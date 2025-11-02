@@ -1,0 +1,47 @@
+{
+    "defender_messages": {
+        "h": "h"
+    },
+
+    "attacker_messages": {
+        "help": {
+            "menu": [
+                "Welcome to Cybersecurity Game demo.\n\n\n",
+                "Click 'Play as Attacker' to start the demo."
+            ],
+
+            "start": [
+                "Click the button to start probing\nthe network."
+            ],
+
+            "ip": [
+                "Locate and enter the IP addresses for\n",
+                "the submarine and the submarine controller to start\n",
+                "sniffing for activity."
+            ],
+
+            "encoding": [
+                "Enter a format to start\n",
+                "decoding the packets. 'utf-8' is a good idea."
+            ],
+
+            "fields": [
+                "Find significant field names\n",
+                "in the decoded packets. If you track enough\n",
+                "fields, the packet stream can simulate the\n",
+                "submarine."
+            ],
+
+            "endgame": [
+                "Now start sending cyber attacks\n",
+                "to trick the submarine and controller. Expand the\n",
+                "right sidebar if you've closed it."
+            ]                        
+        },
+        "info": {
+            "this button": [
+                "this is what i do"
+            ]
+        }
+    }
+}

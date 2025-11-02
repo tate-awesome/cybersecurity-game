@@ -1,0 +1,42 @@
+ip,state,hostname,mac,vendor
+10.0.0.1,up,core-router-1,00:11:22:33:44:01,Cisco Systems
+10.0.0.2,up,core-router-2,00:11:22:33:44:02,Cisco Systems
+10.0.0.10,up,submarine,00:11:22:33:44:0A,General Dynamics
+10.0.0.11,up,submarine_controller,00:11:22:33:44:0B,Raytheon
+10.0.0.20,up,radar-array-01,00:11:22:33:44:14,Lockheed Martin
+10.0.0.21,up,radar-array-02,00:11:22:33:44:15,Lockheed Martin
+10.0.0.22,up,radar-array-03,00:11:22:33:44:16,Lockheed Martin
+10.0.1.5,up,powergrid-scada-01,00:11:22:33:44:1F,Siemens AG
+10.0.1.6,up,powergrid-scada-02,00:11:22:33:44:20,Siemens AG
+10.0.1.7,up,powergrid-scada-03,00:11:22:33:44:21,Siemens AG
+10.0.1.8,up,hydro-dam-control-01,00:11:22:33:44:22,GE Energy
+10.0.1.9,up,hydro-dam-sensors-01,00:11:22:33:44:23,GE Energy
+10.0.2.10,up,airbase-comm-01,00:11:22:33:44:24,Harris Corp
+10.0.2.11,up,airbase-comm-02,00:11:22:33:44:25,Harris Corp
+10.0.2.12,up,airbase-defense-01,00:11:22:33:44:26,Northrop Grumman
+10.0.2.13,up,airbase-defense-02,00:11:22:33:44:27,Northrop Grumman
+10.0.3.5,up,naval-dock-ctrl-01,00:11:22:33:44:28,BAE Systems
+10.0.3.6,up,naval-dock-ctrl-02,00:11:22:33:44:29,BAE Systems
+10.0.3.7,up,naval-dock-radar-01,00:11:22:33:44:2A,Raytheon
+10.0.4.2,up,missile-defense-node-01,00:11:22:33:44:2B,Lockheed Martin
+10.0.4.3,up,missile-defense-node-02,00:11:22:33:44:2C,Lockheed Martin
+10.0.4.4,up,missile-defense-node-03,00:11:22:33:44:2D,Lockheed Martin
+10.0.5.1,up,satellite-uplink-01,00:11:22:33:44:2E,Boeing
+10.0.5.2,up,satellite-uplink-02,00:11:22:33:44:2F,Boeing
+10.0.5.3,up,satellite-ground-ctrl-01,00:11:22:33:44:30,Boeing
+10.0.5.4,up,satellite-ground-ctrl-02,00:11:22:33:44:31,Boeing
+10.0.6.10,up,utility-grid-core-01,00:11:22:33:44:32,ABB Ltd
+10.0.6.11,up,utility-grid-core-02,00:11:22:33:44:33,ABB Ltd
+10.0.6.12,up,utility-grid-edge-01,00:11:22:33:44:34,ABB Ltd
+10.0.6.13,up,utility-grid-edge-02,00:11:22:33:44:35,ABB Ltd
+10.0.7.1,up,fuel-depot-monitor-01,00:11:22:33:44:36,Schneider Electric
+10.0.7.2,up,fuel-depot-monitor-02,00:11:22:33:44:37,Schneider Electric
+10.0.7.3,up,fuel-depot-pumps-01,00:11:22:33:44:38,Schneider Electric
+10.0.7.4,up,fuel-depot-pumps-02,00:11:22:33:44:39,Schneider Electric
+10.0.8.20,up,munitions-storage-sensors-01,00:11:22:33:44:3A,General Dynamics
+10.0.8.21,up,munitions-storage-sensors-02,00:11:22:33:44:3B,General Dynamics
+10.0.8.22,up,munitions-storage-sensors-03,00:11:22:33:44:3C,General Dynamics
+10.0.9.10,up,research-lab-core-01,00:11:22:33:44:3D,MITRE
+10.0.9.11,up,research-lab-core-02,00:11:22:33:44:3E,MITRE
+10.0.9.12,up,research-lab-instruments-01,00:11:22:33:44:3F,MITRE
+10.0.9.13,up,research-lab-instruments-02,00:11:22:33:44:40,MITRE
