@@ -75,7 +75,10 @@ class Window:
         self.ip_message = "Click Nmap to get your victim's ip address"
 
         # Game settings
-
+        self.MED_FONT = CTkFont(family="Arial", size=16)
+        self.DATA_FONT = CTkFont(family="Courier", size=16)
+        self.HEADER_FONT = CTkFont(family="Arial", size=24)
+        self.TITLE_FONT = CTkFont(family="Arial", size=max(32, self.root.winfo_height()//5), weight="bold")
 
         # App root
         

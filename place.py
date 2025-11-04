@@ -9,8 +9,16 @@ from customtkinter import *
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
    
 
-def menu_bar(parent):
-    return
+def menu_bar(parent, title):
+    menu_bar = CTkFrame(parent)
+    menu_bar.pack(side="top", padx=5, pady=5, fill="x", expand=True, anchor="n")
+    game_label = CTkLabel(master = menu_bar, text=title, font=CTkFont(family="Arial", size=16))
+    game_label.pack(side="left", padx=20, pady=10)
+    return menu_bar
+
+def menu_bar_button(parent, text, function):
+    button = CTkButton(parent, text=text, command=function, font=CTkFont(family="Arial", size=16))
+    button.pack(side="right", padx=10, pady=10)
 
 class virtual_map:
     def canvas(parent, draw_function, framerate_ms):

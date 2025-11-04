@@ -13,17 +13,21 @@ import place
 class Navigate:
     def __init__(self, root):
         self.root = root
-        self.current_nav = self.main_menu
+        self.current_page = self.main_menu
     
     def clear(self, parent):
         while len(parent.winfo_children()) > 0:
             parent.winfo_children()[0].destroy()
     def clear_window(self):
         self.clear(self.root)
+    def quit_game(self):
+        self.root.destroy()
+    def open_help_popup(self):
+        return
     
     def main_menu(self):
         self.clear(self.root)
-        self.current_nav = self.main_menu
+        self.current_page = self.main_menu
         menu_wrapper = place.main_menu.wrapper(self.root)
         place.main_menu.title(menu_wrapper, "Cybersecurity Game", self.root)
         buttons_wrapper = place.main_menu.buttons_wrapper(menu_wrapper)
@@ -69,15 +73,20 @@ class Navigate:
         return
 
     def hacker_start(self):
-        
-        return
-    def defender_start(self):
-        return
-    def open_help_popup(self):
+        self.clear(self.root)
+        self.current_page = self.hacker_start
+        self.current_message = "hacker_start"
+        menu_bar = place.menu_bar(self.root, "Hacker Mode: Start Page")
+        place.menu_bar_button(menu_bar, "Quit", self.quit_game)
+        place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
         return
     
+    def defender_start(self):
+        return
+    
+    
     def cycle_theme(self):
-        navigate = self.current_nav
+        navigate = self.current_page
         if ctk.get_appearance_mode() == "Dark":
             ctk.set_appearance_mode("Light")
             return
@@ -99,6 +108,3 @@ class Navigate:
         ctk.set_appearance_mode("Dark")
         self.clear(self.root)
         navigate()
-    
-    def quit_game(self):
-        return
