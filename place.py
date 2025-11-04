@@ -8,10 +8,10 @@ from customtkinter import *
 # HEADER_FONT = CTkFont(family="Arial", size=24)
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
    
-
+# Menu bar widgets
 def menu_bar(parent, title):
     menu_bar = CTkFrame(parent)
-    menu_bar.pack(side="top", padx=5, pady=5, fill="x", expand=True, anchor="n")
+    menu_bar.pack(side="top", padx=5, pady=5, fill="x", anchor="n")
     game_label = CTkLabel(master = menu_bar, text=title, font=CTkFont(family="Arial", size=16))
     game_label.pack(side="left", padx=20, pady=10)
     return menu_bar
@@ -19,6 +19,32 @@ def menu_bar(parent, title):
 def menu_bar_button(parent, text, function):
     button = CTkButton(parent, text=text, command=function, font=CTkFont(family="Arial", size=16))
     button.pack(side="right", padx=10, pady=10)
+
+# Trifold paned window
+def trifold(parent):
+
+    # Get root color
+    rc = parent._apply_appearance_mode(parent.cget("fg_color"))
+
+    # Set panedwindow theme
+    style = ttk.Style()
+    style.configure('custom.TPanedwindow', background=rc)
+    style.configure("Sash", sashrelief="raised", sashthickness=10)
+
+    # Create paned window
+    paned = ttk.PanedWindow(parent, orient="horizontal", style="custom.TPanedwindow")
+    paned.pack(fill="both", expand=True, padx=10)
+
+    # Create panes with matching corners
+    left = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))
+    middle = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))
+    right = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))
+
+    # Add panes
+    paned.add(left)
+    paned.add(middle)
+    paned.add(right)
+    return left, middle, right
 
 class virtual_map:
     def canvas(parent, draw_function, framerate_ms):
