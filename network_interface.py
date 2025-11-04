@@ -1,6 +1,8 @@
 import virtual_master
 import virtual_slave
 import math
+from pyModbusTCP.client import ModbusClient
+from pcapng import FileScanner
 
 class Network_Interface:
     def __init__(self, network_type):
@@ -14,6 +16,7 @@ class Network_Interface:
         self.current_real_direction = 0
         self.current_fake_direction = 0
         self.target = [0, 0]
+        
 
         if network_type == "virtual":
 
@@ -53,22 +56,6 @@ class Network_Interface:
             
             Slave.send_func = slave_to_master
             Master.send_func = master_to_slave
-        
-        
-    class Boat_State:
-        timestamp: float
-        x: int
-        y: int
-        dir: int
-        rudder: int
-        speed: int
-        def __init__(self, time, x, y, dir, rud, spe):
-            self.timestamp = time
-            self.x = x
-            self.y = y
-            self.dir = dir
-            self.rudder = rud
-            self.speed = spe
 
     # Holds all packet altering data
     # Only use these methods and members to change propagating packets
