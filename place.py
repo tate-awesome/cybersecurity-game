@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from customtkinter import *
 
-          
+# MED_FONT = CTkFont(family="Arial", size=16)
+PANE_GAPS = 10
 # MED_FONT = CTkFont(family="Arial", size=16)
 # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
@@ -11,7 +12,7 @@ from customtkinter import *
 # Menu bar widgets
 def menu_bar(parent, title):
     menu_bar = CTkFrame(parent)
-    menu_bar.pack(side="top", padx=5, pady=5, fill="x", anchor="n")
+    menu_bar.pack(side="top", padx=PANE_GAPS/2, pady=PANE_GAPS/2, fill="x", anchor="n")
     game_label = CTkLabel(master = menu_bar, text=title, font=CTkFont(family="Arial", size=16))
     game_label.pack(side="left", padx=20, pady=10)
     return menu_bar
@@ -29,11 +30,11 @@ def trifold(parent):
     # Set panedwindow theme
     style = ttk.Style()
     style.configure('custom.TPanedwindow', background=rc)
-    style.configure("Sash", sashrelief="raised", sashthickness=10)
+    style.configure("Sash", sashrelief="raised", sashthickness=PANE_GAPS)
 
     # Create paned window
     paned = ttk.PanedWindow(parent, orient="horizontal", style="custom.TPanedwindow")
-    paned.pack(fill="both", expand=True, padx=10)
+    paned.pack(fill="both", expand=True, padx=PANE_GAPS)
 
     # Create panes with matching corners
     left = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))

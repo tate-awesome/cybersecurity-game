@@ -15,6 +15,7 @@ root.title("Cybersecurity Game")
 
 nav = navigate.Navigate(root)
 nav.main_menu()
+# nav.hacker_start()
 
 
 root.mainloop()
