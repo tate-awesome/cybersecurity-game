@@ -2,7 +2,7 @@ import virtual_master
 import virtual_slave
 import math
 from pyModbusTCP.client import ModbusClient
-from pcapng import FileScanner
+import pcapng
 
 class Network_Interface:
     def __init__(self, network_type):

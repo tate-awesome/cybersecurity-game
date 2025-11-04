@@ -13,6 +13,7 @@ import place
 class Navigate:
     def __init__(self, root):
         self.root = root
+        self.current_nav = self.main_menu
     
     def clear(self, parent):
         while len(parent.winfo_children()) > 0:
@@ -22,6 +23,7 @@ class Navigate:
     
     def main_menu(self):
         self.clear(self.root)
+        self.current_nav = self.main_menu
         menu_wrapper = place.main_menu.wrapper(self.root)
         place.main_menu.title(menu_wrapper, "Cybersecurity Game", self.root)
         buttons_wrapper = place.main_menu.buttons_wrapper(menu_wrapper)
@@ -31,7 +33,7 @@ class Navigate:
             [     "Play as Defender",     self.defender_start     ],
             [     "go to virtual map",    self.virtual_map],
             [     "Help",                 self.open_help_popup    ],
-            [     "Cycle Theme",          lambda:self.cycle_theme(self.main_menu)     ],
+            [     "Cycle Theme",          self.cycle_theme     ],
             [     "Quit",                 self.quit_game          ]     ]
 
         for button in buttons:
@@ -67,13 +69,15 @@ class Navigate:
         return
 
     def hacker_start(self):
+        
         return
     def defender_start(self):
         return
     def open_help_popup(self):
         return
     
-    def cycle_theme(self, navigate):
+    def cycle_theme(self):
+        navigate = self.current_nav
         if ctk.get_appearance_mode() == "Dark":
             ctk.set_appearance_mode("Light")
             return
