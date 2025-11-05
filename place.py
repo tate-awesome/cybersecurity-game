@@ -4,6 +4,7 @@ from customtkinter import *
 
 # MED_FONT = CTkFont(family="Arial", size=16)
 PANE_GAPS = 10
+PANE_MIN = PANE_GAPS*4
 # MED_FONT = CTkFont(family="Arial", size=16)
 # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
@@ -27,24 +28,21 @@ def trifold(parent):
     # Get root color
     rc = parent._apply_appearance_mode(parent.cget("fg_color"))
 
-    # Set panedwindow theme
-    style = ttk.Style()
-    style.configure('custom.TPanedwindow', background=rc)
-    style.configure("Sash", sashrelief="raised", sashthickness=PANE_GAPS)
-
     # Create paned window
-    paned = ttk.PanedWindow(parent, orient="horizontal", style="custom.TPanedwindow")
-    paned.pack(fill="both", expand=True, padx=PANE_GAPS)
+    paned = tk.PanedWindow(parent, orient="horizontal", background=rc, sashwidth=PANE_GAPS)
+    paned.pack(fill="both", expand=True, padx=PANE_GAPS, pady=(0, PANE_GAPS))
 
-    # Create panes with matching corners
-    left = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))
-    middle = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))
-    right = CTkFrame(paned, background_corner_colors=(rc, rc, rc, rc))
+    # Create panes with matching corners and preset widths
+    w = parent.winfo_screenwidth()*3/4
+    print(w)
+    left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
+    middle = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
+    right = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
 
     # Add panes
-    paned.add(left)
-    paned.add(middle)
-    paned.add(right)
+    paned.add(left, minsize=PANE_MIN)
+    paned.add(middle, minsize=PANE_MIN)
+    paned.add(right, minsize=PANE_MIN)
     return left, middle, right
 
 class virtual_map:
