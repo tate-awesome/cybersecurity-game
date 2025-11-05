@@ -6,7 +6,17 @@ import customtkinter as ctk
 # MED_FONT = CTkFont(family="Arial", size=16)
 PANE_GAPS = 10
 PANE_MIN = PANE_GAPS*4
-# MED_FONT = CTkFont(family="Arial", size=16)
+MED_FONT = None
+LARGE_FONT = None
+
+def set_fonts():
+    global MED_FONT
+    global LARGE_FONT
+    if MED_FONT is None:
+        MED_FONT = ctk.CTkFont(family="Arial", size=16)
+    if LARGE_FONT is None:
+        LARGE_FONT = ctk.CTkFont(family="Arial", size=24)
+
 # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
@@ -15,12 +25,12 @@ PANE_MIN = PANE_GAPS*4
 def menu_bar(parent, title):
     menu_bar = CTkFrame(parent)
     menu_bar.pack(side="top", padx=PANE_GAPS/2, pady=PANE_GAPS/2, fill="x", anchor="n")
-    game_label = CTkLabel(master = menu_bar, text=title, font=CTkFont(family="Arial", size=16))
+    game_label = CTkLabel(master = menu_bar, text=title, font=MED_FONT)
     game_label.pack(side="left", padx=20, pady=10)
     return menu_bar
 
 def menu_bar_button(parent, text, function):
-    button = CTkButton(parent, text=text, command=function, font=CTkFont(family="Arial", size=16))
+    button = CTkButton(parent, text=text, command=function, font=MED_FONT)
     button.pack(side="right", padx=10, pady=10)
 
 # Trifold paned window
@@ -51,6 +61,9 @@ def trifold(parent):
     paned.add(right, minsize=PANE_MIN)
     return left, middle, right
 
+
+
+
 class virtual_map:
     def canvas(parent, draw_function, framerate_ms):
         square_size = min(parent.winfo_height(), parent.winfo_width())
@@ -77,7 +90,7 @@ class main_menu:
         return wrapper
 
     def button(parent, text, function):
-        button = CTkButton(parent, text=text, width=280, height=50, command=function, font=CTkFont(family="Arial", size=24))
+        button = CTkButton(parent, text=text, width=280, height=50, command=function, font=LARGE_FONT)
         button.pack(pady=10)
         return button
 
