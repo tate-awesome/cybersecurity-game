@@ -61,6 +61,17 @@ def trifold(parent):
     paned.add(right, minsize=PANE_MIN)
     return left, middle, right
 
+# Nmap button
+def nmap_button(parent, text, function):
+    nmap_start_button = CTkButton(parent, text="Start Probing Network via NMap", command=function, font=MED_FONT)
+    nmap_start_button.grid(row=1, column=1, ipadx=20, ipady=10)
+
+    for i in [0, 2]:
+        parent.grid_columnconfigure(i, weight=1)
+        parent.grid_rowconfigure(i, weight=1)
+    parent.grid_columnconfigure(1, weight=0)
+    parent.grid_rowconfigure(1, weight=0)
+
 
 
 
