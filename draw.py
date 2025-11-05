@@ -69,7 +69,7 @@ def target(canvas, x, y, color):
     ]
     canvas.create_oval(bbox, outline=color, width=2, fill="")
 
-def ticks(canvas, path, step, color="black"):
+def ticks(canvas, path, step, width, color="black"):
     # if len(path) < 4 or len(path)%2 != 0:
     #     return
     # tracks = coordinates_transform(path, canvas.winfo_height())
@@ -125,7 +125,7 @@ def ticks(canvas, path, step, color="black"):
             tx = x0 + ux * t * step
             ty = y0 + uy * t * step
 
-            tick_len = 20  # tick length in grid units
+            tick_len = width  # tick length in grid units
             xA = tx + px * tick_len / 2
             yA = ty + py * tick_len / 2
             xB = tx - px * tick_len / 2
