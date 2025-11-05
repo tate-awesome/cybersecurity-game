@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from customtkinter import *
+import customtkinter as ctk
 
 # MED_FONT = CTkFont(family="Arial", size=16)
 PANE_GAPS = 10
@@ -26,7 +27,13 @@ def menu_bar_button(parent, text, function):
 def trifold(parent):
 
     # Get root color
-    rc = parent._apply_appearance_mode(parent.cget("fg_color"))
+    rc = parent.cget("fg_color")
+    mode = ctk.get_appearance_mode()
+    print(rc)
+    if mode == "Light":
+        rc = rc[0]
+    else:
+        rc = rc[1]
 
     # Create paned window
     paned = tk.PanedWindow(parent, orient="horizontal", background=rc, sashwidth=PANE_GAPS)
@@ -34,7 +41,6 @@ def trifold(parent):
 
     # Create panes with matching corners and preset widths
     w = parent.winfo_screenwidth()*3/4
-    print(w)
     left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
     middle = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
     right = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))

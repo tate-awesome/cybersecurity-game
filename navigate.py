@@ -24,6 +24,8 @@ class Navigate:
         self.root.destroy()
     def open_help_popup(self):
         return
+    def open_settings(self):
+        return
     
     def main_menu(self):
         self.clear(self.root)
@@ -35,9 +37,10 @@ class Navigate:
         buttons = [
             [     "Play as Attacker",     self.hacker_start       ],
             [     "Play as Defender",     self.defender_start     ],
-            [     "go to virtual map",    self.virtual_map],
+            [     "go to virtual map",    self.virtual_map        ],
             [     "Help",                 self.open_help_popup    ],
-            [     "Cycle Theme",          self.cycle_theme     ],
+            [     "Settings",             self.open_settings      ],
+            [     "Cycle Theme",          self.cycle_theme        ],
             [     "Quit",                 self.quit_game          ]     ]
 
         for button in buttons:
@@ -81,6 +84,8 @@ class Navigate:
         menu_bar = place.menu_bar(self.root, "Hacker Mode: Start Page")
         place.menu_bar_button(menu_bar, "Quit", self.quit_game)
         place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
+        place.menu_bar_button(menu_bar, "Settings", self.open_settings)
+        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
 
         # Place trifold
         left_pane, middle_pane, right_pane = place.trifold(self.root)
@@ -94,6 +99,8 @@ class Navigate:
         navigate = self.current_page
         if ctk.get_appearance_mode() == "Dark":
             ctk.set_appearance_mode("Light")
+            self.clear(self.root)
+            navigate()
             return
             
         theme_name = ctk.ThemeManager()._currently_loaded_theme
