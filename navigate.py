@@ -14,6 +14,7 @@ class Navigate:
     def __init__(self, root):
         self.root = root
         self.current_page = self.main_menu
+        place.set_fonts()
     
     def clear(self, parent):
         while len(parent.winfo_children()) > 0:
