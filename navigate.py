@@ -76,6 +76,7 @@ class Navigate:
         place.virtual_map.canvas(self.root, draw_virtual_map, 100)
         return
 
+    # Hacker navigation
     def hacker_start(self):
         self.clear(self.root)
         self.current_page = self.hacker_start
@@ -83,6 +84,7 @@ class Navigate:
 
         # Place menu bar
         menu_bar = place.menu_bar(self.root, "Hacker Mode: Start Page")
+        # Place menu buttons right to left
         place.menu_bar_button(menu_bar, "Quit", self.quit_game)
         place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
         place.menu_bar_button(menu_bar, "Settings", self.open_settings)
@@ -90,11 +92,29 @@ class Navigate:
 
         # Place trifold
         left_pane, middle_pane, right_pane = place.trifold(self.root)
-        return
+
+        # Place nmap button
+        place.nmap_button(middle_pane, "Start probing network via NMap", print("nmaps"))
     
+    # Defender navigation
     def defender_start(self):
-        return
-    
+        self.clear(self.root)
+        self.current_page = self.defender_start
+        self.current_message = "defender_start"
+
+        # Place menu bar
+        menu_bar = place.menu_bar(self.root, "Defender Mode: Start Page")
+        # Place menu buttons right to left
+        place.menu_bar_button(menu_bar, "Quit", self.quit_game)
+        place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
+        place.menu_bar_button(menu_bar, "Settings", self.open_settings)
+        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
+
+        # Place trifold
+        left_pane, middle_pane, right_pane = place.trifold(self.root)
+
+        # Place nmap button
+        place.nmap_button(middle_pane, "Start probing network via NMap", print("nmaps"))
     
     def cycle_theme(self):
         navigate = self.current_page
