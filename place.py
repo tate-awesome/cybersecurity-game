@@ -39,7 +39,6 @@ def trifold(parent):
     # Get root color
     rc = parent.cget("fg_color")
     mode = ctk.get_appearance_mode()
-    print(rc)
     if mode == "Light":
         rc = rc[0]
     else:
@@ -50,7 +49,8 @@ def trifold(parent):
     paned.pack(fill="both", expand=True, padx=PANE_GAPS, pady=(0, PANE_GAPS))
 
     # Create panes with matching corners and preset widths
-    w = parent.winfo_screenwidth()*3/4
+    parent.update_idletasks()
+    w = paned.winfo_width()
     left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
     middle = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
     right = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
@@ -64,14 +64,10 @@ def trifold(parent):
 # Nmap button
 def nmap_button(parent, text, function):
     nmap_start_button = CTkButton(parent, text="Start Probing Network via NMap", command=function, font=MED_FONT)
-    nmap_start_button.grid(row=1, column=1, ipadx=20, ipady=10)
+    # nmap_start_button.grid(row=1, column=1, ipadx=20, ipady=10)
+    nmap_start_button.pack(side="top", pady=PANE_MIN, padx=PANE_MIN, fill="x")
 
-    for i in [0, 2]:
-        parent.grid_columnconfigure(i, weight=1)
-        parent.grid_rowconfigure(i, weight=1)
-    parent.grid_columnconfigure(1, weight=0)
-    parent.grid_rowconfigure(1, weight=0)
-
+# 
 
 
 
