@@ -39,6 +39,7 @@ class Navigate:
             [     "Play as Attacker",     self.hacker_start       ],
             [     "Play as Defender",     self.defender_start     ],
             [     "go to virtual map",    self.virtual_map        ],
+            [     "go to saved map",      self.saved_map        ],
             [     "Help",                 self.open_help_popup    ],
             [     "Settings",             self.open_settings      ],
             [     "Cycle Theme",          self.cycle_theme        ],
@@ -47,6 +48,7 @@ class Navigate:
         for button in buttons:
             place.main_menu.button(buttons_wrapper, button[0], button[1])
 
+    # Virtual demo
     def virtual_map(self):
         self.clear_window()
         net = network_interface.Network_Interface("virtual")
@@ -68,10 +70,38 @@ class Navigate:
             dir = net.current_real_direction
             draw.boat(canvas, x, y, dir, "black", "white")
             draw.target(canvas, net.target[0], net.target[1], "red")
-            draw.ticks(canvas, [x, y, net.target[0], net.target[1]], 10, "green")
-            draw.ticks(canvas, net.real_pos_history, 10, "black")
-            draw.ticks(canvas, [0, 0, 0, 1000], 100, "white")
-            draw.ticks(canvas, [0, 0, 1000, 0], 100, "white")
+            draw.ticks(canvas, [x, y, net.target[0], net.target[1]], 10, 10, "green")
+            draw.ticks(canvas, net.real_pos_history, 10, 10, "black")
+            draw.ticks(canvas, [0, 0, 0, 1000], 100, 20, "white")
+            draw.ticks(canvas, [0, 0, 1000, 0], 100, 20, "white")
+            return
+        place.virtual_map.canvas(self.root, draw_virtual_map, 100)
+        return
+    
+    # Saved packets demo
+    def saved_map(self):
+        self.clear_window()
+        net = network_interface.Network_Interface("saved")
+
+        def draw_virtual_map(canvas):
+            canvas.delete("all")
+            draw.ocean(canvas, "#003459")
+            draw.ticks(canvas, [0, 0, 0, 1000], 50, 2000, "grey")
+            draw.ticks(canvas, [0, 0, 1000, 0], 50, 2000, "grey")
+            if len(net.fake_pos_history) < 5 or len(net.real_pos_history) < 5:
+                return
+            draw.line(canvas, net.fake_pos_history, "pink")
+            x = net.fake_pos_history[-2]
+            y = net.fake_pos_history[-1]
+            dir = net.current_fake_direction
+            draw.boat(canvas, x, y, dir, "pink", "")
+            draw.line(canvas, net.real_pos_history, "white")
+            x = net.real_pos_history[-2]
+            y = net.real_pos_history[-1]
+            dir = net.current_real_direction
+            draw.boat(canvas, x, y, dir, "black", "white")
+            draw.target(canvas, net.target[0], net.target[1], "red")
+            
             return
         place.virtual_map.canvas(self.root, draw_virtual_map, 100)
         return

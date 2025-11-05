@@ -3,6 +3,8 @@ import virtual_slave
 import math
 from pyModbusTCP.client import ModbusClient
 import pcapng
+import saved_packets
+import threading
 
 class Network_Interface:
     def __init__(self, network_type):
@@ -56,6 +58,18 @@ class Network_Interface:
             
             Slave.send_func = slave_to_master
             Master.send_func = master_to_slave
+
+        if network_type == "saved":
+            print("saved network mode")
+            saved_packets.GET_HISTORY("Hardware Files\modbus_Traffic.pcapng")
+            def refresh_history():
+                print("Checking history...")
+                self.real_pos_history = saved_packets.current_history
+                self.fake_pos_history = saved_packets.current_history
+                threading.Timer(1, refresh_history).start()
+                # Reschedule the function to run again after 2 seconds
+            threading.Timer(1, refresh_history).start()
+                
 
     # Holds all packet altering data
     # Only use these methods and members to change propagating packets
