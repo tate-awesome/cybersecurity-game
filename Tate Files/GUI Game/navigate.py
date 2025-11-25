@@ -2,6 +2,7 @@ import customtkinter as ctk
 import os
 import network_interface
 import draw
+from tkinter.filedialog import askopenfilename
 
 import place
  # place element (parent)
@@ -42,7 +43,7 @@ class Navigate:
             [     "go to saved map",      self.saved_map        ],
             [     "Help",                 self.open_help_popup    ],
             [     "Settings",             self.open_settings      ],
-            [     "Cycle Theme",          self.cycle_theme        ],
+            [     "Select Theme",          self.select_theme        ],
             [     "Quit",                 self.quit_game          ]     ]
 
         for button in buttons:
@@ -119,7 +120,7 @@ class Navigate:
         place.menu_bar_button(menu_bar, "Quit", self.quit_game)
         place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
         place.menu_bar_button(menu_bar, "Settings", self.open_settings)
-        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
+        place.menu_bar_button(menu_bar, "Select Theme", self.select_theme)
 
         # Place trifold
         left_pane, middle_pane, right_pane = place.trifold(self.root)
@@ -139,7 +140,7 @@ class Navigate:
         place.menu_bar_button(menu_bar, "Quit", self.quit_game)
         place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
         place.menu_bar_button(menu_bar, "Settings", self.open_settings)
-        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
+        place.menu_bar_button(menu_bar, "Select Theme", self.select_theme)
 
         # Place trifold
         left_pane, middle_pane, right_pane = place.trifold(self.root)
@@ -158,11 +159,16 @@ class Navigate:
         place.menu_bar_button(menu_bar, "Quit", self.quit_game)
         place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
         place.menu_bar_button(menu_bar, "Settings", self.open_settings)
-        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
+        place.menu_bar_button(menu_bar, "Select Theme", self.select_theme)
 
         # Place trifold
         left_pane, middle_pane, right_pane = place.trifold(self.root)
         
+        # Place tabs
+        middle_tabs = place.tab.container(middle_pane)
+        middle_tabs.add("joe")
+
+
         # Place pcap viewer
         
 
@@ -179,7 +185,7 @@ class Navigate:
         place.menu_bar_button(menu_bar, "Quit", self.quit_game)
         place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
         place.menu_bar_button(menu_bar, "Settings", self.open_settings)
-        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
+        place.menu_bar_button(menu_bar, "Select Theme", self.select_theme)
 
         # Place trifold
         left_pane, middle_pane, right_pane = place.trifold(self.root)
@@ -187,7 +193,7 @@ class Navigate:
         # Place nmap button
         place.nmap_button(middle_pane, "Start probing network via NMap", print("nmaps"))
     
-    def cycle_theme(self):
+    def select_theme(self):
         navigate = self.current_page
         if ctk.get_appearance_mode() == "Dark":
             ctk.set_appearance_mode("Light")
@@ -195,20 +201,27 @@ class Navigate:
             navigate()
             return
             
-        theme_name = ctk.ThemeManager()._currently_loaded_theme
+        # theme_name = ctk.ThemeManager()._currently_loaded_theme
 
-        if theme_name == "blue":
-            theme = "themes/breeze.json"
-        else:
-            all_themes = os.listdir("themes")
-            files = sorted([f for f in all_themes if os.path.isfile(os.path.join("themes", f))])
-            i = files.index(theme_name.split('/')[1])
-            if i >= len(files) - 1:
-                theme = "blue"
-            else:
-                theme = "themes/"+files[i+1]
+        # if theme_name == "blue":
+        #     theme = "themes/breeze.json"
+        # else:
+        #     all_themes = os.listdir("themes")
+        #     files = sorted([f for f in all_themes if os.path.isfile(os.path.join("themes", f))])
+        #     i = files.index(theme_name.split('/')[1])
+        #     if i >= len(files) - 1:
+        #         theme = "blue"
+        #     else:
+        #         theme = "themes/"+files[i+1]
 
-        ctk.ThemeManager.load_theme(theme)
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        file_path = askopenfilename(
+            initialdir=f"{BASE_DIR}/themes",
+            title="Select a file",
+            filetypes=(("json", "*.*"),)
+        )
+
+        ctk.ThemeManager.load_theme(file_path)
         ctk.set_appearance_mode("Dark")
         self.clear(self.root)
         navigate()
