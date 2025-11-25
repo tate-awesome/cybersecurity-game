@@ -145,7 +145,27 @@ class Navigate:
         left_pane, middle_pane, right_pane = place.trifold(self.root)
 
         # Place ip address form
+
+    def hacker_final(self):
+        self.clear(self.root)
+        self.current_page = self.hacker_final
+        self.current_message = "hacker_final"
+
+        # Place menu bar
+        menu_bar = place.menu_bar(self.root, "Hacker Mode: Final Screen")
+
+        # Place menu buttons right to left
+        place.menu_bar_button(menu_bar, "Quit", self.quit_game)
+        place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
+        place.menu_bar_button(menu_bar, "Settings", self.open_settings)
+        place.menu_bar_button(menu_bar, "Cycle Theme", self.cycle_theme)
+
+        # Place trifold
+        left_pane, middle_pane, right_pane = place.trifold(self.root)
         
+        # Place pcap viewer
+        
+
     
 # Defender navigation
     def defender_start(self):
