@@ -1,10 +1,12 @@
+import os
 import virtual_master
 import virtual_slave
 import math
 from pyModbusTCP.client import ModbusClient
 import pcapng
-import saved_packets
+import sca
 import threading
+from tkinter.filedialog import askopenfilename
 
 class Network_Interface:
     def __init__(self, network_type):
@@ -61,15 +63,26 @@ class Network_Interface:
 
         if network_type == "saved":
             print("saved network mode")
-            saved_packets.GET_HISTORY("Hardware Files\modbus_Traffic.pcapng")
+            sca.GET_HISTORY("Hardware Files\modbus_Traffic.pcapng")
             def refresh_history():
                 print("Checking history...")
-                self.real_pos_history = saved_packets.current_history
-                self.fake_pos_history = saved_packets.current_history
+                self.real_pos_history = sca.current_history
+                self.fake_pos_history = sca.current_history
                 threading.Timer(1, refresh_history).start()
                 # Reschedule the function to run again after 2 seconds
             threading.Timer(1, refresh_history).start()
-                
+        
+        if network_type == "pcap_viewer":
+            print("pcap viewer")
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+            file_path = askopenfilename(
+                initialdir=BASE_DIR,
+                title="Select a file",
+                filetypes=(("PCAP files", "*.pcap*"),)
+            )
+            return sca.unpack(file_path)
+        
+            
 
     # Holds all packet altering data
     # Only use these methods and members to change propagating packets
