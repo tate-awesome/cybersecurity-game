@@ -94,6 +94,21 @@ class tab:
             corner_radius=0,
         )
         return tabs
+    
+class tree:
+    def root(parent, columns):
+        tree = ttk.Treeview(parent, columns=columns, show="headings")
+        tree.pack(fill="both", expand=True)
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=len(col)*8, anchor="w")
+
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+
+    def branch():
+        
 
 # Nmap button
 def nmap_button(parent, text, function):

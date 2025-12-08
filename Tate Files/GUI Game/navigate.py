@@ -166,11 +166,17 @@ class Navigate:
         
         # Place tabs
         middle_tabs = place.tab.container(middle_pane)
-        middle_tabs.add("joe")
+        pcap_tab = middle_tabs.add("pcap viewer")
 
-
-        # Place pcap viewer
+        # Place tree
+        columns = ("No.", "Time", "Source", "Destination", "Protocol", "Length Info")
+        tree = place.tree.root(pcap_tab, columns)
         
+        # Get unpacked pcap
+        pcap_unpacked = network_interface.Network_Interface("pcap_viewer")
+
+        # Place branches
+        tree.insert("", "end", values=(i, time, proto, pkt.summary()))
 
     
 # Defender navigation
@@ -218,7 +224,7 @@ class Navigate:
         file_path = askopenfilename(
             initialdir=f"{BASE_DIR}/themes",
             title="Select a file",
-            filetypes=(("json", "*.*"),)
+            filetypes=(("json", "*.json"),)
         )
 
         ctk.ThemeManager.load_theme(file_path)
