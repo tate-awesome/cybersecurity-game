@@ -255,4 +255,4 @@ def unpack(file_path):
         pkt_data["Info"] = pkt.summary()
         if (pkt.haslayer(ModbusADURequest) or pkt.haslayer(ModbusADUResponse)):
             simple_modbus = decode_modbus(pkt)
-            if simple_modbus.command ==
+            # if simple_modbus.command ==

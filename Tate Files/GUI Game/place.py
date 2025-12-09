@@ -108,6 +108,7 @@ class tree:
         scrollbar.pack(side="right", fill="y")
 
     def branch():
+        return
         
 
 # Nmap button

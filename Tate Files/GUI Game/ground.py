@@ -7,6 +7,7 @@ from scapy.layers.inet import TCP
 from scapy.all import bind_layers
 from scapy.all import rdpcap
 from scapy.contrib.modbus import *
+import sca
 
 class Modbus(Packet):
     name = "Modbus"
