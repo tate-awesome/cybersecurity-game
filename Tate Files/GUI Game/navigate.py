@@ -207,9 +207,11 @@ class Navigate:
         
         spoof_button = place.big_button(middle_pane, "Start ARP Spoofing")
         def stop():
+            spoof_button.configure(command=start, text="Stopping...")
             net.arp_spoofing.stop()
             spoof_button.configure(command=start, text="Start ARP Spoofing")
         def start():
+            spoof_button.configure(command=start, text="Starting...")
             net.arp_spoofing.start()
             spoof_button.configure(command=stop, text="Stop ARP Spoofing")
         spoof_button.configure(command=start)

