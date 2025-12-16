@@ -205,8 +205,6 @@ class Navigate:
         # columns = ("No.", "Time", "Source", "Destination", "Protocol", "Length Info")
         # tree = place.tree.root(pcap_tab, columns)
         
-        # Get unpacked pcap
-        
         spoof_button = place.big_button(middle_pane, "Start ARP Spoofing")
         def stop():
             net.arp_spoofing.stop()
