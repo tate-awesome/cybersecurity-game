@@ -81,8 +81,13 @@ class Network_Interface:
                 filetypes=(("PCAP files", "*.pcap*"),)
             )
             return sca.unpack(file_path)
+
+        if network_type == "hardware_demo":
+            print("hardware demo")
         
-            
+        
+    def attack1(self):
+        print("attack 1")
 
     # Holds all packet altering data
     # Only use these methods and members to change propagating packets

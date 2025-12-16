@@ -176,7 +176,41 @@ class Navigate:
         pcap_unpacked = network_interface.Network_Interface("pcap_viewer")
 
         # Place branches
-        tree.insert("", "end", values=(i, time, proto, pkt.summary()))
+        # tree.insert("", "end", values=(i, time, proto, pkt.summary()))
+
+#Hacker hardware demo
+    def hacker_hardware_demo(self):
+        self.clear(self.root)
+        self.current_page = self.hacker_hardware_demo
+        self.current_message = "hacker_hardware_demo"
+
+        # Place menu bar
+        menu_bar = place.menu_bar(self.root, "Hacker Mode: Hardware Demo")
+
+        # Place menu buttons right to left
+        place.menu_bar_button(menu_bar, "Quit", self.quit_game)
+        place.menu_bar_button(menu_bar, "Help", self.open_help_popup)
+        place.menu_bar_button(menu_bar, "Settings", self.open_settings)
+        place.menu_bar_button(menu_bar, "Select Theme", self.select_theme)
+
+        # Place trifold
+        left_pane, middle_pane, right_pane = place.trifold(self.root)
+        
+        # Place tabs
+        # middle_tabs = place.tab.container(middle_pane)
+        # pcap_tab = middle_tabs.add("pcap viewer")
+
+        # Place tree
+        # columns = ("No.", "Time", "Source", "Destination", "Protocol", "Length Info")
+        # tree = place.tree.root(pcap_tab, columns)
+        
+        # Get unpacked pcap
+        net = network_interface.Network_Interface("hardware_demo")
+
+        mult, offset, a_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Attack")
+
+        # Place branches
+        # tree.insert("", "end", values=(i, time, proto, pkt.summary()))
 
     
 # Defender navigation

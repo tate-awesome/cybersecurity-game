@@ -143,7 +143,7 @@ def build_gui():
     main = ctk.CTkFrame(root)
     main.pack(padx=20, pady=20)
 
-    data_list = scapy2.create_tree_from_selected_pcap()
+    # data_list = scapy2.create_tree_from_selected_pcap()
 
     # Get all top-level keys (columns)
     all_keys = list(data_list[0].keys())
