@@ -3,6 +3,7 @@ import os
 import network_interface
 import draw
 from tkinter.filedialog import askopenfilename
+import network_interface2 as net
 
 import place
  # place element (parent)
@@ -126,7 +127,7 @@ class Navigate:
         left_pane, middle_pane, right_pane = place.trifold(self.root)
 
         # Place nmap button
-        place.nmap_button(middle_pane, "Start probing network via NMap", print("nmaps"))
+        place.big_button(middle_pane, "Start probing network via NMap", print("nmaps"))
     
     def hacker_nmap(self):
         self.clear(self.root)
@@ -205,7 +206,16 @@ class Navigate:
         # tree = place.tree.root(pcap_tab, columns)
         
         # Get unpacked pcap
-        net = network_interface.Network_Interface("hardware_demo")
+        
+        spoof_button = place.big_button(middle_pane, "Start ARP Spoofing")
+        def stop():
+            net.arp_spoofing.stop()
+            spoof_button.configure(command=start, text="Start ARP Spoofing")
+        def start():
+            net.arp_spoofing.start()
+            spoof_button.configure(command=stop, text="Stop ARP Spoofing")
+        spoof_button.configure(command=start)
+        
 
         mult, offset, a_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Attack")
 
@@ -231,7 +241,7 @@ class Navigate:
         left_pane, middle_pane, right_pane = place.trifold(self.root)
 
         # Place nmap button
-        place.nmap_button(middle_pane, "Start probing network via NMap", print("nmaps"))
+        place.big_button(middle_pane, "Start probing network via NMap", print("nmaps"))
     
     def select_theme(self):
         navigate = self.current_page

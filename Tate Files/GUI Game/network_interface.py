@@ -4,6 +4,8 @@ import virtual_slave
 import math
 from pyModbusTCP.client import ModbusClient
 import pcapng
+import scapy
+import time
 import sca
 import threading
 from tkinter.filedialog import askopenfilename
