@@ -3,6 +3,8 @@ from tkinter import ttk
 import customtkinter as ctk
 import navigate
 
+# Run as sudo for socket permissions?
+# sudo python3 "/home/u-smart/Documents/tate-github/cybersecurity-game/Tate Files/GUI Game/main.py"
 
 root = ctk.CTk()
 screen_width = root.winfo_screenwidth()
