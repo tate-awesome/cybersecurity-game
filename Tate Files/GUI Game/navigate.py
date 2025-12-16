@@ -206,15 +206,21 @@ class Navigate:
         # tree = place.tree.root(pcap_tab, columns)
         
         spoof_button = place.big_button(middle_pane, "Start ARP Spoofing")
-        def stop():
-            spoof_button.configure(command=start, text="Stopping...")
+        def stop_spoof():
+            spoof_button.configure(command=start_spoof, text="Stopping...")
             net.arp_spoofing.stop()
-            spoof_button.configure(command=start, text="Start ARP Spoofing")
-        def start():
-            spoof_button.configure(command=start, text="Starting...")
+            spoof_button.configure(command=start_spoof, text="Start ARP Spoofing")
+        def start_spoof():
+            spoof_button.configure(command=start_spoof, text="Starting...")
             net.arp_spoofing.start()
-            spoof_button.configure(command=stop, text="Stop ARP Spoofing")
-        spoof_button.configure(command=start)
+            spoof_button.configure(command=stop_spoof, text="Stop ARP Spoofing")
+        spoof_button.configure(command=start_spoof)
+
+        sniff_button = place.big_button(middle_pane, "Start Sniffing")
+        def start_sniff():
+            spoof_button.configure(command=start_spoof, text="Sniffing...")
+            net.packet_sniffing.start()
+        sniff_button.configure(command=start_sniff)
         
 
         mult, offset, a_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Attack")
