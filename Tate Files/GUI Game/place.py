@@ -148,10 +148,11 @@ class tree:
         
 
 # Nmap button
-def nmap_button(parent, text, function):
-    nmap_start_button = CTkButton(parent, text="Start Probing Network via NMap", command=function, font=MED_FONT)
+def big_button(parent, text, function=None):
+    button = CTkButton(parent, text=text, command=function, font=MED_FONT)
     # nmap_start_button.grid(row=1, column=1, ipadx=20, ipady=10)
-    nmap_start_button.pack(side="top", pady=PANE_MIN, padx=PANE_MIN, fill="x")
+    button.pack(side="top", pady=PANE_MIN, padx=PANE_MIN, fill="x")
+    return button
 
 # 
 
