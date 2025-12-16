@@ -14,10 +14,14 @@ class packet_sniffing:
             return "Not Modbus Layer"
         modbus_layer = pkt.getlayer(ModbusADURequest) or pkt.getlayer(ModbusADUResponse)
 
-        if pkt.haslayer(ModbusADURequest) and getattr(modbus_layer, "funcCode", "?") == 3:
-            print()
+        # Response: speed & rudder: alter this
         if pkt.haslayer(ModbusADUResponse) and getattr(modbus_layer, "funcCode", "?") == 3:
-            print()
+            return pkt
+        if pkt.haslayer(ModbusADUResponse) and getattr(modbus_layer, "funcCode", "?") == 6:
+            return pkt
+        # Position data: alter based on register addr
+        if getattr(modbus_layer, "funcCode", "?") == 6:
+            return pkt
         
 
     def get_packet_info(pkt):
@@ -60,7 +64,7 @@ class packet_sniffing:
     
         # Default string
             register_string = "No info"
-            scan_string = ["     ","     ","     ","     ","     "]
+            scan_string = [" "*6," "*6," "*6," "*6," "*6,"X\tY\tTheta\tSpeed\tRudder"]
             # x y theta rudder dir
 
             register_meanings = {
@@ -169,14 +173,15 @@ class packet_sniffing:
             # Modbus/TCP runs over TCP port 502
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
                 if (pkt.haslayer(ModbusADURequest) or pkt.haslayer(ModbusADUResponse)):
-                    print(packet_sniffing.get_packet_info(pkt)["scan_numbers"])
-                    pkt[scapy.IP].ttl -= 1
-                    del pkt[scapy.IP].chksum
-                    del pkt[scapy.TCP].chksum
+                    print(packet_sniffing.get_packet_info(pkt)["scan_numbers"]) #Scannable numbers in order: X Y Theta Speed Rudder
+                    # print(packet_sniffing.get_packet_info(pkt)["modbus_summary"]) # Detailed lines
+                    # pkt[scapy.IP].ttl -= 1
+                    # del pkt[scapy.IP].chksum
+                    # del pkt[scapy.TCP].chksum
 
-                    pkt = packet_sniffing.modify(pkt)
+                    # pkt = packet_sniffing.modify(pkt)
 
-                    scapy.send(pkt, verbose=False)
+                    # scapy.send(pkt, verbose=False)
                 else:
                     print("not modbus")
                     # pkt[ModbusADUResponse].show()
