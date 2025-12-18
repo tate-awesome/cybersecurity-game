@@ -6,10 +6,198 @@ from scapy.layers.inet import TCP
 from scapy.all import bind_layers
 from scapy.all import rdpcap
 from scapy.contrib.modbus import *
- 
-class packet_sniffing:
+import math
+
+class mb:
+
+    func_meanings = {
+        1: "Read Coils",
+        2: "Read Discrete Inputs",
+        3: "Read Holding Registers",
+        4: "Read Input Registers",
+        5: "Write Single Coil",
+        6: "Write Single Register",
+        15: "Write Multiple Coils",
+        16: "Write Multiple Registers"
+    }
+
+    register_meanings = {
+        3: "Speed Feedback",    # 12-bit count (X/4095)*5.0
+        4: "Rudder Feedback",   # 12-bit count (X/4095)*30
+        10: "X Position",       # meters*100
+        11: "Y Position",       # meters*100
+        12: "Theta (Heading)"   # milli-radians
+    }
+
+    def is_modbus(pkt):
+        return pkt.haslayer(ModbusADURequest) or pkt.haslayer(ModbusADUResponse)
+
+
+    # If packet is speed and rudder. This is the useful one to mod
+    def is_commands(pkt):
+        if not mb.is_modbus(pkt):
+            return False
+        return pkt.haslayer("Read Holding Registers Response")
+
+    def get_commands(pkt):
+        if not mb.is_commands(pkt):
+            return "?"
+        mbl = pkt.getlayer(ModbusADUResponse)
+        pl = getattr(mbl, "payload", "?")
+        return getattr(pl, "registerVal", "?")
+    
+    def get_speed(pkt):
+        return mb.get_commands(pkt)[0]
+
+    def get_rudder(pkt):
+        return mb.get_commands(pkt)[1]
+
+
+
+
+    # If packet is coords (xyt). This is the useful one to mod
+    def is_coord(pkt):
+        if not mb.is_modbus(pkt):
+            return False
+        if pkt.haslayer("Write Single Register"):
+            return True
+
+    def get_coord(pkt):
+        if not mb.is_coord(pkt):
+            return "?"
+        mbl = pkt.getlayer(ModbusADURequest)
+        pl = getattr(mbl, "payload", "?")
+        return getattr(pl, "registerValue", "?")
+    
+    def is_x(pkt):
+        if not mb.is_coord(pkt):
+            return False
+        mbl = pkt.getlayer(ModbusADURequest)
+        pl = getattr(mbl, "payload", "?")
+        if getattr(pl, "registerAddr", "?") == 10:
+            return True
+        else:
+            return False
+
+    def is_y(pkt):
+        if not mb.is_coord(pkt):
+            return False
+        mbl = pkt.getlayer(ModbusADURequest)
+        pl = getattr(mbl, "payload", "?")
+        if getattr(pl, "registerAddr", "?") == 11:
+            return True
+        else:
+            return False
+
+    def is_theta(pkt):
+        if not mb.is_coord(pkt):
+            return False
+        mbl = pkt.getlayer(ModbusADURequest)
+        pl = getattr(mbl, "payload", "?")
+        if getattr(pl, "registerAddr", "?") == 12:
+            return True
+        else:
+            return False
+
+
+    def get_transId(pkt):
+        if not mb.is_modbus(pkt):
+            return "?"
+        mbl = pkt.getlayer(ModbusADURequest) or pkt.getlayer(ModbusADUResponse)
+        return getattr(mbl, "transId", "?")
+
+
+
+
+    def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, show_theta = True, show_speed = True, show_rudder = True, convert = False):
+
+        if not mb.is_modbus(pkt):
+            return
+
+        out = ""
+
+        if show_transId:
+            out += mb.get_transId(pkt)
+        
+        if show_x:
+            out += "X:"
+            if mb.is_x(pkt):
+                x = mb.get_coord(pkt)
+                if convert:
+                    x = x/100.0
+                    out += f"{x:>6.2f}"
+                else:
+                    out += f"{x:>6}"
+            else:
+                out += " "*6
+
+        if show_y:
+            out += "  Y:"
+            if mb.is_y(pkt):
+                y = mb.get_coord(pkt)
+                if convert:
+                    y = y/100.0
+                    out += f"{y:>6.2f}"
+                else:
+                    out += f"{y:>6}"
+            else:
+                out += " "*6
+
+        if show_theta:
+            out += "  Theta:"
+            if mb.is_theta(pkt):
+                t = mb.get_coord(pkt)
+                if convert:
+                    t = (t/100.0)
+                    out += f"{t:>6.2f}"
+                else:
+                    out += f"{t:>6}"
+            else:
+                out += " "*6
+        
+        if show_speed:
+            out += "  Speed:"
+            if mb.is_commands(pkt):
+                s = mb.get_speed(pkt)
+                if convert:
+                    s = (s/4095.0) * 5.0
+                    out += f"{s:>1.4}"
+                else:
+                    out += f"{s:>6}"
+            else:
+                out += " "*6
+
+        if show_rudder:
+            out += "  Rudder:"
+            if mb.is_commands(pkt):
+                r = mb.get_rudder(pkt)
+                if convert:
+                    r = (r/4095.0) * 30.0
+                    out += f"{r:>2.3}"
+                else:
+                    out += f"{r:>6}"
+            else:
+                out += " "*6
+
+        print(out)
+
+
+    
+    '''
+    useful pkt info:
+    pkt.summary()
+    modbus_layer.funcCode
+    modbus_layer.payload
+    '''
+
+    
+
+
+
+class scapy_sniffing:
 
     # Modify packets according to inputs: mult & offset: default to 1x mult, +0 offset
+    # Don't work yet
     def modify(pkt, matrix = [[1,0], [1,0], [1,0], [1,0], [1,0]]):
         if (not pkt.haslayer(ModbusADURequest) and not pkt.haslayer(ModbusADUResponse)):
             return pkt
@@ -53,165 +241,15 @@ class packet_sniffing:
 
         return pkt
         
-        
-
-    def get_packet_info(pkt):
-        
-        pkt_info = dict()
-
-        pkt_info["summary"] = pkt.summary()
-
-        # Modbus should be request or response
-        if (not pkt.haslayer(ModbusADURequest) and not pkt.haslayer(ModbusADUResponse)):
-            return "Not Modbus Layer"
-        
-        # Set layer to whatever returns
-        modbus_layer = pkt.getlayer(ModbusADURequest) or pkt.getlayer(ModbusADUResponse)
-
-        # request or response
-        type = "Request" if pkt.haslayer(ModbusADURequest) else ("Response" if pkt.haslayer(ModbusADUResponse) else "Modbus")
-
-        # transaction ID
-        trans_id = getattr(modbus_layer, "transId", "?")
-
-        # function code
-        func_meanings = {
-            1: "Read Coils",
-            2: "Read Discrete Inputs",
-            3: "Read Holding Registers",
-            4: "Read Input Registers",
-            5: "Write Single Coil",
-            6: "Write Single Register",
-            15: "Write Multiple Coils",
-            16: "Write Multiple Registers"
-        }
-        func_code = getattr(modbus_layer, "funcCode", "?")
-        func_name = func_meanings[func_code]
-
-        payload = getattr(modbus_layer, "payload", "?")
-
-        # Change info based on func code
-        def get_register_string(func_code, payload, scannable=False):
-    
-        # Default string
-            register_string = "No info"
-            scan_string = [" "*6," "*6," "*6," "*6," "*6,"X\tY\tTheta\tSpeed\tRudder"]
-            # x y theta rudder dir
-
-            register_meanings = {
-                3: "Speed Feedback",    # 12-bit count (X/4095)*5.0
-                4: "Rudder Feedback",   # 12-bit count (X/4095)*30
-                10: "X Position",       # meters*100
-                11: "Y Position",       # meters*100
-                12: "Theta (Heading)"   # milli-radians
-            }
-            if func_code == 6:
-                register_addr = getattr(payload, "registerAddr", "?")
-                register_value = getattr(payload, "registerValue", "?")
-                register_name = register_meanings[register_addr]
-                register_string = f"{register_name} = {register_value}"
-                # Theta (Heading) = 3142
-                if register_addr == 10:
-                    scan_string[0] = f"{register_value:>6}"
-                if register_addr == 11:
-                    scan_string[1] = f"{register_value:>6}"
-                if register_addr == 12:
-                    scan_string[2] = f"{register_value:>6}"
-
-            elif func_code == 3 and type == "Request":
-                start_addr = getattr(payload, "startAddr", "?")
-                quantity = getattr(payload, "quantity", "?")    # Note: quantity is always and forever 2
-                i = 1
-                register_string = register_meanings[start_addr]
-                while i <= quantity - 1:
-                    register_string += ", " + register_meanings[start_addr + i]
-                    i += 1
-                # X Position, Y Position
-
-            elif func_code == 3 and type == "Response":
-                # Using straight registerVal is touchy.
-                register_val = getattr(payload, "registerVal", "?")
-                # if len(register_val) == 2:
-                    # We got the expected 2 register values
-                register_string = register_val
-
-                scan_string[3] = f"{register_val[0]:>6}"
-                scan_string[4] = f"{register_val[1]:>6}"
-
-                # else:
-                #     modbus_layer.show()
-
-                #     # We got the bad 4 register values and need to go manually
-                #     raw_bytes = getattr(payload, "load", "?")  # or payload[Raw].load if needed
-                #     pdu = raw_bytes[7:]              # skip MBAP header
-                #     func_code = pdu[0]
-                #     byte_count = pdu[1]
-
-                #     register_bytes = pdu[2:2+byte_count]  # slice exactly the number of bytes reported
-                #     register_string = [int.from_bytes(register_bytes[i:i+2], "big") for i in range(0, len(register_bytes), 2)]
-
-                # modbus_layer.show()
-            if scannable:
-                return scan_string
-            return register_string
-        register_string = get_register_string(func_code, payload)
-        scan_numbers = get_register_string(func_code, payload, True)
-
-        # Set info members: modbus_summary, modbus_layer, type, trans_id, func_code, 
-        # func_name, payload, register_summary
-        pkt_info["modbus_summary"] = f"{type} {trans_id}: {func_name}: {register_string}"
-        pkt_info["modbus_layer"] = modbus_layer
-        pkt_info["type"] = type
-        pkt_info["trans_id"] = trans_id
-        pkt_info["func_code"] = func_code
-        pkt_info["func_name"] = func_name
-        pkt_info["payload"] = payload
-        pkt_info["register_summary"] = register_string
-        pkt_info["scan_numbers"] = scan_numbers
-
-        return pkt_info
-
-
-    # def dstart():
-    #     # Create Modbus format
-    #     class Modbus(Packet):
-    #         name = "Modbus"
-    #         fields_desc = [
-    #             ShortField("Transaction_ID", 0),
-    #             ShortField("Protocol_ID", 0),
-    #             ShortField("Length", 0),
-    #             ByteField("Unit_ID", 0),
-    #             ByteField("Function_Code", 0),
-    #             FieldListField("Data", None, ByteField("", 0),
-    #                         length_from=lambda pkt: pkt.Length - 2)
-    #         ]
-    #     # Show Modbus info layer
-    #     bind_layers(TCP, Modbus, dport=502)
-    #     bind_layers(TCP, Modbus, sport=502)
-
-    #     def handle_packet(pkt): # -----------------------------------------------------------------------------------------------Flag
-    #         # Filter for modbus
-    #         if not (pkt.haslayer(ModbusADURequest) or pkt.haslayer(ModbusADUResponse)):
-    #             print("not modbus layer")
-    #             return False
-    #         pkt.show()
-    #         # print(packet_sniffing.get_packet_info(pkt))
-
-    #     scapy.sniff(prn=handle_packet, store=False)
-    
     def start():
         def handle_packet(pkt):
             # Modbus/TCP runs over TCP port 502
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
-                if (pkt.haslayer(ModbusADURequest) or pkt.haslayer(ModbusADUResponse)):
-                    print(packet_sniffing.get_packet_info(pkt)["scan_numbers"])     #Scannable numbers in order: X Y Theta Speed Rudder
+                if mb.is_modbus(pkt):
+                    mb.print_scannable(pkt, convert=True)
                     # print(packet_sniffing.get_packet_info(pkt)["modbus_summary"]) # Detailed lines
             
                     # scapy.send(packet_sniffing.modify(pkt, [[0,0], [0,0], [0,0], [0,0], [0,0]]), verbose=False)
-                else:
-                    print("not modbus")
-                    # pkt[ModbusADUResponse].show()
-
 
         # Sniff live traffic (adjust iface if needed)
         scapy.sniff(
@@ -266,6 +304,7 @@ class arp_spoofing:
 
 
     def start():
+        conf.verb = 0
         
         arp_spoofing.running = True
 

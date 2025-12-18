@@ -48,6 +48,8 @@ def packet_listener(packet):
       del pl[IP].chksum
       packet.set_payload(bytes(pl))
       packet.drop()
+      
+      pl.show() 
     '''
     elif pl.haslayer("Write Single Register Response"):
       
@@ -60,7 +62,7 @@ def packet_listener(packet):
       '''        
                      
     pl=IP(packet.get_payload())       
-    pl.show()       
+          
     send(pl)
     #packet.accept()
            
@@ -80,10 +82,10 @@ def packet_listener(packet):
   
   
 def __setdown():
-  os.system("sudo iptables -t mangle -D PREROUTING -i wlan0 -p TCP -j NFQUEUE --queue-num 1") 
+  os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3-p TCP -j NFQUEUE --queue-num 1") 
     
 
-os.system("sudo iptables -t mangle -A PREROUTING -i wlan0 -p TCP -j NFQUEUE --queue-num 1")
+os.system("sudo iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
 os.system("sudo iptables -L")
 queue = nfq()
 

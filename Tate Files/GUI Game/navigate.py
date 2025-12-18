@@ -219,7 +219,7 @@ class Navigate:
         sniff_button = place.big_button(middle_pane, "Start Sniffing")
         def start_sniff():
             sniff_button.configure(command=start_spoof, text="Sniffing...")
-            net.packet_sniffing.start()
+            net.scapy_sniffing.start()
         sniff_button.configure(command=start_sniff)
         
 
