@@ -3,8 +3,9 @@ import threading
 from scapy.layers.inet import TCP
 from scapy.contrib.modbus import *
 import netfilterqueue as nfq
-from scapy.layers.inet import *
+from scapy.layers.inet import IP, TCP
 import os
+from multiprocessing import Process, Event
 
 class mb:
 
@@ -257,12 +258,19 @@ class net_filter_queue:
 
         try:
             print("Starting Attack")
-            
+            # Check for net_filter_queue.running before each loops
             queue.run()
         except KeyboardInterrupt:
             net_filter_queue.__setdown()
             print("stopping sniffing")
             queue.unbind()
+
+    def dstart():
+        p = Process(target=net_filter_queue.start_worker, daemon=True)
+        p.start()
+
+    def dstop():
+        net_filter_queue.running = False
 
 class scapy_sniffing:
 
@@ -374,6 +382,7 @@ class arp_spoofing:
 
 
     def start():
+        # Stop printing so much
         conf.verb = 0
         
         arp_spoofing.running = True
