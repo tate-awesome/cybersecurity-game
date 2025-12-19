@@ -2,10 +2,6 @@ from netfilterqueue import NetfilterQueue as nfq
 from scapy.all import *
 from scapy.layers.inet import *
 from scapy.utils import *
-import scapy.contrib.modbus as mb
-import re
-import threading
-import subprocess
 
 
 import os
@@ -28,8 +24,32 @@ def packet_listener(packet):
                  
                      
     
+    if  pl.haslayer("Write Single Register"): 
+        print("Write register cache is:", pl['Write Single Register'].raw_packet_cache)  
+        print("Write register is:", pl['Write Single Register'])
+       
+    
+    '''
+    elif pl.haslayer("Read Holding Registers Response"):
+        print("Register response is:", pl['Read Holding Registers Response'].registerVal)
+        print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
+      #pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
+        pload2=pl['Read Holding Registers Response'].registerVal
       
-    pl.show()       
+       	pload2[0]=7
+        print('payload2 is ',pload2)
+      #pl['Write Single Register'].remove_payload
+        pl['Read Holding Registers Response'].registerVal=pload2
+        print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
+        del pl[TCP].chksum
+        del pl[IP].chksum
+        packet.set_payload(bytes(pl))
+        #packet.drop()
+        pl.show() 
+        
+     '''    
+    
+    #pl.show()  
     send(pl)
     packet.accept()
            

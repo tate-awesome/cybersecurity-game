@@ -210,6 +210,7 @@ class Navigate:
             spoof_button.configure(command=start_spoof, text="Stopping...")
             net.arp_spoofing.stop()
             spoof_button.configure(command=start_spoof, text="Start ARP Spoofing")
+
         def start_spoof():
             spoof_button.configure(command=start_spoof, text="Starting...")
             net.arp_spoofing.start()
@@ -218,9 +219,15 @@ class Navigate:
 
         sniff_button = place.big_button(middle_pane, "Start Sniffing")
         def start_sniff():
-            sniff_button.configure(command=start_spoof, text="Sniffing...")
+            sniff_button.configure(text="Sniffing...")
             net.scapy_sniffing.start()
         sniff_button.configure(command=start_sniff)
+
+        nfq_button = place.big_button(middle_pane, "Start Net Filter Queue")
+        def start_nfq():
+            nfq_button.configure(text="Queueing...")
+            net.net_filter_queue.start()
+        nfq_button.configure(command=start_nfq)
         
 
         mult, offset, a_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Attack")
