@@ -224,9 +224,16 @@ class Navigate:
         sniff_button.configure(command=start_sniff)
 
         nfq_button = place.big_button(middle_pane, "Start Net Filter Queue")
+
+        def kill_nfq():
+            nfq_button.configure(text="Killing...")
+            net.net_filter_queue.stop()
+            nfq_button.configure(command=start_nfq, text="Start Net Filter Queue")
+
         def start_nfq():
             nfq_button.configure(text="Queueing...")
             net.net_filter_queue.start()
+            nfq_button.configure(command=kill_nfq, text="Kill Net Filter Queue")
         nfq_button.configure(command=start_nfq)
         
 
