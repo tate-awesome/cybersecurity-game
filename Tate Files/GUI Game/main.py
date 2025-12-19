@@ -5,6 +5,11 @@ import navigate
 
 # Run as sudo for socket permissions?
 # sudo python3 "/home/u-smart/Documents/tate-github/cybersecurity-game/Tate Files/GUI Game/main.py"
+# Password = veronica
+# Be on GL-SFT1200-ab1 wifi
+# Reset device before clicking start buttons
+# ctrl+c in terminal to stop os commands
+# trash terminal
 
 root = ctk.CTk()
 screen_width = root.winfo_screenwidth()
