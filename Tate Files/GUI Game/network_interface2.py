@@ -249,7 +249,7 @@ class net_filter_queue:
 
         os.system("sudo iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
         os.system("sudo iptables -L")
-        queue = nfq()
+        queue = nfq.NetfilterQueue()
 
         queue.bind(1, net_filter_queue.packet_listener)
 
