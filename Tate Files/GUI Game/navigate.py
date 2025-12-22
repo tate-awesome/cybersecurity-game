@@ -218,9 +218,14 @@ class Navigate:
         spoof_button.configure(command=start_spoof)
 
         sniff_button = place.big_button(middle_pane, "Start Sniffing")
+        def stop_sniff():
+            sniff_button.configure(text="Stopping...")
+            net.scapy_sniffing.stop()
+            sniff_button.configure(command=start_sniff, text="Start Sniffing")
         def start_sniff():
             sniff_button.configure(text="Sniffing...")
             net.scapy_sniffing.start()
+            sniff_button.configure(command=stop_sniff, text="Stop Sniffing")
         sniff_button.configure(command=start_sniff)
 
         nfq_button = place.big_button(middle_pane, "Start Net Filter Queue")

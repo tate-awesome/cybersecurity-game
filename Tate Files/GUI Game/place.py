@@ -149,7 +149,7 @@ class tree:
 
 # Nmap button
 def big_button(parent, text, function=None):
-    button = CTkButton(parent, text=text, command=function, font=MED_FONT)
+    button = CTkButton(parent, text=text, command=function, font=LARGE_FONT)
     # nmap_start_button.grid(row=1, column=1, ipadx=20, ipady=10)
     button.pack(side="top", pady=PANE_MIN, padx=PANE_MIN, fill="x")
     return button

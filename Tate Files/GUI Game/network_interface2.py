@@ -296,7 +296,7 @@ class net_filter_queue:
         packet.drop()
         scapy.send(pl)
         '''            
-        
+
     def __setdown():
         os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
 
@@ -329,6 +329,7 @@ class net_filter_queue:
         net_filter_queue.process = p
 
 class scapy_sniffing:
+    sniffer = None
         
     def start():
         def handle_packet(pkt):
@@ -336,16 +337,19 @@ class scapy_sniffing:
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
                 if mb.is_modbus(pkt):
                     mb.print_scannable(pkt, convert=True)
-                    # print(packet_sniffing.get_packet_info(pkt)["modbus_summary"]) # Detailed lines
-            
-                    # scapy.send(packet_sniffing.modify(pkt, [[0,0], [0,0], [0,0], [0,0], [0,0]]), verbose=False)
 
-        # Sniff live traffic (adjust iface if needed)
-        scapy.sniff(
+        scapy_sniffing.sniffer = scapy.AsyncSniffer(
             filter="tcp port 502",
             prn=handle_packet,
             store=False
         )
+
+        scapy_sniffing.sniffer.start()
+
+    def stop():
+        if scapy_sniffing.sniffer:
+            scapy_sniffing.sniffer.stop()
+            scapy_sniffing.sniffer = None
 
 class arp_spoofing:
 
