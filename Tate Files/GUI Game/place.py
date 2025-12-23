@@ -8,14 +8,18 @@ PANE_GAPS = 10
 PANE_MIN = PANE_GAPS*4
 MED_FONT = None
 LARGE_FONT = None
+MONO_FONT = None
 
 def set_fonts():
     global MED_FONT
     global LARGE_FONT
+    global MONO_FONT
     if MED_FONT is None:
         MED_FONT = ctk.CTkFont(family="Arial", size=16)
     if LARGE_FONT is None:
         LARGE_FONT = ctk.CTkFont(family="Arial", size=24)
+    if MONO_FONT is None:
+        MONO_FONT = ctk.CTkFont(family="Courier", size=14)
 
 # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
@@ -154,7 +158,14 @@ def big_button(parent, text, function=None):
     button.pack(side="top", pady=PANE_MIN, padx=PANE_MIN, fill="x")
     return button
 
-# 
+def big_textarea(parent):
+    textarea = CTkTextbox(parent, font=MONO_FONT)
+    textarea.pack(side="top", pady=PANE_MIN, padx=PANE_MIN, fill=BOTH, expand=TRUE)
+    return textarea
+
+def append_text(box, text):
+    box.insert(END, text+"\n")
+    box.see(END)
 
 
 

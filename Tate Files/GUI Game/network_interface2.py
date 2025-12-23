@@ -7,7 +7,9 @@ import netfilterqueue as nfq
 from scapy.layers.inet import IP, TCP
 import os
 from multiprocessing import Process, Event
+from queue import Queue
 
+# Safely decodes and modifies modbus packets. Never scapy unwrap without this class.
 class mb:
 
     func_meanings = {
@@ -137,9 +139,9 @@ class mb:
 
 
 
-    def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, show_theta = True, show_speed = True, show_rudder = True, convert = False):
+    def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, show_theta = True, show_speed = True, show_rudder = True, convert = False, print = True):
 
-        if not mb.is_modbus(pkt):
+        if not (mb.is_commands(pkt) or mb.is_coord(pkt)):
             return
 
         out = ""
@@ -206,8 +208,10 @@ class mb:
                     out += f"{r:>6}"
             else:
                 out += " "*6
-
-        print(out)
+        if print:
+            print(out)
+        else:
+            return out
 
 
     
@@ -218,9 +222,94 @@ class mb:
     modbus_layer.payload
     '''
 
-class packet_options:
+class config:
+    put_all: bool = False
+    do_mods = False
+    mod_matrix = [[1.0,0.0], [1.0,0.0], [1.0,0.0], [1.0,0.0], [1.0,0.0]]
+    queue_size: int = 500
+    put_real: bool = True
+    put_fake: bool = True
+
+# Queues the packets for the GUI to poll
+class buffer:
+
+    packet_queue = Queue(maxsize=config.queue_size)
+    number = 1
+
+    def pop():
+        try:
+            return buffer.packet_queue.get_nowait()
+        except:
+            return None
+
+    # What does the GUI need?
+    '''
+    Name            key                                     purpose
+    Version         .version   "real" or "fake"             boat map        network map         wireshark
+    Source          .src                                                    network map         wireshark
+    Destination     .dst                                                    network map         wireshark
+    Variable        .var                                    boat map
+    Value           .val                                    boat map
+
+    No.             .no                                                                         wireshark
+    Transaction ID  .transId                                                                    wireshark
+    Time            .time                                                                       wireshark
+    Length          .len                                                                        wireshark
+    Info string     .info                                                                       wireshark
     
-    dm = [[1,0], [1,0], [1,0], [1,0], [1,0]]
+    '''
+
+    class PacketData:
+        def __init__(self, pkt, version):
+
+            self.version = version
+
+            self.source = pkt[IP].src
+            self.destination = pkt[IP].dst
+
+            if mb.is_x(pkt):
+                self.variable = "X"
+                self.values = [mb.get_coord(pkt)]
+            elif mb.is_y(pkt):
+                self.variable = "Y"
+                self.values = [mb.get_coord(pkt)]
+            elif mb.is_theta(pkt):
+                self.variable = "Theta"
+                self.values = [mb.get_coord(pkt)]
+            elif mb.is_commands(pkt):
+                self.variable = "Commands"
+                self.values = [mb.get_commands(pkt)]
+            else:
+                self.variable = "None"
+                self.values = ["None"]
+
+            self.transId = mb.get_transId(pkt)
+
+            self.number = buffer.number
+            buffer.number += 1
+            
+            self.timestamp = time.time()
+            self.length = len(pkt[TCP].payload)
+            self.info = pkt.summary()
+            self.scannable = mb.print_scannable(pkt, print=False, convert=True)
+
+
+    def put(pkt, version):
+        p = buffer.PacketData(pkt, version)
+        try:
+            buffer.packet_queue.put_nowait(p)
+            return True
+        except:
+            print("Buffer full")
+            return False
+
+    def clear():
+        while not buffer.packet_queue.empty():
+            buffer.packet_queue.get()
+
+    def size():
+        return buffer.packet_queue.qsize()
+    
     '''
 
         register_value[0] = int(register_value[0])*matrix[3][0] + matrix[3][1]
@@ -256,6 +345,7 @@ class packet_options:
         return pkt
         '''
 
+# Handles nfq. Start, stop, handler, etc.
 class net_filter_queue:
 
     def stop():
@@ -328,6 +418,7 @@ class net_filter_queue:
         p.start()
         net_filter_queue.process = p
 
+# Handles sniffing. Start, stop
 class scapy_sniffing:
     sniffer = None
         
@@ -336,7 +427,8 @@ class scapy_sniffing:
             # Modbus/TCP runs over TCP port 502
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
                 if mb.is_modbus(pkt):
-                    mb.print_scannable(pkt, convert=True)
+                    # mb.print_scannable(pkt, convert=True)
+                    buffer.put(pkt, "Real")
 
         scapy_sniffing.sniffer = scapy.AsyncSniffer(
             filter="tcp port 502",
@@ -351,6 +443,7 @@ class scapy_sniffing:
             scapy_sniffing.sniffer.stop()
             scapy_sniffing.sniffer = None
 
+# Handles arp spoofing. Start, stop.
 class arp_spoofing:
 
     def get_mac1(ip):
@@ -429,7 +522,7 @@ class arp_spoofing:
                 
     def stop():
 
-        print("[!] Detexcted CTRL+C! restoring the network, please wait")
+        print("Stopping ARP Spoof...")
 
         # print(arp_spoofing.saved_packets)
 
@@ -437,3 +530,5 @@ class arp_spoofing:
 
         arp_spoofing.restore(arp_spoofing.target, arp_spoofing.host)
         arp_spoofing.restore(arp_spoofing.host, arp_spoofing.target)
+
+        print("Stopped ARP Spoof")
