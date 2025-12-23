@@ -205,7 +205,7 @@ class Navigate:
         # columns = ("No.", "Time", "Source", "Destination", "Protocol", "Length Info")
         # tree = place.tree.root(pcap_tab, columns)
         
-        spoof_button = place.big_button(middle_pane, "Start ARP Spoofing")
+        spoof_button = place.big_button(left_pane, "Start ARP Spoofing")
         def stop_spoof():
             spoof_button.configure(command=start_spoof, text="Stopping...")
             net.arp_spoofing.stop()
@@ -217,7 +217,7 @@ class Navigate:
             spoof_button.configure(command=stop_spoof, text="Stop ARP Spoofing")
         spoof_button.configure(command=start_spoof)
 
-        sniff_button = place.big_button(middle_pane, "Start Sniffing")
+        sniff_button = place.big_button(left_pane, "Start Sniffing")
         def stop_sniff():
             sniff_button.configure(text="Stopping...")
             net.scapy_sniffing.stop()
@@ -228,7 +228,7 @@ class Navigate:
             sniff_button.configure(command=stop_sniff, text="Stop Sniffing")
         sniff_button.configure(command=start_sniff)
 
-        nfq_button = place.big_button(middle_pane, "Start Net Filter Queue")
+        nfq_button = place.big_button(left_pane, "Start Net Filter Queue")
 
         def stop_nfq():
             nfq_button.configure(text="Stopping...")
@@ -240,6 +240,42 @@ class Navigate:
             net.net_filter_queue.start()
             nfq_button.configure(command=stop_nfq, text="Stop Net Filter Queue")
         nfq_button.configure(command=start_nfq)
+
+        queue_button = place.big_button(left_pane, "Print Packets to GUI")
+        queue_print_running = False
+        spreadsheet = place.big_textarea(middle_pane)
+
+        def print_queue_line(textarea):
+            try:
+                while(net.buffer.size() > 0):
+                    place.append_text(textarea, net.buffer.pop().scannable)
+            except:
+                print("error appending. buffer size = ", net.buffer.size())
+                pass
+            if queue_print_running:
+                queue_button.after(50, lambda:print_queue_line(textarea))
+
+        def start_printing_queue():
+            nonlocal queue_print_running
+            queue_print_running = True
+            print_queue_line(spreadsheet)
+            queue_button.configure(command=stop_printing_queue, text="Stop Printing")
+
+        def stop_printing_queue():
+            queue_button.configure(text="Stopping")
+            nonlocal queue_print_running
+            queue_print_running = False
+            queue_button.configure(command=start_printing_queue, text="Print Packets to GUI")
+
+        queue_button.configure(command=start_printing_queue)
+
+
+            
+
+        
+        
+        
+        queue_button.configure(command=start_printing_queue)
         
 
         mult, offset, a_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Attack")
