@@ -27,8 +27,8 @@ root.attributes("-fullscreen", True)
 root.title("Cybersecurity Game")
 
 nav = navigate.Navigate(root)
-nav.hacker_start()
-# nav.hacker_hardware_demo()
+# nav.hacker_start()
+nav.hacker_hardware_demo()
 # nav.hacker_start()
 
 

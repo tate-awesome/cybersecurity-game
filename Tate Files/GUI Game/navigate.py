@@ -248,15 +248,15 @@ class Navigate:
 
         def print_queue_line(textarea):
             try:
-                while(net.buffer.size() > 0):
-                    place.append_text(textarea, net.buffer.pop().scannable)
+                place.append_text(textarea, net.buffer.pop().scannable)
             except:
-                print("error appending. buffer size = ", net.buffer.size())
+                # print("error printing to GUI. buffer size = ", net.buffer.size())
                 pass
             if queue_print_running:
-                queue_button.after(50, lambda:print_queue_line(textarea))
+                queue_button.after(5, lambda:print_queue_line(textarea))
 
         def start_printing_queue():
+            print(net.config.to_string())
             nonlocal queue_print_running
             queue_print_running = True
             print_queue_line(spreadsheet)
@@ -268,18 +268,49 @@ class Navigate:
             queue_print_running = False
             queue_button.configure(command=start_printing_queue, text="Print Packets to GUI")
 
-        queue_button.configure(command=start_printing_queue)
-
-
-            
-
-        
-        
+        queue_button.configure(command=start_printing_queue)  
         
         queue_button.configure(command=start_printing_queue)
-        
 
-        mult, offset, a_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Attack")
+
+        xm, xo, x_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Change X")
+        ym, yo, y_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Change Y")
+        tm, to, t_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Change Theta")
+        sm, so, s_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Change Speed")
+        rm, ro, r_button = place.form.double_entry(right_pane, "Multiplier", "offset", "Change Rudder")
+        
+        xm.insert(0, "1.0")
+        ym.insert(0, "1.0")
+        tm.insert(0, "1.0")
+        sm.insert(0, "1.0")
+        rm.insert(0, "1.0")
+
+        xo.insert(0, "0.0")
+        yo.insert(0, "0.0")
+        to.insert(0, "0.0")
+        so.insert(0, "0.0")
+        ro.insert(0, "0.0")
+
+        def update_modifiers():
+            net.config.xm = float(xm.get())
+            net.config.ym = float(ym.get())
+            net.config.tm = float(tm.get())
+            net.config.sm = float(sm.get())
+            net.config.rm = float(rm.get())
+
+            net.config.xo = float(xo.get())
+            net.config.yo = float(yo.get())
+            net.config.to = float(to.get())
+            net.config.so = float(so.get())
+            net.config.ro = float(ro.get())
+
+            print(net.config.to_string())
+        
+        x_button.configure(command=update_modifiers)
+        y_button.configure(command=update_modifiers)
+        t_button.configure(command=update_modifiers)
+        s_button.configure(command=update_modifiers)
+        r_button.configure(command=update_modifiers)
 
         # Place branches
         # tree.insert("", "end", values=(i, time, proto, pkt.summary()))

