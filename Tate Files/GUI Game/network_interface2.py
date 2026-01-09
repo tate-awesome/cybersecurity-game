@@ -350,6 +350,10 @@ class buffer:
 class net_filter_queue:
 
     def stop():
+        try:
+            net_filter_queue.stop_event
+        except:
+            return
         net_filter_queue.stop_event.set()
         net_filter_queue.process.join(timeout=2)
 
@@ -526,9 +530,11 @@ class arp_spoofing:
                 
     def stop():
 
-        print("Stopping ARP Spoof...")
-
-        # print(arp_spoofing.saved_packets)
+        # Don't fail if already stopped
+        try:
+            arp_spoofing.running
+        except:
+            return
 
         arp_spoofing.running = False
 
@@ -592,3 +598,12 @@ if __name__ == "__main__":
     arp_spoofing.stop()
 
     
+def abort_all():
+    scapy_sniffing.stop()
+    net_filter_queue.stop()
+    arp_spoofing.stop()
+    buffer.clear()
+    config.reset()
+
+    # NEXT make all these stop without needing to be started in the first place
+    # NEXT why is nfq so slow? because it's interrupting traffic. why?
