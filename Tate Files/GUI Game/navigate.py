@@ -24,6 +24,7 @@ class Navigate:
     def clear_window(self):
         self.clear(self.root)
     def quit_game(self):
+        net.abort_all()
         self.root.destroy()
     def open_help_popup(self):
         return
