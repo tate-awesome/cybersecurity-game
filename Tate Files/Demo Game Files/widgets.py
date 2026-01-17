@@ -305,7 +305,8 @@ class Window:
         animate_nmap(0)
     
     def generate_nmap(self):
-        text = self.read_csv_to_rows("nmap.csv")
+        print(os.getcwd())
+        text = self.read_csv_to_rows("Tate Files/Demo Game Files/nmap.csv")
         return text
     
     def read_csv_to_rows(self, path: str, encoding: str = "utf-8", has_header: bool = True):
@@ -607,19 +608,19 @@ class Window:
     def update_tracked_fields(self):
         message = []
         if self.tracked_fields.count("x") > 0:
-            message.append(f"X Position:\t{math.floor(self.fields["x"]):05d}")
+            message.append(f"X Position:\t{math.floor(self.fields['x']):05d}")
 
         if self.tracked_fields.count("y") > 0:
-            message.append(f"Y Position:\t{math.floor(self.fields["y"]):05d}")
+            message.append(f"Y Position:\t{math.floor(self.fields['y']):05d}")
 
         if self.tracked_fields.count("dir") > 0:
-            message.append(f"Bearing:   \t{math.floor(self.fields["dir"]):05d}")
+            message.append(f"Bearing:   \t{math.floor(self.fields['dir']):05d}")
 
         if self.tracked_fields.count("speed") > 0:
-            message.append(f"Speed:     \t{math.floor(self.fields["speed"]):05d}")
+            message.append(f"Speed:     \t{math.floor(self.fields['speed']):05d}")
 
         if self.tracked_fields.count("rudder") > 0:
-            message.append(f"Rudder:    \t{math.floor(self.fields["rudder"]):05d}")
+            message.append(f"Rudder:    \t{math.floor(self.fields['rudder']):05d}")
 
         # If we're tracking x and y, and the position is new, add it to history
         if self.tracked_fields.count("x") > 0 and self.tracked_fields.count("y") > 0:

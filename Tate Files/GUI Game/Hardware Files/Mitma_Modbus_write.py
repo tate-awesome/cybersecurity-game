@@ -41,7 +41,7 @@ def packet_listener(packet):
       print('payload2 is ',dir(pl['Write Single Register']))
       pload2[-1]=random.randint(1, 10)
       #pl['Write Single Register'].remove_payload
-      pl['Write Single Register'].raw_packet_cache=bytes(pload2) # rewrite mdobus binary to change data
+      pl['Write Single Register'].raw_packet_cache=bytes(pload2)
       print('the new payload is ',bytes(pl['Write Single Register']))
       del pl[TCP].chksum
       del pl[IP].chksum
