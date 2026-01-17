@@ -1,5 +1,6 @@
 from scapy.all import TCP, AsyncSniffer
 import Modbus as mb
+import Buffer as buffer
 
 sniffer = None
 
@@ -17,6 +18,11 @@ class handlers:
         if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
             if mb.is_coord(pkt) or mb.is_commands(pkt):
                 mb.print_scannable(pkt, convert=True)
+
+    def put_modbus_in_buffer(pkt):
+        if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
+            if mb.is_coord(pkt) or mb.is_commands(pkt):
+                buffer.put(pkt, False)
     
 
 def start(packet_handler):
