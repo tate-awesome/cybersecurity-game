@@ -673,13 +673,9 @@ class nmapping:
 
         return f"{ip}/{prefix}"
 
+class experiments:
 
-# Testing
-if __name__ == "__main__":
-
-    experiment = "fd_nfq"
-
-    def callback(pkt):
+    def callback_no_q(pkt):
         spkt = IP(pkt.get_payload())
 
         if spkt.haslayer("Read Holding Registers Response"):
@@ -710,7 +706,7 @@ if __name__ == "__main__":
         pkt.accept()
 
 
-    if experiment == "nmap":
+    def nmap():
         nmapping.print_hosts(nmapping.get_local_ip())
 
         print(f"\nYour IP: {nmapping.get_local_ip()}")
@@ -746,7 +742,7 @@ if __name__ == "__main__":
         scapy_sniffing.stop()
         arp_spoofing.stop()
 
-    if experiment == "nfq":
+    def nfq():
 
         arp_spoofing.start()
 
@@ -821,7 +817,7 @@ if __name__ == "__main__":
             arp_spoofing.stop()
             nfqueue.unbind()
 
-    if experiment == "fd_nfq":
+    def fd_nfq():
         import select
 
         stop_event = threading.Event()
@@ -833,7 +829,7 @@ if __name__ == "__main__":
             os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
 
             nfq = NetfilterQueue()
-            nfq.bind(1, callback)
+            nfq.bind(1, experiments.callback_no_q)
 
             qfd = nfq.get_fd()
             poller = select.poll()
@@ -872,6 +868,12 @@ if __name__ == "__main__":
         stop_nfqueue()
         arp_spoofing.stop()
         t.join()
+
+# Testing
+if __name__ == "__main__":
+
+    print("Experiment:")
+
 
 
 
