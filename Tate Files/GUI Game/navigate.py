@@ -233,12 +233,12 @@ class Navigate:
 
         def stop_nfq():
             nfq_button.configure(text="Stopping...")
-            net.net_filter_queue.stop()
+            net.mitm.stop()
             nfq_button.configure(command=start_nfq, text="Start Net Filter Queue")
 
         def start_nfq():
             nfq_button.configure(text="Queueing...")
-            net.net_filter_queue.start()
+            net.mitm.start()
             nfq_button.configure(command=stop_nfq, text="Stop Net Filter Queue")
         nfq_button.configure(command=start_nfq)
 
@@ -292,17 +292,17 @@ class Navigate:
         ro.insert(0, "0.0")
 
         def update_modifiers():
-            net.config.xm = float(xm.get())
-            net.config.ym = float(ym.get())
-            net.config.tm = float(tm.get())
-            net.config.sm = float(sm.get())
-            net.config.rm = float(rm.get())
+            net.mitm.xm = float(xm.get())
+            net.mitm.ym = float(ym.get())
+            net.mitm.tm = float(tm.get())
+            net.mitm.sm = float(sm.get())
+            net.mitm.rm = float(rm.get())
 
-            net.config.xo = float(xo.get())
-            net.config.yo = float(yo.get())
-            net.config.to = float(to.get())
-            net.config.so = float(so.get())
-            net.config.ro = float(ro.get())
+            net.mitm.xo = float(xo.get())
+            net.mitm.yo = float(yo.get())
+            net.mitm.to = float(to.get())
+            net.mitm.so = float(so.get())
+            net.mitm.ro = float(ro.get())
 
             print(net.config.to_string())
         

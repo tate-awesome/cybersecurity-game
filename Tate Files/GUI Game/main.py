@@ -14,6 +14,9 @@ NEXT MEMO
 Modify mult and offset config from GUI
 pop queue in GUI faster
 
+wireshark filter:
+ip.addr == 192.168.8.137 || arp
+
 
 '''
 

