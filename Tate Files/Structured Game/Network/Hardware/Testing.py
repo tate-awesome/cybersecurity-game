@@ -2,6 +2,7 @@ import ARP_Spoofing as arp
 import Sniffing as sniffer
 import Net_Filter_Queue as nfq
 import Modbus as mb
+import Buffer as buffer
 
 
 class tests:
@@ -37,6 +38,7 @@ class tests:
     def nfq():
         arp.start()
 
+        # Pick one
         # nfq.start(nfq.callbacks.print_and_accept)
         nfq.start(nfq.callbacks.print_and_modify)
 
@@ -56,10 +58,70 @@ class tests:
 
         arp.stop()
 
+    # Passed
+    def sniffer_buffer():
+        arp.start()
+
+        sniffer.start(sniffer.handlers.put_modbus_in_buffer)
+
+        input("Press Enter to print from buffer (3 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to print from buffer (2 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to print from buffer (1 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to print from buffer (0 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to stop")
+
+        sniffer.stop()
+        buffer.clear()
+        arp.stop()
+
+    def nfq_buffer():
+        arp.start()
+
+        # Pick one
+        # nfq.start(nfq.callbacks.buffer_and_accept)
+        nfq.start(nfq.callbacks.buffer_and_modify)
+
+        input("Press Enter to print from buffer (3 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to print from buffer (2 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to print from buffer (1 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to print from buffer (0 remaining)")
+
+        buffer.pop().pkt.show()
+
+        input("Press Enter to stop")
+
+        nfq.stop()
+        buffer.clear()
+        arp.stop()
+
+    
+
+
 
 
 if __name__ == "__main__":
-    tests.nfq()
+    tests.nfq_buffer()
 
 
 
