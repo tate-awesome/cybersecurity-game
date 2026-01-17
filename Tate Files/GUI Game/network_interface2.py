@@ -12,7 +12,7 @@ from scapy.all import IP, ICMP, sr1
 import select
 
 
-# Safely decodes and modifies modbus packets. Never scapy unwrap without this class.
+# Safely decodes and modifies modbus packets. 
 class mb:
 
     func_meanings = {
@@ -673,6 +673,7 @@ class nmapping:
 
         return f"{ip}/{prefix}"
 
+# Experiments for testing problems and new features
 class experiments:
 
     def callback_no_q(pkt):
