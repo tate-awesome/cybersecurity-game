@@ -1,7 +1,7 @@
 from collections import deque
 from threading import Lock
 import time as Time
-import Modbus as mb
+from . import Modbus as mb
 
 data_size: int = 5000
 number = 1

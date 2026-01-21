@@ -1,9 +1,9 @@
-import ARP_Spoofing as arp
-import Sniffing as sniffer
-import Net_Filter_Queue as nfq
-import Modbus as mb
-import Buffer as buffer
-import time as Time
+from . import ARP_Spoofing as arp
+from . import Sniffing as sniffer
+from . import Net_Filter_Queue as nfq
+from . import Modbus as mb
+from . import Buffer as buffer
+from . import time as Time
 
 
 class tests:

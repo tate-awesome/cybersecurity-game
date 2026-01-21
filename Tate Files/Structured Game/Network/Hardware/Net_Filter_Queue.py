@@ -1,8 +1,8 @@
 from scapy.all import IP, TCP
 import threading, os, select
 from netfilterqueue import NetfilterQueue
-import Modbus as mb
-import Buffer as buffer
+from . import Modbus as mb
+from . import Buffer as buffer
 
 # Handles nfq. Start, stop, callback, modify, etc.
 
