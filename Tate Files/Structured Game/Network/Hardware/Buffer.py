@@ -114,7 +114,10 @@ def get_last_xyt():
     for dir in ["in", "out"]:
         for var in ["x", "y", "theta"]:
             with trails[f"{var}_{dir}"]["lock"]:
-                vars.append(trails[f"{var}_{dir}"]["deque"][-1][0])
+                if len(trails[f"{var}_{dir}"]["deque"]) < 1:
+                    vars.append(None)
+                else:
+                    vars.append(trails[f"{var}_{dir}"]["deque"][-1][0])
     return vars
 
 def get_last(var, dir):
@@ -125,6 +128,8 @@ def get_last(var, dir):
         tuple: (value, time, number)
     '''
     with trails[f"{var}_{dir}"]["lock"]:
+        if len(trails[f"{var}_{dir}"]["deque"]) < 1:
+            return None
         value = trails[f"{var}_{dir}"]["deque"][-1]
     return value
 
