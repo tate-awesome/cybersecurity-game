@@ -3,6 +3,7 @@ import Sniffing as sniffer
 import Net_Filter_Queue as nfq
 import Modbus as mb
 import Buffer as buffer
+import time as Time
 
 
 class tests:
@@ -66,19 +67,22 @@ class tests:
 
         input("Press Enter to print from buffer (3 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
 
         input("Press Enter to print from buffer (2 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
+
 
         input("Press Enter to print from buffer (1 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
+
 
         input("Press Enter to print from buffer (0 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
+
 
         input("Press Enter to stop")
 
@@ -86,6 +90,7 @@ class tests:
         buffer.clear()
         arp.stop()
 
+    # Passed
     def nfq_buffer():
         arp.start()
 
@@ -95,19 +100,42 @@ class tests:
 
         input("Press Enter to print from buffer (3 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
+
 
         input("Press Enter to print from buffer (2 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
 
         input("Press Enter to print from buffer (1 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
 
         input("Press Enter to print from buffer (0 remaining)")
 
-        buffer.pop().pkt.show()
+        buffer.get_last("packets", "in")[0].show()
+
+        input("Press Enter to stop")
+
+        nfq.stop()
+        buffer.clear()
+        arp.stop()
+    
+    def get_knit_packets():
+        arp.start()
+
+        # Pick one
+        nfq.start(nfq.callbacks.buffer_and_accept)
+        # nfq.start(nfq.callbacks.buffer_and_modify)
+
+        input("Press Enter to print a table of all packets")
+
+        all = buffer.get_knit_packets()
+
+        for p in all:
+            # packet, time, number, direction
+            # Number, time, direction, scannable
+            print(p[2],"\t", Time.localtime(p[1])[5],"\t", p[3],"\t", mb.print_scannable(p[0], print_to_console=False))
 
         input("Press Enter to stop")
 
@@ -115,13 +143,39 @@ class tests:
         buffer.clear()
         arp.stop()
 
+    def get_knit_coordinates():
+        arp.start()
+
+        nfq.start(nfq.callbacks.buffer_and_modify)
+
+        input("Press Enter to print a table of received coordinates")
+
+        coords = buffer.get_knit_coordinates()
+
+        print("x\ty")
+
+        for c in coords[0]:
+            print(c[0],"\t",c[1])
+
+        input("Press Enter to print a table of forwarded coordinates")
+      
+        print("x\ty")
+
+        for c in coords[1]:
+            print(c[0],"\t",c[1])
+
+        input("Press Enter to stop")
+
+        nfq.stop()
+        buffer.clear()
+        arp.stop()
     
 
 
 
 
 if __name__ == "__main__":
-    tests.nfq_buffer()
+    tests.get_knit_coordinates()
 
 
 
