@@ -1,89 +1,207 @@
-from queue import Queue
+from collections import deque
+from threading import Lock
+import time as Time
+import Modbus as mb
 
-
-queue_size: int = 500
-
-
-packet_queue = Queue(maxsize=queue_size)
+data_size: int = 5000
 number = 1
 
-class PacketData():
-    def __init__(self, pkt, modified: bool = False):
-        self.pkt = pkt
-        self.modified = modified
 
-def pop() -> PacketData:
-    try:
-        return packet_queue.get_nowait()
-    except:
-        return 
+trails = {}
+'''
+Keys:
+    x_in, y_in, theta_in, speed_in, rudder_in,
+    x_out, y_out, theta_out, speed_out, rudder_out,
+    packets_in, packets_out
+
+Values:
+    Dict:
+        "deque":
+            For variables:
+                Tuple: (value: int, time: float, number: int)
+            For packets:
+                Tuple: (packet: Packet, time: float, number: int)
+        "lock": Lock()
+    
+'''
+for var in ["x", "y", "theta", "speed", "rudder", "packets"]:
+    for dir in ["in", "out"]:
+        key = f"{var}_{dir}"
+        trails[key] = {
+            "deque": deque(maxlen=data_size), # queue as tuple(var, time, number)
+            "lock": Lock()
+        }
+
+# NFQ side - setters
 
 def put(pkt, modified):
-    p = PacketData(pkt, modified)
-    try:
-        packet_queue.put_nowait(p)
-        return True
-    except:
-        # print("Buffer full")
-        clear()
-        return False
+    '''
+    Puts the packet and its variable(s) into the appropriate deques.
+    Params:
+        pkt: the packet to be queued
+        modified: (True = forwarded/out, False = received/in)
+    '''
+    global number
+
+    # Get time for matching deque times
+    current_time = Time.time()
+
+    # Determine source
+    if modified:
+        source = "out"
+    else:
+        source = "in"
+
+    # Get variable from pkt
+    if mb.is_x(pkt):
+        variable = "x"
+        value = mb.get_coord(pkt)
+    elif mb.is_y(pkt):
+        variable = "y"
+        value = mb.get_coord(pkt)
+    elif mb.is_theta(pkt):
+        variable = "theta"
+        value = mb.get_coord(pkt)
+    elif mb.is_commands(pkt):
+        # Do speed first
+        values = mb.get_commands(pkt)
+        with trails[f"speed_{source}"]["lock"]:
+            trails[f"speed_{source}"]["deque"].append((values[0], current_time, number))
+        # Do rudder with the rest
+        variable = "rudder"
+        value = values[1]
+    else:
+        variable = "None"
+        value = "None"
+
+    # Lock and store value
+
+        # Write single register response and read holding registers request aren't useful (for now)
+    if not variable == "None" and not value == "None":
+        with trails[f"{variable}_{source}"]["lock"]:
+            trails[f"{variable}_{source}"]["deque"].append((value, current_time, number))
+    
+    # Lock and store packet
+
+    with trails[f"packets_{source}"]["lock"]:
+        trails[f"packets_{source}"]["deque"].append((pkt, current_time, number))
+
+
+    # Update number
+    number = number + 1
+
 
 def clear():
-    while not packet_queue.empty():
-        packet_queue.get()
+    '''
+    Clears all deques
+    '''
+    for var in ["x", "y", "theta", "speed", "rudder", "packets"]:
+        for dir in ["in", "out"]:
+            trails[f"{var}_{dir}"]["deque"].clear()
+    return
 
-def size():
-    return packet_queue.qsize()
+# GUI side - getters
 
-# What does the GUI need?
+def get_last_xyt():
+    '''
+    Returns the latest received and forwarded boat position and bearing. Useful for drawing the boat sprite.
 
-'''
-Name            key                                     purpose
-Version         .version   "real" or "fake"             boat map        network map         wireshark
-Source          .src                                                    network map         wireshark
-Destination     .dst                                                    network map         wireshark
-Variable        .var                                    boat map
-Value           .val                                    boat map
+    Returns:
+        list: [x_in, y_in, theta_in,
+                x_out, y_out, theta_out]
+    '''
+    vars = []
+    for dir in ["in", "out"]:
+        for var in ["x", "y", "theta"]:
+            with trails[f"{var}_{dir}"]["lock"]:
+                vars.append(trails[f"{var}_{dir}"]["deque"][-1][0])
+    return vars
 
-No.             .no                                                                         wireshark
-Transaction ID  .transId                                                                    wireshark
-Time            .time                                                                       wireshark
-Length          .len                                                                        wireshark
-Info string     .info                                                                       wireshark
+def get_last(var, dir):
+    '''
+    Returns the last item in the deque for the given variable and direction.
 
-'''
+    Returns:
+        tuple: (value, time, number)
+    '''
+    with trails[f"{var}_{dir}"]["lock"]:
+        value = trails[f"{var}_{dir}"]["deque"][-1]
+    return value
 
-# class PacketData:
-#     def __init__(self, pkt, version):
+def get_trail(var, dir):
+    '''
+    Returns a copy of the full deque for the variable and direction. Useful for drawing the history of a value.
 
-#         self.version = version
+    Param:
+        var: (x, y, theta, speed, rudder, packets)
+        dir: (in, out)
 
-#         self.source = pkt[IP].src
-#         self.destination = pkt[IP].dst
+    Returns:
+        list: tuple: (value, time, number)
+    '''
+    with trails[f"{var}_{dir}"]["lock"]:
+        snapshot = list(trails[f"{var}_{dir}"]["deque"])
+    return snapshot
 
-#         if mb.is_x(pkt):
-#             self.variable = "X"
-#             self.values = [mb.get_coord(pkt)]
-#         elif mb.is_y(pkt):
-#             self.variable = "Y"
-#             self.values = [mb.get_coord(pkt)]
-#         elif mb.is_theta(pkt):
-#             self.variable = "Theta"
-#             self.values = [mb.get_coord(pkt)]
-#         elif mb.is_commands(pkt):
-#             self.variable = "Commands"
-#             self.values = [mb.get_commands(pkt)]
-#         else:
-#             self.variable = "None"
-#             self.values = ["None"]
+def get_knit_packets():
+    '''
+    Returns a list of received and forwarded packet tuples, sorted by time.
+    Useful for the wireshark clone.
 
-#         self.transId = mb.get_transId(pkt)
+    Returns:
+        list:
+            tuple: (packet, time, number, direction)
+    '''
+    # with trails["packets_in"]["lock"]:
+    #     snapshot_in = list(trails["packets_in"]["deque"])
+    # with trails["packets_out"]["lock"]:
+    #     snapshot_out = list(trails["packets_out"]["deque"])
+    snapshot_in = get_trail("packets","in")
+    snapshot_out = get_trail("packets", "out")
 
-#         self.number = buffer.number
-#         buffer.number += 1
-        
-#         self.timestamp = time.time()
-#         self.length = len(pkt[TCP].payload)
-#         self.info = pkt.summary()
-#         self.scannable = mb.print_scannable(pkt, print_to_console=False, convert=True)
+    # Add direction field to each packet
+    snapshot_in = [(pkt, ts, num, "in") for pkt, ts, num in snapshot_in]
+    snapshot_out = [(pkt, ts, num, "out") for pkt, ts, num in snapshot_out]
 
+    # Merge and sort by timestamp
+    all_packets = snapshot_in + snapshot_out
+    all_packets.sort(key=lambda x: x[1])  # sort by timestamp
+
+    return all_packets
+
+def get_knit_coordinates():
+    '''
+    Returns a list of received and forwarded coordinates. Useful for drawing boat paths.
+
+    Returns:
+        tuple:
+            list (received):
+                tuple:
+                    x, y
+            list (forwarded):
+                tuple:
+                    x, y
+    '''
+    x_in = get_trail("x", "in")
+    x_out = get_trail("x", "out")
+    y_in = get_trail("y", "in")
+    y_out = get_trail("y", "out")
+
+    def knit_xy(xs, ys):
+        points = []
+        j = 0
+        last_y = None
+
+        for x_val, x_time, _ in xs:
+            # advance y pointer
+            while j < len(ys) and ys[j][1] <= x_time:
+                last_y = ys[j][0]
+                j += 1
+            if last_y is not None:
+                points.append((x_val, last_y))
+        return points
+
+    received_coords = knit_xy(x_in, y_in)
+    forwarded_coords = knit_xy(x_out, y_out)
+
+    return received_coords, forwarded_coords
