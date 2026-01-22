@@ -29,6 +29,38 @@ register_meanings = {
     12: "Theta (Heading)"   # milli-radians
 }
 
+class bytes_to_units:
+    # Bytes * value = units
+    def x(hreg10: int):
+        '''
+        Returns x position in meters
+        '''
+        return float(hreg10) * 0.01
+    def y(hreg11: int):
+        '''
+        Returns y position in meters
+        '''
+        return float(hreg11) * 0.01
+    def theta_rad(hreg12: int):
+        '''
+        Returns the bearing in radians
+        '''
+        return float(hreg12) * 0.01
+    def theta_deg(hreg12: int):
+        '''
+        Returns the bearing in degrees
+        '''
+        return float(hreg12) * 0.01 * (180.0/3.1415)
+    def speed(hreg3: int):
+        '''
+        Returns the speed in meters per second
+        '''
+        return float(hreg3) * 5.0 / 4095.0
+    def rudder(hreg4):
+        '''
+        Returns the rudder in degrees *subject to change
+        '''
+        return float(hreg4) * 30.0 / 4095.0
 
 def is_modbus(pkt: Packet) -> bool:
     '''
