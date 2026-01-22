@@ -12,7 +12,7 @@ App
 
         Hardware:
 
-            (module) Hacking.py                 access point for all hacking
+            (module) Hacking.py                 access point for all hacking?
 
             (module) Preprocessing.py           packet preprocessing helper module
             (module) Buffer.py                  safely holds data in a sliding window for GUI access
@@ -23,3 +23,6 @@ App
             (module) Sniffing.py                sniffing module
 
             (scripts) Testing.py
+
+            NEXT: figure out duplicate ACK to stop interrupting communication
+            NEXT: rewrite draw map
