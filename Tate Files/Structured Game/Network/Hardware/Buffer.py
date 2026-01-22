@@ -104,7 +104,7 @@ def clear():
 
 def get_last_xyt():
     '''
-    Returns the latest received and forwarded boat position and bearing. Useful for drawing the boat sprite.
+    Returns the latest received and forwarded boat position and bearing, in meters and degrees. Useful for drawing the boat sprite.
 
     Returns:
         list: [x_in, y_in, theta_in,
@@ -117,7 +117,7 @@ def get_last_xyt():
                 if len(trails[f"{var}_{dir}"]["deque"]) < 1:
                     vars.append(None)
                 else:
-                    vars.append(trails[f"{var}_{dir}"]["deque"][-1][0])
+                    vars.append(convert.x(trails[f"{var}_{dir}"]["deque"][-1][0]))
     return vars
 
 def get_last(var, dir):
@@ -176,7 +176,7 @@ def get_knit_packets():
 
 def get_knit_coordinates():
     '''
-    Returns a list of received and forwarded coordinates. Useful for drawing boat paths.
+    Returns a list of received and forwarded coordinates, in meters. Useful for drawing boat paths.
 
     Returns:
         tuple:
@@ -203,7 +203,7 @@ def get_knit_coordinates():
                 last_y = ys[j][0]
                 j += 1
             if last_y is not None:
-                points.append((x_val, last_y))
+                points.append((convert.x(x_val), convert.y(last_y)))
         return points
 
     received_coords = knit_xy(x_in, y_in)
