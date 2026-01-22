@@ -22,9 +22,9 @@ func_meanings = {
 }
 
 register_meanings = {
-    3: "Speed Feedback",    # 12-bit count (X/4095)*5.0
-    4: "Rudder Feedback",   # 12-bit count (X/4095)*30
-    10: "X Position",       # meters*100
+    3: "Speed Feedback",    # 12-bit count Bytes = X*5/4095
+    4: "Rudder Feedback",   # 12-bit count Bytes = X*30/4095
+    10: "X Position",       # Bytes = meters*100
     11: "Y Position",       # meters*100
     12: "Theta (Heading)"   # milli-radians
 }
