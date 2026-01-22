@@ -2,6 +2,7 @@ from collections import deque
 from threading import Lock
 import time as Time
 from . import Modbus as mb
+from .Modbus import bytes_to_units as convert
 
 data_size: int = 5000
 number = 1
