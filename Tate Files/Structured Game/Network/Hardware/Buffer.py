@@ -103,22 +103,27 @@ def clear():
 
 # GUI side - getters
 
-def get_last_xyt():
+def get_last_xyt(dir: str):
     '''
-    Returns the latest received and forwarded boat position and bearing, in meters and degrees. Useful for drawing the boat sprite.
-
+    Returns the latest boat position and bearing, in meters and radians. Useful for drawing the boat sprite.
+    X and y should be between 0 and 200. Theta is in radians
     Returns:
-        list: [x_in, y_in, theta_in,
-                x_out, y_out, theta_out]
+        list: [x, y, theta]
+        OR
+        False, if any are missing
     '''
     vars = []
-    for dir in ["in", "out"]:
-        for var in ["x", "y", "theta"]:
-            with trails[f"{var}_{dir}"]["lock"]:
-                if len(trails[f"{var}_{dir}"]["deque"]) < 1:
-                    vars.append(None)
-                else:
-                    vars.append(convert.x(trails[f"{var}_{dir}"]["deque"][-1][0]))
+    for var in ["x", "y", "theta"]:
+        with trails[f"{var}_{dir}"]["lock"]:
+            if len(trails[f"{var}_{dir}"]["deque"]) < 1:
+                return False
+            else:
+                vars.append(trails[f"{var}_{dir}"]["deque"][-1][0])
+    # All variables added
+    vars[0] = convert.x(vars[0])
+    vars[1] = convert.y(vars[1])
+    vars[2] = convert.theta_rad(vars[2])
+    # NEXT FLAG what is theta really?
     return vars
 
 def get_last(var, dir):
@@ -175,25 +180,7 @@ def get_knit_packets():
 
     return all_packets
 
-def get_knit_coordinates():
-    '''
-    Returns a list of received and forwarded coordinates, in meters. Useful for drawing boat paths.
-
-    Returns:
-        tuple:
-            list (received):
-                tuple:
-                    x, y
-            list (forwarded):
-                tuple:
-                    x, y
-    '''
-    x_in = get_trail("x", "in")
-    x_out = get_trail("x", "out")
-    y_in = get_trail("y", "in")
-    y_out = get_trail("y", "out")
-
-    def knit_xy(xs, ys):
+def knit_xy(xs, ys):
         points = []
         j = 0
         last_y = None
@@ -207,7 +194,42 @@ def get_knit_coordinates():
                 points.append((convert.x(x_val), convert.y(last_y)))
         return points
 
+def get_knit_coordinates_in():
+    '''
+    Returns a list of received coordinates, in meters. Useful for drawing boat paths.
+    Returned values should be between 0 and 200.
+    
+    Returns:
+        list (received):
+            tuple:
+                x, y
+    '''
+    x_in = get_trail("x", "in")
+    y_in = get_trail("y", "in")
+
+    
+
     received_coords = knit_xy(x_in, y_in)
+
+    return received_coords
+
+
+def get_knit_coordinates_out():
+    '''
+    Returns a list of forwarded coordinates, in meters. Useful for drawing boat paths.
+    Returned values should be between 0 and 200.
+    
+    Returns:
+        list (forwarded):
+            tuple:
+                x, y
+    '''
+    x_out = get_trail("x", "out")
+    y_out = get_trail("y", "out")
+
     forwarded_coords = knit_xy(x_out, y_out)
 
-    return received_coords, forwarded_coords
+    return forwarded_coords
+
+def get_flat_coordinates():
+    return
