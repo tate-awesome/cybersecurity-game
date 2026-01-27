@@ -2,6 +2,7 @@ from Network.Hardware import ARP_Spoofing as arp, Sniffing as sniff, Buffer as b
 import customtkinter as ctk
 import GUI.Widgets.common as place
 import GUI.Drawing.map2 as draw
+from threading import Lock
 
 
 # Run as sudo for socket permissions?
@@ -34,11 +35,11 @@ import GUI.Drawing.map2 as draw
 
 # test.converted_canvas()
 
-def draw_virtual_map(canvas):
-    canvas.delete("all")
-    draw.draw_bbox_ocean(canvas, "#003459")
-    draw.draw_bbox_cage(canvas, "white")
-    draw.draw_mouse(canvas)
+def draw_virtual_map(canvas, draw_lock):
+    global points
+    with draw_lock:
+        canvas.delete("all")
+        draw.triangle(canvas)
 
     # draw.ticks(canvas, [0, 0, 0, 1000], 100, 20, "white")
     # draw.ticks(canvas, [0, 0, 1000, 0], 100, 20, "white")
@@ -82,7 +83,7 @@ def draw_virtual_map(canvas):
     # draw.ticks(canvas, [x, y, net.target[0], net.target[1]], 10, 10, "green")
     # draw.ticks(canvas, pos_history[0], 10, 10, "black")
 
-    canvas.configure(scrollregion=canvas.bbox("all"))
+    # canvas.configure(scrollregion=canvas.bbox("all"))
 
     return
 
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     place.big_button(root, "Start Hack", start)
     place.big_button(root, "Stop Hack", stop)
     
-
-    draw.zoom_pan_canvas(root, draw_virtual_map, 100)
+    draw_lock = Lock()
+    draw.zoom_pan_canvas(root, draw_virtual_map, 100, draw_lock)
 
     root.mainloop()

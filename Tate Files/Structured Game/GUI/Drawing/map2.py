@@ -2,9 +2,10 @@ import math
 import customtkinter
 from customtkinter import CTkCanvas
 
-current_zoom = 1.0
-x_zoom = 0
-y_zoom = 0
+SCALE = 1.0 # overall scale
+OFFSET = [0.0, 0.0] # translation (tx, ty)
+x_pan_start = 0
+y_pan_start = 0
 
 def range_transform(points: list, x_in_range, y_in_range, x_out_range, y_out_range):
     '''
@@ -24,66 +25,115 @@ def range_transform(points: list, x_in_range, y_in_range, x_out_range, y_out_ran
         i += 1
     return tracks
 
-def draw_bbox_ocean(canvas: CTkCanvas, color):
-    '''
-    Draws the ocean bigger than the canvas with some regard for zoom.
-    Provides a bounding box for comfortable panning.
-    '''
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
-    s = min(w, h)
-    m = 0.5 * s
-    z = current_zoom
-    canvas.create_rectangle(-m*z, -m*z, (w+m)*z, (h+m)*z, fill=color)
+def transform_figure(F):
+    """
+    Transforms a flat list figure [x0,y0,x1,y1,...]
+    using the global SCALE and OFFSET.
 
-def draw_bbox_cage(canvas: CTkCanvas, color):
-    '''
-    Draws the 0-200 range for the boat as a dashed box
-    '''
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
-    p = 50
-    z = current_zoom
-    x = -x_zoom/2
-    y = -y_zoom/2
-    canvas.create_rectangle((p-x)*z, (p-y)*z, (w-p-x)*z, (h-p-y)*z, fill="", outline=color)
 
-def draw_mouse(canvas: CTkCanvas):
-    x = x_zoom
-    y = y_zoom
-    s = 5
-    canvas.create_oval(x-s, y-s, x+s, y+s, fill="red")
+    Returns a new flat list.
+    """
+    global SCALE, OFFSET
 
-def draw_reference_dots(positions: list, color):
-    '''
-    Draws 
-    '''
 
-def zoom_pan_canvas(parent, draw_callback, framerate_ms):
-    global current_zoom
+    tx, ty = OFFSET
+    s = SCALE
+
+
+    out = []
+    for i in range(0, len(F), 2):
+        x, y = F[i], F[i+1]
+        x_new = s * x + tx
+        y_new = s * y + ty
+        
+        out.extend((x_new, y_new))
+
+
+    return out
+
+def triangle(canvas: CTkCanvas):
+    triangle = [-100,0, 0,200, 100,0]
+    angle = range_transform(triangle, 200, 200, 200, 200)
+
+
+    new_triangle = transform_figure(angle)
+
+    canvas.create_polygon(new_triangle, fill="orange")
+
+def zoom_pan_canvas(parent, draw_callback, framerate_ms, draw_lock):
     canvas = CTkCanvas(parent)
     canvas.pack(fill="both", expand=True)
 
     
     # Redraw on resize
     def resize(event):
-        draw_callback(canvas)
+        draw_callback(canvas, draw_lock)
         print("config")
     parent.bind("<Configure>", resize)
 
 
-    # Pan 
+    # Pan
     def start_pan(event):
-        canvas.scan_mark(event.x, event.y)
+        global x_pan_start, y_pan_start
+        x_pan_start = event.x
+        y_pan_start = event.y
+
+
     canvas.bind("<ButtonPress-1>", start_pan)
+
+
     def do_pan(event):
-        canvas.scan_dragto(event.x, event.y, gain=1)
+        global OFFSET, x_pan_start, y_pan_start
+
+
+        dx = event.x - x_pan_start
+        dy = event.y - y_pan_start
+
+
+        # Update global offset
+        OFFSET[0] += dx
+        OFFSET[1] += dy
+
+
+        x_pan_start = event.x
+        y_pan_start = event.y
+
+
+        draw_callback(canvas, draw_lock)
+
+
     canvas.bind("<B1-Motion>", do_pan)
 
+    def apply_scale_about(C, k):
+        """
+        Updates the global SCALE and OFFSET to represent
+        scaling about point C by factor k.
+        Params:
+        C: (cx, cy) -> scale center in world coords
+        k: float -> scale factor
+        """
+        global SCALE, OFFSET
+
+
+        cx, cy = C
+        tx, ty = OFFSET
+
+
+        # New collapsed parameters
+        SCALE = k * SCALE
+        OFFSET = [
+        cx + k * (tx - cx),
+        cy + k * (ty - cy),
+        ]
+    
+    def reset_scale():
+        global SCALE, OFFSET
+        SCALE = 1.0
+        OFFSET = [0, 0]
 
     # Zoom
     def zoom(event):
-        global current_zoom, x_zoom, y_zoom
+        global x_focus, y_focus, prev_zoom, x_translation, y_translation
 
         # Determine zoom direction
         if event.delta > 0:
@@ -96,16 +146,18 @@ def zoom_pan_canvas(parent, draw_callback, framerate_ms):
             elif event.num == 5:
                 factor = 0.9
 
-        new_scale = current_zoom * factor
+        
+
 
         # Clamp scale
         # if not (0.2 <= new_scale <= 5.0):
         #     return
-        current_zoom = new_scale
 
-        # Zoom around mouse
-        x_zoom = canvas.canvasx(event.x)
-        y_zoom = canvas.canvasy(event.y)
+        x_focus = canvas.canvasx(event.x)
+        y_focus = canvas.canvasy(event.y)
+        apply_scale_about((x_focus,y_focus), factor)
+        draw_callback(canvas, draw_lock)
+
 
         # canvas.scale("all", x_zoom, y_zoom, factor, factor)
     # Windows / Mac
@@ -116,25 +168,13 @@ def zoom_pan_canvas(parent, draw_callback, framerate_ms):
 
 
     def reset_view(event=None):
-        global current_zoom
-
-        scale_factor = 1 / current_zoom
-        current_zoom = 1.0
-        canvas.scale("all", 0, 0, scale_factor, scale_factor)
-
-        canvas.configure(scrollregion=canvas.bbox("all"))
-
-        # Center view
-        bbox = canvas.bbox("all")
-        if bbox:
-            x0, y0, x1, y1 = bbox
-            canvas.xview_moveto((x0 + x1 - canvas.winfo_width()) / (x1 - x0))
-            canvas.yview_moveto((y0 + y1 - canvas.winfo_height()) / (y1 - y0))
+        reset_scale()
+        draw_callback(canvas, draw_lock)
 
     canvas.bind("<Button-2>", reset_view)      # Windows/Linux
     canvas.bind("<Button-3>", reset_view)      # Mac sometimes uses Button-3
 
     def animation_loop(cx, cy):
-        draw_callback(canvas)
+        draw_callback(canvas, draw_lock)
         canvas.after(framerate_ms, lambda: animation_loop(cx, cy))
     animation_loop(0, 0)
