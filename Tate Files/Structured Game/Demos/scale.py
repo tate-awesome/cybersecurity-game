@@ -78,7 +78,7 @@ def zoom_pan_canvas(parent, draw_callback, framerate_ms):
         margin = 5000  # extra space around content
         canvas.configure(scrollregion=(-margin, -margin, sx1 + margin, sy1 + margin))
 
-        # Move cx/cy around for demo (like your original callback)
+        # Move cx/cy around for demo
         w = 400
         h = 300
         if cx == 0 and cy == 0:
