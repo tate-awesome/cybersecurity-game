@@ -1,7 +1,7 @@
 from collections import deque
 from threading import Lock
 import time as Time
-from . import modbus as mb
+from game.src.network.hardware import modbus
 
 data_size: int = 5000
 number = 1
@@ -68,18 +68,18 @@ def put(pkt, modified):
         source = "in"
 
     # Get variable from pkt
-    if mb.is_x(pkt):
+    if modbus.is_x(pkt):
         variable = "x"
-        value = mb.get_coord(pkt)
-    elif mb.is_y(pkt):
+        value = modbus.get_coord(pkt)
+    elif modbus.is_y(pkt):
         variable = "y"
-        value = mb.get_coord(pkt)
-    elif mb.is_theta(pkt):
+        value = modbus.get_coord(pkt)
+    elif modbus.is_theta(pkt):
         variable = "theta"
-        value = mb.get_coord(pkt)
-    elif mb.is_commands(pkt):
+        value = modbus.get_coord(pkt)
+    elif modbus.is_commands(pkt):
         # Do speed first
-        values = mb.get_commands(pkt)
+        values = modbus.get_commands(pkt)
         with trails[f"speed_{source}"]["lock"]:
             trails[f"speed_{source}"]["deque"].append((values[0], current_time, number))
         # Do rudder with the rest

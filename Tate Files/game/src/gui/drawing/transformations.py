@@ -1,3 +1,7 @@
+'''
+Module for coordinate transforms used in drawing
+'''
+
 from customtkinter import CTkCanvas
 import math
 
