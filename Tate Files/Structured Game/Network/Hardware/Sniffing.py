@@ -1,6 +1,6 @@
 from scapy.all import TCP, AsyncSniffer
-from . import Modbus as mb
-from . import Buffer as buffer
+from . import modbus as mb
+from . import buffer
 
 sniffer = None
 

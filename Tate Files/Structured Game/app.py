@@ -1,4 +1,4 @@
-from Network.Hardware import ARP_Spoofing as arp, Sniffing as sniff, Buffer as buffer, Net_Filter_Queue as nfq, Mod_Table as mt
+from Network.Hardware import arp_spoofing, sniffing, buffer, net_filter_queue, mod_table
 from GUI.Drawing import map, sprites
 import customtkinter as ctk
 import GUI.Widgets.common as place
@@ -147,18 +147,18 @@ if __name__ == "__main__":
     root.title("Cybersecurity Game")
     def start():
         
-        arp.start()
+        arp_spoofing.start()
         buffer.clear()
         # sniff.start(sniff.handlers.put_modbus_in_buffer)
-        nfq.start(nfq.callbacks.buffer_and_accept)
-        mt.set("speed", "offset", 5.0)
-        mt.set("rudder", "mult", 0.0)
+        net_filter_queue.start(net_filter_queue.callbacks.buffer_and_accept)
+        mod_table.set("speed", "offset", 5.0)
+        mod_table.set("rudder", "mult", 0.0)
         
 
     def stop():
-        nfq.stop()
-        arp.stop()
-        mt.reset_table()
+        net_filter_queue.stop()
+        arp_spoofing.stop()
+        mod_table.reset_table()
         
 
     place.big_button(root, "Start Hack", start)
