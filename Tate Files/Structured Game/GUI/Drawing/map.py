@@ -5,11 +5,12 @@ Handles drawing to the map.
 from customtkinter import CTkCanvas
 from customtkinter import CTkBaseClass
 from threading import Lock
+from typing import Callable
 
 class Map:
 
     def resize(self, event):
-        self.draw_callback(self.canvas, self.draw_lock)
+        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
     def start_pan(self, event):
         self.x_pan_start = event.x
@@ -25,7 +26,7 @@ class Map:
         self.x_pan_start = event.x
         self.y_pan_start = event.y
 
-        self.draw_callback(self.canvas, self.draw_lock)
+        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
     def apply_scale_about(self, C: tuple[float, float], k: float):
         # Changes scale and offset based on zoom event and direction
@@ -58,7 +59,7 @@ class Map:
         x_focus = self.canvas.canvasx(event.x)
         y_focus = self.canvas.canvasy(event.y)
         self.apply_scale_about((x_focus,y_focus), factor)
-        self.draw_callback(self.canvas, self.draw_lock)
+        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
     def reset_scale(self):
         self.scale = 1.0
@@ -66,9 +67,9 @@ class Map:
 
     def reset_view(self, event=None):
         self.reset_scale()
-        self.draw_callback(self.canvas, self.draw_lock)
+        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
-    def __init__(self, parent: CTkBaseClass, draw_callback: function, framerate_ms: float, draw_lock: Lock, padding: float=20, margin: float=40):
+    def __init__(self, parent: CTkBaseClass, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
         # zoom/pan persistent values
         self.scale = 1.0
         self.offset = [0.0, 0.0]
@@ -83,7 +84,7 @@ class Map:
         self.parent = parent
         self.draw_callback = draw_callback
         self.framerate_ms = framerate_ms
-        self.draw_lock = draw_lock
+        self.draw_lock = Lock()
 
         # Create canvas
         self.canvas = CTkCanvas(parent)
@@ -104,7 +105,7 @@ class Map:
 
         # Start animation loop
         def animation_loop():
-            draw_callback(self.canvas, self.draw_lock)
+            draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
             self.canvas.after(framerate_ms, lambda: animation_loop())
         animation_loop()
 

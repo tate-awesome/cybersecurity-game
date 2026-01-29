@@ -1,7 +1,7 @@
 from customtkinter import CTkCanvas
 import math
 
-def rotate(points: list(tuple), angle: float, origin: tuple | None=None):
+def rotate(points: list[tuple[float, float]], angle: float, origin: tuple | None=None):
     '''
     Rotates sprite in worldspace
     Angle: radians from 0
@@ -37,7 +37,7 @@ def rotate(points: list(tuple), angle: float, origin: tuple | None=None):
 
     return vertices
 
-def scale(points: list(tuple), mult: float, origin: tuple | None=None):
+def scale(points: list[tuple[float, float]], mult: float, origin: tuple | None=None):
     '''
     Scales sprite in worldspace
     Mult: multiplier for sprite coordinates
@@ -148,5 +148,5 @@ def zoom_and_pan(points: list[tuple[float, float]], scale: float, offset: tuple[
 def flatten(points: list[tuple[float, float]]):
     out = []
     for x, y in points:
-        out.extend(x, y)
+        out.extend((x, y))
     return out

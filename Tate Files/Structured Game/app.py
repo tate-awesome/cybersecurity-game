@@ -1,8 +1,10 @@
 from Network.Hardware import ARP_Spoofing as arp, Sniffing as sniff, Buffer as buffer
+from GUI.Drawing import map, sprites
 import customtkinter as ctk
 import GUI.Widgets.common as place
-import GUI.Drawing.map2 as draw
 from threading import Lock
+from math import pi as PI
+from customtkinter import CTkCanvas
 
 
 # Run as sudo for socket permissions?
@@ -35,11 +37,43 @@ from threading import Lock
 
 # test.converted_canvas()
 
-def draw_virtual_map(canvas, draw_lock):
-    global points
+# def draw_test_map(canvas, draw_lock):
+#     global points
+#     with draw_lock:
+#         canvas.delete("all")
+#         # map.draw.test_triangle(canvas)
+#         # path = buffer.flatten(buffer.get_knit_coordinates_in())
+#         map.draw.ocean(canvas, "#003459")
+#         map.draw.boat_path(canvas, (0, 0, 200, 200), "white")
+#         map.draw.boat(canvas, [100,100], 0, "red", "")
+#         map.draw.boat(canvas, [100,100], PI/2, "orange", "")
+#         map.draw.boat(canvas, [100,100], -PI/4, "blue", "")
+#         map.draw.boat(canvas, [0,0], -PI/4, "black", "white")
+#         map.draw.boat(canvas, [200,0], -PI/4, "black", "white")
+#         map.draw.boat(canvas, [0,200], -PI/4, "black", "white")
+#         map.draw.boat(canvas, [200,200], -PI/4, "black", "white")
+#         map.draw.coordinate_plane(canvas, 20)
+
+    
+# def draw_full_map(canvas, draw_lock):
+
+#     path = buffer.get_flat_coordinates_in()
+#     position = [buffer.get_last("x", "in"), buffer.get_last("y", "in")]
+#     bearing = buffer.convert.theta_rad(buffer.get_last("theta", "in"))
+
+#     with draw_lock:
+#         canvas.delete("all")
+#         map.draw.ocean(canvas, "#003459")
+#         map.draw.coordinate_plane(canvas, 20)
+#         map.draw.boat_path(canvas, path, "red")
+#         map.draw.boat(canvas, position, bearing, "yellow", "yellow")
+
+def draw_test_plane(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
     with draw_lock:
         canvas.delete("all")
-        draw.triangle(canvas)
+        sprites.test_triangle(canvas, scale, offset)
+
+
 
     # draw.ticks(canvas, [0, 0, 0, 1000], 100, 20, "white")
     # draw.ticks(canvas, [0, 0, 1000, 0], 100, 20, "white")
@@ -111,7 +145,6 @@ if __name__ == "__main__":
     place.big_button(root, "Start Hack", start)
     place.big_button(root, "Stop Hack", stop)
     
-    draw_lock = Lock()
-    draw.zoom_pan_canvas(root, draw_virtual_map, 100, draw_lock)
+    world_map = map.Map(root, draw_test_plane, 100)
 
     root.mainloop()
