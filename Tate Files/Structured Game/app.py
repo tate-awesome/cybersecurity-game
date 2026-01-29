@@ -1,4 +1,4 @@
-from Network.Hardware import ARP_Spoofing as arp, Sniffing as sniff, Buffer as buffer
+from Network.Hardware import ARP_Spoofing as arp, Sniffing as sniff, Buffer as buffer, Net_Filter_Queue as nfq, Mod_Table as mt
 from GUI.Drawing import map, sprites
 import customtkinter as ctk
 import GUI.Widgets.common as place
@@ -75,11 +75,16 @@ def draw_test_plane(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tu
 
 def draw_full_map(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
     positions = buffer.get_all_positions("in")
+    bearing = buffer.get_last_tuple("theta", "in")
     with draw_lock:
         canvas.delete("all")
         sprites.boat.grid_lines(canvas, scale, offset)
         if len(positions) < 1: return
+        sprites.boat.poly_line(canvas, positions, scale, offset, "white")
+        if bearing is None: return
         last_position = positions[-1]
+        # sprites.boat.boat(canvas, last_position, bearing, "white", "black")
+        
 
 
 
@@ -141,18 +146,24 @@ if __name__ == "__main__":
     # root.state("iconic")
     root.title("Cybersecurity Game")
     def start():
+        
         arp.start()
         buffer.clear()
-        sniff.start(sniff.handlers.put_modbus_in_buffer)
+        # sniff.start(sniff.handlers.put_modbus_in_buffer)
+        nfq.start(nfq.callbacks.buffer_and_accept)
+        mt.set("speed", "offset", 5.0)
+        mt.set("rudder", "mult", 0.0)
+        
 
     def stop():
-        sniff.stop()
+        nfq.stop()
         arp.stop()
+        mt.reset_table()
         
 
     place.big_button(root, "Start Hack", start)
     place.big_button(root, "Stop Hack", stop)
     
-    world_map = map.Map(root, draw_full_map, 100)
+    world_map = map.Map(root, draw_test_plane, 100)
 
     root.mainloop()
