@@ -73,6 +73,14 @@ def draw_test_plane(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tu
         canvas.delete("all")
         sprites.test_triangle(canvas, scale, offset)
 
+def draw_full_map(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
+    positions = buffer.get_all_positions("in")
+    with draw_lock:
+        canvas.delete("all")
+        sprites.boat.grid_lines(canvas, scale, offset)
+        if len(positions) < 1: return
+        last_position = positions[-1]
+
 
 
     # draw.ticks(canvas, [0, 0, 0, 1000], 100, 20, "white")
@@ -145,6 +153,6 @@ if __name__ == "__main__":
     place.big_button(root, "Start Hack", start)
     place.big_button(root, "Stop Hack", stop)
     
-    world_map = map.Map(root, draw_test_plane, 100)
+    world_map = map.Map(root, draw_full_map, 100)
 
     root.mainloop()
