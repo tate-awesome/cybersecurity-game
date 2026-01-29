@@ -4,6 +4,7 @@ import Network.Hardware.Buffer as buffer
 import Network.Hardware.ARP_Spoofing as arp
 import Network.Hardware.Net_Filter_Queue as nfq
 import Network.Hardware.Sniffing as sniff
+from customtkinter import CTkCanvas as can
 
 
 
@@ -28,8 +29,8 @@ def static_map_hack():
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
 
-    # root.geometry(f"{int(screen_width*3/4)}x{int(screen_height*3/4)}")
-    root.attributes("-fullscreen", True)
+    root.geometry(f"{int(screen_width*3/4)}x{int(screen_height*3/4)}")
+    # root.attributes("-fullscreen", True)
     # root.state("iconic")
     root.title("Cybersecurity Game")
     def start():
@@ -139,4 +140,83 @@ def dynamic_canvas():
 
     root.mainloop()
 
-dynamic_canvas()
+
+
+def converted_canvas():
+
+    root = ctk.CTk()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    root.geometry(f"{int(screen_width*3/4)}x{int(screen_height*3/4)}")
+    # root.attributes("-fullscreen", True)
+    # root.state("iconic")
+    root.title("Cybersecurity Game")
+    def start():
+        arp.start()
+        nfq.start(nfq.callbacks.buffer_and_modify)
+
+    def stop():
+        nfq.stop()
+        buffer.clear()
+        arp.stop()
+        
+
+    place.big_button(root, "Start Hack", start)
+    place.big_button(root, "Stop Hack", stop)
+
+    def draw_virtual_map(canvas: can):
+        canvas.delete("all")
+        draw.ocean(canvas, "#003459")
+
+        draw.ticks(canvas, [0, 0, 0, 1000], 50, 20, "white")
+        draw.ticks(canvas, [0, 0, 1000, 0], 50, 20, "white")
+
+        pos_history = buffer.get_knit_coordinates()
+        boat_pos = buffer.get_last_xyt()
+
+        w = canvas.winfo_width()
+        h = canvas.winfo_height()
+
+
+        # Draw fake path if available
+        if len(pos_history[1]) > 1:
+            flat = [x for t in pos_history[1] for x in t]
+            print(flat)
+            converted = draw.range_transform(flat, 200, 200, w, h)
+            draw.line(canvas, converted, "pink")
+
+        # Draw fake boat if available
+        if not (boat_pos[3] == None or boat_pos[4] == None or boat_pos[5] == None):
+            x = boat_pos[3]
+            y = boat_pos[4]
+            dir = boat_pos[5]
+            draw.boat(canvas, x, y, dir, "pink", "")
+            print(x,"\t",y,"\t",dir)
+        
+        # Draw real path if available
+        if len(pos_history[0]) > 1:
+            flat = [x for t in pos_history[0] for x in t]
+            draw.line(canvas, flat, "white")
+            print(flat)
+
+
+        # Draw real boat if available
+        if not (boat_pos[0] == None or boat_pos[1] == None or boat_pos[2] == None):
+            x = boat_pos[0]
+            y = boat_pos[1]
+            dir = boat_pos[2]
+            print(x,"\t",y,"\t",dir)
+            draw.boat(canvas, x, y, dir, "black", "white")
+
+
+        
+        return
+
+    place.virtual_map.canvas(root, draw_virtual_map, 100)
+
+
+
+
+
+    root.mainloop()

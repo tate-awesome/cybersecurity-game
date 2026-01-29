@@ -1,28 +1,53 @@
 import math
+from customtkinter import CTkCanvas as can
 
-def coords_to_canvas(points: list, input_x, input_y, canvas_x, canvas_y):
+
+
+
+
+
+def coordinates_transform(points: list, canvas_size):
     tracks = []
     for i in range(0, len(points)):
         if i%2 == 0:
-            tracks.append(points[i] * canvas_x / input_range) # 0-100 becomes 0-canvas_size
+            tracks.append(points[i] * canvas_size / 100) # 0-100 becomes 0-canvas_size
         if i%2 == 1:
-            tracks.append(canvas_y - points[i] * canvas_y / input_range) # 0-100 becomes canvas-0
+            tracks.append(canvas_size - points[i] * canvas_size / 100) # 0-100 becomes canvas-0
         i += 1
     return tracks
 
-def line(canvas, points, line_color):
-    w = canvas.winfo_height()
+def range_transform(points: list, x_in_range, y_in_range, x_out_range, y_out_range):
+    '''
+    Converts the incoming list from one range to another. Converts from map bottom-left origin to canvas top-left origin.
+    Useful for converting 0-200 position coordinates to 0-1000 canvas coordinates
+    Returns: list (x1, y1, x2, y2...)
+    '''
+    tracks = []
+    for i in range(0, len(points)):
+        if i%2 == 0:
+            # X: 0-input_x -> 0-output_x
+            x_out = points[i] * x_out_range / x_in_range
+            tracks.append(x_out) # 0-100 becomes 0-canvas_size
+        if i%2 == 1:
+            y_out = points[i] * y_out_range / y_in_range
+            tracks.append(y_out_range - y_out) # 0-100 becomes canvas-0
+        i += 1
+    return tracks
+
+def line(canvas: can, points, line_color):
     if len(points)%2 != 0:
         return
-    tracks = coordinates_transform(points, w)
     
-    canvas.create_line(tracks, width=2, fill=line_color)
+    canvas.create_line(points, width=2, fill=line_color)
     return
 
 def ocean(canvas, color):
     w = canvas.winfo_width()
     h = canvas.winfo_height()
     canvas.create_rectangle(0, 0, w, h, fill=color)
+
+def boat_dot(canvas: can, points):
+    canvas.create_oval(points[0] - 5, points[1] - 5, points[2] + 5, points[3] + 5, fill="red")
 
 def boat(canvas, x_pos, y_pos, dir_deg_360, line_color, fill_color):
     w = canvas.winfo_width()
