@@ -2,7 +2,6 @@ from collections import deque
 from threading import Lock
 import time as Time
 from . import Modbus as mb
-from . Modbus import bytes_to_units as convert
 
 data_size: int = 5000
 number = 1
@@ -197,7 +196,7 @@ def get_all_positions(dir: str, convert=True, flatten=False):
             last_y = ys[j][0]
             j += 1
         if last_y is not None:
-            next = (x_val * factors["x"] ** convert , last_y * factors["y"] ** convert)
+            next = (x_val * (factors["x"] ** convert) , last_y * (factors["y"] ** convert))
             if flatten:
                 points.extend(next)
             else:

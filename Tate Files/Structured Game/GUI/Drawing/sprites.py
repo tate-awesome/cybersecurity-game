@@ -32,10 +32,6 @@ def test_triangle(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
         canvas.create_line(t.flatten(h_line), width=2, fill=color)
         canvas.create_line(t.flatten(v_line), width=2, fill=color)
 
-
-
-
-
     triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
     triangle = t.scale(triangle, 2.0, (0,0))
     angle = (time.time() % 20.0) * PI / 10.0
@@ -50,15 +46,20 @@ def test_triangle(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
     circle_box = t.zoom_and_pan(circle_box, scale, offset)
     canvas.create_oval(circle_box, fill="", outline="blue", width="3")
 
+
 class boat:
+
 
     def poly_line(canvas: CTkCanvas, points: list, scale: float, offset: tuple[float, float], line_color: str):
         '''
         Draws the path of the points 
         '''
+        if len(points) < 2:
+            return
         points = t.padded_fit(points, (0,0), (200,200), canvas, 20)
         points = t.zoom_and_pan(points, scale, offset)
         canvas.create_line(points, width=2, fill=line_color)
+
 
     def grid_lines(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
         for i in range(0, 210, 10):
