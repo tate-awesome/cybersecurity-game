@@ -25,4 +25,4 @@ App
             (scripts) Testing.py
 
             NEXT: figure out duplicate ACK to stop interrupting communication
-            NEXT: rewrite draw map
+            NEXT: continue making buffer more convenient for drawing
