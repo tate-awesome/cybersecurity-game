@@ -1,161 +1,112 @@
-import math
-from customtkinter import CTkCanvas as can
+'''
+Handles drawing to the map. 
+'''
+
+from customtkinter import CTkCanvas
+from customtkinter import CTkBaseClass
+from threading import Lock
+
+class Map:
+
+    def resize(self, event):
+        self.draw_callback(self.canvas, self.draw_lock)
+
+    def start_pan(self, event):
+        self.x_pan_start = event.x
+        self.y_pan_start = event.y
+
+    def do_pan(self, event):
+        dx = event.x - self.x_pan_start
+        dy = event.y - self.y_pan_start
+
+        self.offset[0] += dx
+        self.offset[1] += dy
+
+        self.x_pan_start = event.x
+        self.y_pan_start = event.y
+
+        self.draw_callback(self.canvas, self.draw_lock)
+
+    def apply_scale_about(self, C: tuple[float, float], k: float):
+        # Changes scale and offset based on zoom event and direction
+        cx, cy = C
+        tx, ty = self.offset
+
+        self.scale = k * self.scale
+        self.offset = [
+        cx + k * (tx - cx),
+        cy + k * (ty - cy),
+        ]
+
+    # Zoom
+    def zoom(self, event):
+        # Determine zoom direction
+        if event.delta > 0:
+            factor = 1.1
+        else:
+            factor = 0.9
+        if hasattr(event, "num"):
+            if event.num == 4:
+                factor = 1.1
+            elif event.num == 5:
+                factor = 0.9
+
+        # Clamp scale?
+        # if not (0.2 <= new_scale <= 5.0):
+        #     return
+
+        x_focus = self.canvas.canvasx(event.x)
+        y_focus = self.canvas.canvasy(event.y)
+        self.apply_scale_about((x_focus,y_focus), factor)
+        self.draw_callback(self.canvas, self.draw_lock)
+
+    def reset_scale(self):
+        self.scale = 1.0
+        self.offset = [0, 0]
+
+    def reset_view(self, event=None):
+        self.reset_scale()
+        self.draw_callback(self.canvas, self.draw_lock)
+
+    def __init__(self, parent: CTkBaseClass, draw_callback: function, framerate_ms: float, draw_lock: Lock, padding: float=20, margin: float=40):
+        # zoom/pan persistent values
+        self.scale = 1.0
+        self.offset = [0.0, 0.0]
+        self.x_pan_start = 0.0
+        self.y_pan_start = 0.0
+
+        # Padding for world plane
+        self.padding = padding
+        self.margin = margin
+
+        # Assign variables
+        self.parent = parent
+        self.draw_callback = draw_callback
+        self.framerate_ms = framerate_ms
+        self.draw_lock = draw_lock
+
+        # Create canvas
+        self.canvas = CTkCanvas(parent)
+        self.canvas.pack(fill="both", expand=True)
+
+        # Bind events
+        self.parent.bind("<Configure>", self.resize)
+        self.canvas.bind("<ButtonPress-1>", self.start_pan)
+        self.canvas.bind("<B1-Motion>", self.do_pan)
+            # Windows / Mac
+        self.canvas.bind("<MouseWheel>", self.zoom)
+            # Linux
+        self.canvas.bind("<Button-4>", self.zoom)
+        self.canvas.bind("<Button-5>", self.zoom)
+        # canvas.scale("all", x_zoom, y_zoom, factor, factor)  # <--- only useful for already drawn canvases
+        self.canvas.bind("<Button-2>", self.reset_view)      # Windows/Linux
+        self.canvas.bind("<Button-3>", self.reset_view)      # Mac sometimes uses Button-3
+
+        # Start animation loop
+        def animation_loop():
+            draw_callback(self.canvas, self.draw_lock)
+            self.canvas.after(framerate_ms, lambda: animation_loop())
+        animation_loop()
 
 
-
-
-
-
-def coordinates_transform(points: list, canvas_size):
-    tracks = []
-    for i in range(0, len(points)):
-        if i%2 == 0:
-            tracks.append(points[i] * canvas_size / 100) # 0-100 becomes 0-canvas_size
-        if i%2 == 1:
-            tracks.append(canvas_size - points[i] * canvas_size / 100) # 0-100 becomes canvas-0
-        i += 1
-    return tracks
-
-def range_transform(points: list, x_in_range, y_in_range, x_out_range, y_out_range):
-    '''
-    Converts the incoming list from one range to another. Converts from map bottom-left origin to canvas top-left origin.
-    Useful for converting 0-200 position coordinates to 0-1000 canvas coordinates
-    Returns: list (x1, y1, x2, y2...)
-    '''
-    tracks = []
-    for i in range(0, len(points)):
-        if i%2 == 0:
-            # X: 0-input_x -> 0-output_x
-            x_out = points[i] * x_out_range / x_in_range
-            tracks.append(x_out) # 0-100 becomes 0-canvas_size
-        if i%2 == 1:
-            y_out = points[i] * y_out_range / y_in_range
-            tracks.append(y_out_range - y_out) # 0-100 becomes canvas-0
-        i += 1
-    return tracks
-
-def line(canvas: can, points, line_color):
-    if len(points)%2 != 0:
-        return
-    
-    canvas.create_line(points, width=2, fill=line_color)
-    return
-
-def ocean(canvas, color):
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
-    canvas.create_rectangle(0, 0, w, h, fill=color)
-
-def boat_dot(canvas: can, points):
-    canvas.create_oval(points[0] - 5, points[1] - 5, points[2] + 5, points[3] + 5, fill="red")
-
-def boat(canvas, x_pos, y_pos, dir_deg_360, line_color, fill_color):
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
-    boat_vertices = [
-                    [-2, 1],
-                    [-2, -1],
-                    [1, -1],
-                    [3, 0],
-                    [1, 1]
-                    ]
-    scale = h/120
-    cx = x_pos*100
-    cy = y_pos*100
-    angle = (dir_deg_360 - 360) *math.pi/180
-    vertices = []
-    for vx, vy in boat_vertices:
-        x = vx * scale
-        y = vy * scale
-
-        xr = x * math.cos(angle) - y * math.sin(angle)
-        yr = x * math.sin(angle) + y * math.cos(angle)
-
-        xr += cx
-        yr += cy
-
-        xt = xr*w/2000
-        yt = h - yr*h/2000
-
-        vertices.extend([xt, yt])
-    canvas.create_polygon(vertices, fill=fill_color, outline=line_color)
-    
-def target(canvas, x, y, color):
-    center = coordinates_transform([x, y], canvas.winfo_height())
-    cx = center[0]
-    cy = center[1]
-    radius = 12
-    side = radius/math.sqrt(2)
-    bbox = [
-        cx - side,
-        cy - side,
-        cx + side,
-        cy + side
-    ]
-    canvas.create_oval(bbox, outline=color, width=2, fill="")
-
-def ticks(canvas, path, step, width, color="black"):
-    # if len(path) < 4 or len(path)%2 != 0:
-    #     return
-    # tracks = coordinates_transform(path, canvas.winfo_height())
-    # startpoint = [tracks[0], tracks[1]]
-    # endpoint = [tracks[-2], tracks[-1]]
-    # line_vector = [endpoint[0]-startpoint[0], endpoint[1]-startpoint[1]]
-    # length = math.sqrt(line_vector[0]**2 + line_vector[1]**2)
-    # norm_line_vector = [line_vector[0]/length, line_vector[1]]
-    # stepsize = coordinates_transform([step], canvas.winfo_height())[0]
-    # num_ticks = math.floor(length/stepsize)
-    # orth = [norm_line_vector[1], norm_line_vector[0]]
-    # for i in range(0, num_ticks):
-    #     points = [
-    #         startpoint[0] - orth[0]*5 + norm_line_vector[0]*stepsize*i,
-    #         startpoint[1] - orth[1]*5 + norm_line_vector[1]*stepsize*i,
-    #         startpoint[0] + orth[0]*5 + norm_line_vector[0]*stepsize*i,
-    #         startpoint[1] + orth[1]*5 + norm_line_vector[1]*stepsize*i,
-    #     ]
-    #     canvas.create_line(points, fill=color, width=1)
-    # canvas.create_line([startpoint,endpoint], fill=color, width=3)
-
-    # Get canvas dimensions
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
-    scale_x = w / 1000
-    scale_y = h / 1000
-
-    # Helper to scale grid coords to canvas coords
-    def sx(x): return x * scale_x
-    def sy(y): return h - y * scale_y  # flip Y so (0,0) = bottom-left
-
-    # Draw main line path
-    for i in range(0, len(path) - 2, 2):
-        x0, y0 = path[i], path[i+1]
-        x1, y1 = path[i+2], path[i+3]
-        canvas.create_line(sx(x0), sy(y0), sx(x1), sy(y1), fill=color, width=2)
-
-        # Compute vector and segment length
-        dx, dy = x1 - x0, y1 - y0
-        length = math.hypot(dx, dy)
-        if length == 0:
-            continue
-
-        # Unit direction vector
-        ux, uy = dx / length, dy / length
-
-        # Perpendicular unit vector (for tick direction)
-        px, py = -uy, ux
-
-        # Place ticks every "step" distance
-        n_ticks = int(length // step)
-        for t in range(1, n_ticks):
-            tx = x0 + ux * t * step
-            ty = y0 + uy * t * step
-
-            tick_len = width  # tick length in grid units
-            xA = tx + px * tick_len / 2
-            yA = ty + py * tick_len / 2
-            xB = tx - px * tick_len / 2
-            yB = ty - py * tick_len / 2
-
-            canvas.create_line(sx(xA), sy(yA), sx(xB), sy(yB),
-                               fill=color, width=3)
-    
+  
