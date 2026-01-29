@@ -174,7 +174,7 @@ def get_last_position(dir: str, convert=True):
     return values
 
 
-def get_all_positions(dir: str, convert=True, flatten=True):
+def get_all_positions(dir: str, convert=True, flatten=False):
     '''
     Returns a list of all previous boat positions.
 
