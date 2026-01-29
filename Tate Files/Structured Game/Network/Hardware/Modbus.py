@@ -1,5 +1,6 @@
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 from scapy.all import Packet
+from . import Mod_Table as mt
 
 # Safely decodes and modifies modbus packets. 
 
@@ -28,39 +29,6 @@ register_meanings = {
     11: "Y Position",       # meters*100
     12: "Theta (Heading)"   # milli-radians
 }
-
-class bytes_to_units:
-    # Bytes * value = units
-    def x(hreg10: int):
-        '''
-        Returns x position in meters
-        '''
-        return float(hreg10) * 0.01
-    def y(hreg11: int):
-        '''
-        Returns y position in meters
-        '''
-        return float(hreg11) * 0.01
-    def theta_rad(hreg12: int):
-        '''
-        Returns the bearing in radians
-        '''
-        return float(hreg12) * 0.01
-    def theta_deg(hreg12: int):
-        '''
-        Returns the bearing in degrees
-        '''
-        return float(hreg12) * 0.01 * (180.0/3.1415)
-    def speed(hreg3: int):
-        '''
-        Returns the speed in meters per second
-        '''
-        return float(hreg3) * 5.0 / 4095.0
-    def rudder(hreg4):
-        '''
-        Returns the rudder in degrees *subject to change
-        '''
-        return float(hreg4) * 30.0 / 4095.0
 
 def is_modbus(pkt: Packet) -> bool:
     '''
@@ -259,80 +227,37 @@ def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, sho
         return out
 
 
-xm = 1
-ym = 1
-tm = 1
-sm = 1
-rm = 1
-
-xo = 0
-yo = 0
-to = 0
-so = 0
-ro = 0
-
-
-def reset_table():
-    global xm, ym, tm, sm, rm
-    global xo, yo, to, so , ro
-    xm = 1
-    ym = 1
-    tm = 1
-    sm = 1
-    rm = 1
-
-    xo = 0
-    yo = 0
-    to = 0
-    so = 0
-    ro = 0
-
-def set_table_to(new):
-    global xm, ym, tm, sm, rm
-    global xo, yo, to, so , ro
-    xm = 0
-    ym = 0
-    tm = 0
-    sm = 0
-    rm = 0
-
-    xo = new
-    yo = new
-    to = new
-    so = new
-    ro = new
-
 def modify_coord(pkt):
     mbl = pkt.getlayer(ModbusADURequest)
 
     # Determine values
-    mult = 1
-    offset = 0
     addr = "None"
 
     if mbl.payload.registerAddr == 10: # X address
-        addr = "x"
-        mult = xm
-        offset = xo
+        var = "x"
     elif mbl.payload.registerAddr == 11: # Y address
-        addr = "y"
-        mult = ym
-        offset = yo
+        var = "y"
     elif mbl.payload.registerAddr == 12: # Theta address
-        addr = "t"
-        mult = tm
-        offset = to
+        var = "theta"
 
     z = mbl.payload.registerValue
+    mult = mt.table[f"{var}_mult"]
+    offset = mt.table[f"{var}_offset"]
     mbl.payload.registerValue = int(z * mult + offset)
     return pkt
 
 def modify_commands(pkt):
     mbl = pkt.getlayer(ModbusADUResponse)
 
+    mult = mt.table[f"{speed}_mult"]
+    offset = mt.table[f"{speed}_offset"]
+
     speed = mbl.payload.registerVal[0]
-    mbl.payload.registerVal[0] = int(speed * sm + so)
+    mbl.payload.registerVal[0] = int(speed * mult + offset)
+
+    mult = mt.table[f"{rudder}_mult"]
+    offset = mt.table[f"{rudder}_offset"]
 
     rudder = mbl.payload.registerVal[1]
-    mbl.payload.registerVal[1] = int(rudder * rm + ro)
+    mbl.payload.registerVal[1] = int(rudder * mult + offset)
     return pkt
