@@ -50,17 +50,34 @@ def test_triangle(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
     circle_box = t.zoom_and_pan(circle_box, scale, offset)
     canvas.create_oval(circle_box, fill="", outline="blue", width="3")
 
+class boat:
 
+    def poly_line(canvas: CTkCanvas, points: list, scale: float, offset: tuple[float, float], line_color: str):
+        '''
+        Draws the path of the points 
+        '''
+        points = t.padded_fit(points, (0,0), (200,200), canvas, 20)
+        points = t.zoom_and_pan(points, scale, offset)
+        canvas.create_line(points, width=2, fill=line_color)
 
-# def boat_path(canvas: CTkCanvas, points: list, line_color: str):
-#     '''
-#     Draws the path of the points 
-#     '''
-#     if len(points)%2 > 0 or len(points) < 4:
-#         return
-#     w = canvas.winfo_width()
-#     h = canvas.winfo_height()
-#     canvas.create_line(scale(padding_transform(range_transform(points, 200, 200, w, h), w, h)), width=2, fill=line_color)
+    def grid_lines(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
+        for i in range(0, 210, 10):
+            h_line = [ (0, i), (200, i) ]
+
+            v_line = t.rotate(h_line, PI/2, (i, i))
+
+            h_line = t.padded_fit(h_line, (0,0), (200,200), canvas, 20)
+            v_line = t.padded_fit(v_line, (0,0), (200,200), canvas, 20)
+
+            h_line = t.zoom_and_pan(h_line, scale, offset)
+            v_line = t.zoom_and_pan(v_line, scale, offset)
+
+            color = "black"
+            if i == 0:
+                color = "red"
+
+            canvas.create_line(t.flatten(h_line), width=2, fill=color)
+            canvas.create_line(t.flatten(v_line), width=2, fill=color)
 
 # def ocean(canvas, color):
 #     w = canvas.winfo_width()
