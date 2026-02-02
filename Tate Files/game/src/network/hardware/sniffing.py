@@ -23,26 +23,32 @@ class handlers:
         if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
             if mb.is_coord(pkt) or mb.is_commands(pkt):
                 buffer.put(pkt, False)
+
+
+class Sniffer:
+    def __init__(self):
+        self.sniffer = None
     
 
-def start(packet_handler):
-    print("Starting sniffer...")
-    global sniffer
-    sniffer = AsyncSniffer(
-        filter="tcp port 502",
-        prn=packet_handler,
-        store=False
-    )
+    def start(self, packet_handler):
+        if self.sniffer is not None:
+            print("Sniffer is already running")
+            return
 
-    sniffer.start()
-    print("Started sniffer")
+        print("Starting sniffer...")
+        self.sniffer = AsyncSniffer(
+            filter="tcp port 502",
+            prn=packet_handler,
+            store=False
+        )
+        self.sniffer.start()
+        print("Started sniffer")
 
 
-def stop():
-    global sniffer
-    if not sniffer == None:
-        sniffer.stop()
-        sniffer = None
-        print("Stopped sniffer")
-    else:
-        print("Sniffer is not running")
+    def stop(self):
+        if self.sniffer is not None:
+            self.sniffer.stop()
+            self.sniffer = None
+            print("Stopped sniffer")
+        else:
+            print("Sniffer is not running")
