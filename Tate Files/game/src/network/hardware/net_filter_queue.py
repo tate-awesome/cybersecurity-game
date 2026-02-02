@@ -1,11 +1,12 @@
+'''
+NFQ module. Callbacks and persistent object
+'''
+
 from scapy.all import IP, TCP
 import threading, os, select
-from netfilterqueue import NetfilterQueue
-from . import Modbus as mb
-from . import Buffer as buffer
-
-# Handles nfq. Start, stop, callback, modify, etc.
-
+from netfilterqueue import NetfilterQueue as NFQ
+from . import modbus as mb
+from . import buffer as buffer
 
 
 class callbacks:
@@ -73,61 +74,66 @@ class callbacks:
         pkt.set_payload(bytes(spkt))
         pkt.accept()
 
-# Shared variables
-stop_event = None
-thread = None
-callback = None
+
+class NetFilterQueue:
+
+    def __init__(self):
+        self.stop_event = None
+        self.thread = None
+        self.callback = None
 
 
-def start(_callback = callbacks.accept_only): 
-    global stop_event, thread, callback
-    callback = _callback
-    stop_event = threading.Event()
+    def start(self, _callback = callbacks.accept_only): 
+        if self.stop_event is not None or self.thread is not None or self.callback is not None:
+            print("NFQ already running")
+            return
+        self.callback = _callback
+        self.stop_event = threading.Event()
 
-    thread = threading.Thread(target=_start, daemon=True)
-    thread.start()
+        self.thread = threading.Thread(target=self._start, daemon=True)
+        self.thread.start()
 
-def _start():
-    global stop_event
 
-    # IPTables rule
-    os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+    def _start(self):
 
-    # Create and bind NFQ callback
-    nfq = NetfilterQueue()
-    nfq.bind(1, callback)
+        # IPTables rule
+        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
 
-    # Get readable file descriptor
-    qfd = nfq.get_fd()
-    poller = select.poll()
-    poller.register(qfd, select.POLLIN)
+        # Create and bind NFQ callback
+        nfq = NFQ()
+        nfq.bind(1, self.callback)
 
-    # Pipe for stop signaling
-    stop_r, stop_w = os.pipe()
-    poller.register(stop_r, select.POLLIN)
+        # Get readable file descriptor
+        qfd = nfq.get_fd()
+        poller = select.poll()
+        poller.register(qfd, select.POLLIN)
 
-    try:
-        while not stop_event.is_set():
-            events = poller.poll(500)
-            for fd, _ in events:
-                if fd == qfd:
-                    nfq.run(False)   # process packets without blocking
-                elif fd == stop_r:
-                    stop_event.set()
-    # Stop on error or stop event
-    finally:
-        nfq.unbind()
-        os.close(stop_r)
-        os.close(stop_w)
-        os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+        # Pipe for stop signaling
+        stop_r, stop_w = os.pipe()
+        poller.register(stop_r, select.POLLIN)
+        print("Starting NFQ")
+        try:
+            while not self.stop_event.is_set():
+                events = poller.poll(500)
+                for fd, _ in events:
+                    if fd == qfd:
+                        nfq.run(False)   # process packets without blocking
+                    elif fd == stop_r:
+                        self.stop_event.set()
+        # Stop on error or stop event
+        finally:
+            nfq.unbind()
+            os.close(stop_r)
+            os.close(stop_w)
+            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
 
-def stop():
-    global stop_event, thread
-    if stop_event == None and thread == None:
-        print("Net filter queue is not running")
-        return
-    else:
-        print("Stopping net filter queue...")
-        stop_event.set()
-        thread.join()
-        print("Stopped net filter queue")
+
+    def stop(self):
+        if self.stop_event == None and self.thread == None:
+            print("Net filter queue is not running")
+            return
+        else:
+            print("Stopping net filter queue...")
+            self.stop_event.set()
+            self.thread.join()
+            print("Stopped net filter queue")
