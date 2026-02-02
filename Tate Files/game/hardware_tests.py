@@ -1,22 +1,23 @@
-from game.src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus, buffer
+from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus, buffer
 import time
 
 
 class tests:
 
     # in progress
-    def stop_all():
-        arp_spoofing.stop()
-        sniffing.stop()
+    def stop_all(hacking_objects: list):
+        for object in hacking_objects:
+            object.stop()
 
     # Passed
     def arp_spoofing():
+        spoofer = arp_spoofing.ArpSpoofer()
 
-        arp_spoofing.start(verbose=True)
+        spoofer.start(verbose=True)
 
         input("Press Enter to stop")
 
-        arp_spoofing.stop()
+        spoofer.stop()
 
     # Passed
     def sniffing():
@@ -33,27 +34,30 @@ class tests:
 
     # Passed
     def net_filter_queue():
-        arp_spoofing.start()
+        spoofer = arp_spoofing.ArpSpoofer()
+        spoofer.start()
+
+        nfq = net_filter_queue.NetFilterQueue()
 
         # Pick one
         # net_filter_queue.start(net_filter_queue.callbacks.print_and_accept)
-        net_filter_queue.start(net_filter_queue.callbacks.print_and_modify)
+        nfq.start(net_filter_queue.callbacks.print_and_accept)
 
-        input("Press Enter to change values")
+        # input("Press Enter to change values")
 
-        modbus.set_table_to(10)
-
-        input("Press Enter to stop modifying values")
-
-        net_filter_queue.stop()
-
-        net_filter_queue.start(net_filter_queue.callbacks.print_and_accept)
+        # modbus.set_table_to(10)
 
         input("Press Enter to stop")
 
-        net_filter_queue.stop()
+        nfq.stop()
 
-        arp_spoofing.stop()
+        # net_filter_queue.start(net_filter_queue.callbacks.print_and_accept)
+
+        # input("Press Enter to stop")
+
+        # net_filter_queue.stop()
+
+        spoofer.stop()
 
     # Passed
     def sniffer_buffer():
@@ -171,7 +175,7 @@ class tests:
 
 
 if __name__ == "__main__":
-    tests.get_knit_coordinates()
+    tests.net_filter_queue()
 
 
 

@@ -1,5 +1,5 @@
 '''
-Arp spoofing module. Stateless functions that can be used whenever + Stateful class that provides a simple interface
+Arp spoofing module. Stateless functions that can be used whenever + Stateful class that manages persistent/async things
 '''
 import scapy.all as scapy
 import threading

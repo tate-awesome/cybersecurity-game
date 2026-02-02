@@ -1,7 +1,7 @@
 from collections import deque
 from threading import Lock
 import time as Time
-from game.src.network.hardware import modbus
+from . import modbus
 
 data_size: int = 5000
 number = 1
