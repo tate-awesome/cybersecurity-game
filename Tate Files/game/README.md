@@ -6,9 +6,36 @@ App
 
             common.py
 
+Notated below is the structure that works and is good.
+The one's that aren't noted here are WIP or copied from previous versions
+
+    gui/
+
+        drawing/
+
+        navigation/
+
+            widgets/
+
+    network/
+
+        mod_table.py
+        modbus_util.py
+        network_controller.py
+        packet_buffer.py
+
+        hardware/
+
+            arp_spoofing.py
+            net_filter_queue.py
+            nmap.py
+            sniffing.py
+
+        local/
+
+        virtual/
 
 
-    Network:
 
         Hardware:
 

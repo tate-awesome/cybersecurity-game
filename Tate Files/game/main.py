@@ -1,3 +1,3 @@
-from src.app_core import app
+from src.app_core import app, router
 
-game = app.App()
+game = app.App("map_demo")
