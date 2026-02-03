@@ -1,9 +1,8 @@
-from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus
-from src.network import packet_buffer
+from src.network.hardware import arp_spoofing, sniffing, net_filter_queue
+from src.network import packet_buffer, network_controller, modbus_util, mod_table
 import time
 
-
-class tests:
+class hardware:
 
     # Passed
     def arp_spoofing():
@@ -129,14 +128,21 @@ class tests:
             buffer.clear()
             spoofer.stop()
 
-    
-    
+class network:
 
+    class net:
+        def hardware_test():
+            net = network_controller.HardwareNetwork()
+            try:
+                net.start_arp()
+                net.start_nfq()
 
+                input("Press Enter to print all positions received")
 
-
-if __name__ == "__main__":
-    tests.get_knit_coordinates()
+                print(net.buffer.get_all_positions("in"))
+            finally:
+                net.stop_arp()
+                net.stop_nfq()
 
 
 
