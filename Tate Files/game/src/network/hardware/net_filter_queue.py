@@ -6,12 +6,13 @@ from scapy.all import IP, TCP, Packet
 import threading, os, select
 from netfilterqueue import NetfilterQueue as NFQ
 from .. import modbus_util as mb
+from ..mod_table import ModTable
 from ..packet_buffer import PacketBuffer
 
 
 class NetFilterQueue:
 
-    def __init__(self, buffer: PacketBuffer, mod_table):
+    def __init__(self, buffer: PacketBuffer, mod_table: ModTable):
         self.stop_event = None
         self.thread = None
         self.callback = None
@@ -19,7 +20,7 @@ class NetFilterQueue:
         self.table = mod_table
 
 
-    def start(self, _callback): 
+    def start(self, _callback: callable): 
         if self.stop_event is not None or self.thread is not None or self.callback is not None:
             print("NFQ already running")
             return
@@ -84,6 +85,11 @@ class NetFilterQueue:
     def print_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         mb.print_scannable(spkt)
+        pkt.accept()
+
+    def show_and_accept(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        spkt.show()
         pkt.accept()
 
     def print_and_modify(self, pkt: Packet):
