@@ -1,4 +1,5 @@
-from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus, packet_buffer
+from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus
+from src.network import packet_buffer
 import time
 
 
