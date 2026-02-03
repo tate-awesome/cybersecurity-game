@@ -1,13 +1,8 @@
-from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus, buffer
+from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, modbus, packet_buffer
 import time
 
 
 class tests:
-
-    # in progress
-    def stop_all(hacking_objects: list):
-        for object in hacking_objects:
-            object.stop()
 
     # Passed
     def arp_spoofing():
@@ -20,162 +15,127 @@ class tests:
         spoofer.stop()
 
     # Passed
-    def sniffing():
-        
-        arp_spoofing.start()
-
-        sniffing.start(sniffing.handlers.print_scannable)
-
-        input("Press Enter to stop")
-
-        sniffing.stop()
-
-        arp_spoofing.stop()
-
-    # Passed
     def net_filter_queue():
         spoofer = arp_spoofing.ArpSpoofer()
-        spoofer.start()
 
         nfq = net_filter_queue.NetFilterQueue()
 
-        # Pick one
-        # net_filter_queue.start(net_filter_queue.callbacks.print_and_accept)
-        nfq.start(net_filter_queue.callbacks.print_and_accept)
+        try:
+            spoofer.start()
+            nfq.start(net_filter_queue.callbacks.print_and_accept)
+            input("Press Enter to stop")
 
-        # input("Press Enter to change values")
-
-        # modbus.set_table_to(10)
-
-        input("Press Enter to stop")
-
-        nfq.stop()
-
-        # net_filter_queue.start(net_filter_queue.callbacks.print_and_accept)
-
-        # input("Press Enter to stop")
-
-        # net_filter_queue.stop()
-
-        spoofer.stop()
+        finally:
+            nfq.stop()
+            spoofer.stop()
 
     # Passed
     def sniffer_buffer():
-        arp_spoofing.start()
+        spoofer = arp_spoofing.ArpSpoofer()
 
-        sniffing.start(sniffing.handlers.put_modbus_in_buffer)
+        buffer = packet_buffer.PacketBuffer()
 
-        input("Press Enter to print from buffer (3 remaining)")
+        sniffer = sniffing.Sniffer(buffer)
 
-        buffer.get_last("packets", "in")[0].show()
+        try:
+            spoofer.start()
+            sniffer.start(sniffer.put_modbus_in_buffer)
 
-        input("Press Enter to print from buffer (2 remaining)")
+            input("Press Enter to print from buffer (3 remaining)")
 
-        buffer.get_last("packets", "in")[0].show()
+            buffer.get_last_tuple("packets", "in")[0].show()
 
+            input("Press Enter to print from buffer (2 remaining)")
 
-        input("Press Enter to print from buffer (1 remaining)")
-
-        buffer.get_last("packets", "in")[0].show()
-
-
-        input("Press Enter to print from buffer (0 remaining)")
-
-        buffer.get_last("packets", "in")[0].show()
+            buffer.get_last_tuple("packets", "in")[0].show()
 
 
-        input("Press Enter to stop")
+            input("Press Enter to print from buffer (1 remaining)")
 
-        sniffing.stop()
-        buffer.clear()
-        arp_spoofing.stop()
+            buffer.get_last_tuple("packets", "in")[0].show()
+
+
+            input("Press Enter to print from buffer (0 remaining)")
+
+            buffer.get_last_tuple("packets", "in")[0].show()
+
+
+            input("Press Enter to stop")
+        finally:
+
+            sniffer.stop()
+            buffer.clear()
+            spoofer.stop()
 
     # Passed
     def nfq_buffer():
-        arp_spoofing.start()
+        spoofer = arp_spoofing.ArpSpoofer()
 
-        # Pick one
-        # net_filter_queue.start(net_filter_queue.callbacks.buffer_and_accept)
-        net_filter_queue.start(net_filter_queue.callbacks.buffer_and_modify)
+        buffer = packet_buffer.PacketBuffer()
 
-        input("Press Enter to print from buffer (3 remaining)")
+        nfq = net_filter_queue.NetFilterQueue(buffer)
 
-        buffer.get_last("packets", "in")[0].show()
+        try:
+            spoofer.start()
+            nfq.start(nfq.buffer_and_accept)
+
+            input("Press Enter to print from buffer (3 remaining)")
+
+            buffer.get_last_tuple("packets", "in")[0].show()
+
+            input("Press Enter to print from buffer (2 remaining)")
+
+            buffer.get_last_tuple("packets", "in")[0].show()
 
 
-        input("Press Enter to print from buffer (2 remaining)")
+            input("Press Enter to print from buffer (1 remaining)")
 
-        buffer.get_last("packets", "in")[0].show()
+            buffer.get_last_tuple("packets", "in")[0].show()
 
-        input("Press Enter to print from buffer (1 remaining)")
 
-        buffer.get_last("packets", "in")[0].show()
+            input("Press Enter to print from buffer (0 remaining)")
 
-        input("Press Enter to print from buffer (0 remaining)")
+            buffer.get_last_tuple("packets", "in")[0].show()
 
-        buffer.get_last("packets", "in")[0].show()
 
-        input("Press Enter to stop")
+            input("Press Enter to stop")
+        finally:
 
-        net_filter_queue.stop()
-        buffer.clear()
-        arp_spoofing.stop()
+            nfq.stop()
+            buffer.clear()
+            spoofer.stop()
     
-    def get_knit_packets():
-        arp_spoofing.start()
-
-        # Pick one
-        net_filter_queue.start(net_filter_queue.callbacks.buffer_and_accept)
-        # net_filter_queue.start(net_filter_queue.callbacks.buffer_and_modify)
-
-        input("Press Enter to print a table of all packets")
-
-        all = buffer.get_knit_packets()
-
-        for p in all:
-            # packet, time, number, direction
-            # Number, time, direction, scannable
-            print(p[2],"\t", time.localtime(p[1])[5],"\t", p[3],"\t", modbus.print_scannable(p[0], print_to_console=False))
-
-        input("Press Enter to stop")
-
-        net_filter_queue.stop()
-        buffer.clear()
-        arp_spoofing.stop()
-
     def get_knit_coordinates():
-        arp_spoofing.start()
+        spoofer = arp_spoofing.ArpSpoofer()
 
-        net_filter_queue.start(net_filter_queue.callbacks.buffer_and_modify)
+        buffer = packet_buffer.PacketBuffer()
 
-        input("Press Enter to print a table of received coordinates")
+        nfq = net_filter_queue.NetFilterQueue(buffer)
 
-        coords = buffer.get_knit_coordinates()
+        try:
+            spoofer.start()
+            nfq.start(nfq.buffer_and_accept)
 
-        print("x\ty")
+            input("Press Enter to print from buffer (3 remaining)")
 
-        for c in coords[0]:
-            print(c[0],"\t",c[1])
+            print(buffer.get_all_positions("in"))
 
-        input("Press Enter to print a table of forwarded coordinates")
-      
-        print("x\ty")
 
-        for c in coords[1]:
-            print(c[0],"\t",c[1])
+            input("Press Enter to stop")
+        finally:
 
-        input("Press Enter to stop")
+            nfq.stop()
+            buffer.clear()
+            spoofer.stop()
 
-        net_filter_queue.stop()
-        buffer.clear()
-        arp_spoofing.stop()
+    
     
 
 
 
 
 if __name__ == "__main__":
-    tests.net_filter_queue()
+    tests.get_knit_coordinates()
 
 
 
