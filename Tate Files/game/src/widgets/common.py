@@ -16,13 +16,10 @@ class Common:
                 Common.fonts[name] = CTkFont(size=14)
         return Common.fonts[name]
 
-    # if MED_FONT is None:
-    #     MED_FONT = ctk.CTkFont(family="Arial", size=16)
-    # if LARGE_FONT is None:
-    #     LARGE_FONT = ctk.CTkFont(family="Arial", size=24)
-    # if MONO_FONT is None:
-    #     MONO_FONT = ctk.CTkFont(family="Courier", size=14)
-    #     return Common.fonts[name]
+# DATA_FONT = CTkFont(family="Courier", size=16)
+# HEADER_FONT = CTkFont(family="Arial", size=24)
+# TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
+
 
     GAP = 10
     PANE_MIN = GAP*4
@@ -36,10 +33,11 @@ class Common:
         game_label.pack(side="left", padx=Common.GAP, pady=(Common.GAP, 0))
         return menu_bar
 
-    def menu_bar_button(parent, text, function):
+    def menu_bar_button(parent, text, function=None):
         med = Common.get_font()
         button = CTkButton(parent, text=text, command=function, font=med)
         button.pack(side="right", padx=Common.GAP, pady=Common.GAP)
+        return button
 
     # Layout frames
     def trifold(parent):
@@ -69,16 +67,17 @@ class Common:
         paned.add(right, minsize=Common.PANE_MIN)
         return left, middle, right
 
+    def configure_reversible_button(the_button: CTkButton, start_func: callable, stop_func: callable, func_name: str):
+        def stop():
+            the_button.configure(text=f"Stopping {func_name}...")
+            stop_func()
+            the_button.configure(command=start, text=f"Start {func_name}")
 
-
-
-# DATA_FONT = CTkFont(family="Courier", size=16)
-# HEADER_FONT = CTkFont(family="Arial", size=24)
-# TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
-   
-
-
-
+        def start():
+            the_button.configure(text=f"Starting {func_name}...")
+            start_func()
+            the_button.configure(command=stop, text=f"Stop {func_name}")
+        the_button.configure(command=start, text=f"Start {func_name}")
 
 class form:
     #       label1  label2  
