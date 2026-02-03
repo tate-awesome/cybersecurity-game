@@ -2,7 +2,7 @@ from collections import deque
 from threading import Lock
 import time as Time
 from scapy.all import Packet
-from . import modbus
+from . import modbus_util as modbus
 
 
 class PacketBuffer:
