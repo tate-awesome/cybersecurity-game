@@ -2,88 +2,23 @@
 NFQ module. Callbacks and persistent object
 '''
 
-from scapy.all import IP, TCP
+from scapy.all import IP, TCP, Packet
 import threading, os, select
 from netfilterqueue import NetfilterQueue as NFQ
 from . import modbus as mb
-from . import buffer as buffer
-
-
-class callbacks:
-
-    def accept_only(pkt):
-        pkt.accept()
-
-    def print_and_accept(pkt):
-        spkt = IP(pkt.get_payload())
-        mb.print_scannable(spkt)
-        pkt.accept()
-
-    def print_and_modify(pkt):
-        spkt = IP(pkt.get_payload())
-        mb.print_scannable(spkt)
-
-
-        if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt)
-
-        elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt)
-
-        else:
-            pkt.accept()
-            return
-    
-        mb.print_scannable(spkt)
-
-        # Recalculate checksums
-        del spkt[TCP].chksum
-        del spkt[IP].chksum
-        del spkt[IP].len
-
-        pkt.set_payload(bytes(spkt))
-        pkt.accept()
-
-    def buffer_and_accept(pkt):
-        spkt = IP(pkt.get_payload())
-        buffer.put(spkt, False)
-        pkt.accept()
-
-    def buffer_and_modify(pkt):
-        spkt = IP(pkt.get_payload())
-        
-        buffer.put(spkt, False)
-
-        if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt)
-
-        elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt)
-
-        else:
-            pkt.accept()
-            return
-
-        buffer.put(spkt, True)
-
-        # Recalculate checksums
-        del spkt[TCP].chksum
-        del spkt[IP].chksum
-        del spkt[IP].len
-
-        pkt.set_payload(bytes(spkt))
-        pkt.accept()
+from .packet_buffer import PacketBuffer
 
 
 class NetFilterQueue:
 
-    def __init__(self):
+    def __init__(self, buffer: PacketBuffer):
         self.stop_event = None
         self.thread = None
         self.callback = None
+        self.buffer = buffer
 
 
-    def start(self, _callback = callbacks.accept_only): 
+    def start(self, _callback): 
         if self.stop_event is not None or self.thread is not None or self.callback is not None:
             print("NFQ already running")
             return
@@ -136,4 +71,71 @@ class NetFilterQueue:
             print("Stopping net filter queue...")
             self.stop_event.set()
             self.thread.join()
+            self.stop_event = None
+            self.thread = None
+            self.callback = None
             print("Stopped net filter queue")
+
+    # Callbacks
+    def accept_only(self, pkt: Packet):
+        pkt.accept()
+
+    def print_and_accept(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        mb.print_scannable(spkt)
+        pkt.accept()
+
+    def print_and_modify(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        mb.print_scannable(spkt)
+
+
+        if mb.is_commands(spkt):
+            spkt = mb.modify_commands(spkt)
+
+        elif mb.is_coord(spkt):
+            spkt = mb.modify_coord(spkt)
+
+        else:
+            pkt.accept()
+            return
+    
+        mb.print_scannable(spkt)
+
+        # Recalculate checksums
+        del spkt[TCP].chksum
+        del spkt[IP].chksum
+        del spkt[IP].len
+
+        pkt.set_payload(bytes(spkt))
+        pkt.accept()
+
+    def buffer_and_accept(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        self.buffer.put(spkt, "in")
+        pkt.accept()
+
+    def buffer_and_modify(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        
+        self.buffer.put(spkt, "in")
+
+        if mb.is_commands(spkt):
+            spkt = mb.modify_commands(spkt)
+
+        elif mb.is_coord(spkt):
+            spkt = mb.modify_coord(spkt)
+
+        else:
+            pkt.accept()
+            return
+
+        self.buffer.put(spkt, "out")
+
+        # Recalculate checksums
+        del spkt[TCP].chksum
+        del spkt[IP].chksum
+        del spkt[IP].len
+
+        pkt.set_payload(bytes(spkt))
+        pkt.accept()

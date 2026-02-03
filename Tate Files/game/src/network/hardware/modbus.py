@@ -1,6 +1,6 @@
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 from scapy.all import Packet
-from ...network import mod_table as mt
+from . import mod_table as mt
 
 # Safely decodes and modifies modbus packets. 
 
