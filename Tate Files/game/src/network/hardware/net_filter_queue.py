@@ -5,17 +5,18 @@ NFQ module. Callbacks and persistent object
 from scapy.all import IP, TCP, Packet
 import threading, os, select
 from netfilterqueue import NetfilterQueue as NFQ
-from . import modbus as mb
-from .packet_buffer import PacketBuffer
+from .. import modbus_util as mb
+from ..packet_buffer import PacketBuffer
 
 
 class NetFilterQueue:
 
-    def __init__(self, buffer: PacketBuffer):
+    def __init__(self, buffer: PacketBuffer, mod_table):
         self.stop_event = None
         self.thread = None
         self.callback = None
         self.buffer = buffer
+        self.table = mod_table
 
 
     def start(self, _callback): 
@@ -121,10 +122,10 @@ class NetFilterQueue:
         self.buffer.put(spkt, "in")
 
         if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt)
+            spkt = mb.modify_commands(spkt, self.table)
 
         elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt)
+            spkt = mb.modify_coord(spkt, self.table)
 
         else:
             pkt.accept()
