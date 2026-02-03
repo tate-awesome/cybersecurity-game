@@ -32,3 +32,7 @@ class ModTable:
         if type == "offset":
             value = value * factors[var]
         self.table[key] = value
+
+    def get(self, var: str, type: str):
+        key = f"{var}_{type}"
+        return self.table[key]
