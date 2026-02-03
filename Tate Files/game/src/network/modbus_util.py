@@ -1,6 +1,6 @@
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 from scapy.all import Packet
-from . import mod_table as mt
+from .mod_table import ModTable
 
 # Safely decodes and modifies modbus packets. 
 
@@ -227,7 +227,7 @@ def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, sho
         return out
 
 
-def modify_coord(pkt):
+def modify_coord(pkt, table: ModTable):
     mbl = pkt.getlayer(ModbusADURequest)
 
     # Determine values
@@ -241,22 +241,22 @@ def modify_coord(pkt):
         var = "theta"
 
     z = mbl.payload.registerValue
-    mult = mt.table[f"{var}_mult"]
-    offset = mt.table[f"{var}_offset"]
+    mult = table.get(var, "offset")
+    offset = table.get(var, "offset")
     mbl.payload.registerValue = int(z * mult + offset)
     return pkt
 
-def modify_commands(pkt):
+def modify_commands(pkt, table: ModTable):
     mbl = pkt.getlayer(ModbusADUResponse)
 
-    mult = mt.table[f"{speed}_mult"]
-    offset = mt.table[f"{speed}_offset"]
+    mult = table.get("speed", "mult")
+    offset = table.get("speed", "offset")
 
     speed = mbl.payload.registerVal[0]
     mbl.payload.registerVal[0] = int(speed * mult + offset)
 
-    mult = mt.table[f"{rudder}_mult"]
-    offset = mt.table[f"{rudder}_offset"]
+    mult = table.get("rudder", "mult")
+    offset = table.get("rudder", "offset")
 
     rudder = mbl.payload.registerVal[1]
     mbl.payload.registerVal[1] = int(rudder * mult + offset)
