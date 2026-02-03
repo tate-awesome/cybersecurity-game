@@ -230,14 +230,11 @@ def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, sho
 def modify_coord(pkt, table: ModTable):
     mbl = pkt.getlayer(ModbusADURequest)
 
-    # Determine values
-    addr = "None"
-
     if mbl.payload.registerAddr == 10: # X address
         var = "x"
     elif mbl.payload.registerAddr == 11: # Y address
         var = "y"
-    elif mbl.payload.registerAddr == 12: # Theta address
+    else: # Theta address
         var = "theta"
 
     z = mbl.payload.registerValue
