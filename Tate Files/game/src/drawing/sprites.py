@@ -19,8 +19,8 @@ def test_triangle(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
 
         v_line = t.rotate(h_line, PI/2, (0, 0))
 
-        h_line = t.padded_fit(h_line, (-5, -5), (5, 5), canvas, padding)
-        v_line = t.padded_fit(v_line, (-5, -5), (5, 5), canvas, padding)
+        h_line = t.padded_fit_uniform(h_line, (-5, -5), (5, 5), canvas, padding)
+        v_line = t.padded_fit_uniform(v_line, (-5, -5), (5, 5), canvas, padding)
 
         h_line = t.zoom_and_pan(h_line, scale, offset)
         v_line = t.zoom_and_pan(v_line, scale, offset)
@@ -36,13 +36,13 @@ def test_triangle(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
     triangle = t.scale(triangle, 2.0, (0,0))
     angle = (time.time() % 20.0) * PI / 10.0
     triangle = t.rotate(triangle, angle, (0,0))  #   <.   
-    triangle = t.padded_fit(triangle, (-5, -5), (5, 5), canvas, padding)
+    triangle = t.padded_fit_uniform(triangle, (-5, -5), (5, 5), canvas, padding)
     triangle = t.zoom_and_pan(triangle, scale, offset)
     canvas.create_polygon(triangle, fill="green", width="5", outline="blue")
 
     circle_box = [ (-2,-2), (2,2) ]
     circle_box = t.scale(circle_box, 2.0, (0,0)) 
-    circle_box = t.padded_fit(circle_box, (-5, -5), (5, 5), canvas, padding)
+    circle_box = t.padded_fit_uniform(circle_box, (-5, -5), (5, 5), canvas, padding)
     circle_box = t.zoom_and_pan(circle_box, scale, offset)
     canvas.create_oval(circle_box, fill="", outline="blue", width="3")
 
@@ -56,7 +56,7 @@ class boat:
         '''
         if len(points) < 2:
             return
-        points = t.padded_fit(points, (0,0), (200,200), canvas, 20)
+        points = t.padded_fit_uniform(points, (0,0), (200,200), canvas, 20)
         points = t.zoom_and_pan(points, scale, offset)
         canvas.create_line(points, width=2, fill=line_color)
 
@@ -67,8 +67,8 @@ class boat:
 
             v_line = t.rotate(h_line, PI/2, (i, i))
 
-            h_line = t.padded_fit(h_line, (0,0), (200,200), canvas, 20)
-            v_line = t.padded_fit(v_line, (0,0), (200,200), canvas, 20)
+            h_line = t.padded_fit_uniform(h_line, (0,0), (200,200), canvas, 20)
+            v_line = t.padded_fit_uniform(v_line, (0,0), (200,200), canvas, 20)
 
             h_line = t.zoom_and_pan(h_line, scale, offset)
             v_line = t.zoom_and_pan(v_line, scale, offset)
@@ -80,6 +80,24 @@ class boat:
             canvas.create_line(t.flatten(h_line), width=2, fill=color)
             canvas.create_line(t.flatten(v_line), width=2, fill=color)
 
+    def boat(canvas: CTkCanvas, position: tuple[float, float], bearing: float, fill_color: str, line_color: str, scale, offset):
+        the_boat = [
+                            (-2, 1),
+                            (-2, -1),
+                            (1,  -1),
+                            (3,  0),
+                            (1,  1)
+                        ]
+        the_boat = t.rotate(the_boat, bearing)
+        the_boat = t.scale(the_boat, 2)
+        
+        w = canvas.winfo_width()
+        h = canvas.winfo_height()
+    
+        the_boat = t.padded_fit_uniform(the_boat, (0,0), (200,200), canvas, 20)
+        the_boat = t.zoom_and_pan(the_boat, scale, offset)
+        canvas.create_polygon(the_boat, fill=fill_color, outline=line_color)
+
 # def ocean(canvas, color):
 #     w = canvas.winfo_width()
 #     h = canvas.winfo_height()
@@ -89,23 +107,7 @@ class boat:
 #     canvas.create_oval(coords[0] - 5, coords[1] - 5, coords[0] + 5, coords[1] + 5, fill=color)
 
 # def boat(canvas: CTkCanvas, position: list, bearing_radians: float, line_color: str, fill_color: str, size=7.5):
-#     boat_vertices = [
-#                     -2, 1,
-#                     -2, -1,
-#                     1, -1,
-#                     3, 0,
-#                     1, 1
-#                     ]
-#     w = canvas.winfo_width()
-#     h = canvas.winfo_height()
-#     oriented_boat = rotate(boat_vertices, bearing_radians, scale=size)
-#     canvas_position = padding_transform(range_transform(position, 200, 200, w, h), w, h)
-#     vertices = []
-#     for i in range(0, len(boat_vertices), 2):
-#         vertices.append(canvas_position[0] + oriented_boat[i])
-#         vertices.append(canvas_position[1] - oriented_boat[i+1])
-    
-#     canvas.create_polygon(scale(vertices), fill=fill_color, outline=line_color)
+
 
 # def coordinate_plane(canvas: CTkCanvas, step_size = 20):
 #     w = canvas.winfo_width()

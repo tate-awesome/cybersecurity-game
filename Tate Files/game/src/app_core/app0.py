@@ -64,24 +64,6 @@ from customtkinter import CTkCanvas
 #         map.draw.boat_path(canvas, path, "red")
 #         map.draw.boat(canvas, position, bearing, "yellow", "yellow")
 
-def draw_test_plane(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
-    with draw_lock:
-        canvas.delete("all")
-        sprites.test_triangle(canvas, scale, offset)
-
-def draw_full_map(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
-    positions = buffer.get_all_positions("in")
-    bearing = buffer.get_last_tuple("theta", "in")
-    with draw_lock:
-        canvas.delete("all")
-        sprites.boat.grid_lines(canvas, scale, offset)
-        if len(positions) < 1: return
-        sprites.boat.poly_line(canvas, positions, scale, offset, "white")
-        if bearing is None: return
-        last_position = positions[-1]
-        # sprites.boat.boat(canvas, last_position, bearing, "white", "black")
-        
-
 
 
     # draw.ticks(canvas, [0, 0, 0, 1000], 100, 20, "white")
@@ -128,7 +110,6 @@ def draw_full_map(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tupl
 
     # canvas.configure(scrollregion=canvas.bbox("all"))
 
-    return
 
 
 

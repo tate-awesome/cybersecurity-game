@@ -18,11 +18,15 @@ class hardware:
     def net_filter_queue():
         spoofer = arp_spoofing.ArpSpoofer()
 
-        nfq = net_filter_queue.NetFilterQueue()
+        buffer = packet_buffer.PacketBuffer()
+
+        mt = mod_table.ModTable()
+
+        nfq = net_filter_queue.NetFilterQueue(buffer, mt)
 
         try:
             spoofer.start()
-            nfq.start(net_filter_queue.callbacks.print_and_accept)
+            nfq.start(nfq.show_and_accept)
             input("Press Enter to stop")
 
         finally:

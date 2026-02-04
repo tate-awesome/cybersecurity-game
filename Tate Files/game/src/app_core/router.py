@@ -9,7 +9,8 @@ class Router:
 
         self.pages = {
             "hacker_final":     Hacker.final,
-            "map_demo":         Demos.map
+            "map_demo":         Demos.map,
+            "triangle_demo":    Demos.triangle
         }
 
         self.current_page = start_page
