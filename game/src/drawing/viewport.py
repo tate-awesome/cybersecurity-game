@@ -1,86 +1,99 @@
-'''
-Draw to canvas from here
-'''
 from . import transformations as t
 from customtkinter import CTkCanvas
 from math import pi as PI
 import time
 
-def test_triangle(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
+class ViewPort:
     '''
-    Visualize the transformations
+    Holds the current viewport parameters for drawing on the canvas for a single frame.
     '''
-    padding = 20
+    def __init__(self, canvas: CTkCanvas, scale: float, offset: tuple[float, float], padding=20, input_range=((0,0),(200,200))):
+        self.canvas = canvas
+        self.scale = scale
+        self.offset = offset
+        self.padding = padding
+        self.input_range = input_range
 
-    # Gridlines
-    for i in range(-5, 6):
-        h_line = [ (-1, i), (1, i) ]
-        h_line = t.scale(h_line, 5)
+    def background(self, color: str):
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
+        self.canvas.create_rectangle(0, 0, w, h, fill=color)
 
-        v_line = t.rotate(h_line, PI/2, (0, 0))
+    def ocean(self):
+        self.background("#003459")
 
-        h_line = t.padded_fit_uniform(h_line, (-5, -5), (5, 5), canvas, padding)
-        v_line = t.padded_fit_uniform(v_line, (-5, -5), (5, 5), canvas, padding)
+    def test_triangle(self):
+        '''
+        Visualize the transformations
+        '''
 
-        h_line = t.zoom_and_pan(h_line, scale, offset)
-        v_line = t.zoom_and_pan(v_line, scale, offset)
+        # Gridlines
+        for i in range(-5, 6):
+            h_line = [ (-1, i), (1, i) ]
+            h_line = t.scale(h_line, 5)
 
-        color = "black"
-        if i == 0:
-            color = "red"
+            v_line = t.rotate(h_line, PI/2, (0, 0))
 
-        canvas.create_line(t.flatten(h_line), width=2, fill=color)
-        canvas.create_line(t.flatten(v_line), width=2, fill=color)
+            h_line = t.padded_fit_uniform(h_line, (-5, -5), (5, 5), self.canvas, self.padding)
+            v_line = t.padded_fit_uniform(v_line, (-5, -5), (5, 5), self.canvas, self.padding)
 
-    triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
-    triangle = t.scale(triangle, 2.0, (0,0))
-    angle = (time.time() % 20.0) * PI / 10.0
-    triangle = t.rotate(triangle, angle, (0,0))  #   <.   
-    triangle = t.padded_fit_uniform(triangle, (-5, -5), (5, 5), canvas, padding)
-    triangle = t.zoom_and_pan(triangle, scale, offset)
-    canvas.create_polygon(triangle, fill="green", width="5", outline="blue")
+            h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
+            v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
+            color = "black"
+            if i == 0:
+                color = "red"
 
-    circle_box = [ (-2,-2), (2,2) ]
-    circle_box = t.scale(circle_box, 2.0, (0,0)) 
-    circle_box = t.padded_fit_uniform(circle_box, (-5, -5), (5, 5), canvas, padding)
-    circle_box = t.zoom_and_pan(circle_box, scale, offset)
-    canvas.create_oval(circle_box, fill="", outline="blue", width="3")
+            self.canvas.create_line(t.flatten(h_line), width=2, fill=color)
+            self.canvas.create_line(t.flatten(v_line), width=2, fill=color)
+
+        # Triangle
+        triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
+        triangle = t.scale(triangle, 2.0, (0,0))
+        angle = (time.time() % 20.0) * PI / 10.0
+        triangle = t.rotate(triangle, angle, (0,0))  #   <.   
+        triangle = t.padded_fit_uniform(triangle, (-5, -5), (5, 5), self.canvas, self.padding)
+        triangle = t.zoom_and_pan(triangle, self.scale, self.offset)
+        self.canvas.create_polygon(triangle, fill="green", width="5", outline="blue")
+
+        # Inscribed circle
+        circle_box = [ (-2,-2), (2,2) ]
+        circle_box = t.scale(circle_box, 2.0, (0,0)) 
+        circle_box = t.padded_fit_uniform(circle_box, (-5, -5), (5, 5), self.canvas, self.padding)
+        circle_box = t.zoom_and_pan(circle_box, self.scale, self.offset)
+        self.canvas.create_oval(circle_box, fill="", outline="blue", width="3")
 
 
-class boat:
-
-
-    def poly_line(canvas: CTkCanvas, points: list, scale: float, offset: tuple[float, float], line_color: str):
+    def line(self, points: list[tuple[float, float]], line_color: str):
         '''
         Draws the path of the points 
         '''
         if len(points) < 2:
             return
-        points = t.padded_fit_uniform(points, (0,0), (200,200), canvas, 20)
-        points = t.zoom_and_pan(points, scale, offset)
-        canvas.create_line(points, width=2, fill=line_color)
+        points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
+        points = t.zoom_and_pan(points, self.scale, self.offset)
+        self.canvas.create_line(points, width=2, fill=line_color)
 
 
-    def grid_lines(canvas: CTkCanvas, scale: float, offset: tuple[float, float]):
+    def grid_lines(self):
         for i in range(0, 210, 10):
             h_line = [ (0, i), (200, i) ]
 
             v_line = t.rotate(h_line, PI/2, (i, i))
 
-            h_line = t.padded_fit_uniform(h_line, (0,0), (200,200), canvas, 20)
-            v_line = t.padded_fit_uniform(v_line, (0,0), (200,200), canvas, 20)
+            h_line = t.padded_fit_uniform(h_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
+            v_line = t.padded_fit_uniform(v_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
 
-            h_line = t.zoom_and_pan(h_line, scale, offset)
-            v_line = t.zoom_and_pan(v_line, scale, offset)
-
+            h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
+            v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
             color = "black"
             if i == 0:
                 color = "red"
 
-            canvas.create_line(t.flatten(h_line), width=2, fill=color)
-            canvas.create_line(t.flatten(v_line), width=2, fill=color)
+            self.canvas.create_line(t.flatten(h_line), width=2, fill=color)
+            self.canvas.create_line(t.flatten(v_line), width=2, fill=color)
 
-    def boat(canvas: CTkCanvas, position: tuple[float, float], bearing: float, fill_color: str, line_color: str, scale, offset):
+
+    def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black"):
         the_boat = [
                             (-2, 1),
                             (-2, -1),
@@ -90,13 +103,15 @@ class boat:
                         ]
         the_boat = t.rotate(the_boat, bearing)
         the_boat = t.scale(the_boat, 2)
+
+        the_boat = t.translate(the_boat, position)
         
-        w = canvas.winfo_width()
-        h = canvas.winfo_height()
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
     
-        the_boat = t.padded_fit_uniform(the_boat, (0,0), (200,200), canvas, 20)
-        the_boat = t.zoom_and_pan(the_boat, scale, offset)
-        canvas.create_polygon(the_boat, fill=fill_color, outline=line_color)
+        the_boat = t.padded_fit_uniform(the_boat, self.input_range[0], self.input_range[1], self.canvas, 20)
+        the_boat = t.zoom_and_pan(the_boat, self.scale, self.offset)
+        self.canvas.create_polygon(the_boat, fill=fill_color, outline=line_color)
 
 # def ocean(canvas, color):
 #     w = canvas.winfo_width()
