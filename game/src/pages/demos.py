@@ -16,6 +16,7 @@ class Demos:
             with draw_lock:
                 canvas.delete("all")
                 draw.test_triangle()
+                
         world_map = Map(root, draw_test_plane, 100)
 
     def sprites(root):
