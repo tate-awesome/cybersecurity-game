@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from .hardware import arp_spoofing, net_filter_queue, sniffing
 from .virtual import master, slave
-from .saved import 
+from .saved import loader
 from . import packet_buffer, mod_table
 
 class Network(ABC):
@@ -60,17 +60,20 @@ class SavedNetwork(Network):
     '''
     Fills up the buffer
     '''
-    def __init__(self, saved_loader):
-        self.saved_loader = saved_loader
+    def __init__(self):
+        self.buffer = packet_buffer.PacketBuffer()
+        self.table = mod_table.ModTable()
 
     def start_arp(self):
-        pass
+        # Becomes file picker "how to enter the network"
+        self.file = loader.Loader(self.buffer, self.table)
 
     def stop_arp(self):
         pass
 
     def start_nfq(self):
-        pass
+        # Becomes file loader "how to obtain packets"
+        self.file.open_pcap_file(self.file.buffer_and_accept)
     
     def stop_nfq(self):
         pass
