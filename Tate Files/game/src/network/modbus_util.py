@@ -252,6 +252,10 @@ def modify_commands(pkt, table: ModTable):
     speed = mbl.payload.registerVal[0]
     mbl.payload.registerVal[0] = int(speed * mult + offset)
 
+     # Rarely there is no rudder command
+    if len(mbl.payload.registerVal) < 2:
+        return pkt
+
     mult = table.get("rudder", "mult")
     offset = table.get("rudder", "offset")
 
