@@ -11,7 +11,8 @@ class Router:
             "hacker_final":     Hacker.final,
             "net_map_demo":     Demos.net_map,
             "sprite_demo":     Demos.sprites,
-            "triangle_demo":    Demos.triangle
+            "triangle_demo":    Demos.triangle,
+            "saved_map_demo": Demos.saved_map
         }
 
         self.current_page = start_page

@@ -96,7 +96,7 @@ class Master:
 #   return true;
 # }
         def writeH(self, addr, val):
-
+                pass
 # bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
 #   if (!mb.isConnected(serverIP)) return false;
 #   uint16_t tx = mb.readHreg(serverIP, addr, buf, n);
