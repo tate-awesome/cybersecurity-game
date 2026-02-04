@@ -57,8 +57,8 @@ class Master:
         self.RudderMax_deg = 60.0
 # const float SPEED_DEADBAND_M_S = 0.5f;  // Reduced deadband
 # const float RUDDER_DEADBAND_DEG = 1.0f; // Reduced deadband
-        const self.SPEED_DEADBAND_M_S = 0.5
-        const self.RUDDER_DEADBAND_DEG = 1.0
+        self.SPEED_DEADBAND_M_S = 0.5
+        self.RUDDER_DEADBAND_DEG = 1.0
 # //// ---------- Conversion Helpers ----------
 # static inline uint16_t x_to_u16_100(float v) {
 #   if (v < 0) v = 0;
