@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from .hardware import arp_spoofing, net_filter_queue, sniffing
+from .virtual import master, slave
 from . import packet_buffer, mod_table
 
 class Network(ABC):
@@ -48,3 +49,24 @@ class HardwareNetwork(Network):
     def stop_sniff(self):
         self.sniffer.stop()
     
+class VirtualNetwork(Network):
+    def __init__(self, virtual_slave):
+        self.virtual_slave = virtual_slave
+
+    def start_arp(self):
+        pass
+
+    def stop_arp(self):
+        pass
+
+    def start_nfq(self):
+        pass
+    
+    def stop_nfq(self):
+        pass
+
+    def start_sniff(self):
+        pass
+
+    def stop_sniff(self):
+        pass
