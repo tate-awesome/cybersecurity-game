@@ -194,3 +194,18 @@ def flatten(points: list[tuple[float, float]]):
     for x, y in points:
         out.extend((x, y))
     return out
+
+def translate(points: list[tuple[float, float]], offset: tuple[float, float]):
+    '''
+    Translates a figure by an offset
+    '''
+    tx, ty = offset
+
+    out = []
+    for x, y in points:
+        x_new = x + tx
+        y_new = y + ty
+        
+        out.append((x_new, y_new))
+
+    return out

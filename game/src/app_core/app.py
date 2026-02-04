@@ -21,6 +21,9 @@ class App():
         self.root.bind("<F11>", self.toggle_fullscreen)
         self.root.bind("<Escape>", self.exit_fullscreen)
 
+# # root.state("iconic")
+
+
     
         # Go to start_page
         router = Router(self.root, start_page)
