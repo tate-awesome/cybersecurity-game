@@ -132,6 +132,46 @@ def padded_fit(points: list[tuple[float, float]], in_bl: tuple[float, float],
     canvas_tr = (w-p, p)
     return affine(points, in_bl, in_tr, canvas_bl, canvas_tr)
 
+def padded_fit_uniform(points: list[tuple[float, float]], in_bl: tuple[float, float],
+                                                    in_tr: tuple[float, float],
+                                                    canvas: CTkCanvas,
+                                                    padding: float):
+    '''
+    Converts coordinates from the incoming plane to a plane padded inside the canvas.
+    Returns: list(tuple)
+    '''
+    w = canvas.winfo_width()
+    h = canvas.winfo_height()
+
+     # 1. Available canvas area (the padded "box" you want to fit inside)
+    p = padding
+    target_w = w - 2*p
+    target_h = h - 2*p
+
+    # 2. Input dimensions
+    in_w = in_tr[0] - in_bl[0]
+    in_h = in_tr[1] - in_bl[1]
+
+    # 3. Calculate uniform scale (preserving aspect ratio)
+    # Using abs() ensures it works even if coordinates are inverted (e.g. y-up vs y-down)
+    scale = min(abs(target_w / in_w), abs(target_h / in_h))
+
+    # 4. New dimensions for the fitted rectangle
+    fit_w = in_w * scale
+    fit_h = in_h * scale
+
+    # 5. Calculate offsets to center the fitted rectangle in the canvas
+    # We center it within the area [p, w-p] and [p, h-p]
+    offset_x = p + (target_w - abs(fit_w)) / 2
+    offset_y = p + (target_h - abs(fit_h)) / 2
+
+    # 6. Define the new target coordinates (fitted_bl and fitted_tr)
+    # Adjust for Tkinter's coordinate system (y=0 at top, y=h at bottom)
+    fitted_bl = (offset_x, h - offset_y)
+    fitted_tr = (offset_x + abs(fit_w), offset_y)
+
+    return affine(points, in_bl, in_tr, fitted_bl, fitted_tr)
+
 def zoom_and_pan(points: list[tuple[float, float]], scale: float, offset: tuple[float, float]):
     '''
     Transforms a figure using the scale and offset

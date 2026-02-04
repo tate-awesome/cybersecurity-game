@@ -72,7 +72,7 @@ class PacketBuffer:
         elif modbus.is_theta(pkt):
             variable = "theta"
             value = modbus.get_coord(pkt)
-        elif modbus.is_commands(pkt):
+        elif modbus.is_commands(pkt) and len(modbus.get_commands(pkt)) > 1:
             # Do speed first
             values = modbus.get_commands(pkt)
             with self.trails[f"speed_{dir}"]["lock"]:
