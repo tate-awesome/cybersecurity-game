@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .hardware import arp_spoofing, net_filter_queue, sniffing
+from .hardware import arp_spoofing, sniffing#, net_filter_queue
 from .virtual import master, slave
 from .saved import loader
 from . import packet_buffer, mod_table

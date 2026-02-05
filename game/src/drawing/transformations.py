@@ -209,3 +209,11 @@ def translate(points: list[tuple[float, float]], offset: tuple[float, float]):
         out.append((x_new, y_new))
 
     return out
+
+def get_bearing(origin: tuple[float, float], target: tuple[float, float]):
+    '''
+    Gets an angle from two points
+    '''
+    x = target[0] - origin[0]
+    y = target[1] - origin[1]
+    return math.atan2(y, x)
