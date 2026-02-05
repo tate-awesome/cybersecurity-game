@@ -4,6 +4,8 @@ from customtkinter import CTkCanvas
 from threading import Lock
 from ..drawing.viewport import ViewPort
 from ..network import network_controller
+from ..drawing import sprites, transformations as t
+import time, random
 
 # from ..network import network_controller
 
@@ -119,4 +121,56 @@ class Demos:
 
         map = Map(middle, draw_full_map, 100, 20)
 
-        return
+
+    def boat_motion_map(root):
+        
+        # Make initial boat path
+        positions = sprites.random_spline_path(20, 100)
+        def random_visible_color():
+            while True:
+                r = random.randint(0, 255)
+                g = random.randint(0, 255)
+                b = random.randint(0, 255)
+
+                # Calculate brightness (perceived luminance)
+                brightness = 0.299*r + 0.587*g + 0.114*b
+
+                # White is ~255; reject colors that are too bright
+                if brightness < 200:
+                    return f"#{r:02x}{g:02x}{b:02x}"
+        color = random_visible_color()
+
+
+        def start_attack():
+            positions = sprites.random_spline_path(20, 100)
+            color = random_visible_color()
+
+
+        def stop_attack():
+            pass
+
+
+        def draw_full_map(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
+            path_duration = 30.0
+            path_index = int(((time.time() % path_duration) / path_duration) * (len(positions)-2))
+            bearing = t.get_bearing(positions[path_index], positions[path_index+1])
+            draw = ViewPort(canvas, scale, offset)
+            with draw_lock:
+                canvas.delete("all")
+                draw.grid_lines()
+                draw.line(positions, color)
+                last_position = positions[path_index]
+                draw.boat(last_position, bearing)
+        
+        # Build page
+        menu_bar = place.menu_bar(root, "Demo")
+        
+        no_button = place.menu_bar_button(menu_bar, "Start Printing")
+        place.configure_reversible_button(no_button, lambda:print("start"), lambda:print("stop"), "Printing")
+        
+        attack_button = place.menu_bar_button(menu_bar, "Start Attack")
+        place.configure_reversible_button(attack_button, start_attack, stop_attack, "Attack")
+
+        left, middle, right = place.trifold(root)
+
+        map = Map(middle, draw_full_map, 100, 20)
