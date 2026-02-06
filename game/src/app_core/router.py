@@ -3,6 +3,7 @@ from customtkinter import CTk
 
 from ..pages.demo.sprites import Sprites
 from ..pages.demo.saved_map import SavedMap
+from ..pages.demo.boat_motion import BoatMotion
 
 class Router:
 
@@ -11,7 +12,8 @@ class Router:
 
         self.pages = {
             "demo/sprites": Sprites,
-            "demo/saved_map": SavedMap
+            "demo/saved_map": SavedMap,
+            "demo/boat_motion": BoatMotion
         }
 
         self.current_page = start_page

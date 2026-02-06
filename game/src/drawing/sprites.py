@@ -6,6 +6,7 @@ def random_spline_path(target_points, samples_per_segment):
         x = random.randint(0, 200)
         y = random.randint(0, 200)
         points.append((x,y))
+    points.append(points[0])
 
     spline = []
     for i in range(1, len(points) - 2):
