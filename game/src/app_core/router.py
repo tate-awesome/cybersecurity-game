@@ -1,7 +1,7 @@
-from ..pages.hacker import Hacker
-from ..pages.demos import Demos
 from .context import Context
 from customtkinter import CTk
+
+from ..pages.demo.sprites import Sprites
 
 class Router:
 
@@ -9,12 +9,7 @@ class Router:
         self.context = Context(root, self)
 
         self.pages = {
-            "hacker_final":     Hacker.final,
-            "net_map_demo":     Demos.net_map,
-            "sprite_demo":      Demos.sprites,
-            "triangle_demo":    Demos.triangle,
-            "saved_map_demo":   Demos.saved_map,
-            "boat_motion_demo": Demos.boat_motion_map
+            "demo/sprites": Sprites
         }
 
         self.current_page = start_page
