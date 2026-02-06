@@ -79,6 +79,10 @@ class Common:
             the_button.configure(command=stop, text=f"Stop {func_name}")
         the_button.configure(command=start, text=f"Start {func_name}")
 
+    def clear(parent):
+        for widget in parent.winfo_children():
+            widget.destroy()
+
 class form:
     #       label1  label2  
     #       entry1  entry2  button

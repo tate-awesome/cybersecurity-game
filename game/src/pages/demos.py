@@ -1,6 +1,6 @@
 from ..widgets.common import Common as place
 from ..widgets.map import Map
-from customtkinter import CTkCanvas
+from customtkinter import CTkCanvas, CTk
 from threading import Lock
 from ..drawing.viewport import ViewPort
 from ..network import network_controller
@@ -11,7 +11,7 @@ import time, random
 
 class Demos:
 
-    def triangle(root):
+    def triangle(root: CTk):
 
         def draw_test_plane(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
             draw = ViewPort(canvas, scale, offset)
@@ -40,7 +40,7 @@ class Demos:
         world_map = Map(root, draw_test_map, 100)
 
 
-    def net_map(root):
+    def net_map(root: CTk):
 
         # Create and define network control
         net = network_controller.HardwareNetwork()
@@ -83,7 +83,7 @@ class Demos:
         return
 
 
-    def saved_map(root):
+    def saved_map(root: CTk):
         net = network_controller.SavedNetwork()
 
         def start_attack():
