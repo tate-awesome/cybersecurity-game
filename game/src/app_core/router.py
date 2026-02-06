@@ -2,6 +2,7 @@ from .context import Context
 from customtkinter import CTk
 
 from ..pages.demo.sprites import Sprites
+from ..pages.demo.saved_map import SavedMap
 
 class Router:
 
@@ -9,7 +10,8 @@ class Router:
         self.context = Context(root, self)
 
         self.pages = {
-            "demo/sprites": Sprites
+            "demo/sprites": Sprites,
+            "demo/saved_map": SavedMap
         }
 
         self.current_page = start_page
