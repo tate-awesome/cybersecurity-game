@@ -4,7 +4,7 @@ from .router import Router
 
 class App():
 
-    def __init__(self, start_page: str, title = "Game", start_fullscreen = False):
+    def __init__(self, start_page="main_menu", title="Game", start_fullscreen = False):
 
         # Define root
         self.root = ctk.CTk()
@@ -21,10 +21,6 @@ class App():
         self.root.bind("<F11>", self.toggle_fullscreen)
         self.root.bind("<Escape>", self.exit_fullscreen)
 
-# # root.state("iconic")
-
-
-    
         # Go to start_page
         router = Router(self.root, start_page)
 
