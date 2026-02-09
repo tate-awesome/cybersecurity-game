@@ -1,6 +1,6 @@
 from ..widgets import common as place
 
-class Hacker():
+class Attacker():
 
     def final(root):
         return
