@@ -1,5 +1,7 @@
 from .context import Context
-from customtkinter import CTk
+from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
+import os
+from tkinter.filedialog import askopenfilename
 
 from ..pages.demo.sprites import Sprites
 from ..pages.demo.saved_map import SavedMap
@@ -26,10 +28,42 @@ class Router:
 
     
     def show(self, next_page: str):
+        self.clear()
         self.pages[next_page](self.context)
         self.current_page = next_page
 
-    def refresh(self):
-        self.show(self.current_page)
 
+    def refresh(self):
+        self.clear()
+        self.show(self.current_page)
+    
+
+    def quit(self):
+        # TODO abort all threads and network activity
+        self.context.root.destroy()
+
+
+    def clear(self):
+        root = self.context.root
+        while len(root.winfo_children()) > 0:
+            root.winfo_children()[0].destroy()
+
+
+    def mode_toggle(self):
+        if get_appearance_mode() == "Dark":
+            set_appearance_mode("Light")
+        else:
+            set_appearance_mode("Dark")
+    
+
+    def select_theme(self):
+
+        file_path = askopenfilename(
+            title="Select a theme file",
+            filetypes=(("json", "*.json"),)
+        )
+        try:
+            ThemeManager.load_theme(file_path)
+        finally:
+            self.refresh()
     
