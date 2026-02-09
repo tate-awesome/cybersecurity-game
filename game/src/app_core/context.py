@@ -9,3 +9,9 @@ class Context:
         self.progress = None
         self.router = router
         self.root = root
+
+    def get_all(self):
+        '''
+        Returns tuple[router, root]
+        '''
+        return self.router, self.root
