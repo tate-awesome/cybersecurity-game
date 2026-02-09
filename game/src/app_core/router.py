@@ -26,6 +26,14 @@ class Router:
             "attacker/v0": AttackerV0
         }
 
+        # Page zoom control
+        self.context.root.bind("<Control-plus>", self.zoom_in)     # Ctrl +
+        self.context.root.bind("<Control-minus>", self.zoom_out)    # Ctrl -
+        self.context.root.bind("<Control-0>", self.zoom_default)     # Ctrl 0
+        # sometimes on some keyboards:
+        self.context.root.bind("<Control-=>", self.zoom_in)         # Ctrl = also works as Ctrl +
+        self.context.root.bind("<Control-_>", self.zoom_out)        # Ctrl _ also works as Ctrl -
+
         self.current_page = start_page
 
         self.show(self.current_page)
@@ -70,4 +78,23 @@ class Router:
             ThemeManager.load_theme(file_path)
         finally:
             self.refresh()
+
+
+    def zoom_in(self, event=None):
+        next_index = self.context.ui_scales.index(int(self.context.ui_scale)) + 1
+        if next_index >= len(self.context.ui_scales):
+            return
+        self.context.ui_scale = float(self.context.ui_scales[next_index])
+        print(self.context.ui_scale)
+
+    def zoom_out(self, event=None):
+        next_index = self.context.ui_scales.index(int(self.context.ui_scale)) - 1
+        if next_index < 0:
+            return
+        self.context.ui_scale = float(self.context.ui_scales[next_index])
+        print(self.context.ui_scale)
+
+    def zoom_default(self, event=None):
+        self.context.ui_scale = 100.0
+        print(self.context.ui_scale)
     
