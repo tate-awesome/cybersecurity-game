@@ -10,6 +10,9 @@ class Context:
         self.router = router
         self.root = root
 
+        self.ui_scale = 100.0
+        self.ui_scales = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 133, 140, 150, 175, 200, 250, 300, 400, 500]
+
     def get_all(self):
         '''
         Returns tuple[router, root]
