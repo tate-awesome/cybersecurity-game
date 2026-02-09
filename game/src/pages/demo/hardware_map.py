@@ -2,6 +2,7 @@
 Unable to test
 '''
 from ...app_core.context import Context
+from customtkinter import CTk
 
 
 class HardwareMap:

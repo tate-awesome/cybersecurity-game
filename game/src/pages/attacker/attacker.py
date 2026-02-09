@@ -1,6 +1,13 @@
-from ..widgets import common as place
+from ...widgets.common import Common as place
+from ...app_core.context import Context
 
-class Attacker():
+class AttackerV0:
 
-    def final(root):
-        return
+    def __init__(self, context: Context):
+        router, root = context.get_all()
+
+        menu = place.menu_bar(root, "Attacker Version 0")
+        place.menu_bar_button(menu, "Quit", router.quit)
+        place.menu_bar_button(menu, "Refresh", router.refresh)
+        place.menu_bar_button(menu, "Toggle Theme", router.mode_toggle)
+        place.menu_bar_button(menu, "Select Theme", router.select_theme)

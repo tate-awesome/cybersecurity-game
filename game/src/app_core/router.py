@@ -9,6 +9,8 @@ from ..pages.demo.boat_motion import BoatMotion
 from ..pages.demo.triangle import Triangle
 from ..pages.demo.hardware_map import HardwareMap
 
+from ..pages.attacker.attacker import AttackerV0
+
 class Router:
 
     def __init__(self, root: CTk, start_page: str):
@@ -19,7 +21,9 @@ class Router:
             "demo/saved_map": SavedMap,
             "demo/boat_motion": BoatMotion,
             "demo/triangle": Triangle,
-            "demo/hardware_map": HardwareMap
+            "demo/hardware_map": HardwareMap,
+
+            "attacker/v0": AttackerV0
         }
 
         self.current_page = start_page
