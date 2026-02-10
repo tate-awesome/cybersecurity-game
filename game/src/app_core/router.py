@@ -70,6 +70,8 @@ class Router:
             set_appearance_mode("Light")
         else:
             set_appearance_mode("Dark")
+        # TODO find a less hacky way to make the sashes update
+        self.refresh()
     
 
     def select_theme(self):
