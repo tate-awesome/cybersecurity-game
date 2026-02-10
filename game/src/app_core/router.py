@@ -30,10 +30,14 @@ class Router:
         self.context.root.bind("<Control-plus>", self.zoom_in)     # Ctrl +
         self.context.root.bind("<Control-minus>", self.zoom_out)    # Ctrl -
         self.context.root.bind("<Control-0>", self.zoom_default)     # Ctrl 0
-        # sometimes on some keyboards:
-        self.context.root.bind("<Control-=>", self.zoom_in)         # Ctrl = also works as Ctrl +
-        self.context.root.bind("<Control-_>", self.zoom_out)        # Ctrl _ also works as Ctrl -
-
+        # Linus key event
+        self.context.root.bind("<Control-equal>", self.zoom_in)         # Ctrl = also works as Ctrl +
+        
+        # Key events
+        # def debug_key(e):
+        #     print(e.keysym, e.state)
+        # self.context.root.bind("<Key>", debug_key)       # Ctrl _ also works as Ctrl -
+        
         self.current_page = start_page
 
         self.show(self.current_page)
