@@ -35,7 +35,7 @@ class Common:
         menu_bar = CTkFrame(parent)
         menu_bar.pack(side="top", padx=self.GAP, pady=(self.GAP, 0), fill="x", anchor="n")
         game_label = CTkLabel(master = menu_bar, text=title, font=med)
-        game_label.pack(side="left", padx=self.GAP, pady=(self.GAP, 0))
+        game_label.pack(fill=Y, side="left", padx=self.GAP)
         return menu_bar
 
     def menu_bar_button(self, parent, text, function=None):
