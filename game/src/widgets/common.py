@@ -49,6 +49,7 @@ class Common:
 
         # Get root color
         root_color = parent.cget("fg_color")
+        print(root_color)
         mode = get_appearance_mode()
         if mode == "Light":
             root_color = root_color[0]
@@ -125,7 +126,7 @@ class Common:
     def form_arp_spoofing(self, parent):
 
         ip_frame = CTkFrame(parent)
-        ip_frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=self.GAP)
+        ip_frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=(self.GAP, 0))
         ip_frame.columnconfigure(0, weight=0)
         ip_frame.columnconfigure(1, weight=1)
         ip_frame.columnconfigure(2, weight=0)
@@ -146,7 +147,26 @@ class Common:
         network_sniffing_btn = CTkButton(ip_frame, text="Start ARP Spoof", font=self.get_font(), command=None)
         network_sniffing_btn.grid(row=3, column=2, sticky="e", pady=self.GAP, padx=self.GAP)
         
-        
+    def form_nmap(self, parent):
+        ip_frame = CTkFrame(parent)
+        ip_frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=(self.GAP, 0))
+        ip_frame.columnconfigure(0, weight=0)
+        ip_frame.columnconfigure(1, weight=1)
+        ip_frame.columnconfigure(2, weight=0)
+
+        ip_frame_header = CTkLabel(ip_frame, text="NMapping", font=self.get_font())
+        ip_frame_header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(self.GAP,0))
+
+        ip_label = CTkLabel(ip_frame, text="Your IP:", font=self.get_font())
+        ip_label.grid(row=1, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+
+        ip_input = CTkEntry(ip_frame, font=self.get_font())
+        ip_input.grid(row=1, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        network_sniffing_btn = CTkButton(ip_frame, text="Map Network", font=self.get_font(), command=None)
+        network_sniffing_btn.grid(row=2, column=2, sticky="e", pady=self.GAP, padx=self.GAP)
+
+        return
 
 
 class tab:

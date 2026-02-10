@@ -18,7 +18,9 @@ class AttackerV0:
 
         left_p, middle_p, right_p = place.trifold(root)
 
+    # NMap widget
+        place.form_nmap(left_p)
+
     # ARP Spoofing widget
         place.form_arp_spoofing(left_p)
 
-    # NMap widget
