@@ -2,45 +2,50 @@ from customtkinter import *
 import tkinter as tk
 # from tkinter import ttk
 
+
 class Common:
 
-    # Styling globals
-    fonts = {}
-    def get_font(name="default"):
-        if name not in Common.fonts:
+    def __init__(self, ui_scale=100.0):
+        self.scale = ui_scale
+
+        self.fonts = {}
+        self.GAP = 10
+        self.PANE_MIN = self.GAP*4
+
+    def get_font(self, name="default"):
+        if name not in self.fonts:
             if name == "default":
-                Common.fonts[name] = CTkFont(family="Arial", size=16)
+                size = int(16.0*self.scale/100.0)
+                self.fonts[name] = CTkFont(family="Arial", size=size)
             elif name == "subtitle":
-                Common.fonts[name] = CTkFont(size=18)
+                size=int(18.0*self.scale/100.0)
+                self.fonts[name] = CTkFont(size=size)
             else:
-                Common.fonts[name] = CTkFont(size=14)
-        return Common.fonts[name]
+                size = int(14.0*self.scale/100.0)
+                self.fonts[name] = CTkFont(size=size)
+        return self.fonts[name]
 
 # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
 
-
-    GAP = 10
-    PANE_MIN = GAP*4
-
     # Menu bar widgets
-    def menu_bar(parent, title):
-        med = Common.get_font()
+    def menu_bar(self, parent, title):
+        med = self.get_font()
         menu_bar = CTkFrame(parent)
-        menu_bar.pack(side="top", padx=Common.GAP, pady=(Common.GAP, 0), fill="x", anchor="n")
+        menu_bar.pack(side="top", padx=self.GAP, pady=(self.GAP, 0), fill="x", anchor="n")
         game_label = CTkLabel(master = menu_bar, text=title, font=med)
-        game_label.pack(side="left", padx=Common.GAP, pady=(Common.GAP, 0))
+        game_label.pack(side="left", padx=self.GAP, pady=(self.GAP, 0))
         return menu_bar
 
-    def menu_bar_button(parent, text, function=None):
-        med = Common.get_font()
+    def menu_bar_button(self, parent, text, function=None):
+        med = self.get_font()
         button = CTkButton(parent, text=text, command=function, font=med)
-        button.pack(side="right", padx=Common.GAP, pady=Common.GAP)
+        button.pack(side="right", padx=self.GAP, pady=self.GAP)
         return button
 
     # Layout frames
-    def trifold(parent):
+    def trifold(self, parent):
 
         # Get root color
         root_color = parent.cget("fg_color")
@@ -51,8 +56,8 @@ class Common:
             root_color = root_color[1]
 
         # Create paned window
-        paned = tk.PanedWindow(parent, orient="horizontal", background=root_color, sashwidth=Common.GAP)
-        paned.pack(fill="both", expand=True, padx=Common.GAP, pady=Common.GAP)
+        paned = tk.PanedWindow(parent, orient="horizontal", background=root_color, sashwidth=self.GAP)
+        paned.pack(fill="both", expand=True, padx=self.GAP, pady=self.GAP)
 
         # Create panes with matching corners and preset widths
         parent.update_idletasks()

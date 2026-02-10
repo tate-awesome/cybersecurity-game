@@ -3,7 +3,7 @@ from ...app_core.context import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
-from ...widgets.common import Common as place
+from ...widgets.common import Common
 from ...network import network_controller
 
 class SavedMap:
@@ -13,6 +13,7 @@ class SavedMap:
         root = self.context.root
         
         # Build page
+        place = Common()
         menu_bar = place.menu_bar(root, "Demo")
         
         attack_button = place.menu_bar_button(menu_bar, "Start Attack")
