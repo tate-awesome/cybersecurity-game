@@ -85,16 +85,16 @@ class Router:
         if next_index >= len(self.context.ui_scales):
             return
         self.context.ui_scale = float(self.context.ui_scales[next_index])
-        print(self.context.ui_scale)
+        self.refresh()
 
     def zoom_out(self, event=None):
         next_index = self.context.ui_scales.index(int(self.context.ui_scale)) - 1
         if next_index < 0:
             return
         self.context.ui_scale = float(self.context.ui_scales[next_index])
-        print(self.context.ui_scale)
+        self.refresh()
 
     def zoom_default(self, event=None):
         self.context.ui_scale = 100.0
-        print(self.context.ui_scale)
+        self.refresh()
     
