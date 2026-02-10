@@ -67,9 +67,9 @@ class Common:
         right = CTkFrame(paned, width=w//4, background_corner_colors=(root_color, root_color, root_color, root_color))
 
         # Add panes
-        paned.add(left, minsize=Common.PANE_MIN)
-        paned.add(middle, minsize=Common.PANE_MIN)
-        paned.add(right, minsize=Common.PANE_MIN)
+        paned.add(left, minsize=self.PANE_MIN)
+        paned.add(middle, minsize=self.PANE_MIN)
+        paned.add(right, minsize=self.PANE_MIN)
         return left, middle, right
 
     def configure_reversible_button(the_button: CTkButton, start_func: callable, stop_func: callable, func_name: str):
@@ -88,28 +88,27 @@ class Common:
         for widget in parent.winfo_children():
             widget.destroy()
 
-class form:
     #       label1  label2  
     #       entry1  entry2  button
     # 
     # 
-    def double_entry(parent, text_1, text_2, button_text):
+    def form_mult_offset(self, parent, text_1, text_2, button_text):
         frame = CTkFrame(parent)
         frame.pack(fill=X)
         
-        label1 = CTkLabel(frame, text=text_1, font=MED_FONT)
+        label1 = CTkLabel(frame, text=text_1, font=self.get_font())
         label1.grid(row=0, column=0, sticky="w", pady=5, padx=10)
 
         entry1 = CTkEntry(frame, width=50)
         entry1.grid(row=1, column=0)
 
-        label2 = CTkLabel(frame, text=text_2, font=MED_FONT)
+        label2 = CTkLabel(frame, text=text_2, font=self.get_font())
         label2.grid(row=0, column=2, sticky="w", pady=5, padx=10)
 
         entry2 = CTkEntry(frame, width=50)
         entry2.grid(row=1, column=2)
 
-        button = CTkButton(frame, text=button_text, font=MED_FONT)
+        button = CTkButton(frame, text=button_text, font=self.get_font())
         button.grid(row=1, column=4)
         def con():
             print("button")
@@ -122,6 +121,32 @@ class form:
         frame.columnconfigure(4, weight=0)
 
         return entry1, entry2, button
+
+    def form_arp_spoofing(self, parent):
+
+        ip_frame = CTkFrame(parent)
+        ip_frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=self.GAP)
+        ip_frame.columnconfigure(0, weight=0)
+        ip_frame.columnconfigure(1, weight=1)
+        ip_frame.columnconfigure(2, weight=0)
+
+        ip_frame_header = CTkLabel(ip_frame, text="ARP Spoofing", font=self.get_font())
+        ip_frame_header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(self.GAP,0))
+
+        system_ip_label = CTkLabel(ip_frame, text="System IP:", font=self.get_font())
+        system_ip_label.grid(row=1, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+        system_ip_input = CTkEntry(ip_frame, font=self.get_font())
+        system_ip_input.grid(row=1, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        controller_ip_label = CTkLabel(ip_frame, text="Controller IP:", font=self.get_font())
+        controller_ip_label.grid(row=2, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+        controller_ip_input = CTkEntry(ip_frame, font=self.get_font())
+        controller_ip_input.grid(row=2, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        network_sniffing_btn = CTkButton(ip_frame, text="Start ARP Spoof", font=self.get_font(), command=None)
+        network_sniffing_btn.grid(row=3, column=2, sticky="e", pady=self.GAP, padx=self.GAP)
+        
+        
 
 
 class tab:
