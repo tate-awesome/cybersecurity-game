@@ -1,7 +1,7 @@
 from ...app_core.context import Context
 
 from ...widgets.style import Style
-from ...widgets import common, forms
+from ...widgets import common, forms, popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
@@ -19,6 +19,7 @@ class AttackerV0:
         common.menu_bar_button(style, menu, "Refresh", router.refresh)
         common.menu_bar_button(style, menu, "Toggle Theme", router.mode_toggle)
         common.menu_bar_button(style, menu, "Select Theme", router.select_theme)
+        common.menu_bar_button(style, menu, "Help", lambda:popup.open(style,root,context.help_message()))
 
     # Page sections
         
