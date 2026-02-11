@@ -43,6 +43,9 @@ class Router:
         # Linus key event
         self.context.root.bind("<Control-equal>", self.zoom_in)         # Ctrl = also works as Ctrl +
         
+        # On close
+        root.protocol("WM_DELETE_WINDOW", self.on_close)
+
         # Key events
         # def debug_key(e):
         #     print(e.keysym, e.state)
@@ -113,4 +116,7 @@ class Router:
     def zoom_default(self, event=None):
         self.context.ui_scale = 100.0
         self.refresh()
+
+    def on_close(self):
+        self.quit()
     
