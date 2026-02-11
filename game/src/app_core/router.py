@@ -11,6 +11,8 @@ from ..pages.demo.hardware_map import HardwareMap
 
 from ..pages.attacker.attacker import AttackerV0
 
+from ..pages.title.title import Title
+
 class Router:
 
     def __init__(self, root: CTk, start_page: str):
@@ -23,7 +25,9 @@ class Router:
             "demo/triangle": Triangle,
             "demo/hardware_map": HardwareMap,
 
-            "attacker/v0": AttackerV0
+            "attacker/v0": AttackerV0,
+
+            "title": Title
         }
 
         # Page zoom control
