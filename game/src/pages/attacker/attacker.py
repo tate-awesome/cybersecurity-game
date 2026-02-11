@@ -1,5 +1,7 @@
-from ...widgets.common import Common
 from ...app_core.context import Context
+
+from ...widgets.style import Style
+from ...widgets import common, forms
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
@@ -7,46 +9,46 @@ from ...drawing.viewport import ViewPort
 class AttackerV0:
 
     def __init__(self, context: Context):
-        router, root = context.get_all()
-        place = Common(context.ui_scale)
+        router = context.router
+        root = context.root
+        style = Style(context.ui_scale)
 
     # Menu bar
-        menu = place.menu_bar(root, "Attacker Version 0")
-        place.menu_bar_button(menu, "Quit", router.quit)
-        place.menu_bar_button(menu, "Refresh", router.refresh)
-        place.menu_bar_button(menu, "Toggle Theme", router.mode_toggle)
-        place.menu_bar_button(menu, "Select Theme", router.select_theme)
+        menu = common.menu_bar(style, root, "Attacker Version 0")
+        common.menu_bar_button(style, menu, "Quit", router.quit)
+        common.menu_bar_button(style, menu, "Refresh", router.refresh)
+        common.menu_bar_button(style, menu, "Toggle Theme", router.mode_toggle)
+        common.menu_bar_button(style, menu, "Select Theme", router.select_theme)
 
     # Page sections
-
-        left_p, middle_p, right_p = place.trifold(root)
-
+        
+        left_p, middle_p, right_p = common.trifold(style, root)
+        
     # NMap widget
-        place.form_nmap(left_p)
+        forms.nmap(style, left_p)
 
     # ARP Spoofing widget
-        place.form_arp_spoofing(left_p)
+        forms.arp(style, left_p)
 
     # Sniffing widget
-        place.form_sniff(left_p)
+        forms.sniff(style, left_p)
 
     # NFQ widget with modifiers
-        place.form_mitm(left_p)
+        forms.mitm(style, left_p)
     # Dos widget
-        place.form_dos(left_p)
-
+        forms.dos(style, left_p)
+        
 
     # Map
-        map_frame = place.map_frame(middle_p)
         from ...drawing import sprites
         self.positions = sprites.random_spline_path(20, 100)
         self.color = "blue"
-        world_map = Map(map_frame, self.draw_test_plane, 100)
+        world_map = Map(style, right_p, self.draw_test_plane, 100)
 
 
 
 
-    # Map
+    # Map callback
     def draw_test_plane(self, canvas, draw_lock, scale: float, offset: tuple[float, float]):
         import time
         from ...drawing import transformations as t
