@@ -2,6 +2,7 @@ from ...app_core.context import Context
 from ...drawing.viewport import ViewPort
 from ...drawing import sprites
 from ...widgets.map import Map
+from ...widgets.style import Style
 
 from threading import Lock
 from customtkinter import CTkCanvas
@@ -30,8 +31,8 @@ class BoatMotion:
         self.color = random_visible_color()
 
         
-
-        map = Map(self.context.root, self.frame_callback, 100, 20)
+        style = Style(context.ui_scale)
+        map = Map(style, self.context.root, self.frame_callback, 100, 20)
 
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         import time
