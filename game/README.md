@@ -21,3 +21,25 @@ tabbed right panel
     widgets for modifying values
     widgets for advanced hacking
 
+Bottom:
+    Net tab: master, slave, you, packet dings, pps metrics
+
+Map additions:
+    Rudder, speed, x, y, t metrics
+    
+
+Nmap
+arp
+sniff: show all, learn to filter, learn conversion
+dos
+mitm (nfq) with mod values: show modbus
+
+
+right side
+
+console with level of detail options
+pkt show, summary, pretty print
+
+
+net visual
+show connections, pps
