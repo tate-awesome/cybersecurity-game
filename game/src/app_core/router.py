@@ -12,6 +12,8 @@ from ..pages.demo.hardware_map import HardwareMap
 from ..pages.attacker.attacker import AttackerV0
 
 from ..pages.title.title import Title
+from ..pages.title.select_mode import SelectMode
+from ..pages.title.select_demo import SelectDemo
 
 class Router:
 
@@ -19,15 +21,19 @@ class Router:
         self.context = Context(root, self)
 
         self.pages = {
-            "demo/sprites": Sprites,
-            "demo/saved_map": SavedMap,
-            "demo/boat_motion": BoatMotion,
-            "demo/triangle": Triangle,
-            "demo/hardware_map": HardwareMap,
 
-            "attacker/v0": AttackerV0,
+            "title": Title,
+            "title/title": Title,
+            "title/select_mode": SelectMode,
+                "attacker/v0": AttackerV0,
 
-            "title": Title
+
+            "title/select_demo": SelectDemo,
+                "demo/sprites": Sprites,
+                "demo/saved_map": SavedMap,
+                "demo/boat_motion": BoatMotion,
+                "demo/triangle": Triangle,
+                "demo/hardware_map": HardwareMap,
         }
 
         # Page zoom control
