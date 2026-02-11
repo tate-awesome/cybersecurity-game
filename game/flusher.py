@@ -1,36 +1,44 @@
 import os
 import time
 
+scripts = {
+    "python": [
+        "sudo pkill -f netfilterqueue",
+        "sudo pkill -f scapy"
+    ],
+    "iptables": [
+        "sudo iptables -F",
+        "sudo iptables -X",
+        "sudo iptables -t nat -F",
+        "sudo iptables -t nat -X",
+        "sudo iptables -t mangle -F",
+        "sudo iptables -t mangle -X"
+    ],
+    "policies": [
+        "sudo iptables -P INPUT ACCEPT",
+        "sudo iptables -P FORWARD ACCEPT",
+        "sudo iptables -P OUTPUT ACCEPT"
+    ],
+    "arp": [
+        "sudo ip neigh flush all"
+    ],
+    "network_manager": [
+        "sudo systemctl restart NetworkManager"
+    ],
+}
+
 def run(cmd):
     print(f"\n▶ {cmd}")
     os.system(cmd)
 
-print("\n=== Network Reset Script Starting ===\n")
+def flush_all():
+    for key in scripts:
+        flush(key)
 
-# 1. Kill leftover python / scapy / nfq processes
-run("sudo pkill -f netfilterqueue")
-run("sudo pkill -f scapy")
+def flush(key: str):
+    for script in scripts[key]:
+        run(script)
 
-# 2. Flush iptables (all tables)
-run("sudo iptables -F")
-run("sudo iptables -X")
-run("sudo iptables -t nat -F")
-run("sudo iptables -t nat -X")
-run("sudo iptables -t mangle -F")
-run("sudo iptables -t mangle -X")
 
-# 3. Reset default policies
-run("sudo iptables -P INPUT ACCEPT")
-run("sudo iptables -P FORWARD ACCEPT")
-run("sudo iptables -P OUTPUT ACCEPT")
-
-# 4. Clear ARP cache
-run("sudo ip neigh flush all")
-
-# 5. Restart NetworkManager
-run("sudo systemctl restart NetworkManager")
-
-print("\n=== Network Reset Complete ===\n")
-
-# 6. Kill python
-run("sudo pkill -f python3")
+if __name__ == "__main__":
+    flush_all()
