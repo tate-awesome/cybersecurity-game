@@ -17,8 +17,8 @@ class Style:
             if name == "default":
                 size = int(16.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(family="Arial", size=size)
-            elif name == "subtitle":
-                size=int(18.0*self.scale/100.0)
+            elif name == "title_btn":
+                size=int(20.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
             else:
                 size = int(14.0*self.scale/100.0)
