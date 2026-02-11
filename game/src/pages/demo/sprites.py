@@ -1,4 +1,5 @@
 from ...widgets.map import Map
+from ...widgets.style import Style
 from ...app_core.context import Context
 from customtkinter import CTkCanvas
 from threading import Lock
@@ -7,8 +8,8 @@ from ...drawing.viewport import ViewPort
 
 class Sprites:
     def __init__(self, context: Context):
-
-        world_map = Map(context.root, self.frame_callback, 100)
+        style = Style(context.ui_scale)
+        world_map = Map(style, context.root, self.frame_callback, 100)
 
     
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
