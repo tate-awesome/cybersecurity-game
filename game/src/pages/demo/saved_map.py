@@ -3,7 +3,8 @@ from ...app_core.context import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
-from ...widgets.common import Common
+from ...widgets import common
+from ...widgets.style import Style
 from ...network import network_controller
 
 class SavedMap:
@@ -13,15 +14,15 @@ class SavedMap:
         root = self.context.root
         
         # Build page
-        place = Common()
-        menu_bar = place.menu_bar(root, "Demo")
+        style = Style(context.ui_scale)
+        menu_bar = common.menu_bar(style, root, "Demo")
         
-        attack_button = place.menu_bar_button(menu_bar, "Start Attack")
-        place.configure_reversible_button(attack_button, self.start_attack, self.stop_attack, "Attack")
+        attack_button = common.menu_bar_button(style, menu_bar, "Start Attack")
+        common.configure_reversible_button(attack_button, self.start_attack, self.stop_attack, "Attack")
 
-        left, middle, right = place.trifold(root)
+        left, middle, right = common.trifold(style, root)
 
-        map = Map(middle, self.draw_full_map, 100, 20)
+        map = Map(style, middle, self.draw_full_map, 100, 20)
 
 
     def start_attack(self):
