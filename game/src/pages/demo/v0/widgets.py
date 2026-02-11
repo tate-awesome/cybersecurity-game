@@ -1,16 +1,16 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import scrolledtext
-import network
+from . import network
 import math
 import copy
 import random
-import network
 from customtkinter import *
 import csv
 import time
 import json
 import re
+from tkinter import filedialog
 
 global simplify_data
 simplify_data = False
@@ -304,9 +304,18 @@ class Window:
             return
         animate_nmap(0)
     
+
     def generate_nmap(self):
-        print(os.getcwd())
-        text = self.read_csv_to_rows("Tate Files/Demo Game Files/nmap.csv")
+        file_path = filedialog.askopenfilename(
+            title="Select Nmap CSV File",
+            filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")]
+        )
+
+        if not file_path:
+            return None  # user canceled
+
+        print("Selected file:", file_path)
+        text = self.read_csv_to_rows(file_path)
         return text
     
     def read_csv_to_rows(self, path: str, encoding: str = "utf-8", has_header: bool = True):
