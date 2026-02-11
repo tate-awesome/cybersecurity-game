@@ -18,3 +18,7 @@ class Context:
         Returns tuple[router, root]
         '''
         return self.router, self.root
+
+    def help_message(self, widget="root"):
+        # TODO get help from progress and current page and source widget
+        return "You need to do something"
