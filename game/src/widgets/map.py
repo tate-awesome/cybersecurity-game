@@ -6,6 +6,7 @@ from customtkinter import CTkCanvas
 from customtkinter import CTkBaseClass
 from threading import Lock
 from typing import Callable
+from .style import Style
 
 class Map:
 
@@ -69,7 +70,7 @@ class Map:
         self.reset_scale()
         self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
-    def __init__(self, parent: CTkBaseClass, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
+    def __init__(self, style: Style, parent: CTkBaseClass, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
         # zoom/pan persistent values
         self.scale = 1.0
         self.offset = [0.0, 0.0]
@@ -88,7 +89,7 @@ class Map:
 
         # Create canvas
         self.canvas = CTkCanvas(parent)
-        self.canvas.pack(fill="both", expand=True)
+        self.canvas.pack(side="top", fill="both", expand=True, pady=style.GAP, padx=style.GAP)
 
         # Bind events
         self.parent.bind("<Configure>", self.resize)
