@@ -21,6 +21,12 @@ class ViewPort:
 
     def ocean(self):
         self.background("#003459")
+    
+    def bbox(self):
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
+        o = 3
+        self.canvas.create_rectangle(0,0,w-o/2,h-o/2,fill="",outline="black", width=o)
 
     def test_triangle(self):
         '''
