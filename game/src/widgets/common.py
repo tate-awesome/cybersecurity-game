@@ -168,6 +168,79 @@ class Common:
 
         return
 
+    def form_sniff(self, parent):
+        frame = CTkFrame(parent)
+        frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=(self.GAP, 0))
+        frame.columnconfigure(0, weight=0)
+        frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=0)
+
+        label = CTkLabel(frame, text="Traffic Sniffing", font=self.get_font())
+        label.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(self.GAP,0))
+
+        e_label = CTkLabel(frame, text="IP Address:", font=self.get_font())
+        e_label.grid(row=1, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+
+        entry = CTkEntry(frame, font=self.get_font())
+        entry.grid(row=1, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        e_label2 = CTkLabel(frame, text="IP Address:", font=self.get_font())
+        e_label2.grid(row=2, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+
+        entry2 = CTkEntry(frame, font=self.get_font())
+        entry2.grid(row=2, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        button = CTkButton(frame, text="Start sniffing", font=self.get_font(), command=None)
+        button.grid(row=3, column=2, sticky="e", pady=self.GAP, padx=self.GAP)
+
+        return
+
+    def form_dos(self, parent):
+        ip_frame = CTkFrame(parent)
+        ip_frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=(self.GAP, 0))
+        ip_frame.columnconfigure(0, weight=0)
+        ip_frame.columnconfigure(1, weight=1)
+        ip_frame.columnconfigure(2, weight=0)
+
+        ip_frame_header = CTkLabel(ip_frame, text="Denial of Service", font=self.get_font())
+        ip_frame_header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(self.GAP,0))
+
+        ip_label = CTkLabel(ip_frame, text="Packets per second:", font=self.get_font())
+        ip_label.grid(row=1, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+
+        ip_input = CTkEntry(ip_frame, font=self.get_font())
+        ip_input.grid(row=1, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        network_sniffing_btn = CTkButton(ip_frame, text="Start DoS", font=self.get_font(), command=None)
+        network_sniffing_btn.grid(row=2, column=2, sticky="e", pady=self.GAP, padx=self.GAP)
+
+        return
+
+    def form_mitm(self, parent):
+        ip_frame = CTkFrame(parent)
+        ip_frame.pack(side="top", fill="x", expand=False, padx=self.GAP, pady=(self.GAP, 0))
+        ip_frame.columnconfigure(0, weight=0)
+        ip_frame.columnconfigure(1, weight=1)
+        ip_frame.columnconfigure(2, weight=0)
+
+        ip_frame_header = CTkLabel(ip_frame, text="Denial of Service", font=self.get_font())
+        ip_frame_header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(self.GAP,0))
+
+        ip_label = CTkLabel(ip_frame, text="Packets per second:", font=self.get_font())
+        ip_label.grid(row=1, column=1, sticky="w", pady=(self.GAP,0), padx=self.GAP)
+
+        ip_input = CTkEntry(ip_frame, font=self.get_font())
+        ip_input.grid(row=1, column=2, sticky="e", pady=(self.GAP,0), padx=self.GAP)
+
+        network_sniffing_btn = CTkButton(ip_frame, text="Start DoS", font=self.get_font(), command=None)
+        network_sniffing_btn.grid(row=2, column=2, sticky="e", pady=self.GAP, padx=self.GAP)
+
+        return
+
+    def map_frame(self, parent):
+        frame = CTkFrame(parent)
+        frame.pack(side="top", fill=BOTH, expand=TRUE, pady=(self.GAP, 0), padx=self.GAP)
+        return frame
 
 class tab:
     def container(parent):
