@@ -240,19 +240,46 @@ class Common:
     def map_frame(self, parent):
         frame = CTkFrame(parent)
         frame.pack(side="top", fill=BOTH, expand=TRUE, pady=(self.GAP, 0), padx=self.GAP)
-        return frame
+        return frame       
+
+    def open_popup(self, master, message):
+        popup = self.ctk.CTkToplevel(master)
+        popup.title("Help")
+        popup.config(padx=10, pady=7)
+
+        # Center to app
+        width = 500
+        height = 300
+        root_x = master.winfo_rootx()
+        root_y = master.winfo_rooty()
+        win_x = root_x + master.winfo_width()/2 - width/2
+        win_y = root_y + master.winfo_height()/2 - height/2
+
+        popup.geometry(f"{width}x{height}+{int(win_x)}+{int(win_y)}")
+
+        # Geometry
+
+        # Add widgets to the popup
+        frame = CTkFrame(popup)
+        frame.pack(fill="both", side="top", padx=10, pady=7)
+
+        label = CTkLabel(frame, text=message, font=self.MED_FONT)
+        label.pack(pady=20, padx=10)
+
+        close_button = CTkButton(frame, text="Dismiss", command=popup.destroy, font=self.MED_FONT)
+        close_button.pack(pady=10, side="bottom")
+
+        popup.grab_set()      # block interactions with main window
+        popup.focus_force()   # force focus to the popup
 
 
-
-
-class main_menu:
     def buttons_wrapper(parent):
         wrapper = CTkFrame(parent, fg_color="transparent")
         wrapper.grid(row=2, column=1)
         return wrapper
 
-    def button(parent, text, function):
-        button = CTkButton(parent, text=text, width=280, height=50, command=function, font=LARGE_FONT)
+    def button(self, parent, text, function):
+        button = CTkButton(parent, text=text, width=280, height=50, command=function, font=self.LARGE_FONT)
         button.pack(pady=10)
         return button
 
@@ -286,4 +313,3 @@ class main_menu:
         main_menu_frame = CTkFrame(parent)
         main_menu_frame.pack(fill="both", expand=True)
         return main_menu_frame
-        
