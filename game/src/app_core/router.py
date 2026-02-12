@@ -1,6 +1,5 @@
 from .context import Context
 from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
-import os
 from tkinter.filedialog import askopenfilename
 
 from ..pages.demo.sprites import Sprites
@@ -15,18 +14,22 @@ from ..pages.title.title import Title
 from ..pages.title.select_mode import SelectMode
 from ..pages.title.select_demo import SelectDemo
 
+from .keybinds import KeyBinds
+
 class Router:
 
     def __init__(self, root: CTk, start_page: str):
         self.context = Context(root, self)
+        KeyBinds(root, self.context, self.refresh, self.quit)
+        self.show(start_page)
 
-        self.pages = {
+
+    pages = {
 
             "title": Title,
             "title/title": Title,
             "title/select_mode": SelectMode,
                 "attacker/v0": AttackerV0,
-
 
             "title/select_demo": SelectDemo,
                 "demo/sprites": Sprites,
@@ -35,27 +38,8 @@ class Router:
                 "demo/triangle": Triangle,
                 "demo/hardware_map": HardwareMap,
         }
-
-        # Page zoom control
-        self.context.root.bind("<Control-plus>", self.zoom_in)     # Ctrl +
-        self.context.root.bind("<Control-minus>", self.zoom_out)    # Ctrl -
-        self.context.root.bind("<Control-0>", self.zoom_default)     # Ctrl 0
-        # Linus key event
-        self.context.root.bind("<Control-equal>", self.zoom_in)         # Ctrl = also works as Ctrl +
-        
-        # On close
-        root.protocol("WM_DELETE_WINDOW", self.on_close)
-
-        # Key events
-        # def debug_key(e):
-        #     print(e.keysym, e.state)
-        # self.context.root.bind("<Key>", debug_key)       # Ctrl _ also works as Ctrl -
-        
-        self.current_page = start_page
-
-        self.show(self.current_page)
-
     
+
     def show(self, next_page: str):
         self.clear()
         self.pages[next_page](self.context)
@@ -97,26 +81,4 @@ class Router:
             ThemeManager.load_theme(file_path)
         finally:
             self.refresh()
-
-
-    def zoom_in(self, event=None):
-        next_index = self.context.ui_scales.index(int(self.context.ui_scale)) + 1
-        if next_index >= len(self.context.ui_scales):
-            return
-        self.context.ui_scale = float(self.context.ui_scales[next_index])
-        self.refresh()
-
-    def zoom_out(self, event=None):
-        next_index = self.context.ui_scales.index(int(self.context.ui_scale)) - 1
-        if next_index < 0:
-            return
-        self.context.ui_scale = float(self.context.ui_scales[next_index])
-        self.refresh()
-
-    def zoom_default(self, event=None):
-        self.context.ui_scale = 100.0
-        self.refresh()
-
-    def on_close(self):
-        self.quit()
     
