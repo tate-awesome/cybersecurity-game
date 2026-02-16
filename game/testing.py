@@ -1,4 +1,4 @@
-from src.network.hardware import arp_spoofing, sniffing, net_filter_queue
+from src.network.hardware import arp_spoofing, sniffing, net_filter_queue, nmap
 from src.network import packet_buffer, network_controller, modbus_util, mod_table
 import time
 
@@ -185,22 +185,22 @@ class experiments:
 
 
     def nmap():
-        nmapping.print_hosts(nmapping.get_local_ip())
+        nmap.print_hosts(nmap.get_local_ip())
 
-        print(f"\nYour IP: {nmapping.get_local_ip()}")
+        print(f"\nYour IP: {nmap.get_local_ip()}")
 
 
-        ips = nmapping.get_host_ips(nmapping.get_local_ip())
+        ips = nmap.get_host_ips(nmap.get_local_ip())
         
         print("\nLocal devices found:\n","\n".join(ips),"\n\n")
 
-        devices = nmapping.get_hosts(nmapping.get_local_ip())
+        devices = nmap.get_hosts(nmap.get_local_ip())
 
         print("Device Information")
 
-        nmapping.print_host_info(devices)
+        nmap.print_host_info(devices)
         
-        device_info = nmapping.get_host_info(devices)
+        device_info = nmap.get_host_info(devices)
         
 
         

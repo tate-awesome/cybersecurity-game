@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .hardware import arp_spoofing, sniffing, net_filter_queue
+from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap
 from .virtual import master, slave
 from .saved import loader
 from . import packet_buffer, mod_table
@@ -27,6 +27,7 @@ class Network(ABC):
 class HardwareNetwork(Network):
     def __init__(self):
         self.arp_spoofer = arp_spoofing.ArpSpoofer()
+        self.nmap = nmap
         self.buffer = packet_buffer.PacketBuffer()
         self.table = mod_table.ModTable()
         self.nfq = net_filter_queue.NetFilterQueue(self.buffer, self.table)
