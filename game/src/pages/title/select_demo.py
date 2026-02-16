@@ -14,7 +14,7 @@ class SelectDemo:
         title.title(root, "Select Demo")
         bw = title.buttons_wrapper(root)
         title.button(style, bw, "Boat Motion", lambda:router.show("demo/boat_motion"))
-        title.button(style, bw, "Hardware Map (TODO)", lambda:router.show("demo/hardware_map"))
+        title.button(style, bw, "Hardware Map", lambda:router.show("demo/hardware_map"))
         title.button(style, bw, "Saved Map", lambda:router.show("demo/saved_map"))
         title.button(style, bw, "Sprites", lambda:router.show("demo/sprites"))
         title.button(style, bw, "Triangle", lambda:router.show("demo/triangle"))
