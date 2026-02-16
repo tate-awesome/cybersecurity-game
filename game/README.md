@@ -43,3 +43,5 @@ pkt show, summary, pretty print
 
 net visual
 show connections, pps
+
+path gaps & inferences when there's a break in communication
