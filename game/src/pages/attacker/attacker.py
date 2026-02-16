@@ -5,6 +5,8 @@ from ...widgets import common, forms, popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
+from ...network.network_controller import HardwareNetwork
+
 
 class AttackerV0:
 
@@ -12,6 +14,8 @@ class AttackerV0:
         router = context.router
         root = context.root
         style = Style(context.ui_scale)
+        net = HardwareNetwork()
+        context.net = net
 
     # Menu bar
         menu = common.menu_bar(style, root, "Attacker Version 0")
@@ -25,8 +29,17 @@ class AttackerV0:
 
         left_p, middle_p, right_p = common.trifold(style, root)
 
-    # NMap widget
-        forms.nmap(style, left_p)
+        nmap = forms.NMap(style, left_p)
+        def do_nmap():
+            nmap.status.configure(text="Pinging...")
+            root.update_idletasks()
+            ip, netmask = net.nmap.get_network()
+            network = net.nmap.compute_network(ip, netmask)
+            hosts = net.nmap.get_hosts(network)
+            host_ips = net.nmap.get_host_ips(hosts)
+            print(host_ips)
+            nmap.status.configure(text="NMap Complete")
+        forms.bind(do_nmap, nmap.button)
 
     # ARP Spoofing widget
         forms.arp(style, left_p)
