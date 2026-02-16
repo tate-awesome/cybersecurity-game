@@ -4,9 +4,13 @@ Module
 import scapy.all as scapy
 from scapy.all import IP, ICMP, sr1
 import ipaddress, netifaces
+import threading
 
 
 def get_network() -> tuple[str, str]:
+    '''
+    Returns your ip and the netmask
+    '''
     iface = "wlp0s20f3"
     info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
 
@@ -21,6 +25,10 @@ def compute_network(ip: str, netmask: str) -> str:
 
 
 def get_hosts(network: str, iface="wlp0s20f3"):
+    '''
+    Returns: list[tuple[ip: str, mac: str]]
+    May block for up to 2 seconds.
+    '''
     network = str(network)
     packet = scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(pdst=network)
     answered, _ = scapy.srp(packet, timeout=2, verbose=False)
