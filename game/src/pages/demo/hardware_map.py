@@ -1,16 +1,15 @@
-# TODO convert common object to style object and common module
-
-'''
-Unable to test
-'''
+from ...network import network_controller
+from ...drawing.viewport import ViewPort
+from ...widgets.map import Map
+from ...widgets import common as place
+from ...widgets.style import Style
 from ...app_core.context import Context
-from customtkinter import CTk
 
 
 class HardwareMap:
     def __init__(self, context: Context):
-        return
-def net_map(root: CTk):
+        router, root = context.get_all()
+        frame_ms = 100
 
         # Create and define network control
         net = network_controller.HardwareNetwork()
@@ -23,7 +22,7 @@ def net_map(root: CTk):
             net.stop_nfq()
             net.stop_arp()
 
-        def draw_full_map(canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
+        def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
             positions = net.buffer.get_all_positions("in")
             bearing = net.buffer.get_last_tuple("theta", "in")
             draw = ViewPort(canvas, scale, offset)
@@ -31,23 +30,24 @@ def net_map(root: CTk):
                 canvas.delete("all")
                 draw.grid_lines()
                 if len(positions) < 1: return
-                draw.poly_line(positions, "white")
+                draw.line(positions, "white")
                 if bearing is None: return
                 bearing = bearing[0]
                 last_position = positions[-1]
                 draw.boat(last_position, bearing, "white", "black")
         
         # Build page
-        menu_bar = place.menu_bar(root, "Demo")
+        style = Style(context.ui_scale)
+        menu_bar = place.menu_bar(style, root, "Demo")
         
-        no_button = place.menu_bar_button(menu_bar, "Start Printing")
+        no_button = place.menu_bar_button(style, menu_bar, "Start Printing")
         place.configure_reversible_button(no_button, lambda:print("start"), lambda:print("stop"), "Printing")
         
-        attack_button = place.menu_bar_button(menu_bar, "Start Attack")
+        attack_button = place.menu_bar_button(style, menu_bar, "Start Attack")
         place.configure_reversible_button(attack_button, start_attack, stop_attack, "Attack")
 
-        left, middle, right = place.trifold(root)
+        left, middle, right = place.trifold(style, root)
 
-        map = Map(middle, draw_full_map, 100, 20)
+        map = Map(style, middle, draw_full_map, frame_ms, 20)
 
         return
