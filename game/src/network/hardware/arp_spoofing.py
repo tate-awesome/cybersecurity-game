@@ -50,9 +50,7 @@ def restore(destination_ip, source_ip):
 
 class ArpSpoofer:
 
-    def __init__(self, target_ip='192.168.8.137', host_ip='192.168.8.243', verbose=False, interval=1.0):
-        self.target_ip = target_ip
-        self.host_ip = host_ip
+    def __init__(self, verbose=False, interval=1.0):
         self.verbose = verbose
         self.interval = interval
 
@@ -75,7 +73,7 @@ class ArpSpoofer:
         self.timer.start()
 
 
-    def start(self, verbose=None):
+    def start(self, target_ip='192.168.8.137', host_ip='192.168.8.243', verbose=None):
         if verbose is not None:
             self.verbose = verbose
 
@@ -87,6 +85,9 @@ class ArpSpoofer:
             return
         
         print("Starting ARP Spoof")
+
+        self.target_ip = target_ip
+        self.host_ip = host_ip
 
         self.running = True
 

@@ -22,9 +22,9 @@ class AttackerV0:
         common.menu_bar_button(style, menu, "Help", lambda:popup.open(style,root,context.help_message()))
 
     # Page sections
-        
+
         left_p, middle_p, right_p = common.trifold(style, root)
-        
+
     # NMap widget
         forms.nmap(style, left_p)
 
@@ -38,7 +38,7 @@ class AttackerV0:
         forms.mitm(style, left_p)
     # Dos widget
         forms.dos(style, left_p)
-        
+
 
     # Map
         from ...drawing import sprites
