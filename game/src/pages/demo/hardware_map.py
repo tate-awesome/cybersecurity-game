@@ -15,7 +15,7 @@ class HardwareMap:
         net = network_controller.HardwareNetwork()
 
         def start_attack():
-            net.start_arp()
+            net.start_arp(target_ip='192.168.8.137', host_ip='192.168.8.243')
             net.start_nfq()
 
         def stop_attack():

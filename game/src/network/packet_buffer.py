@@ -6,6 +6,9 @@ from . import modbus_util as modbus
 
 
 class PacketBuffer:
+    '''
+    Provides packet data to the GUI from an NFQ or Sniffer.
+    '''
     def __init__(self, max_size = 5000):
         self.max_size = max_size
         self.number = 1

@@ -6,7 +6,7 @@ from . import packet_buffer, mod_table
 
 class Network(ABC):
     @abstractmethod
-    def start_arp(self):...
+    def start_arp(self, target_ip, host_ip):...
 
     @abstractmethod
     def stop_arp(self):...
@@ -32,8 +32,9 @@ class HardwareNetwork(Network):
         self.nfq = net_filter_queue.NetFilterQueue(self.buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.buffer)
 
-    def start_arp(self):
-        self.arp_spoofer.start()
+    def start_arp(self, target_ip, host_ip):
+        # target_ip='192.168.8.137', host_ip='192.168.8.243'
+        self.arp_spoofer.start(target_ip, host_ip)
 
     def stop_arp(self):
         self.arp_spoofer.stop()
@@ -64,7 +65,7 @@ class SavedNetwork(Network):
         self.buffer = packet_buffer.PacketBuffer()
         self.table = mod_table.ModTable()
 
-    def start_arp(self):
+    def start_arp(self, target_ip, host_ip):
         # Becomes file picker "how to enter the network"
         self.file = loader.Loader(self.buffer, self.table)
 

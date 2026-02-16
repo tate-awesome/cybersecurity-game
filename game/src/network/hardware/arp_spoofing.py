@@ -73,7 +73,8 @@ class ArpSpoofer:
         self.timer.start()
 
 
-    def start(self, target_ip='192.168.8.137', host_ip='192.168.8.243', verbose=None):
+    def start(self, target_ip, host_ip, verbose=None):
+        # target_ip='192.168.8.137', host_ip='192.168.8.243'
         if verbose is not None:
             self.verbose = verbose
 
