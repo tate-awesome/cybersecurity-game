@@ -24,7 +24,7 @@ class HardwareMap:
 
         def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
             positions = net.buffer.get_all_positions("in")
-            bearing = net.buffer.get_last_tuple("theta", "in")
+            bearing = net.buffer.get_last_bearing("in")
             draw = ViewPort(canvas, scale, offset)
             with draw_lock:
                 canvas.delete("all")
@@ -32,7 +32,6 @@ class HardwareMap:
                 if len(positions) < 1: return
                 draw.line(positions, "white")
                 if bearing is None: return
-                bearing = bearing[0]
                 last_position = positions[-1]
                 draw.boat(last_position, bearing, "white", "black")
         

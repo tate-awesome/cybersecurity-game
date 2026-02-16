@@ -162,6 +162,14 @@ class PacketBuffer:
 
         return values
 
+    def get_last_bearing(self, dir: str, convert=True):
+        bearing = self.get_last_tuple("theta", dir)
+        if bearing is None:
+            return None
+        if convert:
+            return bearing[0] * self.factors["theta"]
+        else:
+            return bearing[0]
 
     def get_all_positions(self, dir: str, convert=True, flatten=False):
         '''
