@@ -144,31 +144,31 @@ class ARP:
 
 
 class Sniff:
-    def __init__(self, style: Style, parent):
+    def __init__(self, style: Style, parent, options: list[str]):
         frame = CTkFrame(parent)
         frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
         frame.columnconfigure(0, weight=0)
         frame.columnconfigure(1, weight=1)
         frame.columnconfigure(2, weight=0)
+        self.frame = frame
 
-        label = CTkLabel(frame, text="Traffic Sniffing", font=style.get_font())
-        label.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
+        header = CTkLabel(frame, text="Traffic Sniffing", font=style.get_font())
+        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
+        self.header = header
 
-        e_label = CTkLabel(frame, text="IP Address:", font=style.get_font())
-        e_label.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        label = CTkLabel(frame, text="Packet Handler:", font=style.get_font())
+        label.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.label = label
 
-        entry = CTkEntry(frame, font=style.get_font())
-        entry.grid(row=1, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
-
-        e_label2 = CTkLabel(frame, text="IP Address:", font=style.get_font())
-        e_label2.grid(row=2, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
-
-        entry2 = CTkEntry(frame, font=style.get_font())
-        entry2.grid(row=2, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        option = CTkOptionMenu(frame, font=style.get_font(), values=options)
+        option.grid(row=1, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        self.option = option
 
         button = CTkButton(frame, text="Start sniffing", font=style.get_font(), command=None)
-        button.grid(row=3, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        button.grid(row=2, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        self.button = button
 
+        self.options = [option]
 
 def mult_offset(style: Style, parent, text_1, text_2, button_text):
     frame = CTkFrame(parent)

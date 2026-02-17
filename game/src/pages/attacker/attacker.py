@@ -71,10 +71,17 @@ class AttackerV0:
         forms.load_saved_entries(arp.entries, context.inputs["arp"])
         forms.bind_entries_autosave(arp.entries, context.inputs["arp"])
 
-
-
-    # Sniffing widget
-        forms.sniff(style, left_p)
+    # Sniffing Widget
+        sniff_options = {
+            "Print full packets": "show_all",
+            "Send all packets to buffer": "buffer_all",
+            "Print full modbus packets": "show_modbus",
+            "Print readable modbus data": "print_modbus",
+            "Send modbus packets to buffer": "buffer_modbus"
+        }
+        sniff = forms.Sniff(style, left_p, list(sniff_options.keys()))
+        forms.load_saved_options(sniff.options, context.inputs["sniff"])
+        forms.bind_options_autosave(sniff.options, context.inputs["sniff"])
 
     # NFQ widget with modifiers
         forms.mitm(style, left_p)
