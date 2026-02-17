@@ -238,7 +238,7 @@ def modify_coord(pkt, table: ModTable):
         var = "theta"
 
     z = mbl.payload.registerValue
-    mult = table.get(var, "offset")
+    mult = table.get(var, "mult")
     offset = table.get(var, "offset")
     mbl.payload.registerValue = int(z * mult + offset)
     return pkt
