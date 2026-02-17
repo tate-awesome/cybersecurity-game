@@ -59,7 +59,7 @@ class PacketBuffer:
                     "lock": Lock()
                 }
     
-    def add_callback(self, func: Callable[[Packet, float, int, str, str, str], None]):
+    def add_callback(self, name: str, func: Callable[[Packet, float, int, str, str, str], None]):
         '''
         Add a callback to be executed after the packet is placed in the buffer.
 
@@ -68,7 +68,7 @@ class PacketBuffer:
         If the packet isn't modbus, the variable and value default to "None"
 
         '''
-        self.packet_callbacks.append(func)
+        self.packet_callbacks[name] = func
 
     def remove_callback(self, name: str):
         self.packet_callbacks.pop(name, None)
