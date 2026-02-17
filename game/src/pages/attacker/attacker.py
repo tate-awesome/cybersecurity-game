@@ -66,6 +66,9 @@ class AttackerV0:
         start_on = net.arp_is_running()
         forms.bind_reversible(arp, start_arp, stop_arp, "ARP Spoof", start_on)
 
+        forms.load_saved(arp.entries, context.entries["arp"])
+        forms.bind_autosave(arp.entries, context.entries["arp"])
+
 
 
     # Sniffing widget

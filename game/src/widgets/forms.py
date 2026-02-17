@@ -49,6 +49,18 @@ def bind_reversible(widget, start_func: callable, stop_func: callable, func_name
     for entry in entries:
         entry.bind("<Return>", event_callback)
 
+def bind_autosave(entries: list[CTkEntry], save_slots: list[str]):
+    for entry, slot_index in zip(entries, range(len(save_slots))):
+        def autosave(event=None, e=entry, idx=slot_index):
+            save_slots[idx] = e.get()
+            print(e.get())
+        entry.bind("<KeyRelease>", autosave)
+
+def load_saved(entries: list[CTkEntry], save_slots: list[str]):
+    for i in range(len(entries)):
+        entries[i].delete(0, "end")
+        entries[i].insert(0, save_slots[i])
+
 
 class NMap:
     def __init__(self, style: Style, parent):
