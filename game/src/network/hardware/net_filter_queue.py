@@ -19,12 +19,25 @@ class NetFilterQueue:
         self.buffer = buffer
         self.table = mod_table
 
+    def is_running(self):
+        return self.stop_event is not None or self.thread is not None or self.callback is not None
 
-    def start(self, _callback: callable): 
-        if self.stop_event is not None or self.thread is not None or self.callback is not None:
+
+    def start(self, callback_name: str): 
+        if self.is_running():
             print("NFQ already running")
             return
-        self.callback = _callback
+        callback_dict = {
+            "none_accept": self.accept_only,
+            "print_accept": self.print_and_accept,
+            "show_accept": self.show_and_accept,
+            "buffer_accept": self.buffer_and_accept,
+            
+            "none_modify": None,
+            "print_modify": self.print_and_modify,
+            "buffer_modify": self.buffer_and_modify
+        }
+        self.callback = callback_dict[callback_name]
         self.stop_event = threading.Event()
 
         self.thread = threading.Thread(target=self._start, daemon=True)

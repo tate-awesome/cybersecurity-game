@@ -121,32 +121,33 @@ class ARP:
         self.button = button
 
         self.entries = [entry1, entry2]
-        
 
-def sniff(style: Style, parent):
-    frame = CTkFrame(parent)
-    frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
-    frame.columnconfigure(0, weight=0)
-    frame.columnconfigure(1, weight=1)
-    frame.columnconfigure(2, weight=0)
 
-    label = CTkLabel(frame, text="Traffic Sniffing", font=style.get_font())
-    label.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
+class Sniff:
+    def __init__(self, style: Style, parent):
+        frame = CTkFrame(parent)
+        frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
+        frame.columnconfigure(0, weight=0)
+        frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=0)
 
-    e_label = CTkLabel(frame, text="IP Address:", font=style.get_font())
-    e_label.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        label = CTkLabel(frame, text="Traffic Sniffing", font=style.get_font())
+        label.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
 
-    entry = CTkEntry(frame, font=style.get_font())
-    entry.grid(row=1, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        e_label = CTkLabel(frame, text="IP Address:", font=style.get_font())
+        e_label.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
 
-    e_label2 = CTkLabel(frame, text="IP Address:", font=style.get_font())
-    e_label2.grid(row=2, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        entry = CTkEntry(frame, font=style.get_font())
+        entry.grid(row=1, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
 
-    entry2 = CTkEntry(frame, font=style.get_font())
-    entry2.grid(row=2, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        e_label2 = CTkLabel(frame, text="IP Address:", font=style.get_font())
+        e_label2.grid(row=2, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
 
-    button = CTkButton(frame, text="Start sniffing", font=style.get_font(), command=None)
-    button.grid(row=3, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        entry2 = CTkEntry(frame, font=style.get_font())
+        entry2.grid(row=2, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+
+        button = CTkButton(frame, text="Start sniffing", font=style.get_font(), command=None)
+        button.grid(row=3, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
 
 
 def mult_offset(style: Style, parent, text_1, text_2, button_text):
