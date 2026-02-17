@@ -32,6 +32,11 @@ class Network(ABC):
     @abstractmethod
     def stop_sniff(self):...
 
+    def abort_all(self):
+        self.stop_arp()
+        self.stop_nfq()
+        self.stop_sniff()
+
 
 class HardwareNetwork(Network):
     def __init__(self):

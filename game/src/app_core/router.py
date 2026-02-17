@@ -52,7 +52,8 @@ class Router:
     
 
     def quit(self):
-        # TODO abort all threads and network activity
+        if self.context.net is not None:
+            self.context.net.abort_all()
         self.context.root.destroy()
 
 
