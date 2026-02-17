@@ -28,7 +28,7 @@ class NMap:
         self.header = header
 
         status = CTkLabel(frame, text="", font=style.get_font())
-        status.grid(row=1, column=0, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        status.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
         self.status = status
 
         button = CTkButton(frame, text="Map Network", font=style.get_font(), command=None)
