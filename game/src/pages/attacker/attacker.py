@@ -10,7 +10,8 @@ from ...network.network_controller import HardwareNetwork
 from ...widgets.forms.nmap import NMap
 from ...widgets.forms.arp import ARP
 from ...widgets.forms.sniff import Sniff
-from ...widgets.forms import nfq
+from ...widgets.forms.nfq import NFQ
+from ...widgets.forms.dos import DOS
 
 class AttackerV0:
 
@@ -88,9 +89,9 @@ class AttackerV0:
         sniff.bind_options_autosave(context.inputs["sniff"])
 
     # NFQ widget with modifiers
-        nfq.mitm(style, left_p)
+        NFQ(style, left_p)
     # Dos widget
-        nfq.dos(style, left_p)
+        DOS(style, left_p)
 
 
     # Map
