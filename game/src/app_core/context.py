@@ -29,6 +29,11 @@ class Context:
             "arp": ["",""],
             "sniff": ["",""]
         }
+        '''
+        Save slots for the user inputs during GUI refresh.
+        arp: target ip, host ip
+        sniff: print to gui, print to console
+        '''
 
 
     def get_all(self):

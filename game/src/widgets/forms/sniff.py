@@ -2,7 +2,7 @@ from customtkinter import *
 from ..style import Style
 
 class Sniff:
-    def __init__(self, style: Style, parent, options: list[str]):
+    def __init__(self, style: Style, parent):
         frame = CTkFrame(parent)
         frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
         frame.columnconfigure(0, weight=0)
@@ -10,47 +10,90 @@ class Sniff:
         frame.columnconfigure(2, weight=0)
         self.frame = frame
 
-        header = CTkLabel(frame, text="Traffic Sniffing", font=style.get_font())
+        header = CTkLabel(frame, text="Packet Sniffing", font=style.get_font())
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
         self.header = header
 
-        label = CTkLabel(frame, text="Packet Handler:", font=style.get_font())
-        label.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
-        self.label = label
+        label1 = CTkLabel(frame, text="Print to GUI:", font=style.get_font())
+        label1.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.label1 = label1
 
-        option = CTkOptionMenu(frame, font=style.get_font(), values=options)
-        option.grid(row=1, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
-        self.option = option
+        box1 = CTkCheckBox(frame, text="")
+        box1.grid(row=1, column=2, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.box1 = box1
+
+        label2 = CTkLabel(frame, text="Print to Console:", font=style.get_font())
+        label2.grid(row=2, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.label2 = label2
+
+        box2 = CTkCheckBox(frame, text="")
+        box2.grid(row=2, column=2, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.box2 = box2
+
+        status = CTkLabel(frame, text="", font=style.get_font())
+        status.grid(row=3, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.status = status
 
         button = CTkButton(frame, text="Start sniffing", font=style.get_font(), command=None)
-        button.grid(row=2, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        button.grid(row=3, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
         self.button = button
 
-        self.options = [option]
+        self.inputs = [box1, box2]
 
-    def bind_options_autosave(self, save_slots: list[str], max_len=6):
+    def bind_input_autosave(self, save_slots: list[str]):
         """
-        Binds a callback to all CTkOptionMenus that saves the selected option to the
-        corresponding save slot whenever an option is selected.
-        Automatically shortens the displayed value if it's longer than max_len.
+        Binds a callback to self.boxes (list of CTkCheckBoxes) that saves the
+        selected state to the corresponding save slot whenever toggled.
         """
-        def shorten(text: str, max_len=max_len) -> str:
-            return text if len(text) <= max_len else text[:max_len] + "…"
+        for box, idx in zip(self.inputs, range(len(save_slots))):
+            def autosave(i=idx, b=box):
+                # Save as string to match save_slots type
+                save_slots[i] = str(b.get())
 
-        for option, idx in zip(self.options, range(len(save_slots))):
-            def autosave(selected_value, i=idx, opt=option):
-                # Save the full value
-                save_slots[i] = selected_value
-                # Shorten the displayed text if needed
-                opt.set(shorten(selected_value))
-            
-            option.configure(command=autosave)
+            box.configure(command=autosave)
 
-    def load_saved_options(self, save_slots: list[str]):
+
+    def load_saved_input(self, save_slots: list[str]):
         """
-        Sets the selected option of each CTkOptionMenu to the corresponding string
-        from the save slot.
+        Sets the selected state of each CTkCheckBox from the corresponding save slot.
         """
-        for option, value in zip(self.options, save_slots):
-            if value in option._values:  # make sure it's a valid option
-                option.set(value)
+        for box, value in zip(self.inputs, save_slots):
+            if value == "1":
+                box.select()
+            else:
+                box.deselect()
+
+
+    def bind_reversible(self, start_func: callable, stop_func: callable, func_name: str, start_on):
+        button = self.button
+        entries = self.inputs
+        status = self.status
+
+        def configure_on():
+            button.configure(command=stop, text=f"Stop {func_name}")
+            status.configure(text=f"{func_name} is on")
+        def configure_off():
+            button.configure(command=start, text=f"Start {func_name}")
+            status.configure(text=f"{func_name} is off")
+        
+        def stop():
+            button.configure(text=f"Stopping {func_name}...")
+            stop_func()
+            configure_off()
+
+        def start():
+            button.configure(text=f"Starting {func_name}...")
+            start_func()
+            configure_on()
+
+        if start_on:
+            configure_on()
+        else:
+            configure_off()
+
+        if entries is None:
+            return
+        def event_callback(event=None):
+            start()
+        for entry in entries:
+            entry.bind("<Return>", event_callback)
