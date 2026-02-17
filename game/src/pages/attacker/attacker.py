@@ -13,6 +13,8 @@ from ...widgets.forms.sniff import Sniff
 from ...widgets.forms.nfq import NFQ
 from ...widgets.forms.dos import DOS
 
+from scapy.all import Packet
+
 class AttackerV0:
 
     def __init__(self, context: Context):
@@ -79,14 +81,22 @@ class AttackerV0:
     # Sniffing Widget
         sniff = Sniff(style, left_p)
 
+        def sniff_handler(pkt: Packet, time: float, number: int, variable: str, value: str, direction: str):
+            if sniff.box1.get() == 1:
+                print("-----GUI-------")
+            if sniff.box2.get() == 1:
+                pkt.show()
+
         def start_sniff():
             root.update_idletasks()
-            # net.start_sniff()
+            net.start_sniff()
+            net.buffer.add_callback("sniff_handler", sniff_handler)
             print("start stiff")
 
         def stop_sniff():
             root.update_idletasks()
-            # net.stop_sniff()
+            net.stop_sniff()
+            net.buffer.remove_callback("sniff_handler")
             print("stop stiff")
 
         start_on = net.sniff_is_running()
