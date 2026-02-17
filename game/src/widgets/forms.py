@@ -61,15 +61,21 @@ def load_saved_entries(entries: list[CTkEntry], save_slots: list[str]):
         entries[i].delete(0, "end")
         entries[i].insert(0, save_slots[i])
 
-def bind_options_autosave(options: list[CTkOptionMenu], save_slots: list[str]):
+def bind_options_autosave(options: list[CTkOptionMenu], save_slots: list[str], max_len=6):
     """
     Binds a callback to all CTkOptionMenus that saves the selected option to the
     corresponding save slot whenever an option is selected.
+    Automatically shortens the displayed value if it's longer than max_len.
     """
+    def shorten(text: str, max_len=max_len) -> str:
+        return text if len(text) <= max_len else text[:max_len] + "…"
+
     for option, idx in zip(options, range(len(save_slots))):
-        def autosave(selected_value, i=idx):
+        def autosave(selected_value, i=idx, opt=option):
+            # Save the full value
             save_slots[i] = selected_value
-            print(f"Saved option {i}: {save_slots[i]}")
+            # Shorten the displayed text if needed
+            opt.set(shorten(selected_value))
         
         option.configure(command=autosave)
 
