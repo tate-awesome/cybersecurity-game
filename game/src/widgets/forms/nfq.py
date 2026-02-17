@@ -3,7 +3,42 @@ from ..style import Style
 
 class NFQ:
     def __init__(self, style: Style, parent: CTkBaseClass):
-        ...
+        frame = CTkFrame(parent)
+        frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
+        frame.columnconfigure(0, weight=0)
+        frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=0)
+        self.frame = frame
+
+        header = CTkLabel(frame, text="MITM Attack", font=style.get_font())
+        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
+        self.header = header
+
+        label1 = CTkLabel(frame, text="Label1", font=style.get_font())
+        label1.grid(row=1, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.label1 = label1
+
+        entry1 = CTkEntry(frame, font=style.get_font())
+        entry1.grid(row=1, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        self.entry1 = entry1
+
+        label2 = CTkLabel(frame, text="Label2", font=style.get_font())
+        label2.grid(row=2, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.label2 = label2
+
+        entry2 = CTkEntry(frame, font=style.get_font())
+        entry2.grid(row=2, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        self.entry2 = entry2
+
+        status = CTkLabel(frame, text="", font=style.get_font())
+        status.grid(row=3, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        self.status = status
+
+        button = CTkButton(frame, text="Start Attack", font=style.get_font(), command=None)
+        button.grid(row=3, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        self.button = button
+
+        self.inputs = [entry1, entry2]
 
 def mult_offset(style: Style, parent, text_1, text_2, button_text):
     frame = CTkFrame(parent)
