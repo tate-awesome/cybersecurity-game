@@ -27,6 +27,9 @@ class Network(ABC):
     def start_sniff(self):...
 
     @abstractmethod
+    def sniff_is_running(self):...
+
+    @abstractmethod
     def stop_sniff(self):...
 
 
@@ -54,13 +57,15 @@ class HardwareNetwork(Network):
 
     def nfq_is_running(self):
         return self.nfq.is_running()
-
     
     def stop_nfq(self):
         self.nfq.stop()
 
     def start_sniff(self):
         self.sniffer.start(self.sniffer.put_modbus_in_buffer)
+    
+    def sniff_is_running(self):
+        return self.sniffer.is_running()
 
     def stop_sniff(self):
         self.sniffer.stop()

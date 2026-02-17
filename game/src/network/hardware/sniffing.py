@@ -7,10 +7,14 @@ class Sniffer:
     def __init__(self, buffer: PacketBuffer):
         self.sniffer = None
         self.buffer = buffer
+
+    
+    def is_running(self):
+        return self.sniffer is not None
     
 
     def start(self, packet_handler):
-        if self.sniffer is not None:
+        if self.is_running():
             print("Sniffer is already running")
             return
 
