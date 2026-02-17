@@ -14,8 +14,12 @@ class AttackerV0:
         router = context.router
         root = context.root
         style = Style(context.ui_scale)
-        net = HardwareNetwork()
-        context.net = net
+        # Defer to the existing net
+        if context.net is None:
+            context.net = HardwareNetwork()
+        net = context.net
+
+
 
     # Menu bar
         menu = common.menu_bar(style, root, "Attacker Version 0")

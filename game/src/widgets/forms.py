@@ -7,6 +7,7 @@ def bind(callback: callable, button: CTkButton, entries: list[CTkEntry] = None):
     Bind the callback to pressing enter on the form or clicking the button
     '''
     button.configure(command=callback)
+
     if entries is None:
         return
     def event_callback(event=None):
