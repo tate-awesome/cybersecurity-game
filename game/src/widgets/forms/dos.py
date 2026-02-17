@@ -1,43 +1,11 @@
 from customtkinter import *
 from ..style import Style
 
-class NFQ:
+class DOS:
     def __init__(self, style: Style, parent: CTkBaseClass):
         ...
 
-def mult_offset(style: Style, parent, text_1, text_2, button_text):
-    frame = CTkFrame(parent)
-    frame.pack(fill=X)
-    
-    label1 = CTkLabel(frame, text=text_1, font=style.get_font())
-    label1.grid(row=0, column=0, sticky="w", pady=5, padx=10)
-
-    entry1 = CTkEntry(frame, width=50)
-    entry1.grid(row=1, column=0)
-
-    label2 = CTkLabel(frame, text=text_2, font=style.get_font())
-    label2.grid(row=0, column=2, sticky="w", pady=5, padx=10)
-
-    entry2 = CTkEntry(frame, width=50)
-    entry2.grid(row=1, column=2)
-
-    button = CTkButton(frame, text=button_text, font=style.get_font())
-    button.grid(row=1, column=4)
-    def con():
-        print("button")
-    button.configure(command=con)
-
-    frame.columnconfigure(0, weight=0)
-    frame.columnconfigure(1, weight=1)
-    frame.columnconfigure(2, weight=0)
-    frame.columnconfigure(3, weight=1)
-    frame.columnconfigure(4, weight=0)
-
-    return entry1, entry2, button
-
-
-
-def mitm(style: Style, parent):
+def dos(style: Style, parent):
     ip_frame = CTkFrame(parent)
     ip_frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
     ip_frame.columnconfigure(0, weight=0)
