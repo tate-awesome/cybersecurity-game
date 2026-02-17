@@ -39,24 +39,24 @@ class ARP:
         button.grid(row=3, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
         self.button = button
 
-        self.entries = [entry1, entry2]
+        self.inputs = [entry1, entry2]
 
-    def bind_entries_autosave(self, save_slots: list[str]):
-        for entry, slot_index in zip(self.entries, range(len(save_slots))):
+    def bind_input_autosave(self, save_slots: list[str]):
+        for entry, slot_index in zip(self.inputs, range(len(save_slots))):
             def autosave(event=None, e=entry, idx=slot_index):
                 save_slots[idx] = e.get()
                 print(e.get())
             entry.bind("<KeyRelease>", autosave)
 
-    def load_saved_entries(self, save_slots: list[str]):
-        entries = self.entries
+    def load_saved_input(self, save_slots: list[str]):
+        entries = self.inputs
         for i in range(len(entries)):
             entries[i].delete(0, "end")
             entries[i].insert(0, save_slots[i])
 
     def bind_reversible(self, start_func: callable, stop_func: callable, func_name: str, start_on):
         button = self.button
-        entries = self.entries
+        entries = self.inputs
         status = self.status
 
         def configure_on():

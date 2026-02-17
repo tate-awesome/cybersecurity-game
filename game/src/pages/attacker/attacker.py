@@ -73,20 +73,27 @@ class AttackerV0:
         start_on = net.arp_is_running()
         arp.bind_reversible(start_arp, stop_arp, "ARP Spoof", start_on)
 
-        arp.load_saved_entries(context.inputs["arp"])
-        arp.bind_entries_autosave(context.inputs["arp"])
+        arp.load_saved_input(context.inputs["arp"])
+        arp.bind_input_autosave(context.inputs["arp"])
 
     # Sniffing Widget
-        sniff_options = {
-            "Print full packets": "show_all",
-            "Send all packets to buffer": "buffer_all",
-            "Print full modbus packets": "show_modbus",
-            "Print readable modbus data": "print_modbus",
-            "Send modbus packets to buffer": "buffer_modbus"
-        }
-        sniff = Sniff(style, left_p, list(sniff_options.keys()))
-        sniff.load_saved_options(context.inputs["sniff"])
-        sniff.bind_options_autosave(context.inputs["sniff"])
+        sniff = Sniff(style, left_p)
+
+        def start_sniff():
+            root.update_idletasks()
+            # net.start_sniff()
+            print("start stiff")
+
+        def stop_sniff():
+            root.update_idletasks()
+            # net.stop_sniff()
+            print("stop stiff")
+
+        start_on = net.sniff_is_running()
+        sniff.bind_reversible(start_sniff, stop_sniff, "Sniffing", start_on)
+
+        sniff.load_saved_input(context.inputs["sniff"])
+        sniff.bind_input_autosave(context.inputs["sniff"])
 
     # NFQ widget with modifiers
         NFQ(style, left_p)
