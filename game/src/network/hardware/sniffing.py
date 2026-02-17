@@ -13,10 +13,20 @@ class Sniffer:
         return self.sniffer is not None
     
 
-    def start(self, packet_handler):
+    def start(self, callback_name: str):
         if self.is_running():
             print("Sniffer is already running")
             return
+
+        callback_dict = {
+            "show_all": self.show,
+            "buffer_all": self.put_all_in_buffer,
+
+            "show_modbus": self.show_modbus,
+            "print_modbus": self.print_scannable,
+            "buffer_modbus": self.put_modbus_in_buffer
+        }
+        packet_handler = callback_dict[callback_name]
 
         print("Starting sniffer...")
         self.sniffer = AsyncSniffer(
@@ -53,3 +63,6 @@ class Sniffer:
         if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
             if mb.is_coord(pkt) or mb.is_commands(pkt):
                 self.buffer.put(pkt, "in")
+
+    def put_all_in_buffer(self, pkt):
+        self.buffer.put(pkt, "in")
