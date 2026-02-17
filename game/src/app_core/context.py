@@ -6,12 +6,24 @@ class Context:
 
     def __init__(self, root, router):
         self.net = None
-        self.progress = None
         self.router = router
         self.root = root
 
         self.ui_scale = 100.0
         self.ui_scales = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 133, 140, 150, 175, 200, 250, 300, 400, 500]
+
+        self.progress = {
+            "nmap": False,
+            "arp": False
+        }
+        '''
+        Tracks the state of the hacks on the GUI.
+        
+        False = Fresh state
+        
+        True = Has been done - use network_controller to see if it's running
+        '''
+
 
     def get_all(self):
         '''
