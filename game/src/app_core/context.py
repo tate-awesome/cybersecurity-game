@@ -24,6 +24,10 @@ class Context:
         True = Has been done - use network_controller to see if it's running
         '''
 
+        self.entries = {
+            "arp": ["",""]
+        }
+
 
     def get_all(self):
         '''
