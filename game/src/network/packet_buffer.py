@@ -2,6 +2,8 @@ from collections import deque
 from threading import Lock
 import time as Time
 from scapy.all import Packet
+from concurrent.futures import ThreadPoolExecutor
+from typing import Callable
 from . import modbus_util as modbus
 
 
@@ -12,6 +14,9 @@ class PacketBuffer:
     def __init__(self, max_size = 5000):
         self.max_size = max_size
         self.number = 1
+
+        self.packet_callbacks = {}
+        self.executor = ThreadPoolExecutor(max_workers=4)
 
         self.factors = {
             "x": 0.01,
@@ -53,6 +58,20 @@ class PacketBuffer:
                     "deque": deque(maxlen=self.max_size), # queue as tuple(var, time, number)
                     "lock": Lock()
                 }
+    
+    def add_callback(self, func: Callable[[Packet, float, int, str, str, str], None]):
+        '''
+        Add a callback to be executed after the packet is placed in the buffer.
+
+        Callable(pkt: scapy.Packet, timestamp: float, number: int, variable: str, value: str, direction: str)
+        
+        If the packet isn't modbus, the variable and value default to "None"
+
+        '''
+        self.packet_callbacks.append(func)
+
+    def remove_callback(self, name: str):
+        self.packet_callbacks.pop(name, None)
 
     def put(self, pkt: Packet, dir: str):
         '''
@@ -95,9 +114,12 @@ class PacketBuffer:
                 self.trails[f"{variable}_{dir}"]["deque"].append((value, current_time, self.number))
         
         # Lock and store packet
-
         with self.trails[f"packets_{dir}"]["lock"]:
             self.trails[f"packets_{dir}"]["deque"].append((pkt, current_time, self.number))
+
+        # Do callbacks
+        for cb in list(self.packet_callbacks.values()):
+            self.executor.submit(cb, pkt, current_time, self.number, variable, value, dir)
 
         # Update number
         self.number = self.number + 1
