@@ -49,18 +49,38 @@ def bind_reversible(widget, start_func: callable, stop_func: callable, func_name
     for entry in entries:
         entry.bind("<Return>", event_callback)
 
-def bind_autosave(entries: list[CTkEntry], save_slots: list[str]):
+def bind_entries_autosave(entries: list[CTkEntry], save_slots: list[str]):
     for entry, slot_index in zip(entries, range(len(save_slots))):
         def autosave(event=None, e=entry, idx=slot_index):
             save_slots[idx] = e.get()
             print(e.get())
         entry.bind("<KeyRelease>", autosave)
 
-def load_saved(entries: list[CTkEntry], save_slots: list[str]):
+def load_saved_entries(entries: list[CTkEntry], save_slots: list[str]):
     for i in range(len(entries)):
         entries[i].delete(0, "end")
         entries[i].insert(0, save_slots[i])
 
+def bind_options_autosave(options: list[CTkOptionMenu], save_slots: list[str]):
+    """
+    Binds a callback to all CTkOptionMenus that saves the selected option to the
+    corresponding save slot whenever an option is selected.
+    """
+    for option, idx in zip(options, range(len(save_slots))):
+        def autosave(selected_value, i=idx):
+            save_slots[i] = selected_value
+            print(f"Saved option {i}: {save_slots[i]}")
+        
+        option.configure(command=autosave)
+
+def load_saved_options(options: list[CTkOptionMenu], save_slots: list[str]):
+    """
+    Sets the selected option of each CTkOptionMenu to the corresponding string
+    from the save slot.
+    """
+    for option, value in zip(options, save_slots):
+        if value in option._values:  # make sure it's a valid option
+            option.set(value)
 
 class NMap:
     def __init__(self, style: Style, parent):
