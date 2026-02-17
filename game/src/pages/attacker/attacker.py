@@ -1,12 +1,16 @@
 from ...app_core.context import Context
 
 from ...widgets.style import Style
-from ...widgets import common, forms, popup
+from ...widgets import common, popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
 from ...network.network_controller import HardwareNetwork
 
+from ...widgets.forms.nmap import NMap
+from ...widgets.forms.arp import ARP
+from ...widgets.forms.sniff import Sniff
+from ...widgets.forms import nfq
 
 class AttackerV0:
 
@@ -34,7 +38,7 @@ class AttackerV0:
         left_p, middle_p, right_p = common.trifold(style, root)
 
     # NMap Widget
-        nmap = forms.NMap(style, left_p)
+        nmap = NMap(style, left_p)
         def do_nmap():
             context.progress["nmap"] = True
             nmap.status.configure(text="Pinging...")
@@ -48,14 +52,14 @@ class AttackerV0:
 
             nmap.status.configure(text="NMap Complete")
     
-        forms.bind(do_nmap, nmap.button)
+        nmap.bind(do_nmap, nmap.button)
         if context.progress["nmap"]:
             nmap.status.configure(text="NMap Complete")
         else:
             nmap.status.configure(text="")
 
     # ARP Widget
-        arp = forms.ARP(style, left_p)
+        arp = ARP(style, left_p)
         def start_arp():
             target_ip = str(arp.entry1.get())
             host_ip = str(arp.entry2.get())
@@ -66,10 +70,10 @@ class AttackerV0:
             net.stop_arp()
         
         start_on = net.arp_is_running()
-        forms.bind_reversible(arp, start_arp, stop_arp, "ARP Spoof", start_on)
+        arp.bind_reversible(start_arp, stop_arp, "ARP Spoof", start_on)
 
-        forms.load_saved_entries(arp.entries, context.inputs["arp"])
-        forms.bind_entries_autosave(arp.entries, context.inputs["arp"])
+        arp.load_saved_entries(context.inputs["arp"])
+        arp.bind_entries_autosave(context.inputs["arp"])
 
     # Sniffing Widget
         sniff_options = {
@@ -79,14 +83,14 @@ class AttackerV0:
             "Print readable modbus data": "print_modbus",
             "Send modbus packets to buffer": "buffer_modbus"
         }
-        sniff = forms.Sniff(style, left_p, list(sniff_options.keys()))
-        forms.load_saved_options(sniff.options, context.inputs["sniff"])
-        forms.bind_options_autosave(sniff.options, context.inputs["sniff"])
+        sniff = Sniff(style, left_p, list(sniff_options.keys()))
+        sniff.load_saved_options(context.inputs["sniff"])
+        sniff.bind_options_autosave(context.inputs["sniff"])
 
     # NFQ widget with modifiers
-        forms.mitm(style, left_p)
+        nfq.mitm(style, left_p)
     # Dos widget
-        forms.dos(style, left_p)
+        nfq.dos(style, left_p)
 
 
     # Map
