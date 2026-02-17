@@ -13,20 +13,24 @@ class Sniffer:
         return self.sniffer is not None
     
 
-    def start(self, callback_name: str):
+    def start(self):
+        '''
+        Starts a scapy sniffer that puts all packets into the buffer.
+        This makes all packets available to the GUI and simplifies user options.
+        '''
         if self.is_running():
             print("Sniffer is already running")
             return
 
-        callback_dict = {
-            "show_all": self.show,
-            "buffer_all": self.put_all_in_buffer,
+        # callback_dict = {
+        #     "show_all": self.show,
+        #     "buffer_all": self.put_all_in_buffer,
 
-            "show_modbus": self.show_modbus,
-            "print_modbus": self.print_scannable,
-            "buffer_modbus": self.put_modbus_in_buffer
-        }
-        packet_handler = callback_dict[callback_name]
+        #     "show_modbus": self.show_modbus,
+        #     "print_modbus": self.print_scannable,
+        #     "buffer_modbus": self.put_modbus_in_buffer
+        # }
+        packet_handler = self.put_all_in_buffer
 
         print("Starting sniffer...")
         self.sniffer = AsyncSniffer(
