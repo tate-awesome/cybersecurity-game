@@ -33,6 +33,7 @@ class AttackerV0:
 
         left_p, middle_p, right_p = common.trifold(style, root)
 
+    # NMap Widget
         nmap = forms.NMap(style, left_p)
         def do_nmap():
             context.progress["nmap"] = True
@@ -46,13 +47,14 @@ class AttackerV0:
             print(host_ips) # TODO push this to the GUI console
 
             nmap.status.configure(text="NMap Complete")
-
+    
         forms.bind(do_nmap, nmap.button)
         if context.progress["nmap"]:
             nmap.status.configure(text="NMap Complete")
         else:
             nmap.status.configure(text="")
 
+    # ARP Widget
         arp = forms.ARP(style, left_p)
         def start_arp():
             target_ip = str(arp.entry1.get())
@@ -66,8 +68,8 @@ class AttackerV0:
         start_on = net.arp_is_running()
         forms.bind_reversible(arp, start_arp, stop_arp, "ARP Spoof", start_on)
 
-        forms.load_saved(arp.entries, context.entries["arp"])
-        forms.bind_autosave(arp.entries, context.entries["arp"])
+        forms.load_saved_entries(arp.entries, context.inputs["arp"])
+        forms.bind_entries_autosave(arp.entries, context.inputs["arp"])
 
 
 

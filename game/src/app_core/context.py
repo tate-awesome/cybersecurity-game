@@ -14,7 +14,8 @@ class Context:
 
         self.progress = {
             "nmap": False,
-            "arp": False
+            "arp": False,
+            "sniff": False
         }
         '''
         Tracks the state of the hacks on the GUI.
@@ -24,8 +25,9 @@ class Context:
         True = Has been done - use network_controller to see if it's running
         '''
 
-        self.entries = {
-            "arp": ["",""]
+        self.inputs = {
+            "arp": ["",""],
+            "sniff": ["",""]
         }
 
 
