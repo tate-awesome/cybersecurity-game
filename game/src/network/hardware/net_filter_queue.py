@@ -23,7 +23,7 @@ class NetFilterQueue:
         return self.stop_event is not None or self.thread is not None or self.callback is not None
 
 
-    def start(self, callback_name: str): 
+    def start(self): 
         if self.is_running():
             print("NFQ already running")
             return
@@ -37,7 +37,7 @@ class NetFilterQueue:
             "print_modify": self.print_and_modify,
             "buffer_modify": self.buffer_and_modify
         }
-        self.callback = callback_dict[callback_name]
+        self.callback = self.print_and_modify
         self.stop_event = threading.Event()
 
         self.thread = threading.Thread(target=self._start, daemon=True)
@@ -111,10 +111,10 @@ class NetFilterQueue:
 
 
         if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt)
+            spkt = mb.modify_commands(spkt, self.table)
 
         elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt)
+            spkt = mb.modify_coord(spkt, self.table)
 
         else:
             pkt.accept()
@@ -133,6 +133,12 @@ class NetFilterQueue:
     def buffer_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         self.buffer.put(spkt, "in")
+        pkt.accept()
+
+    def buffer_print_accept(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        self.buffer.put(spkt, "in")
+        mb.print_scannable(spkt)
         pkt.accept()
 
     def buffer_and_modify(self, pkt: Packet):

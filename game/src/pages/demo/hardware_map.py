@@ -13,6 +13,7 @@ class HardwareMap:
 
         # Create and define network control
         net = network_controller.HardwareNetwork()
+        context.net = net
 
         def start_attack():
             net.start_arp(target_ip='192.168.8.137', host_ip='192.168.8.243')
