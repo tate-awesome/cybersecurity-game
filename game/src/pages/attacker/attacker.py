@@ -35,18 +35,38 @@ class AttackerV0:
 
         nmap = forms.NMap(style, left_p)
         def do_nmap():
+            context.progress["nmap"] = True
             nmap.status.configure(text="Pinging...")
             root.update_idletasks()
+
             ip, netmask = net.nmap.get_network()
             network = net.nmap.compute_network(ip, netmask)
             hosts = net.nmap.get_hosts(network)
             host_ips = net.nmap.get_host_ips(hosts)
-            print(host_ips)
-            nmap.status.configure(text="NMap Complete")
-        forms.bind(do_nmap, nmap.button)
+            print(host_ips) # TODO push this to the GUI console
 
-    # ARP Spoofing widget
-        forms.arp(style, left_p)
+            nmap.status.configure(text="NMap Complete")
+
+        forms.bind(do_nmap, nmap.button)
+        if context.progress["nmap"]:
+            nmap.status.configure(text="NMap Complete")
+        else:
+            nmap.status.configure(text="")
+
+        arp = forms.ARP(style, left_p)
+        def start_arp():
+            target_ip = str(arp.entry1.get())
+            host_ip = str(arp.entry2.get())
+            root.update_idletasks()
+            net.start_arp(target_ip, host_ip)
+        def stop_arp():
+            root.update_idletasks()
+            net.stop_arp()
+        
+        start_on = net.arp_is_running()
+        forms.bind_reversible(arp, start_arp, stop_arp, "ARP Spoof", start_on)
+
+
 
     # Sniffing widget
         forms.sniff(style, left_p)

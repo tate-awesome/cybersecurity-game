@@ -9,6 +9,9 @@ class Network(ABC):
     def start_arp(self, target_ip, host_ip):...
 
     @abstractmethod
+    def arp_is_running(self):...
+
+    @abstractmethod
     def stop_arp(self):...
 
     @abstractmethod
@@ -36,6 +39,9 @@ class HardwareNetwork(Network):
     def start_arp(self, target_ip, host_ip):
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
         self.arp_spoofer.start(target_ip, host_ip)
+    
+    def arp_is_running(self):
+        return self.arp_spoofer.running
 
     def stop_arp(self):
         self.arp_spoofer.stop()
