@@ -15,7 +15,7 @@ class Network(ABC):
     def stop_arp(self):...
 
     @abstractmethod
-    def start_nfq(self, callback: str):...
+    def start_nfq(self):...
 
     @abstractmethod
     def nfq_is_running(self):...
@@ -57,8 +57,8 @@ class HardwareNetwork(Network):
     def stop_arp(self):
         self.arp_spoofer.stop()
 
-    def start_nfq(self, callback: str):
-        self.nfq.start(callback)
+    def start_nfq(self):
+        self.nfq.start()
 
     def nfq_is_running(self):
         return self.nfq.is_running()
