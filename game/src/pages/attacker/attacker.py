@@ -134,10 +134,19 @@ class AttackerV0:
 
 
     # Map
-        from ...drawing import sprites
-        self.positions = sprites.random_spline_path(20, 100)
-        self.color = "blue"
-        world_map = Map(style, right_p, self.draw_test_plane, 100)
+        def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
+            positions = net.buffer.get_all_positions("in")
+            bearing = net.buffer.get_last_bearing("in")
+            draw = ViewPort(canvas, scale, offset)
+            with draw_lock:
+                canvas.delete("all")
+                draw.grid_lines()
+                if len(positions) < 1: return
+                draw.line(positions, "white")
+                if bearing is None: return
+                last_position = positions[-1]
+                draw.boat(last_position, bearing, "white", "black")
+        map = Map(style, right_p, draw_full_map, 100, 20)
 
 
 

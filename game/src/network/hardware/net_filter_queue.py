@@ -37,7 +37,7 @@ class NetFilterQueue:
             "print_modify": self.print_and_modify,
             "buffer_modify": self.buffer_and_modify
         }
-        self.callback = self.print_and_modify
+        self.callback = self.buffer_and_modify
         self.stop_event = threading.Event()
 
         self.thread = threading.Thread(target=self._start, daemon=True)
