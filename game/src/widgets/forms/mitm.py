@@ -55,7 +55,7 @@ class MITM:
         self.save_status = save_status
 
         save_button = CTkButton(frame, text="Save Modifiers", font=style.get_font(), command=None)
-        save_button.grid(row=r, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        save_button.grid(row=r, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
         self.save_button = save_button
 
         r = r+1
@@ -65,7 +65,7 @@ class MITM:
         self.status = status
 
         button = CTkButton(frame, text="Start Attack", font=style.get_font(), command=None)
-        button.grid(row=r, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        button.grid(row=r, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
         self.button = button
 
         self.entries = list(self.mults.values())

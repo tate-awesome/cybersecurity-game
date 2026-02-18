@@ -7,7 +7,7 @@ def menu_bar(style: Style, parent, title):
     med = style.get_font()
     menu_bar = CTkFrame(parent)
     menu_bar.pack(side="top", padx=style.GAP, pady=(style.GAP, 0), fill="x", anchor="n")
-    game_label = CTkLabel(master = menu_bar, text=title, font=med)
+    game_label = CTkLabel(master = menu_bar, text=title, font=med, padx=style.GAP)
     game_label.pack(fill=Y, side="left", padx=style.GAP)
     return menu_bar
 
