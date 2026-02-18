@@ -83,7 +83,6 @@ class AttackerV0:
         sniff = Sniff(style, left_p)
 
         def sniff_handler(mpkt: MetaPacket):
-            print("handler")
             if sniff.box1.get() == 1:
                 mpkt.wireshark_line(True)
             if sniff.box2.get() == 1:

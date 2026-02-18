@@ -45,7 +45,6 @@ class ARP:
         for entry, slot_index in zip(self.inputs, range(len(save_slots))):
             def autosave(event=None, e=entry, idx=slot_index):
                 save_slots[idx] = e.get()
-                print(e.get())
             entry.bind("<KeyRelease>", autosave)
 
     def load_saved_input(self, save_slots: list[str]):
