@@ -14,6 +14,7 @@ from ...widgets.forms.nfq import NFQ
 from ...widgets.forms.dos import DOS
 
 from scapy.all import Packet
+from ...network.meta_packet import MetaPacket
 
 class AttackerV0:
 
@@ -81,16 +82,17 @@ class AttackerV0:
     # Sniffing Widget
         sniff = Sniff(style, left_p)
 
-        def sniff_handler(pkt: Packet, time: float, number: int, variable: str, value: str, direction: str):
+        def sniff_handler(mpkt: MetaPacket):
+            print("handler")
             if sniff.box1.get() == 1:
-                print("-----GUI-------")
+                mpkt.wireshark_line(True)
             if sniff.box2.get() == 1:
-                pkt.show()
+                mpkt.show()
 
         def start_sniff():
             root.update_idletasks()
-            net.start_sniff()
             net.buffer.add_callback("sniff_handler", sniff_handler)
+            net.start_sniff()
             print("start stiff")
 
         def stop_sniff():
