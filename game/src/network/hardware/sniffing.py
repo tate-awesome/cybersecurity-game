@@ -34,7 +34,6 @@ class Sniffer:
 
         print("Starting sniffer...")
         self.sniffer = AsyncSniffer(
-            filter="tcp port 502",
             prn=packet_handler,
             store=False
         )
