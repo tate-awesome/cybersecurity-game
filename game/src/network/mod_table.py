@@ -28,6 +28,10 @@ class ModTable:
             self.table[key] = 0.0
 
     def set(self, var: str, type: str, value: float):
+        '''
+        var: ["x", "y", "theta", "speed", "rudder"]
+        type: ["mult", "offset"]
+        '''
         key = f"{var}_{type}"
         if type == "offset":
             value = value * factors[var]
