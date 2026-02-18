@@ -117,11 +117,11 @@ class MITM:
     def load_saved_input(self, table: ModTable):
         for name in ["x", "y", "theta", "speed", "rudder"]:
 
-            mult = str(table.get(name, "mult"))
+            mult = str(table.get_readable(name, "mult"))
             self.mults[name].delete(0, "end")
             self.mults[name].insert(0, mult)
 
-            offset = str(table.get(name, "offset"))
+            offset = str(table.get_readable(name, "offset"))
             self.offsets[name].delete(0, "end")
             self.offsets[name].insert(0, offset)
         
