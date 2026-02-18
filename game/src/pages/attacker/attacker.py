@@ -1,19 +1,22 @@
 from ...app_core.context import Context
 
+# Widgets
 from ...widgets.style import Style
 from ...widgets import common, popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
+# Network
 from ...network.network_controller import HardwareNetwork
 
+# Form widgets
 from ...widgets.forms.nmap import NMap
 from ...widgets.forms.arp import ARP
 from ...widgets.forms.sniff import Sniff
-from ...widgets.forms.nfq import NFQ
+from ...widgets.forms.mitm import MITM
 from ...widgets.forms.dos import DOS
 
-from scapy.all import Packet
+# Packet
 from ...network.meta_packet import MetaPacket
 
 class AttackerV0:
@@ -92,13 +95,11 @@ class AttackerV0:
             root.update_idletasks()
             net.buffer.add_callback("sniff_handler", sniff_handler)
             net.start_sniff()
-            print("start stiff")
 
         def stop_sniff():
             root.update_idletasks()
             net.stop_sniff()
             net.buffer.remove_callback("sniff_handler")
-            print("stop stiff")
 
         start_on = net.sniff_is_running()
         sniff.bind_reversible(start_sniff, stop_sniff, "Sniffing", start_on)
@@ -107,7 +108,27 @@ class AttackerV0:
         sniff.bind_input_autosave(context.inputs["sniff"])
 
     # NFQ widget with modifiers
-        NFQ(style, left_p)
+        mitm = MITM(style, left_p)
+
+        def mitm_handler(mpkt: MetaPacket):
+            mpkt.wireshark_line(True)
+
+        def start_mitm():
+            root.update_idletasks()
+            net.buffer.add_callback("mitm_handler", mitm_handler)
+            net.start_nfq()
+
+        def stop_mitm():
+            root.update_idletasks()
+            net.stop_nfq()
+            net.buffer.remove_callback("mitm_handler")
+
+        start_on = net.nfq_is_running()
+        mitm.bind_reversible(start_mitm, stop_mitm, "Attack", start_on)
+
+        mitm.bind_input_alert()
+        mitm.load_saved_input(net.table)
+        mitm.bind_input_save(net.table)
     # Dos widget
         DOS(style, left_p)
 
