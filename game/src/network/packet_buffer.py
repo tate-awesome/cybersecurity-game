@@ -5,6 +5,7 @@ from scapy.all import Packet
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 from . import modbus_util as modbus
+from .meta_packet import MetaPacket
 
 
 class PacketBuffer:
@@ -14,6 +15,7 @@ class PacketBuffer:
     def __init__(self, max_size = 5000):
         self.max_size = max_size
         self.number = 1
+        self.start_time = Time.time()
 
         self.packet_callbacks = {}
         self.executor = ThreadPoolExecutor(max_workers=4)
@@ -59,7 +61,7 @@ class PacketBuffer:
                     "lock": Lock()
                 }
     
-    def add_callback(self, name: str, func: Callable[[Packet, float, int, str, str, str], None]):
+    def add_callback(self, name: str, func: Callable[[MetaPacket], None]):
         '''
         Add a callback to be executed after the packet is placed in the buffer.
 
@@ -82,7 +84,7 @@ class PacketBuffer:
         '''
 
         # Get time for matching deque times
-        current_time = Time.time()
+        current_time = Time.time() - self.start_time
 
         # Get variable from pkt
         if modbus.is_x(pkt):
@@ -119,8 +121,8 @@ class PacketBuffer:
 
         # Do callbacks
         for cb in list(self.packet_callbacks.values()):
-            self.executor.submit(cb, pkt, current_time, self.number, variable, value, dir)
-
+            mpkt = MetaPacket(pkt, current_time, self.number, dir, variable, value)
+            self.executor.submit(cb, mpkt)
         # Update number
         self.number = self.number + 1
 
