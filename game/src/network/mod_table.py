@@ -37,6 +37,13 @@ class ModTable:
             value = value * factors[var]
         self.table[key] = value
 
-    def get(self, var: str, type: str):
+    def get_raw(self, var: str, type: str):
         key = f"{var}_{type}"
         return self.table[key]
+
+    def get_readable(self, var: str, type: str):
+        key = f"{var}_{type}"
+        value = self.table[key]
+        if type == "offset":
+            value = value / factors[var]
+        return value

@@ -238,16 +238,16 @@ def modify_coord(pkt, table: ModTable):
         var = "theta"
 
     z = mbl.payload.registerValue
-    mult = table.get(var, "mult")
-    offset = table.get(var, "offset")
+    mult = table.get_raw(var, "mult")
+    offset = table.get_raw(var, "offset")
     mbl.payload.registerValue = int(z * mult + offset)
     return pkt
 
 def modify_commands(pkt, table: ModTable):
     mbl = pkt.getlayer(ModbusADUResponse)
 
-    mult = table.get("speed", "mult")
-    offset = table.get("speed", "offset")
+    mult = table.get_raw("speed", "mult")
+    offset = table.get_raw("speed", "offset")
 
     speed = mbl.payload.registerVal[0]
     mbl.payload.registerVal[0] = int(speed * mult + offset)
@@ -256,8 +256,8 @@ def modify_commands(pkt, table: ModTable):
     if len(mbl.payload.registerVal) < 2:
         return pkt
 
-    mult = table.get("rudder", "mult")
-    offset = table.get("rudder", "offset")
+    mult = table.get_raw("rudder", "mult")
+    offset = table.get_raw("rudder", "offset")
 
     rudder = mbl.payload.registerVal[1]
     mbl.payload.registerVal[1] = int(rudder * mult + offset)
