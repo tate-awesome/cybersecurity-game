@@ -4,6 +4,7 @@ from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
 from ...widgets import common
+from ...widgets.menu_bar import MenuBar
 from ...widgets.style import Style
 from ...network import network_controller
 
@@ -15,9 +16,9 @@ class SavedMap:
         
         # Build page
         style = Style(context)
-        menu_bar = common.menu_bar(style, root, "Demo")
+        menu_bar = MenuBar(style, root, "Demo", context)
         
-        attack_button = common.menu_bar_button(style, menu_bar, "Start Attack")
+        attack_button = menu_bar.button("Start Attack")
         common.configure_reversible_button(attack_button, self.start_attack, self.stop_attack, "Attack")
 
         left, middle, right = common.trifold(style, root)

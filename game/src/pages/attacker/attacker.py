@@ -3,6 +3,7 @@ from ...app_core.context import Context
 # Widgets
 from ...widgets.style import Style
 from ...widgets import common, popup
+from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
@@ -26,7 +27,7 @@ class AttackerV0:
         style = Style(context)
         net = context.refresh_net(HardwareNetwork)
 
-        common.full_menu(style, root, "Attacker V0", context)
+        menu_bar = MenuBar(style, root, "Attacker V0", context)
 
         left, middle_p, right_p = common.trifold(style, root)
 
