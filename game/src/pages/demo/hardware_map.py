@@ -4,6 +4,7 @@ from ...widgets.map import Map
 from ...widgets import common as place
 from ...widgets.style import Style
 from ...app_core.context import Context
+from ...widgets.menu_bar import MenuBar
 
 
 class HardwareMap:
@@ -38,12 +39,12 @@ class HardwareMap:
         
         # Build page
         style = Style(context)
-        menu_bar = place.menu_bar(style, root, "Demo")
+        menu_bar = MenuBar(style, root, "Demo", context)
         
-        no_button = place.menu_bar_button(style, menu_bar, "Start Printing")
+        no_button = menu_bar.button("Start Printing")
         place.configure_reversible_button(no_button, lambda:print("start"), lambda:print("stop"), "Printing")
         
-        attack_button = place.menu_bar_button(style, menu_bar, "Start Attack")
+        attack_button = menu_bar.button("Start Attack")
         place.configure_reversible_button(attack_button, start_attack, stop_attack, "Attack")
 
         left, middle, right = place.trifold(style, root)

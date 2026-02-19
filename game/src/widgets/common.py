@@ -4,30 +4,6 @@ from .style import Style
 from . import popup
 # from tkinter import ttk
 
-def menu_bar(style: Style, parent, title):
-    med = style.get_font()
-    menu_bar = CTkFrame(parent)
-    menu_bar.pack(side="top", padx=style.gap, pady=style.gaptop, fill="x", anchor="n")
-    game_label = CTkLabel(master = menu_bar, text=title, font=med, padx=style.igap)
-    game_label.pack(fill=Y, side="left", padx=style.gap)
-    return menu_bar
-
-def menu_bar_button(style: Style, parent, text, function=None):
-    med = style.get_font()
-    button = CTkButton(parent, text=text, command=function, font=med)
-    button.pack(side="right", padx=style.gap, pady=style.gap)
-    return button
-
-def full_menu(style: Style, parent, title, context):
-    router = context.router
-    root = context.root
-    menu = menu_bar(style, root, "Attacker Version 0")
-    menu_bar_button(style, menu, "Quit", router.quit)
-    menu_bar_button(style, menu, "Refresh", router.refresh)
-    menu_bar_button(style, menu, "Toggle Theme", router.mode_toggle)
-    menu_bar_button(style, menu, "Select Theme", router.select_theme)
-    menu_bar_button(style, menu, "Help", lambda:popup.open(style,root,context.help_message()))
-
 # Layout frames
 def trifold(style: Style, parent):
 
