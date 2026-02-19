@@ -1,6 +1,7 @@
 from .context import Context
 from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
 from tkinter.filedialog import askopenfilename
+import os
 
 from ..pages.demo.sprites import Sprites
 from ..pages.demo.saved_map import SavedMap
@@ -74,12 +75,17 @@ class Router:
 
     def select_theme(self):
 
-        file_path = askopenfilename(
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        themes_dir = os.path.join(BASE_DIR, "..", "..", "assets", "themes")
+        try:
+            file_path = askopenfilename(
+            initialdir=themes_dir,
             title="Select a theme file",
             filetypes=(("json", "*.json"),)
-        )
-        try:
+            )
             ThemeManager.load_theme(file_path)
+        except:
+            pass
         finally:
             self.refresh()
     
