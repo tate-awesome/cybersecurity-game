@@ -14,7 +14,7 @@ class SavedMap:
         root = self.context.root
         
         # Build page
-        style = Style(context.ui_scale)
+        style = Style(context)
         menu_bar = common.menu_bar(style, root, "Demo")
         
         attack_button = common.menu_bar_button(style, menu_bar, "Start Attack")

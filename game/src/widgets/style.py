@@ -1,11 +1,15 @@
-from customtkinter import CTkFont
+from customtkinter import CTkFont, get_appearance_mode, ThemeManager
 
 class Style:
 
-    def __init__(self, ui_scale: float=100.0):
-        self.scale = ui_scale
-        self.GAP = 10
-        self.PANE_MIN = self.GAP*4
+    def __init__(self, context):
+        self.root = context.root
+        self.scale = context.ui_scale
+        self.gap = (10, 10)
+        self.nogap = (0, 0)
+        self.gaptop = (10, 0)
+        self.igap = 10
+        self.PANE_MIN = self.igap*4
         self.fonts = {}
         # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
@@ -24,3 +28,23 @@ class Style:
                 size = int(14.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
         return self.fonts[name]
+
+    def color(self, type: str) -> str:
+        '''
+        Returns a theme color:
+        "root": root color,
+        "panel": fg_color,
+        "widget": top_fg_color
+        '''
+        root_color = self.root.cget("fg_color")
+        mode = get_appearance_mode()
+        colors = {}
+        if mode == "Light":
+            colors["root"] = root_color[0]
+            colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"][0]
+            colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][0]
+        else:
+            colors["root"] = root_color[1]
+            colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"][1]
+            colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][1]
+        return colors[type]

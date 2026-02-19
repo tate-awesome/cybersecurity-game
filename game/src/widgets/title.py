@@ -9,7 +9,7 @@ def buttons_wrapper(parent):
 
 def button(style: Style, parent, text, function):
     button = CTkButton(parent, text=text, command=function, font=style.get_font("title_btn"))
-    button.pack(pady=style.GAP, ipady=style.GAP)
+    button.pack(pady=style.gap, ipady=style.igap)
     return button
 
 def title(parent, text):

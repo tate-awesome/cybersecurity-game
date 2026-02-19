@@ -8,7 +8,7 @@ class SelectMode:
     def __init__(self, context: Context):
         router = context.router
         root = context.root
-        style = Style(context.ui_scale)
+        style = Style(context)
 
         title.title(root, "Select Mode")
         bw = title.buttons_wrapper(root)

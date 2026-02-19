@@ -8,7 +8,7 @@ from ...drawing.viewport import ViewPort
 
 class Sprites:
     def __init__(self, context: Context):
-        style = Style(context.ui_scale)
+        style = Style(context)
         world_map = Map(style, context.root, self.frame_callback, 100)
 
     
