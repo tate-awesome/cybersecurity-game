@@ -1,49 +1,80 @@
 from customtkinter import *
 import tkinter as tk
 from .style import Style
+from . import popup
 # from tkinter import ttk
 
 def menu_bar(style: Style, parent, title):
     med = style.get_font()
     menu_bar = CTkFrame(parent)
-    menu_bar.pack(side="top", padx=style.GAP, pady=(style.GAP, 0), fill="x", anchor="n")
-    game_label = CTkLabel(master = menu_bar, text=title, font=med, padx=style.GAP)
-    game_label.pack(fill=Y, side="left", padx=style.GAP)
+    menu_bar.pack(side="top", padx=style.gap, pady=style.gaptop, fill="x", anchor="n")
+    game_label = CTkLabel(master = menu_bar, text=title, font=med, padx=style.igap)
+    game_label.pack(fill=Y, side="left", padx=style.gap)
     return menu_bar
 
 def menu_bar_button(style: Style, parent, text, function=None):
     med = style.get_font()
     button = CTkButton(parent, text=text, command=function, font=med)
-    button.pack(side="right", padx=style.GAP, pady=style.GAP)
+    button.pack(side="right", padx=style.gap, pady=style.gap)
     return button
+
+def full_menu(style: Style, parent, title, context):
+    router = context.router
+    root = context.root
+    menu = menu_bar(style, root, "Attacker Version 0")
+    menu_bar_button(style, menu, "Quit", router.quit)
+    menu_bar_button(style, menu, "Refresh", router.refresh)
+    menu_bar_button(style, menu, "Toggle Theme", router.mode_toggle)
+    menu_bar_button(style, menu, "Select Theme", router.select_theme)
+    menu_bar_button(style, menu, "Help", lambda:popup.open(style,root,context.help_message()))
 
 # Layout frames
 def trifold(style: Style, parent):
 
     # Get root color
-    root_color = parent.cget("fg_color")
-    mode = get_appearance_mode()
-    if mode == "Light":
-        root_color = root_color[0]
-    else:
-        root_color = root_color[1]
+    rc = style.color("root")
 
     # Create paned window
-    paned = tk.PanedWindow(parent, orient="horizontal", background=root_color, sashwidth=style.GAP)
-    paned.pack(fill="both", expand=True, padx=style.GAP, pady=style.GAP)
+    paned = tk.PanedWindow(parent, orient="horizontal", background=rc, sashwidth=style.igap)
+    paned.pack(fill="both", expand=True, padx=style.gap, pady=style.gap)
 
     # Create panes with matching corners and preset widths
     parent.update_idletasks()
     w = paned.winfo_width()
-    left = CTkFrame(paned, width=w//4, background_corner_colors=(root_color, root_color, root_color, root_color))
-    middle = CTkFrame(paned, width=w//4, background_corner_colors=(root_color, root_color, root_color, root_color))
-    right = CTkFrame(paned, width=w//2, background_corner_colors=(root_color, root_color, root_color, root_color))
+    left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
+    middle = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
+    right = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
 
     # Add panes
     paned.add(left, minsize=style.PANE_MIN)
     paned.add(middle, minsize=style.PANE_MIN)
     paned.add(right, minsize=style.PANE_MIN)
     return left, middle, right
+
+def scrollable(style: Style, parent):
+    frame = CTkScrollableFrame(parent, fg_color=style.color("panel"))
+    frame.pack(side="top", fill="both", expand="y", padx=style.gap, pady=style.gap)
+    bind_scroll(frame)
+    return frame
+
+def bind_scroll(sf: CTkScrollableFrame):
+    canvas = sf._parent_canvas
+
+    def _on_mousewheel(event):
+        canvas.yview_scroll(-int(event.delta / 480), "units")
+
+    def _bind_to_mousewheel(_):
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+
+    def _unbind_from_mousewheel(_):
+        canvas.unbind_all("<MouseWheel>")
+        canvas.unbind_all("<Button-4>")
+        canvas.unbind_all("<Button-5>")
+
+    sf.bind("<Enter>", _bind_to_mousewheel)
+    sf.bind("<Leave>", _unbind_from_mousewheel)
 
 def configure_reversible_button(the_button: CTkButton, start_func: callable, stop_func: callable, func_name: str):
     def stop():
