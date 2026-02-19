@@ -45,3 +45,8 @@ net visual
 show connections, pps
 
 path gaps & inferences when there's a break in communication
+
+new menu bar:
+
+[back arrow] [refresh] Title   - 100% + [gear] [help] [light/dark moon] [theme palette] [fullscreen box] [exit X]
+< ⟳ Title         - 100% +  ⚙️  ❔ 🎨  ▢  ❌
