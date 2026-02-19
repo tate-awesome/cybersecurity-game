@@ -45,3 +45,10 @@ class Context:
     def help_message(self, widget="root"):
         # TODO get help from progress and current page and source widget
         return "You need to do something"
+
+    def refresh_net(self, constructor):
+        # Defer to the existing net
+        if self.net is None:
+            self.net = constructor()
+        net = self.net
+        return net

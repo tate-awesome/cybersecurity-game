@@ -22,27 +22,15 @@ from ...network.meta_packet import MetaPacket
 class AttackerV0:
 
     def __init__(self, context: Context):
-        router = context.router
         root = context.root
-        style = Style(context.ui_scale)
-        # Defer to the existing net
-        if context.net is None:
-            context.net = HardwareNetwork()
-        net = context.net
+        style = Style(context)
+        net = context.refresh_net(HardwareNetwork)
 
+        common.full_menu(style, root, "Attacker V0", context)
 
+        left, middle_p, right_p = common.trifold(style, root)
 
-    # Menu bar
-        menu = common.menu_bar(style, root, "Attacker Version 0")
-        common.menu_bar_button(style, menu, "Quit", router.quit)
-        common.menu_bar_button(style, menu, "Refresh", router.refresh)
-        common.menu_bar_button(style, menu, "Toggle Theme", router.mode_toggle)
-        common.menu_bar_button(style, menu, "Select Theme", router.select_theme)
-        common.menu_bar_button(style, menu, "Help", lambda:popup.open(style,root,context.help_message()))
-
-    # Page sections
-
-        left_p, middle_p, right_p = common.trifold(style, root)
+        left_p = common.scrollable(style, left)        
 
     # NMap Widget
         nmap = NMap(style, left_p)
