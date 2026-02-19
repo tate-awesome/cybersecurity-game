@@ -9,6 +9,7 @@ class Style:
         self.nogap = (0, 0)
         self.gaptop = (10, 0)
         self.igap = 10
+        self.cgap = 2
         self.PANE_MIN = self.igap*4
         self.fonts = {}
         # DATA_FONT = CTkFont(family="Courier", size=16)

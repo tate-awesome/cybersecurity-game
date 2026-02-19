@@ -29,7 +29,7 @@ def trifold(style: Style, parent):
 
 def scrollable(style: Style, parent):
     frame = CTkScrollableFrame(parent, fg_color=style.color("panel"))
-    frame.pack(side="top", fill="both", expand="y", padx=style.gap, pady=style.gap)
+    frame.pack(side="top", fill="both", expand="y", padx=style.cgap, pady=style.cgap)
     bind_scroll(frame)
     return frame
 
@@ -67,3 +67,9 @@ def configure_reversible_button(the_button: CTkButton, start_func: callable, sto
 def clear(parent):
     for widget in parent.winfo_children():
         widget.destroy()
+
+def scroll_deadspace(style, parent):
+    parent.update_idletasks()
+    h = parent.winfo_height() * 0.8
+    frame = CTkFrame(parent, fg_color=style.color("panel"), height=h)
+    frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)

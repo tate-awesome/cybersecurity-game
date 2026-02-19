@@ -121,6 +121,9 @@ class AttackerV0:
     # Dos widget
         DOS(style, left_p)
 
+    # Spacer widget
+        common.scroll_deadspace(style, left_p)
+
 
     # Map
         def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
