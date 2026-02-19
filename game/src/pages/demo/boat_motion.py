@@ -31,7 +31,7 @@ class BoatMotion:
         self.color = random_visible_color()
 
         
-        style = Style(context.ui_scale)
+        style = Style(context)
         map = Map(style, self.context.root, self.frame_callback, 100, 20)
 
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):

@@ -6,7 +6,7 @@ from ...widgets.style import Style
 
 class Triangle:
     def __init__(self, context: Context):       
-        style = Style(context.ui_scale)
+        style = Style(context)
         world_map = Map(style, context.root, self.draw_test_plane, 100)
 
     def draw_test_plane(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):

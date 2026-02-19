@@ -4,15 +4,15 @@ from ...network.mod_table import ModTable
 
 class MITM:
     def __init__(self, style: Style, parent: CTkBaseClass):
-        frame = CTkFrame(parent)
-        frame.pack(side="top", fill="x", expand=False, padx=style.GAP, pady=(style.GAP, 0))
+        frame = CTkFrame(parent, fg_color=style.color("widget"))
+        frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         frame.columnconfigure(0, weight=0)
         frame.columnconfigure(1, weight=1)
         frame.columnconfigure(2, weight=0)
         self.frame = frame
 
         header = CTkLabel(frame, text="MITM Attack", font=style.get_font())
-        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=(style.GAP,0))
+        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
         self.labels = {}
@@ -29,11 +29,11 @@ class MITM:
         r = 1
         for name in ["x", "y", "theta", "speed", "rudder"]:
             label = CTkLabel(frame, text=f"{self.names[name]}_out = {self.names[name]}_in *", font=style.get_font())
-            label.grid(row=r, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+            label.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
             self.labels[name] = label
 
             subframe = CTkFrame(frame, bg_color="transparent", fg_color="transparent")
-            subframe.grid(row=r, column=2, sticky="ew", pady=(style.GAP,0), padx=style.GAP)
+            subframe.grid(row=r, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
             subframe.grid_columnconfigure(1, weight=1)
             self.frames[name] = subframe
 
@@ -51,21 +51,21 @@ class MITM:
             r = r+1
 
         save_status = CTkLabel(frame, text="", font=style.get_font())
-        save_status.grid(row=r, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        save_status.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.save_status = save_status
 
         save_button = CTkButton(frame, text="Save Modifiers", font=style.get_font(), command=None)
-        save_button.grid(row=r, column=2, sticky="e", pady=(style.GAP,0), padx=style.GAP)
+        save_button.grid(row=r, column=2, sticky="e", pady=style.gaptop, padx=style.gap)
         self.save_button = save_button
 
         r = r+1
 
         status = CTkLabel(frame, text="", font=style.get_font())
-        status.grid(row=r, column=1, sticky="w", pady=(style.GAP,0), padx=style.GAP)
+        status.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 
         button = CTkButton(frame, text="Start Attack", font=style.get_font(), command=None)
-        button.grid(row=r, column=2, sticky="e", pady=style.GAP, padx=style.GAP)
+        button.grid(row=r, column=2, sticky="e", pady=style.gap, padx=style.gap)
         self.button = button
 
         self.entries = list(self.mults.values())

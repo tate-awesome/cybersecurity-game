@@ -4,7 +4,7 @@ from .style import Style
 def open(style: Style, master: CTkBaseClass, message: str):
         window = CTkToplevel(master)
         window.title("Help")
-        window.config(padx=style.GAP, pady=style.GAP)
+        window.config(padx=style.igap, pady=style.igap)
 
         # Center to app
         width = 500
@@ -20,13 +20,13 @@ def open(style: Style, master: CTkBaseClass, message: str):
 
         # Add widgets to the window
         frame = CTkFrame(window)
-        frame.pack(fill="both", side="top", expand=True, padx=style.GAP, pady=style.GAP)
+        frame.pack(fill="both", side="top", expand=True, padx=style.gap, pady=style.gap)
 
         label = CTkLabel(frame, text=message, font=style.get_font())
-        label.pack(pady=style.GAP, padx=style.GAP)
+        label.pack(pady=style.gap, padx=style.gap)
 
         close_button = CTkButton(frame, text="Dismiss", command=window.destroy, font=style.get_font())
-        close_button.pack(pady=style.GAP, side="bottom")
+        close_button.pack(pady=style.gap, side="bottom")
 
         window.transient(master)
         window.update_idletasks()

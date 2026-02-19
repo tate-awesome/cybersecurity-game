@@ -89,7 +89,7 @@ class Map:
 
         # Create canvas
         self.canvas = CTkCanvas(parent)
-        self.canvas.pack(side="top", fill="both", expand=True, pady=style.GAP, padx=style.GAP)
+        self.canvas.pack(side="top", fill="both", expand=True, pady=style.gap, padx=style.gap)
 
         # Bind events
         self.parent.bind("<Configure>", self.resize)

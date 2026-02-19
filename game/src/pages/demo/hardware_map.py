@@ -37,7 +37,7 @@ class HardwareMap:
                 draw.boat(last_position, bearing, "white", "black")
         
         # Build page
-        style = Style(context.ui_scale)
+        style = Style(context)
         menu_bar = place.menu_bar(style, root, "Demo")
         
         no_button = place.menu_bar_button(style, menu_bar, "Start Printing")
