@@ -15,7 +15,9 @@ class Context:
         self.progress = {
             "nmap": False,
             "arp": False,
-            "sniff": False
+            "sniff": False,
+            "mitm": False,
+            "dos": False
         }
         '''
         Tracks the state of the hacks on the GUI.
@@ -26,7 +28,7 @@ class Context:
         '''
 
         self.inputs = {
-            "arp": ["",""],
+            "arp": ["192.168.8.137","192.168.8.243"],
             "sniff": ["",""]
         }
         '''
