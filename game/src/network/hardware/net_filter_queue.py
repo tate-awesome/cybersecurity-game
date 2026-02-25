@@ -3,6 +3,7 @@ NFQ module. Callbacks and persistent object
 '''
 
 from scapy.all import IP, TCP, Packet
+from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 import threading, os, select
 from netfilterqueue import NetfilterQueue as NFQ
 from .. import modbus_util as mb
@@ -27,17 +28,7 @@ class NetFilterQueue:
         if self.is_running():
             print("NFQ already running")
             return
-        callback_dict = {
-            "none_accept": self.accept_only,
-            "print_accept": self.print_and_accept,
-            "show_accept": self.show_and_accept,
-            "buffer_accept": self.buffer_and_accept,
-            
-            "none_modify": None,
-            "print_modify": self.print_and_modify,
-            "buffer_modify": self.buffer_and_modify
-        }
-        self.callback = self.buffer_and_modify
+        self.callback = self.modify_and_accept3
         self.stop_event = threading.Event()
 
         self.thread = threading.Thread(target=self._start, daemon=True)
@@ -93,6 +84,57 @@ class NetFilterQueue:
 
     # Callbacks
     def accept_only(self, pkt: Packet):
+        pkt.accept()
+
+    def modify_and_accept3(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        if spkt.haslayer("Read Holding Registers Response"):
+            mult = self.table.get_raw("speed", "mult")
+            offset = self.table.get_raw("speed", "offset")
+
+            mbl = spkt.getlayer(ModbusADUResponse)
+
+            speed = mbl.payload.registerVal[0]
+            val = int(speed * mult + offset)
+            val = max(0, min(65535, val))
+            mbl.payload.registerVal[0] = val
+
+            if len(mbl.payload.registerVal) > 1:
+                mult = self.table.get_raw("rudder", "mult")
+                offset = self.table.get_raw("rudder", "offset")
+                rudder = mbl.payload.registerVal[1]
+                val = int(rudder * mult + offset)
+                val = max(0, min(65535, val))
+                mbl.payload.registerVal[1] = val
+
+        elif spkt.haslayer("Write Single Register"):
+            mbl = spkt.getlayer(ModbusADURequest)
+
+            if mbl.payload.registerAddr == 10: # X address
+                var = "x"
+            elif mbl.payload.registerAddr == 11: # Y address
+                var = "y"
+            else: # Theta address
+                var = "theta"
+
+            z = mbl.payload.registerValue
+            mult = self.table.get_raw(var, "mult")
+            offset = self.table.get_raw(var, "offset")
+            val = int(z * mult + offset)
+            val = max(0, min(65535, val))
+            mbl.payload.registerValue = val
+
+        else:
+            pkt.accept()
+            return
+
+        # Recalculate checksums
+        del mbl.len
+        del spkt[TCP].chksum
+        del spkt[IP].chksum
+        del spkt[IP].len
+
+        pkt.set_payload(bytes(spkt))
         pkt.accept()
 
     def print_and_accept(self, pkt: Packet):
