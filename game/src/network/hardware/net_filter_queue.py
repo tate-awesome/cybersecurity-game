@@ -9,11 +9,12 @@ from netfilterqueue import NetfilterQueue as NFQ
 from .. import modbus_util as mb
 from ..mod_table import ModTable
 from ..packet_buffer import PacketBuffer
+from ..data_buffer import DataBuffer
 
 
 class NetFilterQueue:
 
-    def __init__(self, buffer: PacketBuffer, mod_table: ModTable):
+    def __init__(self, buffer: DataBuffer, mod_table: ModTable):
         self.stop_event = None
         self.thread = None
         self.callback = None
@@ -26,7 +27,7 @@ class NetFilterQueue:
 
     def start(self): 
         if self.is_running():
-            print("NFQ already running")
+            self.buffer.put("nfq", "status", "NFQ is already running")
             return
         self.callback = self.modify_and_accept3
         self.stop_event = threading.Event()
@@ -52,7 +53,7 @@ class NetFilterQueue:
         # Pipe for stop signaling
         stop_r, stop_w = os.pipe()
         poller.register(stop_r, select.POLLIN)
-        print("Starting NFQ")
+        self.buffer.put("nfq", "status", "Starting NFQ")
         try:
             while not self.stop_event.is_set():
                 events = poller.poll(500)
@@ -71,16 +72,16 @@ class NetFilterQueue:
 
     def stop(self):
         if self.stop_event == None and self.thread == None:
-            print("Net filter queue is not running")
+            self.buffer.put("nfq", "status", "Net filter queue is not running")
             return
         else:
-            print("Stopping net filter queue...")
+            self.buffer.put("nfq", "status", "Stopping net filter queue...")
             self.stop_event.set()
             self.thread.join()
             self.stop_event = None
             self.thread = None
             self.callback = None
-            print("Stopped net filter queue")
+            self.buffer.put("nfq", "status", "Stopped net filter queue")
 
     # Callbacks
     def accept_only(self, pkt: Packet):
@@ -89,6 +90,7 @@ class NetFilterQueue:
     def modify_and_accept3(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         if spkt.haslayer("Read Holding Registers Response"):
+            self.buffer.put("nfq", "Incoming Modbus Packet", spkt)
             mult = self.table.get_raw("speed", "mult")
             offset = self.table.get_raw("speed", "offset")
 
@@ -108,6 +110,8 @@ class NetFilterQueue:
                 mbl.payload.registerVal[1] = val
 
         elif spkt.haslayer("Write Single Register"):
+            self.buffer.put("nfq", "Incoming Modbus Packet", spkt)
+
             mbl = spkt.getlayer(ModbusADURequest)
 
             if mbl.payload.registerAddr == 10: # X address
@@ -129,13 +133,16 @@ class NetFilterQueue:
             return
 
         # Recalculate checksums
-        del mbl.len
+        # del mbl.len
+        del spkt[IP].len
         del spkt[TCP].chksum
         del spkt[IP].chksum
-        del spkt[IP].len
 
+        spkt = IP(bytes(spkt))
         pkt.set_payload(bytes(spkt))
         pkt.accept()
+
+        self.buffer.put("nfq", "Outgoing Modbus Packet", spkt)
 
     def print_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
@@ -163,42 +170,6 @@ class NetFilterQueue:
             return
     
         mb.print_scannable(spkt)
-
-        # Recalculate checksums
-        del spkt[TCP].chksum
-        del spkt[IP].chksum
-        del spkt[IP].len
-
-        pkt.set_payload(bytes(spkt))
-        pkt.accept()
-
-    def buffer_and_accept(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
-        self.buffer.put(spkt, "in")
-        pkt.accept()
-
-    def buffer_print_accept(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
-        self.buffer.put(spkt, "in")
-        mb.print_scannable(spkt)
-        pkt.accept()
-
-    def buffer_and_modify(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
-        
-        self.buffer.put(spkt, "in")
-
-        if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt, self.table)
-
-        elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt, self.table)
-
-        else:
-            pkt.accept()
-            return
-
-        self.buffer.put(spkt, "out")
 
         # Recalculate checksums
         del spkt[TCP].chksum
