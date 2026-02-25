@@ -1,13 +1,22 @@
 from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw
 
 class MetaPacket:
-    def __init__(self, pkt: Packet, current_time: float, number: int, direction: str = "in", variable: str = "None", value: str = "None"):
+    def __init__(  self, pkt: Packet, current_time: float, number: int,
+    hack: str, purpose: str = "None",
+    direction: str = "in", variable: str = "None", value: str = "None"):
+        # Essential info
         self.pkt = pkt
         self.time = current_time
         self.number = number
+
+        # Hack showcase info
+        self.hack = hack
+        self.purpose = purpose
+        self.direction = direction
+
+        # Modbus info
         self.variable = variable
         self.value = value
-        self.direction = direction
 
     def show(self):
         self.pkt.show()
