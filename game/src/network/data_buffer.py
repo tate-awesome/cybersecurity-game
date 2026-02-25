@@ -17,7 +17,6 @@ class DataBuffer:
     '''
     def __init__(self, max_size = 5000):
         self.max_size = max_size
-        self.packet_number = 1
         self.start_time = Time.time()
         self.mac = ARP().hwsrc
 
@@ -51,6 +50,7 @@ class DataBuffer:
         '''
         for key in ["nmap", "arp", "sniff", "dos", "mitm"]:
             self.console_buffers[key] = {
+                "number": 1,
                 "deque": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
@@ -89,11 +89,6 @@ class DataBuffer:
                     "deque": deque(maxlen=self.max_size),
                     "lock": Lock()
                 }
-        # Variable seismographs
-        # Time-separated boat position trails
-        # Sniffer puts MetaPackets
-        # NMAP results
-        # ARP lines
 
     def put(self, source: str, purpose: str, data: Packet or list[str]):
         '''
@@ -102,6 +97,7 @@ class DataBuffer:
         If a status message is for a packet, it must go after the packet.
         '''
         if source == "nmap":
+            # TODO push data to nmap console (process showcase)
             print("\n\n")
             print(purpose)
             if isinstance(data, Packet):
@@ -114,6 +110,7 @@ class DataBuffer:
             return
         
         if source == "arp":
+            # TODO push data to arp console (process showcase + wireshark + explanation)
             print("\n\n")
             print(purpose)
             if isinstance(data, Packet):
@@ -126,6 +123,10 @@ class DataBuffer:
             return
 
         if source == "sniff":
+            # TODO push data to sniff console (wireshark clone using MetaPackets)
+            # Variable tracers (regular timestep, broken during breaks)
+            # Time-separated boat position trails
+
             print("\n\n")
             print(purpose)
             if isinstance(data, Packet):
@@ -141,6 +142,7 @@ class DataBuffer:
             return
 
         if source == "nfq":
+            # TODO push data to nfq console (before/after showcase)
             print("\n\n")
             print(purpose)
             if isinstance(data, Packet):
