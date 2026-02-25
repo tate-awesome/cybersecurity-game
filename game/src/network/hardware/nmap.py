@@ -4,19 +4,20 @@ Module
 import scapy.all as scapy
 from scapy.all import IP, ICMP, sr1
 import ipaddress, netifaces
-import threading
 
 
-def get_network() -> tuple[str, str]:
-    '''
-    Returns your ip and the netmask
-    '''
+def get_ip() -> str:
     iface = "wlp0s20f3"
     info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
-
     ip = info["addr"]
+    return ip
+
+def get_netmask() -> str:
+    iface = "wlp0s20f3"
+    info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
     netmask = info["netmask"]
-    return ip, netmask
+    return netmask
+
 
 
 def compute_network(ip: str, netmask: str) -> str:
@@ -47,6 +48,13 @@ def get_host_ips(hosts):
     for h in hosts:
         out.append(h["ip"])
     return out
+
+def do_nmap():
+    ip = get_ip()
+    netmask = get_netmask()
+    network = compute_network(ip, netmask)
+    hosts = get_hosts(network)
+    host_ips = get_host_ips(hosts)
 
 
 if __name__ == "__main__":

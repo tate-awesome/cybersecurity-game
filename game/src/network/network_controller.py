@@ -6,6 +6,9 @@ from . import packet_buffer, mod_table
 
 class Network(ABC):
     @abstractmethod
+    def do_nmap(self):...
+
+    @abstractmethod
     def start_arp(self, target_ip, host_ip):...
 
     @abstractmethod
@@ -46,6 +49,9 @@ class HardwareNetwork(Network):
         self.table = mod_table.ModTable()
         self.nfq = net_filter_queue.NetFilterQueue(self.buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.buffer)
+
+    def do_nmap(self):
+        nmap.do_nmap()
 
     def start_arp(self, target_ip, host_ip):
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
