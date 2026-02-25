@@ -95,6 +95,11 @@ class DataBuffer:
         # ARP lines
 
     def put(self, source: str, purpose: str, data: Packet or list[str]):
+        '''
+        Put status messages and packets into the buffer.
+
+        If a status message is for a packet, it must go after the packet.
+        '''
         if source == "nmap":
             print("\n\n")
             print(purpose)
@@ -102,7 +107,16 @@ class DataBuffer:
                 data.summary()
                 data.show()
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
-                print("ste")
+                print("\t".join(data))
+            return
+        
+        if source == "arp":
+            print("\n\n")
+            print(purpose)
+            if isinstance(data, Packet):
+                data.summary()
+                data.show()
+            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
 
     def put_packet(self, pkt: Packet, dir: str):

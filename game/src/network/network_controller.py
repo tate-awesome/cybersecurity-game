@@ -45,7 +45,7 @@ class HardwareNetwork(Network):
     def __init__(self):
         self.buffer = packet_buffer.PacketBuffer()
         self.data_buffer = data_buffer.DataBuffer()
-        self.arp_spoofer = arp_spoofing.ArpSpoofer()
+        self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
         self.nmap = nmap.NMapper(self.data_buffer)
         self.table = mod_table.ModTable()
         self.nfq = net_filter_queue.NetFilterQueue(self.buffer, self.table)
