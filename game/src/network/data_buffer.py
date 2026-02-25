@@ -1,7 +1,7 @@
 from collections import deque
 from threading import Lock
 import time as Time
-from scapy.all import Packet
+from scapy.all import Packet, ARP
 from . import modbus_util as modbus
 from .meta_packet import MetaPacket
 
@@ -19,6 +19,7 @@ class DataBuffer:
         self.max_size = max_size
         self.packet_number = 1
         self.start_time = Time.time()
+        self.mac = ARP().hwsrc
 
         self.factors = {
             "x": 0.01,
@@ -130,6 +131,24 @@ class DataBuffer:
             if isinstance(data, Packet):
                 data.summary()
                 data.show()
+                # print(data.hwdst)
+                # TODO NEXT Direction: compare data.hwdst to self.mac
+                # data.hwsrc
+            elif isinstance(data, str):
+                print(data)
+            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
+                print("\t".join(data))
+            return
+
+        if source == "nfq":
+            print("\n\n")
+            print(purpose)
+            if isinstance(data, Packet):
+                data.summary()
+                data.show()
+                # print(data.hwdst)
+                # 
+                # data.hwsrc
             elif isinstance(data, str):
                 print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):

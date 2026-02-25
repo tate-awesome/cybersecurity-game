@@ -48,7 +48,7 @@ class HardwareNetwork(Network):
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
         self.nmap = nmap.NMapper(self.data_buffer)
         self.table = mod_table.ModTable()
-        self.nfq = net_filter_queue.NetFilterQueue(self.buffer, self.table)
+        self.nfq = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.data_buffer)
 
     def do_nmap(self):
