@@ -1,10 +1,10 @@
 from scapy.all import TCP, AsyncSniffer
 from .. import modbus_util as mb
-from ..packet_buffer import PacketBuffer
+from ..data_buffer import DataBuffer
 
 
 class Sniffer:
-    def __init__(self, buffer: PacketBuffer):
+    def __init__(self, buffer: DataBuffer):
         self.sniffer = None
         self.buffer = buffer
 
@@ -19,7 +19,7 @@ class Sniffer:
         This makes all packets available to the GUI and simplifies user options.
         '''
         if self.is_running():
-            print("Sniffer is already running")
+            self.buffer.put("sniff", "status", "Sniffer is already running")
             return
 
         # callback_dict = {
@@ -30,42 +30,21 @@ class Sniffer:
         #     "print_modbus": self.print_scannable,
         #     "buffer_modbus": self.put_modbus_in_buffer
         # }
-        packet_handler = self.put_all_in_buffer
 
-        print("Starting sniffer...")
+        self.buffer.put("sniff", "status", "Starting Sniffer")
+        def callback(pkt):
+            self.buffer.put("sniff", "Sniffed Packet", pkt)
         self.sniffer = AsyncSniffer(
-            prn=packet_handler,
+            prn=callback,
             store=False
         )
         self.sniffer.start()
-        print("Started sniffer")
 
 
     def stop(self):
         if self.sniffer is not None:
             self.sniffer.stop()
             self.sniffer = None
-            print("Stopped sniffer")
+            self.buffer.put("sniff", "status", "Stopped Sniffer")
         else:
-            print("Sniffer is not running")
-
-    def show(self, pkt):
-        pkt.show()
-
-    def show_modbus(self, pkt):
-        if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
-            if mb.is_coord(pkt) or mb.is_commands(pkt):
-                pkt.show()
-
-    def print_scannable(self, pkt):
-        if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
-            if mb.is_coord(pkt) or mb.is_commands(pkt):
-                mb.print_scannable(pkt, convert=True)
-
-    def put_modbus_in_buffer(self, pkt):
-        if pkt.haslayer(TCP) and (pkt[TCP].sport == 502 or pkt[TCP].dport == 502):
-            if mb.is_coord(pkt) or mb.is_commands(pkt):
-                self.buffer.put(pkt, "in")
-
-    def put_all_in_buffer(self, pkt):
-        self.buffer.put(pkt, "in")
+            self.buffer.put("sniff", "status", "Sniffer is not running")

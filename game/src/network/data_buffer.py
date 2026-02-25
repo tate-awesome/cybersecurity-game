@@ -106,6 +106,8 @@ class DataBuffer:
             if isinstance(data, Packet):
                 data.summary()
                 data.show()
+            elif isinstance(data, str):
+                print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
             return
@@ -116,8 +118,23 @@ class DataBuffer:
             if isinstance(data, Packet):
                 data.summary()
                 data.show()
+            elif isinstance(data, str):
+                print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
+            return
+
+        if source == "sniff":
+            print("\n\n")
+            print(purpose)
+            if isinstance(data, Packet):
+                data.summary()
+                data.show()
+            elif isinstance(data, str):
+                print(data)
+            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
+                print("\t".join(data))
+            return
 
     def put_packet(self, pkt: Packet, dir: str):
         '''

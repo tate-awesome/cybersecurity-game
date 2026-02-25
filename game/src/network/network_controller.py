@@ -49,7 +49,7 @@ class HardwareNetwork(Network):
         self.nmap = nmap.NMapper(self.data_buffer)
         self.table = mod_table.ModTable()
         self.nfq = net_filter_queue.NetFilterQueue(self.buffer, self.table)
-        self.sniffer = sniffing.Sniffer(self.buffer)
+        self.sniffer = sniffing.Sniffer(self.data_buffer)
 
     def do_nmap(self):
         self.nmap.do_nmap()
