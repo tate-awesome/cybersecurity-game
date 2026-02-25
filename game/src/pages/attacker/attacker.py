@@ -6,6 +6,7 @@ from ...widgets import common, popup
 from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
+from ...widgets.console import Console
 
 # Network
 from ...network.network_controller import HardwareNetwork
@@ -40,11 +41,7 @@ class AttackerV0:
             nmap.status.configure(text="Pinging...")
             root.update_idletasks()
 
-            ip, netmask = net.nmap.get_network()
-            network = net.nmap.compute_network(ip, netmask)
-            hosts = net.nmap.get_hosts(network)
-            host_ips = net.nmap.get_host_ips(hosts)
-            print(host_ips) # TODO push this to the GUI console
+            net.do_nmap()
 
             nmap.status.configure(text="NMap Complete")
     
@@ -57,6 +54,7 @@ class AttackerV0:
     # ARP Widget
         arp = ARP(style, left_p)
         def start_arp():
+            context.progress["arp"] = True
             target_ip = str(arp.entry1.get())
             host_ip = str(arp.entry2.get())
             root.update_idletasks()
@@ -81,6 +79,7 @@ class AttackerV0:
                 mpkt.show()
 
         def start_sniff():
+            context.progress["sniff"] = True
             root.update_idletasks()
             net.buffer.add_callback("sniff_handler", sniff_handler)
             net.start_sniff()
@@ -103,6 +102,7 @@ class AttackerV0:
             mpkt.wireshark_line(True)
 
         def start_mitm():
+            context.progress["mitm"] = True
             root.update_idletasks()
             net.buffer.add_callback("mitm_handler", mitm_handler)
             net.start_nfq()
@@ -123,6 +123,9 @@ class AttackerV0:
 
     # Spacer widget
         common.scroll_deadspace(style, left_p)
+
+    # Console
+        console = Console(style, middle_p, context)
 
 
     # Map
