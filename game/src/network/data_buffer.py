@@ -1,9 +1,11 @@
 from collections import deque
 from threading import Lock
 import time as Time
-from scapy.all import Packet, ARP
+from scapy.all import Packet, ARP, Ether
 from . import modbus_util as modbus
 from .meta_packet import MetaPacket
+
+from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 
 # Tabview -> tab -> console -> update loop (100ms) pulls everything from buffer to display (print for now)
 # Hack widget -> hack.start -> handler -> hack.put -> buffer["hack"].packet OR NMAP result OR ARP lines
@@ -48,7 +50,7 @@ class DataBuffer:
 
             "mitm": ?
         '''
-        for key in ["nmap", "arp", "sniff", "dos", "mitm"]:
+        for key in ["nmap", "arp", "sniff", "dos", "nfq"]:
             self.console_buffers[key] = {
                 "number": 1,
                 "deque": deque(maxlen=self.max_size),
@@ -90,12 +92,43 @@ class DataBuffer:
                     "lock": Lock()
                 }
 
-    def put(self, source: str, purpose: str, data: Packet or list[str]):
+    def put(self, source: str, purpose: str, data: Packet or list[str] or str):
         '''
         Put status messages and packets into the buffer.
 
         If a status message is for a packet, it must go after the packet.
         '''
+        # Set time and number
+        current_time = Time.time() - self.start_time
+
+        # Put single str in list for data safety
+        if isinstance(data, str):
+            data = [data]
+
+        # Exit if data is bad
+        if not isinstance(data, Packet) and not (isinstance(data, list) and all(isinstance(s, str) for s in data)):
+            return
+
+
+        if isinstance(data, Packet):
+            # Increment number
+            current_number = self.console_buffers[source]["number"]
+            self.console_buffers[source]["number"] = current_number + 1
+            
+            # make data a MetaPacket
+            variables, values = self.extract(data)
+            data = MetaPacket(data, current_time, current_number,
+                source, purpose,
+                variables, values)
+        
+        # Print your data
+        print(data)
+        return
+
+            
+
+
+        # Console buffers (packets, strings, columnated strings)
         if source == "nmap":
             # TODO push data to nmap console (process showcase)
             print("\n\n")
@@ -103,8 +136,6 @@ class DataBuffer:
             if isinstance(data, Packet):
                 data.summary()
                 data.show()
-            elif isinstance(data, str):
-                print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
             return
@@ -116,8 +147,6 @@ class DataBuffer:
             if isinstance(data, Packet):
                 data.summary()
                 data.show()
-            elif isinstance(data, str):
-                print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
             return
@@ -135,8 +164,6 @@ class DataBuffer:
                 # print(data.hwdst)
                 # TODO NEXT Direction: compare data.hwdst to self.mac
                 # data.hwsrc
-            elif isinstance(data, str):
-                print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
             return
@@ -151,11 +178,40 @@ class DataBuffer:
                 # print(data.hwdst)
                 # 
                 # data.hwsrc
-            elif isinstance(data, str):
-                print(data)
             elif isinstance(data, list) and all(isinstance(s, str) for s in data):
                 print("\t".join(data))
             return
+
+    def extract(self, pkt: Packet) -> tuple[list[str], list[float]]:
+        # Extract variables
+        if pkt.haslayer("Read Holding Registers Response"):
+            variables = ["speed"]
+            mbl = pkt.getlayer(ModbusADUResponse)
+            values = [mbl.payload.registerVal[0]*self.factors["speed"]]
+
+            if len(mbl.payload.registerVal) > 1:
+                variables.append("rudder")
+                values.append(mbl.payload.registerVal[1]*self.factors["rudder"])
+
+        elif pkt.haslayer("Write Single Register"):
+            mbl = pkt.getlayer(ModbusADURequest)
+            if mbl.payload.registerAddr == 10: # X address
+                var = "x"
+            elif mbl.payload.registerAddr == 11: # Y address
+                var = "y"
+            else: # Theta address
+                var = "theta"
+
+            z = mbl.payload.registerValue
+
+            variables = [var]
+            values = [z*self.factors[var]]
+        
+        else:
+            variables = []
+            values = []
+
+        return variables, values
 
     def put_packet(self, pkt: Packet, dir: str):
         '''
