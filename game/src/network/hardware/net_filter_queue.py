@@ -29,7 +29,7 @@ class NetFilterQueue:
         if self.is_running():
             self.buffer.put("nfq", "status", "NFQ is already running")
             return
-        self.callback = self.modify_and_accept3
+        self.callback = self.modify_and_accept
         self.stop_event = threading.Event()
 
         self.thread = threading.Thread(target=self._start, daemon=True)
@@ -87,7 +87,7 @@ class NetFilterQueue:
     def accept_only(self, pkt: Packet):
         pkt.accept()
 
-    def modify_and_accept3(self, pkt: Packet):
+    def modify_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         if spkt.haslayer("Read Holding Registers Response"):
             self.buffer.put("nfq", "Incoming Modbus Packet", spkt)
@@ -143,38 +143,3 @@ class NetFilterQueue:
         pkt.accept()
 
         self.buffer.put("nfq", "Outgoing Modbus Packet", spkt)
-
-    def print_and_accept(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
-        mb.print_scannable(spkt)
-        pkt.accept()
-
-    def show_and_accept(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
-        spkt.show()
-        pkt.accept()
-
-    def print_and_modify(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
-        mb.print_scannable(spkt)
-
-
-        if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt, self.table)
-
-        elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt, self.table)
-
-        else:
-            pkt.accept()
-            return
-    
-        mb.print_scannable(spkt)
-
-        # Recalculate checksums
-        del spkt[TCP].chksum
-        del spkt[IP].chksum
-        del spkt[IP].len
-
-        pkt.set_payload(bytes(spkt))
-        pkt.accept()
