@@ -1,9 +1,13 @@
-from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw
+from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether
+from scapy.arch import get_if_addr, get_if_hwaddr
+from scapy.contrib import modbus
+import json
 
 class MetaPacket:
     def __init__(  self, pkt: Packet, current_time: float, number: int,
     hack: str, purpose: str = "None",
-    direction: str = "in", variable: str = "None", value: str = "None"):
+    variables: list[str] = [], values: list[str] = []):
+
         # Essential info
         self.pkt = pkt
         self.time = current_time
@@ -12,34 +16,69 @@ class MetaPacket:
         # Hack showcase info
         self.hack = hack
         self.purpose = purpose
+        direction = "none"
+        if pkt.haslayer(Ether):
+            mac = get_if_hwaddr("wlp0s20f3")
+            if pkt[Ether].src == mac:
+                direction = "out"
+            elif pkt[Ether].dst == mac:
+                direction = "in"
+        elif pkt.haslayer(IP):
+            ip = get_if_addr("wlp0s20f3")
+            if pkt[IP].src == ip:
+                direction = "out"
+            elif pkt[IP].dst == ip:
+                direction = "in"
         self.direction = direction
 
         # Modbus info
-        self.variable = variable
-        self.value = value
+        self.variables = variables
+        self.values = values
 
-    def show(self):
-        self.pkt.show()
+    def __str__(self) -> str:
+        s=" / "
+        c=","
+        if self.direction == "in":
+            dir = "incoming"
+        elif self.direction == "out":
+            dir = "outgoing"
+        else:
+            dir = "unknown"
 
-    def wireshark_line(self, dump = False) -> list[str]:
+        hwsrc = ""
+        hwdst = ""
+        if self.pkt.haslayer(Ether):
+            hwsrc = str(self.pkt[Ether].src)
+            hwdst = str(self.pkt[Ether].dst)
+        ipsrc = ""
+        ipdst = ""
+        if self.pkt.haslayer(IP):
+            ipsrc = str(self.pkt[IP].src)
+            ipdst = str(self.pkt[IP].dst)
+
+        layers = s.join(layer.__name__ for layer in self.pkt.layers())
+        length = str(len(self.pkt))
+
+        lines = []
+        lines.append(f"[ {layers} ]")
+        lines.append(f"   | no: {self.number}\ttime: {self.time:.3f}\tlen: {length}\tfrom: {self.hack}")
+        lines.append(f"   | hwsrc: {hwsrc}\thwdst: {hwdst}")
+        lines.append(f"   | ipsrc: {ipsrc}\tipdst: {ipdst}")
+        lines.append(f"   | dir: {dir}\tpurpose: {self.purpose}")
+        lines.append(f"   | {self.get_info()}")
+        lines.append("")
+        return "\n".join(lines)
+
+
+    def get_info(self) -> str:
         pkt = self.pkt
-
-        number = str(self.number)
-        time = f"{self.time:.6f}"
-        length = str(len(pkt))
-        direction = self.direction
-
-        src = "?"
-        dst = "?"
-        proto = "?"
         info = ""
+        proto = ""
 
         # ---------------- ARP ----------------
         if pkt.haslayer(ARP):
             arp = pkt[ARP]
             proto = "ARP"
-            src = arp.psrc
-            dst = arp.pdst
 
             if arp.op == 1:
                 info = f"Who has {arp.pdst}? Tell {arp.psrc}"
@@ -51,8 +90,6 @@ class MetaPacket:
         # ---------------- IP ----------------
         elif pkt.haslayer(IP):
             ip = pkt[IP]
-            src = ip.src
-            dst = ip.dst
 
             # ---------- TCP ----------
             if pkt.haslayer(TCP):
@@ -76,7 +113,7 @@ class MetaPacket:
                 flag_str = flag_str.rstrip(",")
 
                 # Duplicate ACK heuristic
-                if flags.A and not flags.S and tcp.len == 0:
+                if flags.A and not flags.S and len(tcp) == 0:
                     flag_str += " (Dup ACK?)"
 
                 info = f"{tcp.sport} → {tcp.dport} [{flag_str}] Seq={tcp.seq} Ack={tcp.ack}"
@@ -101,6 +138,40 @@ class MetaPacket:
 
                     except:
                         pass
+                
+                # -------- ModBus detection --------
+                if pkt.haslayer(modbus.ModbusADUResponse) or pkt.haslayer(modbus.ModbusADURequest):
+                    func_meanings = {
+                        1: "Read Coils",
+                        2: "Read Discrete Inputs",
+                        3: "Read Holding Registers",
+                        4: "Read Input Registers",
+                        5: "Write Single Coil",
+                        6: "Write Single Register",
+                        15: "Write Multiple Coils",
+                        16: "Write Multiple Registers"
+                    }
+                    register_meanings = {
+                        3: "Speed Feedback",    # 12-bit count Bytes = X*5/4095
+                        4: "Rudder Feedback",   # 12-bit count Bytes = X*30/4095
+                        10: "X Position",       # Bytes = meters*100
+                        11: "Y Position",       # meters*100
+                        12: "Theta (Heading)"   # milli-radians
+                    }
+                    if pkt.haslayer(modbus.ModbusADUResponse):
+                        mbl = pkt.getlayer(modbus.ModbusADUResponse)
+                        re = "Response"
+                    elif pkt.haslayer(modbus.ModbusADURequest):
+                        mbl = pkt.getlayer(modbus.ModbusADURequest)
+                        re = "Request"
+                    func_code = mbl.funcCode
+                    name = mbl.getlayer(1).name
+                    action = ""
+                    if pkt.haslayer("Write Single Register") or pkt.haslayer("Read Holding Registers Response"):
+                        action = f"{str(self.variables)} is {str(self.values)}"
+                    proto = "Modbus"
+                    info = f"({func_code}) {name} - {action}"
+                    
 
             # ---------- UDP ----------
             elif pkt.haslayer(UDP):
@@ -130,23 +201,8 @@ class MetaPacket:
                 info = pkt.summary()
 
         else:
-            proto = pkt.__class__.__name__
             info = pkt.summary()
 
-        out = [
-            number,
-            time,
-            src,
-            dst,
-            proto,
-            length,
-            direction,
-            info
-        ]
-
-        if dump:
-            print("\t".join(out))
-        else:
-            return out
+        return f"{proto}: {info}"
 
     
