@@ -12,8 +12,9 @@ class MetaPacket:
         self.pkt = pkt
         self.time = current_time
         self.number = number
+        self.length = str(len(self.pkt))
 
-        # Hack showcase info
+        # Hack info
         self.hack = hack
         self.purpose = purpose
         direction = "none"
@@ -29,41 +30,60 @@ class MetaPacket:
                 direction = "out"
             elif pkt[IP].dst == ip:
                 direction = "in"
+
+        # Get direction
         self.direction = direction
+        if self.direction == "in":
+            self.direction_verbose = "incoming"
+        elif self.direction == "out":
+            self.direction_verbose = "outgoing"
+        else:
+            self.direction_verbose = "unknown"
+
+        # Try to get mac info
+        self.hwsrc = "unknown"
+        self.hwdst = "unknown"
+        if self.pkt.haslayer(Ether):
+            self.hwsrc = str(self.pkt[Ether].src)
+            self.hwdst = str(self.pkt[Ether].dst)
+
+        # Try to get ip info
+        self.ipsrc = "unknown"
+        self.ipdst = "unknown"
+        if self.pkt.haslayer(IP):
+            self.ipsrc = str(self.pkt[IP].src)
+            self.ipdst = str(self.pkt[IP].dst)
+
+        # Get protocol layers
+        self.layers = " / ".join(layer.__name__ for layer in self.pkt.layers())
 
         # Modbus info
         self.variables = variables
         self.values = values
 
+        # Label fields
+        self.fields = {
+            "Time": self.time,
+            "No.": self.number,
+            "Hack": self.hack,
+            "Purpose": self.purpose,
+            "Direction": self.direction_verbose,
+            "MAC Source": self.hwsrc,
+            "MAC Destination": self.hwdst,
+            "IP Source": self.ipsrc,
+            "IP Destination": self.ipdst,
+            "Protocol Layers": self.layers,
+            "Modbus Variables": self.variables,
+            "Modbus Values": self.values,
+            "Info String": self.get_info()
+        }
+
     def __str__(self) -> str:
-        s=" / "
-        c=","
-        if self.direction == "in":
-            dir = "incoming"
-        elif self.direction == "out":
-            dir = "outgoing"
-        else:
-            dir = "unknown"
-
-        hwsrc = ""
-        hwdst = ""
-        if self.pkt.haslayer(Ether):
-            hwsrc = str(self.pkt[Ether].src)
-            hwdst = str(self.pkt[Ether].dst)
-        ipsrc = ""
-        ipdst = ""
-        if self.pkt.haslayer(IP):
-            ipsrc = str(self.pkt[IP].src)
-            ipdst = str(self.pkt[IP].dst)
-
-        layers = s.join(layer.__name__ for layer in self.pkt.layers())
-        length = str(len(self.pkt))
-
         lines = []
-        lines.append(f"[ {layers} ]")
-        lines.append(f"   | no: {self.number}\ttime: {self.time:.3f}\tlen: {length}\tfrom: {self.hack}")
-        lines.append(f"   | hwsrc: {hwsrc}\thwdst: {hwdst}")
-        lines.append(f"   | ipsrc: {ipsrc}\tipdst: {ipdst}")
+        lines.append(f"[ {self.layers} ]")
+        lines.append(f"   | no: {self.number}\ttime: {self.time:.3f}\tlen: {self.length}\tfrom: {self.hack}")
+        lines.append(f"   | hwsrc: {self.hwsrc}\thwdst: {self.hwdst}")
+        lines.append(f"   | ipsrc: {self.ipsrc}\tipdst: {self.ipdst}")
         lines.append(f"   | dir: {dir}\tpurpose: {self.purpose}")
         lines.append(f"   | {self.get_info()}")
         lines.append("")
