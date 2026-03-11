@@ -1,4 +1,4 @@
-from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether
+from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether, conf
 from scapy.arch import get_if_addr, get_if_hwaddr
 from scapy.contrib import modbus
 import json
@@ -19,13 +19,13 @@ class MetaPacket:
         self.purpose = purpose
         direction = "none"
         if pkt.haslayer(Ether):
-            mac = get_if_hwaddr("wlp0s20f3")
+            mac = get_if_hwaddr(conf.iface)
             if pkt[Ether].src == mac:
                 direction = "out"
             elif pkt[Ether].dst == mac:
                 direction = "in"
         elif pkt.haslayer(IP):
-            ip = get_if_addr("wlp0s20f3")
+            ip = get_if_addr(conf.iface)
             if pkt[IP].src == ip:
                 direction = "out"
             elif pkt[IP].dst == ip:
