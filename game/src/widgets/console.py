@@ -1,26 +1,52 @@
 from ..app_core.context import Context
 from ..network.meta_packet import MetaPacket
 from customtkinter import *
+from tkinter import ttk
+import tkinter as tk
 
 class Console:
+    '''
+    Wireshark-like treeview output for different hacks
+    '''
 
     def __init__(self, style, parent, context: Context):
         self.context = context
         self.style = style
-        self.tabs = {}  # hack_name -> textbox
-        self.frame = self.build_frame(parent)
+        self.frame = parent
+        self.create_menu(parent)
 
-        for hack, status in context.progress.items():
-            if status:
-                self.build_tab(hack)
+    def create_menu(self, parent):
+        # Create frame across the top of parent
+
+        # Create dropdown menu
+        for source in ["NMAP", "ARP", "Sniff", "MITM", "DoS"]:
+            print(source)
+            # Add dropdown option for each
+            # Dropdown method is lambda:self.show_stream(source)
+        
+        # Create dropdown for showing fields
+        
+
+    def show_stream(self, source: str):
+        print(source)
+
+    def root(parent, columns):
+        tree = ttk.Treeview(parent, columns=columns, show="headings")
+        tree.pack(fill="both", expand=True)
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=len(col)*8, anchor="w")
+
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+
+    def branch():
+        return
 
     def build_frame(self, parent):
         frame = CTkFrame(parent)
         frame.pack(fill="both", expand=True)
-
-        self.tabview = CTkTabview(frame)
-        self.tabview.pack(fill="both", expand=True)
-
         return frame
 
     def build_tab(self, hack: str):

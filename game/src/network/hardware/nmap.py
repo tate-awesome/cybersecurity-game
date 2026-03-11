@@ -11,6 +11,7 @@ class NMapper:
         self.buffer = buffer
 
     def do_nmap(self):
+        # TODO nmap console command outputs
         # TODO Name these things correctly
         ip = self.get_ip()
         self.buffer.put("nmap", "info", ["Your IP Address", ip])
