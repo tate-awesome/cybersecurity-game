@@ -9,4 +9,9 @@ from src.app_core.app import App
 # ctrl+c in terminal to stop os commands - note: you shouldn't need to do this anymore
 # trash terminal - note: you shouldn't need to do this anymore
 # Wireshark filter:     ip.addr == 192.168.8.137 || arp
+
+# Deactivate venv: deactivate
+# Create venv: python -m venv myenv
+# Activate: source myenv/bin/activate   
+
 game = App("title")
