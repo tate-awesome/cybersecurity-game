@@ -4,9 +4,7 @@ Arp spoofing module. Stateless functions that can be used whenever + Stateful cl
 import scapy.all as scapy
 import threading
 from ..data_buffer import DataBuffer
-
-
-
+import ipaddress, netifaces
 
 
 class ArpSpoofer:
@@ -82,7 +80,7 @@ class ArpSpoofer:
         arp_request = scapy.ARP(pdst=ip)
         broadcast = scapy.Ether(dst ="ff:ff:ff:ff:ff:ff")
         arp_request_broadcast = broadcast/ arp_request
-        answered_list, _ = scapy.srp(arp_request_broadcast, timeout=5)
+        answered_list, _ = scapy.srp(arp_request_broadcast, timeout=2)
         self.buffer.put("arp", "ARP Broadcast Request", arp_request_broadcast)
         if answered_list:
             for received in answered_list:
@@ -111,3 +109,43 @@ class ArpSpoofer:
         self.buffer.put("arp", "Restore packet", packet)
         scapy.send(packet, verbose = False)
         self.buffer.put("arp", "restore message", [f"^ Sent to {destination_ip}", f"{source_ip} is-at {source_mac}"])
+
+
+    def get_interface(self):
+        interface = scapy.conf.iface
+        return interface
+
+
+    def get_ip(self, iface) -> str:
+        info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
+        ip = info["addr"]
+        return str(ip)
+
+
+    def get_netmask(self, iface) -> str:
+        info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
+        netmask = info["netmask"]
+        return str(netmask)
+    
+
+    def compute_network(self, ip: str, netmask: str) -> str:
+        network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
+        return str(network)
+
+
+    def ping_hosts(self, network: str) -> tuple[Packet, list, list]:
+        '''
+        May block for up to 2 seconds.
+        '''
+        network = str(network)
+        ping_packet = scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(pdst=network)
+        answered, unanswered = scapy.srp(ping_packet, timeout=2.0, verbose=False)
+
+        return ping_packet, answered, unanswered
+    
+    
+    def compute_hosts(self, responses: list[Packet]):
+        infos = []
+        for pkt in responses:
+            infos.append(f"Host IP {pkt[ARP].psrc} is at MAC address {pkt[ARP].hwsrc}")
+        return infos
