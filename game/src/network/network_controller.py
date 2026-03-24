@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap
+from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap, dos
 from .virtual import master, slave
 from .saved import loader
 from . import packet_buffer, mod_table, data_buffer
@@ -35,10 +35,20 @@ class Network(ABC):
     @abstractmethod
     def stop_sniff(self):...
 
+    @abstractmethod
+    def start_dos(self):...
+
+    @abstractmethod
+    def dos_is_running(self):...
+
+    @abstractmethod
+    def stop_dos(self):...
+
     def abort_all(self):
         self.stop_arp()
         self.stop_nfq()
         self.stop_sniff()
+        self.stop_dos()
 
 
 class HardwareNetwork(Network):
@@ -50,6 +60,7 @@ class HardwareNetwork(Network):
         self.table = mod_table.ModTable()
         self.nfq = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.data_buffer)
+        self.dos = dos.Denier(self.data_buffer)
 
     def do_nmap(self):
         self.nmap.do_nmap()
@@ -81,6 +92,24 @@ class HardwareNetwork(Network):
 
     def stop_sniff(self):
         self.sniffer.stop()
+
+    def start_dos(self, target_ip):
+        return super().start_dos()
+    
+    def dos_is_running(self, target_ip):
+        return super().dos_is_running()
+    
+    def stop_dos(self, target_ip):
+        return super().stop_dos()
+    
+    def start_dos(self):
+        return super().start_dos()
+    
+    def dos_is_running(self):
+        return super().dos_is_running()
+    
+    def stop_dos(self):
+        return super().stop_dos()
     
 
 class VirtualNetwork(Network):
