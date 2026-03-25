@@ -29,7 +29,8 @@ class Context:
 
         self.inputs = {
             "arp": ["192.168.8.137","192.168.8.243"],
-            "sniff": ["",""]
+            "sniff": ["",""],
+            "dos": ["192.168.8.114:200","192.168.8.114:201"]
         }
         '''
         Save slots for the user inputs during GUI refresh.
