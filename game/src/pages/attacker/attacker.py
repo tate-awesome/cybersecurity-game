@@ -16,7 +16,7 @@ from ...widgets.forms.nmap import NMap
 from ...widgets.forms.arp import ARP
 from ...widgets.forms.sniff import Sniff
 from ...widgets.forms.mitm import MITM
-from ...widgets.forms.dos import DOS
+from ...widgets.forms.dos import DoS
 
 # Packet
 from ...network.meta_packet import MetaPacket
@@ -68,6 +68,24 @@ class AttackerV0:
 
         arp.load_saved_input(context.inputs["arp"])
         arp.bind_input_autosave(context.inputs["arp"])
+    
+    # DoS Widget
+        dos = DoS(style, left_p)
+        def start_dos():
+            context.progress["dos"] = True
+            ip_1 = str(dos.entry1.get())
+            ip_2 = str(dos.entry2.get())
+            root.update_idletasks()
+            net.start_dos(ip_1, ip_2)
+        def stop_dos():
+            root.update_idletasks()
+            net.stop_dos()
+        
+        start_on = net.dos_is_running()
+        dos.bind_reversible(start_dos, stop_dos, "DoS Attack", start_on)
+
+        dos.load_saved_input(context.inputs["dos"])
+        dos.bind_input_autosave(context.inputs["dos"])
 
     # Sniffing Widget
         sniff = Sniff(style, left_p)
@@ -118,8 +136,6 @@ class AttackerV0:
         mitm.bind_input_alert()
         mitm.load_saved_input(net.table)
         mitm.bind_input_save(net.table)
-    # Dos widget
-        DOS(style, left_p)
 
     # Spacer widget
         common.scroll_deadspace(style, left_p)

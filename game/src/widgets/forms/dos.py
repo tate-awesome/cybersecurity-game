@@ -1,27 +1,88 @@
 from customtkinter import *
 from ..style import Style
 
-class DOS:
-    def __init__(self, style: Style, parent: CTkBaseClass):
-        ...
 
-def dos(style: Style, parent):
-    ip_frame = CTkFrame(parent)
-    ip_frame.pack(side="top", fill="x", expand=False, padx=style.gap, pady=style.gaptop)
-    ip_frame.columnconfigure(0, weight=0)
-    ip_frame.columnconfigure(1, weight=1)
-    ip_frame.columnconfigure(2, weight=0)
+class DoS:
+    def __init__(self, style: Style, parent):
+        frame = CTkFrame(parent, fg_color=style.color("widget"))
+        frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
+        frame.columnconfigure(0, weight=0)
+        frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=0)
+        self.frame = frame
 
-    ip_frame_header = CTkLabel(ip_frame, text="Denial of Service", font=style.get_font())
-    ip_frame_header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
+        header = CTkLabel(frame, text="Denial of Service", font=style.get_font())
+        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
+        self.header = header
 
-    ip_label = CTkLabel(ip_frame, text="Packets per second:", font=style.get_font())
-    ip_label.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        label1 = CTkLabel(frame, text="Target IP:Port", font=style.get_font())
+        label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        self.label1 = label1
 
-    ip_input = CTkEntry(ip_frame, font=style.get_font())
-    ip_input.grid(row=1, column=2, sticky="e", pady=style.gaptop, padx=style.gap)
+        entry1 = CTkEntry(frame, font=style.get_font())
+        entry1.grid(row=1, column=2, sticky="e", pady=style.gaptop, padx=style.gap)
+        self.entry1 = entry1
 
-    network_sniffing_btn = CTkButton(ip_frame, text="Start DoS", font=style.get_font(), command=None)
-    network_sniffing_btn.grid(row=2, column=2, sticky="e", pady=style.gap, padx=style.gap)
+        label2 = CTkLabel(frame, text="Target IP:Port", font=style.get_font())
+        label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        self.label2 = label2
 
-    return
+        entry2 = CTkEntry(frame, font=style.get_font())
+        entry2.grid(row=2, column=2, sticky="e", pady=style.gaptop, padx=style.gap)
+        self.entry2 = entry2
+
+        status = CTkLabel(frame, text="", font=style.get_font())
+        status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        self.status = status
+
+        button = CTkButton(frame, text="Start DoS Attack", font=style.get_font(), command=None)
+        button.grid(row=3, column=2, sticky="e", pady=style.gap, padx=style.gap)
+        self.button = button
+
+        self.inputs = [entry1, entry2]
+
+    def bind_input_autosave(self, save_slots: list[str]):
+        for entry, slot_index in zip(self.inputs, range(len(save_slots))):
+            def autosave(event=None, e=entry, idx=slot_index):
+                save_slots[idx] = e.get()
+            entry.bind("<KeyRelease>", autosave)
+
+    def load_saved_input(self, save_slots: list[str]):
+        entries = self.inputs
+        for i in range(len(entries)):
+            entries[i].delete(0, "end")
+            entries[i].insert(0, save_slots[i])
+
+    def bind_reversible(self, start_func: callable, stop_func: callable, func_name: str, start_on):
+        button = self.button
+        entries = self.inputs
+        status = self.status
+
+        def configure_on():
+            button.configure(command=stop, text=f"Stop {func_name}")
+            status.configure(text=f"{func_name} is on")
+        def configure_off():
+            button.configure(command=start, text=f"Start {func_name}")
+            status.configure(text=f"{func_name} is off")
+        
+        def stop():
+            button.configure(text=f"Stopping {func_name}...")
+            stop_func()
+            configure_off()
+
+        def start():
+            button.configure(text=f"Starting {func_name}...")
+            start_func()
+            configure_on()
+
+        if start_on:
+            configure_on()
+        else:
+            configure_off()
+
+        if entries is None:
+            return
+        def event_callback(event=None):
+            start()
+        for entry in entries:
+            entry.bind("<Return>", event_callback)

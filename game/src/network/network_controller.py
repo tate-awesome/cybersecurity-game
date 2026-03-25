@@ -93,23 +93,14 @@ class HardwareNetwork(Network):
     def stop_sniff(self):
         self.sniffer.stop()
 
-    def start_dos(self, target_ip):
-        return super().start_dos()
-    
-    def dos_is_running(self, target_ip):
-        return super().dos_is_running()
-    
-    def stop_dos(self, target_ip):
-        return super().stop_dos()
-    
-    def start_dos(self):
-        return super().start_dos()
+    def start_dos(self, target_1, target_2):
+        self.dos.start([target_1, target_2])
     
     def dos_is_running(self):
-        return super().dos_is_running()
+        self.dos.is_running()
     
     def stop_dos(self):
-        return super().stop_dos()
+        self.dos.stop()
     
 
 class VirtualNetwork(Network):
