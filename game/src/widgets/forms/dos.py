@@ -15,23 +15,23 @@ class DoS:
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
-        label1 = CTkLabel(frame, text="Target IP:Port", font=style.get_font())
+        label1 = CTkLabel(frame, text="Target IP:Port", font=style.get_font(), anchor="e")
         label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.label1 = label1
 
         entry1 = CTkEntry(frame, font=style.get_font())
-        entry1.grid(row=1, column=2, sticky="e", pady=style.gaptop, padx=style.gap)
+        entry1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
         self.entry1 = entry1
 
-        label2 = CTkLabel(frame, text="Target IP:Port", font=style.get_font())
+        label2 = CTkLabel(frame, text="Target IP:Port", font=style.get_font(), anchor="e")
         label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.label2 = label2
 
         entry2 = CTkEntry(frame, font=style.get_font())
-        entry2.grid(row=2, column=2, sticky="e", pady=style.gaptop, padx=style.gap)
+        entry2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
         self.entry2 = entry2
 
-        status = CTkLabel(frame, text="", font=style.get_font())
+        status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
         status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 

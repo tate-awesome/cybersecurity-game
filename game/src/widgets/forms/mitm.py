@@ -28,29 +28,31 @@ class MITM:
         }
         r = 1
         for name in ["x", "y", "theta", "speed", "rudder"]:
-            label = CTkLabel(frame, text=f"{self.names[name]}_out = {self.names[name]}_in *", font=style.get_font())
+            label = CTkLabel(frame, text=f"{self.names[name]}_out = {self.names[name]}_in *", font=style.get_font(), anchor="w")
             label.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
             self.labels[name] = label
 
             subframe = CTkFrame(frame, bg_color="transparent", fg_color="transparent")
             subframe.grid(row=r, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-            subframe.grid_columnconfigure(1, weight=1)
+            subframe.grid_columnconfigure(0, weight=1)
+            subframe.grid_columnconfigure(1, weight=0)
+            subframe.grid_columnconfigure(2, weight=1)
             self.frames[name] = subframe
 
             mult = CTkEntry(subframe, width=46, font=style.get_font())
-            mult.grid(row=0, column=0, sticky="w")
+            mult.grid(row=0, column=0, sticky="ew")
             self.mults[name] = mult
 
-            plus1 = CTkLabel(subframe, text="+", font=style.get_font())
+            plus1 = CTkLabel(subframe, text="  +  ", font=style.get_font())
             plus1.grid(row=0, column=1, sticky="ew")
 
             offset = CTkEntry(subframe, width=46, font=style.get_font())
-            offset.grid(row=0, column=2, sticky="e")
+            offset.grid(row=0, column=2, sticky="ew")
             self.offsets[name] = offset
 
             r = r+1
 
-        save_status = CTkLabel(frame, text="", font=style.get_font())
+        save_status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
         save_status.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.save_status = save_status
 
@@ -60,7 +62,7 @@ class MITM:
 
         r = r+1
 
-        status = CTkLabel(frame, text="", font=style.get_font())
+        status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
         status.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 

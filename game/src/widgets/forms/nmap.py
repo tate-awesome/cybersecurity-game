@@ -14,7 +14,7 @@ class NMap:
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
-        status = CTkLabel(frame, text="", font=style.get_font())
+        status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
         status.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 
