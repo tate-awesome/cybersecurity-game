@@ -92,7 +92,7 @@ class DataBuffer:
                     "lock": Lock()
                 }
 
-    def put(self, source: str, purpose: str, data: Packet or list[str] or str):
+    def put(self, source: str, purpose: str, data: Packet | list[str] | str):
         '''
         Put status messages and packets into the buffer.
 
