@@ -6,7 +6,7 @@ from ...widgets import common, popup
 from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
-from ...widgets.console import Console
+from ...widgets.console.console import Console
 
 # Network
 from ...network.network_controller import HardwareNetwork
@@ -141,7 +141,7 @@ class AttackerV0:
         common.scroll_deadspace(style, left_p)
 
     # Console
-        console = Console(style, middle_p, context)
+        console = Console(style, middle_p, context, net.data_buffer)
 
 
     # Map
