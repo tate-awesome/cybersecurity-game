@@ -30,7 +30,84 @@ class Context:
         self.inputs = {
             "arp": ["192.168.8.137","192.168.8.243"],
             "sniff": ["",""],
-            "dos": ["192.168.8.114:200","192.168.8.114:201"]
+            "dos": ["192.168.8.114:200","192.168.8.114:201"],
+            "checkbox_filters": {
+                "Hack": {
+                    "NMapping": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.hack == "nmap"
+                    },
+                    "ARP Spoofing": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.hack == "arp"
+                    },
+                    "Denial of Service": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.hack == "dos"
+                    },
+                    "Packet Sniffing": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.hack == "sniff"
+                    },
+                    "MITM Attack": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.hack == "nfq"
+                    }
+                },
+
+                "Protocol": {
+                    "TCP": {
+                        "state": "",
+                        "function": lambda mpkt: "TCP" in mpkt.protocols
+                    },
+                    "ARP": {
+                        "state": "",
+                        "function": lambda mpkt: "ARP" in mpkt.protocols
+                    },
+                    "UDP": {
+                        "state": "",
+                        "function": lambda mpkt: "UDP" in mpkt.protocols
+                    },
+                    "DNS": {
+                        "state": "",
+                        "function": lambda mpkt: "DNS" in mpkt.protocols
+                    },
+                    "MODBUSADU": {
+                        "state": "",
+                        "function": lambda mpkt: "MODBUSADU" in mpkt.protocols
+                    },
+                    "WRITE SINGLE REGISTER": {
+                        "state": "",
+                        "function": lambda mpkt: "WRITE SINGLE REGISTER" in mpkt.protocols
+                    },
+                    "READ HOLDING REGISTERS RESPONSE": {
+                        "state": "",
+                        "function": lambda mpkt: "READ HOLDING REGISTERS RESPONSE" in mpkt.protocols
+                    }
+                },
+
+                "Direction": {
+                    "Sent": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.direction == "out"
+                    },
+                    "Received": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.direction == "in"
+                    },
+                    "Observed": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.direction == "other"
+                    }
+                }
+            },
+            "text_filters": {
+                "address_filter": {
+                    "label": "IP/MAC Addresses Involved (Separated by \"|\")",
+                    "text": ""
+                }
+            }
+            
         }
         '''
         Save slots for the user inputs during GUI refresh.

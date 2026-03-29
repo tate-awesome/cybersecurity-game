@@ -15,6 +15,7 @@ class Console:
         self.style = style
         self.frame = parent
         self.buffer = buffer
+        self.filter_func = lambda mpkt: True
 
         menu_frame = self.create_menu_frame(self.frame)
         refresh_button = self.create_menu_button(menu_frame, "Refresh")
@@ -40,47 +41,63 @@ class Console:
     
     # Filter overlay
     def add_filter_options(self, parent: CTkFrame):
-        # Designate Filter Options
-        filters = {
-            "Hack": {
-                "NMapping": lambda mpkt: mpkt.hack == "nmap",
-                "ARP Spoofing": lambda mpkt: mpkt.hack == "arp",
-                "Denial of Service": lambda mpkt: mpkt.hack == "dos",
-                "Packet Sniffing": lambda mpkt: mpkt.hack == "sniff",
-                "MITM Attack": lambda mpkt: mpkt.hack == "nfq"
-            },
-            "Direction": {
-                "Incoming": lambda mpkt: mpkt.direction == "out",
-                "Outgoing": lambda mpkt: mpkt.direction == "in",
-                "Unknown": lambda mpkt: mpkt.direction == "none"
-            },
-            "Protocol": {
-                "TCP": lambda mpkt: mpkt.layers
-            },
-            # "Hack": self.hack,
-            # "Purpose": self.purpose,
-            # "Direction": self.direction_verbose,
-            # "MAC Source": self.hwsrc,
-            # "MAC Destination": self.hwdst,
-            # "IP Source": self.ipsrc,
-            # "IP Destination": self.ipdst,
-            # "Protocol Layers": self.layers,
-            # "Modbus Variables": self.variables,
-            # "Modbus Values": self.values,
-            # "Info String": self.get_info()
-        }
         '''
-        Key: Filter Name
-        Value: Callable[MetaPacket] which returns true if the MetaPacket should be shown
+        Create filter menu widgets, load filter options from context and configure inputs for autosave
         '''
+        # Create box filter widgets
+        box_slots = self.context.inputs["checkbox_filters"]
+        med = self.style.get_font()
+        checkbox_frame = CTkFrame(parent)
+        checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
+
+        for category in box_slots:
+
+            category_frame = CTkFrame(checkbox_frame)
+            category_frame.pack(side="left", anchor="n")
+            category_label = CTkLabel(category_frame, text=category, font=med)
+            category_label.pack(side="top", padx=self.style.gap, anchor="n")
+
+            for box_name in box_slots[category]:
+
+                filter_box = CTkCheckBox(category_frame, text=box_name, font=med)
+                filter_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
+                # Load previous input
+                value = box_slots[category][box_name]["state"]
+                if value == "1": filter_box.select()
+                else: filter_box.deselect()
+                # Configure for autosave
+                def autosave(slot=box_slots[category][box_name], b=filter_box):
+                    slot["state"] = str(b.get())
+                filter_box.configure(command=autosave)
+        
+
+        # Create text filter widgets
+        text_slots = self.context.inputs["text_filters"]
+        entry_frame = CTkFrame(parent)
+        entry_frame.pack(side="top", fill="x", padx=self.style.gap, pady=self.style.gap)
+
+        for text_slot in text_slots:
+
+            filter_label = CTkLabel(entry_frame, text=text_slots[text_slot]["label"], font=med)
+            filter_label.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
+            filter_entry = CTkEntry(entry_frame, font=med)
+            filter_entry.pack(fill="x", side="top", padx=self.style.gap, pady=self.style.gap)
+            # Load previous input
+            previous_text = text_slots[text_slot]["text"]
+            filter_entry.delete(0, "end")
+            filter_entry.insert(0, previous_text)
+            # Configure for autosave
+            def autosave(event=None, e=filter_entry, slot=text_slots[text_slot]):
+                slot["text"] = e.get()
+            filter_entry.bind("<KeyRelease>", autosave)
+        
 
     def create_filter_overlay(self, button: CTkButton):
-        print("open filters")
 
         # Place overlay just below button
         x = button.winfo_rootx() - self.context.root.winfo_rootx() + button.winfo_width() / 2
         y = button.winfo_rooty() - self.context.root.winfo_rooty() + button.winfo_height() + self.style.igap
-        overlay = CTkFrame(self.context.root, width=200, height=200, fg_color="red")
+        overlay = CTkFrame(self.context.root)
         overlay.place(x=x, y=y, anchor="n")
         overlay.lift()
         self.filter_overlay = overlay
