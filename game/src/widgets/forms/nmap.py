@@ -2,7 +2,7 @@ from customtkinter import *
 from ..style import Style
 
 class NMap:
-    def __init__(self, style: Style, parent, context, net):
+    def __init__(self, style: Style, parent, context, do_nmap):
         
         # Widgets
 
@@ -27,12 +27,12 @@ class NMap:
 
         # Bindings
 
-        def do_nmap():
+        def do():
             context.progress["nmap"] = True
             self.status.configure(text="Pinging...")
             context.root.update_idletasks()
 
-            net.do_nmap()
+            do_nmap()
 
             self.status.configure(text="NMap Complete")
     
