@@ -3,7 +3,10 @@ from ..style import Style
 
 
 class DoS:
-    def __init__(self, style: Style, parent):
+    def __init__(self, style: Style, parent, context, start_dos, dos_is_running, stop_dos):
+
+        # Widgets
+
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         frame.columnconfigure(0, weight=0)
@@ -40,6 +43,24 @@ class DoS:
         self.button = button
 
         self.inputs = [entry1, entry2]
+
+        # Bindings
+
+        def start():
+            context.progress["dos"] = True
+            ip_1 = str(self.entry1.get())
+            ip_2 = str(self.entry2.get())
+            context.root.update_idletasks()
+            start_dos(ip_1, ip_2)
+        def stop():
+            context.root.update_idletasks()
+            stop_dos()
+        
+        start_on = dos_is_running()
+        self.bind_reversible(start, stop, "DoS Attack", start_on)
+
+        self.load_saved_input(context.inputs["dos"])
+        self.bind_input_autosave(context.inputs["dos"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         for entry, slot_index in zip(self.inputs, range(len(save_slots))):

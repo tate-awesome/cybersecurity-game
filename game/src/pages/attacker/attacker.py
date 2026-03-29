@@ -34,84 +34,11 @@ class AttackerV0:
 
         left_p = common.scrollable(style, left)        
 
-    # NMap Widget
-        nmap = NMap(style, left_p)
-        def do_nmap():
-            context.progress["nmap"] = True
-            nmap.status.configure(text="Pinging...")
-            root.update_idletasks()
-
-            net.do_nmap()
-
-            nmap.status.configure(text="NMap Complete")
-    
-        nmap.bind(do_nmap, nmap.button)
-        if context.progress["nmap"]:
-            nmap.status.configure(text="NMap Complete")
-        else:
-            nmap.status.configure(text="")
-
-    # ARP Widget
-        arp = ARP(style, left_p)
-        def start_arp():
-            context.progress["arp"] = True
-            target_ip = str(arp.entry1.get())
-            host_ip = str(arp.entry2.get())
-            root.update_idletasks()
-            net.start_arp(target_ip, host_ip)
-        def stop_arp():
-            root.update_idletasks()
-            net.stop_arp()
-        
-        start_on = net.arp_is_running()
-        arp.bind_reversible(start_arp, stop_arp, "ARP Spoof", start_on)
-
-        arp.load_saved_input(context.inputs["arp"])
-        arp.bind_input_autosave(context.inputs["arp"])
-    
-    # DoS Widget
-        dos = DoS(style, left_p)
-        def start_dos():
-            context.progress["dos"] = True
-            ip_1 = str(dos.entry1.get())
-            ip_2 = str(dos.entry2.get())
-            root.update_idletasks()
-            net.start_dos(ip_1, ip_2)
-        def stop_dos():
-            root.update_idletasks()
-            net.stop_dos()
-        
-        start_on = net.dos_is_running()
-        dos.bind_reversible(start_dos, stop_dos, "DoS Attack", start_on)
-
-        dos.load_saved_input(context.inputs["dos"])
-        dos.bind_input_autosave(context.inputs["dos"])
-
-    # Sniffing Widget
-        sniff = Sniff(style, left_p)
-
-        def sniff_handler(mpkt: MetaPacket):
-            if sniff.box1.get() == 1:
-                mpkt.wireshark_line(True)
-            if sniff.box2.get() == 1:
-                mpkt.show()
-
-        def start_sniff():
-            context.progress["sniff"] = True
-            root.update_idletasks()
-            net.buffer.add_callback("sniff_handler", sniff_handler)
-            net.start_sniff()
-
-        def stop_sniff():
-            root.update_idletasks()
-            net.stop_sniff()
-            net.buffer.remove_callback("sniff_handler")
-
-        start_on = net.sniff_is_running()
-        sniff.bind_reversible(start_sniff, stop_sniff, "Sniffing", start_on)
-
-        sniff.load_saved_input(context.inputs["sniff"])
-        sniff.bind_input_autosave(context.inputs["sniff"])
+    # Forms
+        nmap = NMap(style, left_p, context, net.do_nmap)
+        arp = ARP(style, left_p, context, net.start_arp, net.arp_is_running, net.stop_arp)
+        dos = DoS(style, left_p, context, net.start_dos, net.dos_is_running, net.stop_dos)
+        sniff = Sniff(style, left_p, context, net.start_sniff, net.sniff_is_running, net.stop_sniff)
 
     # NFQ widget with modifiers
         mitm = MITM(style, left_p)
@@ -136,6 +63,7 @@ class AttackerV0:
         mitm.bind_input_alert()
         mitm.load_saved_input(net.table)
         mitm.bind_input_save(net.table)
+        mitm.deactivate()
 
     # Spacer widget
         common.scroll_deadspace(style, left_p)

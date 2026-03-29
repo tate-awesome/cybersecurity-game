@@ -3,7 +3,10 @@ from ..style import Style
 
 
 class ARP:
-    def __init__(self, style: Style, parent):
+    def __init__(self, style: Style, parent, context, start_arp, arp_is_running, stop_arp):
+
+        # Widgets
+
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         frame.columnconfigure(0, weight=0)
@@ -40,6 +43,24 @@ class ARP:
         self.button = button
 
         self.inputs = [entry1, entry2]
+
+        # Bindings
+
+        def start():
+            context.progress["arp"] = True
+            target_ip = str(self.entry1.get())
+            host_ip = str(self.entry2.get())
+            context.root.update_idletasks()
+            start_arp(target_ip, host_ip)
+        def stop():
+            context.root.update_idletasks()
+            stop_arp()
+        
+        start_on = arp_is_running()
+        self.bind_reversible(start, stop, "ARP Spoof", start_on)
+
+        self.load_saved_input(context.inputs["arp"])
+        self.bind_input_autosave(context.inputs["arp"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         for entry, slot_index in zip(self.inputs, range(len(save_slots))):
