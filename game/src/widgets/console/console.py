@@ -47,15 +47,15 @@ class Console:
         # Create box filter widgets
         box_slots = self.context.inputs["checkbox_filters"]
         med = self.style.get_font()
-        checkbox_frame = CTkFrame(parent)
+        checkbox_frame = CTkFrame(parent, fg_color=self.style.color("panel"))
         checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
 
         for category in box_slots:
 
-            category_frame = CTkFrame(checkbox_frame)
-            category_frame.pack(side="left", anchor="n")
+            category_frame = CTkFrame(checkbox_frame, fg_color=self.style.color("widget"))
+            category_frame.pack(side="left", padx=self.style.gap, pady=self.style.gap, anchor="n")
             category_label = CTkLabel(category_frame, text=category, font=med)
-            category_label.pack(side="top", padx=self.style.gap, anchor="n")
+            category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
             for box_name in box_slots[category]:
 
@@ -74,7 +74,7 @@ class Console:
         # Create text filter widgets
         text_slots = self.context.inputs["text_filters"]
         entry_frame = CTkFrame(parent)
-        entry_frame.pack(side="top", fill="x", padx=self.style.gap, pady=self.style.gap)
+        entry_frame.pack(side="top", fill="x", padx=self.style.gap2, pady=self.style.gap2)
 
         for text_slot in text_slots:
 
