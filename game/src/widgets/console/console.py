@@ -40,6 +40,39 @@ class Console:
         return button
     
     # Filter overlay
+    def add_filter_activator(self, parent: CTkFrame):
+        med = self.style.get_font()
+
+        activator_frame = CTkFrame(parent)
+        activator_frame.pack(side="top", padx=self.style.gap2, pady=self.style.gap2, fill="x")
+
+        activator_button = CTkButton(activator_frame, text="Apply Filters", font=med)
+        activator_button.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap)
+
+        summary = self.context.inputs["packet_filter_function"]["summary"]
+        activator_frame.update_idletasks()
+        width = activator_frame.winfo_width() - activator_button.winfo_width() - 50
+
+        filter_label = CTkLabel(activator_frame, text=summary, font=med, wraplength=width, justify="left")
+        filter_label.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap, fill="x")
+
+        def activate():
+            self.compile_filter()
+            new_summary = self.context.inputs["packet_filter_function"]["summary"]
+
+            width = activator_frame.winfo_width() - activator_button.winfo_width() - 50
+
+            filter_label.configure(text=new_summary, wraplength=width)
+
+        activator_button.configure(command=activate)
+
+
+
+
+        
+        
+
+
     def add_filter_options(self, parent: CTkFrame):
         '''
         Create filter menu widgets, load filter options from context and configure inputs for autosave
@@ -102,6 +135,7 @@ class Console:
         overlay.lift()
         self.filter_overlay = overlay
         self.add_filter_options(overlay)
+        self.add_filter_activator(overlay)
 
     def destroy_filter_overlay(self, button: CTkButton):
         try:
@@ -124,6 +158,86 @@ class Console:
                 close()
             self.context.root.bind("<Escape>", event_callback)
             configure_closed()
+
+    def compile_filter(self):
+            '''
+            Compile and save the mpkt filter to self.context.inputs["packet_filter_function"]["function"]
+            Save the summary to self.context.inputs["packet_filter_function"]["summary"]
+            '''
+            # Compile section
+            def checkbox_filter(mpkt):
+                checkboxes_condition = True
+                box_slots = self.context.inputs["checkbox_filters"]
+                for category in box_slots:
+                    # OR within a category - show only all checked :: start false, become true if any match
+                    any_checked = False
+                    category_condition = False
+                    for box_name in box_slots[category]:
+                        if box_slots[category][box_name]["state"] == "1":
+                            any_checked = True
+                            out = out or box_slots[category][box_name]["function"](mpkt)
+
+                    if not any_checked: category_condition = True # If none checked, show all
+
+                    # AND each category condition together :: if any miss, return false
+                    checkboxes_condition = checkboxes_condition and category_condition
+                return checkboxes_condition
+
+            def address_filter(mpkt):
+                filter_str = self.context.inputs["text_filters"]["address_filter"]["text"]
+                addresses = filter_str.split("|")
+                if len(addresses) < 1:
+                    return True
+                condition_met = False
+                # If any given address matches any mpkt address, return true
+                for address in addresses:
+                    value = str.strip(address.lower())
+                    if (value in mpkt.ip_src.lower()
+                        or value in mpkt.ip_dst.lower()
+                        or value in mpkt.mac_src.lower()
+                        or value in mpkt.mac_dst.lower()):
+                        condition_met = True
+                return condition_met
+            
+            # Save function
+            self.context.inputs["packet_filter_function"]["function"] = lambda mpkt: address_filter(mpkt) and checkbox_filter(mpkt)
+
+            # Summarize section
+            full_summary = "Currently filtering for"
+            category_summaries = []
+            box_slots = self.context.inputs["checkbox_filters"]
+            for category in box_slots:
+                category_conditions = []
+                category_summary = f"{category}s including"
+
+                for box_name in box_slots[category]:
+                    if box_slots[category][box_name]["state"] == "1":
+                        category_conditions.append(box_name)
+
+                if len(category_conditions) > 0:
+                    category_summary = f"{category_summary} {" OR ".join(category_conditions)}"
+                    category_summaries.append(category_summary)
+            category_summaries = " AND ".join(category_summaries)
+
+            filter_str = self.context.inputs["text_filters"]["address_filter"]["text"]
+            addresses = filter_str.split("|")
+            
+            if len(addresses) < 1 or len(filter_str) < 1:
+                if len(category_summaries) < 1:
+                    full_summary = f"{full_summary} any packets."
+                else:
+                    full_summary = f"{full_summary} packets with {category_summaries}."
+            else:
+                for a in addresses:
+                    a = f"\"{a}\""
+                addresses = " OR ".join(addresses).lower()
+                if len(category_summaries) < 1:
+                    full_summary = f"{full_summary} packets involving addresses matching {addresses}."
+                else:
+                    full_summary = f"{full_summary} packets with {category_summaries}, and involving addresses matching {addresses}."
+
+            # Save summary
+            self.context.inputs["packet_filter_function"]["summary"] = full_summary
     
 
     def menu_dropdown(self, frame, options: list[str], function):

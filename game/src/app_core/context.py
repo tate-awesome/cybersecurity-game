@@ -106,6 +106,10 @@ class Context:
                     "label": "IP/MAC Addresses Involved (Separated by \"|\")",
                     "text": ""
                 }
+            },
+            "packet_filter_function": {
+                "summary": "Currently filtering for any packets.",
+                "function": lambda mpkt: True
             }
             
         }
