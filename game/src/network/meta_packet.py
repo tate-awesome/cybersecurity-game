@@ -1,7 +1,7 @@
 from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether, conf
 from scapy.arch import get_if_addr, get_if_hwaddr
 from scapy.contrib import modbus
-import json
+import json, socket, uuid
 
 class MetaPacket:
     def __init__(  self, pkt: Packet, current_time: float, number: int,
@@ -14,48 +14,59 @@ class MetaPacket:
         self.number = number
         self.length = str(len(self.pkt))
 
-        # Hack info
+        # External info
         self.hack = hack
         self.purpose = purpose
-        direction = "none"
-        if pkt.haslayer(Ether):
-            mac = get_if_hwaddr(conf.iface)
-            if pkt[Ether].src == mac:
-                direction = "out"
-            elif pkt[Ether].dst == mac:
-                direction = "in"
-        elif pkt.haslayer(IP):
-            ip = get_if_addr(conf.iface)
-            if pkt[IP].src == ip:
-                direction = "out"
-            elif pkt[IP].dst == ip:
-                direction = "in"
 
-        # Get direction
-        self.direction = direction
-        if self.direction == "in":
-            self.direction_verbose = "incoming"
-        elif self.direction == "out":
-            self.direction_verbose = "outgoing"
+        # MAC
+        self.mac_src = pkt[Ether].src if pkt.haslayer(Ether) else "-"
+        self.mac_dst = pkt[Ether].dst if pkt.haslayer(Ether) else "-"
+
+        # IP
+        self.ip_src = pkt[IP].src if pkt.haslayer(IP) else "-"
+        self.ip_dst = pkt[IP].dst if pkt.haslayer(IP) else "-"
+
+        # Protocols
+        layers = []
+        current = pkt
+        while current:
+            layers.append(current.name.upper())
+            current = current.payload if current.payload else None
+            if current == b'':
+                break
+        self.protocols = layers
+        self.proto_str = "/".join(self.protocols)
+
+        # Direction
+        def get_local_ip():
+            try:
+                return socket.gethostbyname(socket.gethostname())
+            except:
+                return None
+            
+        def get_local_mac():
+            mac = uuid.getnode()
+            return ':'.join(f'{(mac >> ele) & 0xff:02x}' for ele in range(40, -8, -8))
+
+        LOCAL_IP = get_local_ip()
+        LOCAL_MAC = get_local_mac()
+        BROADCAST_MAC = "ff:ff:ff:ff:ff:ff"
+
+        if self.ip_src == LOCAL_IP or self.mac_src.lower() == LOCAL_MAC.lower():
+            self.direction = "out"
+            self.direction_verbose = "Sent"
+
+        elif (
+            self.ip_dst == LOCAL_IP
+            or self.mac_dst.lower() == LOCAL_MAC.lower()
+            or self.mac_dst.lower() == BROADCAST_MAC
+        ):
+            self.direction = "in"
+            self.direction_verbose = "Received"
+
         else:
-            self.direction_verbose = "unknown"
-
-        # Try to get mac info
-        self.hwsrc = "unknown"
-        self.hwdst = "unknown"
-        if self.pkt.haslayer(Ether):
-            self.hwsrc = str(self.pkt[Ether].src)
-            self.hwdst = str(self.pkt[Ether].dst)
-
-        # Try to get ip info
-        self.ipsrc = "unknown"
-        self.ipdst = "unknown"
-        if self.pkt.haslayer(IP):
-            self.ipsrc = str(self.pkt[IP].src)
-            self.ipdst = str(self.pkt[IP].dst)
-
-        # Get protocol layers
-        self.layers = " / ".join(layer.__name__ for layer in self.pkt.layers())
+            self.direction = "other"   # 👈 important for promiscuous mode
+            self.direction_verbose = "Observed"
 
         # Modbus info
         self.variables = variables
@@ -65,14 +76,16 @@ class MetaPacket:
         self.fields = {
             "Time": self.time,
             "No.": self.number,
+
             "Hack": self.hack,
             "Purpose": self.purpose,
+
             "Direction": self.direction_verbose,
-            "MAC Source": self.hwsrc,
-            "MAC Destination": self.hwdst,
-            "IP Source": self.ipsrc,
-            "IP Destination": self.ipdst,
-            "Protocol Layers": self.layers,
+            "MAC Source": self.mac_src,
+            "MAC Destination": self.mac_dst,
+            "IP Source": self.ip_src,
+            "IP Destination": self.ip_dst,
+            "Protocol Layers": self.proto_str,
             "Modbus Variables": self.variables,
             "Modbus Values": self.values,
             "Info String": self.get_info()
@@ -80,11 +93,11 @@ class MetaPacket:
 
     def __str__(self) -> str:
         lines = []
-        lines.append(f"[ {self.layers} ]")
+        lines.append(f"[ {self.proto_str} ]")
         lines.append(f"   | no: {self.number}\ttime: {self.time:.3f}\tlen: {self.length}\tfrom: {self.hack}")
-        lines.append(f"   | hwsrc: {self.hwsrc}\thwdst: {self.hwdst}")
-        lines.append(f"   | ipsrc: {self.ipsrc}\tipdst: {self.ipdst}")
-        lines.append(f"   | dir: {dir}\tpurpose: {self.purpose}")
+        lines.append(f"   | hwsrc: {self.mac_src}\thwdst: {self.mac_dst}")
+        lines.append(f"   | ipsrc: {self.ip_src}\tipdst: {self.ip_dst}")
+        lines.append(f"   | dir: {self.direction_verbose}\tpurpose: {self.purpose}")
         lines.append(f"   | {self.get_info()}")
         lines.append("")
         return "\n".join(lines)
