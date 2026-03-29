@@ -5,11 +5,25 @@ NFQ module. Callbacks and persistent object
 from scapy.all import IP, TCP, Packet
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 import threading, os, select
-from netfilterqueue import NetfilterQueue as NFQ
 from .. import modbus_util as mb
 from ..mod_table import ModTable
 from ..packet_buffer import PacketBuffer
 from ..data_buffer import DataBuffer
+
+import platform
+os_name = platform.system()
+
+if os_name == "Windows":
+    # NFQ is not possible
+    ...
+elif os_name == "Linux":
+    # NFQ is possible
+    from netfilterqueue import NetfilterQueue as NFQ
+elif os_name == "Darwin":
+    # NFQ is possible
+    from netfilterqueue import NetfilterQueue as NFQ
+else:
+    print(f"Running on an unidentified system: {os_name}")
 
 
 class NetFilterQueue:
