@@ -38,22 +38,42 @@ class DataBuffer:
 
         self.console_buffers = {}
         '''
-        Console elements:
+        For the Console:
 
-            "nmap": MetaPacket or str
+            "nmap":
+                "number": n,
+                "mpkt": deque[MetaPacket],
+                "status": deque[str],
+                "lock": Lock()
+            "arp": 
+                "number": n,
+                "mpkt": deque[MetaPacket],
+                "status": deque[str],
+                "lock": Lock()
 
-            "arp": MetaPacket or dict[str,str]
+            "sniff": 
+                "number": n,
+                "mpkt": deque[MetaPacket],
+                "status": deque[str],
+                "lock": Lock()
 
-            "sniff": MetaPacket
+            "dos": 
+                "number": n,
+                "mpkt": deque[MetaPacket],
+                "status": deque[str],
+                "lock": Lock()
 
-            "dos": ?
-
-            "mitm": ?
+            "mitm": 
+                "number": n,
+                "mpkt": deque[MetaPacket],
+                "status": deque[str],
+                "lock": Lock()
         '''
         for key in ["nmap", "arp", "sniff", "dos", "nfq"]:
             self.console_buffers[key] = {
                 "number": 1,
-                "deque": deque(maxlen=self.max_size),
+                "mpkt": deque(maxlen=self.max_size),
+                "status": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
 
@@ -91,8 +111,15 @@ class DataBuffer:
                     "deque": deque(maxlen=self.max_size),
                     "lock": Lock()
                 }
+    
+    def print_filtered_console_buffer(self, source: str, filter: callable):
+        with self.console_buffers[source]["lock"]:
+            snapshot = list(self.console_buffers[source]["mpkt"])
+        for mpkt in snapshot:
+            if filter(mpkt):
+                print(mpkt)
 
-    def put(self, source: str, purpose: str, data: Packet | list[str] | str):
+    def put(self, source: str, purpose: str, data: Packet | None=None):
         '''
         Put status messages and packets into appropriate buffers.
 
@@ -124,7 +151,11 @@ class DataBuffer:
             variables, values)
         
         # Print your data
-        print(data)
+        # print(data)
+
+        # Put it in the console buffer
+        with self.console_buffers[source]["lock"]:
+            self.console_buffers[source]["mpkt"].append(console_mpkt)
         return
 
             
