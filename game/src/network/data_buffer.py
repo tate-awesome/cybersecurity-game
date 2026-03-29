@@ -94,32 +94,34 @@ class DataBuffer:
 
     def put(self, source: str, purpose: str, data: Packet | list[str] | str):
         '''
-        Put status messages and packets into the buffer.
+        Put status messages and packets into appropriate buffers.
 
-        If a status message is for a packet, it must go after the packet.
+        source: the network action - "nmap", "arp", "dos", "sniff", "mitm"
+
+        purpose: a message about the packet, or a status message
         '''
         # Set time and number
         current_time = Time.time() - self.start_time
 
-        # Put single str in list for data safety
-        if isinstance(data, str):
-            data = [data]
-
-        # Exit if data is bad
-        if not isinstance(data, Packet) and not (isinstance(data, list) and all(isinstance(s, str) for s in data)):
-            return
-
-
-        if isinstance(data, Packet):
-            # Increment number
-            current_number = self.console_buffers[source]["number"]
-            self.console_buffers[source]["number"] = current_number + 1
-            
-            # make data a MetaPacket
-            variables, values = self.extract(data)
-            data = MetaPacket(data, current_time, current_number,
-                source, purpose,
-                variables, values)
+        # Put status message in a console buffer
+        if data is None or not isinstance(data, Packet):
+            try:
+                with self.console_buffers[source]["lock"]:
+                    self.console_buffers[source]["status"].append(purpose)
+            except Exception:
+                print(f"Failed to put {purpose}")
+            finally:
+                return
+        
+        # Set numbers for this packet
+        console_number = self.console_buffers[source]["number"]
+        self.console_buffers[source]["number"] = console_number + 1
+        
+        # Create a MetaPacket
+        variables, values = self.extract_modbus(data)
+        console_mpkt = MetaPacket(data, current_time, console_number,
+            source, purpose,
+            variables, values)
         
         # Print your data
         print(data)
@@ -182,7 +184,7 @@ class DataBuffer:
                 print("\t".join(data))
             return
 
-    def extract(self, pkt: Packet) -> tuple[list[str], list[float]]:
+    def extract_modbus(self, pkt: Packet) -> tuple[list[str], list[float]]:
         # Extract variables
         if pkt.haslayer("Read Holding Registers Response"):
             variables = ["speed"]

@@ -27,7 +27,7 @@ class NetFilterQueue:
 
     def start(self): 
         if self.is_running():
-            self.buffer.put("nfq", "status", "NFQ is already running")
+            self.buffer.put("nfq", "NFQ is already running")
             return
         self.callback = self.modify_and_accept
         self.stop_event = threading.Event()
@@ -53,7 +53,7 @@ class NetFilterQueue:
         # Pipe for stop signaling
         stop_r, stop_w = os.pipe()
         poller.register(stop_r, select.POLLIN)
-        self.buffer.put("nfq", "status", "Starting NFQ")
+        self.buffer.put("nfq", "Starting NFQ")
         try:
             while not self.stop_event.is_set():
                 events = poller.poll(500)
@@ -72,16 +72,16 @@ class NetFilterQueue:
 
     def stop(self):
         if self.stop_event == None and self.thread == None:
-            self.buffer.put("nfq", "status", "Net filter queue is not running")
+            self.buffer.put("nfq", "Net filter queue is not running")
             return
         else:
-            self.buffer.put("nfq", "status", "Stopping net filter queue...")
+            self.buffer.put("nfq", "Stopping net filter queue...")
             self.stop_event.set()
             self.thread.join()
             self.stop_event = None
             self.thread = None
             self.callback = None
-            self.buffer.put("nfq", "status", "Stopped net filter queue")
+            self.buffer.put("nfq", "Stopped net filter queue")
 
     # Callbacks
     def accept_only(self, pkt: Packet):

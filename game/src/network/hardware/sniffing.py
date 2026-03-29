@@ -19,7 +19,7 @@ class Sniffer:
         This makes all packets available to the GUI and simplifies user options.
         '''
         if self.is_running():
-            self.buffer.put("sniff", "status", "Sniffer is already running")
+            self.buffer.put("sniff", "Sniffer is already running")
             return
 
         # callback_dict = {
@@ -31,7 +31,7 @@ class Sniffer:
         #     "buffer_modbus": self.put_modbus_in_buffer
         # }
 
-        self.buffer.put("sniff", "status", "Starting Sniffer")
+        self.buffer.put("sniff", "Starting Sniffer")
         def callback(pkt):
             self.buffer.put("sniff", "Sniffed Packet", pkt)
         self.sniffer = AsyncSniffer(
@@ -45,6 +45,6 @@ class Sniffer:
         if self.sniffer is not None:
             self.sniffer.stop()
             self.sniffer = None
-            self.buffer.put("sniff", "status", "Stopped Sniffer")
+            self.buffer.put("sniff", "Stopped Sniffer")
         else:
-            self.buffer.put("sniff", "status", "Sniffer is not running")
+            self.buffer.put("sniff", "Sniffer is not running")

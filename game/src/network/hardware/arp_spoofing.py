@@ -39,10 +39,10 @@ class ArpSpoofer:
         scapy.conf.verb = 0
 
         if self.running:
-            self.buffer.put("arp", "status", ["ARP Spoof is already running"])
+            self.buffer.put("arp", "ARP Spoof is already running")
             return
 
-        self.buffer.put("arp", "status", ["Starting ARP Spoof"])
+        self.buffer.put("arp", "Starting ARP Spoof")
 
         self.target_ip = target_ip
         self.host_ip = host_ip
@@ -58,10 +58,10 @@ class ArpSpoofer:
     def stop(self):
 
         if self.running == False:
-            self.buffer.put("arp", "status", ["ARP Spoof is not running"])
+            self.buffer.put("arp", "ARP Spoof is not running")
             return
 
-        self.buffer.put("arp", "status", ["Stopping ARP Spoof"])
+        self.buffer.put("arp", "Stopping ARP Spoof")
 
         self.running = False
 
@@ -70,7 +70,7 @@ class ArpSpoofer:
 
         self.restore(self.target_ip, self.host_ip)
         self.restore(self.host_ip, self.target_ip)
-        self.buffer.put("arp", "status", ["Stopped ARP Spoof."])
+        self.buffer.put("arp", "Stopped ARP Spoof.")
 
 
     # Useful methods
