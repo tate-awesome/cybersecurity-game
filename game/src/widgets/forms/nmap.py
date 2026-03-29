@@ -2,7 +2,10 @@ from customtkinter import *
 from ..style import Style
 
 class NMap:
-    def __init__(self, style: Style, parent):
+    def __init__(self, style: Style, parent, context, net):
+        
+        # Widgets
+
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
         frame.columnconfigure(0, weight=0)
@@ -21,6 +24,23 @@ class NMap:
         button = CTkButton(frame, text="Map Network", font=style.get_font(), command=None)
         button.grid(row=1, column=2, sticky="e", pady=style.gap, padx=style.gap)
         self.button = button
+
+        # Bindings
+
+        def do_nmap():
+            context.progress["nmap"] = True
+            self.status.configure(text="Pinging...")
+            context.root.update_idletasks()
+
+            net.do_nmap()
+
+            self.status.configure(text="NMap Complete")
+    
+        self.bind(do_nmap, self.button)
+        if context.progress["nmap"]:
+            self.status.configure(text="NMap Complete")
+        else:
+            self.status.configure(text="")
 
     def bind(self, callback: callable, button: CTkButton, entries: list[CTkEntry] = None):
         '''

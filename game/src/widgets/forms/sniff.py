@@ -2,7 +2,10 @@ from customtkinter import *
 from ..style import Style
 
 class Sniff:
-    def __init__(self, style: Style, parent):
+    def __init__(self, style: Style, parent, context, start_sniff, sniff_is_running, stop_sniff):
+
+        # Widgets
+
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         frame.columnconfigure(0, weight=0)
@@ -14,21 +17,21 @@ class Sniff:
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
-        label1 = CTkLabel(frame, text="Print to GUI:", font=style.get_font(), anchor="e")
-        label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-        self.label1 = label1
+        # label1 = CTkLabel(frame, text="Print to GUI:", font=style.get_font(), anchor="e")
+        # label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        # self.label1 = label1
 
-        box1 = CTkCheckBox(frame, text="")
-        box1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-        self.box1 = box1
+        # box1 = CTkCheckBox(frame, text="")
+        # box1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
+        # self.box1 = box1
 
-        label2 = CTkLabel(frame, text="Print to Console:", font=style.get_font(), anchor="e")
-        label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-        self.label2 = label2
+        # label2 = CTkLabel(frame, text="Print to Console:", font=style.get_font(), anchor="e")
+        # label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        # self.label2 = label2
 
-        box2 = CTkCheckBox(frame, text="")
-        box2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-        self.box2 = box2
+        # box2 = CTkCheckBox(frame, text="")
+        # box2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
+        # self.box2 = box2
 
         status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
         status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
@@ -38,7 +41,32 @@ class Sniff:
         button.grid(row=3, column=2, sticky="ew", pady=style.gap, padx=style.gap)
         self.button = button
 
-        self.inputs = [box1, box2]
+        # self.inputs = [box1, box2]
+
+        # Bindings
+
+        def sniff_handler(mpkt):
+            if sniff.box1.get() == 1:
+                mpkt.wireshark_line(True)
+            if sniff.box2.get() == 1:
+                mpkt.show()
+
+        def start():
+            context.progress["sniff"] = True
+            context.root.update_idletasks()
+            # net.buffer.add_callback("sniff_handler", sniff_handler)
+            start_sniff()
+
+        def stop():
+            context.root.update_idletasks()
+            stop_sniff()
+            # net.buffer.remove_callback("sniff_handler")
+
+        start_on = sniff_is_running()
+        self.bind_reversible(start, stop, "Sniffing", start_on)
+
+        # sniff.load_saved_input(context.inputs["sniff"])
+        # sniff.bind_input_autosave(context.inputs["sniff"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         """
@@ -66,7 +94,6 @@ class Sniff:
 
     def bind_reversible(self, start_func: callable, stop_func: callable, func_name: str, start_on):
         button = self.button
-        entries = self.inputs
         status = self.status
 
         def configure_on():
@@ -90,10 +117,3 @@ class Sniff:
             configure_on()
         else:
             configure_off()
-
-        if entries is None:
-            return
-        def event_callback(event=None):
-            start()
-        for entry in entries:
-            entry.bind("<Return>", event_callback)
