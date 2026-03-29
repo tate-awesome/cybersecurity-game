@@ -64,6 +64,10 @@ class Console:
 
             filter_label.configure(text=new_summary, wraplength=width)
 
+            self.buffer.console_buffers["sniff"]
+
+            self.buffer.print_filtered_console_buffer("sniff", self.context.inputs["packet_filter_function"]["function"])
+
         activator_button.configure(command=activate)
 
 
@@ -175,7 +179,7 @@ class Console:
                     for box_name in box_slots[category]:
                         if box_slots[category][box_name]["state"] == "1":
                             any_checked = True
-                            out = out or box_slots[category][box_name]["function"](mpkt)
+                            category_condition = category_condition or box_slots[category][box_name]["function"](mpkt)
 
                     if not any_checked: category_condition = True # If none checked, show all
 
