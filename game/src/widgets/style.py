@@ -6,6 +6,7 @@ class Style:
         self.root = context.root
         self.scale = context.ui_scale
         self.gap = (10, 10)
+        self.gap2 = (20,20)
         self.nogap = (0, 0)
         self.gaptop = (10, 0)
         self.igap = 10
