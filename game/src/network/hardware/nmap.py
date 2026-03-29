@@ -14,16 +14,16 @@ class NMapper:
         # TODO nmap console command outputs
         # TODO Name these things correctly
         iface = str(self.get_interface())
-        self.buffer.put("nmap", "Detected interface", ["Your network interface", iface])
+        self.buffer.put("nmap", f"Your network interface: {iface}")
 
         ip = self.get_ip(iface)
-        self.buffer.put("nmap", "info", ["Your IP Address", ip])
+        self.buffer.put("nmap", f"Your IP address: {ip}")
 
         netmask = self.get_netmask(iface)
-        self.buffer.put("nmap", "info", ["Network Mask", netmask])
+        self.buffer.put("nmap", f"Your network mask: {netmask}")
 
         network = self.compute_network(ip, netmask)
-        self.buffer.put("nmap", "info", ["Network Range", network])
+        self.buffer.put("nmap", f"Network ping range: {network}")
 
         ping_packet, answered, unanswered = self.ping_hosts(network)
         self.buffer.put("nmap", "ARP Probe", ping_packet)
@@ -37,7 +37,7 @@ class NMapper:
 
         hosts = self.compute_hosts(responses)
         for host in hosts:
-            self.buffer.put("nmap", "info", ["Found host", host])
+            self.buffer.put("nmap", f"Found host at {host}")
 
 
 
