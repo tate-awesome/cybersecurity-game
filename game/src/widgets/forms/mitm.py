@@ -155,3 +155,11 @@ class MITM:
             configure_on()
         else:
             configure_off()
+
+    def deactivate(self):
+        import platform
+        os_name = platform.system()
+        if os_name == "Windows":
+            # NFQ is not possible
+            self.status.configure(text="NFQ is not supported on Windows.")
+            self.button.configure(state="disabled", text="Disabled")
