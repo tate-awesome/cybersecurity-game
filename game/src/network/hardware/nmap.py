@@ -2,7 +2,7 @@
 Module
 '''
 import scapy.all as scapy
-from scapy.all import Packet, ARP
+from scapy.all import Packet, ARP, IFACES, get_if_addr, get_working_if
 import ipaddress, netifaces
 from ..data_buffer import DataBuffer
 
@@ -11,18 +11,31 @@ class NMapper:
         self.buffer = buffer
 
     def do_nmap(self):
-        # TODO nmap console command outputs
-        # TODO Name these things correctly
-        iface = str(self.get_interface())
-        self.buffer.put("nmap", f"Your network interface: {iface}")
+        self.interface_manager = self.InterfaceManager()
+        ifm = self.interface_manager
 
-        ip = self.get_ip(iface)
-        self.buffer.put("nmap", f"Your IP address: {ip}")
+        # Post interfaces, find active interface
+        active_iface = None
+        self.buffer.put("nmap", "\n=== Interfaces ===\n")
+        for i, iface in enumerate(ifm.interfaces):
+            if iface["is_active"]:
+                active = "[ACTIVE]" 
+                active_iface = iface
+            else:
+                active = ""
 
-        netmask = self.get_netmask(iface)
-        self.buffer.put("nmap", f"Your network mask: {netmask}")
+            self.buffer.put("nmap", f"Interface {i}: {iface['display_name']} {active}")
+            self.buffer.put("nmap", f"   Alt Name:   {iface['scapy_name']}")
+            self.buffer.put("nmap", f"   IP:      {iface['ip']}")
+            self.buffer.put("nmap", f"   Netmask: {iface['netmask']}")
+            self.buffer.put("nmap", "\n")
 
-        network = self.compute_network(ip, netmask)
+        active_ip = active_iface["ip"] if active_iface else "None"
+        active_netmask = active_iface["netmask"] if active_iface else "None"
+        self.buffer.put("nmap", f"Your IP address: {active_ip}")
+        self.buffer.put("nmap", f"Your netmask: {active_netmask}")
+
+        network = self.compute_network(active_ip, active_netmask)
         self.buffer.put("nmap", f"Network ping range: {network}")
 
         ping_packet, answered, unanswered = self.ping_hosts(network)
@@ -39,24 +52,8 @@ class NMapper:
         for host in hosts:
             self.buffer.put("nmap", f"Found host at {host}")
 
+        self.buffer.print_status("nmap")
 
-
-
-
-    def get_interface(self):
-        interface = scapy.conf.iface
-        return interface
-
-
-    def get_ip(self, iface) -> str:
-        info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
-        ip = info["addr"]
-        return str(ip)
-
-    def get_netmask(self, iface) -> str:
-        info = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
-        netmask = info["netmask"]
-        return str(netmask)
 
     def compute_network(self, ip: str, netmask: str) -> str:
         network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
@@ -77,3 +74,74 @@ class NMapper:
         for pkt in responses:
             infos.append(f"Host IP {pkt[ARP].psrc} is at MAC address {pkt[ARP].hwsrc}")
         return infos
+
+    class InterfaceManager:
+        def __init__(self):
+            self.interfaces = []
+            self.active_iface = None
+            self.load_interfaces()
+
+        def load_interfaces(self):
+            self.interfaces.clear()
+
+            try:
+                working = get_working_if()
+                self.active_iface = working.name
+            except Exception:
+                self.active_iface = None
+
+            for iface in IFACES.data.values():
+                scapy_name = iface.name
+                display_name = iface.description
+
+                # Get IP (Scapy works great here)
+                try:
+                    ip = get_if_addr(scapy_name)
+                except Exception:
+                    ip = None
+
+                # Get netmask (fallback method)
+                netmask = self.get_netmask_fallback(ip)
+
+                self.interfaces.append({
+                    "scapy_name": scapy_name,
+                    "display_name": display_name,
+                    "ip": ip,
+                    "netmask": netmask,
+                    "is_active": scapy_name == self.active_iface
+                })
+
+        def get_netmask_fallback(self, ip):
+            """
+            Match IP to netifaces interface to extract netmask.
+            Works cross-platform.
+            """
+            if not ip or ip == "0.0.0.0":
+                return None
+
+            for iface in netifaces.interfaces():
+                try:
+                    addrs = netifaces.ifaddresses(iface)
+                    if netifaces.AF_INET in addrs:
+                        for info in addrs[netifaces.AF_INET]:
+                            if info.get("addr") == ip:
+                                return info.get("netmask")
+                except Exception:
+                    continue
+
+            return None
+
+        def print_interfaces(self):
+            print("\n=== Interfaces ===\n")
+
+            for i, iface in enumerate(self.interfaces):
+                active = "[ACTIVE]" if iface["is_active"] else ""
+
+                print(f"{i}: {iface['display_name']} {active}")
+                print(f"   Scapy:   {iface['scapy_name']}")
+                print(f"   IP:      {iface['ip']}")
+                print(f"   Netmask: {iface['netmask']}")
+                print()
+
+        def get_interface(self, index):
+            return self.interfaces[index]["scapy_name"]

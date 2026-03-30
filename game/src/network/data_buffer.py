@@ -111,13 +111,27 @@ class DataBuffer:
                     "deque": deque(maxlen=self.max_size),
                     "lock": Lock()
                 }
-    
+
     def print_filtered_console_buffer(self, source: str, filter: callable):
         with self.console_buffers[source]["lock"]:
             snapshot = list(self.console_buffers[source]["mpkt"])
         for mpkt in snapshot:
             if filter(mpkt):
                 print(mpkt)
+
+    def print_status(self, source: str):
+        with self.console_buffers[source]["lock"]:
+            snapshot = list(self.console_buffers[source]["status"])
+        for status in snapshot:
+            print(status)
+
+    def clear_status(self, source: str):
+        with self.console_buffers[source]["lock"]:
+            self.console_buffers[source]["status"].clear()
+
+    def clear_mpkt(self, source: str):
+        with self.console_buffers[source]["lock"]:
+            self.console_buffers[source]["mpkt"].clear()
 
     def put(self, source: str, purpose: str, data: Packet | None=None):
         '''
@@ -131,7 +145,7 @@ class DataBuffer:
         current_time = Time.time() - self.start_time
 
         # Put status message in a console buffer
-        if data is None or not isinstance(data, Packet):
+        if not isinstance(data, Packet):
             try:
                 with self.console_buffers[source]["lock"]:
                     self.console_buffers[source]["status"].append(purpose)
