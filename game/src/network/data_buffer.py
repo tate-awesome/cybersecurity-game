@@ -3,7 +3,7 @@ from threading import Lock
 import time as Time
 from scapy.all import Packet, ARP, Ether
 from . import modbus_util as modbus
-from .meta_packet import MetaPacket
+from .meta_packet import MetaPacket, MetaStatus
 
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 
@@ -68,14 +68,25 @@ class DataBuffer:
                 "mpkt": deque[MetaPacket],
                 "status": deque[str],
                 "lock": Lock()
+            "status":
+                "number": n,
+                "buffer": deque[MetaStatus],
+                "lock": Lock()
+
         '''
         for key in ["nmap", "arp", "sniff", "dos", "nfq"]:
             self.console_buffers[key] = {
                 "number": 1,
                 "mpkt": deque(maxlen=self.max_size),
-                "status": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
+        self.console_buffers["status"] = {
+            "number": 1,
+            "print_pointer": 0,
+            "buffer": deque(maxlen=self.max_size),
+            "lock": Lock()
+        }
+
 
         self.map_buffers = {}
         '''
@@ -124,6 +135,24 @@ class DataBuffer:
             snapshot = list(self.console_buffers[source]["status"])
         for status in snapshot:
             print(status)
+    
+    def get_status(self) -> list[MetaStatus]:
+        with self.console_buffers["status"]["lock"]:
+            snapshot = list(self.console_buffers["status"]["buffer"])
+        return snapshot
+    
+    def pop_status(self):
+        with self.console_buffers["status"]["lock"]:
+            if self.console_buffers["status"]["print_pointer"] < len(self.console_buffers["status"]["buffer"]):
+                status = self.console_buffers["status"]["buffer"][self.console_buffers["status"]["print_pointer"]]
+                self.console_buffers["status"]["print_pointer"] += 1
+                return status
+            else:
+                return None
+    
+    def reset_status_print_pointer(self):
+        with self.console_buffers["status"]["lock"]:
+            self.console_buffers["status"]["print_pointer"] = 0
 
     def clear_status(self, source: str):
         with self.console_buffers[source]["lock"]:
@@ -144,11 +173,13 @@ class DataBuffer:
         # Set time and number
         current_time = Time.time() - self.start_time
 
-        # Put status message in a console buffer
+        # Put status message in "status" buffer
         if not isinstance(data, Packet):
             try:
-                with self.console_buffers[source]["lock"]:
-                    self.console_buffers[source]["status"].append(purpose)
+                meta_status = MetaStatus(source, purpose, current_time, self.console_buffers["status"]["number"])
+                with self.console_buffers["status"]["lock"]:
+                    self.console_buffers["status"]["buffer"].append(meta_status)
+                self.console_buffers["status"]["number"] += 1
             except Exception:
                 print(f"Failed to put {purpose}")
             finally:

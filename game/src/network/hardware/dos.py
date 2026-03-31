@@ -51,16 +51,16 @@ class Denier:
 		Starts attack(s) on the given target(s)
 		'''
 		if self.is_running():
-			self.buffer.put("dos", "status", ["DoS Attack is already running"])
+			self.buffer.put("dos", "DoS Attack is already running")
 			return
 		for target in targets:
 			if target not in self.targets and len(target) > 0 and len(target.split(":")) == 2:
 				try:
 					self._start(target)
 				except:
-					self.buffer.put("dos", "status", [f"Error while starting DoS attack on {target}"])
+					self.buffer.put("dos",f"Error while starting DoS attack on {target}")
 			else:
-				self.buffer.put("dos", "status", [f"Did not start DoS attack on \"{target}\""])
+				self.buffer.put("dos", f"Did not start DoS attack on \"{target}\"")
 
 
 				
@@ -94,14 +94,14 @@ class Denier:
 			t = threading.Thread(target=job, args=(target, i), daemon=True)
 			self.targets[target]["threads"].append(t)
 			t.start()
-		self.buffer.put("dos", "status", [f"Started {number_of_attacks} DoS attack threads on {target}"])
+		self.buffer.put("dos", f"Started {number_of_attacks} DoS attack threads on {target}")
 
 	def stop(self, target_ip: str|None=None):
 		'''
 		Stops attack(s) on the given target(s)
 		'''
 		if not self.is_running(target_ip):
-				self.buffer.put("dos", "status", ["DoS Attack is not running"])
+				self.buffer.put("dos", "DoS Attack is not running")
 				return
 		if target_ip is None:
 			for target in self.targets.keys():
@@ -122,7 +122,7 @@ class Denier:
 		for t in data["threads"]:
 			t.join(timeout=1)
 
-		self.buffer.put("dos", "status", [f"Stopped DoS attack on {target}"])
+		self.buffer.put("dos", f"Stopped DoS attack on {target}")
 
 
 if __name__ == "__main__":

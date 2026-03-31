@@ -13,10 +13,12 @@ class NMapper:
     def do_nmap(self):
         self.interface_manager = self.InterfaceManager()
         ifm = self.interface_manager
+        self.buffer.put("nmap", "Starting NMap...")
+
 
         # Post interfaces, find active interface
         active_iface = None
-        self.buffer.put("nmap", "\n=== Interfaces ===\n")
+        self.buffer.put("nmap", "vvvv Your network interfaces vvvv")
         for i, iface in enumerate(ifm.interfaces):
             if iface["is_active"]:
                 active = "[ACTIVE]" 
@@ -28,7 +30,6 @@ class NMapper:
             self.buffer.put("nmap", f"   Alt Name:   {iface['scapy_name']}")
             self.buffer.put("nmap", f"   IP:      {iface['ip']}")
             self.buffer.put("nmap", f"   Netmask: {iface['netmask']}")
-            self.buffer.put("nmap", "\n")
 
         active_ip = active_iface["ip"] if active_iface else "None"
         active_netmask = active_iface["netmask"] if active_iface else "None"
@@ -50,9 +51,9 @@ class NMapper:
 
         hosts = self.compute_hosts(responses)
         for host in hosts:
-            self.buffer.put("nmap", f"Found host at {host}")
+            self.buffer.put("nmap", f"Found {host}")
 
-        self.buffer.print_status("nmap")
+        self.buffer.put("nmap", "NMap complete.")
 
 
     def compute_network(self, ip: str, netmask: str) -> str:
@@ -72,7 +73,7 @@ class NMapper:
     def compute_hosts(self, responses: list[Packet]):
         infos = []
         for pkt in responses:
-            infos.append(f"Host IP {pkt[ARP].psrc} is at MAC address {pkt[ARP].hwsrc}")
+            infos.append(f"Host IP {pkt[ARP].psrc} at MAC address {pkt[ARP].hwsrc}")
         return infos
 
     class InterfaceManager:
@@ -130,18 +131,6 @@ class NMapper:
                     continue
 
             return None
-
-        def print_interfaces(self):
-            print("\n=== Interfaces ===\n")
-
-            for i, iface in enumerate(self.interfaces):
-                active = "[ACTIVE]" if iface["is_active"] else ""
-
-                print(f"{i}: {iface['display_name']} {active}")
-                print(f"   Scapy:   {iface['scapy_name']}")
-                print(f"   IP:      {iface['ip']}")
-                print(f"   Netmask: {iface['netmask']}")
-                print()
 
         def get_interface(self, index):
             return self.interfaces[index]["scapy_name"]
