@@ -29,6 +29,7 @@ class NMap:
 
         def do():
             context.progress["nmap"] = True
+
             self.status.configure(text="Pinging...")
             context.root.update_idletasks()
 
