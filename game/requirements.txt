@@ -1,0 +1,4 @@
+customtkinter
+scapy
+netifaces
+netfilterqueue (on unix)
