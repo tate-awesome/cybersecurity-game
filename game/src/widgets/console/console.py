@@ -17,6 +17,9 @@ class Console:
         self.buffer = buffer
         self.filter_func = lambda mpkt: True
 
+        parent.configure(fg_color=style.color("root"))
+
+        # Filter overlay
         menu_frame = self.create_menu_frame(self.frame)
         refresh_button = self.create_menu_button(menu_frame, "Refresh")
         filter_button = self.create_menu_button(menu_frame, "Filters")
@@ -30,7 +33,7 @@ class Console:
     # Menu
     def create_menu_frame(self, parent):
         menu_frame = CTkFrame(parent)
-        menu_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x", anchor="n")
+        menu_frame.pack(side="top", fill="x")
         return menu_frame
     
     def create_menu_button(self, frame, text, function=None):
@@ -69,13 +72,6 @@ class Console:
             self.buffer.print_filtered_console_buffer("sniff", self.context.inputs["packet_filter_function"]["function"])
 
         activator_button.configure(command=activate)
-
-
-
-
-        
-        
-
 
     def add_filter_options(self, parent: CTkFrame):
         '''
@@ -134,7 +130,7 @@ class Console:
         # Place overlay just below button
         x = button.winfo_rootx() - self.context.root.winfo_rootx() + button.winfo_width() / 2
         y = button.winfo_rooty() - self.context.root.winfo_rooty() + button.winfo_height() + self.style.igap
-        overlay = CTkFrame(self.context.root)
+        overlay = CTkFrame(self.context.root, border_color=self.style.color("accent"), border_width=2)
         overlay.place(x=x, y=y, anchor="n")
         overlay.lift()
         self.filter_overlay = overlay
