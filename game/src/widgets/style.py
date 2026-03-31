@@ -9,6 +9,7 @@ class Style:
         self.gap2 = (20,20)
         self.nogap = (0, 0)
         self.gaptop = (10, 0)
+        self.gapbot = (0, 10)
         self.igap = 10
         self.cgap = 2
         self.PANE_MIN = self.igap*4
@@ -45,8 +46,10 @@ class Style:
             colors["root"] = root_color[0]
             colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"][0]
             colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][0]
+            colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"][0]
         else:
             colors["root"] = root_color[1]
             colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"][1]
             colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][1]
+            colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"][1]
         return colors[type]
