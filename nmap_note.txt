@@ -1,0 +1,30 @@
+Starting Nmap 7.95 ( https://nmap.org ) at 2026-03-31 15:32 MDT
+Nmap scan report for console.gl-inet.com (192.168.8.1)
+Host is up (0.0016s latency).
+Not shown: 996 closed tcp ports (conn-refused)
+PORT    STATE SERVICE
+22/tcp  open  ssh
+53/tcp  open  domain
+80/tcp  open  http
+443/tcp open  https
+
+Nmap scan report for esp32s3-92026C.lan (192.168.8.137)
+Host is up (0.0033s latency).
+All 1000 scanned ports on esp32s3-92026C.lan (192.168.8.137) are in ignored states.
+Not shown: 1000 closed tcp ports (conn-refused)
+
+Nmap scan report for debian13.lan (192.168.8.231)
+Host is up (0.000041s latency).
+All 1000 scanned ports on debian13.lan (192.168.8.231) are in ignored states.
+Not shown: 1000 closed tcp ports (conn-refused)
+
+Nmap scan report for esp32s3-3385B4.lan (192.168.8.243)
+Host is up (0.014s latency).
+All 1000 scanned ports on esp32s3-3385B4.lan (192.168.8.243) are in ignored states.
+Not shown: 1000 closed tcp ports (conn-refused)
+
+
+Next tuesday
+Packet graph
+seismometers
+network visual
