@@ -25,7 +25,7 @@ class Console:
         menu_frame = self.create_menu_frame(self.frame)
         refresh_button = self.create_menu_button(menu_frame, "Refresh")
         filter_button = self.create_menu_button(menu_frame, "Filters")
-        filter_overlay = FilterOverlay(self.context, self.style, filter_button)
+        filter_overlay = FilterOverlay(self.context, self.style, filter_button, buffer)
         
         top, bottom = self.create_paned_window(self.frame)
         packet_console = PacketConsole(style, top, context, buffer)

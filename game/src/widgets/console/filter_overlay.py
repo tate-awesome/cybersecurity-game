@@ -1,14 +1,16 @@
 from ...app_core.context import Context
 from ...network.meta_packet import MetaPacket
+from ...network.data_buffer import DataBuffer
 
 from customtkinter import *
 from tkinter import ttk
 import tkinter as tk
 
 class FilterOverlay:
-    def __init__(self, parent, style, button):
+    def __init__(self, parent, style, button, buffer: DataBuffer):
         self.context = parent
         self.style = style
+        self.buffer = buffer
 
         self.bind_overlay_button(button, self.create_filter_overlay, self.destroy_filter_overlay)
 
