@@ -28,3 +28,7 @@ Next tuesday
 Packet graph
 seismometers
 network visual
+
+Add options to print stupid packet info
+    - ALL DOS Packets
+    - UNANSWERED NMAP Packets

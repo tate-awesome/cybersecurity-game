@@ -39,10 +39,6 @@ class FilterOverlay:
 
             filter_label.configure(text=new_summary, wraplength=width)
 
-            self.buffer.console_buffers["sniff"]
-
-            self.buffer.print_filtered_console_buffer("sniff", self.context.inputs["packet_filter_function"]["function"])
-
         activator_button.configure(command=activate)
 
     def add_filter_options(self, parent: CTkFrame):

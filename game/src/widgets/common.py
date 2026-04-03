@@ -18,7 +18,7 @@ def trifold(style: Style, parent):
     parent.update_idletasks()
     w = paned.winfo_width()
     left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
-    middle = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
+    middle = CTkFrame(paned, width=w//3, background_corner_colors=(rc, rc, rc, rc))
     right = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
 
     # Add panes

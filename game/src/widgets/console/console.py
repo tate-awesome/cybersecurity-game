@@ -3,7 +3,6 @@ from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
 from .packet_console import PacketConsole
 from .status_console import StatusConsole
-from .filter_overlay import FilterOverlay
 from customtkinter import *
 from tkinter import ttk
 import tkinter as tk
@@ -21,27 +20,10 @@ class Console:
         self.filter_func = lambda mpkt: True
 
         parent.configure(fg_color=style.color("root"))
-
-        menu_frame = self.create_menu_frame(self.frame)
-        refresh_button = self.create_menu_button(menu_frame, "Refresh")
-        filter_button = self.create_menu_button(menu_frame, "Filters")
-        filter_overlay = FilterOverlay(self.context, self.style, filter_button, buffer)
         
         top, bottom = self.create_paned_window(self.frame)
         packet_console = PacketConsole(style, top, context, buffer)
         status_console = StatusConsole(style, bottom, context, buffer)
-
-    # Menu
-    def create_menu_frame(self, parent):
-        menu_frame = CTkFrame(parent)
-        menu_frame.pack(side="top", fill="x")
-        return menu_frame
-    
-    def create_menu_button(self, frame, text, function=None):
-        med = self.style.get_font()
-        button = CTkButton(frame, text=text, command=function, font=med)
-        button.pack(side="left", padx=self.style.gap, pady=self.style.gap)
-        return button
     
     # PanedWindow
     def create_paned_window(self, parent: CTkFrame):
@@ -51,16 +33,17 @@ class Console:
 
         # Create paned window
         paned = tk.PanedWindow(parent, orient="vertical", background=rc, sashwidth=self.style.igap)
-        paned.pack(side="top", fill="both", expand=True, pady=self.style.gaptop)
+        paned.pack(side="top", fill="both", expand=True)
 
         # Create panes with matching corners and preset widths
+        self.context.root.update_idletasks()
         h = paned.winfo_height()
-        top = CTkFrame(paned, height=400, background_corner_colors=(rc, rc, rc, rc))
-        bottom = CTkFrame(paned, height=400, background_corner_colors=(rc, rc, rc, rc))
+        top = CTkFrame(paned, height=h//2, background_corner_colors=(rc, rc, rc, rc))
+        bottom = CTkFrame(paned, height=h//2, background_corner_colors=(rc, rc, rc, rc))
 
         # Add panes
-        paned.add(top, minsize=self.style.PANE_MIN)
-        paned.add(bottom, minsize=self.style.PANE_MIN)
+        paned.add(top, minsize=110)
+        paned.add(bottom, minsize=110)
         return top, bottom
 
     def menu_dropdown(self, frame, options: list[str], function):

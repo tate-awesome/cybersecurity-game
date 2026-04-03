@@ -22,14 +22,15 @@ class MetaStatus:
         return f"{prefix}{self.status}"
 
 class MetaPacket:
-    def __init__(  self, pkt: Packet, current_time: float, number: int,
+    def __init__(  self, pkt: Packet, current_time: float, absolute_number: int, hack_number: int,
     hack: str, purpose: str = "None",
     variables: list[str] = [], values: list[str] = []):
 
         # Essential info
         self.pkt = pkt
         self.time = current_time
-        self.number = number
+        self.absolute_number = absolute_number
+        self.hack_number = hack_number
         self.length = str(len(self.pkt))
 
         # External info
@@ -93,7 +94,8 @@ class MetaPacket:
         # Label fields
         self.fields = {
             "Time": self.time,
-            "No.": self.number,
+            "No.": self.absolute_number,
+            "Hack No.": self.hack_number,
 
             "Hack": self.hack,
             "Purpose": self.purpose,
@@ -112,7 +114,7 @@ class MetaPacket:
     def __str__(self) -> str:
         lines = []
         lines.append(f"[ {self.proto_str} ]")
-        lines.append(f"   | no: {self.number}\ttime: {self.time:.3f}\tlen: {self.length}\tfrom: {self.hack}")
+        lines.append(f"   | no: {self.absolute_number}\ttime: {self.time:.3f}\tlen: {self.length}\tfrom: {self.hack}\t{self.hack_number}")
         lines.append(f"   | hwsrc: {self.mac_src}\thwdst: {self.mac_dst}")
         lines.append(f"   | ipsrc: {self.ip_src}\tipdst: {self.ip_dst}")
         lines.append(f"   | dir: {self.direction_verbose}\tpurpose: {self.purpose}")

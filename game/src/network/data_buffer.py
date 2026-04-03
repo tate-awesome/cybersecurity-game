@@ -36,37 +36,16 @@ class DataBuffer:
             float
         '''
 
+        # Buffers for console use
         self.console_buffers = {}
         '''
         For the Console:
-
-            "nmap":
-                "number": n,
-                "mpkt": deque[MetaPacket],
-                "status": deque[str],
-                "lock": Lock()
-            "arp": 
-                "number": n,
-                "mpkt": deque[MetaPacket],
-                "status": deque[str],
-                "lock": Lock()
-
-            "sniff": 
-                "number": n,
-                "mpkt": deque[MetaPacket],
-                "status": deque[str],
-                "lock": Lock()
-
-            "dos": 
-                "number": n,
-                "mpkt": deque[MetaPacket],
-                "status": deque[str],
-                "lock": Lock()
-
-            "mitm": 
-                "number": n,
-                "mpkt": deque[MetaPacket],
-                "status": deque[str],
+            "packets":
+                "numbers": {
+                    "absolute": n,
+                    "this_hack": n
+                }
+                "buffer": deque[MetaPacket],
                 "lock": Lock()
             "status":
                 "number": n,
@@ -74,12 +53,14 @@ class DataBuffer:
                 "lock": Lock()
 
         '''
-        for key in ["nmap", "arp", "sniff", "dos", "nfq"]:
-            self.console_buffers[key] = {
-                "number": 1,
-                "mpkt": deque(maxlen=self.max_size),
+        self.console_buffers["packets"] = {
+                "numbers": {},
+                "print_pointer": 0,
+                "buffer": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
+        for key in ["absolute", "nmap", "arp", "sniff", "dos", "mitm"]:
+            self.console_buffers["packets"]["numbers"][key] = 1
         self.console_buffers["status"] = {
             "number": 1,
             "print_pointer": 0,
@@ -87,7 +68,7 @@ class DataBuffer:
             "lock": Lock()
         }
 
-
+        # Buffers for the map
         self.map_buffers = {}
         '''
         Map elements:
@@ -107,7 +88,8 @@ class DataBuffer:
                     "deque": list(),
                     "lock": Lock()
                 }
-
+        
+        # Buffers for the tracers
         self.tracer_buffers = {}
         '''
         Tracer elements: 
@@ -123,6 +105,84 @@ class DataBuffer:
                     "lock": Lock()
                 }
 
+    def put(self, source: str, purpose: str, data: Packet | None=None):
+        '''
+        Put status messages and packets into appropriate buffers.
+
+        source: the network action - "nmap", "arp", "dos", "sniff", "mitm"
+
+        purpose: a message about the packet, or a status message
+        '''
+        # Set time
+        current_time = Time.time() - self.start_time
+
+        # Put status message in "status" buffer
+        if not isinstance(data, Packet):
+            try:
+                meta_status = MetaStatus(source, purpose, current_time, self.console_buffers["status"]["number"])
+                with self.console_buffers["status"]["lock"]:
+                    self.console_buffers["status"]["buffer"].append(meta_status)
+                self.console_buffers["status"]["number"] += 1
+            except Exception:
+                print(f"Failed to put {purpose}")
+            finally:
+                return
+        
+        # Set numbers for this packet
+        absolute_number = self.console_buffers["packets"]["numbers"]["absolute"]
+        self.console_buffers["packets"]["numbers"]["absolute"] = absolute_number+1
+        hack_number = self.console_buffers["packets"]["numbers"][source]
+        self.console_buffers["packets"]["numbers"][source] = hack_number+1
+        
+        # Create a MetaPacket
+        variables, values = self.extract_modbus(source, data)
+        mpkt = MetaPacket(data, current_time, absolute_number, hack_number,
+            source, purpose,
+            variables, values)
+
+        # Put MetaPacket in the buffer
+        with self.console_buffers["packets"]["lock"]:
+            self.console_buffers["packets"]["buffer"].append(mpkt)
+
+        # TODO put in the tracer and map and stuff
+        return
+
+    def extract_modbus(self, source: str, pkt: Packet) -> tuple[list[str], list[float]]:
+        '''
+        Returns the modbus variables and values in the packet.
+        If there's no modbus, return empty lists
+        '''
+        # Extract variables
+        if pkt.haslayer("Read Holding Registers Response"):
+            variables = ["speed"]
+            mbl = pkt.getlayer(ModbusADUResponse)
+            values = [mbl.payload.registerVal[0]*self.factors["speed"]]
+
+            if len(mbl.payload.registerVal) > 1:
+                variables.append("rudder")
+                values.append(mbl.payload.registerVal[1]*self.factors["rudder"])
+
+        elif pkt.haslayer("Write Single Register"):
+            mbl = pkt.getlayer(ModbusADURequest)
+            if mbl.payload.registerAddr == 10: # X address
+                var = "x"
+            elif mbl.payload.registerAddr == 11: # Y address
+                var = "y"
+            else: # Theta address
+                var = "theta"
+
+            z = mbl.payload.registerValue
+
+            variables = [var]
+            values = [z*self.factors[var]]
+        
+        else:
+            variables = []
+            values = []
+
+        return variables, values
+    
+    # Console
     def print_filtered_console_buffer(self, source: str, filter: callable):
         with self.console_buffers[source]["lock"]:
             snapshot = list(self.console_buffers[source]["mpkt"])
@@ -154,317 +214,17 @@ class DataBuffer:
         with self.console_buffers["status"]["lock"]:
             self.console_buffers["status"]["print_pointer"] = 0
 
-    def clear_status(self, source: str):
-        with self.console_buffers[source]["lock"]:
-            self.console_buffers[source]["status"].clear()
+    def get_packets(self, filter: callable) -> list[MetaPacket]:
+        with self.console_buffers["packets"]["lock"]:
+            snapshot = list(self.console_buffers["packets"]["buffer"])
 
-    def clear_mpkt(self, source: str):
-        with self.console_buffers[source]["lock"]:
-            self.console_buffers[source]["mpkt"].clear()
-
-    def put(self, source: str, purpose: str, data: Packet | None=None):
-        '''
-        Put status messages and packets into appropriate buffers.
-
-        source: the network action - "nmap", "arp", "dos", "sniff", "mitm"
-
-        purpose: a message about the packet, or a status message
-        '''
-        # Set time and number
-        current_time = Time.time() - self.start_time
-
-        # Put status message in "status" buffer
-        if not isinstance(data, Packet):
-            try:
-                meta_status = MetaStatus(source, purpose, current_time, self.console_buffers["status"]["number"])
-                with self.console_buffers["status"]["lock"]:
-                    self.console_buffers["status"]["buffer"].append(meta_status)
-                self.console_buffers["status"]["number"] += 1
-            except Exception:
-                print(f"Failed to put {purpose}")
-            finally:
-                return
-        
-        # Set numbers for this packet
-        console_number = self.console_buffers[source]["number"]
-        self.console_buffers[source]["number"] = console_number + 1
-        
-        # Create a MetaPacket
-        variables, values = self.extract_modbus(data)
-        console_mpkt = MetaPacket(data, current_time, console_number,
-            source, purpose,
-            variables, values)
-        
-        # Print your data
-        # print(data)
-
-        # Put it in the console buffer
-        with self.console_buffers[source]["lock"]:
-            self.console_buffers[source]["mpkt"].append(console_mpkt)
-        return
-
-            
-
-
-        # Console buffers (packets, strings, columnated strings)
-        if source == "nmap":
-            # TODO push data to nmap console (process showcase)
-            print("\n\n")
-            print(purpose)
-            if isinstance(data, Packet):
-                data.summary()
-                data.show()
-            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
-                print("\t".join(data))
-            return
-        
-        if source == "arp":
-            # TODO push data to arp console (process showcase + wireshark + explanation)
-            print("\n\n")
-            print(purpose)
-            if isinstance(data, Packet):
-                data.summary()
-                data.show()
-            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
-                print("\t".join(data))
-            return
-
-        if source == "sniff":
-            # TODO push data to sniff console (wireshark clone using MetaPackets)
-            # Variable tracers (regular timestep, broken during breaks)
-            # Time-separated boat position trails
-
-            print("\n\n")
-            print(purpose)
-            if isinstance(data, Packet):
-                data.summary()
-                data.show()
-                # print(data.hwdst)
-                # TODO NEXT Direction: compare data.hwdst to self.mac
-                # data.hwsrc
-            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
-                print("\t".join(data))
-            return
-
-        if source == "nfq":
-            # TODO push data to nfq console (before/after showcase)
-            print("\n\n")
-            print(purpose)
-            if isinstance(data, Packet):
-                data.summary()
-                data.show()
-                # print(data.hwdst)
-                # 
-                # data.hwsrc
-            elif isinstance(data, list) and all(isinstance(s, str) for s in data):
-                print("\t".join(data))
-            return
-
-    def extract_modbus(self, pkt: Packet) -> tuple[list[str], list[float]]:
-        # Extract variables
-        if pkt.haslayer("Read Holding Registers Response"):
-            variables = ["speed"]
-            mbl = pkt.getlayer(ModbusADUResponse)
-            values = [mbl.payload.registerVal[0]*self.factors["speed"]]
-
-            if len(mbl.payload.registerVal) > 1:
-                variables.append("rudder")
-                values.append(mbl.payload.registerVal[1]*self.factors["rudder"])
-
-        elif pkt.haslayer("Write Single Register"):
-            mbl = pkt.getlayer(ModbusADURequest)
-            if mbl.payload.registerAddr == 10: # X address
-                var = "x"
-            elif mbl.payload.registerAddr == 11: # Y address
-                var = "y"
-            else: # Theta address
-                var = "theta"
-
-            z = mbl.payload.registerValue
-
-            variables = [var]
-            values = [z*self.factors[var]]
-        
-        else:
-            variables = []
-            values = []
-
-        return variables, values
-
-    def put_packet(self, pkt: Packet, dir: str):
-        '''
-        Processes the packet.
-        '''
-
-        # Get time for matching deque times
-        current_time = Time.time() - self.start_time
-
-        # Get variable from pkt
-        if modbus.is_x(pkt):
-            variable = "x"
-            value = modbus.get_coord(pkt)
-        elif modbus.is_y(pkt):
-            variable = "y"
-            value = modbus.get_coord(pkt)
-        elif modbus.is_theta(pkt):
-            variable = "theta"
-            value = modbus.get_coord(pkt)
-        elif modbus.is_commands(pkt) and len(modbus.get_commands(pkt)) > 1:
-            # Do speed first
-            values = modbus.get_commands(pkt)
-            with self.trails[f"speed_{dir}"]["lock"]:
-                self.trails[f"speed_{dir}"]["deque"].append((values[0], current_time, self.number))
-            # Do rudder with the rest
-            variable = "rudder"
-            value = values[1]
-        else:
-            variable = "None"
-            value = "None"
-
-        # Lock and store value
-
-            # Write single register response and read holding registers request aren't useful (for now)
-        if not variable == "None" and not value == "None":
-            with self.trails[f"{variable}_{dir}"]["lock"]:
-                self.trails[f"{variable}_{dir}"]["deque"].append((value, current_time, self.number))
-        
-        # Lock and store packet
-        with self.trails[f"packets_{dir}"]["lock"]:
-            self.trails[f"packets_{dir}"]["deque"].append((pkt, current_time, self.number))
-
-        # Do callbacks
-        for cb in list(self.packet_callbacks.values()):
-            mpkt = MetaPacket(pkt, current_time, self.number, dir, variable, value)
-            self.executor.submit(cb, mpkt)
-        # Update number
-        self.number = self.number + 1
-
-
-    def clear(self):
-        '''
-        Clears all deques
-        '''
-        for var in ["x", "y", "theta", "speed", "rudder", "packets"]:
-            for dir in ["in", "out"]:
-                self.trails[f"{var}_{dir}"]["deque"].clear()
-
-
-    def get_trail(self, var: str, dir: str):
-        '''
-        Returns a copy of the full deque for the variable and direction.
-
-        May return an empty deque.
-
-        Param:
-            var: (x, y, theta, speed, rudder, packets)
-            dir: (in, out)
-
-        Returns:
-            list: tuple: (value|packet, time, number)
-        '''
-        with self.trails[f"{var}_{dir}"]["lock"]:
-            snapshot = list(self.trails[f"{var}_{dir}"]["deque"])
-        return snapshot
-
-
-    def get_last_tuple(self, var: str, dir: str) -> None | tuple[Packet | int, float, int]:
-        '''
-        Returns the last tuple in the deque for the given variable and direction.
-
-        Returns None if the deque is empty.
-
-        Returns:
-            tuple: value|packet, time, number
-        '''
-        trail = self.get_trail(var, dir)
-        if len(trail) < 1:
-            return None
-        else:
-            return trail[-1]
-
-
-    def get_last_position(self, dir: str, convert=True):
-        '''
-        Returns the latest boat position, in meters. Useful for drawing the boat sprite.
-        X and y should be between 0 and 200.
-        Returns:
-            list: [x, y]
-            OR
-            None, if any are missing
-        '''
-        values = []
-        for var in ["x", "y"]:
-            last_tuple = self.get_last_tuple(var, dir)
-            if last_tuple == None:
-                return None
-            else:
-                values.append(last_tuple[0] * self.factors[var] ** convert)
-
-        return values
-
-    def get_last_bearing(self, dir: str, convert=True):
-        bearing = self.get_last_tuple("theta", dir)
-        if bearing is None:
-            return None
-        if convert:
-            return bearing[0] * self.factors["theta"]
-        else:
-            return bearing[0]
-
-    def get_all_positions(self, dir: str, convert=True, flatten=False):
-        '''
-        Returns a list of all previous boat positions by assigning the last y to every x value.
-
-        Returns:
-            if flatten:
-                list: [x0, xy0, x1, y1,...]
-            else:
-                list: [tuple(x0, y0), tuple(x1, y1), ...]
-        '''
-        points = []
-        j = 0
-        last_y = None
-
-        xs = self.get_trail("x", dir)
-        ys = self.get_trail("y", dir)
-
-        for x_val, x_time, _ in xs:
-
-            while j < len(ys) and ys[j][1] <= x_time:
-                last_y = ys[j][0]
-                j += 1
-            if last_y is not None:
-                next = (x_val * (self.factors["x"] ** convert) , last_y * (self.factors["y"] ** convert))
-                if flatten:
-                    points.extend(next)
-                else:
-                    points.append(next)
-
-        return points
-
-
-# def get_knit_packets():
-#     '''
-#     Returns a list of received and forwarded packet tuples, sorted by time.
-#     Useful for the wireshark clone.
-
-#     Returns:
-#         list:
-#             tuple: (packet, time, number, direction)
-#     '''
-#     # with trails["packets_in"]["lock"]:
-#     #     snapshot_in = list(trails["packets_in"]["deque"])
-#     # with trails["packets_out"]["lock"]:
-#     #     snapshot_out = list(trails["packets_out"]["deque"])
-#     snapshot_in = get_trail("packets","in")
-#     snapshot_out = get_trail("packets", "out")
-
-#     # Add direction field to each packet
-#     snapshot_in = [(pkt, ts, num, "in") for pkt, ts, num in snapshot_in]
-#     snapshot_out = [(pkt, ts, num, "out") for pkt, ts, num in snapshot_out]
-
-#     # Merge and sort by timestamp
-#     all_packets = snapshot_in + snapshot_out
-#     all_packets.sort(key=lambda x: x[1])  # sort by timestamp
-
-#     return all_packets
+        return [mpkt for mpkt in snapshot if filter(mpkt)]
+    
+    def pop_packet(self, filter: callable) -> MetaPacket:
+        with self.console_buffers["packets"]["lock"]:
+            if self.console_buffers["packets"]["print_pointer"] < len(self.console_buffers["packets"]["buffer"]):
+                packet = self.console_buffers["packets"]["buffer"][self.console_buffers["packets"]["print_pointer"]]
+                self.console_buffers["packets"]["print_pointer"] += 1
+                if filter(packet):
+                    return packet
+        return None
