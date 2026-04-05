@@ -2,7 +2,7 @@
 Module
 '''
 import scapy.all as scapy
-from scapy.all import Packet, ARP, IFACES, get_if_addr, get_working_if
+from scapy.all import Packet, ARP, get_if_addr, get_working_if
 import ipaddress, netifaces
 from ..data_buffer import DataBuffer
 
@@ -91,7 +91,7 @@ class NMapper:
             except Exception:
                 self.active_iface = None
 
-            for iface in IFACES.data.values():
+            for iface in scapy.IFACES.data.values():
                 scapy_name = iface.name
                 display_name = iface.description
 

@@ -183,7 +183,7 @@ class FilterOverlay:
                         category_conditions.append(box_name)
 
                 if len(category_conditions) > 0:
-                    category_summary = f"{category_summary} {" OR ".join(category_conditions)}"
+                    category_summary = f"{category_summary} {' OR '.join(category_conditions)}"
                     category_summaries.append(category_summary)
             category_summaries = " AND ".join(category_summaries)
 
