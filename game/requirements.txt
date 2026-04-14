@@ -1,4 +1,4 @@
 customtkinter
 scapy
-netifaces
+netifaces2
 netfilterqueue (on unix)
