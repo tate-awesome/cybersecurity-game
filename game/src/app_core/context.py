@@ -110,7 +110,45 @@ class Context:
             "packet_filter_function": {
                 "summary": "Currently filtering for any packets.",
                 "function": lambda mpkt: True
-            }
+            },
+            "column_selections": {
+                "Time": {
+                    "state": "1",
+                    "function": lambda mpkt: mpkt.time
+                },
+                "No.": {
+                    "state": "1",
+                    "function": lambda mpkt: mpkt.absolute_number
+                },
+                "Length": {
+                    "state": "0",
+                    "function": lambda mpkt: mpkt.length
+                },
+                "Hack info": {
+                    "state": "1",
+                    "function": lambda mpkt: mpkt.hack_word
+                },
+                "Transaction": {
+                    "state": "1",
+                    "function": lambda mpkt: mpkt.transaction_word
+                },
+                "Layers": {
+                    "state": "1",
+                    "function": lambda mpkt: mpkt.proto_str
+                },
+                "Purpose": {
+                    "state": "0",
+                    "function": lambda mpkt: mpkt.purpose
+                },
+                "Summary": {
+                    "state": "1",
+                    "function": lambda mpkt: mpkt.summary
+                },
+                "Modbus info": {
+                    "state": "0",
+                    "function": lambda mpkt: mpkt.modbus_word
+                },
+            },
             
         }
         '''

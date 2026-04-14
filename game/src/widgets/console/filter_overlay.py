@@ -7,10 +7,11 @@ from tkinter import ttk
 import tkinter as tk
 
 class FilterOverlay:
-    def __init__(self, parent, style, button, buffer: DataBuffer):
+    def __init__(self, parent, style, button, buffer: DataBuffer, refresh_function):
         self.context = parent
         self.style = style
         self.buffer = buffer
+        self.refresh_function = refresh_function
 
         self.bind_overlay_button(button, self.create_filter_overlay, self.destroy_filter_overlay)
 
