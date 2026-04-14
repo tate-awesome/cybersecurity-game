@@ -91,25 +91,13 @@ class MetaPacket:
         self.variables = variables
         self.values = values
 
-        # Label fields
-        self.fields = {
-            "Time": self.time,
-            "No.": self.absolute_number,
-            "Hack No.": self.hack_number,
-
-            "Hack": self.hack,
-            "Purpose": self.purpose,
-
-            "Direction": self.direction_verbose,
-            "MAC Source": self.mac_src,
-            "MAC Destination": self.mac_dst,
-            "IP Source": self.ip_src,
-            "IP Destination": self.ip_dst,
-            "Protocol Layers": self.proto_str,
-            "Modbus Variables": self.variables,
-            "Modbus Values": self.values,
-            "Info String": self.get_info()
-        }
+        # Summary fields
+        self.summary = self.get_info()
+        self.hack_word = f"{self.hack} {self.hack_number}".strip()
+        self.mac_word = f"{self.mac_src} → {self.mac_dst}" if pkt.haslayer(Ether) else "-"
+        self.ip_word = f"{self.ip_src} → {self.ip_dst}" if pkt.haslayer(IP) else "-"
+        self.transaction_word = f"{self.direction_verbose}\n{self.mac_word}\n{self.ip_word}"
+        self.modbus_word = f"{self.variables} = {self.values}"
 
     def __str__(self) -> str:
         lines = []
