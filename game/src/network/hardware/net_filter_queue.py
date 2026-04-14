@@ -41,7 +41,7 @@ class NetFilterQueue:
 
     def start(self): 
         if self.is_running():
-            self.buffer.put("nfq", "NFQ is already running")
+            self.buffer.put("mitm", "NFQ is already running")
             return
         self.callback = self.modify_and_accept
         self.stop_event = threading.Event()
@@ -67,7 +67,7 @@ class NetFilterQueue:
         # Pipe for stop signaling
         stop_r, stop_w = os.pipe()
         poller.register(stop_r, select.POLLIN)
-        self.buffer.put("nfq", "Starting NFQ")
+        self.buffer.put("mitm", "Starting NFQ")
         try:
             while not self.stop_event.is_set():
                 events = poller.poll(500)
@@ -86,16 +86,16 @@ class NetFilterQueue:
 
     def stop(self):
         if self.stop_event == None and self.thread == None:
-            self.buffer.put("nfq", "Net filter queue is not running")
+            self.buffer.put("mitm", "Net filter queue is not running")
             return
         else:
-            self.buffer.put("nfq", "Stopping net filter queue...")
+            self.buffer.put("mitm", "Stopping net filter queue...")
             self.stop_event.set()
             self.thread.join()
             self.stop_event = None
             self.thread = None
             self.callback = None
-            self.buffer.put("nfq", "Stopped net filter queue")
+            self.buffer.put("mitm", "Stopped net filter queue")
 
     # Callbacks
     def accept_only(self, pkt: Packet):
@@ -104,7 +104,7 @@ class NetFilterQueue:
     def modify_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         if spkt.haslayer("Read Holding Registers Response"):
-            self.buffer.put("nfq", "Incoming Modbus Packet", spkt)
+            self.buffer.put("mitm", "Incoming Modbus Packet", spkt)
             mult = self.table.get_raw("speed", "mult")
             offset = self.table.get_raw("speed", "offset")
 
@@ -124,7 +124,7 @@ class NetFilterQueue:
                 mbl.payload.registerVal[1] = val
 
         elif spkt.haslayer("Write Single Register"):
-            self.buffer.put("nfq", "Incoming Modbus Packet", spkt)
+            self.buffer.put("mitm", "Incoming Modbus Packet", spkt)
 
             mbl = spkt.getlayer(ModbusADURequest)
 
@@ -156,4 +156,4 @@ class NetFilterQueue:
         pkt.set_payload(bytes(spkt))
         pkt.accept()
 
-        self.buffer.put("nfq", "Outgoing Modbus Packet", spkt)
+        self.buffer.put("mitm", "Outgoing Modbus Packet", spkt)
