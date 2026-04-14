@@ -2,7 +2,7 @@
 Module
 '''
 import scapy.all as scapy
-from scapy.all import Packet, ARP, get_if_addr, get_working_if
+from scapy.all import Packet, ARP, get_if_addr, get_working_if, get_if_hwaddr
 import ipaddress, netifaces
 from ..data_buffer import DataBuffer
 
@@ -27,10 +27,13 @@ class NMapper:
                 active = ""
             self.buffer.put("nmap", f"Interface {i}: {iface['display_name']} {active}")
             self.buffer.put("nmap", f"   Alt Name:   {iface['scapy_name']}")
+            self.buffer.put("nmap", f"   MAC:     {iface['mac']}")
             self.buffer.put("nmap", f"   IP:      {iface['ip']}")
             self.buffer.put("nmap", f"   Netmask: {iface['netmask']}")
         active_ip = active_iface["ip"] if active_iface else "None"
         active_netmask = active_iface["netmask"] if active_iface else "None"
+        active_mac = active_iface["mac"] if active_iface else "None"
+        self.buffer.put("nmap", f"Your MAC address: {active_mac}")
         self.buffer.put("nmap", f"Your IP address: {active_ip}")
         self.buffer.put("nmap", f"Your netmask: {active_netmask}")
 
@@ -105,11 +108,17 @@ class NMapper:
                 # Get netmask (fallback method)
                 netmask = self.get_netmask(scapy_name)
 
+                try:
+                    mac = get_if_hwaddr(scapy_name)
+                except Exception:
+                    mac = None
+
                 self.interfaces.append({
                     "scapy_name": scapy_name,
                     "display_name": display_name,
                     "ip": ip,
                     "netmask": netmask,
+                    "mac": mac,
                     "is_active": scapy_name == self.active_iface
                 })
 
