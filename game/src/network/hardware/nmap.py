@@ -25,12 +25,10 @@ class NMapper:
                 active_iface = iface
             else:
                 active = ""
-
             self.buffer.put("nmap", f"Interface {i}: {iface['display_name']} {active}")
             self.buffer.put("nmap", f"   Alt Name:   {iface['scapy_name']}")
             self.buffer.put("nmap", f"   IP:      {iface['ip']}")
             self.buffer.put("nmap", f"   Netmask: {iface['netmask']}")
-
         active_ip = active_iface["ip"] if active_iface else "None"
         active_netmask = active_iface["netmask"] if active_iface else "None"
         self.buffer.put("nmap", f"Your IP address: {active_ip}")
@@ -57,8 +55,11 @@ class NMapper:
 
 
     def compute_network(self, ip: str, netmask: str) -> str:
-        network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
-        return str(network)
+        if not netmask:
+            return "Invalid netmask"
+        else:
+            network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
+            return str(network)
 
     def ping_hosts(self, network: str) -> tuple[Packet, list, list]:
         '''
@@ -102,7 +103,7 @@ class NMapper:
                     ip = None
 
                 # Get netmask (fallback method)
-                netmask = self.get_netmask_fallback(ip)
+                netmask = self.get_netmask(scapy_name)
 
                 self.interfaces.append({
                     "scapy_name": scapy_name,
@@ -112,23 +113,22 @@ class NMapper:
                     "is_active": scapy_name == self.active_iface
                 })
 
-        def get_netmask_fallback(self, ip):
-            """
-            Match IP to netifaces interface to extract netmask.
-            Works cross-platform.
-            """
-            if not ip or ip == "0.0.0.0":
-                return None
+        def get_netmask(self, iface):
+            try:
+                addrs = netifaces.ifaddresses(iface)
+                inet = addrs.get(netifaces.AF_INET)
 
-            for iface in netifaces.interfaces():
-                try:
-                    addrs = netifaces.ifaddresses(iface)
-                    if netifaces.AF_INET in addrs:
-                        for info in addrs[netifaces.AF_INET]:
-                            if info.get("addr") == ip:
-                                return info.get("netmask")
-                except Exception:
-                    continue
+                if not inet:
+                    return None
+
+                for entry in inet:
+                    if "netmask" in entry:
+                        return entry["netmask"]
+                    if "mask" in entry:
+                        return entry["mask"]
+
+            except Exception:
+                pass
 
             return None
 
