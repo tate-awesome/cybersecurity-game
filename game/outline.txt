@@ -1,0 +1,131 @@
+Outline:
+
+The game progresses through multiple states,
+adding and removing widgets
+
+The main game progress should be driven by
+isolated functions like "navigate to this step"
+
+You should be able to navigate to any screen
+at any point
+
+Game data should be stored in some object
+aka sending/receiving/history
+Window navigation should be stored in some object
+
+TODO-----------------
+Modbus file with packet generation and unwrapping
+Make it adaptable to any packet types
+More error checking
+
+Put draw frame instructions in draw.py
+Put all data checking in draw.py
+
+scapy
+
+GAME SCREENS---------------------
+
+----Defender:
+        start
+        encoding
+        ip
+        fields
+        endgame
+
+----Attacker:
+        start
+        encoding
+        ip
+        fields
+        endgame
+
+
+FILES/LAYERS
+
+----network_interface(network_type, role):
+        Receives and sends packets through the network
+        Stores all packets it sees
+        
+
+----Network:
+        No file, imagine it's there
+        Could be hardware, wireless, or virtual
+
+----Master & Slave:
+        Only exist for software only games
+        Two files 
+        Isolate behavior and data
+        Sends "packets" back and forth through a middle man
+        Master receives boat data and sends directions
+        Slave receives directions and simulates its physics
+        Only communicate with modbus
+
+        Control/Feedback modbus procedure:
+        1. Master requests position
+                Slave sends position
+        2. Upon receiving new position, master sends rudder command
+                Slave echoes
+        3. Then master sends speed command
+                Slave echoes
+        Slave is continually updating its physics with whatever commands it gets
+        Master is triggering these procedures on a timestep
+
+
+----Modbus rules
+        Register Type	        Address	        Purpose	                Function Code(s)
+        ----------------        -------         -------------           ----------------
+        Holding Register	40001	        Rudder angle command    Write (06 / 16)
+        Holding Register	40002	        Speed command	        Write (06 / 16)
+        Input Register	        30001	        Direction (0–359°)	Read (04)
+        Input Register	        30002	        X coordinate	        Read (04)
+        Input Register	        30003	        Y coordinate	        Read (04)
+        Coil	                00001	        System enable	        Write (05 / 15)
+        Discrete Input	        10001	        Low battery flag	Read (02)
+
+        [ Transaction ID | Protocol ID | Length | Unit ID | Function Code | Data ]
+
+        
+
+        virtual packets will be arrays of bytes
+
+        Master read data:
+        01 04 00 00 00 03 B0 0B
+        ------------------------
+        01      slave id 01
+        04      read registers
+        00 00   start register 0
+        00 03   read 3 registers
+        B0 0B   CRC
+
+        Slave respond with data:
+        01 04 06 00 5A 04 B0 03 20 49 7C
+        ---------------------------------------------------
+        01	Slave 1
+        04	Affirm Function 4 read registers
+        06	6 bytes of data
+        00 5A	Direction = 90° converted to 2 bytes in hex
+        04 B0	X = 1200        converted to 2 bytes in hex
+        03 20	Y = 800         converted to 2 bytes in hex
+        49 7C	CRC             
+
+        Master send rudder command:
+        01 06 00 00 00 0F 89 CA
+        -----------------------------
+        01	Slave 1
+        06	Write Single Register
+        00 00	Register 0 (rudder)
+        00 0F	Value 15
+        89 CA	CRC
+
+        Slave echoes
+
+        Master send throttle command:
+        01 06 00 01 02 58 D9 CB
+        -----------------------------
+        01	Slave 1
+        06	Write Single Register
+        00 01	Register 1 (throttle)
+        00 0F	Value 15
+        89 CA	CRC
+
+        Slave echoes
