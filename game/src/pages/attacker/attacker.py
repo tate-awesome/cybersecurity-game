@@ -9,7 +9,7 @@ from ...drawing.viewport import ViewPort
 from ...widgets.console.console import Console
 
 # Network
-from ...network.network_controller import Hardware as HardwareNetwork
+from ...network.network_controller import HardwareAttacker as HardwareNetwork
 
 # Form widgets
 from ...widgets.forms.nmap import NMap
@@ -50,14 +50,14 @@ class AttackerV0:
             context.progress["mitm"] = True
             root.update_idletasks()
             net.buffer.add_callback("mitm_handler", mitm_handler)
-            net.start_nfq()
+            net.start_mitm()
 
         def stop_mitm():
             root.update_idletasks()
-            net.stop_nfq()
+            net.stop_mitm()
             net.buffer.remove_callback("mitm_handler")
 
-        start_on = net.nfq_is_running()
+        start_on = net.mitm_is_running()
         mitm.bind_reversible(start_mitm, stop_mitm, "Attack", start_on)
 
         mitm.bind_input_alert()

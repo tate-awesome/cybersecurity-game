@@ -13,12 +13,12 @@ class NetworkController:
     def abort_all(self):
         pass
     
-class Hardware(NetworkController):
+class HardwareAttacker(NetworkController):
     def __init__(self):
         super().__init__()
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
         self.nmap = nmap.NMapper(self.data_buffer)
-        self.nfq = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
+        self.mitm = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.data_buffer)
         self.dos = dos.Denier(self.data_buffer)
 
@@ -35,14 +35,14 @@ class Hardware(NetworkController):
     def stop_arp(self):
         self.arp_spoofer.stop()
 
-    def start_nfq(self):
-        self.nfq.start()
+    def start_mitm(self):
+        self.mitm.start()
 
-    def nfq_is_running(self):
-        return self.nfq.is_running()
+    def mitm_is_running(self):
+        return self.mitm.is_running()
     
-    def stop_nfq(self):
-        self.nfq.stop()
+    def stop_mitm(self):
+        self.mitm.stop()
 
     def start_sniff(self):
         self.sniffer.start()
@@ -64,7 +64,7 @@ class Hardware(NetworkController):
 
     def abort_all(self):
         self.stop_arp()
-        self.stop_nfq()
+        self.stop_mitm()
         self.stop_sniff()
         self.stop_dos()
 
