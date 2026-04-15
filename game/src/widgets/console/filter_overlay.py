@@ -114,7 +114,7 @@ class FilterOverlay:
 
     def bind_overlay_button(self, button: CTkButton, open_func: callable, close_func: callable):
             def configure_opened():
-                button.configure(command=close, text=f"Cancel")
+                button.configure(command=close, text=f"Close")
             def configure_closed():
                 button.configure(command=open, text=f"Filters")
             def close():

@@ -1,4 +1,5 @@
 from customtkinter import *
+
 from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
 from .filter_overlay import FilterOverlay
@@ -24,7 +25,8 @@ class PacketConsole:
         columns_button = self.create_menu_button(menu_frame, "Columns")
         columns_button = ColumnOverlay(self.context, self.style, columns_button, buffer, self.refresh)
 
-        self.text_box = self.create_text_box(parent)
+        self.columns = []
+        self.treeview = self.create_treeview(parent)
 
         # Printing Flags
         self.jump_to_bottom = True
@@ -48,31 +50,56 @@ class PacketConsole:
 
     def print_tick(self):
         flag = True
-        line_printed = False
         while flag:
-            status = self.buffer.pop_packet(self.context.inputs["packet_filter_function"]["function"])
-            if status is None:
-                if line_printed:
-                    self.text_box.configure(state="normal")
-                    self.text_box.insert("end", "\n")
-                    self.text_box.configure(state="disabled")
+            # Filter
+            packet = self.buffer.pop_packet(self.context.inputs["packet_filter_function"]["function"])
+            if packet is None:
                 flag = False
                 continue
-            # self.text_box.delete("1.0", "end")
-            self.text_box.configure(state="normal")
-            self.text_box.insert("end", status.get_info() + "\n")
-            line_printed = True
-            self.text_box.configure(state="disabled")
-            if self.jump_to_bottom:
-                self.text_box.see("end")
+            # Submit packet to treeview
+            self.submit_packet(self.treeview, packet)
+            # Limit rows
+            max_rows = 1000
+            children = self.treeview.get_children()
+            if len(children) > max_rows:
+                self.treeview.delete(children[0])
+        # Auto scroll
+        if self.jump_to_bottom:
+            self.treeview.yview_moveto(1)
         if self.run:
-            self.after_id = self.text_box.after(100, self.print_tick)
+            self.after_id = self.treeview.after(100, self.print_tick)
 
-    # Text box
-    def create_text_box(self, parent):
-        textbox = CTkTextbox(parent, wrap="none", font=("Consolas", 16), state="disabled")
-        textbox.pack(side="top", fill="both", expand=True, padx=self.style.gap, pady=self.style.gap)
-        return textbox
+    # Treeview
+    def create_treeview(self, parent):
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=40)
+        active_columns = []
+        for key in self.context.inputs["column_selections"]:
+            if self.context.inputs["column_selections"][key]["state"] == "1":
+                active_columns.append(key)
+        tree = ttk.Treeview(parent, columns=active_columns, show="headings")
+        tree.pack(fill="both", expand=True, padx=self.style.gap, pady=self.style.gap)
+        for col in active_columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=len(col)*8, anchor="w")
+
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        self.columns = active_columns
+        return tree
+    
+    def submit_packet(self, tree, packet):
+        values = []
+
+        for col in self.columns:
+            value = self.context.inputs["column_selections"][col]["function"](packet)
+            values.append(value)
+
+        tree.insert("", "end", values=values)
+
+    def refresh(self):
+        ...
 
     # Buttons
     def pause(self):
@@ -112,93 +139,3 @@ class PacketConsole:
             start_func()
             the_button.configure(command=stop, text=active_name)
         the_button.configure(command=start, text=inactive_name)
-
-
-# ------------------------------
-
-
-    def show_stream(self, source: str):
-        print(source)
-
-    def root(parent, columns):
-        tree = ttk.Treeview(parent, columns=columns, show="headings")
-        tree.pack(fill="both", expand=True)
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=len(col)*8, anchor="w")
-
-        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-
-    def branch():
-        return
-
-    def build_frame(self, parent):
-        frame = CTkFrame(parent)
-        frame.pack(fill="both", expand=True)
-        return frame
-
-    def build_tab(self, hack: str):
-
-        if hack in self.tabs:
-            return  # already exists
-
-        tab = self.tabview.add(hack)
-
-        textbox = CTkTextbox(
-            tab,
-            wrap="none",
-            state="disabled"
-        )
-        textbox.pack(fill="both", expand=True)
-
-        self.tabs[hack] = textbox
-
-        # Load previous console history if exists
-        for entry in self.context.consoles[hack]:
-            if isinstance(entry, str):
-                self._append_text(hack, entry)
-            else:
-                self._append_packet(hack, entry)
-
-    def submit_line(self, hack: str, line: str):
-
-        if hack not in self.tabs:
-            self.build_tab(hack)
-
-        self.context.consoles[hack].append(line)
-        self._append_text(hack, line)
-
-    def submit_packet(self, hack: str, mpkt: MetaPacket):
-
-        if hack not in self.tabs:
-            self.build_tab(hack)
-
-        self.context.consoles[hack].append(mpkt)
-        self._append_packet(hack, mpkt)
-
-    def _append_text(self, hack, line):
-        textbox = self.tabs[hack]
-        textbox.configure(state="normal")
-        textbox.insert("end", line + "\n")
-        textbox.see("end")
-        textbox.configure(state="disabled")
-
-    def _append_packet(self, hack, mpkt: MetaPacket):
-        textbox = self.tabs[hack]
-
-        formatted = (
-            f"[{mpkt.number}] "
-            f"{mpkt.direction.upper()} "
-            f"{mpkt.pkt.summary()} "
-            f"{mpkt.variable}={mpkt.value}"
-        )
-
-        textbox.configure(state="normal")
-        textbox.insert("end", formatted + "\n")
-        textbox.see("end")
-        textbox.configure(state="disabled")
-
-    def refresh(self):
-        print("refresh")
