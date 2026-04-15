@@ -1,63 +1,23 @@
-from abc import ABC, abstractmethod
 from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap, dos
 from .virtual import master, slave
 from .saved import loader
 from . import packet_buffer, mod_table, data_buffer
 
-class Network(ABC):
-    @abstractmethod
-    def do_nmap(self):...
+class NetworkController:
 
-    @abstractmethod
-    def start_arp(self, target_ip, host_ip):...
-
-    @abstractmethod
-    def arp_is_running(self):...
-
-    @abstractmethod
-    def stop_arp(self):...
-
-    @abstractmethod
-    def start_nfq(self):...
-
-    @abstractmethod
-    def nfq_is_running(self):...
-
-    @abstractmethod
-    def stop_nfq(self):...
-
-    @abstractmethod
-    def start_sniff(self):...
-
-    @abstractmethod
-    def sniff_is_running(self):...
-
-    @abstractmethod
-    def stop_sniff(self):...
-
-    @abstractmethod
-    def start_dos(self):...
-
-    @abstractmethod
-    def dos_is_running(self):...
-
-    @abstractmethod
-    def stop_dos(self):...
-
-    def abort_all(self):
-        self.stop_arp()
-        self.stop_nfq()
-        self.stop_sniff()
-        self.stop_dos()
-
-
-class HardwareNetwork(Network):
     def __init__(self):
         self.buffer = packet_buffer.PacketBuffer()
         self.data_buffer = data_buffer.DataBuffer()
+        self.table = mod_table.ModTable()
+    
+    def abort_all(self):
+        pass
+    
+class Hardware(NetworkController):
+    def __init__(self):
+        super().__init__()
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
         self.nmap = nmap.NMapper(self.data_buffer)
-        self.table = mod_table.ModTable()
         self.nfq = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.data_buffer)
         self.dos = dos.Denier(self.data_buffer)
@@ -101,37 +61,20 @@ class HardwareNetwork(Network):
     
     def stop_dos(self):
         self.dos.stop()
-    
 
-class VirtualNetwork(Network):
-    def __init__(self, virtual_slave):
-        self.virtual_slave = virtual_slave
+    def abort_all(self):
+        self.stop_arp()
+        self.stop_nfq()
+        self.stop_sniff()
+        self.stop_dos()
 
-
-class SavedNetwork(Network):
+class SavedNetwork(NetworkController):
     '''
     Fills up the buffer
     '''
     def __init__(self):
-        self.buffer = packet_buffer.PacketBuffer()
-        self.table = mod_table.ModTable()
+        super().__init__()
 
-    def start_arp(self, target_ip, host_ip):
+    def load_packets(self):
         # Becomes file picker "how to enter the network"
         self.file = loader.Loader(self.buffer, self.table)
-
-    def stop_arp(self):
-        pass
-
-    def start_nfq(self):
-        # Becomes file loader "how to obtain packets"
-        self.file.open_pcap_file(self.file.buffer_and_accept)
-    
-    def stop_nfq(self):
-        pass
-
-    def start_sniff(self):
-        pass
-
-    def stop_sniff(self):
-        pass

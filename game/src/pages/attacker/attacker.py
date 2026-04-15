@@ -9,7 +9,7 @@ from ...drawing.viewport import ViewPort
 from ...widgets.console.console import Console
 
 # Network
-from ...network.network_controller import HardwareNetwork
+from ...network.network_controller import Hardware as HardwareNetwork
 
 # Form widgets
 from ...widgets.forms.nmap import NMap

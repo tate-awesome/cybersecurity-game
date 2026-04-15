@@ -27,13 +27,11 @@ class SavedMap:
 
 
     def start_attack(self):
-        self.context.net.start_arp()
-        self.context.net.start_nfq()
+        self.context.net.load_packets()
 
 
     def stop_attack(self):
-        self.context.net.stop_nfq()
-        self.context.net.stop_arp()
+        self.context.net.abort_all()
 
     def draw_full_map(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         positions = self.context.net.buffer.get_all_positions("in")
