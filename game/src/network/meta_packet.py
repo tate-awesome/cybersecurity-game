@@ -29,6 +29,7 @@ class MetaPacket:
         # Essential info
         self.pkt = pkt
         self.time = current_time
+        self.time_word = f"{current_time:.4f}"
         self.absolute_number = absolute_number
         self.hack_number = hack_number
         self.length = str(len(self.pkt))

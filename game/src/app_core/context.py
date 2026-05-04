@@ -114,7 +114,7 @@ class Context:
             "column_selections": {
                 "Time": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.time
+                    "function": lambda mpkt: mpkt.time_word
                 },
                 "No.": {
                     "state": "1",
