@@ -43,6 +43,11 @@ class ArpSpoofer:
 
 
     def start(self, target_ip, host_ip):
+
+        # enable forwarding
+        with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
+            f.write('1\n')
+
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
         scapy.conf.verb = 0
 
@@ -64,6 +69,9 @@ class ArpSpoofer:
 
 
     def stop(self):
+        # disable forwarding
+        with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
+            f.write('0\n')
 
         if self.running == False:
             self.buffer.put("arp", "ARP Spoof is not running")
