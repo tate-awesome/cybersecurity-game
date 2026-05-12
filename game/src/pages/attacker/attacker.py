@@ -1,3 +1,5 @@
+from ...widgets.displays.world_map import WorldMap
+
 from ...app_core.context import Context
 
 # Widgets
@@ -73,19 +75,7 @@ class AttackerV0:
 
 
     # Map
-        def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
-            positions = net.buffer.get_all_positions("in")
-            bearing = net.buffer.get_last_bearing("in")
-            draw = ViewPort(canvas, scale, offset)
-            with draw_lock:
-                canvas.delete("all")
-                draw.grid_lines()
-                if len(positions) < 1: return
-                draw.line(positions, "white")
-                if bearing is None: return
-                last_position = positions[-1]
-                draw.boat(last_position, bearing, "white", "black")
-        map = Map(style, right_p, draw_full_map, 100, 20)
+        world_map = WorldMap(style, right_p, context, net.data_buffer)
 
 
 
