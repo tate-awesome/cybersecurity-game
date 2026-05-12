@@ -13,8 +13,8 @@ class WorldMap:
         self.buffer = buffer
 
         def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
-            positions = self.buffer.get_tracer_data("x", "in")
-            bearing = positions[-1][1] if len(positions) > 0 else None
+            positions = self.buffer.get_simple_path("in")
+            bearing = self.buffer.get_bearing("in")
             draw = ViewPort(canvas, scale, offset)
             with draw_lock:
                 canvas.delete("all")
