@@ -1,52 +1,51 @@
 from tkinter import filedialog
-from ..packet_buffer import PacketBuffer
 from scapy.packet import Packet
 from scapy.all import rdpcap
+
+from ..data_buffer import DataBuffer
 from .. import modbus_util as mb
 from ..mod_table import ModTable
 
 class Loader:
 
 
-    def __init__(self, buffer: PacketBuffer, table: ModTable):
-        self.file_path = self.select_pcap_file()
+    def __init__(self, buffer: DataBuffer):
         self.buffer = buffer
-        self.table = table
+
+    
+    def load_pcap(self):
+        '''
+        Loads a pcap file into the buffer. Used by networkcontroller
+        '''
+        file_path = self.select_pcap_file()
+        self.open_pcap_file(file_path)
+        
+
+
+        
 
 
     def select_pcap_file(self):
         # Open file dialog to select a pcap file
+        self.buffer.put("pcap", "Opening PCAP file dialog...")
         file_path = filedialog.askopenfilename(
             title="Select a pcap file",
             filetypes=[("PCAP files", "*.pcap *.pcapng"), ("All files", "*.*")]
         )
         if file_path:
-            print(f"Selected file: {file_path}")
+            self.buffer.put("pcap", f"Selected file: {file_path}")
         else:
-            print("No file selected")
+            self.buffer.put("pcap", "No file selected")
         return file_path
 
 
-    def open_pcap_file(self, handler: callable):
-        self.packets = rdpcap(self.file_path)
-        for spkt in self.packets:
-            handler(spkt)
-
-
-    # Handlers
-    def buffer_and_accept(self, spkt: Packet):
-        self.buffer.put(spkt, "in")
-
-        if mb.is_commands(spkt):
-            spkt = mb.modify_commands(spkt, self.table)
-
-        elif mb.is_coord(spkt):
-            spkt = mb.modify_coord(spkt, self.table)
-
-        else:
+    def open_pcap_file(self, file_path):
+        if not file_path:
             return
-        mb.print_scannable(spkt)
-        self.buffer.put(spkt, "out")
+        self.buffer.put("pcap", f"Loading packets from {file_path}...")
+        self.packets = rdpcap(file_path)
+        for spkt in self.packets:
+            self.buffer.put("pcap", "Loaded packet", spkt)
 
-    def show_and_accept(self, spkt: Packet):
-        spkt.show()
+        self.buffer.put("pcap", f"Finished loading {len(self.packets)} packets from {file_path}")
+

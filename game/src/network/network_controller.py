@@ -9,9 +9,8 @@ class NetworkController:
         self.buffer = packet_buffer.PacketBuffer()
         self.data_buffer = data_buffer.DataBuffer()
         self.table = mod_table.ModTable()
-    
-    def abort_all(self):
-        pass
+
+        self.loader = loader.Loader(self.data_buffer)
     
 class HardwareAttacker(NetworkController):
     def __init__(self):
@@ -67,14 +66,3 @@ class HardwareAttacker(NetworkController):
         self.stop_mitm()
         self.stop_sniff()
         self.stop_dos()
-
-class SavedNetwork(NetworkController):
-    '''
-    Fills up the buffer
-    '''
-    def __init__(self):
-        super().__init__()
-
-    def load_packets(self):
-        # Becomes file picker "how to enter the network"
-        self.file = loader.Loader(self.buffer, self.table)
