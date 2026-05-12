@@ -143,8 +143,16 @@ class DataBuffer:
         # Put MetaPacket in the buffer
         with self.console_buffers["packets"]["lock"]:
             self.console_buffers["packets"]["buffer"].append(mpkt)
+        if len(variables) < 1 or len(values) < 1:
+            return
 
-        # TODO put in the tracer and map and stuff
+        # Put variables in the tracer buffers
+        for i, var in enumerate(variables):
+            with self.tracer_buffers[f"{var}_{mpkt.direction}"]["lock"]:
+                self.tracer_buffers[f"{var}_{mpkt.direction}"]["deque"].append((mpkt.time, values[i]))
+
+
+        # TODO put in the map and stuff
         return
 
     def extract_modbus(self, source: str, pkt: Packet) -> tuple[list[str], list[float]]:
@@ -228,3 +236,9 @@ class DataBuffer:
                 if filter(packet):
                     return packet
         return None
+    
+    # Displays
+    def get_tracer_data(self, variable: str, direction: str) -> list[tuple[float,float]]:
+        with self.tracer_buffers[f"{variable}_{direction}"]["lock"]:
+            snapshot = list(self.tracer_buffers[f"{variable}_{direction}"]["deque"])
+        return snapshot
