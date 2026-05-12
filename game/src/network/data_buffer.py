@@ -92,6 +92,7 @@ class DataBuffer:
         # Buffers for the tracers
         self.tracer_buffers = {}
         '''
+        Tracers hold modbus values over time for dot plots and stuff
         Tracer elements: 
 
             "x_in", "y_in", "theta_in", "speed_in", "rudder_in": list[tuple[float,float]]
@@ -134,9 +135,13 @@ class DataBuffer:
         hack_number = self.console_buffers["packets"]["numbers"][source]
         self.console_buffers["packets"]["numbers"][source] = hack_number+1
         
+        # Calculate first packet time
+        if absolute_number == 1:
+            self.first_packet_time = data.time if hasattr(data, "time") else current_time
+
         # Create a MetaPacket
         variables, values = self.extract_modbus(source, data)
-        mpkt = MetaPacket(data, current_time, absolute_number, hack_number,
+        mpkt = MetaPacket(data, self.first_packet_time, absolute_number, hack_number,
             source, purpose,
             variables, values)
 

@@ -22,14 +22,14 @@ class MetaStatus:
         return f"{prefix}{self.status}"
 
 class MetaPacket:
-    def __init__(  self, pkt: Packet, current_time: float, absolute_number: int, hack_number: int,
+    def __init__(  self, pkt: Packet, first_packet_time: float, absolute_number: int, hack_number: int,
     hack: str, purpose: str = "None",
     variables: list[str] = [], values: list[str] = []):
 
         # Essential info
         self.pkt = pkt
-        self.time = current_time
-        self.time_word = f"{current_time:.4f}"
+        self.time = pkt.time - first_packet_time
+        self.time_word = f"{self.time:.4f}"
         self.absolute_number = absolute_number
         self.hack_number = hack_number
         self.length = str(len(self.pkt))
