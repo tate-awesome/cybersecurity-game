@@ -32,7 +32,7 @@ class Context:
             "sniff": ["",""],
             "dos": ["192.168.8.114:200","192.168.8.114:201"],
             "checkbox_filters": {
-                "Hack": {
+                "Source": {
                     "NMapping": {
                         "state": "",
                         "function": lambda mpkt: mpkt.hack == "nmap"
@@ -52,6 +52,10 @@ class Context:
                     "MITM Attack": {
                         "state": "",
                         "function": lambda mpkt: mpkt.hack == "nfq"
+                    },
+                    "PCAP File": {
+                        "state": "",
+                        "function": lambda mpkt: mpkt.hack == "pcap"
                     }
                 },
 

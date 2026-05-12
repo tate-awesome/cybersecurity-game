@@ -13,6 +13,8 @@ class MenuBar:
         self.button("Refresh", router.refresh)
         self.button("Toggle Theme", router.mode_toggle)
         self.button("Select Theme", router.select_theme)
+        if context.net is not None:
+            self.button("Load PCAP File", context.net.loader.load_pcap)
         self.button("Help", lambda:popup.open(style,root,context.help_message()))
 
 
