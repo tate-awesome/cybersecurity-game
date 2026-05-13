@@ -6,6 +6,7 @@ import time
 class ViewPort:
     '''
     Holds the current viewport parameters for drawing on the canvas for a single frame.
+    Also contains helper functions for drawing objects in world space.
     '''
     def __init__(self, canvas: CTkCanvas, scale: float, offset: tuple[float, float], padding=20, input_range=((0,0),(200,200))):
         self.canvas = canvas
@@ -69,7 +70,7 @@ class ViewPort:
         self.canvas.create_oval(circle_box, fill="", outline="blue", width="3")
 
 
-    def line(self, points: list[tuple[float, float]], line_color: str):
+    def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
         Draws the path of the points 
         '''
@@ -77,9 +78,9 @@ class ViewPort:
             return
         points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
         points = t.zoom_and_pan(points, self.scale, self.offset)
-        self.canvas.create_line(points, width=2, fill=line_color)
+        self.canvas.create_line(points, width=1, fill=line_color)
 
-    def arc(self, center: tuple[float, float], radius: float, start_angle: float, end_angle: float, line_color: str):
+    def arc(self, center: tuple[float, float], radius: float, start_angle: float, end_angle: float, line_color: str, thickness=2):
         '''
         Draws an arc with the given parameters. Angles are in radians, 0 is to the right, and positive is counterclockwise.
         '''
@@ -101,15 +102,15 @@ class ViewPort:
 
             h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
             v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
-            color = "black"
+            color = "white"
             if i == 0:
                 color = "red"
 
-            self.canvas.create_line(t.flatten(h_line), width=2, fill=color)
-            self.canvas.create_line(t.flatten(v_line), width=2, fill=color)
+            self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
+            self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
 
 
-    def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black"):
+    def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
         the_boat = [
                             (-2, 1),
                             (-2, -1),
@@ -118,7 +119,7 @@ class ViewPort:
                             (1,  1)
                         ]
         the_boat = t.rotate(the_boat, bearing)
-        the_boat = t.scale(the_boat, 2)
+        the_boat = t.scale(the_boat, scale)
 
         the_boat = t.translate(the_boat, position)
         
