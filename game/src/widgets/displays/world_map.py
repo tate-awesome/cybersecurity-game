@@ -21,9 +21,10 @@ class WorldMap:
             draw = ViewPort(canvas, scale, offset)
             with draw_lock:
                 canvas.delete("all")
+                draw.ocean()
                 draw.grid_lines()
                 if len(positions) < 1: return
-                draw.line(positions, "white")
+                draw.line(positions, "yellow")
                 if bearing is None: return
                 last_position = positions[-1]
-                draw.boat(last_position, bearing, "white", "black")
+                draw.boat(last_position, bearing, "yellow", "yellow")
