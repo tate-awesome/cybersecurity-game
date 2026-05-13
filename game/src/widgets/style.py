@@ -27,6 +27,9 @@ class Style:
             elif name == "title_btn":
                 size=int(20.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
+            elif name == "mono":
+                size=int(16.0*self.scale/100.0)
+                self.fonts[name] = CTkFont("Consolas", size=size)
             else:
                 size = int(14.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(size=size)

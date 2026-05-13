@@ -1,5 +1,6 @@
 from ...widgets.displays.world_map import WorldMap
 from ...widgets.displays.boat_focus import BoatFocus
+from ...widgets.displays.values_table import ValuesTable
 
 from ...app_core.context import Context
 
@@ -80,10 +81,17 @@ class AttackerV0:
 
     # Displays
         top, bottom = common.create_bifold(style, right_p)
-        scroll = common.scrollable(style, top)
-        world_map = WorldMap(style, scroll, context, net.data_buffer)
-        boat_focus = BoatFocus(style, scroll, context)
-        common.scroll_deadspace(style, scroll)
+
+        toppest = common.create_stretchable(style, top)
+
+        numbers_frame = ValuesTable(style, toppest, context)
+        world_map = WorldMap(style, toppest, context, net.data_buffer)
+
+        toppish = common.create_stretchable(style, top)
+        toppish.configure(bg_color="red")
+
+
+        boat_focus = BoatFocus(style, bottom, context)
 
 
     

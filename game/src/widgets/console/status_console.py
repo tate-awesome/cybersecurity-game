@@ -63,7 +63,7 @@ class StatusConsole:
 
     # Text box
     def create_text_box(self, parent):
-        textbox = CTkTextbox(parent, wrap="none", font=("Consolas", 16), state="disabled")
+        textbox = CTkTextbox(parent, wrap="none", font=self.style.get_font("mono"), state="disabled")
         textbox.pack(side="top", fill="both", expand=True, padx=self.style.gap, pady=self.style.gap)
         return textbox
 
