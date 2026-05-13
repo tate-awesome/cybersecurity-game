@@ -79,6 +79,16 @@ class ViewPort:
         points = t.zoom_and_pan(points, self.scale, self.offset)
         self.canvas.create_line(points, width=2, fill=line_color)
 
+    def arc(self, center: tuple[float, float], radius: float, start_angle: float, end_angle: float, line_color: str):
+        '''
+        Draws an arc with the given parameters. Angles are in radians, 0 is to the right, and positive is counterclockwise.
+        '''
+        num_points = int(radius * abs(end_angle - start_angle) + 5)
+        points = t.get_arc_points(center, radius, start_angle, end_angle, num_points)
+        points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
+        points = t.zoom_and_pan(points, self.scale, self.offset)
+        self.canvas.create_line(points, width=2, fill=line_color)
+
 
     def grid_lines(self):
         for i in range(0, 210, 10):
