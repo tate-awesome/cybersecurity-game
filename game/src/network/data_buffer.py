@@ -360,6 +360,32 @@ class DataBuffer:
             return 0
         return snapshot[-1][1]
     
+    def get_bearing(self, direction: str) -> float:
+        '''
+        Returns the latest theta value for the given direction, or 0 if there is no data.
+        '''
+        return self.get_latest_value("theta", direction)
+    
+    def get_rudder(self, direction: str) -> float:
+        '''
+        Returns the latest rudder value for the given direction, or 0 if there is no data.
+        '''
+        return self.get_latest_value("rudder", direction)
+    
+    def get_speed(self, direction: str) -> float:
+        '''
+        Returns the latest speed value for the given direction, or 0 if there is no data.
+        '''
+        return self.get_latest_value("speed", direction)
+    
+    def get_position(self, direction: str) -> tuple[float,float]:
+        '''
+        Returns the latest (x, y) position for the given direction, or (0, 0) if there is no data.
+        '''
+        x = self.get_latest_value("x", direction)
+        y = self.get_latest_value("y", direction)
+        return (x, y)
+    
     def get_simple_path(self, direction: str) -> list[tuple[float,float]]:
         '''
         Returns the path of points as a simple list of tuple[x,y]
