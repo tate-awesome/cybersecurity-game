@@ -73,3 +73,24 @@ def scroll_deadspace(style, parent):
     h = parent.winfo_height() * 0.8
     frame = CTkFrame(parent, fg_color=style.color("panel"), height=h)
     frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
+
+
+def create_bifold(style, parent: CTkFrame):
+
+    # bifold
+    rc = style.color("root")
+
+    # Create paned window
+    paned = tk.PanedWindow(parent, orient="vertical", background=rc, sashwidth=style.igap)
+    paned.pack(side="top", fill="both", expand=True)
+
+    # Create panes with matching corners and preset widths
+    parent.update_idletasks()
+    h = paned.winfo_height()
+    top = CTkFrame(paned, height=h//2, background_corner_colors=(rc, rc, rc, rc))
+    bottom = CTkFrame(paned, height=h//2, background_corner_colors=(rc, rc, rc, rc))
+
+    # Add panes
+    paned.add(top, minsize=110)
+    paned.add(bottom, minsize=110)
+    return top, bottom

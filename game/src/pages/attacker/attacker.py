@@ -8,7 +8,8 @@ from ...widgets import common, popup
 from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
-from ...widgets.console.console import Console
+from ...widgets.console.packet_console import PacketConsole
+from ...widgets.console.status_console import StatusConsole
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
@@ -71,7 +72,9 @@ class AttackerV0:
         common.scroll_deadspace(style, left_p)
 
     # Console
-        console = Console(style, middle_p, context, net.data_buffer)
+        top, bottom = common.create_bifold(style, middle_p)
+        packet_console = PacketConsole(style, top, context, net.data_buffer)
+        status_console = StatusConsole(style, bottom, context, net.data_buffer)
 
 
     # Map
