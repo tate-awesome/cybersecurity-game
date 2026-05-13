@@ -217,3 +217,17 @@ def get_bearing(origin: tuple[float, float], target: tuple[float, float]):
     x = target[0] - origin[0]
     y = target[1] - origin[1]
     return math.atan2(y, x)
+
+def get_arc_points(center: tuple[float, float], radius: float, start_angle: float, end_angle: float, num_points: int=20):
+    '''
+    Gets points along an arc defined by the parameters
+    '''
+    cx, cy = center
+    points = []
+    for i in range(num_points + 1):
+        t = i / num_points
+        angle = start_angle + t * (end_angle - start_angle)
+        x = cx + radius * math.cos(angle)
+        y = cy + radius * math.sin(angle)
+        points.append((x, y))
+    return points
