@@ -5,15 +5,17 @@ from ...network.data_buffer import DataBuffer
 from ...drawing.viewport import ViewPort
 from ...widgets.map import Map
 
+from customtkinter import CTkFrame
+
 class WorldMap:
     def __init__(self, style, parent, context, buffer: DataBuffer):
         self.style = style
         self.parent = parent
         self.context = context
         self.buffer = buffer
-
+        self.frame = CTkFrame(parent)
         
-        map = Map(style, parent, self.draw_full_map, 100, 20)
+        map = Map(style, self.frame, self.draw_full_map, 100, 20)
 
     def draw_full_map(self, canvas, draw_lock, scale: float, offset: tuple[float, float]):
             positions = self.buffer.get_simple_path("in")

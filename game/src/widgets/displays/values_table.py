@@ -10,8 +10,7 @@ class ValuesTable:
         self.context = context
         self.buffer = context.net.data_buffer
 
-        frame = CTkFrame(parent, fg_color=style.color("panel"))
-        frame.pack(fill="both",side="left", expand=False, padx=style.cgap, pady=style.cgap)
+        self.frame = CTkFrame(parent, fg_color=style.color("panel"))
 
 
         self.labels = {}
@@ -30,24 +29,24 @@ class ValuesTable:
         r = 1
         w = 90
         for name in ["", "x", "y", "theta", "speed", "rudder"]:
-            label = CTkLabel(frame, text=f"{self.names[name]}", anchor="w")
+            label = CTkLabel(self.frame, text=f"{self.names[name]}", anchor="w")
             label.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
             self.labels[name] = label
 
-            incoming = CTkLabel(frame, text="0", font=style.get_font("mono"))
+            incoming = CTkLabel(self.frame, text="0", font=style.get_font("mono"))
             if name == "":
                 incoming.configure(text="in")
             incoming.grid(row=r, column=2, pady=style.gaptop, padx=style.gap, sticky="ew")
             self.incoming_values[name] = incoming
 
-            delta = CTkLabel(frame, text="0", width=w, font=style.get_font("mono"))
+            delta = CTkLabel(self.frame, text="0", width=w, font=style.get_font("mono"))
             if name == "":
                 delta.configure(text="delta")
             delta.grid(row=r, column=3, pady=style.gaptop, sticky="ew")
             self.delta_values[name] = delta
 
 
-            outgoing = CTkLabel(frame, text="0", width=w, font=style.get_font("mono"))
+            outgoing = CTkLabel(self.frame, text="0", width=w, font=style.get_font("mono"))
             if name == "":
                 outgoing.configure(text="out")
             outgoing.grid(row=r, column=4, pady=style.gaptop, sticky="ew")
