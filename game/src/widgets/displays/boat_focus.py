@@ -3,6 +3,7 @@ from ...network.data_buffer import DataBuffer
 from ...drawing.viewport import ViewPort
 from ..map import Map
 import math
+from customtkinter import CTkFrame
 
 
 class BoatFocus:
@@ -11,8 +12,9 @@ class BoatFocus:
         self.style = style
         self.context = context
         self.buffer = context.net.data_buffer
+        self.frame = CTkFrame(parent, fg_color="green")
 
-        map = Map(style, parent, self.draw_boat_display, 100, 20, 40)
+        map = Map(style, self.frame, self.draw_boat_display, 100, 20, 40)
 
     def draw_boat_display(self, canvas, draw_lock, scale: float, offset: tuple[float, float]):
             bearing = self.buffer.get_bearing("in")
