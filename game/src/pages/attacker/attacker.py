@@ -1,4 +1,5 @@
 from ...widgets.displays.world_map import WorldMap
+from ...widgets.displays.boat_focus import BoatFocus
 
 from ...app_core.context import Context
 
@@ -77,27 +78,13 @@ class AttackerV0:
         status_console = StatusConsole(style, bottom, context, net.data_buffer)
 
 
-    # Map
-        world_map = WorldMap(style, right_p, context, net.data_buffer)
+    # Displays
+        top, bottom = common.create_bifold(style, right_p)
+        scroll = common.scrollable(style, top)
+        world_map = WorldMap(style, scroll, context, net.data_buffer)
+        boat_focus = BoatFocus(style, scroll, context)
+        common.scroll_deadspace(style, scroll)
 
 
-
-
-    # Map callback
-    def draw_test_plane(self, canvas, draw_lock, scale: float, offset: tuple[float, float]):
-        import time
-        from ...drawing import transformations as t
-
-        path_duration = 30.0
-        path_index = int(((time.time() % path_duration) / path_duration) * (len(self.positions)-2))
-        bearing = t.get_bearing(self.positions[path_index], self.positions[path_index+1])
-        draw = ViewPort(canvas, scale, offset)
-        with draw_lock:
-            canvas.delete("all")
-            draw.bbox()
-            draw.grid_lines()
-            draw.line(self.positions, self.color)
-            last_position = self.positions[path_index]
-            draw.boat(last_position, bearing)
     
 

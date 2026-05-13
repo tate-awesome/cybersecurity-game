@@ -12,7 +12,10 @@ class WorldMap:
         self.context = context
         self.buffer = buffer
 
-        def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
+        
+        map = Map(style, parent, self.draw_full_map, 100, 20)
+
+    def draw_full_map(self, canvas, draw_lock, scale: float, offset: tuple[float, float]):
             positions = self.buffer.get_simple_path("in")
             bearing = self.buffer.get_bearing("in")
             draw = ViewPort(canvas, scale, offset)
@@ -24,4 +27,3 @@ class WorldMap:
                 if bearing is None: return
                 last_position = positions[-1]
                 draw.boat(last_position, bearing, "white", "black")
-        map = Map(style, parent, draw_full_map, 100, 20)

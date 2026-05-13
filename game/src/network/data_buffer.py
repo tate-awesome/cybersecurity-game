@@ -351,11 +351,11 @@ class DataBuffer:
             snapshot = list(self.tracer_buffers[f"{variable}_{direction}"]["deque"])
         return snapshot
     
-    def get_bearing(self, direction: str) -> float:
+    def get_latest_value(self, variable: str, direction: str) -> float:
         '''
-        Returns the latest theta value for the given direction, or 0 if there is no data.
+        Returns the latest value for the given variable and direction, or 0 if there is no data.
         '''
-        snapshot = self.get_tracer_data("theta", direction)
+        snapshot = self.get_tracer_data(variable, direction)
         if len(snapshot) < 1:
             return 0
         return snapshot[-1][1]
