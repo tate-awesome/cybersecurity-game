@@ -94,3 +94,8 @@ def create_bifold(style, parent: CTkFrame):
     paned.add(top, minsize=110)
     paned.add(bottom, minsize=110)
     return top, bottom
+
+def create_stretchable(style, parent):
+    frame = CTkFrame(parent)
+    frame.pack(side="top", fill="both", expand=False)
+    return frame
