@@ -1,0 +1,824 @@
+<?xml version="1.0"?>
+<!--Velocio Builder 1.1-->
+<!--www.Velocio.net-->
+<VelocioNetworks IPAddress="">
+  <Setup ProjectType="FlowChart" />
+  <Connections>
+    <Connection sKey="vFactoryPage" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="InI16A1" iPort="0" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="input" />
+    <Connection sKey="InI16A2" iPort="0" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="input" />
+    <Connection sKey="InI16A3" iPort="0" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="input" />
+    <Connection sKey="SerialRXA1" bIsSerialRX="True" iPort="0" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="register" />
+    <Connection sKey="SerialTXA1" bISSerialTX="True" iPort="0" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="register" />
+    <Connection sKey="InBitB1" iPort="1" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB2" iPort="1" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB3" iPort="1" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB4" iPort="1" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB5" iPort="1" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB6" iPort="1" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC1" iPort="2" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC2" iPort="2" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC3" iPort="2" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC4" iPort="2" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC5" iPort="2" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC6" iPort="2" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="OutBitD1" iPort="3" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD2" iPort="3" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD3" iPort="3" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD4" iPort="3" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD5" iPort="3" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD6" iPort="3" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE1" iPort="4" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE2" iPort="4" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE3" iPort="4" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE4" iPort="4" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE5" iPort="4" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE6" iPort="4" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="y_voltage" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="x_voltage" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="theta_voltage" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="x_Real" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="y_Real" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="theta_Real" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="x" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="y" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="theta" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="speed" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Xpos" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Ypos" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Theta_default" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Xerr" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Yerr" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="thetaDes" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="ax" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="ay" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="n" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="r" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="approx" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="xerr" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="yerr" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="HeadingErr" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Theta" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="RudderCmd" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="RudderPWM" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="RudderTmp" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="dist" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="SpeedErr" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="StopTol " ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="sto" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Kps" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="SpeedMax" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="SpeedCMD" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="SpeedPWM" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="SpeedPWM_i" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="register" />
+    <Connection sKey="FinalSpeedOut" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="FinalSpeed" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="FinalTmp" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="FinalRud" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="FinalRudOut" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="FinalRudderPWM" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="FinalSpeedPWM" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Y_range_m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="X_range_m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Xpos_m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Ypos_m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Theta_Rad" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="X_set_m" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Y_set_m" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="X_set_m_k" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Y_set_m_k" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="Scaled_OnTime_Sp" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+  </Connections>
+  <Modbus />
+  <SubroutineInputs cellsHeigh="0" />
+  <Cells>
+    <start rung="0" row="1" column="1" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilScale rung="0" row="20" column="2" cellsHeigh="3" iSortedIndex="12">
+      <eInput sAddress="theta_voltage" sIndex="" dtAddress="Float" />
+      <eOutput sAddress="theta" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="2703" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="3.3" sIndex="" dtAddress="Float" />
+    </coilScale>
+    <coilScale rung="0" row="16" column="2" cellsHeigh="3" iSortedIndex="10">
+      <eInput sAddress="y_voltage" sIndex="" dtAddress="Float" />
+      <eOutput sAddress="y" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="2703" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="3.3" sIndex="" dtAddress="Float" />
+    </coilScale>
+    <coilScale rung="0" row="12" column="2" cellsHeigh="3" iSortedIndex="8">
+      <eInput sAddress="x_voltage" sIndex="" dtAddress="Float" />
+      <eOutput sAddress="x" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="2703" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="3.3" sIndex="" dtAddress="Float" />
+    </coilScale>
+    <coilCalc rung="0" row="42" column="8" cellsHeigh="3" iSortedIndex="19">
+      <eStoreIn sAddress="ay" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Yerr" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="40" column="1" cellsHeigh="-1" iSortedIndex="-1" />
+    <Less rung="0" row="36" column="4" cellsHeigh="-1" iSortedIndex="20">
+      <eAddress1 sAddress="Xerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <coilCalc rung="0" row="36" column="8" cellsHeigh="3" iSortedIndex="21">
+      <eStoreIn sAddress="ax" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Xerr" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="37" column="18" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="29" column="2" cellsHeigh="3" iSortedIndex="16">
+      <eStoreIn sAddress="Yerr" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="Y_set_m" sIndex="" dtAddress="UI16" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Ypos_m" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="25" column="2" cellsHeigh="3" iSortedIndex="14">
+      <eStoreIn sAddress="Xerr" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="X_set_m" sIndex="" dtAddress="UI16" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Xpos_m" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="25" column="10" cellsHeigh="3" iSortedIndex="15">
+      <eStoreIn sAddress="ax" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="Xerr" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <Less rung="0" row="42" column="4" cellsHeigh="-1" iSortedIndex="18">
+      <eAddress1 sAddress="Yerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <LessEqual rung="0" row="48" column="24" cellsHeigh="-1" iSortedIndex="29">
+      <eAddress1 sAddress="ax" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="ay" sIndex="" dtAddress="Float" />
+    </LessEqual>
+    <coilCalc rung="0" row="44" column="22" cellsHeigh="3" iSortedIndex="28">
+      <eStoreIn sAddress="approx" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="r" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="1" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="0.28" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="r" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="r" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="48" column="28" cellsHeigh="3" iSortedIndex="30">
+      <eStoreIn sAddress="approx" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.14159" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="2" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="r" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="1" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="0.28" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="r" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="r" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="54" column="26" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="56" column="22" cellsHeigh="3" iSortedIndex="31">
+      <eStoreIn sAddress="thetaDes" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="approx" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <Less rung="0" row="58" column="31" cellsHeigh="-1" iSortedIndex="32">
+      <eAddress1 sAddress="Xerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <GreaterEqual rung="0" row="66" column="31" cellsHeigh="-1" iSortedIndex="63">
+      <eAddress1 sAddress="Xerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </GreaterEqual>
+    <Less rung="0" row="66" column="35" cellsHeigh="-1" iSortedIndex="64">
+      <eAddress1 sAddress="Yerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <coilCalc rung="0" row="66" column="40" cellsHeigh="3" iSortedIndex="65">
+      <eStoreIn sAddress="thetaDes" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="approx" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <Less rung="0" row="62" column="35" cellsHeigh="-1" iSortedIndex="66">
+      <eAddress1 sAddress="Yerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <GreaterEqual rung="0" row="58" column="35" cellsHeigh="-1" iSortedIndex="33">
+      <eAddress1 sAddress="Yerr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </GreaterEqual>
+    <coilCalc rung="0" row="58" column="40" cellsHeigh="3" iSortedIndex="34">
+      <eStoreIn sAddress="thetaDes" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="3.14159" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="approx" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="62" column="40" cellsHeigh="3" iSortedIndex="67">
+      <eStoreIn sAddress="thetaDes" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="approx" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.14159" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="2" column="48" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="2" column="36" cellsHeigh="3" iSortedIndex="35">
+      <eStoreIn sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="thetaDes" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Theta_default" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <Greater rung="0" row="7" column="34" cellsHeigh="-1" iSortedIndex="36">
+      <eAddress1 sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="3.14159" sIndex="" dtAddress="Float" />
+    </Greater>
+    <coilCalc rung="0" row="7" column="38" cellsHeigh="3" iSortedIndex="37">
+      <eStoreIn sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="-" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="2" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.14159" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="12" column="38" cellsHeigh="3" iSortedIndex="69">
+      <eStoreIn sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="2" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.14159" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <Less rung="0" row="12" column="34" cellsHeigh="-1" iSortedIndex="68">
+      <eAddress1 sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="-3.14159" sIndex="" dtAddress="Float" />
+    </Less>
+    <coilPID rung="0" row="19" column="36" cellsHeigh="-1" iSortedIndex="38" iSampleRate="100" myPIDType="startContinue">
+      <bFreezeBias value="False" />
+      <eKeyDerivative sAddress="0" sIndex="" dtAddress="Float" />
+      <eKeyInputMax sAddress="1" sIndex="" dtAddress="I16" />
+      <eKeyInputMin sAddress="-1.0" sIndex="" dtAddress="Float" />
+      <eKeyIntegral sAddress="0" sIndex="" dtAddress="Float" />
+      <eKeyOutput sAddress="RudderCmd" sIndex="" dtAddress="Float" />
+      <eKeyOutputMax sAddress="100" sIndex="" dtAddress="I16" />
+      <eKeyOutputMin sAddress="-100" sIndex="" dtAddress="I16" />
+      <eKeyProcessVariable sAddress="HeadingErr" sIndex="" dtAddress="Float" />
+      <eKeyProportional sAddress="0.05" sIndex="" dtAddress="Float" />
+      <eKeySetPoint sAddress="0" sIndex="" dtAddress="I16" />
+    </coilPID>
+    <wireRouter rung="0" row="14" column="46" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="27" column="37" cellsHeigh="3" iSortedIndex="39">
+      <eStoreIn sAddress="RudderTmp" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="4095" sIndex="" dtAddress="I16" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="RudderCmd" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="100" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <Less rung="0" row="31" column="34" cellsHeigh="-1" iSortedIndex="40">
+      <eAddress1 sAddress="RudderTmp" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <coilCalc rung="0" row="31" column="38" cellsHeigh="3" iSortedIndex="41">
+      <eStoreIn sAddress="RudderTmp" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="0" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="35" column="38" cellsHeigh="3" iSortedIndex="71">
+      <eStoreIn sAddress="RudderTmp" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="4095" sIndex="" dtAddress="I16" />
+      </Equation>
+    </coilCalc>
+    <Greater rung="0" row="35" column="34" cellsHeigh="-1" iSortedIndex="70">
+      <eAddress1 sAddress="RudderTmp" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="4095" sIndex="" dtAddress="I16" />
+    </Greater>
+    <wireRouter rung="0" row="41" column="50" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="6" column="51" cellsHeigh="3" iSortedIndex="45">
+      <eStoreIn sAddress="StopTol " sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="5" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="23" column="5" cellsHeigh="-1" iSortedIndex="-1" />
+    <wireRouter rung="0" row="41" column="18" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="37" column="22" cellsHeigh="3" iSortedIndex="26">
+      <eStoreIn sAddress="r" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="0" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="41" column="22" cellsHeigh="3" iSortedIndex="27">
+      <eStoreIn sAddress="r" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="n" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="m" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="0.001" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="23" column="28" cellsHeigh="3" iSortedIndex="25">
+      <eStoreIn sAddress="n" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="ay" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="20" column="20" cellsHeigh="3" iSortedIndex="61">
+      <eStoreIn sAddress="m" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="ay" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="23" column="20" cellsHeigh="3" iSortedIndex="62">
+      <eStoreIn sAddress="n" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="ax" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="28" column="26" cellsHeigh="-1" iSortedIndex="-1" />
+    <wireRouter rung="0" row="37" column="46" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="8" column="10" cellsHeigh="3" iSortedIndex="3">
+      <eStoreIn sAddress="Theta_default" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="3.14159" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="5" column="10" cellsHeigh="3" iSortedIndex="2">
+      <eStoreIn sAddress="X_range_m" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="2" column="10" cellsHeigh="3" iSortedIndex="1">
+      <eStoreIn sAddress="Y_range_m" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCopy rung="0" row="8" column="3" cellsHeigh="3" iSortedIndex="0" CopyType="standard">
+      <eKeySource sAddress="InI16A1" sIndex="" dtAddress="I16" />
+      <eKeySource sAddress="InI16A2" sIndex="" dtAddress="I16" />
+      <eKeySource sAddress="InI16A3" sIndex="" dtAddress="I16" />
+      <eKeyDestination sAddress="x_voltage" sIndex="" dtAddress="Float" />
+      <eKeyDestination sAddress="y_voltage" sIndex="" dtAddress="Float" />
+      <eKeyDestination sAddress="theta_voltage" sIndex="" dtAddress="Float" />
+    </coilCopy>
+    <coilCalc rung="0" row="12" column="10" cellsHeigh="3" iSortedIndex="9">
+      <eStoreIn sAddress="Xpos_m" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="x" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.3" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="X_range_m" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="16" column="10" cellsHeigh="3" iSortedIndex="11">
+      <eStoreIn sAddress="Ypos_m" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="y" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.3" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Y_range_m" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="20" column="10" cellsHeigh="3" iSortedIndex="13">
+      <eStoreIn sAddress="Theta_Rad" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="theta" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.3" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="2" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Theta_default" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="29" column="10" cellsHeigh="3" iSortedIndex="17">
+      <eStoreIn sAddress="ay" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="Yerr" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="12" column="19" cellsHeigh="-1" iSortedIndex="-1" />
+    <wireRouter rung="0" row="11" column="19" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="42" column="32" cellsHeigh="3" iSortedIndex="42">
+      <eStoreIn sAddress="FinalRudderPWM" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="RudderTmp" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <PWM rung="0" row="42" column="42" cellsHeigh="-1" iSortedIndex="44" myPWMType="Start" iDevice="0">
+      <ePeriod sAddress="2000" sIndex="" dtAddress="UI16" />
+      <eOutput sAddress="OutBitE4" sIndex="" dtAddress="Bit" />
+      <eOnTime sAddress="FinalRudderPWM" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <PWM rung="0" row="45" column="36" cellsHeigh="-1" iSortedIndex="43" myPWMType="SetPeriod" iDevice="0">
+      <ePeriod sAddress="4095" sIndex="" dtAddress="UI16" />
+      <eOutput sAddress="OutBitE3" sIndex="" dtAddress="Bit" />
+      <eOnTime sAddress="FinalRudderPWM" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <coilCalc rung="0" row="20" column="28" cellsHeigh="3" iSortedIndex="24">
+      <eStoreIn sAddress="m" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="ax" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <flowComment rung="0" row="32" column="28" cellsHeigh="-1" iSortedIndex="-1" sTextUnformatted="" sText="The reason we are using 2703&#xA;is because they are 3.3v&#xA;signals. So we get&#xA;2703=4095*(3.3/5)">
+      <bDown value="False" />
+      <bLeft value="True" />
+      <bLeftDown value="True" />
+      <bLeftUp value="True" />
+      <bRight value="False" />
+      <bRightDown value="False" />
+      <bRightUp value="False" />
+      <bUp value="False" />
+    </flowComment>
+    <coilCalc rung="0" row="6" column="59" cellsHeigh="3" iSortedIndex="46">
+      <eStoreIn sAddress="SpeedMax" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="5" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="6" column="66" cellsHeigh="3" iSortedIndex="47">
+      <eStoreIn sAddress="Kps" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="1" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <flowComment rung="0" row="3" column="61" cellsHeigh="-1" iSortedIndex="-1" sTextUnformatted="" sText="maximum speed, m/s">
+      <bDown value="True" />
+      <bLeft value="False" />
+      <bLeftDown value="False" />
+      <bLeftUp value="False" />
+      <bRight value="False" />
+      <bRightDown value="False" />
+      <bRightUp value="False" />
+      <bUp value="False" />
+    </flowComment>
+    <coilCalc rung="0" row="13" column="51" cellsHeigh="3" iSortedIndex="48">
+      <eStoreIn sAddress="SpeedCMD" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="Kps" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="dist" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <Greater rung="0" row="13" column="59" cellsHeigh="-1" iSortedIndex="49">
+      <eAddress1 sAddress="SpeedCMD" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="SpeedMax" sIndex="" dtAddress="Float" />
+    </Greater>
+    <coilCalc rung="0" row="13" column="63" cellsHeigh="3" iSortedIndex="50">
+      <eStoreIn sAddress="SpeedCMD" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="SpeedMax" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="16" column="61" cellsHeigh="-1" iSortedIndex="-1" />
+    <wireRouter rung="0" row="19" column="57" cellsHeigh="-1" iSortedIndex="-1" />
+    <Less rung="0" row="18" column="59" cellsHeigh="-1" iSortedIndex="51">
+      <eAddress1 sAddress="dist" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="StopTol " sIndex="" dtAddress="Float" />
+    </Less>
+    <coilCalc rung="0" row="18" column="63" cellsHeigh="3" iSortedIndex="52">
+      <eStoreIn sAddress="SpeedCMD" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="0.5" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="22" column="61" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="25" column="51" cellsHeigh="3" iSortedIndex="53">
+      <eStoreIn sAddress="SpeedPWM" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="SpeedCMD" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="SpeedMax" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="4095" sIndex="" dtAddress="I16" />
+      </Equation>
+    </coilCalc>
+    <Less rung="0" row="25" column="60" cellsHeigh="-1" iSortedIndex="54">
+      <eAddress1 sAddress="SpeedPWM" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="0" sIndex="" dtAddress="UI8" />
+    </Less>
+    <coilCalc rung="0" row="25" column="64" cellsHeigh="3" iSortedIndex="55">
+      <eStoreIn sAddress="SpeedPWM" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="0" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="29" column="64" cellsHeigh="3" iSortedIndex="73">
+      <eStoreIn sAddress="SpeedPWM" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="4095" sIndex="" dtAddress="I16" />
+      </Equation>
+    </coilCalc>
+    <Greater rung="0" row="29" column="60" cellsHeigh="-1" iSortedIndex="72">
+      <eAddress1 sAddress="SpeedPWM" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="4095" sIndex="" dtAddress="I16" />
+    </Greater>
+    <PWM rung="0" row="34" column="66" cellsHeigh="-1" iSortedIndex="58" myPWMType="Start" iDevice="0">
+      <ePeriod sAddress="2000" sIndex="" dtAddress="UI16" />
+      <eOutput sAddress="OutBitE5" sIndex="" dtAddress="Bit" />
+      <eOnTime sAddress="FinalSpeedPWM" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <coilCalc rung="0" row="34" column="52" cellsHeigh="3" iSortedIndex="56">
+      <eStoreIn sAddress="FinalSpeedPWM" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="SpeedPWM" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="32" column="55" cellsHeigh="-1" iSortedIndex="-1" />
+    <wireRouter rung="0" row="28" column="72" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCalc rung="0" row="6" column="19" cellsHeigh="3" iSortedIndex="7">
+      <eStoreIn sAddress="Y_set_m" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="100" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="Y_set_m_k" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="6" column="26" cellsHeigh="3" iSortedIndex="6">
+      <eStoreIn sAddress="X_set_m" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="100" sIndex="" dtAddress="UI8" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="X_set_m_k" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+    <coilCopy rung="0" row="2" column="20" cellsHeigh="3" iSortedIndex="4" CopyType="standard">
+      <eKeySource sAddress="X_set_m_k" sIndex="" dtAddress="UI16" />
+      <eKeyDestination sAddress="X_set_m_k" sIndex="" dtAddress="UI16" />
+    </coilCopy>
+    <coilCopy rung="0" row="2" column="27" cellsHeigh="3" iSortedIndex="5" CopyType="standard">
+      <eKeySource sAddress="Y_set_m_k" sIndex="" dtAddress="Float" />
+      <eKeyDestination sAddress="Y_set_m_k" sIndex="" dtAddress="Float" />
+    </coilCopy>
+    <coilCalc rung="0" row="17" column="20" cellsHeigh="3" iSortedIndex="60">
+      <eStoreIn sAddress="dist" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="ay" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="0.4" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="ax" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <Greater rung="0" row="14" column="26" cellsHeigh="-1" iSortedIndex="22">
+      <eAddress1 sAddress="ax" sIndex="" dtAddress="Float" />
+      <eAddress2 sAddress="ay" sIndex="" dtAddress="Float" />
+    </Greater>
+    <coilCalc rung="0" row="17" column="28" cellsHeigh="3" iSortedIndex="23">
+      <eStoreIn sAddress="dist" sIndex="" dtAddress="Float" />
+      <Equation>
+        <mathElement sAddress="ax" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="+" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="0.4" sIndex="" dtAddress="Float" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="ay" sIndex="" dtAddress="Float" />
+      </Equation>
+    </coilCalc>
+    <PWM rung="0" row="34" column="60" cellsHeigh="-1" iSortedIndex="57" myPWMType="SetPeriod" iDevice="0">
+      <ePeriod sAddress="4100" sIndex="" dtAddress="UI16" />
+      <eOutput sAddress="OutBitE5" sIndex="" dtAddress="Bit" />
+      <eOnTime sAddress="FinalSpeedPWM" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <coilCalc rung="0" row="38" column="52" cellsHeigh="3" iSortedIndex="-1">
+      <eStoreIn sAddress="Scaled_OnTime_Sp" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="FinalSpeedPWM" sIndex="" dtAddress="UI16" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="4095.0" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="5000" sIndex="" dtAddress="I16" />
+      </Equation>
+    </coilCalc>
+    <flowComment rung="0" row="18" column="54" cellsHeigh="-1" iSortedIndex="-1" sTextUnformatted="" sText="If distance is less than&#xA;StopTol, SPEED is SET to 0">
+      <bDown value="False" />
+      <bLeft value="False" />
+      <bLeftDown value="False" />
+      <bLeftUp value="False" />
+      <bRight value="True" />
+      <bRightDown value="False" />
+      <bRightUp value="False" />
+      <bUp value="True" />
+    </flowComment>
+  </Cells>
+  <FlowConnections>
+    <FlowConn From="0" Yes="53" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="1" Yes="56" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="2" Yes="55" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="3" Yes="54" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="4" Yes="42" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="5" Yes="12" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="6" Yes="7" dirYesFrom="right" dirYesTo="left" No="8" dirNoFrom="down" dirNoTo="down" />
+    <FlowConn From="7" Yes="8" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="8" Yes="58" dirYesFrom="right" dirYesTo="down" />
+    <FlowConn From="9" Yes="57" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="10" Yes="11" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="11" Yes="9" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="12" Yes="4" dirYesFrom="right" dirYesTo="left" No="42" dirNoFrom="down" dirNoTo="down" />
+    <FlowConn From="13" Yes="15" dirYesFrom="right" dirYesTo="left" No="16" dirNoFrom="down" dirNoTo="left" />
+    <FlowConn From="14" Yes="13" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="15" Yes="16" dirYesFrom="down" dirYesTo="right" />
+    <FlowConn From="16" Yes="17" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="17" Yes="18" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="18" Yes="23" dirYesFrom="right" dirYesTo="left" No="19" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="19" Yes="20" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="20" Yes="21" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="21" Yes="26" dirYesFrom="right" dirYesTo="right" />
+    <FlowConn From="22" Yes="25" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="23" Yes="24" dirYesFrom="right" dirYesTo="left" No="22" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="24" Yes="26" dirYesFrom="right" dirYesTo="down" />
+    <FlowConn From="25" Yes="26" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="26" Yes="27" dirYesFrom="up" dirYesTo="up" />
+    <FlowConn From="27" Yes="28" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="28" Yes="29" dirYesFrom="right" dirYesTo="left" No="31" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="29" Yes="33" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="30" Yes="33" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="31" Yes="30" dirYesFrom="right" dirYesTo="left" No="32" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="32" Yes="34" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="33" Yes="32" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="34" Yes="35" dirYesFrom="left" dirYesTo="up" />
+    <FlowConn From="35" Yes="36" dirYesFrom="right" dirYesTo="left" No="38" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="36" Yes="49" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="37" Yes="49" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="38" Yes="37" dirYesFrom="right" dirYesTo="left" No="60" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="39" Yes="40" dirYesFrom="up" dirYesTo="left" />
+    <FlowConn From="40" Yes="65" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="41" Yes="10" dirYesFrom="down" dirYesTo="left" />
+    <FlowConn From="42" Yes="6" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="43" Yes="44" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="44" Yes="14" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="45" Yes="48" dirYesFrom="down" dirYesTo="right" />
+    <FlowConn From="46" Yes="47" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="47" Yes="48" dirYesFrom="down" dirYesTo="left" />
+    <FlowConn From="48" Yes="43" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="49" Yes="60" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="50" Yes="87" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="51" Yes="50" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="52" Yes="51" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="53" Yes="52" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="54" Yes="2" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="55" Yes="1" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="56" Yes="41" dirYesFrom="down" dirYesTo="right" />
+    <FlowConn From="57" Yes="5" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="58" Yes="90" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="59" Yes="3" dirYesFrom="left" dirYesTo="up" />
+    <FlowConn From="60" Yes="62" dirYesFrom="down" dirYesTo="left" />
+    <FlowConn From="61" Yes="39" dirYesFrom="right" dirYesTo="down" />
+    <FlowConn From="62" Yes="61" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="63" Yes="45" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="65" Yes="66" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="66" Yes="68" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="68" Yes="69" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="69" Yes="70" dirYesFrom="right" dirYesTo="left" No="71" dirNoFrom="down" dirNoTo="left" />
+    <FlowConn From="70" Yes="71" dirYesFrom="down" dirYesTo="right" />
+    <FlowConn From="71" Yes="72" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="72" Yes="73" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="73" Yes="74" dirYesFrom="right" dirYesTo="left" No="75" dirNoFrom="down" dirNoTo="left" />
+    <FlowConn From="74" Yes="75" dirYesFrom="down" dirYesTo="right" />
+    <FlowConn From="75" Yes="76" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="76" Yes="77" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="77" Yes="78" dirYesFrom="right" dirYesTo="left" No="80" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="78" Yes="84" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="79" Yes="84" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="80" Yes="79" dirYesFrom="right" dirYesTo="left" No="83" dirNoFrom="down" dirNoTo="up" />
+    <FlowConn From="82" Yes="92" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="83" Yes="82" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="84" Yes="83" dirYesFrom="right" dirYesTo="right" />
+    <FlowConn From="85" Yes="59" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="86" Yes="85" dirYesFrom="left" dirYesTo="up" />
+    <FlowConn From="87" Yes="88" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="88" Yes="86" dirYesFrom="right" dirYesTo="up" />
+    <FlowConn From="89" Yes="46" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="90" Yes="91" dirYesFrom="right" dirYesTo="up" No="89" dirNoFrom="left" dirNoTo="up" />
+    <FlowConn From="91" Yes="63" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="92" Yes="81" dirYesFrom="right" dirYesTo="left" />
+  </FlowConnections>
+  <Wires />
+  <Comments />
+</VelocioNetworks>
