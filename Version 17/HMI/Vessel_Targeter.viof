@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<!--Velocio Builder 1.1-->
+<!--www.Velocio.net-->
+<VelocioNetworks IPAddress="">
+  <Setup ProjectType="FlowChart" />
+  <Connections>
+    <Connection sKey="vFactoryPage" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="InI16A1" iPort="0" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="input" />
+    <Connection sKey="InI16A2" iPort="0" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="input" />
+    <Connection sKey="InI16A3" iPort="0" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="I16" dataSource="input" />
+    <Connection sKey="SerialRXA1" bIsSerialRX="True" iPort="0" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="register" />
+    <Connection sKey="SerialTXA1" bISSerialTX="True" iPort="0" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="register" />
+    <Connection sKey="InBitB1" iPort="1" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB2" iPort="1" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB3" iPort="1" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB4" iPort="1" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB5" iPort="1" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitB6" iPort="1" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC1" iPort="2" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC2" iPort="2" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC3" iPort="2" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC4" iPort="2" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC5" iPort="2" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="InBitC6" iPort="2" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="input" />
+    <Connection sKey="OutBitD1" iPort="3" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD2" iPort="3" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD3" iPort="3" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD4" iPort="3" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD5" iPort="3" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitD6" iPort="3" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE1" iPort="4" iPin="1" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE2" iPort="4" iPin="2" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE3" iPort="4" iPin="3" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE4" iPort="4" iPin="4" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE5" iPort="4" iPin="5" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="OutBitE6" iPort="4" iPin="6" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Bit" dataSource="output" />
+    <Connection sKey="x_voltage" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="y_voltage" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="theta_voltage" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="x_Real" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="y_Real" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="theta_Real" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="Float" dataSource="register" />
+    <Connection sKey="X_range_m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Y_range_m" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Xpos" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Ypos" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="Thetapos" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="targetX" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="targetY" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="HMI_Target_X" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+    <Connection sKey="HMI_Target_Y" bRemoteWritable="True" ui32Mask="0" ui32MessageId="0" ui32Period="0" dataType="UI16" dataSource="register" />
+  </Connections>
+  <Modbus />
+  <SubroutineInputs cellsHeigh="0" />
+  <Cells>
+    <start rung="0" row="1" column="1" cellsHeigh="-1" iSortedIndex="-1" />
+    <coilCopy rung="0" row="5" column="2" cellsHeigh="3" iSortedIndex="0" CopyType="standard">
+      <eKeySource sAddress="InI16A1" sIndex="" dtAddress="I16" />
+      <eKeySource sAddress="InI16A2" sIndex="" dtAddress="I16" />
+      <eKeySource sAddress="InI16A3" sIndex="" dtAddress="I16" />
+      <eKeyDestination sAddress="x_voltage" sIndex="" dtAddress="Float" />
+      <eKeyDestination sAddress="y_voltage" sIndex="" dtAddress="Float" />
+      <eKeyDestination sAddress="theta_voltage" sIndex="" dtAddress="Float" />
+    </coilCopy>
+    <coilScale rung="0" row="19" column="2" cellsHeigh="3" iSortedIndex="11">
+      <eInput sAddress="theta_voltage" sIndex="" dtAddress="Float" />
+      <eOutput sAddress="theta_Real" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="2703" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="3.3" sIndex="" dtAddress="Float" />
+    </coilScale>
+    <coilCalc rung="0" row="19" column="10" cellsHeigh="3" iSortedIndex="12">
+      <eStoreIn sAddress="Thetapos" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="theta_Real" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.3" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="6283" sIndex="" dtAddress="I16" />
+      </Equation>
+    </coilCalc>
+    <coilScale rung="0" row="15" column="2" cellsHeigh="3" iSortedIndex="9">
+      <eInput sAddress="y_voltage" sIndex="" dtAddress="Float" />
+      <eOutput sAddress="y_Real" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="2703" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="3.3" sIndex="" dtAddress="Float" />
+    </coilScale>
+    <coilCalc rung="0" row="15" column="10" cellsHeigh="3" iSortedIndex="10">
+      <eStoreIn sAddress="Ypos" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="y_Real" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.3" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilScale rung="0" row="11" column="2" cellsHeigh="3" iSortedIndex="7">
+      <eInput sAddress="x_voltage" sIndex="" dtAddress="Float" />
+      <eOutput sAddress="x_Real" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="0" sIndex="" dtAddress="Float" />
+      <eInputValue sAddress="2703" sIndex="" dtAddress="Float" />
+      <eOutputValue sAddress="3.3" sIndex="" dtAddress="Float" />
+    </coilScale>
+    <coilCalc rung="0" row="11" column="10" cellsHeigh="3" iSortedIndex="8">
+      <eStoreIn sAddress="Xpos" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="x_Real" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="3.3" sIndex="" dtAddress="Float" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <PWM rung="0" row="24" column="8" cellsHeigh="-1" iSortedIndex="14" myPWMType="Start" iDevice="0">
+      <ePeriod sAddress="4100" sIndex="" dtAddress="UI16" />
+      <eOutput sAddress="OutBitE2" sIndex="" dtAddress="Bit" />
+      <eOnTime sAddress="targetX" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <PWM rung="0" row="24" column="2" cellsHeigh="-1" iSortedIndex="13" myPWMType="SetPeriod" iDevice="0">
+      <ePeriod sAddress="4100" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <coilCalc rung="0" row="5" column="8" cellsHeigh="3" iSortedIndex="6">
+      <eStoreIn sAddress="targetY" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="HMI_Target_Y" sIndex="" dtAddress="UI16" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="4100" sIndex="" dtAddress="I16" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="5" column="17" cellsHeigh="3" iSortedIndex="5">
+      <eStoreIn sAddress="targetX" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="(" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="HMI_Target_X" sIndex="" dtAddress="UI16" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="*" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="4100" sIndex="" dtAddress="I16" />
+        <mathElement sAddress=")" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="/" sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress=" " sIndex="" dtAddress="Symbol" />
+        <mathElement sAddress="200" sIndex="" dtAddress="UI8" />
+      </Equation>
+    </coilCalc>
+    <wireRouter rung="0" row="9" column="6" cellsHeigh="-1" iSortedIndex="-1" />
+    <PWM rung="0" row="24" column="15" cellsHeigh="-1" iSortedIndex="15" myPWMType="Start" iDevice="0">
+      <ePeriod sAddress="4100" sIndex="" dtAddress="UI16" />
+      <eOutput sAddress="OutBitE3" sIndex="" dtAddress="Bit" />
+      <eOnTime sAddress="targetY" sIndex="" dtAddress="UI16" />
+      <bContinuous value="True" />
+    </PWM>
+    <flowComment rung="0" row="5" column="24" cellsHeigh="-1" iSortedIndex="-1" sTextUnformatted="" sText="Changed the 10% - 90%&#xA;scaling formulas from:&#xA;410 + (HMI_Target_X * 3280 /&#xA;200)&#xA;to&#xA;(HMI_Target_X * 4100) / 200">
+      <bDown value="False" />
+      <bLeft value="True" />
+      <bLeftDown value="False" />
+      <bLeftUp value="False" />
+      <bRight value="False" />
+      <bRightDown value="False" />
+      <bRightUp value="False" />
+      <bUp value="False" />
+    </flowComment>
+    <coilCopy rung="0" row="5" column="29" cellsHeigh="3" iSortedIndex="4" CopyType="standard">
+      <eKeySource sAddress="HMI_Target_Y" sIndex="" dtAddress="UI16" />
+      <eKeyDestination sAddress="HMI_Target_Y" sIndex="" dtAddress="UI16" />
+    </coilCopy>
+    <coilCopy rung="0" row="2" column="29" cellsHeigh="3" iSortedIndex="3" CopyType="standard">
+      <eKeySource sAddress="HMI_Target_X" sIndex="" dtAddress="UI16" />
+      <eKeyDestination sAddress="HMI_Target_X" sIndex="" dtAddress="UI16" />
+    </coilCopy>
+    <coilCalc rung="0" row="1" column="17" cellsHeigh="3" iSortedIndex="2">
+      <eStoreIn sAddress="HMI_Target_Y" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="HMI_Target_Y" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+    <coilCalc rung="0" row="1" column="8" cellsHeigh="3" iSortedIndex="1">
+      <eStoreIn sAddress="HMI_Target_X" sIndex="" dtAddress="UI16" />
+      <Equation>
+        <mathElement sAddress="HMI_Target_X" sIndex="" dtAddress="UI16" />
+      </Equation>
+    </coilCalc>
+  </Cells>
+  <FlowConnections>
+    <FlowConn From="0" Yes="1" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="1" Yes="18" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="2" Yes="3" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="3" Yes="9" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="4" Yes="5" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="5" Yes="2" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="6" Yes="7" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="7" Yes="4" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="8" Yes="13" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="9" Yes="8" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="10" Yes="12" dirYesFrom="down" dirYesTo="right" />
+    <FlowConn From="11" Yes="10" dirYesFrom="left" dirYesTo="up" />
+    <FlowConn From="12" Yes="6" dirYesFrom="left" dirYesTo="up" />
+    <FlowConn From="15" Yes="11" dirYesFrom="left" dirYesTo="up" />
+    <FlowConn From="16" Yes="15" dirYesFrom="down" dirYesTo="up" />
+    <FlowConn From="17" Yes="16" dirYesFrom="right" dirYesTo="left" />
+    <FlowConn From="18" Yes="17" dirYesFrom="right" dirYesTo="left" />
+  </FlowConnections>
+  <Wires />
+  <Comments />
+</VelocioNetworks>
