@@ -8,7 +8,7 @@ from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 
 # Network
-from ...network.network_controller import HardwareAttacker as HardwareNetwork
+from ...network.network_controller import HardwareDefender
 
 # customtkinter widgets
 from customtkinter import (
@@ -37,7 +37,7 @@ class DefenderV0:
     def __init__(self, context: Context):
         root  = context.root
         style = Style(context)
-        net   = context.refresh_net(HardwareNetwork)
+        net   = context.refresh_net(HardwareDefender)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
         self._server_url    = "http://localhost:5000"

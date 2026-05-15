@@ -11,18 +11,40 @@ class NetworkController:
         self.table = mod_table.ModTable()
 
         self.loader = loader.Loader(self.data_buffer)
-    
-class HardwareAttacker(NetworkController):
+
+class HardwareController(NetworkController):
     def __init__(self):
         super().__init__()
-        self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
         self.nmap = nmap.NMapper(self.data_buffer)
-        self.mitm = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
         self.sniffer = sniffing.Sniffer(self.data_buffer)
-        self.dos = dos.Denier(self.data_buffer)
 
     def do_nmap(self):
         self.nmap.do_nmap()
+
+    def start_sniff(self):
+        self.sniffer.start()
+    
+    def sniff_is_running(self):
+        return self.sniffer.is_running()
+
+    def stop_sniff(self):
+        self.sniffer.stop()
+    
+    def abort_all(self):
+        self.stop_sniff()
+    
+class HardwareAttacker(HardwareController):
+    def __init__(self):
+        super().__init__()
+        self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
+        self.mitm = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
+        self.dos = dos.Denier(self.data_buffer)
+    
+    def abort_all(self):
+        super().abort_all()
+        self.stop_arp()
+        self.stop_mitm()
+        self.stop_dos()
 
     def start_arp(self, target_ip, host_ip):
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
@@ -43,15 +65,6 @@ class HardwareAttacker(NetworkController):
     def stop_mitm(self):
         self.mitm.stop()
 
-    def start_sniff(self):
-        self.sniffer.start()
-    
-    def sniff_is_running(self):
-        return self.sniffer.is_running()
-
-    def stop_sniff(self):
-        self.sniffer.stop()
-
     def start_dos(self, target_1, target_2):
         self.dos.start([target_1, target_2])
     
@@ -61,8 +74,6 @@ class HardwareAttacker(NetworkController):
     def stop_dos(self):
         self.dos.stop()
 
-    def abort_all(self):
-        self.stop_arp()
-        self.stop_mitm()
-        self.stop_sniff()
-        self.stop_dos()
+class HardwareDefender(HardwareController):
+    def __init__(self):
+        super().__init__()
