@@ -1,4 +1,6 @@
 customtkinter
 scapy
 netifaces2
-netfilterqueue (on unix)
+netfilterqueue
+requests
+flask
