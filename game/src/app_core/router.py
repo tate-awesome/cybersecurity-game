@@ -10,6 +10,7 @@ from ..pages.demo.triangle import Triangle
 from ..pages.demo.hardware_map import HardwareMap
 
 from ..pages.attacker.attacker import AttackerV0
+from ..pages.defender.defender import DefenderV0
 
 from ..pages.title.title import Title
 from ..pages.title.select_mode import SelectMode
@@ -31,7 +32,7 @@ class Router:
             "title/title": Title,
             "title/select_mode": SelectMode,
                 "attacker/v0": AttackerV0,
-
+                "defender/v0": DefenderV0,
             "title/select_demo": SelectDemo,
                 "demo/sprites": Sprites,
                 "demo/saved_map": SavedMap,
