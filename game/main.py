@@ -1,36 +1,34 @@
+import os, subprocess, sys, platform
+
 from src.app_core.app import App
-import os, subprocess, sys
-import platform
 
-# Run as sudo for socket permissions?
-# sudo python3 
-# Password = veronica
-# Be on GL-SFT1200-ab1 wifi
-# Reset device before clicking start buttons
-# ctrl+c in terminal to stop os commands - note: you shouldn't need to do this anymore
-# trash terminal - note: you shouldn't need to do this anymore
-# Wireshark filter:     ip.addr == 192.168.8.137 || arp
+'''
+ENTRY POINT FOR APP
 
-# Deactivate venv: deactivate
-# Create venv: python -m venv myenv
-# Activate: source myenv/bin/activate   
+Requirements:
+    Must run as root for permissions to access iptables, ip forwarding, and sockets
+    Must be on the same network as the target device
+    Must be in the venv
+    Must run with linux or macos for full functionality. Windows doesn't allow many of the hacking features to work properly, but some GUI features will work.
+
+Known issues:
+    As far as I know, the daemon threads close when the program is closed.
+    If not, use flusher.py to flush iptables and close all threads.
+'''
 
 os_name = platform.system()
 
-if platform.system() == "Windows":
-    # Elevation is not possible
+# GUI apps usually don't run as root, but this app constantly accesses iptables, ip forwarding, and sockets
+if os_name == "Windows":
     print("Running on Windows. Many features will not work properly.")
     ...
 elif os_name == "Linux" or os_name == "Darwin":
-    # Elevation is possible
     if os.geteuid() != 0:
         print("Requesting root privileges for permissions...\a")
         subprocess.check_call(["sudo", sys.executable] + sys.argv)
-        # GUI apps usually don't run as root, but this app constantly accesses iptables, ip forwarding, and sockets
         sys.exit()
 else:
     print(f"Running on an unidentified system: {os_name}")
-
 
 
 game = App("title")

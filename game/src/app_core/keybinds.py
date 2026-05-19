@@ -1,12 +1,24 @@
 from customtkinter import CTk
+
 from .context import Context
 
+
 class KeyBinds:
+    '''
+    Adds global keybinds and event handlers to the app.
+    Includes zoom controls (Ctrl +, Ctrl -, Ctrl 0), fullscreen toggle (F11), and exit fullscreen (Escape).
+    Also runs Router.quit() when the window is closed.
+    '''
 
     def __init__(self, root: CTk, context: Context, refresh: callable, quit: callable):
+        '''
+        Binds all events
+        '''
+
         self.root = root
         self.context = context
         self.refresh = refresh
+        self.quit = quit
 
         # Page zoom control
         root.bind("<Control-plus>", self.zoom_in)            # Ctrl +
@@ -21,8 +33,8 @@ class KeyBinds:
         root.bind("<F11>", self.toggle_fullscreen)
         root.bind("<Escape>", self.exit_fullscreen)
 
-        # On close
-        root.protocol("WM_DELETE_WINDOW", quit)
+        # On close event
+        root.protocol("WM_DELETE_WINDOW", self.quit)
 
 
     def toggle_fullscreen(self, event=None):

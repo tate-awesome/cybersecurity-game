@@ -3,6 +3,10 @@ Shared data for a game session. Passed to next pages on navigation
 '''
 
 class Context:
+    '''
+    Important data that needs to be shared across pages, such as the network controller and the router.
+    Every page builder function should take a Context object as an argument and build the page on the root CTk object.
+    '''
 
     def __init__(self, root, router):
         self.net = None
@@ -21,16 +25,18 @@ class Context:
         }
         '''
         Tracks the state of the hacks on the GUI.
-        
         False = Fresh state
-        
-        True = Has been done - use network_controller to see if it's running
+        True = Has been done - use network_controller to see if it's running.
+        TODO: Use for game progression and unlocking elements
         '''
 
         self.inputs = {
+        # Hacking Forms
             "arp": ["192.168.8.137","192.168.8.243"],
             "sniff": ["",""],
             "dos": ["192.168.8.114:200","192.168.8.114:201"],
+            
+        # Filter overlay
             "checkbox_filters": {
                 "Source": {
                     "NMapping": {
@@ -105,16 +111,21 @@ class Context:
                     }
                 }
             },
+
+        # Filter overlay text inputs
             "text_filters": {
                 "address_filter": {
                     "label": "IP/MAC Addresses Involved (Separated by \"|\")",
                     "text": ""
                 }
             },
+        # Filter overlay
             "packet_filter_function": {
                 "summary": "Currently filtering for any packets.",
                 "function": lambda mpkt: True
             },
+
+        # Column overlay
             "column_selections": {
                 "Time": {
                     "state": "1",
@@ -162,55 +173,56 @@ class Context:
                     "width": 400
                 },
             },
-            "map_settings": {
-                "customization": {
-                    "Show/Hide Elements": {
-                        "in Boat": "1",
-                        "in Path": "1",
-                        "in Path Discontinuity": "1",
-                        "out Boat": "1",
-                        "out Path": "1",
-                        "out Path Discontinuity": "1"
-                    },
-                    "Show/Hide Labels": {
-                        "in Boat": "1",
-                        "in Boat Position": "1",
-                        "out Boat": "1",
-                        "out Boat Position": "1",
-                        "Grid Numbers": "1",
-                        "Grid Lines": "1"
-                    },
-                    "Colors": {
-                        "in Boat": "yellow",
-                        "in Path": "yellow",
-                        "in Path Discontinuity": "yellow",
-                        "out Boat": "cyan",
-                        "out Path": "cyan",
-                        "out Path Discontinuity": "cyan"
-                    },
+
+        # Map customization overlay
+            "customization": {
+                "Show/Hide Elements": {
+                    "in Boat": "1",
+                    "in Path": "1",
+                    "in Path Discontinuity": "1",
+                    "out Boat": "1",
+                    "out Path": "1",
+                    "out Path Discontinuity": "1"
                 },
-                "path_length": 100
+                "Show/Hide Labels": {
+                    "in Boat": "1",
+                    "in Boat Position": "1",
+                    "out Boat": "1",
+                    "out Boat Position": "1",
+                    "Grid Numbers": "1",
+                    "Grid Lines": "1"
+                },
+                "Colors": {
+                    "in Boat": "yellow",
+                    "in Path": "yellow",
+                    "in Path Discontinuity": "yellow",
+                    "out Boat": "cyan",
+                    "out Path": "cyan",
+                    "out Path Discontinuity": "cyan"
+                },
             },
-            
+        # Map settings bar
+            "path_length": 100
         }
         '''
-        Save slots for the user inputs during GUI refresh.
-        arp: target ip, host ip
-        sniff: print to gui, print to console
+        Primary storage for checkbox/entry values, which are changed/checked by many different GUI elements.
+        Values retreived when building GUI elements.
+        Defaults are set here.
+        Some styling/filter values are stored here because the checkbox name is the primary key
         '''
 
-
-    def get_all(self):
-        '''
-        Returns tuple[router, root]
-        '''
-        return self.router, self.root
 
     def help_message(self, widget="root"):
         # TODO get help from progress and current page and source widget
         return "You need to do something"
 
     def refresh_net(self, constructor):
+        '''
+        Gets the correct network controller for the current page.
+        If the net doesn't exist yet, it will be created using the provided constructor and saved to the context.
+        If it already exists, it will be returned as is to preserve the state.
+        Helps the net controller persist across page navigation without having to pass it as an argument to every page builder function.
+        '''
         # Defer to the existing net
         if self.net is None:
             self.net = constructor()

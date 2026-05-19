@@ -1,33 +1,48 @@
-from .context import Context
 from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
 from tkinter.filedialog import askopenfilename
 import os
 
+from .context import Context
+from .keybinds import KeyBinds
+
+# Import page builder objects here
+# /demo
 from ..pages.demo.sprites import Sprites
 from ..pages.demo.saved_map import SavedMap
 from ..pages.demo.boat_motion import BoatMotion
 from ..pages.demo.triangle import Triangle
 from ..pages.demo.hardware_map import HardwareMap
 
+# /attacker
 from ..pages.attacker.attacker import AttackerV0
 from ..pages.defender.defender import DefenderV0
 
+# /title
 from ..pages.title.title import Title
 from ..pages.title.select_mode import SelectMode
 from ..pages.title.select_demo import SelectDemo
 
-from .keybinds import KeyBinds
 
 class Router:
-
+    '''
+    Handles page navigation by calling page builder functions. (Pages can't import each other because of circular imports)
+    Builds the first page on startup
+    '''
+    
     def __init__(self, root: CTk, start_page: str):
+        '''
+        Creates the app's Context object and shows the first page.
+        '''
         self.context = Context(root, self)
         KeyBinds(root, self.context, self.refresh, self.quit)
         self.show(start_page)
 
 
-    pages = {
-
+    def show(self, next_page: str):
+        '''
+        Displays the specified page, which should be a key in the pages dict. Clears the current page first.
+        '''
+        pages = {
             "title": Title,
             "title/title": Title,
             "title/select_mode": SelectMode,
@@ -40,16 +55,24 @@ class Router:
                 "demo/triangle": Triangle,
                 "demo/hardware_map": HardwareMap,
         }
-    
-
-    def show(self, next_page: str):
+        '''
+        Dict mapping page names to page builder functions.
+        Add new pages here to make them accessible by the router.
+        All page builder functions should take a Context object as an argument and build the page on the root CTk object.
+        '''
         self.clear()
-        self.pages[next_page](self.context)
+        if next_page not in pages:
+            print(f"Page '{next_page}' not found. Redirecting to title page.")
+            next_page = "title"
+        pages[next_page](self.context)
         self.current_page = next_page
 
 
     def refresh(self):
-        self.clear()
+        '''
+        Refreshes the current page by clearing the root CTk object and rebuilding the current page.
+        Useful for updating the UI after changing themes or making changes to the context.
+        '''
         self.show(self.current_page)
     
 
