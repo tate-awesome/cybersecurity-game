@@ -9,7 +9,8 @@ from ...widgets.menu_bar import MenuBar
 
 class HardwareMap:
     def __init__(self, context: Context):
-        router, root = context.get_all()
+        router = context.router
+        root = context.root
         frame_ms = 100
 
         # Create and define network control

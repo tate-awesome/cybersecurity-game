@@ -18,7 +18,7 @@ class CustomizationOverlay:
         Create filter menu widgets, load filter options from context and configure inputs for autosave
         '''
         # Create box filter widgets
-        box_slots = self.context.inputs["map_settings"]["customization"]
+        box_slots = self.context.inputs["customization"]
         med = self.style.get_font()
         checkbox_frame = CTkFrame(parent, fg_color=self.style.color("panel"))
         checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
