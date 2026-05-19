@@ -6,6 +6,7 @@ from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font as tkfont
 
 class PacketConsole:
     def __init__(self, style, parent, context, buffer: DataBuffer):
@@ -71,22 +72,99 @@ class PacketConsole:
 
     # Treeview
     def create_treeview(self, parent):
+
         style = ttk.Style()
-        style.configure("Treeview", rowheight=40)
+
+        # Font and row height
+        tree_font = tkfont.Font(
+            family="Consolas",
+            size=self.style.get_font_size()
+        )
+
+        row_height = tree_font.metrics("linespace") * 2 + 6
+
+        style.configure(
+            "Treeview",
+            font=("Consolas", self.style.get_font_size(), "normal"),
+            rowheight=row_height
+        )
+
+        style.configure(
+            "Treeview.Heading",
+            font=("Consolas", self.style.get_font_size(), "bold")
+        )
+
+        # Container for tree + scrollbars
+        container = ttk.Frame(parent)
+        container.pack(
+            fill="both",
+            expand=True,
+            padx=self.style.gap,
+            pady=self.style.gap
+        )
+
+        # Columns
         active_columns = []
+
         for key in self.context.inputs["column_selections"]:
             if self.context.inputs["column_selections"][key]["state"] == "1":
                 active_columns.append(key)
-        tree = ttk.Treeview(parent, columns=active_columns, show="headings")
-        tree.pack(fill="both", expand=True, padx=self.style.gap, pady=self.style.gap)
-        for col in active_columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=len(col)*8, anchor="w")
 
-        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
+        # Treeview
+        tree = ttk.Treeview(
+            container,
+            columns=active_columns,
+            show="headings"
+        )
+
+        # Configure columns
+        for col in active_columns:
+
+            stretch = (col == "Info")
+
+            tree.heading(col, text=col)
+
+            tree.column(
+                col,
+                width=self.style.get_column_width(col),
+                minwidth=50,
+                stretch=stretch,
+                anchor="w"
+            )
+
+        # Vertical scrollbar
+        y_scrollbar = ttk.Scrollbar(
+            container,
+            orient="vertical",
+            command=tree.yview
+        )
+
+        # Horizontal scrollbar
+        x_scrollbar = ttk.Scrollbar(
+            container,
+            orient="horizontal",
+            command=tree.xview
+        )
+
+        # Connect scrollbars
+        tree.configure(
+            yscrollcommand=y_scrollbar.set,
+            xscrollcommand=x_scrollbar.set
+        )
+
+        # Layout
+        tree.grid(row=0, column=0, sticky="nsew")
+
+        y_scrollbar.grid(row=0, column=1, sticky="ns")
+
+        x_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        # Make tree expand
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
         self.columns = active_columns
+
         return tree
     
     def submit_packet(self, tree, packet):

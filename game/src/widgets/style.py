@@ -4,6 +4,7 @@ class Style:
 
     def __init__(self, context):
         self.root = context.root
+        self.context = context
         self.scale = context.ui_scale
         self.gap = (10, 10)
         self.gap2 = (20,20)
@@ -22,18 +23,18 @@ class Style:
     def get_font(self, name="default"):
         if name not in self.fonts:
             if name == "default":
-                size = int(16.0*self.scale/100.0)
-                self.fonts[name] = CTkFont(family="Arial", size=size)
+                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size())
             elif name == "title_btn":
-                size=int(20.0*self.scale/100.0)
-                self.fonts[name] = CTkFont(size=size)
+                self.fonts[name] = CTkFont(size=self.get_font_size(20.0), weight="bold")
             elif name == "mono":
-                size=int(16.0*self.scale/100.0)
-                self.fonts[name] = CTkFont("Consolas", size=size)
+                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size())
             else:
                 size = int(14.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
         return self.fonts[name]
+
+    def get_font_size(self, size=16.0):
+        return int(size*self.scale/100.0)
 
     def color(self, type: str) -> str:
         '''
@@ -56,3 +57,10 @@ class Style:
             colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][1]
             colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"][1]
         return colors[type]
+
+    def get_column_width(self, column_name):
+        # Example column widths, adjust as needed
+        if column_name in self.context.inputs["column_selections"]:
+            return self.context.inputs["column_selections"][column_name].get("width", 100)
+        
+        return 100
