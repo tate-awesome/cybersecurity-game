@@ -5,7 +5,7 @@ import scapy.all as scapy
 from scapy.all import Packet, ARP
 import threading
 from ..data_buffer import DataBuffer
-import ipaddress, netifaces
+import ipaddress, netifaces, platform
 # TODO get mac address better
 
 class ArpSpoofer:
@@ -15,6 +15,7 @@ class ArpSpoofer:
         self.interval = interval
 
         self.running = False
+        self.forwarding_enabled = False
         self.timer = None
 
 
@@ -44,9 +45,29 @@ class ArpSpoofer:
 
     def start(self, target_ip, host_ip):
 
-        # enable forwarding
-        with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
-            f.write('1\n')
+
+        os_name = platform.system()
+        if os_name == "Windows":
+            # IP Forwarding is not possible
+            self.buffer.put("arp", "Running on Windows. IP forwarding is not possible, so ARP spoofing may not work properly.")
+            ...
+        elif os_name == "Linux":
+            # IP Forwarding is possible
+            # enable forwarding
+            with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
+                f.write('1\n')
+            self.buffer.put("arp", "IP forwarding enabled.")
+            self.forwarding_enabled = True
+            ...
+        elif os_name == "Darwin":
+            # IP Forwarding is possible
+            # enable forwarding
+            with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
+                f.write('1\n')
+            ...
+        else:
+            self.buffer.put("arp", f"Running on an unidentified system: {os_name}. ARP spoofing may not work properly.")    
+        
 
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
         scapy.conf.verb = 0
@@ -70,8 +91,11 @@ class ArpSpoofer:
 
     def stop(self):
         # disable forwarding
-        with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
-            f.write('0\n')
+        if self.forwarding_enabled:
+            with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
+                f.write('0\n')
+            self.buffer.put("arp", "IP forwarding disabled.")
+            self.forwarding_enabled = False
 
         if self.running == False:
             self.buffer.put("arp", "ARP Spoof is not running")
