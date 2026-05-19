@@ -24,10 +24,11 @@ class PacketConsole:
         filter_overlay = FilterOverlay(self.context, self.style, filter_button, buffer, self.refresh)
 
         columns_button = self.create_menu_button(menu_frame, "Columns")
-        columns_button = ColumnOverlay(self.context, self.style, columns_button, buffer, self.refresh)
+        columns_button = ColumnOverlay(self.context, self.style, columns_button, buffer, self.refresh_columns)
 
         self.columns = []
         self.treeview = self.create_treeview(parent)
+        self.refresh_columns()
 
         # Printing Flags
         self.jump_to_bottom = True
@@ -104,21 +105,17 @@ class PacketConsole:
         )
 
         # Columns
-        active_columns = []
-
-        for key in self.context.inputs["column_selections"]:
-            if self.context.inputs["column_selections"][key]["state"] == "1":
-                active_columns.append(key)
+        all_columns = list(self.context.inputs["column_selections"].keys())
 
         # Treeview
         tree = ttk.Treeview(
             container,
-            columns=active_columns,
+            columns=all_columns,
             show="headings"
         )
 
         # Configure columns
-        for col in active_columns:
+        for col in all_columns:
 
             stretch = (col == "Info")
 
@@ -163,7 +160,7 @@ class PacketConsole:
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.columns = active_columns
+        self.columns = all_columns
 
         return tree
     
@@ -175,6 +172,17 @@ class PacketConsole:
             values.append(value)
 
         tree.insert("", "end", values=values)
+
+    def refresh_columns(self):
+
+        active_columns = []
+
+        for key in self.context.inputs["column_selections"]:
+
+            if self.context.inputs["column_selections"][key]["state"] == "1":
+                active_columns.append(key)
+
+        self.treeview["displaycolumns"] = active_columns
 
     def refresh(self):
         ...
