@@ -1,5 +1,6 @@
 from src.app_core.app import App
 import os, subprocess, sys
+import platform
 
 # Run as sudo for socket permissions?
 # sudo python3 
@@ -14,13 +15,22 @@ import os, subprocess, sys
 # Create venv: python -m venv myenv
 # Activate: source myenv/bin/activate   
 
-def privilege_elevation():
+os_name = platform.system()
+
+if platform.system() == "Windows":
+    # Elevation is not possible
+    print("Running on Windows. Many features will not work properly.")
+    ...
+elif os_name == "Linux" or os_name == "Darwin":
+    # Elevation is possible
     if os.geteuid() != 0:
         print("Requesting root privileges for permissions...\a")
         subprocess.check_call(["sudo", sys.executable] + sys.argv)
         # GUI apps usually don't run as root, but this app constantly accesses iptables, ip forwarding, and sockets
         sys.exit()
+else:
+    print(f"Running on an unidentified system: {os_name}")
 
-privilege_elevation()
+
 
 game = App("title")
