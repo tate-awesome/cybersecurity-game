@@ -118,39 +118,48 @@ class Context:
             "column_selections": {
                 "Time": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.time_word
+                    "function": lambda mpkt: mpkt.time_word,
+                    "width": 120
                 },
                 "No.": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.absolute_number
+                    "function": lambda mpkt: mpkt.absolute_number,
+                    "width": 70
                 },
                 "Length": {
                     "state": "0",
-                    "function": lambda mpkt: mpkt.length
+                    "function": lambda mpkt: mpkt.length,
+                    "width": 80
                 },
                 "Hack info": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.hack_word
+                    "function": lambda mpkt: mpkt.hack_word,
+                    "width": 120
                 },
                 "Transaction": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.transaction_word
+                    "function": lambda mpkt: mpkt.transaction_word,
+                    "width": 500
                 },
                 "Layers": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.proto_str
+                    "function": lambda mpkt: mpkt.proto_str,
+                    "width": 250
                 },
                 "Purpose": {
                     "state": "0",
-                    "function": lambda mpkt: mpkt.purpose
+                    "function": lambda mpkt: mpkt.purpose,
+                    "width": 400
                 },
                 "Summary": {
                     "state": "1",
-                    "function": lambda mpkt: mpkt.summary
+                    "function": lambda mpkt: mpkt.summary,
+                    "width": 600
                 },
                 "Modbus info": {
                     "state": "0",
-                    "function": lambda mpkt: mpkt.modbus_word
+                    "function": lambda mpkt: mpkt.modbus_word,
+                    "width": 400
                 },
             },
             "map_settings": {
