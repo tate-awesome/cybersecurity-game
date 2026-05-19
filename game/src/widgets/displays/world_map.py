@@ -5,7 +5,7 @@ from ...network.data_buffer import DataBuffer
 from ...drawing.viewport import ViewPort
 from ...widgets.map import Map
 
-from customtkinter import CTkFrame
+from customtkinter import *
 
 class WorldMap:
     def __init__(self, style, parent, context, buffer: DataBuffer):
@@ -13,9 +13,21 @@ class WorldMap:
         self.parent = parent
         self.context = context
         self.buffer = buffer
-        self.frame = CTkFrame(parent)
         
-        map = Map(style, self.frame, self.draw_full_map, 100, 20)
+
+    def create_menu_bar(self, parent):
+        frame = CTkFrame(parent)
+        frame.pack(side="top", fill="x", pady=self.style.gaptop, padx=self.style.gap)
+
+        header = CTkLabel(frame, text="Packet Stream", font=self.style.get_font(), padx=self.style.igap)
+        header.pack(fill=Y, side="left", padx=self.style.gap)
+        return frame
+
+    def create_menu_button(self, frame, text, function=None):
+        med = self.style.get_font()
+        button = CTkButton(frame, text=text, command=function, font=med)
+        button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+        return button
 
     def draw_full_map(self, canvas, draw_lock, scale: float, offset: tuple[float, float]):
             positions = self.buffer.get_simple_path("in")

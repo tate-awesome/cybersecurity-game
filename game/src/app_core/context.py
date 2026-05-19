@@ -153,6 +153,35 @@ class Context:
                     "function": lambda mpkt: mpkt.modbus_word
                 },
             },
+            "map_settings": {
+                "customization": {
+                    "Show/Hide Elements": {
+                        "in Boat": "1",
+                        "in Path": "1",
+                        "in Path Discontinuity": "1",
+                        "out Boat": "1",
+                        "out Path": "1",
+                        "out Path Discontinuity": "1"
+                    },
+                    "Show/Hide Labels": {
+                        "in Boat": "1",
+                        "in Boat Position": "1",
+                        "out Boat": "1",
+                        "out Boat Position": "1",
+                        "Grid Numbers": "1",
+                        "Grid Lines": "1"
+                    },
+                    "Colors": {
+                        "in Boat": "yellow",
+                        "in Path": "yellow",
+                        "in Path Discontinuity": "yellow",
+                        "out Boat": "cyan",
+                        "out Path": "cyan",
+                        "out Path Discontinuity": "cyan"
+                    },
+                },
+                "path_length": 100
+            },
             
         }
         '''
