@@ -86,13 +86,13 @@ class PacketConsole:
 
         style.configure(
             "Treeview",
-            font=("Consolas", self.style.get_font_size(), "normal"),
+            font=("Consolas", self.style.get_font_size(10), "normal"),
             rowheight=row_height
         )
 
         style.configure(
             "Treeview.Heading",
-            font=("Consolas", self.style.get_font_size(), "bold")
+            font=("Consolas", self.style.get_font_size(10), "bold")
         )
 
         # Container for tree + scrollbars
