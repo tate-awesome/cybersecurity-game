@@ -25,7 +25,7 @@ class Style:
             if name == "default":
                 self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size())
             elif name == "title_btn":
-                self.fonts[name] = CTkFont(size=self.get_font_size(20.0), weight="bold")
+                self.fonts[name] = CTkFont(size=self.get_font_size(20.0))
             elif name == "mono":
                 self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size())
             else:
