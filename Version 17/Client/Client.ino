@@ -1,3 +1,5 @@
+#define REST_API_ENABLED  // Comment out to disable REST API
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -10,6 +12,15 @@
 #define PI 3.14159265358979323846f
 #endif
 
+#ifdef REST_API_ENABLED
+  #include <HTTPClient.h>
+  #include <ArduinoJson.h>
+  const char* REST_URL = "http://192.168.8.167:5000/data";
+  const uint32_t REST_INTERVAL_MS = 2000;
+  static uint32_t lastRestMs = 0;
+  static bool encrypt_status = false;
+#endif
+
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -17,10 +28,10 @@ const char* ssid = "GL-SFT1200-ab1";
 const char* password = "goodlife";
 IPAddress serverIP(192, 168, 8, 137);
 
-const char* REST_URL  = "http://192.168.8.167:5000/data";
-const uint32_t REST_INTERVAL_MS = 2000;
-static uint32_t lastRestMs = 0;
-static bool     encrypt_status = false;
+// const char* REST_URL  = "http://192.168.8.167:5000/data";
+// const uint32_t REST_INTERVAL_MS = 2000;
+// static uint32_t lastRestMs = 0;
+// static bool     encrypt_status = false;
 
 ModbusIP mb;
 
@@ -99,6 +110,7 @@ void sendPose() {
   }
 }
 
+#ifdef REST_API_ENABLED
 void restPost() {
   if (WiFi.status() != WL_CONNECTED) return;
 
@@ -137,6 +149,7 @@ void restPost() {
 
   http.end();
 }
+#endif
 
 //// ---------- Setup ----------
 void setup() {
@@ -319,8 +332,18 @@ void loop() {
 
         Serial.printf("[MASTER] RECV  Speed = %.3f m/s  |  Rudder = %.2f deg  (raw: %u, %u)\n",
                       speed_m_s, rudder_deg, speed_counts, rudder_counts);
-        Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f) e_stat=%d\n",
-                      state_x, state_y, state_theta, degrees(state_theta), encrypt_status);
+        // Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f) e_stat=%d\n",
+        //               state_x, state_y, state_theta, degrees(state_theta), encrypt_status);
+        Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f)"
+          #ifdef REST_API_ENABLED
+                        " e_stat=%d"
+          #endif
+                        "\n",
+                        state_x, state_y, state_theta, degrees(state_theta)
+          #ifdef REST_API_ENABLED
+                        , encrypt_status
+          #endif
+          );
       }
 
     } else {
@@ -338,9 +361,11 @@ void loop() {
     }
   }
 
-  if (millis() - lastRestMs >= REST_INTERVAL_MS) {
-    lastRestMs = millis();
-    restPost();
-  }
+  #ifdef REST_API_ENABLED
+    if (millis() - lastRestMs >= REST_INTERVAL_MS) {
+      lastRestMs = millis();
+      restPost();
+    }
+  #endif
   delay(5);
 }
