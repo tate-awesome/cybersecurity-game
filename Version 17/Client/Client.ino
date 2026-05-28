@@ -1,4 +1,5 @@
-#define REST_API_ENABLED  // Comment out to disable REST API
+//#define REST_API_ENABLED  // Comment out to disable REST API
+//#define DEBUG_SERIAL      // Comment out to disable debug output
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -21,6 +22,15 @@
   static bool encrypt_status = false;
 #endif
 
+#ifdef DEBUG_SERIAL
+  #define DBG_PRINT(...)  Serial.print(__VA_ARGS__)
+  #define DBG_PRINTLN(...) Serial.println(__VA_ARGS__)
+  #define DBG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#else
+  #define DBG_PRINT(...)
+  #define DBG_PRINTLN(...)
+  #define DBG_PRINTF(...)
+#endif
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -28,13 +38,7 @@ const char* ssid = "GL-SFT1200-ab1";
 const char* password = "goodlife";
 IPAddress serverIP(192, 168, 8, 137);
 
-// const char* REST_URL  = "http://192.168.8.167:5000/data";
-// const uint32_t REST_INTERVAL_MS = 2000;
-// static uint32_t lastRestMs = 0;
-// static bool     encrypt_status = false;
-
 ModbusIP mb;
-
 
 float state_x = 0.0f;
 float state_y = 0.0f;
@@ -75,26 +79,55 @@ static inline uint16_t theta_to_mrad_u16(float t) {
   return (uint16_t)lroundf(t * 1000.0f);
 }
 
+
 bool writeH(uint16_t addr, uint16_t val) {
-  if (!mb.isConnected(serverIP)) return false;
-  uint16_t tx = mb.writeHreg(serverIP, addr, val);
-  if (!tx) return false;
-  for (int i = 0; i < 12; i++) {
-    mb.task();
-    delay(3);
+  if (!mb.isConnected(serverIP)) {
+    DBG_PRINTF("[MASTER] writeH FAIL addr=%u: not connected\n", addr);
+    return false;
   }
-  return true;
+  // One retry on timeout to handle occasional WiFi jitter
+  for (int attempt = 0; attempt < 2; attempt++) {
+    uint16_t tx = mb.writeHreg(serverIP, addr, val);
+    if (!tx) {
+      DBG_PRINTF("[MASTER] writeH FAIL addr=%u: writeHreg returned 0 (queue full or busy)\n", addr);
+      return false;  // retrying won't help so exit immediately.
+    }
+    // Poll until the transaction clears, up to a hard timeout of 300ms.
+    uint32_t start = millis();
+    while (millis() - start < 300) {
+      mb.task();
+      if (!mb.isTransaction(tx)) return true;
+      delay(3);
+    }
+    DBG_PRINTF("[MASTER] writeH addr=%u: transaction timed out (attempt %d/2)\n", addr, attempt + 1);
+    for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
+  }
+  return false;
 }
 
 bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
-  if (!mb.isConnected(serverIP)) return false;
-  uint16_t tx = mb.readHreg(serverIP, addr, buf, n);
-  if (!tx) return false;
-  for (int i = 0; i < 16; i++) {
-    mb.task();
-    delay(3);
+  if (!mb.isConnected(serverIP)) {
+    DBG_PRINTLN("[MASTER] readH FAIL: not connected");
+    return false;
   }
-  return true;
+  // 1 retry on timeout to handle occasional WiFi jitter
+  for (int attempt = 0; attempt < 2; attempt++) {
+    uint16_t tx = mb.readHreg(serverIP, addr, buf, n);
+    if (!tx) {
+      DBG_PRINTLN("[MASTER] readH FAIL: readHreg returned 0 (queue full or busy)");
+      return false;  // retrying won't help so bail immediately.
+    }
+    // Poll until the transaction clears, up to a hard timeout of 300ms.
+    uint32_t start = millis();
+    while (millis() - start < 300) {
+      mb.task();
+      if (!mb.isTransaction(tx)) return true;
+      delay(3);
+    }
+    DBG_PRINTF("[MASTER] readH FAIL: transaction timed out (attempt %d/2)\n", attempt + 1);
+    for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
+  }
+  return false;
 }
 
 //// ---------- Send X/Y/Theta to Slave ----------
@@ -254,12 +287,14 @@ void loop() {
 
   // Read feedback and update pose
   static uint32_t lastReadS = 0;
+  static uint32_t lastPoseMs = 0;
   if (millis() - lastReadS >= 50) {  // Update at ~20Hz
     uint32_t currentMs = millis();
     lastReadS = currentMs;
     float dt = 0.05f;
 
     uint16_t rb[2];
+    readAttempts++;
     if (readH(HREG_SPEED, rb, 2)) {
       uint16_t speed_counts = rb[0];
       uint16_t rudder_counts = rb[1];
@@ -301,7 +336,10 @@ void loop() {
       }
 
       // Send updated pose back to Slave
-      sendPose();
+      if (millis() - lastPoseMs >= 200) {
+        lastPoseMs = millis();
+        sendPose();
+      }
 
       // Update LCD every 500ms
       static uint32_t lastLcdUpdate = 0;
@@ -332,8 +370,6 @@ void loop() {
 
         Serial.printf("[MASTER] RECV  Speed = %.3f m/s  |  Rudder = %.2f deg  (raw: %u, %u)\n",
                       speed_m_s, rudder_deg, speed_counts, rudder_counts);
-        // Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f) e_stat=%d\n",
-        //               state_x, state_y, state_theta, degrees(state_theta), encrypt_status);
         Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f)"
           #ifdef REST_API_ENABLED
                         " e_stat=%d"
@@ -347,7 +383,8 @@ void loop() {
       }
 
     } else {
-      Serial.println("[MASTER] ERR  read feedback failed");
+      readFailures++;
+      DBG_PRINTF("[MASTER] ERR  read feedback failed (%d/%d failures)\n", readFailures, readAttempts);
       
       static uint32_t lastErrLcd = 0;
       if (millis() - lastErrLcd > 2000) {
