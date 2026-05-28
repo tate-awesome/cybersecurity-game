@@ -1,5 +1,5 @@
 //#define REST_API_ENABLED  // Comment out to disable REST API
-
+// Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
 #include <Arduino.h>
 #include <WiFi.h>
 #ifdef REST_API_ENABLED
@@ -23,6 +23,17 @@ const char* password = "goodlife";
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs   = 0;
   static bool encrypt_status   = false;
+#endif
+
+// -- Debug statements
+#ifdef DEBUG_SERIAL
+  #define DBG_PRINT(...)  Serial.print(__VA_ARGS__)
+  #define DBG_PRINTLN(...) Serial.println(__VA_ARGS__)
+  #define DBG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#else
+  #define DBG_PRINT(...)
+  #define DBG_PRINTLN(...)
+  #define DBG_PRINTF(...)
 #endif
 
 // ---------- Modbus ----------
@@ -243,10 +254,6 @@ void loop() {
     static uint32_t tPrint = 0;
     if (millis() - tPrint > 1000) {
         tPrint = millis();
-        // Serial.printf("[SERVER] Pos:%.1f,%.1f | Tar:%.1f,%.1f | DutyX:%.1f%% | DutyY:%.1f%% | Cmd:%.1f m/s, %.1f deg | encrypt=%d\n",
-        //               g_state_x, g_state_y, target_x, target_y,
-        //               current_duty_x * 100.0, current_duty_y * 100.0,
-        //               g_speed_cmd, g_rudder_deg, encrypt_status);
         Serial.printf("[SERVER] Pos:%.1f,%.1f | Tar:%.1f,%.1f | DutyX:%.1f%% | DutyY:%.1f%% | Cmd:%.1f m/s, %.1f deg"
             #ifdef REST_API_ENABLED
                         " | encrypt=%d"
