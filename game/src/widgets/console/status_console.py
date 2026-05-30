@@ -96,28 +96,6 @@ class StatusConsole:
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
         return button
 
-    def create_filter_boxes(self, parent):
-        box_slots = self.context.inputs["status_filters"]
-        for box_name in box_slots:
-
-            filter_box = CTkCheckBox(parent, text=box_name, font=self.style.get_font())
-            filter_box.pack(side="left", pady=self.style.gap, padx=self.style.gap)
-            # Load previous input
-            value = box_slots[box_name]["state"]
-            if value == "1": filter_box.select()
-            else: filter_box.deselect()
-            # Configure for autosave
-            def autosave(slot=box_slots[box_name], b=filter_box):
-                slot["state"] = str(b.get())
-            def click_action():
-                autosave()
-                self.update_filters()
-                
-            filter_box.configure(command=click_action)
-
-
-    def update_filters(self):
-        ...
 
     def configure_reversible_button(self, the_button: CTkButton, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
         def stop():

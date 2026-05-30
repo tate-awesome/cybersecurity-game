@@ -16,5 +16,5 @@ class SelectMode:
         title.button(style, bw, "Hardware Defender", lambda:router.show("defender/v0"))
         title.button(style, bw, "Virtual Attacker", None)
         title.button(style, bw, "Select a Demo", lambda:router.show("title/select_demo"))
-        title.button(style, bw, "Back", lambda:router.show("title"))
+        title.button(style, bw, "Back", router.go_back)
         title.button(style, bw, "Quit", router.quit)

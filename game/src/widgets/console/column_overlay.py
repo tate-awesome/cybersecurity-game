@@ -4,6 +4,10 @@ from customtkinter import *
 
 
 class ColumnOverlay:
+    '''
+    Binds a button to open and close an overlay with checkboxes for each column, which are saved in the context states for persistence.
+    The refresh function is called when the "Apply" button is pressed, which should trigger a refresh of the console to show/hide columns based on the new states.
+    '''
     def __init__(self, parent, style, button, buffer: DataBuffer, refresh_function):
         self.context = parent
         self.style = style
@@ -12,19 +16,22 @@ class ColumnOverlay:
 
         self.bind_overlay_button(button, self.create_column_overlay, self.destroy_column_overlay)
 
+        
+
     def create_column_overlay(self, button: CTkButton):
 
         # Place overlay just below button
         x = button.winfo_rootx() - self.context.root.winfo_rootx() + button.winfo_width() / 2
         y = button.winfo_rooty() - self.context.root.winfo_rooty() + button.winfo_height() + self.style.igap
         overlay = CTkFrame(self.context.root, border_color=self.style.color("accent"), border_width=2)
-        overlay.place(x=x, y=y, anchor="n")
+        overlay.place(x=x/self.style.get_scale_correction(), y=y/self.style.get_scale_correction(), anchor="n")
         overlay.lift()
         self.column_overlay = overlay
         
-        # Create box filter widgets
-        box_slots = self.context.inputs["column_selections"]
+        box_slots = self.context.states["packet_columns"]
         med = self.style.get_font()
+
+        # Create box filter widgets
         checkbox_frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
         checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
 
@@ -32,23 +39,22 @@ class ColumnOverlay:
         category_frame.pack(side="left", padx=self.style.gap, pady=self.style.gap, anchor="n")
         category_label = CTkLabel(category_frame, text="Show Columns", font=med)
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
-        
-        for field in box_slots:
-            column_box = CTkCheckBox(category_frame, text=field, font=med)
+
+        for key in self.context.states["packet_columns"]:
+            column_box = CTkCheckBox(category_frame, text=self.context.labels["packet_columns"][key], font=med)
             column_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input
-            value = box_slots[field]["state"]
-            if value == "1": column_box.select()
+            value = box_slots[key]
+            if value == "1" or value == 1: column_box.select()
             else: column_box.deselect()
-            # Configure for autosave
-            def autosave(slot=box_slots[field], b=column_box):
-                slot["state"] = str(b.get())
+            # Configure for autosave (give it a function with a value container, its key, and itself)
+            def autosave(value=box_slots, key=key, b=column_box):
+                value[key] = str(b.get())
             column_box.configure(command=autosave)
 
-        activator_button = CTkButton(category_frame, text="Apply", font=med)
+        activator_button = CTkButton(category_frame, text="Apply", font=med, command=self.refresh_function)
         activator_button.pack(side="bottom", anchor="s", padx=self.style.gap, pady=self.style.gap)
 
-        activator_button.configure(command=self.refresh_function)
 
     def destroy_column_overlay(self, button: CTkButton):
         try:

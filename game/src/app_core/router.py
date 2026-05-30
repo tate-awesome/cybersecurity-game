@@ -1,6 +1,6 @@
 from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
 from tkinter.filedialog import askopenfilename
-import os
+import os, json
 
 from .context import Context
 from .keybinds import KeyBinds
@@ -34,6 +34,7 @@ class Router:
         Creates the app's Context object and shows the first page.
         '''
         self.context = Context(root, self)
+        self.navigation_stack = []
         KeyBinds(root, self.context, self.refresh, self.quit)
         self.show(start_page)
 
@@ -42,6 +43,7 @@ class Router:
         '''
         Displays the specified page, which should be a key in the pages dict. Clears the current page first.
         '''
+        print(self.navigation_stack)
         pages = {
             "title": Title,
             "title/title": Title,
@@ -61,11 +63,25 @@ class Router:
         All page builder functions should take a Context object as an argument and build the page on the root CTk object.
         '''
         self.clear()
+        if next_page == "back" and len(self.navigation_stack) > 1:
+            self.navigation_stack.pop() # Remove current page
+            next_page = self.navigation_stack.pop() # Pop previous page
+            pages[next_page](self.context)
+            return
+
         if next_page not in pages:
             print(f"Page '{next_page}' not found. Redirecting to title page.")
             next_page = "title"
+
+        # Handle first page ever
+        if len(self.navigation_stack) == 0:
+            self.navigation_stack.append(next_page)
+        # Handle refresh
+        if next_page == self.navigation_stack[-1]:
+            ...
+        else:
+            self.navigation_stack.append(next_page)
         pages[next_page](self.context)
-        self.current_page = next_page
 
 
     def refresh(self):
@@ -97,6 +113,28 @@ class Router:
         self.refresh()
     
 
+    def select_preset(self):
+
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        presets_dir = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
+        try:
+            file_path = askopenfilename(
+            initialdir=presets_dir,
+            title="Select a preset file",
+            filetypes=(("json", "*.json"),)
+            )
+            with open(file_path) as json_file:
+                data = json.load(json_file)
+            self.context.load_preset(data)
+        finally:
+            self.refresh()
+
+    
+    def go_back(self):
+        self.context.destroy_context()
+        self.show("back")
+
+
     def select_theme(self):
 
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -108,8 +146,6 @@ class Router:
             filetypes=(("json", "*.json"),)
             )
             ThemeManager.load_theme(file_path)
-        except:
-            pass
         finally:
             self.refresh()
     

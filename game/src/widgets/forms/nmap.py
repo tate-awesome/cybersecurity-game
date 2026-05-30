@@ -28,7 +28,7 @@ class NMap:
         # Bindings
 
         def do():
-            context.progress["nmap"] = True
+            context.states["game_progress"]["nmap"] = True
 
             self.status.configure(text="Pinging...")
             context.root.update_idletasks()
@@ -38,7 +38,7 @@ class NMap:
             self.status.configure(text="NMap Complete")
     
         self.bind(do_nmap, self.button)
-        if context.progress["nmap"]:
+        if context.states["game_progress"]["nmap"]:
             self.status.configure(text="NMap Complete")
         else:
             self.status.configure(text="")

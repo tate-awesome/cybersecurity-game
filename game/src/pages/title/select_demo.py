@@ -19,5 +19,5 @@ class SelectDemo:
         title.button(style, bw, "Sprites", lambda:router.show("demo/sprites"))
         title.button(style, bw, "Triangle", lambda:router.show("demo/triangle"))
         title.button(style, bw, "Proof of Concept", run)
-        title.button(style, bw, "Back", lambda:router.show("title/select_mode"))
+        title.button(style, bw, "Back", router.go_back)
         title.button(style, bw, "Quit", router.quit)

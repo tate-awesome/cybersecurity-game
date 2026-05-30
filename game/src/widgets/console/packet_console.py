@@ -26,7 +26,6 @@ class PacketConsole:
         columns_button = self.create_menu_button(menu_frame, "Columns")
         columns_button = ColumnOverlay(self.context, self.style, columns_button, buffer, self.refresh_columns)
 
-        self.columns = []
         self.treeview = self.create_treeview(parent)
         self.refresh_columns()
 
@@ -54,7 +53,7 @@ class PacketConsole:
         flag = True
         while flag:
             # Filter
-            packet = self.buffer.pop_packet(self.context.inputs["packet_filter_function"]["function"])
+            packet = self.buffer.pop_packet(self.context.states["packet_filter_function"]["function"])
             if packet is None:
                 flag = False
                 continue
@@ -74,28 +73,24 @@ class PacketConsole:
     # Treeview
     def create_treeview(self, parent):
 
+        # Styling options
         style = ttk.Style()
-
-        # Font and row height
         tree_font = tkfont.Font(
             family="Consolas",
-            size=self.style.get_font_size()
+            size=self.style.get_font_size("treeview")
         )
-
         row_height = tree_font.metrics("linespace") * 2 + 6
-
         style.configure(
             "Treeview",
-            font=("Consolas", self.style.get_font_size(10), "normal"),
+            font=("Consolas", self.style.get_font_size("treeview"), "normal"),
             rowheight=row_height
         )
-
         style.configure(
             "Treeview.Heading",
-            font=("Consolas", self.style.get_font_size(10), "bold")
+            font=("Consolas", self.style.get_font_size("treeview"), "bold")
         )
 
-        # Container for tree + scrollbars
+        # Container for tree and scrollbars
         container = ttk.Frame(parent)
         container.pack(
             fill="both",
@@ -105,7 +100,7 @@ class PacketConsole:
         )
 
         # Columns
-        all_columns = list(self.context.inputs["column_selections"].keys())
+        all_columns = list(self.context.labels["packet_columns"].keys())
 
         # Treeview
         tree = ttk.Treeview(
@@ -119,7 +114,7 @@ class PacketConsole:
 
             stretch = (col == "Info")
 
-            tree.heading(col, text=col)
+            tree.heading(col, text=self.context.labels["packet_columns"][col])
 
             tree.column(
                 col,
@@ -168,7 +163,7 @@ class PacketConsole:
         values = []
 
         for col in self.columns:
-            value = self.context.inputs["column_selections"][col]["function"](packet)
+            value = packet.get_column_value(col)
             values.append(value)
 
         tree.insert("", "end", values=values)
@@ -177,9 +172,9 @@ class PacketConsole:
 
         active_columns = []
 
-        for key in self.context.inputs["column_selections"]:
+        for key in self.context.states["packet_columns"]:
 
-            if self.context.inputs["column_selections"][key]["state"] == "1":
+            if self.context.states["packet_columns"][key] == "1" or self.context.states["packet_columns"][key] == 1:
                 active_columns.append(key)
 
         self.treeview["displaycolumns"] = active_columns
