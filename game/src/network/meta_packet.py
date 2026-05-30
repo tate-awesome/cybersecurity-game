@@ -100,6 +100,72 @@ class MetaPacket:
         self.transaction_word = f"{self.direction_verbose}\n{self.mac_word}\n{self.ip_word}"
         self.modbus_word = f"{self.variables} = {self.values}"
 
+    def get_column_value(self, column_name: str):
+        match column_name:
+            case "time":
+                return self.time_word
+            case "number":
+                return self.absolute_number
+            case "length":
+                return self.length
+            case "hack_info":
+                return self.hack_word
+            case "transaction":
+                return self.transaction_word
+            case "layers":
+                return self.proto_str
+            case "purpose":
+                return self.purpose
+            case "summary":
+                return self.summary
+            case "modbus":
+                return self.modbus_word
+            case _:
+                return "-"
+
+    def matches(self, requirement: str):
+        '''
+        Returns whether the given requirement is true given a primary key string found in presets.json - "packet_filter_columns".
+        '''
+        
+        match requirement:
+            case "nmap":
+                return self.hack == "nmap"
+            case "arp":
+                return self.hack == "arp"
+            case "dos":
+                return self.hack == "dos"
+            case "sniff":
+                return self.hack == "sniff"
+            case "mitm":
+                return self.hack == "mitm"
+            case "pcap":
+                return self.hack == "pcap"
+
+            case "TCP":
+                return "TCP" in self.protocols
+            case "ARP":
+                return "ARP" in self.protocols
+            case "UDP":
+                return "UDP" in self.protocols
+            case "DNS":
+                return "DNS" in self.protocols
+            case "MODBUSADU":
+                return "MODBUSADU" in self.protocols
+            case "WRITE SINGLE REGISTER":
+                return "WRITE SINGLE REGISTER" in self.protocols
+            case "READ HOLDING REGISTERS RESPONSE":
+                return "READ HOLDING REGISTERS RESPONSE" in self.protocols
+
+            case "out":
+                return self.direction == "out"
+            case "in":
+                return self.direction == "in"
+            case "other":
+                return self.direction == "other"
+            case _:
+                return True
+
     def __str__(self) -> str:
         lines = []
         lines.append(f"[ {self.proto_str} ]")

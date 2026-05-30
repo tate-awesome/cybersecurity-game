@@ -52,7 +52,7 @@ class Sniff:
                 mpkt.show()
 
         def start():
-            context.progress["sniff"] = True
+            context.states["game_progress"]["sniff"] = True
             context.root.update_idletasks()
             # net.buffer.add_callback("sniff_handler", sniff_handler)
             start_sniff()
@@ -64,9 +64,6 @@ class Sniff:
 
         start_on = sniff_is_running()
         self.bind_reversible(start, stop, "Sniffing", start_on)
-
-        # sniff.load_saved_input(context.inputs["sniff"])
-        # sniff.bind_input_autosave(context.inputs["sniff"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         """

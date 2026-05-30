@@ -47,7 +47,7 @@ class ARP:
         # Bindings
 
         def start():
-            context.progress["arp"] = True
+            context.states["game_progress"]["arp"] = True
             target_ip = str(self.entry1.get())
             host_ip = str(self.entry2.get())
             context.root.update_idletasks()
@@ -59,8 +59,8 @@ class ARP:
         start_on = arp_is_running()
         self.bind_reversible(start, stop, "ARP Spoof", start_on)
 
-        self.load_saved_input(context.inputs["arp"])
-        self.bind_input_autosave(context.inputs["arp"])
+        self.load_saved_input(context.states["hack_forms"]["arp"])
+        self.bind_input_autosave(context.states["hack_forms"]["arp"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         for entry, slot_index in zip(self.inputs, range(len(save_slots))):

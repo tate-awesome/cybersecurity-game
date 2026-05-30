@@ -16,13 +16,9 @@ class Context:
         self.ui_scale = 100.0
         self.ui_scales = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 133, 140, 150, 175, 200, 250, 300, 400, 500]
 
-        self.progress = {
-            "nmap": False,
-            "arp": False,
-            "sniff": False,
-            "mitm": False,
-            "dos": False
-        }
+        self.states = self.get_base_preset()
+        self.labels = self.get_base_labels()
+        
         '''
         Tracks the state of the hacks on the GUI.
         False = Fresh state
@@ -30,152 +26,116 @@ class Context:
         TODO: Use for game progression and unlocking elements
         '''
 
-        self.inputs = {
-        # Hacking Forms
-            "arp": ["192.168.8.137","192.168.8.243"],
-            "sniff": ["",""],
-            "dos": ["192.168.8.114:200","192.168.8.114:201"],
+    def get_base_labels(self):
+        return {
+            "packet_columns": {
+                "time": "Time",
+                "number": "No.",
+                "length": "Length",
+                "hack_info": "Hack Info",
+                "transaction": "Transaction",
+                "layers": "Layers",
+                "purpose": "Purpose",
+                "summary": "Summary",
+                "modbus": "MODBUS Info"
+            },
+
+            "packet_filter_categories": {
+                "source": "From Source",
+                "protocol": "Includes Protocol",
+                "direction": "Direction"
+            },
+
+            "packet_filter_checkboxes": {            
+                "nmap": "NMapping",
+                "arp": "ARP Spoofing",
+                "dos": "Denial of Service",
+                "sniff": "Packet Sniffing",
+                "mitm": "MITM Attack",
+                "pcap": "PCAP File",
+                "TCP": "TCP",
+                "ARP": "ARP",
+                "UDP": "UDP",
+                "DNS": "DNS",
+                "MODBUSADU": "MODBUSADU",
+                "WRITE SINGLE REGISTER": "WRITE SINGLE REGISTER",
+                "READ HOLDING REGISTERS RESPONSE": "READ HOLDING REGISTERS RESPONSE",
+                "out": "Sent",
+                "in": "Received",
+                "other": "Observed"
+            },
+
+            "packet_filter_entries": {
+                "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
+            }
+        }
+
+
+    def get_base_preset(self):
+        '''
+        Returns a preset with default values for all checkboxes and entries.
+        Useful for resetting the game states before loading a .json preset file, which may not have all values defined.
+        Add a default value here if you want to include data that should survive a soft refresh.
+        '''
+        
+        return {
+
+            "game_progress": {
+                "nmap": False,
+                "arp": False,
+                "sniff": False,
+                "mitm": False,
+                "dos": False
+                },
             
-        # Filter overlay
-            "checkbox_filters": {
-                "Source": {
-                    "NMapping": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.hack == "nmap"
-                    },
-                    "ARP Spoofing": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.hack == "arp"
-                    },
-                    "Denial of Service": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.hack == "dos"
-                    },
-                    "Packet Sniffing": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.hack == "sniff"
-                    },
-                    "MITM Attack": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.hack == "nfq"
-                    },
-                    "PCAP File": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.hack == "pcap"
-                    }
-                },
-
-                "Protocol": {
-                    "TCP": {
-                        "state": "",
-                        "function": lambda mpkt: "TCP" in mpkt.protocols
-                    },
-                    "ARP": {
-                        "state": "",
-                        "function": lambda mpkt: "ARP" in mpkt.protocols
-                    },
-                    "UDP": {
-                        "state": "",
-                        "function": lambda mpkt: "UDP" in mpkt.protocols
-                    },
-                    "DNS": {
-                        "state": "",
-                        "function": lambda mpkt: "DNS" in mpkt.protocols
-                    },
-                    "MODBUSADU": {
-                        "state": "",
-                        "function": lambda mpkt: "MODBUSADU" in mpkt.protocols
-                    },
-                    "WRITE SINGLE REGISTER": {
-                        "state": "",
-                        "function": lambda mpkt: "WRITE SINGLE REGISTER" in mpkt.protocols
-                    },
-                    "READ HOLDING REGISTERS RESPONSE": {
-                        "state": "",
-                        "function": lambda mpkt: "READ HOLDING REGISTERS RESPONSE" in mpkt.protocols
-                    }
-                },
-
-                "Direction": {
-                    "Sent": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.direction == "out"
-                    },
-                    "Received": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.direction == "in"
-                    },
-                    "Observed": {
-                        "state": "",
-                        "function": lambda mpkt: mpkt.direction == "other"
-                    }
-                }
+            "hack_forms": {
+                "arp": ["",""],
+                "sniff": ["",""],
+                "dos": ["",""]
             },
 
-        # Filter overlay text inputs
-            "text_filters": {
-                "address_filter": {
-                    "label": "IP/MAC Addresses Involved (Separated by \"|\")",
-                    "text": ""
-                }
+            "packet_filter_checkboxes": {
+                "nmap": 0,
+                "arp": 0,
+                "dos": 0,
+                "sniff": 0,
+                "mitm": 0,
+                "pcap": 0,
+                "TCP": 0,
+                "ARP": 0,
+                "UDP": 0,
+                "DNS": 0,
+                "misc": 0,
+                "MODBUSADU": 0,
+                "WRITE SINGLE REGISTER": 0,
+                "READ HOLDING REGISTERS RESPONSE": 0,
+                "out": 0,
+                "in": 0,
+                "other": 0
             },
-        # Filter overlay
+
+            "packet_filter_entries": {
+                "address_filter": ""
+            },
+
             "packet_filter_function": {
                 "summary": "Currently filtering for any packets.",
                 "function": lambda mpkt: True
             },
 
-        # Column overlay
-            "column_selections": {
-                "Time": {
-                    "state": "1",
-                    "function": lambda mpkt: mpkt.time_word,
-                    "width": 120
-                },
-                "No.": {
-                    "state": "1",
-                    "function": lambda mpkt: mpkt.absolute_number,
-                    "width": 70
-                },
-                "Length": {
-                    "state": "0",
-                    "function": lambda mpkt: mpkt.length,
-                    "width": 80
-                },
-                "Hack info": {
-                    "state": "1",
-                    "function": lambda mpkt: mpkt.hack_word,
-                    "width": 120
-                },
-                "Transaction": {
-                    "state": "1",
-                    "function": lambda mpkt: mpkt.transaction_word,
-                    "width": 500
-                },
-                "Layers": {
-                    "state": "1",
-                    "function": lambda mpkt: mpkt.proto_str,
-                    "width": 250
-                },
-                "Purpose": {
-                    "state": "0",
-                    "function": lambda mpkt: mpkt.purpose,
-                    "width": 400
-                },
-                "Summary": {
-                    "state": "1",
-                    "function": lambda mpkt: mpkt.summary,
-                    "width": 600
-                },
-                "Modbus info": {
-                    "state": "0",
-                    "function": lambda mpkt: mpkt.modbus_word,
-                    "width": 400
-                },
+            "packet_columns": {
+                "time": 1,
+                "number": 1,
+                "length": 0,
+                "hack_info": 0,
+                "transaction": 0,
+                "layers": 0,
+                "purpose": 1,
+                "summary": 1,
+                "modbus": 0
             },
 
-        # Map customization overlay
-            "customization": {
+            "map_customization": {
                 "Show/Hide Elements": {
                     "in Boat": "1",
                     "in Path": "1",
@@ -200,16 +160,23 @@ class Context:
                     "out Path": "cyan",
                     "out Path Discontinuity": "cyan"
                 },
-            },
-        # Map settings bar
-            "path_length": 100
+            }
         }
+
+
+
+    def load_preset(self, preset: dict = {}):
         '''
-        Primary storage for checkbox/entry values, which are changed/checked by many different GUI elements.
-        Values retreived when building GUI elements.
-        Defaults are set here.
-        Some styling/filter values are stored here because the checkbox name is the primary key
+        Loads a preset from a .json file or a provided dictionary.
+        If the preset is missing any values, it will use the default values from get_base_preset() to fill in the gaps.
+        This allows for easy creation of new presets without having to define every single value.
+        Call with preset=None to reset all values to their defaults.
         '''
+        base_preset = self.get_base_preset()
+
+        merged_preset = {**base_preset, **preset}
+
+        self.states = merged_preset
 
 
     def help_message(self, widget="root"):
@@ -228,3 +195,12 @@ class Context:
             self.net = constructor()
         net = self.net
         return net
+
+    def destroy_net(self):
+        if self.net is not None:
+            self.net.abort_all()
+            self.net = None # Set to None is as good as clearing it manually, since all references to the old net will be lost and it will be garbage collected.
+    
+    def destroy_context(self):
+        self.destroy_net()
+        self.load_preset()

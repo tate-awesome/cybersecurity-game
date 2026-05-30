@@ -47,7 +47,7 @@ class DoS:
         # Bindings
 
         def start():
-            context.progress["dos"] = True
+            context.states["game_progress"]["dos"] = True
             ip_1 = str(self.entry1.get())
             ip_2 = str(self.entry2.get())
             context.root.update_idletasks()
@@ -59,8 +59,8 @@ class DoS:
         start_on = dos_is_running()
         self.bind_reversible(start, stop, "DoS Attack", start_on)
 
-        self.load_saved_input(context.inputs["dos"])
-        self.bind_input_autosave(context.inputs["dos"])
+        self.load_saved_input(context.states["hack_forms"]["dos"])
+        self.bind_input_autosave(context.states["hack_forms"]["dos"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         for entry, slot_index in zip(self.inputs, range(len(save_slots))):

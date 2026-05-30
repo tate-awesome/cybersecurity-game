@@ -1,4 +1,4 @@
-from customtkinter import CTkFont, get_appearance_mode, ThemeManager
+from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker
 
 class Style:
 
@@ -15,26 +15,36 @@ class Style:
         self.cgap = 2
         self.PANE_MIN = self.igap*4
         self.fonts = {}
+
         # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
 
+    def get_scale_correction(self):
+        return ScalingTracker.get_widget_scaling(self.context.root)
 
     def get_font(self, name="default"):
         if name not in self.fonts:
             if name == "default":
-                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size())
+                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("default"))
             elif name == "title_btn":
-                self.fonts[name] = CTkFont(size=self.get_font_size(20.0))
+                self.fonts[name] = CTkFont(size=self.get_font_size("title"))
             elif name == "mono":
-                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size())
+                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("default"))
+            elif name == "treeview":
+                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("treeview"))
             else:
                 size = int(14.0*self.scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
         return self.fonts[name]
 
-    def get_font_size(self, size=16.0):
-        return int(size*self.scale/100.0)
+    def get_font_size(self, name="default"):
+        size = 16.0
+        if name == "treeview":
+            size = size * self.get_scale_correction()
+        elif name == "title":
+            size = 20.0
+        return int(size * self.scale / 100.0)
 
     def color(self, type: str) -> str:
         '''
@@ -59,8 +69,23 @@ class Style:
         return colors[type]
 
     def get_column_width(self, column_name):
-        # Example column widths, adjust as needed
-        if column_name in self.context.inputs["column_selections"]:
-            return self.context.inputs["column_selections"][column_name].get("width", 100)
-        
+        match column_name:
+            case "time":
+                return int(120*self.get_scale_correction())
+            case "number":
+                return int(70*self.get_scale_correction())
+            case "length":
+                return int(80*self.get_scale_correction())
+            case "hack_info":
+                return int(120*self.get_scale_correction())
+            case "transaction":
+                return int(500*self.get_scale_correction())
+            case "layers":
+                return int(250*self.get_scale_correction())
+            case "purpose":
+                return int(200*self.get_scale_correction())
+            case "summary":
+                return int(600*self.get_scale_correction())
+            case "modbus":
+                return int(400*self.get_scale_correction())
         return 100

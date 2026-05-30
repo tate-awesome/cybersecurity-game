@@ -50,7 +50,7 @@ class AttackerV0:
             mpkt.wireshark_line(True)
 
         def start_mitm():
-            context.progress["mitm"] = True
+            context.states["game_progress"]["mitm"] = True
             root.update_idletasks()
             net.buffer.add_callback("mitm_handler", mitm_handler)
             net.start_mitm()

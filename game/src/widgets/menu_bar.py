@@ -1,7 +1,6 @@
 from .style import Style
 from customtkinter import *
 from . import popup
-from .displays.customization_overlay import CustomizationOverlay
 
 class MenuBar:
 
@@ -12,12 +11,13 @@ class MenuBar:
         self.frame = self.bar(style, root, "Attacker Version 0")
         self.button("Quit", router.quit)
         self.button("Refresh", router.refresh)
+        self.button("Back to Title", router.go_back)
         self.button("Toggle Theme", router.mode_toggle)
         self.button("Select Theme", router.select_theme)
         cb = self.button("Customize", None)
-        CustomizationOverlay(context, style, cb)
         if context.net is not None:
             self.button("Load PCAP File", context.net.loader.load_pcap)
+        self.button("Load Preset", router.select_preset)
         self.button("Help", lambda:popup.open(style,root,context.help_message()))
 
 

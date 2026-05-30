@@ -1,0 +1,83 @@
+{
+    "game_progress": {
+        "nmap": true,
+        "arp": true,
+        "sniff": true,
+        "mitm": true,
+        "dos": true
+    },
+
+    
+    "hack_forms": {
+        "arp": ["192.168.8.137","192.168.8.243"],
+        "sniff": ["",""],
+        "dos": ["192.168.8.114:200","192.168.8.114:201"]
+    },
+
+
+    "packet_filter_checkboxes": {
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "mitm": 0,
+        "pcap": 0,
+        "TCP": 0,
+        "ARP": 0,
+        "UDP": 0,
+        "DNS": 0,
+        "MODBUSADU": 0,
+        "WRITE SINGLE REGISTER": 0,
+        "READ HOLDING REGISTERS RESPONSE": 0,
+        "out": 0,
+        "in": 0,
+        "other": 0
+    },
+
+
+    "packet_filter_entries": {
+        "address_filter": ""
+    },
+
+
+    "column_selections": {
+        "time": 1,
+        "number": 1,
+        "length": 0,
+        "hack_info": 1,
+        "transaction": 1,
+        "layers": 1,
+        "purpose": 0,
+        "summary": 1,
+        "modbus": 0
+    },
+
+
+    "map_customization": {
+        "Show/Hide Elements": {
+            "in Boat": "1",
+            "in Path": "1",
+            "in Path Discontinuity": "1",
+            "out Boat": "1",
+            "out Path": "1",
+            "out Path Discontinuity": "1"
+        },
+        "Show/Hide Labels": {
+            "in Boat": "1",
+            "in Boat Position": "1",
+            "out Boat": "1",
+            "out Boat Position": "1",
+            "Grid Numbers": "1",
+            "Grid Lines": "1"
+        },
+        "Colors": {
+            "in Boat": "yellow",
+            "in Path": "yellow",
+            "in Path Discontinuity": "yellow",
+            "out Boat": "cyan",
+            "out Path": "cyan",
+            "out Path Discontinuity": "cyan"
+        }
+    },
+        "path_length": 100
+    }
