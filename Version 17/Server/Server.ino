@@ -1,4 +1,4 @@
-//#define REST_API_ENABLED  // Comment out to disable REST API
+#define REST_API_ENABLED  // Comment out to disable REST API
 // Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
 #include <Arduino.h>
 #include <WiFi.h>
@@ -19,7 +19,7 @@ const char* password = "goodlife";
 
 // ---------- REST ----------
 #ifdef REST_API_ENABLED
-  const char* REST_URL         = "http://192.168.8.167:5000/data";
+  const char* REST_URL         = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs   = 0;
   static bool encrypt_status   = false;

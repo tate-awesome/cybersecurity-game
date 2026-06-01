@@ -1,6 +1,8 @@
 {
-    "configuration": "JTAGAdapter=default,PSRAM=disabled,FlashMode=qio,FlashSize=4M,LoopCore=1,EventsCore=1,USBMode=hwcdc,CDCOnBoot=default,MSCOnBoot=default,DFUOnBoot=default,UploadMode=default,PartitionScheme=default,CPUFreq=240,UploadSpeed=921600,DebugLevel=none,EraseFlash=none,ZigbeeMode=default",
+    "sketch": "Version 17/Client/Client.ino",
     "board": "esp32:esp32:esp32s3",
-    "port": "COM5",
-    "sketch": "Version 17\\Client\\Client.ino"
+    "port": "/dev/ttyACM0",
+    "output": "./build",
+    "configuration": "JTAGAdapter=default,PSRAM=disabled,FlashMode=qio,FlashSize=4M,LoopCore=1,EventsCore=1",
+    "sketchbookPath": "/home/martin/Arduino"
 }

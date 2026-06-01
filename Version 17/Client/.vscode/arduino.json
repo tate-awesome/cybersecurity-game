@@ -1,7 +1,8 @@
 {
   "sketch": "Client.ino",
   "board": "esp32:esp32:esp32s3",
-  "port": "COM5",
-  "output": "../build",
-  "configuration": "JTAGAdapter=default,PSRAM=disabled,FlashMode=qio,FlashSize=4M,LoopCore=1,EventsCore=1"
+  "port": "/dev/ttyACM0",
+  "output": "./build",
+  "configuration": "JTAGAdapter=default,PSRAM=disabled,FlashMode=qio,FlashSize=4M,LoopCore=1,EventsCore=1",
+  "sketchbookPath": "/home/martin/Arduino"
 }

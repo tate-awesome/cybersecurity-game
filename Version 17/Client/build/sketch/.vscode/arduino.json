@@ -1,8 +1,0 @@
-#line 1 "C:\\Users\\IT Admin\\Desktop\\Research_cyber_ics\\cyber-ics-platform\\ProjTesting\\2026\\Version 17\\Client\\.vscode\\arduino.json"
-{
-  "sketch": "Client.ino",
-  "board": "esp32:esp32:esp32s3",
-  "port": "COM5",
-  "output": "../build",
-  "configuration": "JTAGAdapter=default,PSRAM=disabled,FlashMode=qio,FlashSize=4M,LoopCore=1,EventsCore=1"
-}
