@@ -1,5 +1,5 @@
 '''
-Shared data for a game session. Passed to next pages on navigation
+Shared data for a page. Passed to next pages on navigation.
 '''
 
 class Context:

@@ -15,6 +15,8 @@ os_name = platform.system()
 
 if os_name == "Windows":
     # NFQ is not possible
+    # from iphelp import iphelp
+    # import iphlpapi
     ...
 elif os_name == "Linux":
     # NFQ is possible

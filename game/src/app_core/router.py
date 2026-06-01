@@ -89,7 +89,7 @@ class Router:
         Refreshes the current page by clearing the root CTk object and rebuilding the current page.
         Useful for updating the UI after changing themes or making changes to the context.
         '''
-        self.show(self.current_page)
+        self.show(self.navigation_stack[-1])
     
 
     def quit(self):
