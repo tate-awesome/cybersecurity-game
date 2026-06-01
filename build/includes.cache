@@ -1,0 +1,162 @@
+[
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/cores/esp32"
+  },
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/variants/esp32s3"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "WiFi.h",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "Network.h",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "HTTPClient.h",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/HTTPClient/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "NetworkClientSecure.h",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/NetworkClientSecure/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "ArduinoJson.h",
+    "Includepath": "/home/martin/Arduino/libraries/ArduinoJson/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "ModbusIP_ESP8266.h",
+    "Includepath": "/home/martin/Arduino/libraries/modbus-esp8266/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "Wire.h",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Wire/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "LiquidCrystal_I2C.h",
+    "Includepath": "/home/martin/Arduino/libraries/LiquidCrystal_I2C"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/Client.ino.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/AP.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/STA.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFi.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiAP.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiGeneric.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiMulti.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiSTA.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiScan.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkClient.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkEvents.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkInterface.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkManager.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkServer.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkUdp.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/HTTPClient/src/HTTPClient.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/NetworkClientSecure/src/NetworkClientSecure.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/NetworkClientSecure/src/ssl_client.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Arduino/libraries/modbus-esp8266/src/Modbus.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Arduino/libraries/modbus-esp8266/src/ModbusRTU.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Wire/src/Wire.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Arduino/libraries/LiquidCrystal_I2C/LiquidCrystal_I2C.cpp",
+    "Include": "",
+    "Includepath": null
+  }
+]
