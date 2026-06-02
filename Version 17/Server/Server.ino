@@ -169,7 +169,7 @@ void restPost() {
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
                 encrypt_status = resp["encryption_status"].as<bool>();
-                String key = resp["encryption_key"].as<String>();
+                key = resp["encryption_key"].as<String>();
                 Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
             }
         }
