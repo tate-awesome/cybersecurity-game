@@ -28,10 +28,7 @@ class DefenderV0:
     # Flag definitions — (key, display label).
     # Set the corresponding key to True in self._flags to light it up.
     FLAG_DEFS = [
-        ("quick_position_change",  "Quick position change"),
-        ("unexpected_value",       "Unexpected value"),
-        ("speed_out_of_bounds",    "Speed out of bounds"),
-        ("position_out_of_bounds", "Position out of bounds"),
+        ("unexpected_movement",       "Unexpected movement"),
     ]
 
     def __init__(self, context: Context):
@@ -53,18 +50,24 @@ class DefenderV0:
         # Filtering State Variables
         self._last_theta = None
         self._last_speed = None
-        self._speed_threshold = 1.5
-        self._rudder_threshold = 8
+        self._speed_threshold = 3
+        self._rudder_threshold = 15
 
         self._k_speed_estimate = 0
         self._k_speed_cov = 5
-        self._k_speed_process_noise = 0.002
+        self._k_speed_process_noise = 0.05
         self._k_speed_measurement_noise = 0.1
 
         self._k_rudder_estimate = 0
         self._k_rudder_cov = 5
-        self._k_rudder_process_noise = 0.1
+        self._k_rudder_process_noise = 2
         self._k_rudder_measurement_noise = 1
+
+        # Anomaly GUI variables
+        self._anomaly_speed_expected = 0.0
+        self._anomaly_speed_measured = 0.0
+        self._anomaly_rudder_expected = 0.0
+        self._anomaly_rudder_measured = 0.0
 
         # Flag state — all False until logic sets them
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
@@ -245,6 +248,39 @@ class DefenderV0:
             )
             self._flag_labels[key] = dot
 
+            if key == "unexpected_movement":
+                self._speed_expected_lbl = CTkLabel(
+                    section,
+                    text="Expected Speed: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._speed_expected_lbl.pack(fill="x", padx=style.igap)
+
+                self._speed_measured_lbl = CTkLabel(
+                    section,
+                    text="Measured Speed: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._speed_measured_lbl.pack(fill="x", padx=style.igap)
+
+                self._rudder_expected_lbl = CTkLabel(
+                    section,
+                    text="Expected Rudder: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._rudder_expected_lbl.pack(fill="x", padx=style.igap)
+
+                self._rudder_measured_lbl = CTkLabel(
+                    section,
+                    text="Measured Rudder: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._rudder_measured_lbl.pack(fill="x", padx=style.igap)
+
         CTkFrame(section, fg_color="transparent", height=style.igap).pack()
 
     # ════════════════════════════════════════════════════════════════════════
@@ -316,8 +352,10 @@ class DefenderV0:
         self._k_rudder_estimate = rudder_pred + k_rudder * (measured_rudder - rudder_pred)
         self._k_rudder_cov = (1 - k_rudder) * rudder_cov_pred
 
-        if (abs(measured_speed - self._k_speed_estimate) > self._speed_threshold or
-        abs(measured_rudder - self._k_rudder_estimate) > self._rudder_threshold):
+        if (abs(measured_speed - self._k_speed_estimate) > self._speed_threshold):
+            anomaly = True
+        
+        if (abs(measured_rudder - self._k_rudder_estimate) > self._rudder_threshold):
             anomaly = True
 
         return self._k_speed_estimate, self._k_rudder_estimate, anomaly
@@ -362,7 +400,14 @@ class DefenderV0:
                 measured_rudder
             )
 
-            self._flags["unexpected_value"] = flag
+            if flag:
+                self._anomaly_speed_expected = filtered_speed
+                self._anomaly_speed_measured = measured_speed
+
+                self._anomaly_rudder_expected = filtered_rudder
+                self._anomaly_rudder_measured = measured_rudder
+
+            self._flags["unexpected_movement"] = flag
             
             # optionally overwrite latest values for UI consistency
             latest["speed_filtered"] = filtered_speed
@@ -435,6 +480,26 @@ class DefenderV0:
         """Dots turn red when flag is True, gray when clear."""
         for key, dot in self._flag_labels.items():
             dot.configure(text_color="red" if self._flags.get(key) else "gray")
+        
+        if self._flags.get("unexpected_movement", False):
+            self._speed_expected_lbl.configure(
+                text=f"Expected Speed: {self._anomaly_speed_expected:.3f}"
+            )
+            self._speed_measured_lbl.configure(
+                text=f"Measured Speed: {self._anomaly_speed_measured:.3f}"
+            )
+
+            self._rudder_expected_lbl.configure(
+                text=f"Expected Rudder: {self._anomaly_rudder_expected:.3f}"
+            )
+            self._rudder_measured_lbl.configure(
+                text=f"Measured Rudder: {self._anomaly_rudder_measured:.3f}"
+            )
+        else:
+            self._speed_expected_lbl.configure(text="Expected Speed: --")
+            self._speed_measured_lbl.configure(text="Measured Speed: --")
+            self._rudder_expected_lbl.configure(text="Expected Rudder: --")
+            self._rudder_measured_lbl.configure(text="Measured Rudder: --")
 
     def _set_connected(self):
         self._conn_status.configure(text="⬤  Connected", text_color="green")
