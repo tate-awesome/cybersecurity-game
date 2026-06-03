@@ -4,7 +4,7 @@ NFQ module. Callbacks and persistent object
 
 from scapy.all import IP, TCP, Packet
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
-import threading, os, select
+import threading, os, select, subprocess
 from .. import modbus_util as mb
 from .nmap import NMapper
 from ..mod_table import ModTable
@@ -58,7 +58,34 @@ class NetFilterQueue:
         active_iface = nmapper.get_active_iface()
 
         # IPTables rule
-        os.system(f"iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
+        
+        cmd = [
+            "sudo",
+            "iptables",
+            "-t", "mangle",
+            "-A", "PREROUTING",
+            "-i", active_iface,
+            "-p", "tcp",
+            "-j", "NFQUEUE",
+            "--queue-num", "1",
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        print("stdout:", result.stdout)
+        print("stderr:", result.stderr)
+        print("returncode:", result.returncode)
+        
+        self.buffer.put("mitm", f"Adding iptables rule:")
+        self.buffer.put("mitm", f"sudo iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
+        # Part	Meaning
+        # iptables	Configure Linux packet filtering rules
+        # -t mangle	Use the mangle table (used for packet modification/inspection)
+        # -A PREROUTING	Append rule to the PREROUTING chain
+        # -i wlp5s0	Match packets arriving on interface wlp5s0
+        # -p TCP	Match only TCP packets
+        # -j NFQUEUE	Instead of normal processing, send packets to an NFQUEUE
+        # --queue-num 1	Send them to queue number 1
 
         # Create and bind NFQ callback
         nfq = NFQ()
@@ -86,7 +113,22 @@ class NetFilterQueue:
             nfq.unbind()
             os.close(stop_r)
             os.close(stop_w)
-            os.system("iptables -t mangle -D PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+            cmd = [
+                "sudo",
+                "iptables",
+                "-t", "mangle",
+                "-D", "PREROUTING",
+                "-i", active_iface,
+                "-p", "tcp",
+                "-j", "NFQUEUE",
+                "--queue-num", "1",
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True)
+
+            print("stdout:", result.stdout)
+            print("stderr:", result.stderr)
+            print("returncode:", result.returncode)
 
 
     def stop(self):
@@ -105,6 +147,12 @@ class NetFilterQueue:
     # Callbacks
     def accept_only(self, pkt: Packet):
         pkt.accept()
+    
+    def print_and_accept(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        self.buffer.put("mitm", "Incoming Packet", spkt)
+        pkt.accept()
+        self.buffer.put("mitm", "Outgoing Packet", spkt)
 
     def modify_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
