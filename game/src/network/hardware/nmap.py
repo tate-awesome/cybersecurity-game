@@ -17,7 +17,7 @@ class NMapper:
         for i, iface in enumerate(ifm.interfaces):
             if iface["is_active"]:
                 active_iface = iface
-        return active_iface
+        return active_iface["display_name"]
         
 
     def do_nmap(self):

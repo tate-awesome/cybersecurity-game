@@ -13,9 +13,23 @@ class Displays:
         self.context = context
         self.buffer = self.context.net.data_buffer
 
+        self.create_menu_bar(parent)
 
-        top, bottom = common.create_bifold(style, self.parent)
+        self.create_menu_button(self.menu_bar, "Customize")
+        self.create_menu_button(self.menu_bar, "Reset View")
+        self.create_menu_button(self.menu_bar, "Clear Values")
+        self.create_menu_button(self.menu_bar, "Center on Boat") #Move with boat
 
+    def create_menu_bar(self, parent):
+        frame = CTkFrame(parent)
+        frame.pack(side="top", fill="x", pady=self.style.gaptop, padx=self.style.gap)
 
-        world_map = WorldMap(self.style, top, self.context, self.buffer)
+        header = CTkLabel(frame, text="Data Displays", font=self.style.get_font(), padx=self.style.igap)
+        header.pack(fill=Y, side="left", padx=self.style.gap)
+        return frame
 
+    def create_menu_button(self, frame, text, function=None):
+        med = self.style.get_font()
+        button = CTkButton(frame, text=text, command=function, font=med)
+        button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+        return button

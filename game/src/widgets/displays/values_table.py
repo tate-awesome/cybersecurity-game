@@ -11,6 +11,7 @@ class ValuesTable:
         self.buffer = context.net.data_buffer
 
         self.frame = CTkFrame(parent, fg_color=style.color("panel"))
+        self.frame.pack(side="left", fill="both", padx=style.gap, pady=style.gaptop)
 
 
         self.labels = {}
