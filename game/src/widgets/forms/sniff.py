@@ -45,12 +45,6 @@ class Sniff:
 
         # Bindings
 
-        def sniff_handler(mpkt):
-            if sniff.box1.get() == 1:
-                mpkt.wireshark_line(True)
-            if sniff.box2.get() == 1:
-                mpkt.show()
-
         def start():
             context.states["game_progress"]["sniff"] = True
             context.root.update_idletasks()

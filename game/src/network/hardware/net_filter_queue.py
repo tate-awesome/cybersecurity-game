@@ -6,8 +6,8 @@ from scapy.all import IP, TCP, Packet
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 import threading, os, select
 from .. import modbus_util as mb
+from .nmap import NMapper
 from ..mod_table import ModTable
-from ..packet_buffer import PacketBuffer
 from ..data_buffer import DataBuffer
 
 import platform
@@ -53,9 +53,12 @@ class NetFilterQueue:
 
 
     def _start(self):
+        # Calculate iface
+        nmapper = NMapper(self.buffer)
+        active_iface = nmapper.get_active_iface()
 
         # IPTables rule
-        os.system("iptables -t mangle -A PREROUTING -i wlp0s20f3 -p TCP -j NFQUEUE --queue-num 1")
+        os.system(f"iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
 
         # Create and bind NFQ callback
         nfq = NFQ()

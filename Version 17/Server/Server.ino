@@ -17,9 +17,12 @@
 const char* ssid     = "GL-SFT1200-ab1";
 const char* password = "goodlife";
 
+// ------- Encryption -------
+String key = (String)1234;
+
 // ---------- REST ----------
 #ifdef REST_API_ENABLED
-  const char* REST_URL         = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
+  const char* REST_URL         = "http://192.168.8.158:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs   = 0;
   static bool encrypt_status   = false;
@@ -119,6 +122,24 @@ void computeControlCommands(float target_x, float target_y,
     *speed_out  = SpeedCmd;
     *rudder_out = rho_rad * 180.0f / PI;
 }
+
+//------------------------------- Encryption methods ------------------
+
+uint16_t xorCipher(uint16_t value, uint16_t key){
+    return value ^ key;
+}
+
+uint16_t keyToUint(const String& key){
+
+  int sum = 0;
+
+  for(int i = 0; i< key.length(); i++){
+    sum += key.charAt(i);
+  }
+
+  return(uint16_t)sum;
+}
+
 #ifdef REST_API_ENABLED
 void restPost() {
     if (WiFi.status() != WL_CONNECTED) return;
@@ -148,7 +169,7 @@ void restPost() {
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
                 encrypt_status = resp["encryption_status"].as<bool>();
-                String key = resp["encryption_key"].as<String>();
+                key = resp["encryption_key"].as<String>();
                 Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
             }
         }
@@ -216,10 +237,20 @@ void loop() {
         target_y       = clampf_local(current_duty_y * Y_RANGE_M, 0.0f, Y_RANGE_M);
     }
 
+    uint16_t h_x;
+    uint16_t h_y;
+    uint16_t h_th;
+
     // Read state from Modbus registers (written by Client/Master)
-    uint16_t h_x  = mb.Hreg(HREG_X_PHYS);
-    uint16_t h_y  = mb.Hreg(HREG_Y_PHYS);
-    uint16_t h_th = mb.Hreg(HREG_THETA_MRAD);
+    if(encrypt_status){
+        h_x  = xorCipher(mb.Hreg(HREG_X_PHYS), keyToUint(key));
+        h_y  = xorCipher(mb.Hreg(HREG_Y_PHYS), keyToUint(key));
+        h_th = xorCipher(mb.Hreg(HREG_THETA_MRAD), keyToUint(key));
+    }else{
+        h_x  = mb.Hreg(HREG_X_PHYS);
+        h_y  = mb.Hreg(HREG_Y_PHYS);
+        h_th = mb.Hreg(HREG_THETA_MRAD);
+    }
 
     if (h_x != 0 || h_y != 0) {
         g_state_x     = clampf_local(h_x / 100.0f, 0.0f, X_RANGE_M);
@@ -238,9 +269,19 @@ void loop() {
                            g_state_x, g_state_y, g_state_theta,
                            &g_speed_cmd, &g_rudder_deg);
 
-    mb.Hreg(HREG_SPEED,  (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f));
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
-    mb.Hreg(HREG_RUDDER, (uint16_t)lroundf(clampf_local(rud_norm, 0, 1) * 4095.0f));
+    uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);
+    uint16_t unencrypted_rudder = (uint16_t)lroundf(clampf_local(rud_norm, 0, 1) * 4095.0f);
+
+    if(encrypt_status){
+        uint16_t encrypted_speed = xorCipher(unencrypted_speed, keyToUint(key));
+        uint16_t encrypted_rudder = xorCipher(unencrypted_rudder, keyToUint(key));
+        mb.Hreg(HREG_SPEED, encrypted_speed);
+        mb.Hreg(HREG_RUDDER, encrypted_rudder);
+    }else{
+        mb.Hreg(HREG_SPEED, unencrypted_speed);
+        mb.Hreg(HREG_RUDDER, unencrypted_rudder);
+    }
 
     // REST POST every 2 seconds
     #ifdef REST_API_ENABLED

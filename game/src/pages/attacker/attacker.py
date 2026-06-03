@@ -42,33 +42,7 @@ class AttackerV0:
         arp = ARP(style, left_p, context, net.start_arp, net.arp_is_running, net.stop_arp)
         dos = DoS(style, left_p, context, net.start_dos, net.dos_is_running, net.stop_dos)
         sniff = Sniff(style, left_p, context, net.start_sniff, net.sniff_is_running, net.stop_sniff)
-
-    # NFQ widget with modifiers
-        mitm = MITM(style, left_p)
-
-        def mitm_handler(mpkt: MetaPacket):
-            mpkt.wireshark_line(True)
-
-        def start_mitm():
-            context.states["game_progress"]["mitm"] = True
-            root.update_idletasks()
-            net.buffer.add_callback("mitm_handler", mitm_handler)
-            net.start_mitm()
-
-        def stop_mitm():
-            root.update_idletasks()
-            net.stop_mitm()
-            net.buffer.remove_callback("mitm_handler")
-
-        start_on = net.mitm_is_running()
-        mitm.bind_reversible(start_mitm, stop_mitm, "Attack", start_on)
-
-        mitm.bind_input_alert()
-        mitm.load_saved_input(net.table)
-        mitm.bind_input_save(net.table)
-        mitm.deactivate()
-
-    # Spacer widget
+        mitm = MITM(style, left_p, context, net.start_mitm, net.mitm_is_running, net.stop_mitm)
         common.scroll_deadspace(style, left_p)
 
     # Console
