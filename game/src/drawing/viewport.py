@@ -91,24 +91,51 @@ class ViewPort:
         self.canvas.create_line(points, width=2, fill=line_color)
 
 
+    # def grid_lines(self):
+    #     for i in range(0, 210, 10):
+    #         h_line = [ (0, i), (200, i) ]
+
+    #         v_line = t.rotate(h_line, PI/2, (i, i))
+
+    #         h_line = t.padded_fit_uniform(h_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
+    #         v_line = t.padded_fit_uniform(v_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
+
+    #         h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
+    #         v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
+    #         color = "white"
+    #         if i == 0:
+    #             color = "red"
+
+    #         self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
+    #         self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
+
     def grid_lines(self):
         for i in range(0, 210, 10):
-            h_line = [ (0, i), (200, i) ]
-
+            h_line = [(0, i), (200, i)]
             v_line = t.rotate(h_line, PI/2, (i, i))
-
             h_line = t.padded_fit_uniform(h_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
             v_line = t.padded_fit_uniform(v_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-
             h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
             v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
             color = "white"
             if i == 0:
                 color = "red"
-
             self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
             self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
 
+            # Draw labels every 20 units using already-transformed coordinates
+            if i % 20 == 0:
+                # h_line goes from (0,i) to (200,i) — use its left end for the Y axis label
+                # v_line goes from (i,0) to (i,200) — use its top end for the X axis label
+                x_pixel = v_line[0][0]   # x position of vertical line = X axis label position
+                y_pixel = h_line[0][1]   # y position of horizontal line = Y axis label position
+
+                # X axis label — sits above the top of each vertical line
+                self.canvas.create_text(x_pixel, v_line[0][1] + 10,
+                                        text=str(i), fill="#3a6070", font=("Courier", 7))
+                # Y axis label — sits to the left of each horizontal line
+                self.canvas.create_text(h_line[0][0] - 16, y_pixel,
+                                        text=str(i), fill="#3a6070", font=("Courier", 7))
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
         the_boat = [

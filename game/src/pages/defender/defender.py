@@ -82,6 +82,7 @@ class DefenderV0:
         # ── Left pane ────────────────────────────────────────────────────────
         self._build_connection_block(style, left_p)
         self._build_encryption_block(style, left_p)
+        self._build_target_block(style, left_p)
         self._build_values_block(style, left_p)
         common.scroll_deadspace(style, left_p)
 
@@ -89,10 +90,16 @@ class DefenderV0:
         self._build_packet_log(style, middle_p)
         self._build_flags_block(style, middle_p)
 
+        self._map_scale  = None
+        self._map_offset = None
+        self._map_click_xy = None
+
         # ── Right pane — live map ─────────────────────────────────────────────
         def draw_defender_map(canvas, draw_lock, scale, offset):
             draw = ViewPort(canvas, scale, offset)
             with draw_lock:
+                self._map_scale  = scale
+                self._map_offset = offset
                 canvas.delete("all")
                 draw.grid_lines()
                 if len(self._positions) < 1:
@@ -104,6 +111,7 @@ class DefenderV0:
 
         self._map = Map(style, right_p, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
+        self._map.canvas.bind("<Button-1>", self._on_map_click)
 
         # ── Start polling ────────────────────────────────────────────────────
         self._poll()
@@ -153,6 +161,36 @@ class DefenderV0:
                                      font=style.get_font(),
                                      command=self._toggle_encryption)
         self._enc_button.pack(fill="x", padx=style.igap, pady=(0, style.igap))
+
+    def _build_target_block(self, style, parent):
+        section = CTkFrame(parent, fg_color=style.color("widget"))
+        section.pack(fill="x", padx=style.igap, pady=style.igap)
+
+        CTkLabel(section, text="TARGET POSITION", font=style.get_font()).pack(
+            anchor="w", padx=style.igap, pady=(style.igap, 0)
+        )
+        self._target_status = CTkLabel(section, text="Status: Not set",
+                                       font=style.get_font(), text_color="gray")
+        self._target_status.pack(anchor="w", padx=style.igap)
+
+        # X entry
+        CTkLabel(section, text="X Target", font=style.get_font("small"),
+                 text_color="gray").pack(anchor="w", padx=style.igap, pady=(style.igap, 0))
+        self._target_x_entry = CTkEntry(section, font=style.get_font(),
+                                        placeholder_text="Enter X…")
+        self._target_x_entry.pack(fill="x", padx=style.igap, pady=(2, 4))
+
+        # Y entry
+        CTkLabel(section, text="Y Target", font=style.get_font("small"),
+                 text_color="gray").pack(anchor="w", padx=style.igap, pady=(0, 0))
+        self._target_y_entry = CTkEntry(section, font=style.get_font(),
+                                        placeholder_text="Enter Y…")
+        self._target_y_entry.pack(fill="x", padx=style.igap, pady=(2, 4))
+
+        CTkButton(section, text="Set Target Position", font=style.get_font(),
+                  command=self._send_target).pack(
+            fill="x", padx=style.igap, pady=(0, style.igap)
+        )
 
     def _build_values_block(self, style, parent):
         """Client values card and Server values card, side by side."""
@@ -306,6 +344,43 @@ class DefenderV0:
                     self._root.after(0, self._refresh_encryption_ui)
             except Exception:
                 pass
+
+        threading.Thread(target=_request, daemon=True).start()
+
+    def _send_target(self):
+        raw_x = self._target_x_entry.get().strip()
+        raw_y = self._target_y_entry.get().strip()
+
+        try:
+            target_x = float(raw_x)
+            target_y = float(raw_y)
+        except ValueError:
+            self._root.after(0, lambda: self._target_status.configure(
+                text="Status: Invalid input", text_color="red"
+            ))
+            return
+
+        def _request():
+            try:
+                resp = requests.post(
+                    f"{self._get_url()}/set_target",
+                    json={"target_x": target_x, "target_y": target_y},
+                    timeout=3,
+                )
+                if resp.ok:
+                    self._root.after(0, lambda: self._target_status.configure(
+                        text=f"Status: Set to ({target_x:.1f}, {target_y:.1f})",
+                        text_color="green"
+                    ))
+                else:
+                    self._root.after(0, lambda: self._target_status.configure(
+                        text=f"Status: Server error {resp.status_code}",
+                        text_color="red"
+                    ))
+            except Exception:
+                self._root.after(0, lambda: self._target_status.configure(
+                    text="Status: Connection failed", text_color="red"
+                ))
 
         threading.Thread(target=_request, daemon=True).start()
 
@@ -500,3 +575,23 @@ class DefenderV0:
 
     def _set_disconnected(self):
         self._conn_status.configure(text="⬤  Disconnected", text_color="red")
+
+    def _on_map_click(self, event):
+            if self._map_scale is None or self._map_offset is None:
+                return
+
+            if not (0.0 <= world_x <= 200.0 and 0.0 <= world_y <= 200.0):
+                return
+            world_x = (event.x - self._map_offset[0]) / self._map_scale
+            world_y = (event.y - self._map_offset[1]) / self._map_scale
+
+            # Clamp to valid map range
+            world_x = max(0.0, min(200.0, world_x))
+            world_y = max(0.0, min(200.0, world_y))
+
+            self._map_click_xy = (world_x, world_y)
+
+            self._target_x_entry.delete(0, "end")
+            self._target_x_entry.insert(0, f"{world_x:.1f}")
+            self._target_y_entry.delete(0, "end")
+            self._target_y_entry.insert(0, f"{world_y:.1f}")

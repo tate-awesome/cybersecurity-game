@@ -16,7 +16,7 @@
 #ifdef REST_API_ENABLED
   #include <HTTPClient.h>
   #include <ArduinoJson.h>
-  const char* REST_URL = "http://192.168.8.158:5000/data"; //Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
+  const char* REST_URL = "http://192.168.8.114:5000/data"; //Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs = 0;
   static bool encrypt_status = false;

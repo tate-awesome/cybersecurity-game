@@ -22,7 +22,7 @@ String key = (String)1234;
 
 // ---------- REST ----------
 #ifdef REST_API_ENABLED
-  const char* REST_URL         = "http://192.168.8.158:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
+  const char* REST_URL         = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs   = 0;
   static bool encrypt_status   = false;
@@ -64,6 +64,8 @@ static float g_state_y     = 100.0f;
 static float g_state_theta = 0.0f;
 static float g_speed_cmd   = 0.0f;
 static float g_rudder_deg  = 0.0f;
+static float g_target_x = 100.0f;
+static float g_target_y = 100.0f;
 
 // ---------- Control Params ----------
 const float HEAD_OFFSET_M  = 2.0f;
@@ -165,12 +167,18 @@ void restPost() {
 
     if (code == 200) {
         String body = http.getString();
-        StaticJsonDocument<64> resp;
+        StaticJsonDocument<128> resp;
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
                 encrypt_status = resp["encryption_status"].as<bool>();
                 key = resp["encryption_key"].as<String>();
                 Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
+            }
+
+            if (resp.containsKey("target_x") && resp.containsKey("target_y")) {
+            g_target_x = resp["target_x"].as<float>();
+            g_target_y = resp["target_y"].as<float>();
+            Serial.printf("[SERVER] Target updated: %.1f, %.1f\n", g_target_x, g_target_y);
             }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
@@ -218,8 +226,8 @@ void loop() {
     mb.task();
     yield();
 
-    static float target_x = 100.0f;
-    static float target_y = 100.0f;
+    float target_x = g_target_x;
+    float target_y = g_target_y;
 
     // Read target X from PWM pin
     unsigned long txHigh = pulseInLong(PIN_TARGET_X, HIGH, 10000);
@@ -300,7 +308,7 @@ void loop() {
                         " | encrypt=%d"
             #endif
                         "\n",
-                        g_state_x, g_state_y, target_x, target_y,
+                        g_state_x, g_state_y, g_target_x, g_target_y,
                         current_duty_x * 100.0, current_duty_y * 100.0,
                         g_speed_cmd, g_rudder_deg
             #ifdef REST_API_ENABLED
