@@ -8,10 +8,8 @@ from .keybinds import KeyBinds
 # Import page builder objects here
 # /demo
 from ..pages.demo.sprites import Sprites
-from ..pages.demo.saved_map import SavedMap
 from ..pages.demo.boat_motion import BoatMotion
 from ..pages.demo.triangle import Triangle
-from ..pages.demo.hardware_map import HardwareMap
 
 # /attacker
 from ..pages.attacker.attacker import AttackerV0
@@ -51,10 +49,8 @@ class Router:
                 "defender/v0": DefenderV0,
             "title/select_demo": SelectDemo,
                 "demo/sprites": Sprites,
-                "demo/saved_map": SavedMap,
                 "demo/boat_motion": BoatMotion,
                 "demo/triangle": Triangle,
-                "demo/hardware_map": HardwareMap,
         }
         '''
         Dict mapping page names to page builder functions.
