@@ -1,9 +1,17 @@
 from customtkinter import *
 from ..style import Style
 from ...network.mod_table import ModTable
+from ...network.meta_packet import MetaPacket
 
 class MITM:
-    def __init__(self, style: Style, parent: CTkBaseClass):
+    def __init__(self, style: Style, parent: CTkBaseClass, context, start_mitm: callable, mitm_is_running: callable, stop_mitm: callable):
+        # Assign local references
+        self.context = context
+        self.start_mitm = start_mitm
+        self.mitm_is_running = mitm_is_running
+        self.stop_mitm = stop_mitm
+        
+        # Create form
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         frame.columnconfigure(0, weight=0)
@@ -15,6 +23,7 @@ class MITM:
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
+        # Create value table entries
         self.labels = {}
         self.frames = {}
         self.mults = {}
@@ -52,6 +61,7 @@ class MITM:
 
             r = r+1
 
+        # Save button
         save_status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
         save_status.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.save_status = save_status
@@ -66,12 +76,33 @@ class MITM:
         status.grid(row=r, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 
+        # Start/Stop button
         button = CTkButton(frame, text="Start Attack", font=style.get_font(), command=None)
         button.grid(row=r, column=2, sticky="e", pady=style.gap, padx=style.gap)
         self.button = button
 
         self.entries = list(self.mults.values())
         self.entries.extend(list(self.offsets.values()))
+
+        # Define stop/start
+        def start_mitm():
+            self.context.states["game_progress"]["mitm"] = True
+            self.context.root.update_idletasks()
+            self.context.net.start_mitm()
+
+        def stop_mitm():
+            self.context.root.update_idletasks()
+            self.context.net.stop_mitm()
+
+        # Autosave & preset
+        start_on = self.mitm_is_running()
+        self.bind_reversible(start_mitm, stop_mitm, "Attack", start_on)
+
+
+        self.bind_input_alert()
+        self.load_saved_input(self.context.net.table)
+        self.bind_input_save(self.context.net.table) # Bind save button on entry change
+        self.deactivate() # Disable button on windows
         
         
     def bind_input_save(self, table: ModTable):
