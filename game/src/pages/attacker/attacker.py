@@ -1,5 +1,3 @@
-from ...widgets.displays.build_displays import Displays
-
 from ...app_core.context import Context
 
 # Widgets
@@ -10,6 +8,9 @@ from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole
+from ...widgets.displays.build_displays import Displays
+from ...widgets.displays.values_table import ValuesTable
+from ...widgets.displays.visualizer import Visualizer
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
@@ -52,10 +53,7 @@ class AttackerV0:
 
 
     # Displays
-        Displays(style, right_p, context)
-
-
-
-
-    
-
+        top, bottom = common.create_bifold(style, right_p)
+        # displays = Displays(style, top, context)
+        # values = ValuesTable(style, top, context)
+        network_visualizer = Visualizer(style, bottom, context)
