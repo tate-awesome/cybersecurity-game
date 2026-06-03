@@ -73,7 +73,7 @@ class DataBuffer:
         self.map_buffers = {}
         '''
         Map elements:
-        "status_in", "status_out":
+        "status_in", "status_out", "status_other":
             "latest_x": (value, time) or None,
             "latest_y": (value, time) or None,
             "segment": int,
@@ -93,6 +93,10 @@ class DataBuffer:
             "deque": deque(maxlen=self.max_size),
             "lock": Lock()
         }
+        self.map_buffers["points_other"] = {
+            "deque": deque(maxlen=self.max_size),
+            "lock": Lock()
+        }
         self.map_buffers["status_in"] = {
             "latest_x": None,
             "latest_y": None,
@@ -100,6 +104,12 @@ class DataBuffer:
             "last_point": None,
         }
         self.map_buffers["status_out"] = {
+            "latest_x": None,
+            "latest_y": None,
+            "segment": 0,
+            "last_point": None,
+        }
+        self.map_buffers["status_other"] = {
             "latest_x": None,
             "latest_y": None,
             "segment": 0,
@@ -116,7 +126,7 @@ class DataBuffer:
             "x_out", "y_out", "theta_out", "speed_out", "rudder_out": list[tuple[time,value]]
         '''
         for var in ["x", "y", "theta", "speed", "rudder"]:
-            for dir in ["in", "out"]:
+            for dir in ["in", "out", "other"]:
                 key = f"{var}_{dir}"
                 self.tracer_buffers[key] = {
                     "deque": deque(maxlen=self.max_size),
