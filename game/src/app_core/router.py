@@ -43,7 +43,6 @@ class Router:
         '''
         Displays the specified page, which should be a key in the pages dict. Clears the current page first.
         '''
-        print(self.navigation_stack)
         pages = {
             "title": Title,
             "title/title": Title,
@@ -123,11 +122,14 @@ class Router:
             title="Select a preset file",
             filetypes=(("json", "*.json"),)
             )
+            if file_path == "":
+                return
             with open(file_path) as json_file:
                 data = json.load(json_file)
             self.context.load_preset(data)
-        finally:
             self.refresh()
+        finally:
+            return
 
     
     def go_back(self):
@@ -141,11 +143,13 @@ class Router:
         themes_dir = os.path.join(BASE_DIR, "..", "..", "assets", "themes")
         try:
             file_path = askopenfilename(
-            initialdir=themes_dir,
-            title="Select a theme file",
-            filetypes=(("json", "*.json"),)
+                initialdir=themes_dir,
+                title="Select a theme file",
+                filetypes=(("json", "*.json"),)
             )
+            if file_path == "":
+                return
             ThemeManager.load_theme(file_path)
-        finally:
             self.refresh()
-    
+        finally:
+            return
