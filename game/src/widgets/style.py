@@ -41,7 +41,10 @@ class Style:
     def get_font_size(self, name="default"):
         size = 16.0
         if name == "treeview":
-            size = size * self.get_scale_correction()
+            tk_scale = float(self.context.root.tk.call("tk", "scaling"))
+            # print(tk_scale)
+            size = size * self.get_scale_correction() / tk_scale
+            # TODO TK vs CTK font scaling on different platforms
         elif name == "title":
             size = 20.0
         return int(size * self.scale / 100.0)

@@ -10,6 +10,16 @@ class NMapper:
     def __init__(self, buffer: DataBuffer):
         self.buffer = buffer
 
+    def get_active_iface(self):
+        active_iface = ""
+        self.interface_manager = self.InterfaceManager()
+        ifm = self.interface_manager
+        for i, iface in enumerate(ifm.interfaces):
+            if iface["is_active"]:
+                active_iface = iface
+        return active_iface
+        
+
     def do_nmap(self):
         self.interface_manager = self.InterfaceManager()
         ifm = self.interface_manager

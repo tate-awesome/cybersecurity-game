@@ -28,10 +28,7 @@ class DefenderV0:
     # Flag definitions — (key, display label).
     # Set the corresponding key to True in self._flags to light it up.
     FLAG_DEFS = [
-        ("quick_position_change",  "Quick position change"),
-        ("unexpected_value",       "Unexpected value"),
-        ("speed_out_of_bounds",    "Speed out of bounds"),
-        ("position_out_of_bounds", "Position out of bounds"),
+        ("unexpected_movement",       "Unexpected movement"),
     ]
 
     def __init__(self, context: Context):
@@ -49,6 +46,28 @@ class DefenderV0:
         self._root          = root
         self._style         = style
         self._last_points   = {"client": [], "server": []}
+
+        # Filtering State Variables
+        self._last_theta = None
+        self._last_speed = None
+        self._speed_threshold = 3
+        self._rudder_threshold = 15
+
+        self._k_speed_estimate = 0
+        self._k_speed_cov = 5
+        self._k_speed_process_noise = 0.05
+        self._k_speed_measurement_noise = 0.1
+
+        self._k_rudder_estimate = 0
+        self._k_rudder_cov = 5
+        self._k_rudder_process_noise = 2
+        self._k_rudder_measurement_noise = 1
+
+        # Anomaly GUI variables
+        self._anomaly_speed_expected = 0.0
+        self._anomaly_speed_measured = 0.0
+        self._anomaly_rudder_expected = 0.0
+        self._anomaly_rudder_measured = 0.0
 
         # Flag state — all False until logic sets them
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
@@ -229,6 +248,39 @@ class DefenderV0:
             )
             self._flag_labels[key] = dot
 
+            if key == "unexpected_movement":
+                self._speed_expected_lbl = CTkLabel(
+                    section,
+                    text="Expected Speed: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._speed_expected_lbl.pack(fill="x", padx=style.igap)
+
+                self._speed_measured_lbl = CTkLabel(
+                    section,
+                    text="Measured Speed: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._speed_measured_lbl.pack(fill="x", padx=style.igap)
+
+                self._rudder_expected_lbl = CTkLabel(
+                    section,
+                    text="Expected Rudder: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._rudder_expected_lbl.pack(fill="x", padx=style.igap)
+
+                self._rudder_measured_lbl = CTkLabel(
+                    section,
+                    text="Measured Rudder: --",
+                    font=style.get_font("small"),
+                    anchor="w"
+                )
+                self._rudder_measured_lbl.pack(fill="x", padx=style.igap)
+
         CTkFrame(section, fg_color="transparent", height=style.igap).pack()
 
     # ════════════════════════════════════════════════════════════════════════
@@ -278,6 +330,36 @@ class DefenderV0:
         active = self._last_points.get(self._log_source, [])
         self._update_log(list(reversed(active[-10:])))
 
+    def _kalman_update(self, measured_speed, measured_rudder):
+
+        anomaly = False
+
+        # --- SPEED ---
+        speed_pred = self._k_speed_estimate
+        speed_cov_pred = self._k_speed_cov + self._k_speed_process_noise
+
+        k_speed = speed_cov_pred / (speed_cov_pred + self._k_speed_measurement_noise)
+
+        self._k_speed_estimate = speed_pred + k_speed * (measured_speed - speed_pred)
+        self._k_speed_cov = (1 - k_speed) * speed_cov_pred
+
+        # --- RUDDER ---
+        rudder_pred = self._k_rudder_estimate
+        rudder_cov_pred = self._k_rudder_cov + self._k_rudder_process_noise
+
+        k_rudder = rudder_cov_pred / (rudder_cov_pred + self._k_rudder_measurement_noise)
+
+        self._k_rudder_estimate = rudder_pred + k_rudder * (measured_rudder - rudder_pred)
+        self._k_rudder_cov = (1 - k_rudder) * rudder_cov_pred
+
+        if (abs(measured_speed - self._k_speed_estimate) > self._speed_threshold):
+            anomaly = True
+        
+        if (abs(measured_rudder - self._k_rudder_estimate) > self._rudder_threshold):
+            anomaly = True
+
+        return self._k_speed_estimate, self._k_rudder_estimate, anomaly
+
     # ════════════════════════════════════════════════════════════════════════
     #  UI update helpers
     # ════════════════════════════════════════════════════════════════════════
@@ -303,6 +385,33 @@ class DefenderV0:
         # Map — always driven by client positions
         if client_points:
             latest = client_points[-1]
+
+            measured_speed = latest.get("speed", 0.0)
+            measured_rudder = latest.get("rudder", 0.0)
+            try:
+                measured_speed = float(measured_speed)
+                measured_rudder = float(measured_rudder)
+            except (ValueError, TypeError):
+                measured_speed = 0.0
+                measured_rudder = 0.0
+
+            filtered_speed, filtered_rudder, flag = self._kalman_update(
+                measured_speed,
+                measured_rudder
+            )
+
+            self._anomaly_speed_expected = filtered_speed
+            self._anomaly_speed_measured = measured_speed
+
+            self._anomaly_rudder_expected = filtered_rudder
+            self._anomaly_rudder_measured = measured_rudder
+
+            self._flags["unexpected_movement"] = flag
+            
+            # optionally overwrite latest values for UI consistency
+            latest["speed_filtered"] = filtered_speed
+            latest["rudder_filtered"] = filtered_rudder
+
             if latest.get("seq", -1) != self._last_seq:
                 self._last_seq  = latest.get("seq", -1)
                 self._positions = [(p["x"], p.get("y", 0.0)) for p in client_points]
@@ -357,6 +466,7 @@ class DefenderV0:
                 row_labels.append(lbl)
             self._log_rows.append(row_labels)
 
+
     def _refresh_encryption_ui(self):
         if self._encryption_on:
             self._enc_label.configure(text="Status: ON", text_color="green")
@@ -369,6 +479,21 @@ class DefenderV0:
         """Dots turn red when flag is True, gray when clear."""
         for key, dot in self._flag_labels.items():
             dot.configure(text_color="red" if self._flags.get(key) else "gray")
+        
+        
+        self._speed_expected_lbl.configure(
+            text=f"Expected Speed: {self._anomaly_speed_expected:.3f}"
+        )
+        self._speed_measured_lbl.configure(
+            text=f"Measured Speed: {self._anomaly_speed_measured:.3f}"
+        )
+
+        self._rudder_expected_lbl.configure(
+            text=f"Expected Rudder: {self._anomaly_rudder_expected:.3f}"
+        )
+        self._rudder_measured_lbl.configure(
+            text=f"Measured Rudder: {self._anomaly_rudder_measured:.3f}"
+        )
 
     def _set_connected(self):
         self._conn_status.configure(text="⬤  Connected", text_color="green")

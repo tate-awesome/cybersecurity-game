@@ -16,7 +16,7 @@
 #ifdef REST_API_ENABLED
   #include <HTTPClient.h>
   #include <ArduinoJson.h>
-  const char* REST_URL = "http://192.168.8.114:5000/data"; //Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
+  const char* REST_URL = "http://192.168.8.158:5000/data"; //Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs = 0;
   static bool encrypt_status = false;
@@ -60,6 +60,8 @@ const uint16_t HREG_RUDDER = 4;
 
 static int readAttempts = 0;
 static int readFailures = 0;
+
+static String key = (String)1234;
 
 //// ---------- Physical scaling constants ----------
 const float SpeedMax_m_s = 50.0f;    // max physical speed (m/s)
@@ -122,12 +124,34 @@ bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
     while (millis() - start < 300) {
       mb.task();
       if (!mb.isTransaction(tx)) return true;
-      delay(3);
     }
     DBG_PRINTF("[MASTER] readH FAIL: transaction timed out (attempt %d/2)\n", attempt + 1);
     for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
   }
   return false;
+}
+
+//// ---------- Encryption Helper Functions ----------
+
+uint16_t xorCipher(uint16_t value, uint16_t key){
+  return value ^ key;
+}
+
+void xorArrayDecrypt(uint16_t data[2], uint16_t key){
+  for(int i = 0; i < 2; i++){
+    data[i] ^= key;
+  }
+}
+
+uint16_t keyToUint(const String& key){
+
+  int sum = 0;
+
+  for(int i = 0; i< key.length(); i++){
+    sum += key.charAt(i);
+  }
+
+  return(uint16_t)sum;
 }
 
 //// ---------- Send X/Y/Theta to Slave ----------
@@ -140,6 +164,20 @@ void sendPose() {
     // Success - values sent
   } else {
     Serial.println("[MASTER] ERR: Failed to send pose to Slave");
+  }
+}
+
+void sendPoseEncrypted(){
+  uint16_t x_u = xorCipher(x_to_u16_100(state_x), keyToUint(key));
+  uint16_t y_u = xorCipher(x_to_u16_100(state_y), keyToUint(key));
+  uint16_t t_u = xorCipher(theta_to_mrad_u16(state_theta), keyToUint(key));
+
+  bool x = writeH(HREG_X_PHYS, x_u);
+  bool y = writeH(HREG_Y_PHYS, y_u);
+  bool theta = writeH(HREG_THETA_MRAD, t_u);
+  if(x && y && theta){    
+  }else{
+    Serial.print("[Master] ERR: Failed to send pose to Slave.");
   }
 }
 
@@ -172,7 +210,7 @@ void restPost() {
     if (!deserializeJson(resp, body)) {
       if (resp.containsKey("encryption_status")) {
         encrypt_status = resp["encryption_status"].as<bool>();
-        String key = resp["encryption_key"].as<String>();
+        key = resp["encryption_key"].as<String>();
         // Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
       }
     }
@@ -243,7 +281,11 @@ void setup() {
     delay(1000);
     
     // Send initial pose
-    sendPose();
+    if(encrypt_status){
+      sendPoseEncrypted();
+    }else{
+      sendPose();
+    }
     Serial.println("[MASTER] Initial pose sent to Slave.");
     
     lcd.clear();
@@ -278,7 +320,11 @@ void loop() {
       mb.connect(serverIP);
       if (mb.isConnected(serverIP)) {
         Serial.println("[MASTER] Reconnected successfully!");
-        sendPose();
+        if(encrypt_status){
+          sendPoseEncrypted();
+        }else{
+          sendPose();
+        }
       }
     }
     delay(10);
@@ -296,6 +342,11 @@ void loop() {
     uint16_t rb[2];
     readAttempts++;
     if (readH(HREG_SPEED, rb, 2)) {
+
+      if(encrypt_status){
+        xorArrayDecrypt(rb, keyToUint(key));
+      }
+
       uint16_t speed_counts = rb[0];
       uint16_t rudder_counts = rb[1];
 
@@ -338,7 +389,11 @@ void loop() {
       // Send updated pose back to Slave
       if (millis() - lastPoseMs >= 200) {
         lastPoseMs = millis();
-        sendPose();
+        if(encrypt_status){
+          sendPoseEncrypted();
+         }else{
+          sendPose();
+        }
       }
 
       // Update LCD every 500ms
