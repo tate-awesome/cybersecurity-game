@@ -6,7 +6,6 @@ from . import packet_buffer, mod_table, data_buffer
 class NetworkController:
 
     def __init__(self):
-        self.buffer = packet_buffer.PacketBuffer()
         self.data_buffer = data_buffer.DataBuffer()
         self.table = mod_table.ModTable()
 

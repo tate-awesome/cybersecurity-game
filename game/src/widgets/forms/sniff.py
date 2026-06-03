@@ -48,13 +48,11 @@ class Sniff:
         def start():
             context.states["game_progress"]["sniff"] = True
             context.root.update_idletasks()
-            # net.buffer.add_callback("sniff_handler", sniff_handler)
             start_sniff()
 
         def stop():
             context.root.update_idletasks()
             stop_sniff()
-            # net.buffer.remove_callback("sniff_handler")
 
         start_on = sniff_is_running()
         self.bind_reversible(start, stop, "Sniffing", start_on)
