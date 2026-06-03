@@ -62,12 +62,8 @@ class Router:
         All page builder functions should take a Context object as an argument and build the page on the root CTk object.
         '''
         self.clear()
-        if next_page == "back" and len(self.navigation_stack) > 1:
-            self.navigation_stack.pop() # Remove current page
-            next_page = self.navigation_stack.pop() # Pop previous page
-            pages[next_page](self.context)
-            return
 
+        # Handle 404
         if next_page not in pages:
             print(f"Page '{next_page}' not found. Redirecting to title page.")
             next_page = "title"
@@ -78,6 +74,7 @@ class Router:
         # Handle refresh
         if next_page == self.navigation_stack[-1]:
             ...
+        # Handle deeper page
         else:
             self.navigation_stack.append(next_page)
         pages[next_page](self.context)
@@ -133,8 +130,11 @@ class Router:
 
     
     def go_back(self):
+        if len(self.navigation_stack) < 1:
+            return
         self.context.destroy_context()
-        self.show("back")
+        self.navigation_stack.pop()
+        self.show(self.navigation_stack[-1])
 
 
     def select_theme(self):
