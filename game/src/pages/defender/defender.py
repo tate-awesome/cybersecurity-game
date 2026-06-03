@@ -400,12 +400,11 @@ class DefenderV0:
                 measured_rudder
             )
 
-            if flag:
-                self._anomaly_speed_expected = filtered_speed
-                self._anomaly_speed_measured = measured_speed
+            self._anomaly_speed_expected = filtered_speed
+            self._anomaly_speed_measured = measured_speed
 
-                self._anomaly_rudder_expected = filtered_rudder
-                self._anomaly_rudder_measured = measured_rudder
+            self._anomaly_rudder_expected = filtered_rudder
+            self._anomaly_rudder_measured = measured_rudder
 
             self._flags["unexpected_movement"] = flag
             
@@ -481,25 +480,20 @@ class DefenderV0:
         for key, dot in self._flag_labels.items():
             dot.configure(text_color="red" if self._flags.get(key) else "gray")
         
-        if self._flags.get("unexpected_movement", False):
-            self._speed_expected_lbl.configure(
-                text=f"Expected Speed: {self._anomaly_speed_expected:.3f}"
-            )
-            self._speed_measured_lbl.configure(
-                text=f"Measured Speed: {self._anomaly_speed_measured:.3f}"
-            )
+        
+        self._speed_expected_lbl.configure(
+            text=f"Expected Speed: {self._anomaly_speed_expected:.3f}"
+        )
+        self._speed_measured_lbl.configure(
+            text=f"Measured Speed: {self._anomaly_speed_measured:.3f}"
+        )
 
-            self._rudder_expected_lbl.configure(
-                text=f"Expected Rudder: {self._anomaly_rudder_expected:.3f}"
-            )
-            self._rudder_measured_lbl.configure(
-                text=f"Measured Rudder: {self._anomaly_rudder_measured:.3f}"
-            )
-        else:
-            self._speed_expected_lbl.configure(text="Expected Speed: --")
-            self._speed_measured_lbl.configure(text="Measured Speed: --")
-            self._rudder_expected_lbl.configure(text="Expected Rudder: --")
-            self._rudder_measured_lbl.configure(text="Measured Rudder: --")
+        self._rudder_expected_lbl.configure(
+            text=f"Expected Rudder: {self._anomaly_rudder_expected:.3f}"
+        )
+        self._rudder_measured_lbl.configure(
+            text=f"Measured Rudder: {self._anomaly_rudder_measured:.3f}"
+        )
 
     def _set_connected(self):
         self._conn_status.configure(text="⬤  Connected", text_color="green")
