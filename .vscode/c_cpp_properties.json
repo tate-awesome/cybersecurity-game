@@ -12,7 +12,7 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "/home/martin/Desktop/cybersecurity-game/Version 17/Client",
+                "/home/martin/Desktop/cybersecurity-game/Version 17/Server",
                 "/home/martin/.arduino15/packages/esp32/tools/esp32s3-libs/3.3.8/qio_qspi/include",
                 "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/cores/esp32",
                 "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/variants/esp32s3",
@@ -22,8 +22,6 @@
                 "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/NetworkClientSecure/src",
                 "/home/martin/Arduino/libraries/ArduinoJson/src",
                 "/home/martin/Arduino/libraries/modbus-esp8266/src",
-                "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Wire/src",
-                "/home/martin/Arduino/libraries/LiquidCrystal_I2C",
                 "/home/martin/.arduino15/packages/esp32/tools/esp-x32/2601/xtensa-esp-elf/include/c++/14.2.0",
                 "/home/martin/.arduino15/packages/esp32/tools/esp-x32/2601/xtensa-esp-elf/include/c++/14.2.0/xtensa-esp-elf/esp32s3",
                 "/home/martin/.arduino15/packages/esp32/tools/esp-x32/2601/xtensa-esp-elf/include/c++/14.2.0/backward",

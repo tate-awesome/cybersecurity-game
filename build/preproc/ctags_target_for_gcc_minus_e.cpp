@@ -1,398 +1,314 @@
-# 1 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino"
+# 1 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino"
 
-//#define DEBUG_SERIAL      // Comment out to disable debug output
+// Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
+# 4 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
+# 5 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
 
-# 5 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
-# 6 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
-# 7 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
-# 8 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
-# 9 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
-# 10 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
-# 11 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
+# 7 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
+# 8 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
 
-
+# 10 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
+# 11 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
 
 
 
 
-# 18 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino" 2
 
-  const char* REST_URL = "http://192.168.8.114:5000/data"; //Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
+
+# 16 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino"
+// ---------- WiFi ----------
+const char* ssid = "GL-SFT1200-ab1";
+const char* password = "goodlife";
+
+// ------- Encryption -------
+String key = (String)1234;
+
+// ---------- REST ----------
+
+  const char* REST_URL = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs = 0;
   static bool encrypt_status = false;
-# 35 "/home/martin/Desktop/cybersecurity-game/Version 17/Client/Client.ino"
-LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-const char* ssid = "GL-SFT1200-ab1";
-const char* password = "goodlife";
-IPAddress serverIP(192, 168, 8, 137);
 
+// -- Debug statements
+# 42 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino"
+// ---------- Modbus ----------
 ModbusIP mb;
-
-float state_x = 0.0f;
-float state_y = 0.0f;
-float state_theta = 0.0f; // radians (start facing East)
-float state_speed = 0.0f;
-float state_rudder = 0.0f;
-
-
-const float L_vehicle = 0.07f;
-const float K_theta = 0.6f;
-unsigned long lastUpdateMs = 0;
-
 const uint16_t HREG_X_PHYS = 10;
 const uint16_t HREG_Y_PHYS = 11;
 const uint16_t HREG_THETA_MRAD = 12;
-
 const uint16_t HREG_SPEED = 3;
 const uint16_t HREG_RUDDER = 4;
 
-static int readAttempts = 0;
-static int readFailures = 0;
+// ---------- Pins ----------
+const int PIN_X = 4;
+const int PIN_Y = 5;
+const int PIN_T = 18;
+const int PIN_TARGET_X = 6;
+const int PIN_TARGET_Y = 2;
 
-//// ---------- Physical scaling constants ----------
-const float SpeedMax_m_s = 50.0f; // max physical speed (m/s)
-const float RudderMax_deg = 60.0f; // max rudder deflection (±60°)
+// ---------- Globals ----------
+float current_duty_x = 0.5f;
+float current_duty_y = 0.5f;
 
-//// ---------- Conversion Helpers ----------
-static inline uint16_t x_to_u16_100(float v) {
-  if (v < 0) v = 0;
-  if (v > 200) v = 200;
-  return (uint16_t)lroundf(v * 100.0f);
+// Expose current state so restPost() can read them
+static float g_state_x = 100.0f;
+static float g_state_y = 100.0f;
+static float g_state_theta = 0.0f;
+static float g_speed_cmd = 0.0f;
+static float g_rudder_deg = 0.0f;
+static float g_target_x = 100.0f;
+static float g_target_y = 100.0f;
+
+// ---------- Control Params ----------
+const float HEAD_OFFSET_M = 2.0f;
+const float Kps = 0.1f;
+const float Kp_rudder = 0.1f;
+const float SpeedMax = 50.0f;
+const float StopTol = 0.3f;
+const float X_RANGE_M = 200.0f;
+const float Y_RANGE_M = 200.0f;
+const float RudderMax_deg = 60.0f;
+
+const int LEDC_RES_BITS = 12;
+const int LEDC_FREQ_HZ = 500;
+
+
+
+
+
+// ---------- Helpers ----------
+static inline float clampf_local(float v, float lo, float hi) {
+    if (isnan(v)) return lo;
+    return (v < lo) ? lo : (v > hi ? hi : v);
 }
 
-static inline uint16_t theta_to_mrad_u16(float t) {
-  // Keep theta in 0 to 2*PI range
-  while (t < 0) t += 2.0f * 3.1415926535897932384626433832795;
-  while (t >= 2.0f * 3.1415926535897932384626433832795) t -= 2.0f * 3.1415926535897932384626433832795;
-  return (uint16_t)lroundf(t * 1000.0f);
+static inline uint16_t phys_to_pwm12(float phys_0_200) {
+    float val = clampf_local(phys_0_200, 0.0f, 200.0f);
+    return (uint16_t)lroundf((val / 200.0f) * 4095.0f);
 }
 
-
-bool writeH(uint16_t addr, uint16_t val) {
-  if (!mb.isConnected(serverIP)) {
-    ;
-    return false;
-  }
-  // One retry on timeout to handle occasional WiFi jitter
-  for (int attempt = 0; attempt < 2; attempt++) {
-    uint16_t tx = mb.writeHreg(serverIP, addr, val);
-    if (!tx) {
-      ;
-      return false; // retrying won't help so exit immediately.
-    }
-    // Poll until the transaction clears, up to a hard timeout of 300ms.
-    uint32_t start = millis();
-    while (millis() - start < 300) {
-      mb.task();
-      if (!mb.isTransaction(tx)) return true;
-      delay(3);
-    }
-    ;
-    for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
-  }
-  return false;
+float wrap_to_pi(float angle) {
+    while (angle > 3.1415926535897932384626433832795) angle -= 2.0f * 3.1415926535897932384626433832795;
+    while (angle < -3.1415926535897932384626433832795) angle += 2.0f * 3.1415926535897932384626433832795;
+    return angle;
 }
 
-bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
-  if (!mb.isConnected(serverIP)) {
-    ;
-    return false;
-  }
-  // 1 retry on timeout to handle occasional WiFi jitter
-  for (int attempt = 0; attempt < 2; attempt++) {
-    uint16_t tx = mb.readHreg(serverIP, addr, buf, n);
-    if (!tx) {
-      ;
-      return false; // retrying won't help so bail immediately.
-    }
-    // Poll until the transaction clears, up to a hard timeout of 300ms.
-    uint32_t start = millis();
-    while (millis() - start < 300) {
-      mb.task();
-      if (!mb.isTransaction(tx)) return true;
-      delay(3);
-    }
-    ;
-    for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
-  }
-  return false;
+void computeControlCommands(float target_x, float target_y,
+                            float state_x, float state_y, float state_theta,
+                            float* speed_out, float* rudder_out) {
+    float head_x = state_x + HEAD_OFFSET_M * cos(state_theta);
+    float head_y = state_y + HEAD_OFFSET_M * sin(state_theta);
+    float Xerr = target_x - head_x;
+    float Yerr = target_y - head_y;
+
+    float ThetaDes = atan2f(Yerr, Xerr);
+    float HeadingErr = wrap_to_pi(ThetaDes - state_theta);
+    float rho_rad = Kp_rudder * HeadingErr;
+
+    rho_rad = clampf_local(rho_rad, -3.1415926535897932384626433832795 / 3.0f, 3.1415926535897932384626433832795 / 3.0f);
+
+    float center_dist = sqrtf(powf(Xerr, 2) + powf(Yerr, 2));
+    float SpeedCmd = (center_dist < StopTol) ? 0.0f
+                        : clampf_local(Kps * center_dist, 0.0f, SpeedMax);
+
+    if (center_dist < StopTol) rho_rad = 0.0f;
+
+    *speed_out = SpeedCmd;
+    *rudder_out = rho_rad * 180.0f / 3.1415926535897932384626433832795;
 }
 
-//// ---------- Send X/Y/Theta to Slave ----------
-void sendPose() {
-  uint16_t x_u = x_to_u16_100(state_x);
-  uint16_t y_u = x_to_u16_100(state_y);
-  uint16_t t_u = theta_to_mrad_u16(state_theta);
+//------------------------------- Encryption methods ------------------
 
-  if (writeH(HREG_X_PHYS, x_u) && writeH(HREG_Y_PHYS, y_u) && writeH(HREG_THETA_MRAD, t_u)) {
-    // Success - values sent
-  } else {
-    Serial0.println("[MASTER] ERR: Failed to send pose to Slave");
+uint16_t xorCipher(uint16_t value, uint16_t key){
+    return value ^ key;
+}
+
+uint16_t keyToUint(const String& key){
+
+  int sum = 0;
+
+  for(int i = 0; i< key.length(); i++){
+    sum += key.charAt(i);
   }
+
+  return(uint16_t)sum;
 }
 
 
 void restPost() {
-  if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED) return;
 
-  HTTPClient http;
-  http.begin(REST_URL);
-  http.addHeader("Content-Type", "application/json");
+    HTTPClient http;
+    http.begin(REST_URL);
+    http.addHeader("Content-Type", "application/json");
 
-  // Build payload
-  StaticJsonDocument<128> doc;
-  doc["timestamp"] = (uint32_t)(millis() / 1000);
-  doc["x"] = state_x;
-  doc["y"] = state_y;
-  doc["theta"] = state_theta;
-  doc["speed"] = state_speed;
-  doc["rudder"] = state_rudder;
+    // Build JSON payload with current state
+    StaticJsonDocument<128> doc;
+    doc["timestamp"] = (uint32_t)(millis() / 1000);
+    doc["source"] = "server";
+    doc["x"] = g_state_x;
+    doc["y"] = g_state_y;
+    doc["theta"] = g_state_theta;
+    doc["speed"] = g_speed_cmd;
+    doc["rudder"] = g_rudder_deg;
 
-  String payload;
-  serializeJson(doc, payload);
+    String payload;
+    serializeJson(doc, payload);
 
-  int code = http.POST(payload);
+    int code = http.POST(payload);
 
-  if (code == 200) {
-    String body = http.getString();
+    if (code == 200) {
+        String body = http.getString();
+        StaticJsonDocument<128> resp;
+        if (!deserializeJson(resp, body)) {
+            if (resp.containsKey("encryption_status")) {
+                encrypt_status = resp["encryption_status"].as<bool>();
+                key = resp["encryption_key"].as<String>();
+                Serial0.printf("[SERVER] encryption_key=%s\n", key.c_str());
+            }
 
-    StaticJsonDocument<64> resp;
-    if (!deserializeJson(resp, body)) {
-      if (resp.containsKey("encryption_status")) {
-        encrypt_status = resp["encryption_status"].as<bool>();
-        String key = resp["encryption_key"].as<String>();
-        // Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
-      }
-    }
-  } else {
-    Serial0.printf("[MASTER] REST POST failed  HTTP %d\n", code);
-  }
-
-  http.end();
-}
-
-
-//// ---------- Setup ----------
-void setup() {
-  Serial0.begin(115200);
-  delay(50);
-  Serial0.println("\n[MASTER] Booting…");
-
-  // Initialize LCD
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Master Init...");
-
-  // WiFi
-  lcd.setCursor(0, 1);
-  lcd.print("WiFi connect...");
-  WiFi.mode(WIFI_MODE_STA);
-  WiFi.begin(ssid, password);
-  Serial0.print("[MASTER] Connecting to WiFi");
-
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
-    delay(300);
-    Serial0.print(".");
-    attempts++;
-  }
-
-  lcd.clear();
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial0.printf("\n[MASTER] IP: %s\n", WiFi.localIP().toString().c_str());
-    lcd.setCursor(0, 0);
-    lcd.print("WiFi: OK");
-    lcd.setCursor(0, 1);
-    lcd.print(WiFi.localIP());
-    delay(2000);
-  } else {
-    lcd.setCursor(0, 0);
-    lcd.print("WiFi: FAILED!");
-    Serial0.println("\n[MASTER] WiFi failed!");
-    while(1) { delay(1000); }
-  }
-
-  WiFi.setSleep(false);
-  Serial0.println("[MASTER] WiFi sleep disabled");
-
-  // Connect to Slave
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Connect Slave...");
-  mb.connect(serverIP);
-  delay(500);
-
-  if (mb.isConnected(serverIP)) {
-    Serial0.println("[MASTER] Connected to Slave Modbus server.");
-    lcd.setCursor(0, 1);
-    lcd.print("Slave: OK");
-    delay(1000);
-
-    // Send initial pose
-    sendPose();
-    Serial0.println("[MASTER] Initial pose sent to Slave.");
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Feedback Loop:");
-    lcd.setCursor(0, 1);
-    lcd.print("Starting...");
-    delay(1000);
-  } else {
-    Serial0.println("[MASTER] WARNING: Could not connect to Slave initially.");
-    lcd.setCursor(0, 1);
-    lcd.print("Slave: FAIL");
-    delay(2000);
-  }
-}
-
-//// ---------- Loop ----------
-void loop() {
-  mb.task();
-  yield();
-
-  // Reconnect if disconnected
-  if (!mb.isConnected(serverIP)) {
-    static uint32_t lastTry = 0;
-    if (millis() - lastTry > 2000) {
-      lastTry = millis();
-      Serial0.println("[MASTER] Reconnecting Modbus…");
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Reconnecting...");
-
-      mb.connect(serverIP);
-      if (mb.isConnected(serverIP)) {
-        Serial0.println("[MASTER] Reconnected successfully!");
-        sendPose();
-      }
-    }
-    delay(10);
-    return;
-  }
-
-  // Read feedback and update pose
-  static uint32_t lastReadS = 0;
-  static uint32_t lastPoseMs = 0;
-  if (millis() - lastReadS >= 50) { // Update at ~20Hz
-    uint32_t currentMs = millis();
-    lastReadS = currentMs;
-    float dt = 0.05f;
-
-    uint16_t rb[2];
-    readAttempts++;
-    if (readH(HREG_SPEED, rb, 2)) {
-      uint16_t speed_counts = rb[0];
-      uint16_t rudder_counts = rb[1];
-
-      // Convert counts to physical units
-      float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
-      float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
-      state_speed = speed_m_s;
-      state_rudder = rudder_deg;
-
-      // Only integrate if there's meaningful motion
-      if (fabs(speed_m_s) > 0.01f) {
-        float v = speed_m_s;
-        float rho = ((rudder_deg) * 0.017453292519943295769236907684886);
-
-        // MATLAB-style kinematic update
-        float xdot = v * cos(rho + state_theta);
-        float ydot = v * sin(rho + state_theta);
-        float thetadot = 0.0f;
-
-        // Only turn if rudder is not centered
-        if (fabs(rho) > 0.001f) {
-          thetadot = K_theta / (L_vehicle / tan(rho));
+            if (resp.containsKey("target_x") && resp.containsKey("target_y")) {
+            g_target_x = resp["target_x"].as<float>();
+            g_target_y = resp["target_y"].as<float>();
+            Serial0.printf("[SERVER] Target updated: %.1f, %.1f\n", g_target_x, g_target_y);
+            }
         }
+        Serial0.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
+    } else {
+        Serial0.printf("[SERVER] REST POST failed  HTTP %d\n", code);
+    }
 
-        state_x += xdot * dt;
-        state_y += ydot * dt;
-        state_theta += thetadot * dt;
+    http.end();
+}
 
-        // Normalize theta to [0, 2*PI]
-        while (state_theta < 0) state_theta += 2.0f * 3.1415926535897932384626433832795;
-        while (state_theta >= 2.0f * 3.1415926535897932384626433832795) state_theta -= 2.0f * 3.1415926535897932384626433832795;
 
-        // Clamp X, Y to valid range
-        if (state_x < 0.0f) state_x = 0.0f;
-        if (state_x > 200.0f) state_x = 200.0f;
-        if (state_y < 0.0f) state_y = 0.0f;
-        if (state_y > 200.0f) state_y = 200.0f;
-      }
+// ---------- Setup ----------
+void setup() {
+    Serial0.begin(115200);
+    delay(500);
+    Serial0.println("\n[SERVER] Booting...");
 
-      // Send updated pose back to Slave
-      if (millis() - lastPoseMs >= 200) {
-        lastPoseMs = millis();
-        sendPose();
-      }
+    WiFi.mode(WIFI_MODE_STA);
+    WiFi.begin(ssid, password);
+    WiFi.setSleep(false);
+    while (WiFi.status() != WL_CONNECTED) { delay(300); Serial0.print("."); }
+    Serial0.printf("\n[SERVER] IP: %s\n", WiFi.localIP().toString().c_str());
 
-      // Update LCD every 500ms
-      static uint32_t lastLcdUpdate = 0;
-      if (millis() - lastLcdUpdate > 500) {
-        lastLcdUpdate = millis();
+    // Modbus server
+    mb.server();
+    mb.addHreg(HREG_X_PHYS, 10000);
+    mb.addHreg(HREG_Y_PHYS, 10000);
+    mb.addHreg(HREG_THETA_MRAD, 0);
+    mb.addHreg(HREG_SPEED, 0);
+    mb.addHreg(HREG_RUDDER, 0);
 
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("X:");
-        lcd.print((int)state_x);
-        lcd.print(" Y:");
-        lcd.print((int)state_y);
-        lcd.print(" S:");
-        lcd.print(speed_counts);
+    ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
+    ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
+    ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
 
-        lcd.setCursor(0, 1);
-        lcd.print("H:");
-        lcd.print((int)(state_theta * 57.3));
-        lcd.print((char)223); // degree symbol
-        lcd.print(" R:");
-        lcd.print(rudder_counts);
-      }
+    pinMode(PIN_TARGET_X, 0x05);
+    pinMode(PIN_TARGET_Y, 0x05);
+    pinMode(LED_BUILTIN /* allow testing #ifdef LED_BUILTIN*/, 0x03);
 
-      // Print diagnostics every second
-      static uint32_t lastPrint = 0;
-      if (millis() - lastPrint > 1000) {
-        lastPrint = millis();
+    Serial0.println("[SERVER] Ready.");
+}
 
-        Serial0.printf("[MASTER] RECV  Speed = %.3f m/s  |  Rudder = %.2f deg  (raw: %u, %u)\n",
-                      speed_m_s, rudder_deg, speed_counts, rudder_counts);
-        Serial0.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f)"
+// ---------- Loop ----------
+void loop() {
+    mb.task();
+    yield();
 
-                        " e_stat=%d"
+    float target_x = g_target_x;
+    float target_y = g_target_y;
+
+    // Read target X from PWM pin
+    unsigned long txHigh = pulseInLong(PIN_TARGET_X, 0x1, 10000);
+    if (txHigh > 0) {
+        float duty = (float)txHigh / 4100.0f;
+        current_duty_x = clampf_local(1.0f - duty, 0.0f, 1.0f);
+        target_x = clampf_local(current_duty_x * X_RANGE_M, 0.0f, X_RANGE_M);
+    }
+
+    // Read target Y from PWM pin
+    unsigned long tyHigh = pulseInLong(PIN_TARGET_Y, 0x1, 10000);
+    if (tyHigh > 0) {
+        float duty = (float)tyHigh / 4100.0f;
+        current_duty_y = clampf_local(1.0f - duty, 0.0f, 1.0f);
+        target_y = clampf_local(current_duty_y * Y_RANGE_M, 0.0f, Y_RANGE_M);
+    }
+
+    uint16_t h_x;
+    uint16_t h_y;
+    uint16_t h_th;
+
+    // Read state from Modbus registers (written by Client/Master)
+    if(encrypt_status){
+        h_x = xorCipher(mb.Hreg(HREG_X_PHYS), keyToUint(key));
+        h_y = xorCipher(mb.Hreg(HREG_Y_PHYS), keyToUint(key));
+        h_th = xorCipher(mb.Hreg(HREG_THETA_MRAD), keyToUint(key));
+    }else{
+        h_x = mb.Hreg(HREG_X_PHYS);
+        h_y = mb.Hreg(HREG_Y_PHYS);
+        h_th = mb.Hreg(HREG_THETA_MRAD);
+    }
+
+    if (h_x != 0 || h_y != 0) {
+        g_state_x = clampf_local(h_x / 100.0f, 0.0f, X_RANGE_M);
+        g_state_y = clampf_local(h_y / 100.0f, 0.0f, Y_RANGE_M);
+        g_state_theta = ((int16_t)h_th) / 1000.0f;
+    }
+
+    // Drive PWM outputs
+    ledcWrite(PIN_X, phys_to_pwm12(g_state_x));
+    ledcWrite(PIN_Y, phys_to_pwm12(g_state_y));
+    float theta_norm = (g_state_theta + 3.1415926535897932384626433832795) / (2.0f * 3.1415926535897932384626433832795);
+    ledcWrite(PIN_T, (uint16_t)(clampf_local(theta_norm, 0, 1) * 4095.0f));
+
+    // Compute control commands and write back to Modbus
+    computeControlCommands(target_x, target_y,
+                           g_state_x, g_state_y, g_state_theta,
+                           &g_speed_cmd, &g_rudder_deg);
+
+    float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
+    uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);
+    uint16_t unencrypted_rudder = (uint16_t)lroundf(clampf_local(rud_norm, 0, 1) * 4095.0f);
+
+    if(encrypt_status){
+        uint16_t encrypted_speed = xorCipher(unencrypted_speed, keyToUint(key));
+        uint16_t encrypted_rudder = xorCipher(unencrypted_rudder, keyToUint(key));
+        mb.Hreg(HREG_SPEED, encrypted_speed);
+        mb.Hreg(HREG_RUDDER, encrypted_rudder);
+    }else{
+        mb.Hreg(HREG_SPEED, unencrypted_speed);
+        mb.Hreg(HREG_RUDDER, unencrypted_rudder);
+    }
+
+    // REST POST every 2 seconds
+
+    if (millis() - lastRestMs >= REST_INTERVAL_MS) {
+        lastRestMs = millis();
+        restPost();
+    }
+
+
+    // Debug print every second
+    static uint32_t tPrint = 0;
+    if (millis() - tPrint > 1000) {
+        tPrint = millis();
+        Serial0.printf("[SERVER] Pos:%.1f,%.1f | Tar:%.1f,%.1f | DutyX:%.1f%% | DutyY:%.1f%% | Cmd:%.1f m/s, %.1f deg"
+
+                        " | encrypt=%d"
 
                         "\n",
-                        state_x, state_y, state_theta, ((state_theta) * 57.295779513082320876798154814105)
+                        g_state_x, g_state_y, g_target_x, g_target_y,
+                        current_duty_x * 100.0, current_duty_y * 100.0,
+                        g_speed_cmd, g_rudder_deg
 
                         , encrypt_status
 
-          );
-      }
-
-    } else {
-      readFailures++;
-      ;
-
-      static uint32_t lastErrLcd = 0;
-      if (millis() - lastErrLcd > 2000) {
-        lastErrLcd = millis();
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Feedback Loop:");
-        lcd.setCursor(0, 1);
-        lcd.print("Read FAIL!");
-      }
+            );
+        digitalWrite(LED_BUILTIN /* allow testing #ifdef LED_BUILTIN*/, !digitalRead(LED_BUILTIN /* allow testing #ifdef LED_BUILTIN*/));
     }
-  }
-
-
-    if (millis() - lastRestMs >= REST_INTERVAL_MS) {
-      lastRestMs = millis();
-      restPost();
-    }
-
-  delay(5);
 }
