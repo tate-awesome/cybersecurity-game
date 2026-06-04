@@ -58,7 +58,7 @@ class DataBuffer:
         '''
         self.console_buffers["packets"] = {
                 "numbers": {},
-                "last_displayed": 1,
+                "last_displayed": 0,
                 "buffer": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
@@ -329,24 +329,28 @@ class DataBuffer:
         with self.console_buffers["status"]["lock"]:
             self.console_buffers["status"]["last_displayed"] = 0
     
-    def reset_status_print_pointer(self):
-        with self.console_buffers["status"]["lock"]:
-            self.console_buffers["status"]["last_displayed"] = 0
+    # Packet Console getters
 
-    def get_packets(self, filter: callable) -> list[MetaPacket]:
+    def get_new_packets(self, filter: callable) -> list[MetaPacket]:
         with self.console_buffers["packets"]["lock"]:
             snapshot = list(self.console_buffers["packets"]["buffer"])
 
-        return [mpkt for mpkt in snapshot if filter(mpkt)]
-    
-    def pop_packet(self, filter: callable) -> MetaPacket:
+        new_packets = [
+            meta_packet for meta_packet in snapshot
+            if meta_packet.absolute_number > self.console_buffers["packets"]["last_displayed"]
+            and filter(meta_packet)
+        ]
+
+        if new_packets:
+            self.console_buffers["packets"]["last_displayed"] = max(
+                packet.absolute_number for packet in new_packets
+            )
+
+        return new_packets
+
+    def reset_packet_cursor(self):
         with self.console_buffers["packets"]["lock"]:
-            if self.console_buffers["packets"]["last_displayed"] < len(self.console_buffers["packets"]["buffer"]):
-                packet = self.console_buffers["packets"]["buffer"][self.console_buffers["packets"]["last_displayed"]]
-                self.console_buffers["packets"]["last_displayed"] += 1
-                if filter(packet):
-                    return packet
-        return None
+            self.console_buffers["packets"]["last_displayed"] = 0
     
     # Displays getters
     def get_tracer_data(self, variable: str, direction: str) -> list[tuple[float,float]]:
