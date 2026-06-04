@@ -3,7 +3,7 @@ from ..style import Style
 
 
 class DoS:
-    def __init__(self, style: Style, parent, context, start_dos, dos_is_running, stop_dos):
+    def __init__(self, style: Style, parent, context):
 
         # Widgets
 
@@ -51,12 +51,12 @@ class DoS:
             ip_1 = str(self.entry1.get())
             ip_2 = str(self.entry2.get())
             context.root.update_idletasks()
-            start_dos(ip_1, ip_2)
+            context.net.start_dos(ip_1, ip_2)
         def stop():
             context.root.update_idletasks()
-            stop_dos()
+            context.net.stop_dos()
         
-        start_on = dos_is_running()
+        start_on = context.net.dos_is_running()
         self.bind_reversible(start, stop, "DoS Attack", start_on)
 
         self.load_saved_input(context.states["hack_forms"]["dos"])
