@@ -17,6 +17,8 @@ from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 class DataBuffer:
     '''
     Holds data from different network actions to be easily accessed by different GUI elements.
+    Put() is the main function, which takes in a packet or status message and puts it in the appropriate buffers.
+    Get() functions are provided for the console and the displays to access the data.
     '''
     def __init__(self, max_size = 5000):
         self.max_size = max_size
@@ -56,7 +58,7 @@ class DataBuffer:
         '''
         self.console_buffers["packets"] = {
                 "numbers": {},
-                "print_pointer": 0,
+                "last_displayed": 1,
                 "buffer": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
@@ -64,7 +66,7 @@ class DataBuffer:
             self.console_buffers["packets"]["numbers"][key] = 1
         self.console_buffers["status"] = {
             "number": 1,
-            "print_pointer": 0,
+            "last_displayed": 0,
             "buffer": deque(maxlen=self.max_size),
             "lock": Lock()
         }
@@ -305,37 +307,31 @@ class DataBuffer:
         status["last_point"] = new_point
 
     
-    # Console getters
-    def print_filtered_console_buffer(self, source: str, filter: callable):
-        with self.console_buffers[source]["lock"]:
-            snapshot = list(self.console_buffers[source]["mpkt"])
-        for mpkt in snapshot:
-            if filter(mpkt):
-                print(mpkt)
-
-    def print_status(self, source: str):
-        with self.console_buffers[source]["lock"]:
-            snapshot = list(self.console_buffers[source]["status"])
-        for status in snapshot:
-            print(status)
-    
-    def get_status(self) -> list[MetaStatus]:
+    # Status Console getter
+            
+    def get_new_statuses(self) -> list[MetaStatus]:
         with self.console_buffers["status"]["lock"]:
             snapshot = list(self.console_buffers["status"]["buffer"])
-        return snapshot
-    
-    def pop_status(self):
+
+        new_statuses = [
+            meta_status for meta_status in snapshot
+            if meta_status.number > self.console_buffers["status"]["last_displayed"]
+        ]
+
+        if new_statuses:
+            self.console_buffers["status"]["last_displayed"] = max(
+                status.number for status in new_statuses
+            )
+
+        return new_statuses
+
+    def reset_status_cursor(self):
         with self.console_buffers["status"]["lock"]:
-            if self.console_buffers["status"]["print_pointer"] < len(self.console_buffers["status"]["buffer"]):
-                status = self.console_buffers["status"]["buffer"][self.console_buffers["status"]["print_pointer"]]
-                self.console_buffers["status"]["print_pointer"] += 1
-                return status
-            else:
-                return None
+            self.console_buffers["status"]["last_displayed"] = 0
     
     def reset_status_print_pointer(self):
         with self.console_buffers["status"]["lock"]:
-            self.console_buffers["status"]["print_pointer"] = 0
+            self.console_buffers["status"]["last_displayed"] = 0
 
     def get_packets(self, filter: callable) -> list[MetaPacket]:
         with self.console_buffers["packets"]["lock"]:
@@ -345,9 +341,9 @@ class DataBuffer:
     
     def pop_packet(self, filter: callable) -> MetaPacket:
         with self.console_buffers["packets"]["lock"]:
-            if self.console_buffers["packets"]["print_pointer"] < len(self.console_buffers["packets"]["buffer"]):
-                packet = self.console_buffers["packets"]["buffer"][self.console_buffers["packets"]["print_pointer"]]
-                self.console_buffers["packets"]["print_pointer"] += 1
+            if self.console_buffers["packets"]["last_displayed"] < len(self.console_buffers["packets"]["buffer"]):
+                packet = self.console_buffers["packets"]["buffer"][self.console_buffers["packets"]["last_displayed"]]
+                self.console_buffers["packets"]["last_displayed"] += 1
                 if filter(packet):
                     return packet
         return None

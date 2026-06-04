@@ -21,6 +21,9 @@ class MetaStatus:
         prefix = f"{self.number} {time_str} [{self.hack}] "
         return f"{prefix}{self.status}"
 
+    def __str__(self) -> str:
+        return self.get_line()
+
 class MetaPacket:
     def __init__(  self, pkt: Packet, first_packet_time: float, absolute_number: int, hack_number: int,
     hack: str, purpose: str = "None",
