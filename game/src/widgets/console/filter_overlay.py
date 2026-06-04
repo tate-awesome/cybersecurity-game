@@ -135,6 +135,10 @@ class FilterOverlay:
 
             filter_label.configure(text=new_summary, wraplength=width/self.style.get_scale_correction())
 
+            self.refresh_function()
+        
+        apply_filters = activate
+
         activator_button.configure(command=activate)
 
     def destroy_filter_overlay(self, button: CTkButton):
