@@ -17,10 +17,10 @@ class App():
         if start_fullscreen:
             root.attributes("-fullscreen", True)
         else:
-            # Set the window size to 3/4 of the screen size
+            # Set the window size to fullsize for more room
             screen_width = root.winfo_screenwidth()
             screen_height = root.winfo_screenheight()
-            root.geometry(f"{int(screen_width*3/4)}x{int(screen_height*3/4)}")
+            root.geometry(f"{int(screen_width)}x{int(screen_height)}")
 
         # Create the router, which will handle page navigation
         Router(root, start_page)
