@@ -3,7 +3,7 @@ from ..style import Style
 
 
 class ARP:
-    def __init__(self, style: Style, parent, context, start_arp, arp_is_running, stop_arp):
+    def __init__(self, style: Style, parent, context):
 
         # Widgets
 
@@ -51,12 +51,12 @@ class ARP:
             target_ip = str(self.entry1.get())
             host_ip = str(self.entry2.get())
             context.root.update_idletasks()
-            start_arp(target_ip, host_ip)
+            context.net.start_arp(target_ip, host_ip)
         def stop():
             context.root.update_idletasks()
-            stop_arp()
+            context.net.stop_arp()
         
-        start_on = arp_is_running()
+        start_on = context.net.arp_is_running()
         self.bind_reversible(start, stop, "ARP Spoof", start_on)
 
         self.load_saved_input(context.states["hack_forms"]["arp"])

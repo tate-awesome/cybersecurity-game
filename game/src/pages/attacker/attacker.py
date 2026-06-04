@@ -39,11 +39,12 @@ class AttackerV0:
         left_p = common.scrollable(style, left)        
 
     # Forms
-        nmap = NMap(style, left_p, context, net.do_nmap)
-        arp = ARP(style, left_p, context, net.start_arp, net.arp_is_running, net.stop_arp)
-        dos = DoS(style, left_p, context, net.start_dos, net.dos_is_running, net.stop_dos)
-        sniff = Sniff(style, left_p, context, net.start_sniff, net.sniff_is_running, net.stop_sniff)
-        mitm = MITM(style, left_p, context, net.start_mitm, net.mitm_is_running, net.stop_mitm)
+        nmap = NMap(style, left_p, context)
+        arp = ARP(style, left_p, context)
+        dos = DoS(style, left_p, context)
+        sniff = Sniff(style, left_p, context)
+        mitm = MITM(style, left_p, context)
+        # mitm2 = MITM2(style, left_p, context)
         common.scroll_deadspace(style, left_p)
 
     # Console
