@@ -50,10 +50,8 @@ class ColumnOverlay:
             # Configure for autosave (give it a function with a value container, its key, and itself)
             def autosave(value=box_slots, key=key, b=column_box):
                 value[key] = str(b.get())
+                self.refresh_function()
             column_box.configure(command=autosave)
-
-        activator_button = CTkButton(category_frame, text="Apply", font=med, command=self.refresh_function)
-        activator_button.pack(side="bottom", anchor="s", padx=self.style.gap, pady=self.style.gap)
 
 
     def destroy_column_overlay(self, button: CTkButton):
