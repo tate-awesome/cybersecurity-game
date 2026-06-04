@@ -54,6 +54,6 @@ class AttackerV0:
 
     # Displays
         top, bottom = common.create_bifold(style, right_p)
-        # displays = Displays(style, top, context)
+        displays = Displays(style, top, context)
         # values = ValuesTable(style, top, context)
         network_visualizer = Visualizer(style, bottom, context)
