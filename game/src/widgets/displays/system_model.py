@@ -9,7 +9,7 @@ from .. import common
 from ...network.data_buffer import DataBuffer
 from typing import cast
 
-class Displays:
+class SystemModel:
     def __init__(self, style, parent, context):
         self.style = style
         self.parent = parent
@@ -22,6 +22,7 @@ class Displays:
         self.create_menu_button(self.menu_bar, "Reset View")
         self.create_menu_button(self.menu_bar, "Clear Values")
         self.create_menu_button(self.menu_bar, "Center on Boat") #Move with boat
+
 
         def draw_full_map(canvas, draw_lock, scale: float, offset: tuple[float, float]):
             positions = self.buffer.get_simple_path("in")
@@ -37,7 +38,10 @@ class Displays:
                 last_position = positions[-1]
                 draw.boat(last_position, bearing, "yellow", "yellow")
 
+        # map_frame = CTkFrame(parent)
+        # map_frame.pack(side="top", fill="both", expand=True)
         map = Map(style, parent, draw_full_map, 100)
+
 
     def create_menu_bar(self, parent):
         frame = CTkFrame(parent)
