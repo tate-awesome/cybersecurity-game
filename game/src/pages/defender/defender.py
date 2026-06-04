@@ -6,6 +6,7 @@ from ...widgets import common, popup
 from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
+from ...widgets.style import Style
 
 # Network
 from ...network.network_controller import HardwareDefender
@@ -32,6 +33,7 @@ class DefenderV0:
     ]
 
     def __init__(self, context: Context):
+        self.style = Style(context)
         root  = context.root
         style = Style(context)
         net   = context.refresh_net(HardwareDefender)
@@ -158,8 +160,30 @@ class DefenderV0:
         self._enc_key_entry.pack(fill="x", padx=style.igap, pady=(2, 4))
 
         self._enc_button = CTkButton(section, text="Enable Encryption",
-                                     font=style.get_font(),
-                                     command=self._toggle_encryption)
+                                     font=style.get_font())
+        def enc_button():
+            if not self._encryption_on:
+                # Encryption is off - try to turn it on
+                if self._enc_key_entry.get().strip() == "":
+                    # Empty key — show error
+                    popup.open(self.style, self._root, "Please enter an encryption key before enabling encryption.")
+                elif not str.isascii(self._enc_key_entry.get().strip()):
+                    # Non-ASCII key — show error
+                    popup.open(self.style, self._root, "Encryption key must be ASCII.")
+                else:
+                    # Key looks good — toggle encryption on behavior
+                    self._enc_key_entry.configure(state="disabled")
+                    self._enc_button.configure(text="Disable Encryption")
+                    self._toggle_encryption()
+            else:
+                # Encryption is on - turn it off
+                self._enc_key_entry.configure(state="normal")
+                # self._enc_key_entry.delete(0, "end")
+                self._enc_button.configure(text="Enable Encryption")
+                self._toggle_encryption()
+
+        self._enc_button.configure(command=enc_button)
+
         self._enc_button.pack(fill="x", padx=style.igap, pady=(0, style.igap))
 
     def _build_target_block(self, style, parent):
