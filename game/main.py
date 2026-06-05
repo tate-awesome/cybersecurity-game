@@ -13,6 +13,7 @@ Requirements:
 
 Known issues:
     As far as I know, the daemon threads close when the program is closed.
+    The DEFENDER page fails to close threads
     If not, use flusher.py to flush iptables and close all threads.
 '''
 
@@ -30,5 +31,5 @@ elif os_name == "Linux" or os_name == "Darwin":
 else:
     print(f"Running on an unidentified system: {os_name}")
 
-
-game = App("title")
+# Create the App object, which owns the CTk root
+game = App("title", title="Game", start_fullscreen=False)
