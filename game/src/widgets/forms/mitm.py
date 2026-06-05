@@ -4,12 +4,9 @@ from ...network.mod_table import ModTable
 from ...network.meta_packet import MetaPacket
 
 class MITM:
-    def __init__(self, style: Style, parent: CTkBaseClass, context, start_mitm: callable, mitm_is_running: callable, stop_mitm: callable):
+    def __init__(self, style: Style, parent: CTkBaseClass, context):
         # Assign local references
         self.context = context
-        self.start_mitm = start_mitm
-        self.mitm_is_running = mitm_is_running
-        self.stop_mitm = stop_mitm
         
         # Create form
         frame = CTkFrame(parent, fg_color=style.color("widget"))
@@ -95,7 +92,7 @@ class MITM:
             self.context.net.stop_mitm()
 
         # Autosave & preset
-        start_on = self.mitm_is_running()
+        start_on = context.net.mitm_is_running()
         self.bind_reversible(start_mitm, stop_mitm, "Attack", start_on)
 
 

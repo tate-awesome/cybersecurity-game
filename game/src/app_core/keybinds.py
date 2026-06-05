@@ -35,11 +35,18 @@ class KeyBinds:
 
         # On close event
         root.protocol("WM_DELETE_WINDOW", self.quit)
+        self.root.bind("<FocusOut>", self.minimize_on_tab_if_fullscreen)
 
 
     def toggle_fullscreen(self, event=None):
-        is_fullscreen = not bool(self.root.attributes("-fullscreen"))
-        self.root.attributes("-fullscreen", is_fullscreen)
+        switch_fullscreen = not bool(self.root.attributes("-fullscreen"))
+        self.root.attributes("-fullscreen", switch_fullscreen)
+
+    def minimize_on_tab_if_fullscreen(self, event=None):
+        # Ensure the event is for the root window and not an internal widget
+        is_fullscreen = bool(self.root.attributes("-fullscreen"))
+        if event.widget == self.root and is_fullscreen:
+            self.root.iconify()
 
 
     def exit_fullscreen(self, event=None):
