@@ -2,7 +2,7 @@ from customtkinter import *
 from ..style import Style
 
 class Sniff:
-    def __init__(self, style: Style, parent, context, start_sniff, sniff_is_running, stop_sniff):
+    def __init__(self, style: Style, parent, context):
 
         # Widgets
 
@@ -48,13 +48,13 @@ class Sniff:
         def start():
             context.states["game_progress"]["sniff"] = True
             context.root.update_idletasks()
-            start_sniff()
+            context.net.start_sniff()
 
         def stop():
             context.root.update_idletasks()
-            stop_sniff()
+            context.net.stop_sniff()
 
-        start_on = sniff_is_running()
+        start_on = context.net.sniff_is_running()
         self.bind_reversible(start, stop, "Sniffing", start_on)
 
     def bind_input_autosave(self, save_slots: list[str]):

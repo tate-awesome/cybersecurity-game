@@ -8,7 +8,7 @@ from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole
-from ...widgets.displays.build_displays import Displays
+from ...widgets.displays.system_model import SystemModel
 from ...widgets.displays.values_table import ValuesTable
 from ...widgets.displays.visualizer import Visualizer
 
@@ -21,6 +21,7 @@ from ...widgets.forms.arp import ARP
 from ...widgets.forms.sniff import Sniff
 from ...widgets.forms.mitm import MITM
 from ...widgets.forms.dos import DoS
+from ...widgets.forms.mitm2 import MITM2
 
 # Packet
 from ...network.meta_packet import MetaPacket
@@ -39,11 +40,12 @@ class AttackerV0:
         left_p = common.scrollable(style, left)        
 
     # Forms
-        nmap = NMap(style, left_p, context, net.do_nmap)
-        arp = ARP(style, left_p, context, net.start_arp, net.arp_is_running, net.stop_arp)
-        dos = DoS(style, left_p, context, net.start_dos, net.dos_is_running, net.stop_dos)
-        sniff = Sniff(style, left_p, context, net.start_sniff, net.sniff_is_running, net.stop_sniff)
-        mitm = MITM(style, left_p, context, net.start_mitm, net.mitm_is_running, net.stop_mitm)
+        nmap = NMap(style, left_p, context)
+        arp = ARP(style, left_p, context)
+        dos = DoS(style, left_p, context)
+        sniff = Sniff(style, left_p, context)
+        mitm = MITM(style, left_p, context)
+        mitm2 = MITM2(style, left_p, context)
         common.scroll_deadspace(style, left_p)
 
     # Console
@@ -54,6 +56,6 @@ class AttackerV0:
 
     # Displays
         top, bottom = common.create_bifold(style, right_p)
-        # displays = Displays(style, top, context)
+        system_model = SystemModel(style, top, context)
         # values = ValuesTable(style, top, context)
         network_visualizer = Visualizer(style, bottom, context)
