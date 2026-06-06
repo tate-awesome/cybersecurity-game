@@ -1,16 +1,12 @@
 from ...app_core.context import Context
-from ...widgets import title
+from ...widgets.panels.title_menu import TitleMenu
 
 
 class Title:
-
+    
     def __init__(self, context: Context):
-        router = context.router
-        root = context.root
-        style = context.style
-
-        title.title(root, "The Game")
-        bw = title.buttons_wrapper(root)
-        title.button(bw, context, "Play", lambda:router.show("title/select_mode"))
-        title.button(bw, context, "Settings", None)
-        title.button(bw, context, "Quit", router.quit)
+        self.router = context.router
+        
+        panel = TitleMenu(context.root, context, "The Game")
+        panel.button("Play", lambda: self.router.show("title/select_mode"))
+        panel.button("Quit", self.router.quit)
