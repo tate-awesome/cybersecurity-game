@@ -2,7 +2,7 @@ from ...app_core.context import Context
 
 # Widgets
 from ...widgets import common, popup
-from ...widgets.menu_bar import MenuBar
+from ...widgets.frame_widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
@@ -27,12 +27,16 @@ from ...widgets.forms.mitm2 import MITM2
 from ...network.meta_packet import MetaPacket
 
 class AttackerV0(Page):
+    '''
+    Page constructor for attacker/attackerv0. Inherits CTkFrame
+    '''
 
     def __init__(self, context: Context):
         super().__init__(context)
         net = context.refresh_net(HardwareNetwork)
 
         menu_bar = MenuBar(self, context, "Attacker V0")
+        menu_bar.all_buttons()
 
         left, middle_p, right_p = common.trifold(self, context)
 

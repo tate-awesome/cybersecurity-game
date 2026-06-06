@@ -3,6 +3,7 @@ from ...drawing.viewport import ViewPort
 from ...drawing import sprites
 from ...widgets.map import Map
 from ...pages.page import Page
+from ...widgets.frame_widgets.menu_bar import MenuBar
 
 from threading import Lock
 from customtkinter import CTkCanvas
@@ -11,7 +12,9 @@ from customtkinter import CTkCanvas
 class BoatMotion(Page):
     def __init__(self, context: Context):
         super().__init__(context)
-
+        menu_bar = MenuBar(self, context, "Boat Motion Demo")
+        menu_bar.quit_button()
+        menu_bar.back_button()
 
         # Make initial boat path
         self.positions = sprites.random_spline_path(20, 100)
@@ -29,7 +32,7 @@ class BoatMotion(Page):
                 if brightness < 200:
                     return f"#{r:02x}{g:02x}{b:02x}"
         self.color = random_visible_color()
-        map = Map(self.style, self, self.frame_callback, 100, 20)
+        map = Map(self, self.context, self.frame_callback, 100, 20)
 
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         import time

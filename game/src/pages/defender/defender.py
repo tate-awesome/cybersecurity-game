@@ -2,7 +2,7 @@ from ...app_core.context import Context
 
 # Widgets
 from ...widgets import common, popup
-from ...widgets.menu_bar import MenuBar
+from ...widgets.frame_widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...app_core.context import Context
@@ -23,6 +23,9 @@ import math
 
 
 class DefenderV0(Page):
+    '''
+    Page constructor for defender/defenderv0. Inherits CTkFrame
+    '''
 
     POLL_INTERVAL_MS = 2000
 
@@ -35,6 +38,7 @@ class DefenderV0(Page):
 
     def __init__(self, context: Context):
         super().__init__(context)
+        context.refresh_net(HardwareDefender)
         # TODO use net for lifetime management   = context.refresh_net(HardwareDefender)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
@@ -81,7 +85,8 @@ class DefenderV0(Page):
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
 
         # ── Menu bar ─────────────────────────────────────────────────────────
-        MenuBar(self, context, "Defender V0")
+        menu_bar = MenuBar(self, context, "Defender V0")
+        menu_bar.all_buttons()
 
         # ── Three-pane layout ────────────────────────────────────────────────
         left, middle_p, right_p = common.trifold(self, context)
