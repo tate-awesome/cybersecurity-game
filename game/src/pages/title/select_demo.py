@@ -1,5 +1,5 @@
 from ...app_core.context import Context
-from ...widgets import title
+from ...widgets.panels.title_menu import TitleMenu
 from ..demo.v0.main import run
 
 
@@ -10,11 +10,11 @@ class SelectDemo:
         root = context.root
         style = context.style
 
-        title.title(root, "Select Demo")
-        bw = title.buttons_wrapper(root)
-        title.button(bw, context, "Boat Motion", lambda:router.show("demo/boat_motion"))
-        title.button(bw, context, "Sprites", lambda:router.show("demo/sprites"))
-        title.button(bw, context, "Triangle", lambda:router.show("demo/triangle"))
-        title.button(bw, context, "Proof of Concept", run)
-        title.button(bw, context, "Back", router.go_back)
-        title.button(bw, context, "Quit", router.quit)
+        panel = TitleMenu(context.root, context, "Select Demo")
+
+        panel.button("Boat Motion", lambda:router.show("demo/boat_motion"))
+        panel.button("Sprites", lambda:router.show("demo/sprites"))
+        panel.button("Triangle", lambda:router.show("demo/triangle"))
+        panel.button("Proof of Concept", run)
+        panel.button("Back", router.go_back)
+        panel.button("Quit", router.quit)
