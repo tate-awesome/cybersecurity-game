@@ -1,5 +1,5 @@
 from ...app_core.context import Context
-from ...widgets.panels.title_menu import TitleMenu
+from ...widgets.frame_widgets.title_menu import TitleMenu
 from ..page import Page
 from ..demo.v0.main import run
 
@@ -12,7 +12,7 @@ class SelectDemo(Page):
     def __init__(self, context: Context):
         super().__init__(context)
 
-        panel = TitleMenu(context.root, context, "Select Demo")
+        panel = TitleMenu(self, context, "Select Demo")
         panel.button("Boat Motion", lambda:self.router.show("demo/boat_motion"))
         panel.button("Sprites", lambda:self.router.show("demo/sprites"))
         panel.button("Triangle", lambda:self.router.show("demo/triangle"))
