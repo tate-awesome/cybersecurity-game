@@ -1,14 +1,15 @@
-from .style import Style
+from ..app_core.context import Context
 from customtkinter import *
-from . import popup
+from .popup import message
 
 class MenuBar:
 
-    def __init__(self, style, parent, title, context):
+    def __init__(self, parent, context: Context, title):
         router = context.router
         root = context.root
-        self.style = style
-        self.frame = self.bar(style, root, "Attacker Version 0")
+        style = context.style
+        self.style = context.style
+        self.frame = self.bar(root, "Attacker Version 0")
         self.button("Quit", router.quit)
         self.button("Refresh", router.refresh)
         self.button("Back to Title", router.go_back)
@@ -18,15 +19,15 @@ class MenuBar:
         if context.net is not None:
             self.button("Load PCAP File", context.net.loader.load_pcap)
         self.button("Load Preset", router.select_preset)
-        self.button("Help", lambda:popup.open(style,root,context.help_message()))
+        self.button("Help", lambda: message(root, context, context.help_message()))
 
 
-    def bar(self, style: Style, parent, title):
-        med = style.get_font()
+    def bar(self, parent, title):
+        med = self.style.get_font()
         menu_bar = CTkFrame(parent)
-        menu_bar.pack(side="top", padx=style.gap, pady=style.gaptop, fill="x", anchor="n")
-        game_label = CTkLabel(master = menu_bar, text=title, font=med, padx=style.igap)
-        game_label.pack(fill=Y, side="left", padx=style.gap)
+        menu_bar.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x", anchor="n")
+        game_label = CTkLabel(master = menu_bar, text=title, font=med, padx=self.style.igap)
+        game_label.pack(fill=Y, side="left", padx=self.style.gap)
         return menu_bar
 
 

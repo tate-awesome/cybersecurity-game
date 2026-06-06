@@ -1,6 +1,6 @@
 from customtkinter import *
 
-from ..style import Style
+from ...app_core.context import Context
 from .map import Map
 from ...drawing.viewport import ViewPort
 from .boat_focus import BoatFocus
@@ -10,8 +10,8 @@ from ...network.data_buffer import DataBuffer
 from typing import cast
 
 class SystemModel:
-    def __init__(self, style, parent, context):
-        self.style = style
+    def __init__(self, parent, context: Context):
+        self.style = context.style
         self.parent = parent
         self.context = context
         self.buffer = cast(DataBuffer, self.context.net.data_buffer)
@@ -40,7 +40,7 @@ class SystemModel:
 
         # map_frame = CTkFrame(parent)
         # map_frame.pack(side="top", fill="both", expand=True)
-        map = Map(style, parent, draw_full_map, 100)
+        map = Map(parent, context, draw_full_map, 100)
 
 
     def create_menu_bar(self, parent):

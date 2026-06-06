@@ -1,17 +1,16 @@
-from ...widgets.style import Style
 from ...network.data_buffer import DataBuffer
 from ...drawing.viewport import ViewPort
 from ..map import Map
+from typing import cast
 import math
 from customtkinter import CTkFrame
 
 
 class BoatFocus:
-    def __init__(self, style: Style, parent, context):
+    def __init__(self, parent, context):
         self.parent = parent
-        self.style = style
         self.context = context
-        self.buffer = context.net.data_buffer
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.frame = CTkFrame(parent, fg_color="green")
 
         map = Map(style, self.frame, self.draw_boat_display, 100, 20, 40)

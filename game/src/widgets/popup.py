@@ -1,7 +1,8 @@
 from customtkinter import *
-from .style import Style
+from ..app_core.context import Context
 
-def message(style: Style, master: CTkBaseClass, message: str):
+def message(master: CTkBaseClass, context: Context, message: str):
+        style = context.style
         window = CTkToplevel(master)
         window.title("Help")
         window.config(padx=style.igap, pady=style.igap)
@@ -34,7 +35,8 @@ def message(style: Style, master: CTkBaseClass, message: str):
         window.focus_force()   # force focus to the window
         return window
 
-def quit_dialog(style: Style, master: CTkBaseClass, quit_func):
+def quit_dialog(master: CTkBaseClass, context: Context, quit_func):
+        style = context.style
         window = CTkToplevel(master)
         window.title("Confirm")
         window.config(padx=style.igap, pady=style.igap)

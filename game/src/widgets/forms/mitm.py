@@ -1,12 +1,13 @@
 from customtkinter import *
-from ..style import Style
+from ...app_core.context import Context
 from ...network.mod_table import ModTable
 from ...network.meta_packet import MetaPacket
 
 class MITM:
-    def __init__(self, style: Style, parent: CTkBaseClass, context):
+    def __init__(self, parent: CTkBaseClass, context):
         # Assign local references
         self.context = context
+        style = context.style
         
         # Create form
         frame = CTkFrame(parent, fg_color=style.color("widget"))

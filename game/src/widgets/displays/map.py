@@ -6,10 +6,11 @@ from customtkinter import CTkCanvas
 from customtkinter import CTkBaseClass
 from threading import Lock
 from typing import Callable
-from ..style import Style
 
 class Map:
-    def __init__(self, style: Style, parent: CTkBaseClass, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
+    def __init__(self, parent: CTkBaseClass, context, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
+        style = context.style
+
         # zoom/pan persistent values
         self.scale = 1.0
         self.offset = [0.0, 0.0]

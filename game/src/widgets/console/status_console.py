@@ -1,13 +1,14 @@
 from customtkinter import *
 from ...network.meta_packet import MetaStatus
 from ...network.data_buffer import DataBuffer
+from ...app_core.context import Context
 from typing import cast
 
 class StatusConsole:
-    def __init__(self, style, parent, context, buffer: DataBuffer):
+    def __init__(self, parent, context: Context):
         self.context = context
-        self.style = style
-        self.buffer = buffer
+        self.style = context.style
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
          
         menu_frame = self.create_menu_bar(parent)
         #  self.create_filter_boxes(menu_frame)
