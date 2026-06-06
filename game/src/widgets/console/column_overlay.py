@@ -1,6 +1,7 @@
 from ...network.data_buffer import DataBuffer
 from ...app_core.context import Context
 from customtkinter import *
+from typing import cast
 
 
 class ColumnOverlay:
@@ -8,10 +9,10 @@ class ColumnOverlay:
     Binds a button to open and close an overlay with checkboxes for each column, which are saved in the context states for persistence.
     The refresh function is called when the "Apply" button is pressed, which should trigger a refresh of the console to show/hide columns based on the new states.
     '''
-    def __init__(self, parent, style, button, buffer: DataBuffer, refresh_function):
-        self.context = parent
-        self.style = style
-        self.buffer = buffer
+    def __init__(self, button, context: Context, refresh_function):
+        self.context = context
+        self.style = context.style
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
 
         self.bind_overlay_button(button, self.create_column_overlay, self.destroy_column_overlay)

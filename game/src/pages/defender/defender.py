@@ -1,12 +1,11 @@
 from ...app_core.context import Context
 
 # Widgets
-from ...widgets.style import Style
 from ...widgets import common, popup
 from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
-from ...widgets.style import Style
+from ...app_core.context import Context
 
 # Network
 from ...network.network_controller import HardwareDefender
@@ -34,9 +33,7 @@ class DefenderV0:
     ]
 
     def __init__(self, context: Context):
-        self.style = Style(context)
         root  = context.root
-        style = Style(context)
         net   = context.refresh_net(HardwareDefender)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
@@ -47,7 +44,7 @@ class DefenderV0:
         self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
         self._root          = root
-        self._style         = style
+        self._style         = context.style
         self._last_points   = {"client": [], "server": []}
 
         # Filtering State Variables
@@ -85,22 +82,22 @@ class DefenderV0:
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
 
         # ── Menu bar ─────────────────────────────────────────────────────────
-        MenuBar(style, root, "Defender V0", context)
+        MenuBar(root, context, "Defender V0")
 
         # ── Three-pane layout ────────────────────────────────────────────────
-        left, middle_p, right_p = common.trifold(style, root)
-        left_p = common.scrollable(style, left)
+        left, middle_p, right_p = common.trifold(root, context)
+        left_p = common.scrollable(left, context)
 
         # ── Left pane ────────────────────────────────────────────────────────
-        self._build_connection_block(style, left_p)
-        self._build_encryption_block(style, left_p)
-        self._build_target_block(style, left_p)
-        self._build_values_block(style, left_p)
-        common.scroll_deadspace(style, left_p)
+        self._build_connection_block(left_p)
+        self._build_encryption_block(left_p)
+        self._build_target_block(left_p)
+        self._build_values_block(left_p)
+        common.scroll_deadspace(left_p, context)
 
         # ── Middle pane ──────────────────────────────────────────────────────
-        self._build_packet_log(style, middle_p)
-        self._build_flags_block(style, middle_p)
+        self._build_packet_log(middle_p)
+        self._build_flags_block(middle_p)
 
         self._map_scale  = None
         self._map_offset = None
@@ -121,7 +118,7 @@ class DefenderV0:
                     return
                 draw.boat(self._positions[-1], self._last_bearing, "white", "black")
 
-        self._map = Map(style, right_p, draw_defender_map,
+        self._map = Map(right_p, context, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
         self._map.canvas.bind("<Button-1>", self._on_map_click)
 
@@ -132,7 +129,8 @@ class DefenderV0:
     #  UI builder helpers
     # ════════════════════════════════════════════════════════════════════════
 
-    def _build_connection_block(self, style, parent):
+    def _build_connection_block(self, parent):
+        style = self._style
         section = CTkFrame(parent, fg_color=style.color("widget"))
         section.pack(fill="x", padx=style.igap, pady=style.igap)
 
@@ -151,7 +149,8 @@ class DefenderV0:
                                      font=style.get_font(), text_color="gray")
         self._conn_status.pack(anchor="w", padx=style.igap, pady=(0, style.igap))
 
-    def _build_encryption_block(self, style, parent):
+    def _build_encryption_block(self, parent):
+        style = self._style
         section = CTkFrame(parent, fg_color=style.color("widget"))
         section.pack(fill="x", padx=style.igap, pady=style.igap)
 
@@ -196,7 +195,8 @@ class DefenderV0:
 
         self._enc_button.pack(fill="x", padx=style.igap, pady=(0, style.igap))
 
-    def _build_target_block(self, style, parent):
+    def _build_target_block(self, parent):
+        style = self._style
         section = CTkFrame(parent, fg_color=style.color("widget"))
         section.pack(fill="x", padx=style.igap, pady=style.igap)
 
@@ -226,7 +226,8 @@ class DefenderV0:
             fill="x", padx=style.igap, pady=(0, style.igap)
         )
 
-    def _build_values_block(self, style, parent):
+    def _build_values_block(self, parent):
+        style = self._style
         """Client values card and Server values card, side by side."""
         outer = CTkFrame(parent, fg_color="transparent")
         outer.pack(fill="x", padx=style.igap, pady=style.igap)
@@ -260,7 +261,8 @@ class DefenderV0:
 
             CTkFrame(card, fg_color="transparent", height=style.igap).pack()
 
-    def _build_packet_log(self, style, parent):
+    def _build_packet_log(self, parent):
+        style = self._style
         """Header with CLIENT | SERVER segmented toggle, then scrollable rows."""
         header_frame = CTkFrame(parent, fg_color=style.color("widget"))
         header_frame.pack(fill="x", padx=style.igap, pady=(style.igap, 0))
@@ -296,7 +298,8 @@ class DefenderV0:
 
         self._log_rows = []
 
-    def _build_flags_block(self, style, parent):
+    def _build_flags_block(self, parent):
+        style = self._style
         """Flags panel — dots light red when a flag is set."""
         section = CTkFrame(parent, fg_color=style.color("widget"))
         section.pack(fill="x", padx=style.igap, pady=(0, style.igap))

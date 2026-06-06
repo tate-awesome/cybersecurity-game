@@ -1,14 +1,15 @@
 from customtkinter import *
-from ..style import Style
-
+from typing import cast
+from ...app_core.context import Context
+from ...network.data_buffer import DataBuffer
 
 class ValuesTable:
     
-    def __init__(self, style: Style, parent, context):
-        self.style = style
+    def __init__(self, parent, context: Context):
+        self.style = context.style
         self.parent = parent
         self.context = context
-        self.buffer = context.net.data_buffer
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
 
         self.frame = CTkFrame(parent, fg_color=style.color("panel"))
         self.frame.pack(side="left", fill="both", padx=style.gap, pady=style.gaptop)

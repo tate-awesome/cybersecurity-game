@@ -1,7 +1,6 @@
 from ...app_core.context import Context
 
 # Widgets
-from ...widgets.style import Style
 from ...widgets import common, popup
 from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
@@ -30,32 +29,31 @@ class AttackerV0:
 
     def __init__(self, context: Context):
         root = context.root
-        style = Style(context)
         net = context.refresh_net(HardwareNetwork)
 
-        menu_bar = MenuBar(style, root, "Attacker V0", context)
+        menu_bar = MenuBar(root, context, "Attacker V0")
 
-        left, middle_p, right_p = common.trifold(style, root)
+        left, middle_p, right_p = common.trifold(root, context)
 
-        left_p = common.scrollable(style, left)        
+        left_p = common.scrollable(left, context)        
 
     # Forms
-        nmap = NMap(style, left_p, context)
-        arp = ARP(style, left_p, context)
-        dos = DoS(style, left_p, context)
-        sniff = Sniff(style, left_p, context)
-        mitm = MITM(style, left_p, context)
-        mitm2 = MITM2(style, left_p, context)
-        common.scroll_deadspace(style, left_p)
+        nmap = NMap(left_p, context)
+        arp = ARP(left_p, context)
+        dos = DoS(left_p, context)
+        sniff = Sniff(left_p, context)
+        mitm = MITM(left_p, context)
+        mitm2 = MITM2(left_p, context)
+        common.scroll_deadspace(left_p, context)
 
     # Console
-        top, bottom = common.create_bifold(style, middle_p)
-        packet_console = PacketConsole(style, top, context, net.data_buffer)
-        status_console = StatusConsole(style, bottom, context, net.data_buffer)
+        top, bottom = common.create_bifold(middle_p, context)
+        packet_console = PacketConsole(top, context)
+        status_console = StatusConsole(bottom, context)
 
 
     # Displays
-        top, bottom = common.create_bifold(style, right_p)
-        system_model = SystemModel(style, top, context)
+        top, bottom = common.create_bifold(right_p, context)
+        system_model = SystemModel(top, context)
         # values = ValuesTable(style, top, context)
-        network_visualizer = Visualizer(style, bottom, context)
+        network_visualizer = Visualizer(bottom, context)

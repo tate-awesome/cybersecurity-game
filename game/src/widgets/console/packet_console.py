@@ -4,15 +4,17 @@ from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
 from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay
+from ...app_core.context import Context
+from typing import cast
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
 
 class PacketConsole:
-    def __init__(self, style, parent, context, buffer: DataBuffer):
+    def __init__(self, parent, context: Context):
         self.context = context
-        self.style = style
-        self.buffer = buffer
+        self.style = context.style
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
 
         menu_frame = self.create_menu_bar(parent)
         #  self.create_filter_boxes(menu_frame)
@@ -21,10 +23,10 @@ class PacketConsole:
         self.configure_reversible_button(jump_button, self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
 
         filter_button = self.create_menu_button(menu_frame, "Filters")
-        filter_overlay = FilterOverlay(self.context, self.style, filter_button, buffer, self.apply_filters)
+        filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
 
         columns_button = self.create_menu_button(menu_frame, "Columns")
-        columns_button = ColumnOverlay(self.context, self.style, columns_button, buffer, self.refresh_columns)
+        columns_button = ColumnOverlay(columns_button, context, self.refresh_columns)
 
         self.treeview = self.create_treeview(parent)
         self.refresh_columns()

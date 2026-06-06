@@ -3,6 +3,7 @@ from tkinter.filedialog import askopenfilename
 import os, json
 
 from .context import Context
+from .style import Style
 from .keybinds import KeyBinds
 
 # Import page builder objects here
@@ -31,12 +32,13 @@ class Router:
         '''
         Creates the app's Context object and shows the first page.
         '''
-        self.context = Context(root, self)
+        self.style = Style(root)
+        self.context = Context(root, self, self.style)
         self.navigation_stack = []
         self.show(start_page)
 
         # Bind window commands (zoom, f11, Quit)
-        KeyBinds(root, self.context, self.refresh, self.quit)
+        KeyBinds(root, self.style, self.refresh, self.quit)
 
 
     def show(self, next_page: str):

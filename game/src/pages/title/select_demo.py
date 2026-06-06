@@ -1,5 +1,4 @@
 from ...app_core.context import Context
-from ...widgets.style import Style
 from ...widgets import title
 from ..demo.v0.main import run
 
@@ -9,7 +8,7 @@ class SelectDemo:
     def __init__(self, context: Context):
         router = context.router
         root = context.root
-        style = Style(context)
+        style = context.style
 
         title.title(root, "Select Demo")
         bw = title.buttons_wrapper(root)

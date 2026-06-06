@@ -1,11 +1,12 @@
 from customtkinter import *
-from ..style import Style
+from ...app_core.context import Context
 
 
 class DoS:
-    def __init__(self, style: Style, parent, context):
+    def __init__(self, parent, context):
 
         # Widgets
+        style = context.style
 
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)

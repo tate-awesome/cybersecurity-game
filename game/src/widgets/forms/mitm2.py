@@ -1,16 +1,17 @@
 from customtkinter import *
-from ..style import Style
+from ...app_core.context import Context
 from ...network.mod_table import ModTable
 from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
 from typing import cast
 
 class MITM2:
-    def __init__(self, style: Style, parent: CTkBaseClass, context):
+    def __init__(self, parent: CTkBaseClass, context: Context):
         # Assign local references
         self.context = context
         self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.parent = parent
+        style = context.style
         
         # Create form
         frame = CTkFrame(parent, fg_color=style.color("widget"))

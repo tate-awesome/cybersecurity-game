@@ -1,5 +1,4 @@
 from customtkinter import *
-from ..widgets.style import Style
 
 
 def buttons_wrapper(parent):
@@ -7,7 +6,8 @@ def buttons_wrapper(parent):
     wrapper.grid(row=2, column=1)
     return wrapper
 
-def button(style: Style, parent, text, function):
+def button(parent, context, text, function):
+    style = context.style
     button = CTkButton(parent, text=text, command=function, font=style.get_font("title_btn"))
     button.pack(pady=style.gap, ipady=style.igap)
     return button
