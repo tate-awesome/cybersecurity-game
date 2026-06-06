@@ -30,11 +30,13 @@ class Style:
             if name == "default":
                 self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("default"))
             elif name == "title_btn":
-                self.fonts[name] = CTkFont(size=self.get_font_size("title"))
+                self.fonts[name] = CTkFont(size=self.get_font_size("title_btn"))
             elif name == "mono":
                 self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("default"))
             elif name == "treeview":
                 self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("treeview"))
+            elif name == "title":
+                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("title"), weight="bold")
             else:
                 size = int(14.0*self.ui_scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
@@ -47,8 +49,10 @@ class Style:
             # print(tk_scale)
             size = size * self.get_scale_correction() / tk_scale
             # TODO TK vs CTK font scaling on different platforms
-        elif name == "title":
+        elif name == "title_btn":
             size = 20.0
+        elif name == "title":
+            size = 72
         return int(size * self.ui_scale / 100.0)
 
     def color(self, type: str) -> str:
@@ -57,6 +61,7 @@ class Style:
         "root": root color,
         "panel": fg_color,
         "widget": top_fg_color
+        "accent": button fg_color
         '''
         root_color = self.root.cget("fg_color")
         mode = get_appearance_mode()

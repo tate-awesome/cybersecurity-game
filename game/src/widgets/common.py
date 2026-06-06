@@ -17,7 +17,7 @@ def trifold(parent, context: Context):
 
     # Create panes with matching corners and preset widths
     parent.update_idletasks()
-    w = paned.winfo_width()
+    w = paned.winfo_width() / context.style.get_scale_correction()
     left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
     middle = CTkFrame(paned, width=w//3, background_corner_colors=(rc, rc, rc, rc))
     right = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
