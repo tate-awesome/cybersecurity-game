@@ -35,6 +35,7 @@ class Router:
         self.style = Style(root)
         self.context = Context(root, self, self.style)
         self.navigation_stack = []
+        self.current_frame = None
         self.show(start_page)
 
         # Bind window commands (zoom, f11, Quit)
@@ -77,10 +78,11 @@ class Router:
             self.navigation_stack.append(next_page)
         
         # Clear the window
-        self.clear()
+        if self.current_frame is not None:
+            self.current_frame.destroy()
 
         # Call the page builder
-        pages[next_page](self.context)
+        self.current_frame = pages[next_page](self.context)
 
 
     def refresh(self):
@@ -99,15 +101,6 @@ class Router:
         if self.context.net is not None:
             self.context.net.abort_all()
         self.context.root.destroy()
-
-
-    def clear(self):
-        '''
-        Deletes all widgets inside the root
-        '''
-        root = self.context.root
-        while len(root.winfo_children()) > 0:
-            root.winfo_children()[0].destroy()
 
 
     def mode_toggle(self):
@@ -129,20 +122,17 @@ class Router:
         '''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         presets_dir = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
-        try:
-            file_path = askopenfilename(
-            initialdir=presets_dir,
-            title="Select a preset file",
-            filetypes=(("json", "*.json"),)
-            )
-            if file_path == "":
-                return
-            with open(file_path) as json_file:
-                data = json.load(json_file)
-            self.context.load_preset(data)
-            self.refresh()
-        finally:
+        file_path = askopenfilename(
+        initialdir=presets_dir,
+        title="Select a preset file",
+        filetypes=(("json", "*.json"),)
+        )
+        if file_path == "":
             return
+        with open(file_path) as json_file:
+            data = json.load(json_file)
+        self.context.load_preset(data)
+        self.refresh()
 
     
     def go_back(self):
@@ -172,5 +162,7 @@ class Router:
                 return
             ThemeManager.load_theme(file_path)
             self.refresh()
+        except:
+            print("Error in select theme")
         finally:
             return

@@ -2,14 +2,15 @@ from ...app_core.context import Context
 from ...drawing.viewport import ViewPort
 from ...drawing import sprites
 from ...widgets.map import Map
+from ...pages.page import Page
 
 from threading import Lock
 from customtkinter import CTkCanvas
 
 
-class BoatMotion:
+class BoatMotion(Page):
     def __init__(self, context: Context):
-        self.context = context
+        super().__init__(context)
 
 
         # Make initial boat path
@@ -28,10 +29,7 @@ class BoatMotion:
                 if brightness < 200:
                     return f"#{r:02x}{g:02x}{b:02x}"
         self.color = random_visible_color()
-
-        
-        style = context.style
-        map = Map(style, self.context.root, self.frame_callback, 100, 20)
+        map = Map(self.style, self, self.frame_callback, 100, 20)
 
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         import time

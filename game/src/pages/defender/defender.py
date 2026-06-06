@@ -6,6 +6,7 @@ from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...app_core.context import Context
+from ..page import Page
 
 # Network
 from ...network.network_controller import HardwareDefender
@@ -21,7 +22,7 @@ import requests
 import math
 
 
-class DefenderV0:
+class DefenderV0(Page):
 
     POLL_INTERVAL_MS = 2000
 
@@ -33,8 +34,8 @@ class DefenderV0:
     ]
 
     def __init__(self, context: Context):
-        root  = context.root
-        net   = context.refresh_net(HardwareDefender)
+        super().__init__(context)
+        # TODO use net for lifetime management   = context.refresh_net(HardwareDefender)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
         self._server_url    = "http://localhost:5000"
@@ -43,8 +44,6 @@ class DefenderV0:
         self._encryption_on = False
         self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
-        self._root          = root
-        self._style         = context.style
         self._last_points   = {"client": [], "server": []}
 
         # Filtering State Variables
@@ -82,10 +81,10 @@ class DefenderV0:
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
 
         # ── Menu bar ─────────────────────────────────────────────────────────
-        MenuBar(root, context, "Defender V0")
+        MenuBar(self, context, "Defender V0")
 
         # ── Three-pane layout ────────────────────────────────────────────────
-        left, middle_p, right_p = common.trifold(root, context)
+        left, middle_p, right_p = common.trifold(self, context)
         left_p = common.scrollable(left, context)
 
         # ── Left pane ────────────────────────────────────────────────────────
@@ -130,55 +129,53 @@ class DefenderV0:
     # ════════════════════════════════════════════════════════════════════════
 
     def _build_connection_block(self, parent):
-        style = self._style
-        section = CTkFrame(parent, fg_color=style.color("widget"))
-        section.pack(fill="x", padx=style.igap, pady=style.igap)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
-        CTkLabel(section, text="SERVER URL", font=style.get_font()).pack(
-            anchor="w", padx=style.igap, pady=(style.igap, 0)
+        CTkLabel(section, text="SERVER URL", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=self.style.gaptop
         )
-        self._url_entry = CTkEntry(section, font=style.get_font(),
+        self._url_entry = CTkEntry(section, font=self.style.get_font(),
                                    placeholder_text="http://localhost:5000")
-        self._url_entry.pack(fill="x", padx=style.igap, pady=(style.igap, 4))
+        self._url_entry.pack(fill="x", padx=self.style.igap, pady=(self.style.igap, 4))
         self._url_entry.insert(0, "http://localhost:5000")
 
-        CTkButton(section, text="Connect", font=style.get_font(),
-                  command=self._poll).pack(fill="x", padx=style.igap, pady=(0, 4))
+        CTkButton(section, text="Connect", font=self.style.get_font(),
+                  command=self._poll).pack(fill="x", padx=self.style.igap, pady=(0, 4))
 
         self._conn_status = CTkLabel(section, text="⬤  Not connected",
-                                     font=style.get_font(), text_color="gray")
-        self._conn_status.pack(anchor="w", padx=style.igap, pady=(0, style.igap))
+                                     font=self.style.get_font(), text_color="gray")
+        self._conn_status.pack(anchor="w", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_encryption_block(self, parent):
-        style = self._style
-        section = CTkFrame(parent, fg_color=style.color("widget"))
-        section.pack(fill="x", padx=style.igap, pady=style.igap)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
-        CTkLabel(section, text="ENCRYPTION", font=style.get_font()).pack(
-            anchor="w", padx=style.igap, pady=(style.igap, 0)
+        CTkLabel(section, text="ENCRYPTION", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
         )
         self._enc_label = CTkLabel(section, text="Status: OFF",
-                                   font=style.get_font(), text_color="gray")
-        self._enc_label.pack(anchor="w", padx=style.igap)
+                                   font=self.style.get_font(), text_color="gray")
+        self._enc_label.pack(anchor="w", padx=self.style.igap)
 
         # Key entry
-        CTkLabel(section, text="Encryption Key", font=style.get_font("small"),
-                 text_color="gray").pack(anchor="w", padx=style.igap, pady=(style.igap, 0))
-        self._enc_key_entry = CTkEntry(section, font=style.get_font(),
+        CTkLabel(section, text="Encryption Key", font=self.style.get_font("small"),
+                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
+        self._enc_key_entry = CTkEntry(section, font=self.style.get_font(),
                                        placeholder_text="Enter key…")
-        self._enc_key_entry.pack(fill="x", padx=style.igap, pady=(2, 4))
+        self._enc_key_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
 
         self._enc_button = CTkButton(section, text="Enable Encryption",
-                                     font=style.get_font())
+                                     font=self.style.get_font())
         def enc_button():
             if not self._encryption_on:
                 # Encryption is off - try to turn it on
                 if self._enc_key_entry.get().strip() == "":
                     # Empty key — show error
-                    popup.open(self.style, self._root, "Please enter an encryption key before enabling encryption.")
+                    popup.open(self.style, self, "Please enter an encryption key before enabling encryption.")
                 elif not str.isascii(self._enc_key_entry.get().strip()):
                     # Non-ASCII key — show error
-                    popup.open(self.style, self._root, "Encryption key must be ASCII.")
+                    popup.open(self.style, self, "Encryption key must be ASCII.")
                 else:
                     # Key looks good — toggle encryption on behavior
                     self._enc_key_entry.configure(state="disabled")
@@ -193,44 +190,42 @@ class DefenderV0:
 
         self._enc_button.configure(command=enc_button)
 
-        self._enc_button.pack(fill="x", padx=style.igap, pady=(0, style.igap))
+        self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_target_block(self, parent):
-        style = self._style
-        section = CTkFrame(parent, fg_color=style.color("widget"))
-        section.pack(fill="x", padx=style.igap, pady=style.igap)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
-        CTkLabel(section, text="TARGET POSITION", font=style.get_font()).pack(
-            anchor="w", padx=style.igap, pady=(style.igap, 0)
+        CTkLabel(section, text="TARGET POSITION", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=self.style.gaptop
         )
         self._target_status = CTkLabel(section, text="Status: Not set",
-                                       font=style.get_font(), text_color="gray")
-        self._target_status.pack(anchor="w", padx=style.igap)
+                                       font=self.style.get_font(), text_color="gray")
+        self._target_status.pack(anchor="w", padx=self.style.igap)
 
         # X entry
-        CTkLabel(section, text="X Target", font=style.get_font("small"),
-                 text_color="gray").pack(anchor="w", padx=style.igap, pady=(style.igap, 0))
-        self._target_x_entry = CTkEntry(section, font=style.get_font(),
+        CTkLabel(section, text="X Target", font=self.style.get_font("small"),
+                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
+        self._target_x_entry = CTkEntry(section, font=self.style.get_font(),
                                         placeholder_text="Enter X…")
-        self._target_x_entry.pack(fill="x", padx=style.igap, pady=(2, 4))
+        self._target_x_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
 
         # Y entry
-        CTkLabel(section, text="Y Target", font=style.get_font("small"),
-                 text_color="gray").pack(anchor="w", padx=style.igap, pady=(0, 0))
-        self._target_y_entry = CTkEntry(section, font=style.get_font(),
+        CTkLabel(section, text="Y Target", font=self.style.get_font("small"),
+                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.nogap)
+        self._target_y_entry = CTkEntry(section, font=self.style.get_font(),
                                         placeholder_text="Enter Y…")
-        self._target_y_entry.pack(fill="x", padx=style.igap, pady=(2, 4))
+        self._target_y_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
 
-        CTkButton(section, text="Set Target Position", font=style.get_font(),
+        CTkButton(section, text="Set Target Position", font=self.style.get_font(),
                   command=self._send_target).pack(
-            fill="x", padx=style.igap, pady=(0, style.igap)
+            fill="x", padx=self.style.igap, pady=self.style.gapbot
         )
 
     def _build_values_block(self, parent):
-        style = self._style
         """Client values card and Server values card, side by side."""
         outer = CTkFrame(parent, fg_color="transparent")
-        outer.pack(fill="x", padx=style.igap, pady=style.igap)
+        outer.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
         outer.grid_columnconfigure(0, weight=1)
         outer.grid_columnconfigure(1, weight=1)
 
@@ -238,60 +233,59 @@ class DefenderV0:
         self._val_labels = {"client": {}, "server": {}}
 
         for col, source in enumerate(["client", "server"]):
-            card = CTkFrame(outer, fg_color=style.color("widget"))
+            card = CTkFrame(outer, fg_color=self.style.color("widget"))
             card.grid(row=0, column=col, padx=4, sticky="nsew")
 
             CTkLabel(card, text=f"{source.capitalize()} Values",
-                     font=style.get_font()).pack(
-                anchor="w", padx=style.igap, pady=(style.igap, 4)
+                     font=self.style.get_font()).pack(
+                anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
             )
 
             for field in fields:
                 row_frame = CTkFrame(card, fg_color="transparent")
-                row_frame.pack(fill="x", padx=style.igap, pady=1)
+                row_frame.pack(fill="x", padx=self.style.igap, pady=1)
 
                 CTkLabel(row_frame, text=f"{field} =",
-                         font=style.get_font("small"), text_color="gray",
+                         font=self.style.get_font("small"), text_color="gray",
                          width=60, anchor="w").pack(side="left")
 
                 lbl = CTkLabel(row_frame, text="—",
-                               font=style.get_font("small"), anchor="w")
+                               font=self.style.get_font("small"), anchor="w")
                 lbl.pack(side="left", fill="x", expand=True)
                 self._val_labels[source][field] = lbl
 
-            CTkFrame(card, fg_color="transparent", height=style.igap).pack()
+            CTkFrame(card, fg_color="transparent", height=self.style.igap).pack()
 
     def _build_packet_log(self, parent):
-        style = self._style
         """Header with CLIENT | SERVER segmented toggle, then scrollable rows."""
-        header_frame = CTkFrame(parent, fg_color=style.color("widget"))
-        header_frame.pack(fill="x", padx=style.igap, pady=(style.igap, 0))
+        header_frame = CTkFrame(parent, fg_color=self.style.color("widget"))
+        header_frame.pack(fill="x", padx=self.style.igap, pady=(self.style.igap, 0))
 
         title_row = CTkFrame(header_frame, fg_color="transparent")
-        title_row.pack(fill="x", padx=style.igap, pady=style.igap)
+        title_row.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
         CTkLabel(title_row, text="PACKET LOG  (last 10)",
-                 font=style.get_font()).pack(side="left")
+                 font=self.style.get_font()).pack(side="left")
 
         self._log_toggle = CTkSegmentedButton(
             title_row,
             values=["CLIENT", "SERVER"],
             command=self._on_log_source_change,
-            font=style.get_font("small"),
+            font=self.style.get_font("small"),
         )
         self._log_toggle.set("CLIENT")
         self._log_toggle.pack(side="right")
 
         cols = ["Time", "X (m)", "Y (m)", "Theta", "Speed", "Rudder", "Uptime (s)"]
-        col_frame = CTkFrame(parent, fg_color=style.color("panel"))
-        col_frame.pack(fill="x", padx=style.igap)
+        col_frame = CTkFrame(parent, fg_color=self.style.color("panel"))
+        col_frame.pack(fill="x", padx=self.style.igap)
         for i, col in enumerate(cols):
-            CTkLabel(col_frame, text=col, font=style.get_font("small"),
+            CTkLabel(col_frame, text=col, font=self.style.get_font("small"),
                      text_color="gray").grid(row=0, column=i, padx=6, pady=4, sticky="w")
             col_frame.grid_columnconfigure(i, weight=1)
 
-        self._log_frame = CTkScrollableFrame(parent, fg_color=style.color("panel"), height=240)
-        self._log_frame.pack(fill="x", padx=style.igap, pady=(0, style.igap))
+        self._log_frame = CTkScrollableFrame(parent, fg_color=self.style.color("panel"), height=240)
+        self._log_frame.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
         common.bind_scroll(self._log_frame)
         for i in range(len(cols)):
             self._log_frame.grid_columnconfigure(i, weight=1)
@@ -299,26 +293,25 @@ class DefenderV0:
         self._log_rows = []
 
     def _build_flags_block(self, parent):
-        style = self._style
         """Flags panel — dots light red when a flag is set."""
-        section = CTkFrame(parent, fg_color=style.color("widget"))
-        section.pack(fill="x", padx=style.igap, pady=(0, style.igap))
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
 
-        CTkLabel(section, text="FLAGS", font=style.get_font()).pack(
-            anchor="w", padx=style.igap, pady=(style.igap, 4)
+        CTkLabel(section, text="FLAGS", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
         )
 
         self._flag_labels = {}
         for key, label_text in self.FLAG_DEFS:
             row = CTkFrame(section, fg_color="transparent")
-            row.pack(fill="x", padx=style.igap, pady=2)
+            row.pack(fill="x", padx=self.style.igap, pady=2)
 
-            dot = CTkLabel(row, text="●", font=style.get_font("small"),
+            dot = CTkLabel(row, text="●", font=self.style.get_font("small"),
                            text_color="gray", width=20)
             dot.pack(side="left")
 
             CTkLabel(row, text=label_text,
-                     font=style.get_font("small"), anchor="w").pack(
+                     font=self.style.get_font("small"), anchor="w").pack(
                 side="left", fill="x", expand=True
             )
             self._flag_labels[key] = dot
@@ -327,61 +320,61 @@ class DefenderV0:
                 self._speed_expected_lbl = CTkLabel(
                     section,
                     text="Expected Speed: --",
-                    font=style.get_font("small"),
+                    font=self.style.get_font("small"),
                     anchor="w"
                 )
-                self._speed_expected_lbl.pack(fill="x", padx=style.igap)
+                self._speed_expected_lbl.pack(fill="x", padx=self.style.igap)
 
                 self._speed_measured_lbl = CTkLabel(
                     section,
                     text="Measured Speed: --",
-                    font=style.get_font("small"),
+                    font=self.style.get_font("small"),
                     anchor="w"
                 )
-                self._speed_measured_lbl.pack(fill="x", padx=style.igap)
+                self._speed_measured_lbl.pack(fill="x", padx=self.style.igap)
 
                 self._rudder_expected_lbl = CTkLabel(
                     section,
                     text="Expected Rudder: --",
-                    font=style.get_font("small"),
+                    font=self.style.get_font("small"),
                     anchor="w"
                 )
-                self._rudder_expected_lbl.pack(fill="x", padx=style.igap)
+                self._rudder_expected_lbl.pack(fill="x", padx=self.style.igap)
 
                 self._rudder_measured_lbl = CTkLabel(
                     section,
                     text="Measured Rudder: --",
-                    font=style.get_font("small"),
+                    font=self.style.get_font("small"),
                     anchor="w"
                 )
-                self._rudder_measured_lbl.pack(fill="x", padx=style.igap)
+                self._rudder_measured_lbl.pack(fill="x", padx=self.style.igap)
             
             if key == "bicycle_verification":
                 self._bicycle_speed_expected_lbl = CTkLabel(
                     section, text="Bicycle Expected Speed: --",
-                    font=style.get_font("small"), anchor="w"
+                    font=self.style.get_font("small"), anchor="w"
                 )
-                self._bicycle_speed_expected_lbl.pack(fill="x", padx=style.igap)
+                self._bicycle_speed_expected_lbl.pack(fill="x", padx=self.style.igap)
 
                 self._bicycle_speed_measured_lbl = CTkLabel(
                     section, text="Bicycle Measured Speed: --",
-                    font=style.get_font("small"), anchor="w"
+                    font=self.style.get_font("small"), anchor="w"
                 )
-                self._bicycle_speed_measured_lbl.pack(fill="x", padx=style.igap)
+                self._bicycle_speed_measured_lbl.pack(fill="x", padx=self.style.igap)
 
                 self._bicycle_rudder_expected_lbl = CTkLabel(
                     section, text="Bicycle Expected Rudder: --",
-                    font=style.get_font("small"), anchor="w"
+                    font=self.style.get_font("small"), anchor="w"
                 )
-                self._bicycle_rudder_expected_lbl.pack(fill="x", padx=style.igap)
+                self._bicycle_rudder_expected_lbl.pack(fill="x", padx=self.style.igap)
 
                 self._bicycle_rudder_measured_lbl = CTkLabel(
                     section, text="Bicycle Measured Rudder: --",
-                    font=style.get_font("small"), anchor="w"
+                    font=self.style.get_font("small"), anchor="w"
                 )
-                self._bicycle_rudder_measured_lbl.pack(fill="x", padx=style.igap)
+                self._bicycle_rudder_measured_lbl.pack(fill="x", padx=self.style.igap)
 
-        CTkFrame(section, fg_color="transparent", height=style.igap).pack()
+        CTkFrame(section, fg_color="transparent", height=self.style.igap).pack()
 
     # ════════════════════════════════════════════════════════════════════════
     #  Network actions
@@ -403,7 +396,7 @@ class DefenderV0:
                 )
                 if resp.ok:
                     self._encryption_on = new_state
-                    self._root.after(0, self._refresh_encryption_ui)
+                    self.after(0, self._refresh_encryption_ui)
             except Exception:
                 pass
 
@@ -419,7 +412,7 @@ class DefenderV0:
             self._target_x = target_x
             self._target_y = target_y
         except ValueError:
-            self._root.after(0, lambda: self._target_status.configure(
+            self.after(0, lambda: self._target_status.configure(
                 text="Status: Invalid input", text_color="red"
             ))
             return
@@ -432,17 +425,17 @@ class DefenderV0:
                     timeout=3,
                 )
                 if resp.ok:
-                    self._root.after(0, lambda: self._target_status.configure(
+                    self.after(0, lambda: self._target_status.configure(
                         text=f"Status: Set to ({target_x:.1f}, {target_y:.1f})",
                         text_color="green"
                     ))
                 else:
-                    self._root.after(0, lambda: self._target_status.configure(
+                    self.after(0, lambda: self._target_status.configure(
                         text=f"Status: Server error {resp.status_code}",
                         text_color="red"
                     ))
             except Exception:
-                self._root.after(0, lambda: self._target_status.configure(
+                self.after(0, lambda: self._target_status.configure(
                     text="Status: Connection failed", text_color="red"
                 ))
 
@@ -454,15 +447,15 @@ class DefenderV0:
                 resp = requests.get(f"{self._get_url()}/api/data", timeout=3)
                 if resp.ok:
                     data = resp.json()
-                    self._root.after(0, lambda: self._on_data(data))
-                    self._root.after(0, self._set_connected)
+                    self.after(0, lambda: self._on_data(data))
+                    self.after(0, self._set_connected)
                 else:
-                    self._root.after(0, self._set_disconnected)
+                    self.after(0, self._set_disconnected)
             except Exception:
-                self._root.after(0, self._set_disconnected)
+                self.after(0, self._set_disconnected)
 
         threading.Thread(target=_request, daemon=True).start()
-        self._root.after(self.POLL_INTERVAL_MS, self._poll)
+        self.after(self.POLL_INTERVAL_MS, self._poll)
 
     def _on_log_source_change(self, value: str):
         self._log_source = value.lower()
@@ -645,7 +638,6 @@ class DefenderV0:
             self._val_labels[source][field].configure(text=text)
 
     def _update_log(self, rows: list):
-        style = self._style
         cols  = ["received_at", "x", "y", "theta", "speed", "rudder", "timestamp"]
 
         for widget in self._log_frame.winfo_children():
@@ -668,7 +660,7 @@ class DefenderV0:
                         text = str(raw)
 
                 lbl = CTkLabel(self._log_frame, text=text,
-                               font=style.get_font("small"),
+                               font=self.style.get_font("small"),
                                fg_color=bg, anchor="w")
                 lbl.grid(row=r_idx, column=c_idx, padx=4, pady=1, sticky="ew")
                 row_labels.append(lbl)

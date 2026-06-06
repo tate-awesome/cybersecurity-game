@@ -3,12 +3,13 @@ from ...app_core.context import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
+from ...pages.page import Page
 
 
-class Sprites:
+class Sprites(Page):
     def __init__(self, context: Context):
-        style = context.style
-        world_map = Map(style, context.root, self.frame_callback, 100)
+        super().__init__(context)
+        world_map = Map(self.style, context.root, self.frame_callback, 100)
 
     
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
