@@ -1,5 +1,6 @@
 from ...app_core.context import Context
 from customtkinter import *
+from ..popup import message
 
 class MenuBar(CTkFrame):
     '''
