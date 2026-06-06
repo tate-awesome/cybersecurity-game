@@ -10,6 +10,7 @@ from ...widgets.console.status_console import StatusConsole
 from ...widgets.displays.system_model import SystemModel
 from ...widgets.displays.values_table import ValuesTable
 from ...widgets.displays.visualizer import Visualizer
+from ...pages.page import Page
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
@@ -25,15 +26,15 @@ from ...widgets.forms.mitm2 import MITM2
 # Packet
 from ...network.meta_packet import MetaPacket
 
-class AttackerV0:
+class AttackerV0(Page):
 
     def __init__(self, context: Context):
-        root = context.root
+        super().__init__(context)
         net = context.refresh_net(HardwareNetwork)
 
-        menu_bar = MenuBar(root, context, "Attacker V0")
+        menu_bar = MenuBar(self, context, "Attacker V0")
 
-        left, middle_p, right_p = common.trifold(root, context)
+        left, middle_p, right_p = common.trifold(self, context)
 
         left_p = common.scrollable(left, context)        
 

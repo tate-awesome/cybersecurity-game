@@ -2,8 +2,9 @@ from ...app_core.context import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...widgets.map import Map
+from ...pages.page import Page
 
-class Triangle:
+class Triangle(Page):
     def __init__(self, context: Context):       
         style = context.style
         world_map = Map(style, context.root, self.draw_test_plane, 100)
