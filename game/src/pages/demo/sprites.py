@@ -4,7 +4,7 @@ from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
 from ...pages.page import Page
-from ...widgets.frame_widgets.menu_bar import MenuBar
+from ...widgets import MenuBar
 
 
 class Sprites(Page):

@@ -1,8 +1,10 @@
 from ...app_core.context import Context
 
+# Frame widgets
+from ...widgets import Trifold, MenuBar
+
 # Widgets
 from ...widgets import common, popup
-from ...widgets.frame_widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
@@ -38,9 +40,11 @@ class AttackerV0(Page):
         menu_bar = MenuBar(self, context, "Attacker V0")
         menu_bar.all_buttons()
 
-        left, middle_p, right_p = common.trifold(self, context)
+        trifold = Trifold(self, context)
 
-        left_p = common.scrollable(left, context)        
+        left_p = common.scrollable(trifold.left, context)       
+        middle_p = trifold.middle
+        right_p = trifold.middle
 
     # Forms
         nmap = NMap(left_p, context)

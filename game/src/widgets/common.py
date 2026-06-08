@@ -4,30 +4,6 @@ from . import popup
 from ..app_core.context import Context
 # from tkinter import ttk
 
-# Layout frames
-def trifold(parent, context: Context):
-    style = context.style
-
-    # Get root color
-    rc = style.color("root")
-
-    # Create paned window
-    paned = tk.PanedWindow(parent, orient="horizontal", background=rc, sashwidth=style.igap)
-    paned.pack(fill="both", expand=True, padx=style.gap, pady=style.gap)
-
-    # Create panes with matching corners and preset widths
-    parent.update_idletasks()
-    w = paned.winfo_width() / context.style.get_scale_correction()
-    left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
-    middle = CTkFrame(paned, width=w//3, background_corner_colors=(rc, rc, rc, rc))
-    right = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
-
-    # Add panes
-    paned.add(left, minsize=style.PANE_MIN)
-    paned.add(middle, minsize=style.PANE_MIN)
-    paned.add(right, minsize=style.PANE_MIN)
-    return left, middle, right
-
 def scrollable(parent, context: Context):
     style = context.style
     frame = CTkScrollableFrame(parent, fg_color=style.color("panel"))
