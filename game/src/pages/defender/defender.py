@@ -177,10 +177,10 @@ class DefenderV0(Page):
                 # Encryption is off - try to turn it on
                 if self._enc_key_entry.get().strip() == "":
                     # Empty key — show error
-                    popup.open(self.style, self, "Please enter an encryption key before enabling encryption.")
+                    popup.message(self, self.context, "Please enter an encryption key before enabling encryption.")
                 elif not str.isascii(self._enc_key_entry.get().strip()):
                     # Non-ASCII key — show error
-                    popup.open(self.style, self, "Encryption key must be ASCII.")
+                    popup.message(self, self.context, "Encryption key must be ASCII.")
                 else:
                     # Key looks good — toggle encryption on behavior
                     self._enc_key_entry.configure(state="disabled")
