@@ -1,6 +1,6 @@
 from ...app_core.context import Context
 from ..page import Page
-from ...widgets.frame_widgets.title_menu import TitleMenu
+from ...widgets import TitleMenu
 
 
 class SelectMode(Page):

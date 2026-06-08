@@ -3,7 +3,7 @@ from ...drawing.viewport import ViewPort
 from ...drawing import sprites
 from ...widgets.map import Map
 from ...pages.page import Page
-from ...widgets.frame_widgets.menu_bar import MenuBar
+from ...widgets import MenuBar
 
 from threading import Lock
 from customtkinter import CTkCanvas

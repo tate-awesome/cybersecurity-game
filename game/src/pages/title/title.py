@@ -1,6 +1,6 @@
 from ..page import Page
 from ...app_core.context import Context
-from ...widgets.frame_widgets.title_menu import TitleMenu
+from ...widgets import TitleMenu
 
 
 class Title(Page):

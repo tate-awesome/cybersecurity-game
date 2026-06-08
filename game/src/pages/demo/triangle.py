@@ -3,7 +3,7 @@ from customtkinter import CTkCanvas
 from threading import Lock
 from ...widgets.map import Map
 from ...pages.page import Page
-from ...widgets.frame_widgets.menu_bar import MenuBar
+from ...widgets import MenuBar
 
 class Triangle(Page):
     def __init__(self, context: Context):

@@ -1,5 +1,5 @@
 from ...app_core.context import Context
-from ...widgets.frame_widgets.title_menu import TitleMenu
+from ...widgets import TitleMenu
 from ..page import Page
 from ..demo.v0.main import run
 
