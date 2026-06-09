@@ -111,7 +111,7 @@ class DefenderV0:
 
         self._map = Map(style, right_p, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
-        self._map.canvas.bind("<Button-1>", self._on_map_click)
+        #self._map.canvas.bind("<Button-1>", self._on_map_click)
 
         # ── Start polling ────────────────────────────────────────────────────
         self._poll()
@@ -576,22 +576,22 @@ class DefenderV0:
     def _set_disconnected(self):
         self._conn_status.configure(text="⬤  Disconnected", text_color="red")
 
-    def _on_map_click(self, event):
-            if self._map_scale is None or self._map_offset is None:
-                return
+    # def _on_map_click(self, event):
+    #         if self._map_scale is None or self._map_offset is None:
+    #             return
 
-            if not (0.0 <= world_x <= 200.0 and 0.0 <= world_y <= 200.0):
-                return
-            world_x = (event.x - self._map_offset[0]) / self._map_scale
-            world_y = (event.y - self._map_offset[1]) / self._map_scale
+    #         if not (0.0 <= world_x <= 200.0 and 0.0 <= world_y <= 200.0):
+    #             return
+    #         world_x = (event.x - self._map_offset[0]) / self._map_scale
+    #         world_y = (event.y - self._map_offset[1]) / self._map_scale
 
-            # Clamp to valid map range
-            world_x = max(0.0, min(200.0, world_x))
-            world_y = max(0.0, min(200.0, world_y))
+    #         # Clamp to valid map range
+    #         world_x = max(0.0, min(200.0, world_x))
+    #         world_y = max(0.0, min(200.0, world_y))
 
-            self._map_click_xy = (world_x, world_y)
+    #         self._map_click_xy = (world_x, world_y)
 
-            self._target_x_entry.delete(0, "end")
-            self._target_x_entry.insert(0, f"{world_x:.1f}")
-            self._target_y_entry.delete(0, "end")
-            self._target_y_entry.insert(0, f"{world_y:.1f}")
+    #         self._target_x_entry.delete(0, "end")
+    #         self._target_x_entry.insert(0, f"{world_x:.1f}")
+    #         self._target_y_entry.delete(0, "end")
+    #         self._target_y_entry.insert(0, f"{world_y:.1f}")
