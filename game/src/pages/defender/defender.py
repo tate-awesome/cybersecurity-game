@@ -416,12 +416,21 @@ class DefenderV0(Page):
         try:
             target_x = float(raw_x)
             target_y = float(raw_y)
+
+            if not(0 < target_x < 200 and 0 < target_y < 200):
+                self.after(0, lambda: self._target_status.configure(
+                    text="Status: Invalid input", text_color="red"
+                ))
+                popup.message(self, self.context, "The target X and target Y field must both be filled with values between 0 and 200")
+                return
+        
             self._target_x = target_x
             self._target_y = target_y
         except ValueError:
             self.after(0, lambda: self._target_status.configure(
                 text="Status: Invalid input", text_color="red"
             ))
+            popup.message(self, self.context, "The target X and target Y field must both be filled with values between 0 and 200")
             return
 
         def _request():
@@ -653,7 +662,7 @@ class DefenderV0(Page):
 
         for r_idx, packet in enumerate(rows):
             row_labels = []
-            bg = style.color("widget") if r_idx % 2 == 0 else style.color("panel")
+            bg = self.style.color("widget") if r_idx % 2 == 0 else self.style.color("panel")
             for c_idx, key in enumerate(cols):
                 raw = packet.get(key, "—")
                 if key == "received_at":
