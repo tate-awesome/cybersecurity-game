@@ -417,7 +417,7 @@ class DefenderV0(Page):
             target_x = float(raw_x)
             target_y = float(raw_y)
 
-            if not(0 < target_x < 200 and 0 < target_y < 200):
+            if not(0 <= target_x <= 200 and 0 <= target_y <= 200):
                 self.after(0, lambda: self._target_status.configure(
                     text="Status: Invalid input", text_color="red"
                 ))
@@ -635,6 +635,11 @@ class DefenderV0(Page):
                 if len(self._positions) >= 2:
                     dx = self._positions[-1][0] - self._positions[-2][0]
                     dy = self._positions[-1][1] - self._positions[-2][1]
+                    speed = math.sqrt((dx*dx)+(dy*dy))
+                    if(speed > 50):
+                        self._flags["unexpected_movement"] = True
+                    else:
+                        self._flags["unexpected_movement"] = False
                     self._last_bearing = math.atan2(dy, dx)
                 else:
                     self._last_bearing = None
