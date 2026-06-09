@@ -1,16 +1,18 @@
 from ...app_core.context import Context
 
+# Frame widgets
+from ...widgets import Trifold, MenuBar
+
 # Widgets
-from ...widgets.style import Style
 from ...widgets import common, popup
-from ...widgets.menu_bar import MenuBar
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole
-from ...widgets.displays.build_displays import Displays
+from ...widgets.displays.system_model import SystemModel
 from ...widgets.displays.values_table import ValuesTable
 from ...widgets.displays.visualizer import Visualizer
+from ...pages.page import Page
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
@@ -21,39 +23,46 @@ from ...widgets.forms.arp import ARP
 from ...widgets.forms.sniff import Sniff
 from ...widgets.forms.mitm import MITM
 from ...widgets.forms.dos import DoS
+from ...widgets.forms.mitm2 import MITM2
 
 # Packet
 from ...network.meta_packet import MetaPacket
 
-class AttackerV0:
+class AttackerV0(Page):
+    '''
+    Page constructor for attacker/attackerv0. Inherits CTkFrame
+    '''
 
     def __init__(self, context: Context):
-        root = context.root
-        style = Style(context)
+        super().__init__(context)
         net = context.refresh_net(HardwareNetwork)
 
-        menu_bar = MenuBar(style, root, "Attacker V0", context)
+        menu_bar = MenuBar(self, context, "Attacker V0")
+        menu_bar.all_buttons()
 
-        left, middle_p, right_p = common.trifold(style, root)
+        trifold = Trifold(self, context)
 
-        left_p = common.scrollable(style, left)        
+        left_p = common.scrollable(trifold.left, context)       
+        middle_p = trifold.middle
+        right_p = trifold.middle
 
     # Forms
-        nmap = NMap(style, left_p, context, net.do_nmap)
-        arp = ARP(style, left_p, context, net.start_arp, net.arp_is_running, net.stop_arp)
-        dos = DoS(style, left_p, context, net.start_dos, net.dos_is_running, net.stop_dos)
-        sniff = Sniff(style, left_p, context, net.start_sniff, net.sniff_is_running, net.stop_sniff)
-        mitm = MITM(style, left_p, context, net.start_mitm, net.mitm_is_running, net.stop_mitm)
-        common.scroll_deadspace(style, left_p)
+        nmap = NMap(left_p, context)
+        arp = ARP(left_p, context)
+        dos = DoS(left_p, context)
+        sniff = Sniff(left_p, context)
+        mitm = MITM(left_p, context)
+        mitm2 = MITM2(left_p, context)
+        common.scroll_deadspace(left_p, context)
 
     # Console
-        top, bottom = common.create_bifold(style, middle_p)
-        packet_console = PacketConsole(style, top, context, net.data_buffer)
-        status_console = StatusConsole(style, bottom, context, net.data_buffer)
+        top, bottom = common.create_bifold(middle_p, context)
+        packet_console = PacketConsole(top, context)
+        status_console = StatusConsole(bottom, context)
 
 
     # Displays
-        top, bottom = common.create_bifold(style, right_p)
-        # displays = Displays(style, top, context)
+        top, bottom = common.create_bifold(right_p, context)
+        system_model = SystemModel(top, context)
         # values = ValuesTable(style, top, context)
-        network_visualizer = Visualizer(style, bottom, context)
+        network_visualizer = Visualizer(bottom, context)

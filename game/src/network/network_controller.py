@@ -11,6 +11,11 @@ class NetworkController:
 
         self.loader = loader.Loader(self.data_buffer)
 
+    def abort_all(self):
+        self.data_buffer.reset_packet_cursor()
+        self.data_buffer.reset_status_cursor()
+        self.table.reset_table()
+
 class HardwareController(NetworkController):
     def __init__(self):
         super().__init__()
@@ -30,6 +35,7 @@ class HardwareController(NetworkController):
         self.sniffer.stop()
     
     def abort_all(self):
+        super().abort_all()
         self.stop_sniff()
     
 class HardwareAttacker(HardwareController):

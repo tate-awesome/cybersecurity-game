@@ -1,20 +1,19 @@
 from ...app_core.context import Context
-from ...widgets.style import Style
-from ...widgets import title
+from ..page import Page
+from ...widgets import TitleMenu
 
 
-class SelectMode:
+class SelectMode(Page):
+    '''
+    Page constructor for title/select_mode. Inherits CTkFrame
+    '''
 
     def __init__(self, context: Context):
-        router = context.router
-        root = context.root
-        style = Style(context)
+        super().__init__(context)
 
-        title.title(root, "Select Mode")
-        bw = title.buttons_wrapper(root)
-        title.button(style, bw, "Hardware Attacker", lambda:router.show("attacker/v0"))
-        title.button(style, bw, "Hardware Defender", lambda:router.show("defender/v0"))
-        title.button(style, bw, "Virtual Attacker", None)
-        title.button(style, bw, "Select a Demo", lambda:router.show("title/select_demo"))
-        title.button(style, bw, "Back", router.go_back)
-        title.button(style, bw, "Quit", router.quit)
+        panel = TitleMenu(self, context, "Select Mode")
+        panel.button("Hardware Attacker", lambda:self.router.show("attacker/v0"))
+        panel.button("Hardware Defender", lambda:self.router.show("defender/v0"))
+        panel.button("Select a Demo", lambda:self.router.show("title/select_demo"))
+        panel.button("Back", self.router.go_back)
+        panel.button("Quit", self.router.quit)

@@ -1,11 +1,12 @@
 from customtkinter import *
-from ..style import Style
+from ...app_core.context import Context
 
 
 class ARP:
-    def __init__(self, style: Style, parent, context, start_arp, arp_is_running, stop_arp):
+    def __init__(self, parent, context):
 
         # Widgets
+        style = context.style
 
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
@@ -51,12 +52,12 @@ class ARP:
             target_ip = str(self.entry1.get())
             host_ip = str(self.entry2.get())
             context.root.update_idletasks()
-            start_arp(target_ip, host_ip)
+            context.net.start_arp(target_ip, host_ip)
         def stop():
             context.root.update_idletasks()
-            stop_arp()
+            context.net.stop_arp()
         
-        start_on = arp_is_running()
+        start_on = context.net.arp_is_running()
         self.bind_reversible(start, stop, "ARP Spoof", start_on)
 
         self.load_saved_input(context.states["hack_forms"]["arp"])

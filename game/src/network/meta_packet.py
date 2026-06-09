@@ -21,6 +21,9 @@ class MetaStatus:
         prefix = f"{self.number} {time_str} [{self.hack}] "
         return f"{prefix}{self.status}"
 
+    def __str__(self) -> str:
+        return self.get_line()
+
 class MetaPacket:
     def __init__(  self, pkt: Packet, first_packet_time: float, absolute_number: int, hack_number: int,
     hack: str, purpose: str = "None",
@@ -98,7 +101,13 @@ class MetaPacket:
         self.mac_word = f"{self.mac_src} → {self.mac_dst}" if pkt.haslayer(Ether) else "-"
         self.ip_word = f"{self.ip_src} → {self.ip_dst}" if pkt.haslayer(IP) else "-"
         self.transaction_word = f"{self.direction_verbose}\n{self.mac_word}\n{self.ip_word}"
-        self.modbus_word = f"{self.variables} = {self.values}"
+        modbus_associations = []
+        for i, variable in enumerate(self.variables):
+            modbus_associations.append(f"{str(self.variables[i])} = {self.values[i]:.2f}")
+        if len(modbus_associations) == 0:
+            self.modbus_word = "No Data"
+        else:
+            self.modbus_word = " , ".join(modbus_associations)
 
     def get_column_value(self, column_name: str):
         match column_name:

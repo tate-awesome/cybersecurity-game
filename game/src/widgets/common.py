@@ -1,33 +1,11 @@
 from customtkinter import *
 import tkinter as tk
-from .style import Style
 from . import popup
+from ..app_core.context import Context
 # from tkinter import ttk
 
-# Layout frames
-def trifold(style: Style, parent):
-
-    # Get root color
-    rc = style.color("root")
-
-    # Create paned window
-    paned = tk.PanedWindow(parent, orient="horizontal", background=rc, sashwidth=style.igap)
-    paned.pack(fill="both", expand=True, padx=style.gap, pady=style.gap)
-
-    # Create panes with matching corners and preset widths
-    parent.update_idletasks()
-    w = paned.winfo_width()
-    left = CTkFrame(paned, width=w//4, background_corner_colors=(rc, rc, rc, rc))
-    middle = CTkFrame(paned, width=w//3, background_corner_colors=(rc, rc, rc, rc))
-    right = CTkFrame(paned, width=w//2, background_corner_colors=(rc, rc, rc, rc))
-
-    # Add panes
-    paned.add(left, minsize=style.PANE_MIN)
-    paned.add(middle, minsize=style.PANE_MIN)
-    paned.add(right, minsize=style.PANE_MIN)
-    return left, middle, right
-
-def scrollable(style: Style, parent):
+def scrollable(parent, context: Context):
+    style = context.style
     frame = CTkScrollableFrame(parent, fg_color=style.color("panel"))
     frame.pack(side="top", fill="both", expand="y", padx=style.cgap, pady=style.cgap)
     bind_scroll(frame)
@@ -68,14 +46,16 @@ def clear(parent):
     for widget in parent.winfo_children():
         widget.destroy()
 
-def scroll_deadspace(style, parent):
+def scroll_deadspace(parent, context: Context):
+    style = context.style
     parent.update_idletasks()
     h = parent.winfo_height() * 0.8
     frame = CTkFrame(parent, fg_color=style.color("panel"), height=h)
     frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
 
 
-def create_bifold(style, parent: CTkFrame):
+def create_bifold(parent: CTkFrame, context: Context):
+    style = context.style
 
     # bifold
     rc = style.color("root")
@@ -95,7 +75,8 @@ def create_bifold(style, parent: CTkFrame):
     paned.add(bottom, minsize=110)
     return top, bottom
 
-def create_stretchable(style, parent, side="top"):
+def create_stretchable(parent, context: Context, side="top"):
+    style = context.style
     frame = CTkFrame(parent)
     frame.pack(side=side, fill="both", expand=True)
     return frame

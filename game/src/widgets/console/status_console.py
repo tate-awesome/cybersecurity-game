@@ -1,12 +1,14 @@
 from customtkinter import *
 from ...network.meta_packet import MetaStatus
 from ...network.data_buffer import DataBuffer
+from ...app_core.context import Context
+from typing import cast
 
 class StatusConsole:
-    def __init__(self, style, parent, context, buffer):
+    def __init__(self, parent, context: Context):
         self.context = context
-        self.style = style
-        self.buffer = buffer
+        self.style = context.style
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
          
         menu_frame = self.create_menu_bar(parent)
         #  self.create_filter_boxes(menu_frame)
@@ -22,6 +24,9 @@ class StatusConsole:
         # Printing Flags
         self.jump_to_bottom = True
         self.run = True
+
+        # Reset print pointer on refresh
+        self.buffer.reset_status_cursor()
 
         # Start printing loop
         self.start_printing()
@@ -40,24 +45,29 @@ class StatusConsole:
             self.after_id = None
 
     def print_tick(self):
-        flag = True
-        line_printed = False
-        while flag:
-            status = self.buffer.pop_status()
-            if status is None:
-                if line_printed:
-                    self.text_box.configure(state="normal")
-                    self.text_box.insert("end", "\n")
-                    self.text_box.configure(state="disabled")
-                flag = False
-                continue
-            # self.text_box.delete("1.0", "end")
+        '''
+        Prints new status lines to the text box, then sets a timer to call itself again after 100 ms.
+        The buffer's getter returns all new lines since the last print, so we don't need to loop.
+        Empty lines go after every cluster of statuses
+        '''
+        # Get new lines
+        statuses = self.buffer.get_new_statuses()
+        if len(statuses) == 0:
+            # Don't print
+            ...
+        else:
+            # Do print
+            status_strings = [str(status) for status in statuses]
+            text_block = "\n".join(status_strings) + "\n\n"
+            
+            # Add to text box
             self.text_box.configure(state="normal")
-            self.text_box.insert("end", status.get_line() + "\n")
-            line_printed = True
+            self.text_box.insert("end", text_block)
             self.text_box.configure(state="disabled")
+
             if self.jump_to_bottom:
                 self.text_box.see("end")
+
         if self.run:
             self.after_id = self.text_box.after(100, self.print_tick)
 

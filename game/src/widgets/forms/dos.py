@@ -1,11 +1,12 @@
 from customtkinter import *
-from ..style import Style
+from ...app_core.context import Context
 
 
 class DoS:
-    def __init__(self, style: Style, parent, context, start_dos, dos_is_running, stop_dos):
+    def __init__(self, parent, context):
 
         # Widgets
+        style = context.style
 
         frame = CTkFrame(parent, fg_color=style.color("widget"))
         frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
@@ -51,12 +52,12 @@ class DoS:
             ip_1 = str(self.entry1.get())
             ip_2 = str(self.entry2.get())
             context.root.update_idletasks()
-            start_dos(ip_1, ip_2)
+            context.net.start_dos(ip_1, ip_2)
         def stop():
             context.root.update_idletasks()
-            stop_dos()
+            context.net.stop_dos()
         
-        start_on = dos_is_running()
+        start_on = context.net.dos_is_running()
         self.bind_reversible(start, stop, "DoS Attack", start_on)
 
         self.load_saved_input(context.states["hack_forms"]["dos"])

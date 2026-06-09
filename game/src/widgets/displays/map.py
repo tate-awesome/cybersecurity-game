@@ -6,10 +6,51 @@ from customtkinter import CTkCanvas
 from customtkinter import CTkBaseClass
 from threading import Lock
 from typing import Callable
-from ..style import Style
 
 class Map:
+    def __init__(self, parent: CTkBaseClass, context, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
+        style = context.style
 
+        # zoom/pan persistent values
+        self.scale = 1.0
+        self.offset = [0.0, 0.0]
+        self.x_pan_start = 0.0
+        self.y_pan_start = 0.0
+
+        # Padding for world plane
+        self.padding = padding
+        self.margin = margin
+
+        # Assign variables
+        self.parent = parent
+        self.draw_callback = draw_callback
+        self.framerate_ms = framerate_ms
+        self.draw_lock = Lock()
+
+        # Create canvas
+        self.canvas = CTkCanvas(parent)
+        self.canvas.pack(side="top", fill="both", expand=True, pady=style.gap, padx=style.gap)
+
+        # Bind events
+        self.parent.bind("<Configure>", self.resize)
+        self.canvas.bind("<ButtonPress-1>", self.start_pan)
+        self.canvas.bind("<B1-Motion>", self.do_pan)
+            # Windows / Mac
+        self.canvas.bind("<MouseWheel>", self.zoom)
+            # Linux
+        self.canvas.bind("<Button-4>", self.zoom)
+        self.canvas.bind("<Button-5>", self.zoom)
+        # canvas.scale("all", x_zoom, y_zoom, factor, factor)  # <--- only useful for already drawn canvases
+        self.canvas.bind("<Button-2>", self.reset_view)      # Windows/Linux
+        self.canvas.bind("<Button-3>", self.reset_view)      # Mac sometimes uses Button-3
+
+        # Start animation loop
+        def animation_loop():
+            draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+            self.canvas.after(framerate_ms, lambda: animation_loop())
+        animation_loop()
+
+        
     def resize(self, event):
         self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
@@ -70,45 +111,7 @@ class Map:
         self.reset_scale()
         self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
-    def __init__(self, style: Style, parent: CTkBaseClass, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
-        # zoom/pan persistent values
-        self.scale = 1.0
-        self.offset = [0.0, 0.0]
-        self.x_pan_start = 0.0
-        self.y_pan_start = 0.0
-
-        # Padding for world plane
-        self.padding = padding
-        self.margin = margin
-
-        # Assign variables
-        self.parent = parent
-        self.draw_callback = draw_callback
-        self.framerate_ms = framerate_ms
-        self.draw_lock = Lock()
-
-        # Create canvas
-        self.canvas = CTkCanvas(parent)
-        self.canvas.pack(side="top", fill="both", expand=True, pady=style.gap, padx=style.gap)
-
-        # Bind events
-        self.parent.bind("<Configure>", self.resize)
-        self.canvas.bind("<ButtonPress-1>", self.start_pan)
-        self.canvas.bind("<B1-Motion>", self.do_pan)
-            # Windows / Mac
-        self.canvas.bind("<MouseWheel>", self.zoom)
-            # Linux
-        self.canvas.bind("<Button-4>", self.zoom)
-        self.canvas.bind("<Button-5>", self.zoom)
-        # canvas.scale("all", x_zoom, y_zoom, factor, factor)  # <--- only useful for already drawn canvases
-        self.canvas.bind("<Button-2>", self.reset_view)      # Windows/Linux
-        self.canvas.bind("<Button-3>", self.reset_view)      # Mac sometimes uses Button-3
-
-        # Start animation loop
-        def animation_loop():
-            draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
-            self.canvas.after(framerate_ms, lambda: animation_loop())
-        animation_loop()
+    
 
 
   
