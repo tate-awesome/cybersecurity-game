@@ -2,16 +2,17 @@ from ...app_core.context import Context
 from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
 
+from typing import cast
 import customtkinter as ctk
 from customtkinter import *
 from tkinter import ttk
 import tkinter as tk
 
 class FilterOverlay:
-    def __init__(self, parent, style, button, buffer: DataBuffer, refresh_function):
-        self.context = parent
-        self.style = style
-        self.buffer = buffer
+    def __init__(self, button, context: Context, refresh_function):
+        self.context = context
+        self.style = context.style
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
 
         self.bind_overlay_button(button, self.create_filter_overlay, self.destroy_filter_overlay)
@@ -46,7 +47,7 @@ class FilterOverlay:
         Creates a filter overlay just below the button, with checkboxes for each filter in self.context.states["packet_filter_checkboxes"]
         Creates text entries for each filter in self.context.inputs["packet_filter_entries"].
         '''
-
+        apply_filters = lambda: ...
 
         # Place overlay just below button
         # 150%
@@ -89,6 +90,7 @@ class FilterOverlay:
                 # Configure for autosave
                 def autosave(slots=box_slots, key=filter_key, b=filter_box):
                     slots[key] = str(b.get())
+                    apply_filters()
                 filter_box.configure(command=autosave)
         
         # Create text filter widgets
@@ -110,19 +112,20 @@ class FilterOverlay:
             filter_entry.insert(0, previous_text)
 
             # Configure for autosave
-            def autosave(event=None, e=filter_entry, slot=text_slots[text_slot]):
-                slot = e.get()
+            def autosave(event=None, slots=text_slots, key=text_slot, e=filter_entry):
+                slots[key] = str(e.get())
+                apply_filters()
             filter_entry.bind("<KeyRelease>", autosave)
 
         # Add filter activator button and summary
         activator_frame = CTkFrame(overlay)
         activator_frame.pack(side="top", padx=self.style.gap2, pady=self.style.gap2, fill="x")
 
-        activator_button = CTkButton(activator_frame, text="Apply Filters", font=self.style.get_font())
-        activator_button.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap)
+        # activator_button = CTkButton(activator_frame, text="Apply Filters", font=self.style.get_font())
+        # activator_button.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap)
 
         summary = self.context.states["packet_filter_function"]["summary"]
-        width = activator_frame.winfo_width() - activator_button.winfo_width() - 50
+        width = activator_frame.winfo_width() - 50
 
         filter_label = CTkLabel(activator_frame, text=summary, font=self.style.get_font(), justify="left", wraplength=width/self.style.get_scale_correction())
         filter_label.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap, fill="x")
@@ -131,11 +134,15 @@ class FilterOverlay:
             self.compile_filter()
             new_summary = self.context.states["packet_filter_function"]["summary"]
 
-            width = activator_frame.winfo_width() - activator_button.winfo_width() - 50
+            width = activator_frame.winfo_width() - 50
 
             filter_label.configure(text=new_summary, wraplength=width/self.style.get_scale_correction())
 
-        activator_button.configure(command=activate)
+            self.refresh_function()
+        
+        apply_filters = activate
+
+        # activator_button.configure(command=activate)
 
     def destroy_filter_overlay(self, button: CTkButton):
         try:
@@ -226,6 +233,7 @@ class FilterOverlay:
             category_summaries = " AND ".join(category_summaries)
 
             entry_str = self.context.states["packet_filter_entries"]["address_filter"]
+            print(entry_str)
             addresses = entry_str.split("|")
             
             if len(addresses) < 1 or len(entry_str) < 1:
@@ -238,7 +246,7 @@ class FilterOverlay:
                     a = f"\"{a}\""
                 addresses = " OR ".join(addresses).lower()
                 if len(category_summaries) < 1:
-                    full_summary = f"{full_summary} packets involving addresses matching {addresses}."
+                    full_summary = f"{full_summary} packets involving addresses matching \"{addresses}\"."
                 else:
                     full_summary = f"{full_summary} packets with {category_summaries}, and involving addresses matching {addresses}."
 

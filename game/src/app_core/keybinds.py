@@ -1,6 +1,6 @@
 from customtkinter import CTk
 
-from .context import Context
+from .style import Style
 
 
 class KeyBinds:
@@ -10,13 +10,13 @@ class KeyBinds:
     Also runs Router.quit() when the window is closed.
     '''
 
-    def __init__(self, root: CTk, context: Context, refresh: callable, quit: callable):
+    def __init__(self, root: CTk, style: Style, refresh: callable, quit: callable):
         '''
         Binds all events
         '''
 
         self.root = root
-        self.context = context
+        self.style = style
         self.refresh = refresh
         self.quit = quit
 
@@ -27,7 +27,7 @@ class KeyBinds:
         root.bind("<Control-equal>", self.zoom_in)   # (linux) Ctrl = also works as Ctrl +
 
         # Key events
-        # self.context.root.bind("<Key>", self.print_key)
+        # self.style.root.bind("<Key>", self.print_key)
 
         # Fullscreen control
         root.bind("<F11>", self.toggle_fullscreen)
@@ -35,11 +35,18 @@ class KeyBinds:
 
         # On close event
         root.protocol("WM_DELETE_WINDOW", self.quit)
+        # self.root.bind("<FocusOut>", self.minimize_on_tab_if_fullscreen)
 
 
     def toggle_fullscreen(self, event=None):
-        is_fullscreen = not bool(self.root.attributes("-fullscreen"))
-        self.root.attributes("-fullscreen", is_fullscreen)
+        switch_fullscreen = not bool(self.root.attributes("-fullscreen"))
+        self.root.attributes("-fullscreen", switch_fullscreen)
+
+    def minimize_on_tab_if_fullscreen(self, event=None):
+        # Ensure the event is for the root window and not an internal widget
+        is_fullscreen = bool(self.root.attributes("-fullscreen"))
+        if event.widget == self.root and is_fullscreen:
+            self.root.iconify()
 
 
     def exit_fullscreen(self, event=None):
@@ -47,23 +54,23 @@ class KeyBinds:
 
 
     def zoom_in(self, event=None):
-        next_index = self.context.ui_scales.index(int(self.context.ui_scale)) + 1
-        if next_index >= len(self.context.ui_scales):
+        next_index = self.style.ui_scales.index(int(self.style.ui_scale)) + 1
+        if next_index >= len(self.style.ui_scales):
             return
-        self.context.ui_scale = float(self.context.ui_scales[next_index])
+        self.style.ui_scale = float(self.style.ui_scales[next_index])
         self.refresh()
 
 
     def zoom_out(self, event=None):
-        next_index = self.context.ui_scales.index(int(self.context.ui_scale)) - 1
+        next_index = self.style.ui_scales.index(int(self.style.ui_scale)) - 1
         if next_index < 0:
             return
-        self.context.ui_scale = float(self.context.ui_scales[next_index])
+        self.style.ui_scale = float(self.style.ui_scales[next_index])
         self.refresh()
 
 
     def zoom_default(self, event=None):
-        self.context.ui_scale = 100.0
+        self.style.ui_scale = 100.0
         self.refresh()
 
     

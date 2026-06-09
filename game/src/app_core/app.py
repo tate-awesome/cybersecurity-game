@@ -11,19 +11,30 @@ class App():
     def __init__(self, start_page="main_menu", title="Game", start_fullscreen = False):
 
         # Start a CTk app
-        root = ctk.CTk()
-        root.title(title)
-
-        if start_fullscreen:
-            root.attributes("-fullscreen", True)
-        else:
-            # Set the window size to 3/4 of the screen size
-            screen_width = root.winfo_screenwidth()
-            screen_height = root.winfo_screenheight()
-            root.geometry(f"{int(screen_width*3/4)}x{int(screen_height*3/4)}")
-
+        self.root = ctk.CTk()
+        self.root.title(title)
+        self.set_geometry(start_fullscreen)
+        
         # Create the router, which will handle page navigation
-        Router(root, start_page)
+        Router(self.root, start_page)
 
         # Start the main loop
-        root.mainloop()
+        self.root.mainloop()
+
+
+    def set_geometry(self, start_fullscreen):
+        '''
+        Sets the size and position of the window, then starts maximized or fullscreen
+        '''
+        f = 3.0/4.0
+        w = int(f*self.root.winfo_screenwidth())
+        h = int(f*self.root.winfo_screenheight())
+        self.root.geometry(f"{w}x{h}")
+
+        if start_fullscreen:
+            self.root.attributes("-fullscreen", True)
+        else:
+            self.root.after(
+                50,
+                lambda: self.root.state("zoomed")
+            )

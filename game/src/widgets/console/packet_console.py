@@ -4,15 +4,17 @@ from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
 from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay
+from ...app_core.context import Context
+from typing import cast
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
 
 class PacketConsole:
-    def __init__(self, style, parent, context, buffer: DataBuffer):
+    def __init__(self, parent, context: Context):
         self.context = context
-        self.style = style
-        self.buffer = buffer
+        self.style = context.style
+        self.buffer = cast(DataBuffer, context.net.data_buffer)
 
         menu_frame = self.create_menu_bar(parent)
         #  self.create_filter_boxes(menu_frame)
@@ -21,10 +23,10 @@ class PacketConsole:
         self.configure_reversible_button(jump_button, self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
 
         filter_button = self.create_menu_button(menu_frame, "Filters")
-        filter_overlay = FilterOverlay(self.context, self.style, filter_button, buffer, self.refresh)
+        filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
 
         columns_button = self.create_menu_button(menu_frame, "Columns")
-        columns_button = ColumnOverlay(self.context, self.style, columns_button, buffer, self.refresh_columns)
+        columns_button = ColumnOverlay(columns_button, context, self.refresh_columns)
 
         self.treeview = self.create_treeview(parent)
         self.refresh_columns()
@@ -32,6 +34,9 @@ class PacketConsole:
         # Printing Flags
         self.jump_to_bottom = True
         self.run = True
+
+        # Reset print pointer on refresh
+        self.buffer.reset_packet_cursor()
 
         # Start printing loop
         self.start_printing()
@@ -50,25 +55,29 @@ class PacketConsole:
             self.after_id = None
 
     def print_tick(self):
-        flag = True
-        while flag:
-            # Filter
-            packet = self.buffer.pop_packet(self.context.states["packet_filter_function"]["function"])
-            if packet is None:
-                flag = False
-                continue
-            # Submit packet to treeview
-            self.submit_packet(self.treeview, packet)
-            # Limit rows
+        # self.buffer.reset_packet_cursor()
+        # self.treeview.delete(*self.treeview.get_children())
+        packets = self.buffer.get_new_packets(self.context.states["packet_filter_function"]["function"])
+        if len(packets) == 0:
+            # Don't print
+            ...
+        else:
+            # Do print
+            for packet in packets:
+                self.submit_packet(self.treeview, packet)
             max_rows = 1000
-            children = self.treeview.get_children()
-            if len(children) > max_rows:
-                self.treeview.delete(children[0])
-        # Auto scroll
-        if self.jump_to_bottom:
-            self.treeview.yview_moveto(1)
+            while len(self.treeview.get_children()) > max_rows:
+                    self.treeview.delete(self.treeview.get_children()[0])
+        
+            # Auto scroll
+            if self.jump_to_bottom:
+                self.treeview.yview_moveto(1)
         if self.run:
             self.after_id = self.treeview.after(100, self.print_tick)
+    
+    def apply_filters(self):
+        self.buffer.reset_packet_cursor()
+        self.treeview.delete(*self.treeview.get_children())
 
     # Treeview
     def create_treeview(self, parent):
@@ -178,9 +187,6 @@ class PacketConsole:
                 active_columns.append(key)
 
         self.treeview["displaycolumns"] = active_columns
-
-    def refresh(self):
-        ...
 
     # Buttons
     def pause(self):

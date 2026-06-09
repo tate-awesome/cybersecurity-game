@@ -1,15 +1,19 @@
 from ...widgets.map import Map
-from ...widgets.style import Style
 from ...app_core.context import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
+from ...pages.page import Page
+from ...widgets import MenuBar
 
 
-class Sprites:
+class Sprites(Page):
     def __init__(self, context: Context):
-        style = Style(context)
-        world_map = Map(style, context.root, self.frame_callback, 100)
+        super().__init__(context)
+        menu_bar = MenuBar(self, context, "Boat Motion Demo")
+        menu_bar.quit_button()
+        menu_bar.back_button()
+        world_map = Map(self, context, self.frame_callback, 100)
 
     
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):

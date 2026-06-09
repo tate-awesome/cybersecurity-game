@@ -2,19 +2,20 @@
 Shared data for a page. Passed to next pages on navigation.
 '''
 
+from .style import Style
+from ..network.network_controller import NetworkController
+
 class Context:
     '''
     Important data that needs to be shared across pages, such as the network controller and the router.
     Every page builder function should take a Context object as an argument and build the page on the root CTk object.
     '''
 
-    def __init__(self, root, router):
-        self.net = None
+    def __init__(self, root, router, style: Style):
+        self.net =  NetworkController()
         self.router = router
         self.root = root
-
-        self.ui_scale = 100.0
-        self.ui_scales = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 133, 140, 150, 175, 200, 250, 300, 400, 500]
+        self.style = style
 
         self.states = self.get_base_preset()
         self.labels = self.get_base_labels()
@@ -186,15 +187,16 @@ class Context:
     def refresh_net(self, constructor):
         '''
         Gets the correct network controller for the current page.
-        If the net doesn't exist yet, it will be created using the provided constructor and saved to the context.
+        If the net is a different type, it will create a new net with the constructor.
         If it already exists, it will be returned as is to preserve the state.
-        Helps the net controller persist across page navigation without having to pass it as an argument to every page builder function.
+        Helps the net controller persist across refreshes without having to pass it as an argument to every page builder function.
         '''
-        # Defer to the existing net
-        if self.net is None:
+        # Check type
+        if type(self.net) is constructor:
+            return self.net
+        else:
             self.net = constructor()
-        net = self.net
-        return net
+            return self.net
 
     def destroy_net(self):
         if self.net is not None:

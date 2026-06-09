@@ -3,6 +3,7 @@ from tkinter.filedialog import askopenfilename
 import os, json
 
 from .context import Context
+from .style import Style
 from .keybinds import KeyBinds
 
 # Import page builder objects here
@@ -31,10 +32,14 @@ class Router:
         '''
         Creates the app's Context object and shows the first page.
         '''
-        self.context = Context(root, self)
+        self.style = Style(root)
+        self.context = Context(root, self, self.style)
         self.navigation_stack = []
-        KeyBinds(root, self.context, self.refresh, self.quit)
+        self.current_frame = None
         self.show(start_page)
+
+        # Bind window commands (zoom, f11, Quit)
+        KeyBinds(root, self.style, self.refresh, self.quit)
 
 
     def show(self, next_page: str):
@@ -57,23 +62,27 @@ class Router:
         Add new pages here to make them accessible by the router.
         All page builder functions should take a Context object as an argument and build the page on the root CTk object.
         '''
-        self.clear()
 
         # Handle 404
         if next_page not in pages:
             print(f"Page '{next_page}' not found. Redirecting to title page.")
+            self.navigation_stack = []
             next_page = "title"
 
-        # Handle first page ever
+        # Handle first page ever (usually title or 404 reset)
         if len(self.navigation_stack) == 0:
             self.navigation_stack.append(next_page)
-        # Handle refresh
-        if next_page == self.navigation_stack[-1]:
-            ...
-        # Handle deeper page
-        else:
+
+        # Handle deeper page (not refresh)
+        if not next_page == self.navigation_stack[-1]:
             self.navigation_stack.append(next_page)
-        pages[next_page](self.context)
+        
+        # Clear the window
+        if self.current_frame is not None:
+            self.current_frame.destroy()
+
+        # Call the page builder
+        self.current_frame = pages[next_page](self.context)
 
 
     def refresh(self):
@@ -85,47 +94,51 @@ class Router:
     
 
     def quit(self):
+        '''
+        Deletes all ongoing processes and destroys the CTk root.
+        Called on Close event or by the Quit button.
+        '''
         if self.context.net is not None:
             self.context.net.abort_all()
         self.context.root.destroy()
 
 
-    def clear(self):
-        root = self.context.root
-        while len(root.winfo_children()) > 0:
-            root.winfo_children()[0].destroy()
-
-
     def mode_toggle(self):
+        '''
+        Toggles the appearance mode (light/dark mode)
+        '''
         if get_appearance_mode() == "Dark":
             set_appearance_mode("Light")
         else:
             set_appearance_mode("Dark")
-        # TODO find a less hacky way to make the sashes update
+        # set_appearance_mode refreshes all CTk elements automatically, but we have some TK elements and custom colors.
         self.refresh()
     
 
     def select_preset(self):
-
+        '''
+        Opens a dialog for the user to select a context preset.
+        Context presets populate fields and checkboxes.
+        '''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         presets_dir = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
-        try:
-            file_path = askopenfilename(
-            initialdir=presets_dir,
-            title="Select a preset file",
-            filetypes=(("json", "*.json"),)
-            )
-            if file_path == "":
-                return
-            with open(file_path) as json_file:
-                data = json.load(json_file)
-            self.context.load_preset(data)
-            self.refresh()
-        finally:
+        file_path = askopenfilename(
+        initialdir=presets_dir,
+        title="Select a preset file",
+        filetypes=(("json", "*.json"),)
+        )
+        if file_path == "":
             return
+        with open(file_path) as json_file:
+            data = json.load(json_file)
+        self.context.load_preset(data)
+        self.refresh()
 
     
     def go_back(self):
+        '''
+        Navigates backwards in the page history.
+        '''
         if len(self.navigation_stack) < 1:
             return
         self.context.destroy_context()
@@ -134,7 +147,9 @@ class Router:
 
 
     def select_theme(self):
-
+        '''
+        Opens a dialog for the user to select a CTk theme.
+        '''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         themes_dir = os.path.join(BASE_DIR, "..", "..", "assets", "themes")
         try:
@@ -147,5 +162,7 @@ class Router:
                 return
             ThemeManager.load_theme(file_path)
             self.refresh()
+        except:
+            print("Error in select theme")
         finally:
             return

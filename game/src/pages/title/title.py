@@ -1,17 +1,17 @@
+from ..page import Page
 from ...app_core.context import Context
-from ...widgets.style import Style
-from ...widgets import title
+from ...widgets import TitleMenu
 
 
-class Title:
-
+class Title(Page):
+    '''
+    Page constructor for title/title
+    Inherits CTkFrame
+    '''
+    
     def __init__(self, context: Context):
-        router = context.router
-        root = context.root
-        style = Style(context)
-
-        title.title(root, "The Game")
-        bw = title.buttons_wrapper(root)
-        title.button(style, bw, "Play", lambda:router.show("title/select_mode"))
-        title.button(style, bw, "Settings", None)
-        title.button(style, bw, "Quit", router.quit)
+        super().__init__(context)
+        
+        panel = TitleMenu(self, context, "The Game")
+        panel.button("Play", lambda: self.router.show("title/select_mode"))
+        panel.button("Quit", self.router.quit)
