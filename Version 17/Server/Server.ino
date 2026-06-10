@@ -2,10 +2,8 @@
 // Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
 #include <Arduino.h>
 #include <WiFi.h>
-#ifdef REST_API_ENABLED
-  #include <HTTPClient.h>
-  #include <ArduinoJson.h>
-#endif
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include <ModbusIP_ESP8266.h>
 #include <math.h>
 
@@ -13,16 +11,21 @@
 #define PI 3.14159265358979323846f
 #endif
 
-// ---------- WiFi ----------
-const char* ssid     = "GL-SFT1200-ab1";
-const char* password = "goodlife";
+// AP ESP32 is always at this address 
+const char* AP_SSID     = "ESP32-Config";
+const char* AP_PASSWORD = "admin1234";
+const char* CONFIG_URL  = "http://192.168.4.1/config";
+const char* REST_URL    = "http://192.168.4.1/data";
+
+String g_router_ssid = "";
+String g_router_pass = "";
+String g_flask_ip    = "";
 
 // ------- Encryption -------
 String key = (String)1234;
 
 // ---------- REST ----------
 #ifdef REST_API_ENABLED
-  const char* REST_URL         = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs   = 0;
   static bool encrypt_status   = false;
@@ -80,11 +83,72 @@ const float RudderMax_deg  = 60.0f;
 const int LEDC_RES_BITS = 12;
 const int LEDC_FREQ_HZ  = 500;
 
+String g_ap_router_ip = "192.168.8.141";  // fallback
+
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 2
 #endif
 
-// ---------- Helpers ----------
+bool fetchConfigFromAP() {
+  Serial.println("[BOOT] Connecting to AP ESP32 to fetch config...");
+
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 8000) {
+    delay(300); Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[BOOT] Could not reach AP ESP32 — using fallback values.");
+    g_router_ssid = "GL-SFT1200-ab1";
+    g_router_pass = "goodlife";
+    g_flask_ip    = "192.168.8.114";
+    g_ap_router_ip = "192.168.8.141";
+    return false;
+  }
+
+  HTTPClient http;
+  http.begin(CONFIG_URL);
+  int code = http.GET();
+
+  if (code == 200) {
+    StaticJsonDocument<256> doc;
+    deserializeJson(doc, http.getString());
+    g_router_ssid  = doc["ssid"]         | "";
+    g_router_pass  = doc["password"]     | "";
+    g_flask_ip     = doc["flask_ip"]     | "192.168.8.114";
+    g_ap_router_ip = doc["ap_router_ip"] | "192.168.8.141";  // ← add
+    Serial.printf("[BOOT] AP router IP: %s\n", g_ap_router_ip.c_str());
+    http.end();
+    return true;
+  }
+
+  http.end();
+  Serial.println("[BOOT] Config fetch failed — using fallback values.");
+  return false;
+}
+
+void connectToRouter() {
+  WiFi.disconnect(true);
+  delay(300);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(g_router_ssid.c_str(), g_router_pass.c_str());
+
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 12000) {
+    delay(400); Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("[BOOT] Router connected — IP: %s\n",
+                  WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("[BOOT] Router connection FAILED.");
+  }
+}
+
 static inline float clampf_local(float v, float lo, float hi) {
     if (isnan(v)) return lo;
     return (v < lo) ? lo : (v > hi ? hi : v);
@@ -101,9 +165,7 @@ float wrap_to_pi(float angle) {
     return angle;
 }
 
-void computeControlCommands(float target_x, float target_y,
-                            float state_x, float state_y, float state_theta,
-                            float* speed_out, float* rudder_out) {
+void computeControlCommands(float target_x, float target_y,float state_x, float state_y, float state_theta,float* speed_out, float* rudder_out) {
     float head_x = state_x + HEAD_OFFSET_M * cos(state_theta);
     float head_y = state_y + HEAD_OFFSET_M * sin(state_theta);
     float Xerr   = target_x - head_x;
@@ -125,8 +187,6 @@ void computeControlCommands(float target_x, float target_y,
     *rudder_out = rho_rad * 180.0f / PI;
 }
 
-//------------------------------- Encryption methods ------------------
-
 uint16_t xorCipher(uint16_t value, uint16_t key){
     return value ^ key;
 }
@@ -146,8 +206,9 @@ uint16_t keyToUint(const String& key){
 void restPost() {
     if (WiFi.status() != WL_CONNECTED) return;
 
+    String url = "http://" + g_ap_router_ip + "/data";
     HTTPClient http;
-    http.begin(REST_URL);
+    http.begin(url);
     http.addHeader("Content-Type", "application/json");
 
     // Build JSON payload with current state
@@ -190,16 +251,16 @@ void restPost() {
 }
 #endif
 
-// ---------- Setup ----------
 void setup() {
     Serial.begin(115200);
     delay(500);
     Serial.println("\n[SERVER] Booting...");
+    fetchConfigFromAP();
+    connectToRouter();
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
+    
+
     WiFi.setSleep(false);
-    while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
     Serial.printf("\n[SERVER] IP: %s\n", WiFi.localIP().toString().c_str());
 
     // Modbus server
@@ -209,19 +270,15 @@ void setup() {
     mb.addHreg(HREG_THETA_MRAD, 0);
     mb.addHreg(HREG_SPEED,      0);
     mb.addHreg(HREG_RUDDER,     0);
-
     ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
     ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
     ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
-
     pinMode(PIN_TARGET_X, INPUT_PULLUP);
     pinMode(PIN_TARGET_Y, INPUT_PULLUP);
     pinMode(LED_BUILTIN, OUTPUT);
-
     Serial.println("[SERVER] Ready.");
 }
 
-// ---------- Loop ----------
 void loop() {
     mb.task();
     yield();
@@ -273,9 +330,7 @@ void loop() {
     ledcWrite(PIN_T, (uint16_t)(clampf_local(theta_norm, 0, 1) * 4095.0f));
 
     // Compute control commands and write back to Modbus
-    computeControlCommands(target_x, target_y,
-                           g_state_x, g_state_y, g_state_theta,
-                           &g_speed_cmd, &g_rudder_deg);
+    computeControlCommands(target_x, target_y,g_state_x, g_state_y, g_state_theta,&g_speed_cmd, &g_rudder_deg);
 
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
     uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);

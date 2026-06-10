@@ -1,14 +1,3 @@
-// ============================================================
-//  AP / Config ESP32  —  Firmware Sketch
-//  Role: Permanent soft-AP + REST relay + web config page
-//
-//  Libraries required (install via Arduino Library Manager):
-//    - ESPAsyncWebServer  (me-no-dev)
-//    - AsyncTCP           (me-no-dev)
-//    - ArduinoJson        (bblanchon)
-//
-//  Board: ESP32-S3 (or any ESP32 variant)
-// ============================================================
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Preferences.h>          // NVS (non-volatile) storage
@@ -35,9 +24,9 @@ AsyncWebServer server(80);
 
 String g_ssid     = "";
 String g_password = "";
-String g_flask_ip = "192.168.8.167";   // default Flask server IP
+String g_flask_ip = "192.168.8.167";
 
-// Latest data payloads cached from client & server ESP32s
+
 String g_client_payload = "{}";
 String g_server_payload = "{}";
 
@@ -50,10 +39,6 @@ void setupRoutes();
 String buildConfigPage();
 void forwardToFlask(const String& endpoint, const String& body);
 
-
-// ============================================================
-//  SETUP
-// ============================================================
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -63,7 +48,7 @@ void setup() {
   startAP();
 
   if (g_ssid.length() > 0) {
-    connectSTA();   // connect to router so we can reach Flask
+    connectSTA();
   } else {
     Serial.println("[AP-ESP32] No router SSID saved — skipping STA connect.");
   }
@@ -73,10 +58,6 @@ void setup() {
   Serial.println("[AP-ESP32] Web server started on http://192.168.4.1");
 }
 
-
-// ============================================================
-//  LOOP
-// ============================================================
 void loop() {
   // Re-attempt STA connection if it drops
   static uint32_t lastCheckMs = 0;
@@ -89,10 +70,6 @@ void loop() {
   }
 }
 
-
-// ============================================================
-//  NVS  —  load / save
-// ============================================================
 void loadPreferences() {
   prefs.begin(NVS_NAMESPACE, true);   // read-only
   g_ssid     = prefs.getString(NVS_KEY_SSID,  "");
@@ -100,8 +77,7 @@ void loadPreferences() {
   g_flask_ip = prefs.getString(NVS_KEY_FLASK, "192.168.8.167");
   prefs.end();
 
-  Serial.printf("[AP-ESP32] Loaded NVS — SSID: '%s'  Flask: '%s'\n",
-                g_ssid.c_str(), g_flask_ip.c_str());
+  Serial.printf("[AP-ESP32] Loaded NVS — SSID: '%s'  Flask: '%s'\n",g_ssid.c_str(), g_flask_ip.c_str());
 }
 
 void savePreferences(const String& ssid, const String& pass, const String& flask_ip) {
@@ -113,22 +89,13 @@ void savePreferences(const String& ssid, const String& pass, const String& flask
   Serial.println("[AP-ESP32] Preferences saved to NVS.");
 }
 
-
-// ============================================================
-//  WiFi — soft-AP
-// ============================================================
 void startAP() {
   WiFi.mode(WIFI_AP_STA);   // AP + STA simultaneously
   WiFi.softAPConfig(AP_IP, AP_GW, AP_SUBNET);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
-  Serial.printf("[AP-ESP32] Soft-AP started: SSID='%s'  IP=%s\n",
-                AP_SSID, WiFi.softAPIP().toString().c_str());
+  Serial.printf("[AP-ESP32] Soft-AP started: SSID='%s'  IP=%s\n",AP_SSID, WiFi.softAPIP().toString().c_str());
 }
 
-
-// ============================================================
-//  WiFi — STA (connect to router)
-// ============================================================
 void connectSTA() {
   Serial.printf("[AP-ESP32] Connecting to router SSID='%s'...\n", g_ssid.c_str());
   WiFi.begin(g_ssid.c_str(), g_password.c_str());
@@ -143,15 +110,15 @@ void connectSTA() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.printf("[AP-ESP32] Router connected — IP: %s\n",
                   WiFi.localIP().toString().c_str());
+    
+    prefs.begin(NVS_NAMESPACE, false);
+    prefs.putString("ap_router_ip", WiFi.localIP().toString());
+    prefs.end();
   } else {
     Serial.println("[AP-ESP32] Router connection FAILED (will retry in 10s).");
   }
 }
 
-
-// ============================================================
-//  Forward a payload to the Flask server
-// ============================================================
 void forwardToFlask(const String& endpoint, const String& body) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("[AP-ESP32] Cannot forward — not connected to router.");
@@ -446,10 +413,6 @@ String buildConfigPage() {
   return html;
 }
 
-
-// ============================================================
-//  Web Server Routes
-// ============================================================
 void setupRoutes() {
 
   // ── GET /  →  Config page ──────────────────────────────────
@@ -548,9 +511,10 @@ void setupRoutes() {
   //   Used by other ESP32s to fetch stored credentials on boot
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest* req) {
     StaticJsonDocument<256> doc;
-    doc["ssid"]     = g_ssid;
-    doc["password"] = g_password;
-    doc["flask_ip"] = g_flask_ip;
+    doc["ssid"]         = g_ssid;
+    doc["password"]     = g_password;
+    doc["flask_ip"]     = g_flask_ip;
+    doc["ap_router_ip"] = WiFi.localIP().toString();  // ← add this
     String out;
     serializeJson(doc, out);
     req->send(200, "application/json", out);
