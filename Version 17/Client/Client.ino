@@ -3,20 +3,28 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
 #include <ModbusIP_ESP8266.h>
 #include <Wire.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include <LiquidCrystal_I2C.h>  // Frank de Brabander
 
 #ifndef PI
 #define PI 3.14159265358979323846f
 #endif
 
+//  AP ESP32 is always at this address 
+const char* AP_SSID     = "ESP32-Config";
+const char* AP_PASSWORD = "admin1234";
+const char* CONFIG_URL  = "http://192.168.4.1/config";
+const char* REST_URL    = "http://192.168.4.1/data";
+
+// Populated at boot from AP config
+String g_router_ssid = "";
+String g_router_pass = "";
+String g_flask_ip    = "";
+
 #ifdef REST_API_ENABLED
-  #include <HTTPClient.h>
-  #include <ArduinoJson.h>
-  const char* REST_URL = "http://192.168.8.114:5000/data"; //Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs = 0;
   static bool encrypt_status = false;
@@ -34,15 +42,13 @@
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-const char* ssid = "GL-SFT1200-ab1";
-const char* password = "goodlife";
 IPAddress serverIP(192, 168, 8, 137);
 
 ModbusIP mb;
 
 float state_x = 0.0f;
 float state_y = 0.0f;
-float state_theta = 0.0f; // radians (start facing East)
+float state_theta = 0.0f;
 float state_speed  = 0.0f;
 float state_rudder = 0.0f;
 
@@ -62,12 +68,12 @@ static int readAttempts = 0;
 static int readFailures = 0;
 
 static String key = (String)1234;
+String g_ap_router_ip = "192.168.8.141";
 
-//// ---------- Physical scaling constants ----------
-const float SpeedMax_m_s = 50.0f;    // max physical speed (m/s)
-const float RudderMax_deg = 60.0f;   // max rudder deflection (±60°)
+//// Physical scaling constants 
+const float SpeedMax_m_s = 50.0f;
+const float RudderMax_deg = 60.0f;
 
-//// ---------- Conversion Helpers ----------
 static inline uint16_t x_to_u16_100(float v) {
   if (v < 0) v = 0;
   if (v > 200) v = 200;
@@ -131,8 +137,7 @@ bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
   return false;
 }
 
-//// ---------- Encryption Helper Functions ----------
-
+//// Encryption Helper Functions 
 uint16_t xorCipher(uint16_t value, uint16_t key){
   return value ^ key;
 }
@@ -154,7 +159,6 @@ uint16_t keyToUint(const String& key){
   return(uint16_t)sum;
 }
 
-//// ---------- Send X/Y/Theta to Slave ----------
 void sendPose() {
   uint16_t x_u = x_to_u16_100(state_x);
   uint16_t y_u = x_to_u16_100(state_y);
@@ -185,12 +189,14 @@ void sendPoseEncrypted(){
 void restPost() {
   if (WiFi.status() != WL_CONNECTED) return;
 
+  String url = "http://" + g_ap_router_ip + "/data";
   HTTPClient http;
-  http.begin(REST_URL);
+  http.begin(url);
   http.addHeader("Content-Type", "application/json");
 
   // Build payload
   StaticJsonDocument<128> doc;
+  doc["source"] = "client";
   doc["timestamp"] = (uint32_t)(millis() / 1000);
   doc["x"]         = state_x;
   doc["y"]         = state_y;
@@ -222,11 +228,85 @@ void restPost() {
 }
 #endif
 
-//// ---------- Setup ----------
+bool fetchConfigFromAP() {
+  Serial.println("[BOOT] Connecting to AP ESP32 to fetch config...");
+
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 8000) {
+    delay(300); Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[BOOT] Could not reach AP ESP32 — using fallback values.");
+    g_router_ssid = "GL-SFT1200-ab1";
+    g_router_pass = "goodlife";
+    g_flask_ip    = "192.168.8.114";
+    g_ap_router_ip = "192.168.8.141";
+    return false;
+  }
+
+  HTTPClient http;
+  http.begin(CONFIG_URL);
+  int code = http.GET();
+
+  if (code == 200) {
+    StaticJsonDocument<256> doc;
+    deserializeJson(doc, http.getString());
+    g_router_ssid  = doc["ssid"]         | "";
+    g_router_pass  = doc["password"]     | "";
+    g_flask_ip     = doc["flask_ip"]     | "192.168.8.114";
+    g_ap_router_ip = doc["ap_router_ip"] | "192.168.8.141";
+    http.end();
+    return true;
+  }
+
+  http.end();
+  Serial.println("[BOOT] Config fetch failed — using fallback values.");
+  return false;
+}
+
+void connectToRouter() {
+  Serial.println("[WIFI] Disconnecting from AP...");
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  delay(500);
+  WiFi.mode(WIFI_STA);
+  delay(200);
+
+  Serial.printf("[WIFI] Connecting to router '%s'...\n", g_router_ssid.c_str());
+  WiFi.begin(g_router_ssid.c_str(), g_router_pass.c_str());
+
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+    delay(400); Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("[BOOT] Router connected — IP: %s\n",
+                  WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("[BOOT] Router connection FAILED.");
+    Serial.printf("[BOOT] WiFi status code: %d\n", WiFi.status());
+    // Status codes:
+    // 0 = WL_IDLE, 1 = WL_NO_SSID, 3 = WL_CONNECTED
+    // 4 = WL_CONNECT_FAILED, 6 = WL_DISCONNECTED
+  }
+}
+
+
 void setup() {
   Serial.begin(115200);
   delay(50);
   Serial.println("\n[MASTER] Booting…");
+  Serial.println("[MASTER] Step 1: fetchConfigFromAP()");
+  fetchConfigFromAP();
+  Serial.printf("[MASTER] After fetch — IP: %s  SSID: %s\n", WiFi.localIP().toString().c_str(),WiFi.SSID().c_str());
+  Serial.println("[MASTER] Step 2: connectToRouter()");
+  connectToRouter();
+  Serial.printf("[MASTER] After router — IP: %s  SSID: %s  Status: %d\n",WiFi.localIP().toString().c_str(),WiFi.SSID().c_str(),WiFi.status());
 
   // Initialize LCD
   lcd.init();
@@ -238,16 +318,7 @@ void setup() {
   // WiFi
   lcd.setCursor(0, 1);
   lcd.print("WiFi connect...");
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  Serial.print("[MASTER] Connecting to WiFi");
-  
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
-    delay(300);
-    Serial.print(".");
-    attempts++;
-  }
+
 
   lcd.clear();
   if (WiFi.status() == WL_CONNECTED) {
@@ -271,8 +342,14 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Connect Slave...");
+  // Check they're on same subnet
+  if (WiFi.localIP()[2] != serverIP[2]) {
+      Serial.println("[MASTER] WARNING: Different subnets! Modbus will fail.");
+  }
+
   mb.connect(serverIP);
-  delay(500);
+  delay(1000);
+  Serial.printf("[MASTER] Modbus isConnected: %d\n", mb.isConnected(serverIP));
 
   if (mb.isConnected(serverIP)) {
     Serial.println("[MASTER] Connected to Slave Modbus server.");
@@ -302,7 +379,6 @@ void setup() {
   }
 }
 
-//// ---------- Loop ----------
 void loop() {
   mb.task();
   yield();
@@ -361,7 +437,6 @@ void loop() {
         float v = speed_m_s;
         float rho = radians(rudder_deg);
         
-        // MATLAB-style kinematic update
         float xdot = v * cos(rho + state_theta);
         float ydot = v * sin(rho + state_theta);
         float thetadot = 0.0f;
@@ -375,11 +450,10 @@ void loop() {
         state_y += ydot * dt;
         state_theta += thetadot * dt;
 
-        // Normalize theta to [0, 2*PI]
         while (state_theta < 0) state_theta += 2.0f * PI;
         while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
 
-        // Clamp X, Y to valid range
+
         if (state_x < 0.0f) state_x = 0.0f;
         if (state_x > 200.0f) state_x = 200.0f;
         if (state_y < 0.0f) state_y = 0.0f;

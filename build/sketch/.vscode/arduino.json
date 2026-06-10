@@ -1,8 +1,0 @@
-#line 1 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/.vscode/arduino.json"
-{
-  "sketch": "Server.ino",
-  "board": "esp32:esp32:esp32s3",
-  "port": "COM5",
-  "output": "../build",
-  "configuration": "JTAGAdapter=default,PSRAM=disabled,FlashMode=qio,FlashSize=4M,LoopCore=1,EventsCore=1"
-}

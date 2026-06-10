@@ -1,5 +1,5 @@
 {
-  "additionalFiles": "../../..",
+  "additionalFiles": "",
   "builtInToolsFolders": "",
   "compiler.optimization_flags": "-Os",
   "customBuildProperties": "",
@@ -7,5 +7,5 @@
   "hardwareFolders": "/home/martin/.arduino15/packages",
   "otherLibrariesFolders": "/home/martin/Arduino/libraries",
   "runtime.ide.version": "10607",
-  "sketchLocation": "/home/martin/Desktop/cybersecurity-game/Version 17/Server"
+  "sketchLocation": "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32"
 }
