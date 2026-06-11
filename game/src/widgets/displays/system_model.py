@@ -18,12 +18,13 @@ class SystemModel:
 
         menu_bar = MenuBar(parent, context, "System Model", False)
 
-        menu_bar.button("Customize")
-        menu_bar.button("Reset View")
-        menu_bar.button("Clear Values")
-        menu_bar.button("Center on Boat")
 
         map = WorldMap(self.parent, context)
+
+        menu_bar.button("Customize")
+        menu_bar.button("Reset View", map.camera.reset_scale)
+        menu_bar.button("Clear Values")
+        menu_bar.button("Center on Boat")
 
 
     def create_menu_button(self, frame, text, function=None):
