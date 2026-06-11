@@ -30,6 +30,18 @@ String g_flask_ip = "192.168.8.167";
 String g_client_payload = "{}";
 String g_server_payload = "{}";
 
+#define MAX_POINTS 20 
+
+StaticJsonDocument<8192> g_client_doc;  // stores array of points
+StaticJsonDocument<8192> g_server_doc;
+JsonArray g_client_arr = g_client_doc.to<JsonArray>();
+JsonArray g_server_arr = g_server_doc.to<JsonArray>();
+
+bool g_encryption_status = false;
+String g_encryption_key  = "1234";
+float g_target_x = 100.0;
+float g_target_y = 100.0;
+
 // ─── Forward declarations ─────────────────────────────────────
 void loadPreferences();
 void savePreferences(const String& ssid, const String& pass, const String& flask_ip);
@@ -52,6 +64,9 @@ void setup() {
   } else {
     Serial.println("[AP-ESP32] No router SSID saved — skipping STA connect.");
   }
+
+  g_client_arr = g_client_doc.to<JsonArray>();
+  g_server_arr = g_server_doc.to<JsonArray>();
 
   setupRoutes();
   server.begin();
@@ -413,6 +428,119 @@ String buildConfigPage() {
   return html;
 }
 
+// void setupRoutes() {
+
+//   // ── GET /  →  Config page ──────────────────────────────────
+//   server.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     req->send(200, "text/html", buildConfigPage());
+//   });
+
+//   // ── POST /config  →  Save credentials ─────────────────────
+//   server.on("/config", HTTP_POST,
+//     [](AsyncWebServerRequest* req) {},
+//     nullptr,
+//     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+//       StaticJsonDocument<256> doc;
+//       DeserializationError err = deserializeJson(doc, data, len);
+//       if (err) {
+//         req->send(400, "application/json", "{\"error\":\"bad json\"}");
+//         return;
+//       }
+
+//       String newSsid  = doc["ssid"]     | "";
+//       String newPass  = doc["password"] | "";
+//       String newFlask = doc["flask_ip"] | "";
+
+//       if (newSsid.length() == 0 || newFlask.length() == 0) {
+//         req->send(400, "application/json", "{\"error\":\"missing fields\"}");
+//         return;
+//       }
+
+//       g_ssid     = newSsid;
+//       g_password = newPass;
+//       g_flask_ip = newFlask;
+//       savePreferences(g_ssid, g_password, g_flask_ip);
+
+//       req->send(200, "application/json", "{\"status\":\"saved\"}");
+
+//       // Reconnect STA on a small delay so response can be sent first
+//       delay(500);
+//       connectSTA();
+//     }
+//   );
+
+//   // ── POST /reboot  →  Reboot ESP32 ─────────────────────────
+//   server.on("/reboot", HTTP_POST, [](AsyncWebServerRequest* req) {
+//     req->send(200, "application/json", "{\"status\":\"rebooting\"}");
+//     delay(500);
+//     ESP.restart();
+//   });
+
+//   // ── GET /status  →  JSON health check ─────────────────────
+//   server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     StaticJsonDocument<256> doc;
+//     doc["ap_ssid"]        = AP_SSID;
+//     doc["ap_ip"]          = WiFi.softAPIP().toString();
+//     doc["sta_ssid"]       = g_ssid;
+//     doc["sta_connected"]  = (WiFi.status() == WL_CONNECTED);
+//     doc["sta_ip"]         = WiFi.localIP().toString();
+//     doc["flask_ip"]       = g_flask_ip;
+
+//     String out;
+//     serializeJson(doc, out);
+//     req->send(200, "application/json", out);
+//   });
+
+//   // ── POST /data  →  Relay payload to Flask ─────────────────
+//   //   Body: { "source": "client"|"server", ...rest of payload }
+//   server.on("/data", HTTP_POST,
+//     [](AsyncWebServerRequest* req) {},
+//     nullptr,
+//     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+//       String body = String((char*)data, len);
+
+//       // Cache latest payload by source
+//       StaticJsonDocument<512> doc;
+//       if (!deserializeJson(doc, body)) {
+//         String src = doc["source"] | "unknown";
+//         if (src == "client") g_client_payload = body;
+//         else if (src == "server") g_server_payload = body;
+//       }
+
+//       // Forward to Flask asynchronously (non-blocking would need a task;
+//       // for 2s interval polling, a blocking call here is fine)
+//       forwardToFlask("/data", body);
+
+//       req->send(200, "application/json", "{\"status\":\"forwarded\"}");
+//     }
+//   );
+
+//   // ── GET /data  →  Return cached payloads to Defender ──────
+//   server.on("/api/data", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     String combined = "{\"client_points\":" + g_client_payload
+//                     + ",\"server_points\":" + g_server_payload + "}";
+//     req->send(200, "application/json", combined);
+//   });
+
+//   // ── GET /config  →  Return current config as JSON ─────────
+//   //   Used by other ESP32s to fetch stored credentials on boot
+//   server.on("/config", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     StaticJsonDocument<256> doc;
+//     doc["ssid"]         = g_ssid;
+//     doc["password"]     = g_password;
+//     doc["flask_ip"]     = g_flask_ip;
+//     doc["ap_router_ip"] = WiFi.localIP().toString();  // ← add this
+//     String out;
+//     serializeJson(doc, out);
+//     req->send(200, "application/json", out);
+//   });
+
+//   // ── 404 catch-all ──────────────────────────────────────────
+//   server.onNotFound([](AsyncWebServerRequest* req) {
+//     req->send(404, "text/plain", "Not found");
+//   });
+// }
+
 void setupRoutes() {
 
   // ── GET /  →  Config page ──────────────────────────────────
@@ -420,7 +548,20 @@ void setupRoutes() {
     req->send(200, "text/html", buildConfigPage());
   });
 
-  // ── POST /config  →  Save credentials ─────────────────────
+  // ── GET /config  →  Return current config as JSON ──────────
+  //   Called by Master/Server ESP32s at boot to fetch credentials
+  server.on("/config", HTTP_GET, [](AsyncWebServerRequest* req) {
+    StaticJsonDocument<256> doc;
+    doc["ssid"]         = g_ssid;
+    doc["password"]     = g_password;
+    doc["flask_ip"]     = g_flask_ip;
+    doc["ap_router_ip"] = WiFi.localIP().toString();
+    String out;
+    serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
+  // ── POST /config  →  Save credentials ──────────────────────
   server.on("/config", HTTP_POST,
     [](AsyncWebServerRequest* req) {},
     nullptr,
@@ -447,80 +588,130 @@ void setupRoutes() {
       savePreferences(g_ssid, g_password, g_flask_ip);
 
       req->send(200, "application/json", "{\"status\":\"saved\"}");
-
-      // Reconnect STA on a small delay so response can be sent first
       delay(500);
       connectSTA();
     }
   );
 
-  // ── POST /reboot  →  Reboot ESP32 ─────────────────────────
+  // ── POST /reboot  →  Reboot ESP32 ──────────────────────────
   server.on("/reboot", HTTP_POST, [](AsyncWebServerRequest* req) {
     req->send(200, "application/json", "{\"status\":\"rebooting\"}");
     delay(500);
     ESP.restart();
   });
 
-  // ── GET /status  →  JSON health check ─────────────────────
+  // ── GET /status  →  JSON health check ──────────────────────
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
     StaticJsonDocument<256> doc;
-    doc["ap_ssid"]        = AP_SSID;
-    doc["ap_ip"]          = WiFi.softAPIP().toString();
-    doc["sta_ssid"]       = g_ssid;
-    doc["sta_connected"]  = (WiFi.status() == WL_CONNECTED);
-    doc["sta_ip"]         = WiFi.localIP().toString();
-    doc["flask_ip"]       = g_flask_ip;
-
+    doc["ap_ssid"]       = AP_SSID;
+    doc["ap_ip"]         = WiFi.softAPIP().toString();
+    doc["sta_ssid"]      = g_ssid;
+    doc["sta_connected"] = (WiFi.status() == WL_CONNECTED);
+    doc["sta_ip"]        = WiFi.localIP().toString();
+    doc["flask_ip"]      = g_flask_ip;
+    doc["target_x"]      = g_target_x;
+    doc["target_y"]      = g_target_y;
+    doc["encryption"]    = g_encryption_status;
     String out;
     serializeJson(doc, out);
     req->send(200, "application/json", out);
   });
 
-  // ── POST /data  →  Relay payload to Flask ─────────────────
-  //   Body: { "source": "client"|"server", ...rest of payload }
+  // ── POST /data  →  Accumulate points, return control state ─
+  //   Body: { "source": "client"|"server", "x":..., "y":..., ... }
   server.on("/data", HTTP_POST,
     [](AsyncWebServerRequest* req) {},
     nullptr,
     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
-      String body = String((char*)data, len);
-
-      // Cache latest payload by source
-      StaticJsonDocument<512> doc;
-      if (!deserializeJson(doc, body)) {
-        String src = doc["source"] | "unknown";
-        if (src == "client") g_client_payload = body;
-        else if (src == "server") g_server_payload = body;
+      DynamicJsonDocument incoming(512);
+      DeserializationError err = deserializeJson(incoming, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
       }
 
-      // Forward to Flask asynchronously (non-blocking would need a task;
-      // for 2s interval polling, a blocking call here is fine)
-      forwardToFlask("/data", body);
+      // Tag with AP-side timestamp (seconds since boot)
+      incoming["received_at"] = String(millis() / 1000);
 
-      req->send(200, "application/json", "{\"status\":\"forwarded\"}");
+      String src = incoming["source"] | "unknown";
+
+      if (src == "client") {
+        if (g_client_arr.size() >= MAX_POINTS) g_client_arr.remove(0);
+        g_client_arr.add(incoming.as<JsonObject>());
+      } else if (src == "server") {
+        if (g_server_arr.size() >= MAX_POINTS) g_server_arr.remove(0);
+        g_server_arr.add(incoming.as<JsonObject>());
+      }
+
+      // Return control state back to the posting ESP32
+      // (replaces what Flask used to return)
+      StaticJsonDocument<128> resp;
+      resp["encryption_status"] = g_encryption_status;
+      resp["encryption_key"]    = g_encryption_key;
+      resp["target_x"]          = g_target_x;
+      resp["target_y"]          = g_target_y;
+
+      String out;
+      serializeJson(resp, out);
+      req->send(200, "application/json", out);
     }
   );
 
-  // ── GET /data  →  Return cached payloads to Defender ──────
+  // ── GET /api/data  →  Serve accumulated points to Defender ─
   server.on("/api/data", HTTP_GET, [](AsyncWebServerRequest* req) {
-    String combined = "{\"client_points\":" + g_client_payload
-                    + ",\"server_points\":" + g_server_payload + "}";
-    req->send(200, "application/json", combined);
-  });
+    DynamicJsonDocument resp(8192);
+    resp["encryption_status"] = g_encryption_status;
+    resp["encryption_key"]    = g_encryption_key;
+    resp["target_x"]          = g_target_x;
+    resp["target_y"]          = g_target_y;
+    resp["client_points"]     = g_client_arr;
+    resp["server_points"]     = g_server_arr;
 
-  // ── GET /config  →  Return current config as JSON ─────────
-  //   Used by other ESP32s to fetch stored credentials on boot
-  server.on("/config", HTTP_GET, [](AsyncWebServerRequest* req) {
-    StaticJsonDocument<256> doc;
-    doc["ssid"]         = g_ssid;
-    doc["password"]     = g_password;
-    doc["flask_ip"]     = g_flask_ip;
-    doc["ap_router_ip"] = WiFi.localIP().toString();  // ← add this
     String out;
-    serializeJson(doc, out);
+    serializeJson(resp, out);
     req->send(200, "application/json", out);
   });
 
-  // ── 404 catch-all ──────────────────────────────────────────
+  // ── POST /set_encryption  →  Defender toggles encryption ───
+  server.on("/set_encryption", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<128> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_encryption_status = doc["encryption_status"] | false;
+      g_encryption_key    = doc["encryption_key"]    | "1234";
+      Serial.printf("[AP-ESP32] Encryption set: %s  key=%s\n",
+                    g_encryption_status ? "ON" : "OFF",
+                    g_encryption_key.c_str());
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
+    }
+  );
+
+  // ── POST /set_target  →  Defender sets target position ─────
+  server.on("/set_target", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<128> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_target_x = doc["target_x"] | 100.0f;
+      g_target_y = doc["target_y"] | 100.0f;
+      Serial.printf("[AP-ESP32] Target set: (%.1f, %.1f)\n",
+                    g_target_x, g_target_y);
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
+    }
+  );
+
+  // ── 404 catch-all ───────────────────────────────────────────
   server.onNotFound([](AsyncWebServerRequest* req) {
     req->send(404, "text/plain", "Not found");
   });

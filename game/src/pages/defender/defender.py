@@ -629,20 +629,16 @@ class DefenderV0(Page):
             self._bicycle_rudder_expected = bicycle_expected_rudder
             self._bicycle_rudder_measured = measured_rudder
 
-            if latest.get("seq", -1) != self._last_seq:
-                self._last_seq  = latest.get("seq", -1)
-                self._positions = [(p["x"], p.get("y", 0.0)) for p in client_points]
-                if len(self._positions) >= 2:
-                    dx = self._positions[-1][0] - self._positions[-2][0]
-                    dy = self._positions[-1][1] - self._positions[-2][1]
-                    speed = math.sqrt((dx*dx)+(dy*dy))
-                    if(speed > 50):
-                        self._flags["unexpected_movement"] = True
-                    else:
-                        self._flags["unexpected_movement"] = False
-                    self._last_bearing = math.atan2(dy, dx)
-                else:
-                    self._last_bearing = None
+            # With this (no seq check):
+            self._positions = [(float(p["x"]), float(p.get("y", 0.0))) for p in client_points]
+            if len(self._positions) >= 2:
+                dx = self._positions[-1][0] - self._positions[-2][0]
+                dy = self._positions[-1][1] - self._positions[-2][1]
+                speed = math.sqrt((dx*dx) + (dy*dy))
+                self._flags["unexpected_movement"] = speed > 50
+                self._last_bearing = math.atan2(dy, dx)
+            else:
+                self._last_bearing = None
 
         self._refresh_flags()
 
@@ -671,7 +667,15 @@ class DefenderV0(Page):
             for c_idx, key in enumerate(cols):
                 raw = packet.get(key, "—")
                 if key == "received_at":
-                    text = str(raw)[11:19]
+                    raw_str = str(raw)
+                    # Handle both Flask datetime strings ("2024-01-01 12:34:56")
+                    # and AP ESP32 uptime strings ("100", "3661")
+                    if len(raw_str) > 10:
+                        text = raw_str[11:19]   # Flask datetime format
+                    else:
+                        # Convert raw seconds to HH:MM:SS
+                        secs = int(raw_str)
+                        text = f"{secs//3600:02d}:{(secs%3600)//60:02d}:{secs%60:02d}"
                 elif key == "timestamp":
                     text = str(raw)
                 else:
