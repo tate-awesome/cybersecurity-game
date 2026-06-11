@@ -1,7 +1,7 @@
 from ...app_core.context import Context
 
 # Frame widgets
-from ...widgets import Trifold, MenuBar
+from ...widgets import Trifold, MenuBar, Bifold
 
 # Widgets
 from ...widgets import common, popup
@@ -44,7 +44,7 @@ class AttackerV0(Page):
 
         left_p = common.scrollable(trifold.left, context)       
         middle_p = trifold.middle
-        right_p = trifold.middle
+        right_p = trifold.right
 
     # Forms
         nmap = NMap(left_p, context)
@@ -56,13 +56,13 @@ class AttackerV0(Page):
         common.scroll_deadspace(left_p, context)
 
     # Console
-        top, bottom = common.create_bifold(middle_p, context)
-        packet_console = PacketConsole(top, context)
-        status_console = StatusConsole(bottom, context)
+        console = Bifold(middle_p, context)
+        packet_console = PacketConsole(console.top, context)
+        status_console = StatusConsole(console.bottom, context)
 
 
     # Displays
-        top, bottom = common.create_bifold(right_p, context)
-        system_model = SystemModel(top, context)
+        display = Bifold(right_p, context)
+        system_model = SystemModel(display.top, context)
         # values = ValuesTable(style, top, context)
-        network_visualizer = Visualizer(bottom, context)
+        network_visualizer = Visualizer(display.bottom, context)
