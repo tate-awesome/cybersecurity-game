@@ -68,8 +68,7 @@ class Draw:
         '''
         if len(points) < 2:
             return
-        points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-        points = t.zoom_and_pan(points, self.scale, self.offset)
+        points = self.camera.world_to_canvas(points)
         self.canvas.create_line(points, width=1, fill=line_color)
 
     def arc(self, center: tuple[float, float], radius: float, start_angle: float, end_angle: float, line_color: str, thickness=2):
@@ -78,37 +77,17 @@ class Draw:
         '''
         num_points = int(radius * abs(end_angle - start_angle) + 5)
         points = t.get_arc_points(center, radius, start_angle, end_angle, num_points)
-        points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-        points = t.zoom_and_pan(points, self.scale, self.offset)
+        points = self.camera.world_to_canvas(points)
         self.canvas.create_line(points, width=2, fill=line_color)
 
-
-    # def grid_lines(self):
-    #     for i in range(0, 210, 10):
-    #         h_line = [ (0, i), (200, i) ]
-
-    #         v_line = t.rotate(h_line, math.pi/2, (i, i))
-
-    #         h_line = t.padded_fit_uniform(h_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-    #         v_line = t.padded_fit_uniform(v_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-
-    #         h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
-    #         v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
-    #         color = "white"
-    #         if i == 0:
-    #             color = "red"
-
-    #         self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
-    #         self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
 
     def grid_lines(self):
         for i in range(0, 210, 10):
             h_line = [(0, i), (200, i)]
             v_line = t.rotate(h_line, math.pi/2, (i, i))
-            h_line = t.padded_fit_uniform(h_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-            v_line = t.padded_fit_uniform(v_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
-            h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
-            v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
+
+            h_line = self.camera.world_to_canvas(h_line)
+            v_line = self.camera.world_to_canvas(v_line)
             color = "white"
             if i == 0:
                 color = "red"
@@ -145,8 +124,7 @@ class Draw:
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
     
-        the_boat = t.padded_fit_uniform(the_boat, self.input_range[0], self.input_range[1], self.canvas, 20)
-        the_boat = t.zoom_and_pan(the_boat, self.scale, self.offset)
+        the_boat = self.camera.world_to_canvas(the_boat)
         self.canvas.create_polygon(the_boat, fill=fill_color, outline=line_color)
 
     def random_spline_path(target_points, samples_per_segment):
