@@ -90,14 +90,14 @@ static inline uint16_t theta_to_mrad_u16(float t) {
 
 bool writeH(uint16_t addr, uint16_t val) {
   if (!mb.isConnected(serverIP)) {
-    DBG_PRINTF("[MASTER] writeH FAIL addr=%u: not connected\n", addr);
+    DBG_PRINTF("[CLIENT] writeH FAIL addr=%u: not connected\n", addr);
     return false;
   }
   // One retry on timeout to handle occasional WiFi jitter
   for (int attempt = 0; attempt < 2; attempt++) {
     uint16_t tx = mb.writeHreg(serverIP, addr, val);
     if (!tx) {
-      DBG_PRINTF("[MASTER] writeH FAIL addr=%u: writeHreg returned 0 (queue full or busy)\n", addr);
+      DBG_PRINTF("[CLIENT] writeH FAIL addr=%u: writeHreg returned 0 (queue full or busy)\n", addr);
       return false;  // retrying won't help so exit immediately.
     }
     // Poll until the transaction clears, up to a hard timeout of 300ms.
@@ -107,7 +107,7 @@ bool writeH(uint16_t addr, uint16_t val) {
       if (!mb.isTransaction(tx)) return true;
       delay(3);
     }
-    DBG_PRINTF("[MASTER] writeH addr=%u: transaction timed out (attempt %d/2)\n", addr, attempt + 1);
+    DBG_PRINTF("[CLIENT] writeH addr=%u: transaction timed out (attempt %d/2)\n", addr, attempt + 1);
     for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
   }
   return false;
@@ -115,14 +115,14 @@ bool writeH(uint16_t addr, uint16_t val) {
 
 bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
   if (!mb.isConnected(serverIP)) {
-    DBG_PRINTLN("[MASTER] readH FAIL: not connected");
+    DBG_PRINTLN("[CLIENT] readH FAIL: not connected");
     return false;
   }
   // 1 retry on timeout to handle occasional WiFi jitter
   for (int attempt = 0; attempt < 2; attempt++) {
     uint16_t tx = mb.readHreg(serverIP, addr, buf, n);
     if (!tx) {
-      DBG_PRINTLN("[MASTER] readH FAIL: readHreg returned 0 (queue full or busy)");
+      DBG_PRINTLN("[CLIENT] readH FAIL: readHreg returned 0 (queue full or busy)");
       return false;  // retrying won't help so bail immediately.
     }
     // Poll until the transaction clears, up to a hard timeout of 300ms.
@@ -131,7 +131,7 @@ bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
       mb.task();
       if (!mb.isTransaction(tx)) return true;
     }
-    DBG_PRINTF("[MASTER] readH FAIL: transaction timed out (attempt %d/2)\n", attempt + 1);
+    DBG_PRINTF("[CLIENT] readH FAIL: transaction timed out (attempt %d/2)\n", attempt + 1);
     for (int i = 0; i < 5; i++) { mb.task(); delay(5); }
   }
   return false;
@@ -167,7 +167,7 @@ void sendPose() {
   if (writeH(HREG_X_PHYS, x_u) && writeH(HREG_Y_PHYS, y_u) && writeH(HREG_THETA_MRAD, t_u)) {
     // Success - values sent
   } else {
-    Serial.println("[MASTER] ERR: Failed to send pose to Slave");
+    Serial.println("[CLIENT] ERR: Failed to send pose to Server");
   }
 }
 
@@ -181,7 +181,7 @@ void sendPoseEncrypted(){
   bool theta = writeH(HREG_THETA_MRAD, t_u);
   if(x && y && theta){    
   }else{
-    Serial.print("[Master] ERR: Failed to send pose to Slave.");
+    Serial.print("[CLIENT] ERR: Failed to send pose to Server.");
   }
 }
 
@@ -217,11 +217,11 @@ void restPost() {
       if (resp.containsKey("encryption_status")) {
         encrypt_status = resp["encryption_status"].as<bool>();
         key = resp["encryption_key"].as<String>();
-        // Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
+        // Serial.printf("[CLIENT] encryption_key=%s\n", key.c_str());
       }
     }
   } else {
-    Serial.printf("[MASTER] REST POST failed  HTTP %d\n", code);
+    Serial.printf("[CLIENT] REST POST failed  HTTP %d\n", code);
   }
 
   http.end();
@@ -300,20 +300,20 @@ void connectToRouter() {
 void setup() {
   Serial.begin(115200);
   delay(50);
-  Serial.println("\n[MASTER] Booting…");
-  Serial.println("[MASTER] Step 1: fetchConfigFromAP()");
+  Serial.println("\n[CLIENT] Booting…");
+  Serial.println("[CLIENT] Step 1: fetchConfigFromAP()");
   fetchConfigFromAP();
-  Serial.printf("[MASTER] After fetch — IP: %s  SSID: %s\n", WiFi.localIP().toString().c_str(),WiFi.SSID().c_str());
-  Serial.println("[MASTER] Step 2: connectToRouter()");
+  Serial.printf("[CLIENT] After fetch — IP: %s  SSID: %s\n", WiFi.localIP().toString().c_str(),WiFi.SSID().c_str());
+  Serial.println("[CLIENT] Step 2: connectToRouter()");
   connectToRouter();
-  Serial.printf("[MASTER] After router — IP: %s  SSID: %s  Status: %d\n",WiFi.localIP().toString().c_str(),WiFi.SSID().c_str(),WiFi.status());
+  Serial.printf("[CLIENT] After router — IP: %s  SSID: %s  Status: %d\n",WiFi.localIP().toString().c_str(),WiFi.SSID().c_str(),WiFi.status());
 
   // Initialize LCD
   lcd.init();
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Master Init...");
+  lcd.print("CLIENT Init...");
 
   // WiFi
   lcd.setCursor(0, 1);
@@ -322,7 +322,7 @@ void setup() {
 
   lcd.clear();
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\n[MASTER] IP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.printf("\n[CLIENT] IP: %s\n", WiFi.localIP().toString().c_str());
     lcd.setCursor(0, 0);
     lcd.print("WiFi: OK");
     lcd.setCursor(0, 1);
@@ -331,30 +331,30 @@ void setup() {
   } else {
     lcd.setCursor(0, 0);
     lcd.print("WiFi: FAILED!");
-    Serial.println("\n[MASTER] WiFi failed!");
+    Serial.println("\n[CLIENT] WiFi failed!");
     while(1) { delay(1000); }
   }
 
   WiFi.setSleep(false);
-  Serial.println("[MASTER] WiFi sleep disabled");
+  Serial.println("[CLIENT] WiFi sleep disabled");
 
-  // Connect to Slave
+  // Connect to Server
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Connect Slave...");
+  lcd.print("Connect Server...");
   // Check they're on same subnet
   if (WiFi.localIP()[2] != serverIP[2]) {
-      Serial.println("[MASTER] WARNING: Different subnets! Modbus will fail.");
+      Serial.println("[CLIENT] WARNING: Different subnets! Modbus will fail.");
   }
 
   mb.connect(serverIP);
   delay(1000);
-  Serial.printf("[MASTER] Modbus isConnected: %d\n", mb.isConnected(serverIP));
+  Serial.printf("[CLIENT] Modbus isConnected: %d\n", mb.isConnected(serverIP));
 
   if (mb.isConnected(serverIP)) {
-    Serial.println("[MASTER] Connected to Slave Modbus server.");
+    Serial.println("[CLIENT] Connected to Server Modbus server.");
     lcd.setCursor(0, 1);
-    lcd.print("Slave: OK");
+    lcd.print("Server: OK");
     delay(1000);
     
     // Send initial pose
@@ -363,7 +363,7 @@ void setup() {
     }else{
       sendPose();
     }
-    Serial.println("[MASTER] Initial pose sent to Slave.");
+    Serial.println("[CLIENT] Initial pose sent to Server.");
     
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -372,9 +372,9 @@ void setup() {
     lcd.print("Starting...");
     delay(1000);
   } else {
-    Serial.println("[MASTER] WARNING: Could not connect to Slave initially.");
+    Serial.println("[CLIENT] WARNING: Could not connect to Server initially.");
     lcd.setCursor(0, 1);
-    lcd.print("Slave: FAIL");
+    lcd.print("Server: FAIL");
     delay(2000);
   }
 }
@@ -388,14 +388,14 @@ void loop() {
     static uint32_t lastTry = 0;
     if (millis() - lastTry > 2000) {
       lastTry = millis();
-      Serial.println("[MASTER] Reconnecting Modbus…");
+      Serial.println("[CLIENT] Reconnecting Modbus…");
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Reconnecting...");
       
       mb.connect(serverIP);
       if (mb.isConnected(serverIP)) {
-        Serial.println("[MASTER] Reconnected successfully!");
+        Serial.println("[CLIENT] Reconnected successfully!");
         if(encrypt_status){
           sendPoseEncrypted();
         }else{
@@ -460,7 +460,7 @@ void loop() {
         if (state_y > 200.0f) state_y = 200.0f;
       }
 
-      // Send updated pose back to Slave
+      // Send updated pose back to Server
       if (millis() - lastPoseMs >= 200) {
         lastPoseMs = millis();
         if(encrypt_status){
@@ -497,9 +497,9 @@ void loop() {
       if (millis() - lastPrint > 1000) {
         lastPrint = millis();
 
-        Serial.printf("[MASTER] RECV  Speed = %.3f m/s  |  Rudder = %.2f deg  (raw: %u, %u)\n",
+        Serial.printf("[CLIENT] RECV  Speed = %.3f m/s  |  Rudder = %.2f deg  (raw: %u, %u)\n",
                       speed_m_s, rudder_deg, speed_counts, rudder_counts);
-        Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f)"
+        Serial.printf("[CLIENT] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f)"
           #ifdef REST_API_ENABLED
                         " e_stat=%d"
           #endif
@@ -513,7 +513,7 @@ void loop() {
 
     } else {
       readFailures++;
-      DBG_PRINTF("[MASTER] ERR  read feedback failed (%d/%d failures)\n", readFailures, readAttempts);
+      DBG_PRINTF("[CLIENT] ERR  read feedback failed (%d/%d failures)\n", readFailures, readAttempts);
       
       static uint32_t lastErrLcd = 0;
       if (millis() - lastErrLcd > 2000) {
