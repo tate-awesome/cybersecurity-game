@@ -42,7 +42,7 @@ class DefenderV0(Page):
         # TODO use net for lifetime management   = context.refresh_net(HardwareDefender)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
-        self._server_url    = "http://192.168.8.141/api/data"
+        self._server_url    = "http://192.168.4.1"
         self._positions     = []
         self._last_bearing  = None
         self._encryption_on = False
@@ -145,7 +145,7 @@ class DefenderV0(Page):
         self._url_entry = CTkEntry(section, font=self.style.get_font(),
                                    placeholder_text="http://192.168.8.141")
         self._url_entry.pack(fill="x", padx=self.style.igap, pady=(self.style.igap, 4))
-        self._url_entry.insert(0, "http://192.168.8.141")
+        self._url_entry.insert(0, "http://192.168.4.1")
 
         CTkButton(section, text="Connect", font=self.style.get_font(),
                   command=self._poll).pack(fill="x", padx=self.style.igap, pady=(0, 4))
