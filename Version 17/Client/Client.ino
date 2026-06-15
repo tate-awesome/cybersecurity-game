@@ -20,9 +20,9 @@ const char* CONFIG_URL  = "http://192.168.4.1/config";
 const char* REST_URL    = "http://192.168.4.1/data";
 
 // Populated at boot from AP config
-String g_router_ssid = "";
-String g_router_pass = "";
-String g_flask_ip    = "";
+// String g_router_ssid = "";
+// String g_router_pass = "";
+// String g_flask_ip    = "";
 
 #ifdef REST_API_ENABLED
   const uint32_t REST_INTERVAL_MS = 2000;
@@ -42,7 +42,7 @@ String g_flask_ip    = "";
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-IPAddress serverIP(192, 168, 8, 137);
+IPAddress serverIP(192, 168, 4, 10);   // ← was 192.168.8.137
 
 ModbusIP mb;
 
@@ -51,7 +51,6 @@ float state_y = 0.0f;
 float state_theta = 0.0f;
 float state_speed  = 0.0f;
 float state_rudder = 0.0f;
-
 
 const float L_vehicle = 0.07f;
 const float K_theta = 0.6f;
@@ -68,7 +67,6 @@ static int readAttempts = 0;
 static int readFailures = 0;
 
 static String key = (String)1234;
-String g_ap_router_ip = "192.168.8.141";
 
 //// Physical scaling constants 
 const float SpeedMax_m_s = 50.0f;
@@ -86,7 +84,6 @@ static inline uint16_t theta_to_mrad_u16(float t) {
   while (t >= 2.0f * PI) t -= 2.0f * PI;
   return (uint16_t)lroundf(t * 1000.0f);
 }
-
 
 bool writeH(uint16_t addr, uint16_t val) {
   if (!mb.isConnected(serverIP)) {
@@ -189,9 +186,8 @@ void sendPoseEncrypted(){
 void restPost() {
   if (WiFi.status() != WL_CONNECTED) return;
 
-  String url = "http://" + g_ap_router_ip + "/data";
   HTTPClient http;
-  http.begin(url);
+  http.begin(REST_URL);
   http.addHeader("Content-Type", "application/json");
 
   // Build payload
@@ -228,101 +224,37 @@ void restPost() {
 }
 #endif
 
-bool fetchConfigFromAP() {
-  Serial.println("[BOOT] Connecting to AP ESP32 to fetch config...");
-
-  WiFi.begin(AP_SSID, AP_PASSWORD);
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 8000) {
-    delay(300); Serial.print(".");
-  }
-  Serial.println();
-
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[BOOT] Could not reach AP ESP32 — using fallback values.");
-    g_router_ssid = "GL-SFT1200-ab1";
-    g_router_pass = "goodlife";
-    g_flask_ip    = "192.168.8.114";
-    g_ap_router_ip = "192.168.8.141";
-    return false;
-  }
-
-  HTTPClient http;
-  http.begin(CONFIG_URL);
-  int code = http.GET();
-
-  if (code == 200) {
-    StaticJsonDocument<256> doc;
-    deserializeJson(doc, http.getString());
-    g_router_ssid  = doc["ssid"]         | "";
-    g_router_pass  = doc["password"]     | "";
-    g_flask_ip     = doc["flask_ip"]     | "192.168.8.114";
-    g_ap_router_ip = doc["ap_router_ip"] | "192.168.8.141";
-    http.end();
-    return true;
-  }
-
-  http.end();
-  Serial.println("[BOOT] Config fetch failed — using fallback values.");
-  return false;
-}
-
-void connectToRouter() {
-  Serial.println("[WIFI] Disconnecting from AP...");
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  delay(500);
-  WiFi.mode(WIFI_STA);
-  delay(200);
-
-  Serial.printf("[WIFI] Connecting to router '%s'...\n", g_router_ssid.c_str());
-  WiFi.begin(g_router_ssid.c_str(), g_router_pass.c_str());
-
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    delay(400); Serial.print(".");
-  }
-  Serial.println();
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("[BOOT] Router connected — IP: %s\n",
-                  WiFi.localIP().toString().c_str());
-  } else {
-    Serial.println("[BOOT] Router connection FAILED.");
-    Serial.printf("[BOOT] WiFi status code: %d\n", WiFi.status());
-    // Status codes:
-    // 0 = WL_IDLE, 1 = WL_NO_SSID, 3 = WL_CONNECTED
-    // 4 = WL_CONNECT_FAILED, 6 = WL_DISCONNECTED
-  }
-}
-
-
 void setup() {
   Serial.begin(115200);
   delay(50);
-  Serial.println("\n[CLIENT] Booting…");
-  Serial.println("[CLIENT] Step 1: fetchConfigFromAP()");
-  fetchConfigFromAP();
-  Serial.printf("[CLIENT] After fetch — IP: %s  SSID: %s\n", WiFi.localIP().toString().c_str(),WiFi.SSID().c_str());
-  Serial.println("[CLIENT] Step 2: connectToRouter()");
-  connectToRouter();
-  Serial.printf("[CLIENT] After router — IP: %s  SSID: %s  Status: %d\n",WiFi.localIP().toString().c_str(),WiFi.SSID().c_str(),WiFi.status());
+  Serial.println("\n[MASTER] Booting...");
 
   // Initialize LCD
   lcd.init();
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("CLIENT Init...");
+  lcd.print("Master Init...");
 
-  // WiFi
+  // Connect directly to AP ESP32
   lcd.setCursor(0, 1);
   lcd.print("WiFi connect...");
 
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  Serial.print("[MASTER] Connecting to ESP32-Config AP");
+
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println();
 
   lcd.clear();
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\n[CLIENT] IP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.printf("[MASTER] Connected to AP — IP: %s\n",
+                  WiFi.localIP().toString().c_str());
     lcd.setCursor(0, 0);
     lcd.print("WiFi: OK");
     lcd.setCursor(0, 1);
@@ -331,40 +263,31 @@ void setup() {
   } else {
     lcd.setCursor(0, 0);
     lcd.print("WiFi: FAILED!");
-    Serial.println("\n[CLIENT] WiFi failed!");
+    Serial.println("[MASTER] WiFi failed!");
     while(1) { delay(1000); }
   }
 
   WiFi.setSleep(false);
-  Serial.println("[CLIENT] WiFi sleep disabled");
+  Serial.println("[MASTER] WiFi sleep disabled");
 
-  // Connect to Server
+  // Connect to Slave via Modbus
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Connect Server...");
-  // Check they're on same subnet
-  if (WiFi.localIP()[2] != serverIP[2]) {
-      Serial.println("[CLIENT] WARNING: Different subnets! Modbus will fail.");
-  }
-
+  lcd.print("Connect Slave...");
   mb.connect(serverIP);
-  delay(1000);
-  Serial.printf("[CLIENT] Modbus isConnected: %d\n", mb.isConnected(serverIP));
+  delay(500);
 
   if (mb.isConnected(serverIP)) {
-    Serial.println("[CLIENT] Connected to Server Modbus server.");
+    Serial.println("[MASTER] Connected to Slave Modbus server.");
     lcd.setCursor(0, 1);
-    lcd.print("Server: OK");
+    lcd.print("Slave: OK");
     delay(1000);
-    
-    // Send initial pose
-    if(encrypt_status){
+    if (encrypt_status) {
       sendPoseEncrypted();
-    }else{
+    } else {
       sendPose();
     }
-    Serial.println("[CLIENT] Initial pose sent to Server.");
-    
+    Serial.println("[MASTER] Initial pose sent to Slave.");
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Feedback Loop:");
@@ -372,9 +295,9 @@ void setup() {
     lcd.print("Starting...");
     delay(1000);
   } else {
-    Serial.println("[CLIENT] WARNING: Could not connect to Server initially.");
+    Serial.println("[MASTER] WARNING: Could not connect to Slave initially.");
     lcd.setCursor(0, 1);
-    lcd.print("Server: FAIL");
+    lcd.print("Slave: FAIL");
     delay(2000);
   }
 }

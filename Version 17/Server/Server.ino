@@ -1,5 +1,4 @@
 #define REST_API_ENABLED  // Comment out to disable REST API
-// Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -15,11 +14,11 @@
 const char* AP_SSID     = "ESP32-Config";
 const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL  = "http://192.168.4.1/config";
-const char* REST_URL    = "http://192.168.4.1/data";
+const char* REST_URL = "http://192.168.4.1/data";
 
-String g_router_ssid = "";
-String g_router_pass = "";
-String g_flask_ip    = "";
+// String g_router_ssid = "";
+// String g_router_pass = "";
+// String g_flask_ip    = "";
 
 // ------- Encryption -------
 String key = (String)1234;
@@ -83,71 +82,9 @@ const float RudderMax_deg  = 60.0f;
 const int LEDC_RES_BITS = 12;
 const int LEDC_FREQ_HZ  = 500;
 
-String g_ap_router_ip = "192.168.8.141";  // fallback
-
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 2
 #endif
-
-bool fetchConfigFromAP() {
-  Serial.println("[BOOT] Connecting to AP ESP32 to fetch config...");
-
-  WiFi.begin(AP_SSID, AP_PASSWORD);
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 8000) {
-    delay(300); Serial.print(".");
-  }
-  Serial.println();
-
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[BOOT] Could not reach AP ESP32 — using fallback values.");
-    g_router_ssid = "GL-SFT1200-ab1";
-    g_router_pass = "goodlife";
-    g_flask_ip    = "192.168.8.114";
-    g_ap_router_ip = "192.168.8.141";
-    return false;
-  }
-
-  HTTPClient http;
-  http.begin(CONFIG_URL);
-  int code = http.GET();
-
-  if (code == 200) {
-    StaticJsonDocument<256> doc;
-    deserializeJson(doc, http.getString());
-    g_router_ssid  = doc["ssid"]         | "";
-    g_router_pass  = doc["password"]     | "";
-    g_flask_ip     = doc["flask_ip"]     | "192.168.8.114";
-    g_ap_router_ip = doc["ap_router_ip"] | "192.168.8.141";  // ← add
-    Serial.printf("[BOOT] AP router IP: %s\n", g_ap_router_ip.c_str());
-    http.end();
-    return true;
-  }
-
-  http.end();
-  Serial.println("[BOOT] Config fetch failed — using fallback values.");
-  return false;
-}
-
-void connectToRouter() {
-  WiFi.disconnect(true);
-  delay(300);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(g_router_ssid.c_str(), g_router_pass.c_str());
-
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 12000) {
-    delay(400); Serial.print(".");
-  }
-  Serial.println();
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("[BOOT] Router connected — IP: %s\n",
-                  WiFi.localIP().toString().c_str());
-  } else {
-    Serial.println("[BOOT] Router connection FAILED.");
-  }
-}
 
 static inline float clampf_local(float v, float lo, float hi) {
     if (isnan(v)) return lo;
@@ -206,9 +143,8 @@ uint16_t keyToUint(const String& key){
 void restPost() {
     if (WiFi.status() != WL_CONNECTED) return;
 
-    String url = "http://" + g_ap_router_ip + "/data";
     HTTPClient http;
-    http.begin(url);
+    http.begin(REST_URL);
     http.addHeader("Content-Type", "application/json");
 
     // Build JSON payload with current state
@@ -252,31 +188,53 @@ void restPost() {
 #endif
 
 void setup() {
-    Serial.begin(115200);
-    delay(500);
-    Serial.println("\n[SERVER] Booting...");
-    fetchConfigFromAP();
-    connectToRouter();
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("\n[SERVER] Booting...");
 
-    
+  IPAddress staticIP(192, 168, 4, 10);   // fixed address for Slave
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+  WiFi.config(staticIP, gateway, subnet);
 
-    WiFi.setSleep(false);
-    Serial.printf("\n[SERVER] IP: %s\n", WiFi.localIP().toString().c_str());
+  // Connect directly to AP ESP32
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  Serial.print("[SERVER] Connecting to ESP32-Config AP");
 
-    // Modbus server
-    mb.server();
-    mb.addHreg(HREG_X_PHYS,     10000);
-    mb.addHreg(HREG_Y_PHYS,     10000);
-    mb.addHreg(HREG_THETA_MRAD, 0);
-    mb.addHreg(HREG_SPEED,      0);
-    mb.addHreg(HREG_RUDDER,     0);
-    ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    pinMode(PIN_TARGET_X, INPUT_PULLUP);
-    pinMode(PIN_TARGET_Y, INPUT_PULLUP);
-    pinMode(LED_BUILTIN, OUTPUT);
-    Serial.println("[SERVER] Ready.");
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("[SERVER] Connected to AP — IP: %s\n",
+                  WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("[SERVER] WiFi FAILED!");
+    while(1) { delay(1000); }
+  }
+
+  WiFi.setSleep(false);
+
+  // Modbus server starts on AP subnet
+  mb.server();
+  mb.addHreg(HREG_X_PHYS,     10000);
+  mb.addHreg(HREG_Y_PHYS,     10000);
+  mb.addHreg(HREG_THETA_MRAD, 0);
+  mb.addHreg(HREG_SPEED,      0);
+  mb.addHreg(HREG_RUDDER,     0);
+
+  ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  pinMode(PIN_TARGET_X, INPUT_PULLUP);
+  pinMode(PIN_TARGET_Y, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  Serial.println("[SERVER] Ready.");
 }
 
 void loop() {
@@ -306,7 +264,7 @@ void loop() {
     uint16_t h_y;
     uint16_t h_th;
 
-    // Read state from Modbus registers (written by Client/Master)
+    // Read state from Modbus registers (written by Client
     if(encrypt_status){
         h_x  = xorCipher(mb.Hreg(HREG_X_PHYS), keyToUint(key));
         h_y  = xorCipher(mb.Hreg(HREG_Y_PHYS), keyToUint(key));
