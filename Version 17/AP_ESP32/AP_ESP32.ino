@@ -3,6 +3,8 @@
 #include <Preferences.h>          // NVS (non-volatile) storage
 #include <ESPAsyncWebServer.h>    // Async web server
 #include <HTTPClient.h>           // Forward requests to Flask
+#include <DNSServer.h>
+#include <map>
 #include <ArduinoJson.h>          // JSON relay parsing
 
 // ─── Soft-AP credentials (permanent, never change) ───────────
@@ -11,6 +13,9 @@ const char* AP_PASSWORD = "admin1234";
 const IPAddress AP_IP   (192, 168, 4, 1);
 const IPAddress AP_GW   (192, 168, 4, 1);
 const IPAddress AP_SUBNET(255, 255, 255, 0);
+
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
 
 // ─── NVS key names ────────────────────────────────────────────
 #define NVS_NAMESPACE   "netcfg"
@@ -31,6 +36,13 @@ String g_client_payload = "{}";
 String g_server_payload = "{}";
 
 #define MAX_POINTS 20 
+
+struct DeviceInfo {
+  String ip;
+  uint32_t lastSeenMs;
+  int pointCount;
+};
+std::map<String, DeviceInfo> g_devices;
 
 StaticJsonDocument<8192> g_client_doc;  // stores array of points
 StaticJsonDocument<8192> g_server_doc;
@@ -77,6 +89,7 @@ void loop() {
   //     connectSTA();
   //   }
   // }
+  dnsServer.processNextRequest();
   delay(10);
 }
 
@@ -104,6 +117,10 @@ void startAP() {
   WiFi.softAPConfig(AP_IP, AP_GW, AP_SUBNET);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
   Serial.printf("[AP-ESP32] Soft-AP started: SSID='%s'  IP=%s\n", AP_SSID, WiFi.softAPIP().toString().c_str());
+
+  //captive portal
+  dnsServer.start(DNS_PORT, "*", AP_IP);
+  Serial.println("[AP-ESP32] Captive portal DNS started.");
 }
 
 // void connectSTA() {
@@ -150,278 +167,479 @@ void startAP() {
 //  HTML Config Page
 // ============================================================
 String buildConfigPage() {
-  String staStatus = (WiFi.status() == WL_CONNECTED)
-    ? ("&#10003; Connected to <b>" + g_ssid + "</b> (" + WiFi.localIP().toString() + ")")
-    : "&#10007; Not connected to router";
+      String html = R"rawhtml(
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>ESP32 Network Configuration</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  String html = R"rawhtml(
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESP32 Network Configuration</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          background: #1a1a2e;
+          color: #e0e0e0;
+          min-height: 100vh;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 20px;
+        }
 
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
+        .layout {
+          display: flex;
+          gap: 16px;
+          width: 100%;
+          max-width: 960px;
+          flex-wrap: wrap;
+        }
 
-    .card {
-      background: #16213e;
-      border: 1px solid #0f3460;
-      border-radius: 12px;
-      padding: 32px;
-      width: 100%;
-      max-width: 480px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
+        .column {
+          flex: 1;
+          min-width: 280px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
 
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #0f3460;
-    }
+        .card {
+          background: #16213e;
+          border: 1px solid #0f3460;
+          border-radius: 12px;
+          padding: 24px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
 
-    .header-icon {
-      font-size: 28px;
-    }
+        .header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #0f3460;
+          margin-bottom: 16px;
+        }
 
-    h1 {
-      font-size: 1.25rem;
-      color: #e94560;
-      letter-spacing: 0.5px;
-    }
+        .header-icon { font-size: 24px; }
 
-    h1 span {
-      display: block;
-      font-size: 0.75rem;
-      color: #888;
-      font-weight: normal;
-      margin-top: 2px;
-      letter-spacing: 0;
-    }
+        h1 {
+          font-size: 1.1rem;
+          color: #e94560;
+          letter-spacing: 0.5px;
+        }
 
-    .status-bar {
-      background: #0f3460;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+        h1 span {
+          display: block;
+          font-size: 0.72rem;
+          color: #888;
+          font-weight: normal;
+          margin-top: 2px;
+        }
 
-    .status-bar .label { color: #888; }
+        .section-title {
+          font-size: 0.70rem;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          color: #e94560;
+          margin-bottom: 12px;
+          margin-top: 20px;
+        }
 
-    .section-title {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #e94560;
-      margin-bottom: 14px;
-      margin-top: 24px;
-    }
+        .section-title:first-child { margin-top: 0; }
 
-    .form-group {
-      margin-bottom: 16px;
-    }
+        .form-group { margin-bottom: 14px; }
 
-    label {
-      display: block;
-      font-size: 0.82rem;
-      color: #aaa;
-      margin-bottom: 6px;
-    }
+        label {
+          display: block;
+          font-size: 0.80rem;
+          color: #aaa;
+          margin-bottom: 5px;
+        }
 
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 10px 14px;
-      background: #0a0a1a;
-      border: 1px solid #0f3460;
-      border-radius: 8px;
-      color: #e0e0e0;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
+        input[type="text"],
+        input[type="password"] {
+          width: 100%;
+          padding: 9px 12px;
+          background: #0a0a1a;
+          border: 1px solid #0f3460;
+          border-radius: 8px;
+          color: #e0e0e0;
+          font-size: 0.90rem;
+          outline: none;
+          transition: border-color 0.2s;
+        }
 
-    input[type="text"]:focus,
-    input[type="password"]:focus {
-      border-color: #e94560;
-    }
+        input:focus { border-color: #e94560; }
+        input::placeholder { color: #444; }
 
-    input[type="text"]::placeholder,
-    input[type="password"]::placeholder {
-      color: #444;
-    }
+        .btn {
+          width: 100%;
+          padding: 10px;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          margin-top: 6px;
+          transition: opacity 0.2s, transform 0.1s;
+        }
 
-    .btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: opacity 0.2s, transform 0.1s;
-    }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: #e94560; color: #fff; margin-top: 20px; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: #0f3460; color: #e0e0e0; margin-top: 8px; }
+        .btn-secondary:hover { opacity: 0.85; }
 
-    .btn:active { transform: scale(0.98); }
+        .toast {
+          display: none;
+          background: #0f3460;
+          border-left: 3px solid #e94560;
+          border-radius: 6px;
+          padding: 9px 12px;
+          font-size: 0.82rem;
+          margin-top: 14px;
+        }
 
-    .btn-primary {
-      background: #e94560;
-      color: #fff;
-      margin-top: 24px;
-    }
+        /* ── Status Panel ── */
+        .stat-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 4px;
+        }
 
-    .btn-primary:hover { opacity: 0.9; }
+        .stat-box {
+          background: #0a0a1a;
+          border: 1px solid #0f3460;
+          border-radius: 8px;
+          padding: 10px 12px;
+          text-align: center;
+        }
 
-    .btn-secondary {
-      background: #0f3460;
-      color: #e0e0e0;
-      margin-top: 10px;
-    }
+        .stat-value {
+          font-size: 1.4rem;
+          font-weight: 700;
+          color: #e94560;
+          line-height: 1.2;
+        }
 
-    .btn-secondary:hover { opacity: 0.85; }
+        .stat-label {
+          font-size: 0.68rem;
+          color: #888;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          margin-top: 2px;
+        }
 
-    .toast {
-      display: none;
-      background: #0f3460;
-      border-left: 3px solid #e94560;
-      border-radius: 6px;
-      padding: 10px 14px;
-      font-size: 0.85rem;
-      margin-top: 16px;
-    }
+        .status-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 0;
+          border-bottom: 1px solid #0f3460;
+          font-size: 0.82rem;
+        }
 
-    .divider {
-      border: none;
-      border-top: 1px solid #0f3460;
-      margin: 24px 0 0;
-    }
+        .status-row:last-child { border-bottom: none; }
+        .status-key { color: #888; }
+        .status-val { color: #e0e0e0; font-weight: 500; }
+        .status-val.green { color: #4caf50; }
+        .status-val.red   { color: #e94560; }
 
-    .footer {
-      font-size: 0.75rem;
-      color: #555;
-      text-align: center;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
+        /* ── Device Table ── */
+        .device-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.80rem;
+          margin-top: 4px;
+        }
 
-    <div class="header">
-      <div class="header-icon">&#128268;</div>
-      <h1>ESP32 Network Config
-        <span>Access Point / Relay Node</span>
-      </h1>
-    </div>
+        .device-table th {
+          text-align: left;
+          color: #888;
+          font-weight: normal;
+          font-size: 0.70rem;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          padding: 4px 6px 8px;
+          border-bottom: 1px solid #0f3460;
+        }
 
-    <div class="status-bar">
-      <span class="label">Router Status:</span>
-      <span>)rawhtml" + staStatus + R"rawhtml(</span>
-    </div>
+        .device-table td {
+          padding: 8px 6px;
+          border-bottom: 1px solid #0a0a1a;
+          color: #e0e0e0;
+        }
 
-    <!-- ── Router Credentials ── -->
-    <div class="section-title">Router Credentials</div>
+        .device-table tr:last-child td { border-bottom: none; }
 
-    <div class="form-group">
-      <label for="ssid">Network SSID</label>
-      <input type="text" id="ssid" name="ssid"
-             placeholder="e.g. MyLabRouter"
-             value=")rawhtml" + g_ssid + R"rawhtml(">
-    </div>
+        .dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin-right: 6px;
+        }
 
-    <div class="form-group">
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password"
-             placeholder="Router password">
-    </div>
+        .dot-green { background: #4caf50; }
+        .dot-yellow { background: #ff9800; }
+        .dot-red { background: #e94560; }
 
-    <!-- ── Flask Server ── -->
-    <div class="section-title">Flask Server</div>
+        .no-devices {
+          text-align: center;
+          color: #555;
+          font-size: 0.82rem;
+          padding: 16px 0;
+        }
 
-    <div class="form-group">
-      <label for="flask_ip">Flask Server IP</label>
-      <input type="text" id="flask_ip" name="flask_ip"
-             placeholder="e.g. 192.168.8.167"
-             value=")rawhtml" + g_flask_ip + R"rawhtml(">
-    </div>
+        .footer {
+          font-size: 0.72rem;
+          color: #555;
+          text-align: center;
+          margin-top: 16px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="layout">
 
-    <button class="btn btn-primary" onclick="saveConfig()">
-      &#128190; Save &amp; Reconnect
-    </button>
+        <!-- ── Left column: Config ── -->
+        <div class="column">
+          <div class="card">
+            <div class="header">
+              <div class="header-icon">&#128268;</div>
+              <h1>ESP32 Network Config
+                <span>Access Point / Relay Node</span>
+              </h1>
+            </div>
 
-    <button class="btn btn-secondary" onclick="rebootDevice()">
-      &#128260; Reboot ESP32
-    </button>
+            <div class="section-title">Router Credentials</div>
 
-    <div class="toast" id="toast"></div>
+            <div class="form-group">
+              <label for="ssid">Network SSID</label>
+              <input type="text" id="ssid" placeholder="e.g. MyLabRouter" value=")rawhtml" + g_ssid + R"rawhtml(">
+            </div>
 
-    <hr class="divider">
-    <div class="footer">
-      AP IP: 192.168.4.1 &nbsp;|&nbsp; Soft-AP: ESP32-Config
-    </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" placeholder="Router password">
+            </div>
 
-  </div>
+            <div class="section-title">Flask Server</div>
 
-  <script>
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.style.display = 'block';
-      setTimeout(() => t.style.display = 'none', 4000);
-    }
+            <div class="form-group">
+              <label for="flask_ip">Flask Server IP</label>
+              <input type="text" id="flask_ip" placeholder="e.g. 192.168.8.167" value=")rawhtml" + g_flask_ip + R"rawhtml(">
+            </div>
 
-    async function saveConfig() {
-      const ssid     = document.getElementById('ssid').value.trim();
-      const password = document.getElementById('password').value;
-      const flask_ip = document.getElementById('flask_ip').value.trim();
+            <button class="btn btn-primary" onclick="saveConfig()">
+              &#128190; Save &amp; Reconnect
+            </button>
 
-      if (!ssid) { showToast('SSID cannot be empty.'); return; }
-      if (!flask_ip) { showToast('Flask IP cannot be empty.'); return; }
+            <button class="btn btn-secondary" onclick="clearData()">
+              &#128465; Clear Telemetry Data
+            </button>
 
-      const resp = await fetch('/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ssid, password, flask_ip })
-      });
+            <button class="btn btn-secondary" onclick="rebootDevice()">
+              &#128260; Reboot ESP32
+            </button>
 
-      if (resp.ok) {
-        showToast('Saved! Reconnecting to router...');
-        setTimeout(() => location.reload(), 4000);
-      } else {
-        showToast('Error saving config.');
-      }
-    }
+            <div class="toast" id="toast"></div>
 
-    async function rebootDevice() {
-      await fetch('/reboot', { method: 'POST' });
-      showToast('Rebooting ESP32...');
-    }
-  </script>
-</body>
-</html>
-)rawhtml";
+            <div class="footer" style="margin-top:20px;">
+              AP IP: 192.168.4.1 &nbsp;|&nbsp; SSID: ESP32-Config
+            </div>
+          </div>
+        </div>
 
-  return html;
-}
+        <!-- ── Right column: Status + Devices ── -->
+        <div class="column">
+
+          <!-- System Status Card -->
+          <div class="card">
+            <div class="section-title" style="margin-top:0;">System Status
+              <span style="float:right; color:#555; font-size:0.65rem; letter-spacing:0;">
+                auto-refresh 5s
+              </span>
+            </div>
+
+            <div class="stat-grid">
+              <div class="stat-box">
+                <div class="stat-value" id="stat-clients">—</div>
+                <div class="stat-label">Connected</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value" id="stat-uptime">—</div>
+                <div class="stat-label">Uptime</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value" id="stat-client-pts">—</div>
+                <div class="stat-label">Client Points</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value" id="stat-server-pts">—</div>
+                <div class="stat-label">Server Points</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <div class="status-row">
+                <span class="status-key">Encryption</span>
+                <span class="status-val" id="stat-enc">—</span>
+              </div>
+              <div class="status-row">
+                <span class="status-key">Target X / Y</span>
+                <span class="status-val" id="stat-target">—</span>
+              </div>
+              <div class="status-row">
+                <span class="status-key">AP IP</span>
+                <span class="status-val">192.168.4.1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connected Devices Card -->
+          <div class="card">
+            <div class="section-title" style="margin-top:0;">Connected Devices</div>
+            <table class="device-table">
+              <thead>
+                <tr>
+                  <th>IP Address</th>
+                  <th>Status</th>
+                  <th>Last Seen</th>
+                  <th>Points</th>
+                </tr>
+              </thead>
+              <tbody id="device-tbody">
+                <tr><td colspan="4" class="no-devices">No devices seen yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <script>
+        // ── Toast helper ──────────────────────────────────────────
+        function showToast(msg) {
+          const t = document.getElementById('toast');
+          t.textContent = msg;
+          t.style.display = 'block';
+          setTimeout(() => t.style.display = 'none', 4000);
+        }
+
+        // ── Format uptime ms → HH:MM:SS ──────────────────────────
+        function formatUptime(ms) {
+          const s   = Math.floor(ms / 1000);
+          const h   = Math.floor(s / 3600);
+          const m   = Math.floor((s % 3600) / 60);
+          const sec = s % 60;
+          return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+        }
+
+        // ── Dot colour based on last-seen seconds ─────────────────
+        function dotClass(lastSeenS) {
+          if (lastSeenS < 5)  return 'dot-green';
+          if (lastSeenS < 15) return 'dot-yellow';
+          return 'dot-red';
+        }
+
+        // ── Fetch status and update both panels ───────────────────
+        async function refreshStatus() {
+          try {
+            const resp = await fetch('/status');
+            if (!resp.ok) return;
+            const d = await resp.json();
+
+            // Stat boxes
+            document.getElementById('stat-clients').textContent =
+              (d.connected_clients ?? '—') + ' / 3';
+            document.getElementById('stat-uptime').textContent =
+              d.uptime_ms !== undefined ? formatUptime(d.uptime_ms) : '—';
+            document.getElementById('stat-client-pts').textContent =
+              d.client_point_count ?? '—';
+            document.getElementById('stat-server-pts').textContent =
+              d.server_point_count ?? '—';
+
+            // Status rows
+            const encEl = document.getElementById('stat-enc');
+            encEl.textContent    = d.encryption ? 'ON' : 'OFF';
+            encEl.className      = 'status-val ' + (d.encryption ? 'green' : 'red');
+            document.getElementById('stat-target').textContent =
+              `(${d.target_x ?? '—'}, ${d.target_y ?? '—'})`;
+
+            // Device table
+            const tbody = document.getElementById('device-tbody');
+            if (!d.devices || d.devices.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="4" class="no-devices">No devices seen yet</td></tr>';
+            } else {
+              tbody.innerHTML = d.devices.map(dev => {
+                const cls = dotClass(dev.last_seen_s);
+                const age = dev.last_seen_s < 60
+                  ? dev.last_seen_s + 's ago'
+                  : Math.floor(dev.last_seen_s / 60) + 'm ago';
+                const status = dev.last_seen_s < 5 ? 'Active'
+                            : dev.last_seen_s < 15 ? 'Slow'
+                            : 'Stale';
+                return `<tr>
+                  <td>${dev.ip}</td>
+                  <td><span class="dot ${cls}"></span>${status}</td>
+                  <td>${age}</td>
+                  <td>${dev.point_count}</td>
+                </tr>`;
+              }).join('');
+            }
+          } catch(e) {
+            console.warn('Status fetch failed:', e);
+          }
+        }
+
+        // ── Save config ───────────────────────────────────────────
+        async function saveConfig() {
+          const ssid     = document.getElementById('ssid').value.trim();
+          const password = document.getElementById('password').value;
+          const flask_ip = document.getElementById('flask_ip').value.trim();
+
+          if (!ssid) { showToast('SSID cannot be empty.'); return; }
+
+          const resp = await fetch('/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ssid, password, flask_ip })
+          });
+
+          if (resp.ok) {
+            showToast('Saved! Reconnecting...');
+            setTimeout(() => location.reload(), 4000);
+          } else {
+            showToast('Error saving config.');
+          }
+        }
+
+        // ── Clear telemetry ───────────────────────────────────────
+        async function clearData() {
+          await fetch('/clear', { method: 'POST' });
+          showToast('Telemetry data cleared.');
+          refreshStatus();
+        }
+
+        // ── Reboot ────────────────────────────────────────────────
+        async function rebootDevice() {
+          await fetch('/reboot', { method: 'POST' });
+          showToast('Rebooting ESP32...');
+        }
+
+        // ── Start auto-refresh ────────────────────────────────────
+        refreshStatus();
+        setInterval(refreshStatus, 5000);
+      </script>
+    </body>
+    </html>
+    )rawhtml";
+      return html;
+  }
 
 // void setupRoutes() {
 
@@ -597,20 +815,35 @@ void setupRoutes() {
 
   // ── GET /status  →  JSON health check ──────────────────────
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
-    StaticJsonDocument<256> doc;
-    doc["ap_ssid"]       = AP_SSID;
-    doc["ap_ip"]         = WiFi.softAPIP().toString();
-    doc["sta_ssid"]      = g_ssid;
-    doc["sta_connected"] = (WiFi.status() == WL_CONNECTED);
-    doc["sta_ip"]        = WiFi.localIP().toString();
-    doc["flask_ip"]      = g_flask_ip;
-    doc["target_x"]      = g_target_x;
-    doc["target_y"]      = g_target_y;
-    doc["encryption"]    = g_encryption_status;
-    String out;
-    serializeJson(doc, out);
-    req->send(200, "application/json", out);
-  });
+  StaticJsonDocument<1024> doc;
+  doc["ap_ssid"]           = AP_SSID;
+  doc["ap_ip"]             = WiFi.softAPIP().toString();
+  doc["sta_ssid"]          = g_ssid;
+  doc["sta_connected"]     = (WiFi.status() == WL_CONNECTED);
+  doc["sta_ip"]            = WiFi.localIP().toString();
+  doc["flask_ip"]          = g_flask_ip;
+  doc["target_x"]          = g_target_x;
+  doc["target_y"]          = g_target_y;
+  doc["encryption"]        = g_encryption_status;
+  doc["uptime_ms"]         = millis();
+  doc["client_point_count"] = g_client_arr.size();
+  doc["server_point_count"] = g_server_arr.size();
+  doc["connected_clients"] = WiFi.softAPgetStationNum();
+
+  // device list
+  JsonArray devices = doc.createNestedArray("devices");
+  uint32_t now = millis();
+  for (auto& kv : g_devices) {
+    JsonObject d = devices.createNestedObject();
+    d["ip"]          = kv.second.ip;
+    d["last_seen_s"] = (now - kv.second.lastSeenMs) / 1000;
+    d["point_count"] = kv.second.pointCount;
+  }
+
+  String out;
+  serializeJson(doc, out);
+  req->send(200, "application/json", out);
+});
 
   // ── POST /data  →  Accumulate points, return control state ─
   //   Body: { "source": "client"|"server", "x":..., "y":..., ... }
@@ -625,21 +858,25 @@ void setupRoutes() {
         return;
       }
 
-      // Tag with AP-side timestamp (seconds since boot)
       incoming["received_at"] = String(millis() / 1000);
 
       String src = incoming["source"] | "unknown";
 
+      // ── Track device last-seen ─────────────────────────────────
+      String clientIP = req->client()->remoteIP().toString();
+      g_devices[clientIP].ip         = clientIP;
+      g_devices[clientIP].lastSeenMs = millis();
       if (src == "client") {
         if (g_client_arr.size() >= MAX_POINTS) g_client_arr.remove(0);
         g_client_arr.add(incoming.as<JsonObject>());
+        g_devices[clientIP].pointCount = g_client_arr.size();
       } else if (src == "server") {
         if (g_server_arr.size() >= MAX_POINTS) g_server_arr.remove(0);
         g_server_arr.add(incoming.as<JsonObject>());
+        g_devices[clientIP].pointCount = g_server_arr.size();
       }
 
-      // Return control state back to the posting ESP32
-      // (replaces what Flask used to return)
+      // Return control state
       StaticJsonDocument<128> resp;
       resp["encryption_status"] = g_encryption_status;
       resp["encryption_key"]    = g_encryption_key;
@@ -705,6 +942,16 @@ void setupRoutes() {
       req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
   );
+
+  server.on("/clear", HTTP_POST, [](AsyncWebServerRequest* req) {
+      g_client_doc.clear();
+      g_server_doc.clear();
+      g_client_arr = g_client_doc.to<JsonArray>();
+      g_server_arr = g_server_doc.to<JsonArray>();
+      g_devices.clear();
+      Serial.println("[AP-ESP32] Telemetry data cleared.");
+      req->send(200, "application/json", "{\"status\":\"cleared\"}");
+  });
 
   // ── 404 catch-all ───────────────────────────────────────────
   server.onNotFound([](AsyncWebServerRequest* req) {
