@@ -1,20 +1,19 @@
-from customtkinter import *
+from customtkinter import CTkFrame, CTkLabel, CTkButton
 from ...app_core.context import Context
 
-class Sniff:
-    def __init__(self, parent, context: Context):
+class SniffForm(CTkFrame):
+    def __init__(self, master: CTkFrame, context: Context):
 
         # Widgets
         style = context.style
 
-        frame = CTkFrame(parent, fg_color=style.color("widget"))
-        frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
-        frame.columnconfigure(0, weight=0)
-        frame.columnconfigure(1, weight=1)
-        frame.columnconfigure(2, weight=0)
-        self.frame = frame
+        super().__init__(master, fg_color=style.color("widget"))
+        self.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
+        self.columnconfigure(0, weight=0)
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=0)
 
-        header = CTkLabel(frame, text="Packet Sniffing", font=style.get_font())
+        header = CTkLabel(self, text="Packet Sniffing", font=style.get_font())
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
@@ -34,11 +33,11 @@ class Sniff:
         # box2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
         # self.box2 = box2
 
-        status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
+        status = CTkLabel(self, text="", font=style.get_font(), anchor="e")
         status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 
-        button = CTkButton(frame, text="Start sniffing", font=style.get_font(), command=None)
+        button = CTkButton(self, text="Start sniffing", font=style.get_font(), command=None)
         button.grid(row=3, column=2, sticky="ew", pady=style.gap, padx=style.gap)
         self.button = button
 

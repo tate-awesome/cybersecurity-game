@@ -1,7 +1,8 @@
 from ...app_core.context import Context
 
-# Frame widgets
+# Better Widgets
 from ...widgets import Trifold, MenuBar, Bifold, Scrollable
+from ...widgets import ArpForm, NmapForm, DosForm, MitmForm, Mitm2Form, SniffForm
 
 # Widgets
 from ...widgets import popup
@@ -15,14 +16,6 @@ from ...pages.page import Page
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
-
-# Form widgets
-from ...widgets.forms.nmap import NMap
-from ...widgets.forms.arp import ARP
-from ...widgets.forms.sniff import Sniff
-from ...widgets.forms.mitm import MITM
-from ...widgets.forms.dos import DoS
-from ...widgets.forms.mitm2 import MITM2
 
 # Packet
 from ...network.meta_packet import MetaPacket
@@ -46,12 +39,12 @@ class AttackerV0(Page):
         right_p = trifold.right
 
     # Forms
-        nmap = NMap(left_p, context)
-        arp = ARP(left_p, context)
-        dos = DoS(left_p, context)
-        sniff = Sniff(left_p, context)
-        mitm = MITM(left_p, context)
-        mitm2 = MITM2(left_p, context)
+        nmap = NmapForm(left_p, context)
+        arp = ArpForm(left_p, context)
+        dos = DosForm(left_p, context)
+        sniff = SniffForm(left_p, context)
+        mitm = MitmForm(left_p, context)
+        mitm2 = Mitm2Form(left_p, context)
         left_p.add_deadspace()
 
     # Console

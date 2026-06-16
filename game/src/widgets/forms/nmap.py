@@ -1,28 +1,27 @@
-from customtkinter import *
+from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkEntry
 from ...app_core.context import Context
 
-class NMap:
-    def __init__(self, parent, context: Context):
+class NmapForm(CTkFrame):
+    def __init__(self, master: CTkFrame, context: Context):
         
         # Widgets
         style = context.style
 
-        frame = CTkFrame(parent, fg_color=style.color("widget"))
-        frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
-        frame.columnconfigure(0, weight=0)
-        frame.columnconfigure(1, weight=1)
-        frame.columnconfigure(2, weight=0)
-        self.frame = frame
+        super().__init__(master, fg_color=style.color("widget"))
+        self.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
+        self.columnconfigure(0, weight=0)
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=0)
 
-        header = CTkLabel(frame, text="NMapping", font=style.get_font())
+        header = CTkLabel(self, text="NMapping", font=style.get_font())
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
-        status = CTkLabel(frame, text="", font=style.get_font(), anchor="e")
+        status = CTkLabel(self, text="", font=style.get_font(), anchor="e")
         status.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 
-        button = CTkButton(frame, text="Map Network", font=style.get_font(), command=None)
+        button = CTkButton(self, text="Map Network", font=style.get_font(), command=None)
         button.grid(row=1, column=2, sticky="e", pady=style.gap, padx=style.gap)
         self.button = button
 
