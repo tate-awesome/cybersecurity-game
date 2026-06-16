@@ -14,7 +14,7 @@ class WorldMap(Canvas):
         super().__init__(master, context, ((0,0),(200,200)))
 
         def frame_callback():
-            positions = context.net.data_buffer.get_simple_path("other")
+            positions = context.net.data_buffer.get_simple_path("in")
             bearing = context.net.data_buffer.get_bearing("other")
             self.delete("all")
             self.draw.ocean()
