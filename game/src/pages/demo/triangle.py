@@ -11,7 +11,7 @@ class Triangle(Page):
     '''
     def __init__(self, context: Context):
         super().__init__(context)
-        menu_bar = MenuBar(self, context, "Triangle Demo", False)
+        menu_bar = MenuBar(self, context, "Triangle Demo")
         menu_bar.quit_button()
         menu_bar.back_button()
 

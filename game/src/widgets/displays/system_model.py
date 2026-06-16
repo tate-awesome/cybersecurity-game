@@ -15,15 +15,15 @@ class SystemModel:
         self.context = context
         self.buffer = cast(DataBuffer, self.context.net.data_buffer)
 
-        menu_bar = MenuBar(parent, context, "System Model", False)
+        menu_bar = MenuBar(parent, context, "System Model")
 
 
         map = WorldMap(self.parent, context)
 
-        menu_bar.button("Customize")
-        menu_bar.button("Reset View", map.camera.reset_scale)
-        menu_bar.button("Clear Values")
-        menu_bar.button("Center on Boat")
+        menu_bar.add_button("Customize")
+        menu_bar.add_button("Reset View", map.camera.reset_scale)
+        menu_bar.add_button("Clear Values")
+        menu_bar.add_button("Center on Boat")
 
 
     def create_menu_button(self, frame, text, function=None):
