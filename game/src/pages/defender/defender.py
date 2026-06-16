@@ -99,7 +99,7 @@ class DefenderV0(Page):
         self._build_encryption_block(left_p)
         self._build_target_block(left_p)
         self._build_values_block(left_p)
-        common.scroll_deadspace(left_p, context)
+        left_p.add_deadspace()
 
         # ── Middle pane ──────────────────────────────────────────────────────
         self._build_packet_log(middle_p)

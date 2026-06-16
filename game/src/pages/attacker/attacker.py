@@ -53,7 +53,7 @@ class AttackerV0(Page):
         sniff = Sniff(left_p, context)
         mitm = MITM(left_p, context)
         mitm2 = MITM2(left_p, context)
-        common.scroll_deadspace(left_p, context)
+        left_p.add_deadspace()
 
     # Console
         console = Bifold(middle_p, context)
