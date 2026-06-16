@@ -8,6 +8,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <LiquidCrystal_I2C.h>  // Frank de Brabander
+#include <BasicLinearAlgebra.h>
 
 #ifndef PI
 #define PI 3.14159265358979323846f
@@ -46,6 +47,26 @@ IPAddress serverIP(192, 168, 4, 10);   // ← was 192.168.8.137
 
 ModbusIP mb;
 
+using namespace BLA;
+bool filtering = true;
+
+BLA::Matrix<3,1> xhat;   // [x;y;heading angle]
+BLA::Matrix<3,3> P;     // covariance matrix
+BLA::Matrix<3,3> R;    // measurment noise matrix
+BLA::Matrix<2,2> Qu;  // control input noise 
+BLA::Matrix<3,3> I3; // identity matrix
+
+float sigma_x = 0.01;
+float sigma_y = 0.01;
+float sigma_theta = 0.01;
+
+float sigma_meas_x = 8.3f;
+float sigma_meas_y = 8.3f;
+float sigma_meas_theta = 0.01f;
+
+float sigma_speed = 0.01f;
+float sigma_rudder = 0.01f;
+
 float state_x = 0.0f;
 float state_y = 0.0f;
 float state_theta = 0.0f;
@@ -71,6 +92,51 @@ static String key = (String)1234;
 //// Physical scaling constants 
 const float SpeedMax_m_s = 50.0f;
 const float RudderMax_deg = 60.0f;
+
+//// Kalman Filter Helper Functions 
+
+float wrapToPi(float a) {
+  while (a > PI)  a -= 2.0f * PI;
+  while (a < -PI) a += 2.0f * PI;
+  return a;
+}
+
+void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt)
+{
+  // Predict
+  BLA::Matrix<3,1> x_pred;
+  float th = xhat(2,0);
+
+  x_pred(0,0) = xhat(0,0) + speed_m_s * cos(th + rudder_rad) * dt;
+  x_pred(1,0) = xhat(1,0) + speed_m_s * sin(th + rudder_rad) * dt;
+  x_pred(2,0) = wrapToPi(xhat(2,0) + K_theta * (tan(rudder_rad) / L_vehicle) * dt);
+
+  Matrix<3,3> F = {
+    1, 0, -speed_m_s * sin(th + rudder_rad) * dt,
+    0, 1,  speed_m_s * cos(th + rudder_rad) * dt,
+    0, 0,  1
+  };
+
+  Matrix<3,2> G = {
+    cos(th + rudder_rad) * dt, -speed_m_s * sin(th + rudder_rad) * dt,
+    sin(th + rudder_rad) * dt,  speed_m_s * cos(th + rudder_rad) * dt,
+    0, (K_theta * dt / L_vehicle) * (1.0f / (cos(rudder_rad) * cos(rudder_rad)))
+  };
+
+  Matrix<3,3> P_pred = F * P * ~F + G * Qu * ~G;
+
+  // Update
+  Matrix<3,3> S = P_pred + R;      // H = I
+  Matrix<3,3> K = P_pred * Inverse(S);
+
+  Matrix<3,1> y = z_meas - x_pred;
+  y(2,0) = wrapToPi(y(2,0));
+
+  xhat = x_pred + K * y;
+  xhat(2,0) = wrapToPi(xhat(2,0));
+
+  P = (I3 - K) * P_pred;
+}
 
 static inline uint16_t x_to_u16_100(float v) {
   if (v < 0) v = 0;
@@ -277,6 +343,33 @@ void setup() {
   mb.connect(serverIP);
   delay(500);
 
+  xhat.Fill(0);
+  xhat(0,0) = state_x;
+  xhat(1,0) = state_y;
+  xhat(2,0) = state_theta;
+
+  P = {
+    sigma_x, 0.0f, 0.0f,
+    0.0f, sigma_y, 0.0f,
+    0.0f, 0.0f, sigma_theta
+    };
+
+  R = {
+    sigma_meas_x, 0.0f, 0.0f,
+    0.0f, sigma_meas_y, 0.0f,
+    0.0f, 0.0f, sigma_meas_theta
+    };
+
+  Qu = {
+    sigma_speed, 0.0f,
+    0.0f, sigma_rudder
+    };
+
+  I3 = {1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+
   if (mb.isConnected(serverIP)) {
     Serial.println("[MASTER] Connected to Slave Modbus server.");
     lcd.setCursor(0, 1);
@@ -359,7 +452,9 @@ void loop() {
       if (fabs(speed_m_s) > 0.01f) {
         float v = speed_m_s;
         float rho = radians(rudder_deg);
-        
+
+      if(!filtering){
+
         float xdot = v * cos(rho + state_theta);
         float ydot = v * sin(rho + state_theta);
         float thetadot = 0.0f;
@@ -369,9 +464,27 @@ void loop() {
           thetadot = K_theta / (L_vehicle / tan(rho));
         }
 
-        state_x += xdot * dt;
-        state_y += ydot * dt;
-        state_theta += thetadot * dt;
+        state_x += (xdot * dt) + random(-500,500)/100.0f;
+        state_y += (ydot * dt) + random(-500,500)/100.0f;
+        state_theta += (thetadot * dt) + radians(random(-100,100)/100.0f);
+
+        }
+        else{
+
+          BLA::Matrix<3,1> z_meas;
+          z_meas(0,0) = state_x + random(-500,500)/100.0f;
+          z_meas(1,0) = state_y + random(-500,500)/100.0f;
+          z_meas(2,0) = state_theta + radians(random(-100,100)/100.0f);
+
+          ekfStep(v, rho, z_meas, dt);
+
+
+          state_x     = xhat(0,0);
+          state_y     = xhat(1,0);
+          state_theta = xhat(2,0);
+
+        }
+        
 
         while (state_theta < 0) state_theta += 2.0f * PI;
         while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
