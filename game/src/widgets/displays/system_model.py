@@ -5,7 +5,6 @@ from .. import WorldMap, MenuBar
 from ...drawing.viewport import ViewPort
 from .boat_focus import BoatFocus
 from .values_table import ValuesTable
-from .. import common
 from ...network.data_buffer import DataBuffer
 from typing import cast
 

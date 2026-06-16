@@ -4,8 +4,7 @@ from ...app_core.context import Context
 from ...widgets import Trifold, MenuBar, Bifold, Scrollable
 
 # Widgets
-from ...widgets import common, popup
-from ...widgets.map import Map
+from ...widgets import popup
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole

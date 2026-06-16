@@ -2,7 +2,7 @@ from ...app_core.context import Context
 
 # Widgets
 from ...widgets import Trifold, MenuBar, Scrollable
-from ...widgets import common, popup
+from ...widgets import popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ...app_core.context import Context
