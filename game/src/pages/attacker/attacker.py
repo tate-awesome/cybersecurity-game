@@ -1,7 +1,7 @@
 from ...app_core.context import Context
 
 # Frame widgets
-from ...widgets import Trifold, MenuBar, Bifold
+from ...widgets import Trifold, MenuBar, Bifold, Scrollable
 
 # Widgets
 from ...widgets import common, popup
@@ -42,7 +42,7 @@ class AttackerV0(Page):
 
         trifold = Trifold(self, context)
 
-        left_p = common.scrollable(trifold.left, context)       
+        left_p = Scrollable(trifold.left, context)       
         middle_p = trifold.middle
         right_p = trifold.right
 

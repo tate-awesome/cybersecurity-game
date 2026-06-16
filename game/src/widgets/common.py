@@ -4,32 +4,6 @@ from . import popup
 from ..app_core.context import Context
 # from tkinter import ttk
 
-def scrollable(parent, context: Context):
-    style = context.style
-    frame = CTkScrollableFrame(parent, fg_color=style.color("panel"))
-    frame.pack(side="top", fill="both", expand="y", padx=style.cgap, pady=style.cgap)
-    bind_scroll(frame)
-    return frame
-
-def bind_scroll(sf: CTkScrollableFrame):
-    canvas = sf._parent_canvas
-
-    def _on_mousewheel(event):
-        canvas.yview_scroll(-int(event.delta / 480), "units")
-
-    def _bind_to_mousewheel(_):
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
-        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
-
-    def _unbind_from_mousewheel(_):
-        canvas.unbind_all("<MouseWheel>")
-        canvas.unbind_all("<Button-4>")
-        canvas.unbind_all("<Button-5>")
-
-    sf.bind("<Enter>", _bind_to_mousewheel)
-    sf.bind("<Leave>", _unbind_from_mousewheel)
-
 def configure_reversible_button(the_button: CTkButton, start_func: callable, stop_func: callable, func_name: str):
     def stop():
         the_button.configure(text=f"Stopping {func_name}...")
@@ -41,10 +15,6 @@ def configure_reversible_button(the_button: CTkButton, start_func: callable, sto
         start_func()
         the_button.configure(command=stop, text=f"Stop {func_name}")
     the_button.configure(command=start, text=f"Start {func_name}")
-
-def clear(parent):
-    for widget in parent.winfo_children():
-        widget.destroy()
 
 def scroll_deadspace(parent, context: Context):
     style = context.style

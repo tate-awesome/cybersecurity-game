@@ -1,7 +1,7 @@
 from ...app_core.context import Context
 
 # Widgets
-from ...widgets import Trifold, MenuBar
+from ...widgets import Trifold, MenuBar, Scrollable
 from ...widgets import common, popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
@@ -90,7 +90,7 @@ class DefenderV0(Page):
 
         # ── Three-pane layout ────────────────────────────────────────────────
         trifold = Trifold(self, context)
-        left_p = common.scrollable(trifold.left, context)
+        left_p = Scrollable(trifold.left, context)
         middle_p = trifold.middle
         right_p = trifold.right
 
@@ -291,9 +291,7 @@ class DefenderV0(Page):
                      text_color="gray").grid(row=0, column=i, padx=6, pady=4, sticky="w")
             col_frame.grid_columnconfigure(i, weight=1)
 
-        self._log_frame = CTkScrollableFrame(parent, fg_color=self.style.color("panel"), height=240)
-        self._log_frame.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
-        common.bind_scroll(self._log_frame)
+        self._log_frame = Scrollable(parent, self.context, 240)
         for i in range(len(cols)):
             self._log_frame.grid_columnconfigure(i, weight=1)
 
