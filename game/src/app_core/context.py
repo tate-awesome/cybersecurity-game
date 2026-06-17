@@ -136,31 +136,31 @@ class Context:
                 "modbus": 0
             },
 
-            "map_customization": {
-                "Show/Hide Elements": {
-                    "in Boat": 1,
-                    "in Path": 1,
-                    "in Path Discontinuity": 1,
-                    "out Boat": 1,
-                    "out Path": 1,
-                    "out Path Discontinuity": 1
-                },
-                "Show/Hide Labels": {
-                    "in Boat": 1,
-                    "in Boat Position": 1,
-                    "out Boat": 1,
-                    "out Boat Position": 1,
-                    "Grid Numbers": 1,
-                    "Grid Lines": 1
-                },
-                "Colors": {
-                    "in Boat": "yellow",
-                    "in Path": "yellow",
-                    "in Path Discontinuity": "yellow",
-                    "out Boat": "cyan",
-                    "out Path": "cyan",
-                    "out Path Discontinuity": "cyan"
-                },
+            "world_map_sprites": {
+                "boat_in_sprite": 1,
+                "boat_out_sprite": 1,
+                "path_in_sprite": 1,
+                "path_out_sprite": 1,
+
+                "boat_in_label": 1,
+                "boat_out_label": 1,
+                "boat_in_position": 1,
+                "boat_out_position": 1,
+                "grid_numbers": 1,
+                "grid_lines": 1
+            },
+            
+            "world_map_colors": {
+                "ocean": "#003459",
+                "grid_lines": "white",
+                "grid_axes": "red",
+                "grid_numbers": "white",
+                "boat_in_fill": "yellow",
+                "boat_in_outline": "yellow",
+                "boat_out_fill": "yellow",
+                "boat_out_outline": "yellow",
+                "path_in": "cyan",
+                "path_out": "cyan"
             }
         }
 
