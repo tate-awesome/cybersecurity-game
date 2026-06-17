@@ -116,6 +116,8 @@ class Draw:
                             (3,  0),
                             (1,  1)
                         ]
+        if bearing is None or position is None:
+            return
         the_boat = t.rotate(the_boat, bearing)
         the_boat = t.scale(the_boat, scale)
 
