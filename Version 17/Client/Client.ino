@@ -276,13 +276,15 @@ void restPost() {
   if (code == 200) {
     String body = http.getString();
 
-    StaticJsonDocument<64> resp;
+    StaticJsonDocument<128> resp;
     if (!deserializeJson(resp, body)) {
-      if (resp.containsKey("encryption_status")) {
-        encrypt_status = resp["encryption_status"].as<bool>();
-        key = resp["encryption_key"].as<String>();
-        // Serial.printf("[CLIENT] encryption_key=%s\n", key.c_str());
-      }
+        if (resp.containsKey("encryption_status")) {
+            encrypt_status = resp["encryption_status"].as<bool>();
+            key = resp["encryption_key"].as<String>();
+        }
+        if (resp.containsKey("filter_correction")) { 
+            kalman_correction = resp["filter_correction"].as<bool>();
+        }
     }
   } else {
     Serial.printf("[CLIENT] REST POST failed  HTTP %d\n", code);
