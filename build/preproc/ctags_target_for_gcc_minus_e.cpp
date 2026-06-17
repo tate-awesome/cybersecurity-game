@@ -55,6 +55,8 @@ String g_encryption_key = "1234";
 float g_target_x = 100.0;
 float g_target_y = 100.0;
 
+bool g_filter_correction = false;
+
 // ─── Forward declarations ─────────────────────────────────────
 void loadPreferences();
 void savePreferences(const String& ssid, const String& pass, const String& flask_ip);
@@ -490,6 +492,10 @@ String buildConfigPage() {
                 <span class="status-val" id="stat-enc">—</span>
               </div>
               <div class="status-row">
+                <span class="status-key">Kalman Filter</span>
+                <span class="status-val" id="stat-filter">—</span>
+              </div>
+              <div class="status-row">
                 <span class="status-key">Target X / Y</span>
                 <span class="status-val" id="stat-target">—</span>
               </div>
@@ -567,6 +573,10 @@ String buildConfigPage() {
             const encEl = document.getElementById('stat-enc');
             encEl.textContent    = d.encryption ? 'ON' : 'OFF';
             encEl.className      = 'status-val ' + (d.encryption ? 'green' : 'red');
+            const filterEl = document.getElementById('stat-filter');           // ← add this block
+            filterEl.textContent = d.filter_correction ? 'ON' : 'OFF';
+            filterEl.className   = 'status-val ' + (d.filter_correction ? 'green' : 'red');
+
             document.getElementById('stat-target').textContent =
               `(${d.target_x ?? '—'}, ${d.target_y ?? '—'})`;
 
@@ -830,6 +840,7 @@ void setupRoutes() {
   doc["client_point_count"] = g_client_arr.size();
   doc["server_point_count"] = g_server_arr.size();
   doc["connected_clients"] = WiFi.softAPgetStationNum();
+  doc["filter_correction"] = g_filter_correction;
 
   // device list
   JsonArray devices = doc.createNestedArray("devices");
@@ -883,6 +894,7 @@ void setupRoutes() {
       resp["encryption_key"] = g_encryption_key;
       resp["target_x"] = g_target_x;
       resp["target_y"] = g_target_y;
+      resp["filter_correction"] = g_filter_correction;
 
       String out;
       serializeJson(resp, out);
@@ -921,6 +933,24 @@ void setupRoutes() {
       Serial0.printf("[AP-ESP32] Encryption set: %s  key=%s\n",
                     g_encryption_status ? "ON" : "OFF",
                     g_encryption_key.c_str());
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
+    }
+  );
+
+  // ── POST /set_filter_correction  →  Defender toggles filter correction ─
+  server.on("/set_filter_correction", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<64> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_filter_correction = doc["filter_correction"] | false;
+      Serial0.printf("[AP-ESP32] filterCorrection set: %s\n",
+                    g_filter_correction ? "ON" : "OFF");
       req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
   );
