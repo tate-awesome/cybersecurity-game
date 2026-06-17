@@ -81,16 +81,16 @@ class Draw:
         self.canvas.create_line(points, width=2, fill=line_color)
 
 
-    def grid_lines(self):
+    def grid_lines(self, lines_color="white", axes_color="red"):
         for i in range(0, 210, 10):
             h_line = [(0, i), (200, i)]
             v_line = t.rotate(h_line, math.pi/2, (i, i))
 
             h_line = self.camera.world_to_canvas(h_line)
             v_line = self.camera.world_to_canvas(v_line)
-            color = "white"
+            color = lines_color
             if i == 0:
-                color = "red"
+                color = axes_color
             self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
             self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
 

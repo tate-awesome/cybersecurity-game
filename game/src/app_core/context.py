@@ -137,17 +137,20 @@ class Context:
             },
 
             "world_map_sprites": {
-                "boat_in_sprite": 1,
-                "boat_out_sprite": 1,
-                "path_in_sprite": 1,
-                "path_out_sprite": 1,
+                "boat_in": 1,
+                "boat_out": 1,
+                "path_in": 1,
+                "path_out": 1,
 
                 "boat_in_label": 1,
                 "boat_out_label": 1,
                 "boat_in_position": 1,
                 "boat_out_position": 1,
+
                 "grid_numbers": 1,
-                "grid_lines": 1
+                "grid_lines": 1,
+
+                "ocean": 1,
             },
             
             "world_map_colors": {
@@ -159,8 +162,8 @@ class Context:
                 "boat_in_outline": "yellow",
                 "boat_out_fill": "yellow",
                 "boat_out_outline": "yellow",
-                "path_in": "cyan",
-                "path_out": "cyan"
+                "path_in": "yellow",
+                "path_out": "yellow"
             }
         }
 

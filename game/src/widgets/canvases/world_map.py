@@ -14,16 +14,30 @@ class WorldMap(Canvas):
         super().__init__(master, context, ((0,0),(200,200)))
 
         def frame_callback():
+
+            
             positions = context.net.data_buffer.get_simple_path("in")
-            bearing = context.net.data_buffer.get_bearing("other")
+            bearing = context.net.data_buffer.get_bearing("in")
+
+            sprites = context.states["world_map_sprites"]
+            colors = context.states["world_map_colors"]
+            
             self.delete("all")
-            self.draw.ocean()
-            self.draw.grid_lines()
+            
+            if int(sprites["ocean"]) == 1:
+                self.draw.background(colors["ocean"])
+            
+            if int(sprites["grid_lines"]) == 1:
+                self.draw.grid_lines(colors["grid_lines"], colors["grid_axes"])
+            
             if len(positions) < 1: return
-            self.draw.line(positions, "yellow")
+            if int(sprites["path_in"]) == 1:
+                self.draw.line(positions, colors["path_in"])
+
             if bearing is None: return
             last_position = positions[-1]
-            self.draw.boat(last_position, bearing, "yellow", "yellow")
+            if int(sprites["boat_in"]) == 1:
+                self.draw.boat(last_position, bearing, colors["boat_in_fill"], colors["boat_in_outline"])
 
         
         self.set_frame_callback(frame_callback)
