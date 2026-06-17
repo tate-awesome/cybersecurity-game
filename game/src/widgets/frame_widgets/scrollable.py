@@ -7,7 +7,7 @@ class Scrollable(CTkScrollableFrame):
     Inherits CTkScrollableFrame.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, height: int = -1):
+    def __init__(self, master: CTkFrame, context: Context, height: int = -1, fill = "both", expand=True):
         self.context = context
         self.master = master
         style = context.style
@@ -17,8 +17,9 @@ class Scrollable(CTkScrollableFrame):
         if not height == -1:
             self.configure(height=height)
 
-        self.pack(side="top", fill="both", expand=True, padx=style.cgap, pady=style.cgap)
+        self.pack(side="top", fill=fill, expand=expand, padx=style.cgap, pady=style.cgap)
         self.bind_scroll()
+
 
     def bind_scroll(self):
         canvas = self._parent_canvas

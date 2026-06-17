@@ -291,7 +291,7 @@ class DefenderV0(Page):
                      text_color="gray").grid(row=0, column=i, padx=6, pady=4, sticky="w")
             col_frame.grid_columnconfigure(i, weight=1)
 
-        self._log_frame = Scrollable(parent, self.context, 240)
+        self._log_frame = Scrollable(parent, self.context, 240, "x", False)
         for i in range(len(cols)):
             self._log_frame.grid_columnconfigure(i, weight=1)
 
