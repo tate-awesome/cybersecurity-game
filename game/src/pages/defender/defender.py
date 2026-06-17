@@ -44,7 +44,7 @@ class DefenderV0(Page):
         self._positions     = []
         self._last_bearing  = None
         self._encryption_on = False
-        self._filter_correction_on = False
+        self._filter_correction_on = True
         self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
         self._last_points   = {"client": [], "server": []}
@@ -66,6 +66,7 @@ class DefenderV0(Page):
         self._build_connection_block(left_p)
         self._build_encryption_block(left_p)
         self._build_filter_correction_block(left_p)
+        self._refresh_filter_correction_ui()
         self._build_target_block(left_p)
         self._build_values_block(left_p)
         common.scroll_deadspace(left_p, context)
@@ -179,7 +180,7 @@ class DefenderV0(Page):
                                     font=self.style.get_font(), text_color="gray")
         self._filter_label.pack(anchor="w", padx=self.style.igap)
 
-        self._filter_button = CTkButton(section, text="Enable Filter Correction",
+        self._filter_button = CTkButton(section, text="Allow Filter Correction",
                                         font=self.style.get_font(),
                                         command=self._toggle_filter_correction)
         self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
@@ -321,7 +322,7 @@ class DefenderV0(Page):
         new_state = not self._encryption_on
         enc_key   = self._enc_key_entry.get().strip()
 
-        def _request():
+        def _request():      
             try:
                 resp = requests.post(
                     f"{self._get_url()}/set_encryption",
@@ -361,7 +362,7 @@ class DefenderV0(Page):
                 self._filter_button.configure(text="Disable Filter Correction")
             else:
                 self._filter_label.configure(text="Status: OFF", text_color="gray")
-                self._filter_button.configure(text="Enable Filter Correction")
+                self._filter_button.configure(text="Allow Filter Correction")
         except Exception as e:
             print("refresh_filter_correction_ui:", e)
 
