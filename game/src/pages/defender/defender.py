@@ -5,7 +5,6 @@ from ...widgets import Trifold, MenuBar
 from ...widgets import common, popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
-from ...app_core.context import Context
 from ..page import Page
 
 # Network
@@ -32,8 +31,7 @@ class DefenderV0(Page):
     # Flag definitions — (key, display label).
     # Set the corresponding key to True in self._flags to light it up.
     FLAG_DEFS = [
-        ("unexpected_movement",       "Server Detects Irrational Movement"),
-        ("bicycle_verification",      "Submarine Detects Irrational Movement")
+        ("kalman_filter_flag", "Kalman Filtering Threshold Surpassed")
     ]
 
     def __init__(self, context: Context):
@@ -49,37 +47,6 @@ class DefenderV0(Page):
         self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
         self._last_points   = {"client": [], "server": []}
-
-        # Filtering State Variables
-        self._last_theta = None
-        self._last_speed = None
-        self._speed_threshold = 3
-        self._rudder_threshold = 15
-
-        self._k_speed_estimate = 0
-        self._k_speed_cov = 5
-        self._k_speed_process_noise = 0.05
-        self._k_speed_measurement_noise = 0.1
-
-        self._k_rudder_estimate = 0
-        self._k_rudder_cov = 5
-        self._k_rudder_process_noise = 2
-        self._k_rudder_measurement_noise = 1
-
-        self._target_x = 100
-        self._target_y = 100
-
-        # Anomaly GUI variables
-        self._anomaly_speed_expected = 0.0
-        self._anomaly_speed_measured = 0.0
-        self._anomaly_rudder_expected = 0.0
-        self._anomaly_rudder_measured = 0.0
-
-        # Bicycle verification GUI variables
-        self._bicycle_speed_expected = 0.0
-        self._bicycle_speed_measured = 0.0
-        self._bicycle_rudder_expected = 0.0
-        self._bicycle_rudder_measured = 0.0
 
         # Flag state — all False until logic sets them
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
@@ -323,64 +290,6 @@ class DefenderV0(Page):
             )
             self._flag_labels[key] = dot
 
-            if key == "unexpected_movement":
-                self._speed_expected_lbl = CTkLabel(
-                    section,
-                    text="Expected Speed: --",
-                    font=self.style.get_font("small"),
-                    anchor="w"
-                )
-                self._speed_expected_lbl.pack(fill="x", padx=self.style.igap)
-
-                self._speed_measured_lbl = CTkLabel(
-                    section,
-                    text="Measured Speed: --",
-                    font=self.style.get_font("small"),
-                    anchor="w"
-                )
-                self._speed_measured_lbl.pack(fill="x", padx=self.style.igap)
-
-                self._rudder_expected_lbl = CTkLabel(
-                    section,
-                    text="Expected Rudder: --",
-                    font=self.style.get_font("small"),
-                    anchor="w"
-                )
-                self._rudder_expected_lbl.pack(fill="x", padx=self.style.igap)
-
-                self._rudder_measured_lbl = CTkLabel(
-                    section,
-                    text="Measured Rudder: --",
-                    font=self.style.get_font("small"),
-                    anchor="w"
-                )
-                self._rudder_measured_lbl.pack(fill="x", padx=self.style.igap)
-            
-            if key == "bicycle_verification":
-                self._bicycle_speed_expected_lbl = CTkLabel(
-                    section, text="Bicycle Expected Speed: --",
-                    font=self.style.get_font("small"), anchor="w"
-                )
-                self._bicycle_speed_expected_lbl.pack(fill="x", padx=self.style.igap)
-
-                self._bicycle_speed_measured_lbl = CTkLabel(
-                    section, text="Bicycle Measured Speed: --",
-                    font=self.style.get_font("small"), anchor="w"
-                )
-                self._bicycle_speed_measured_lbl.pack(fill="x", padx=self.style.igap)
-
-                self._bicycle_rudder_expected_lbl = CTkLabel(
-                    section, text="Bicycle Expected Rudder: --",
-                    font=self.style.get_font("small"), anchor="w"
-                )
-                self._bicycle_rudder_expected_lbl.pack(fill="x", padx=self.style.igap)
-
-                self._bicycle_rudder_measured_lbl = CTkLabel(
-                    section, text="Bicycle Measured Rudder: --",
-                    font=self.style.get_font("small"), anchor="w"
-                )
-                self._bicycle_rudder_measured_lbl.pack(fill="x", padx=self.style.igap)
-
         CTkFrame(section, fg_color="transparent", height=self.style.igap).pack()
 
     # ════════════════════════════════════════════════════════════════════════
@@ -478,82 +387,6 @@ class DefenderV0(Page):
         active = self._last_points.get(self._log_source, [])
         self._update_log(list(reversed(active[-10:])))
 
-    def _k_update(self, measured_speed, measured_rudder):
-
-        anomaly = False
-
-        # --- SPEED ---
-        speed_pred = self._k_speed_estimate
-        speed_cov_pred = self._k_speed_cov + self._k_speed_process_noise
-
-        k_speed = speed_cov_pred / (speed_cov_pred + self._k_speed_measurement_noise)
-
-        self._k_speed_estimate = speed_pred + k_speed * (measured_speed - speed_pred)
-        self._k_speed_cov = (1 - k_speed) * speed_cov_pred
-
-        # --- RUDDER ---
-        rudder_pred = self._k_rudder_estimate
-        rudder_cov_pred = self._k_rudder_cov + self._k_rudder_process_noise
-
-        k_rudder = rudder_cov_pred / (rudder_cov_pred + self._k_rudder_measurement_noise)
-
-        self._k_rudder_estimate = rudder_pred + k_rudder * (measured_rudder - rudder_pred)
-        self._k_rudder_cov = (1 - k_rudder) * rudder_cov_pred
-
-        if (abs(measured_speed - self._k_speed_estimate) > self._speed_threshold):
-            anomaly = True
-        
-        if (abs(measured_rudder - self._k_rudder_estimate) > self._rudder_threshold):
-            anomaly = True
-
-        return self._k_speed_estimate, self._k_rudder_estimate, anomaly
-    
-    @staticmethod
-    def wrap_to_pi(angle):
-        while angle > math.pi:
-            angle -= 2.0 * math.pi
-
-        while angle < -math.pi:
-            angle += 2.0 * math.pi
-
-        return angle
-
-    @staticmethod
-    def clamp(value, min_val, max_val):
-        return max(min_val, min(value, max_val))
-    
-    def _bicycle_verification (self, boat_x, boat_y, boat_theta, target_x, target_y, measured_speed, measured_rudder):
-        heading_x = boat_x + (2*math.cos(boat_theta))
-        heading_y = boat_y + (2*math.sin(boat_theta))
-        error_x = target_x - heading_x
-        error_y = target_y - heading_y
-
-        destination_theta = math.atan2(error_y, error_x)
-        
-        heading_error = self.wrap_to_pi(destination_theta - boat_theta)
-        bicycle_expected_rudder_rad = 0.1*heading_error
-
-        magnitude = math.pi/3
-        bicycle_expected_rudder_rad = self.clamp(bicycle_expected_rudder_rad, -magnitude, magnitude)
-
-        center_distance = math.sqrt(error_x**2 + error_y**2)
-
-        if center_distance < 5:
-            bicycle_expected_speed = 0
-            bicycle_expected_rudder_rad = 0
-        else:
-            bicycle_expected_speed = self.clamp(0.1*center_distance, 0, 50)
-
-        anomaly = False
-        bicycle_expected_rudder = math.degrees(bicycle_expected_rudder_rad)
-
-        if(abs(measured_rudder - bicycle_expected_rudder) > self._rudder_threshold):
-            anomaly = True
-        if(abs(measured_speed - bicycle_expected_speed) > self._speed_threshold):
-            anomaly = True
-
-        return bicycle_expected_speed, bicycle_expected_rudder, anomaly
-
     # ════════════════════════════════════════════════════════════════════════
     #  UI update helpers
     # ════════════════════════════════════════════════════════════════════════
@@ -578,64 +411,10 @@ class DefenderV0(Page):
 
         # Map — always driven by client positions
         if client_points:
-            latest = client_points[-1]
-
-            measured_speed = latest.get("speed", 0.0)
-            measured_rudder = latest.get("rudder", 0.0)
-            boat_x = latest.get("x", 0.0)
-            boat_y = latest.get("y", 0.0)
-            boat_theta = latest.get("theta", 0.0)
-            try:
-                measured_speed = float(measured_speed)
-                measured_rudder = float(measured_rudder)
-                boat_x = float(boat_x)
-                boat_y = float(boat_y)
-                boat_theta = float(boat_theta)
-            except (ValueError, TypeError):
-                measured_speed = 0.0
-                measured_rudder = 0.0
-                boat_x = 0.0
-                boat_y = 0.0
-                boat_theta = 0.0
-
-            filtered_speed, filtered_rudder, flag = self._k_update(
-                measured_speed,
-                measured_rudder
-            )
-
-            self._anomaly_speed_expected = filtered_speed
-            self._anomaly_speed_measured = measured_speed
-
-            self._anomaly_rudder_expected = filtered_rudder
-            self._anomaly_rudder_measured = measured_rudder
-
-            self._flags["unexpected_movement"] = flag
-            
-            # optionally overwrite latest values for UI consistency
-            latest["speed_filtered"] = filtered_speed
-            latest["rudder_filtered"] = filtered_rudder
-
-            bicycle_expected_speed, bicycle_expected_rudder, bicycle_flag = self._bicycle_verification(boat_x, 
-                                                                                                       boat_y, 
-                                                                                                       boat_theta, 
-                                                                                                       self._target_x,
-                                                                                                       self._target_y, 
-                                                                                                       measured_speed, 
-                                                                                                       measured_rudder)
-            
-            self._flags["bicycle_verification"] = bicycle_flag
-            self._bicycle_speed_expected = bicycle_expected_speed
-            self._bicycle_speed_measured = measured_speed
-            self._bicycle_rudder_expected = bicycle_expected_rudder
-            self._bicycle_rudder_measured = measured_rudder
-
-            # With this (no seq check):
             self._positions = [(float(p["x"]), float(p.get("y", 0.0))) for p in client_points]
             if len(self._positions) >= 2:
                 dx = self._positions[-1][0] - self._positions[-2][0]
                 dy = self._positions[-1][1] - self._positions[-2][1]
-                speed = math.sqrt((dx*dx) + (dy*dy))
-                self._flags["unexpected_movement"] = speed > 50
                 self._last_bearing = math.atan2(dy, dx)
             else:
                 self._last_bearing = None
@@ -717,33 +496,6 @@ class DefenderV0(Page):
         """Dots turn red when flag is True, gray when clear."""
         for key, dot in self._flag_labels.items():
             dot.configure(text_color="red" if self._flags.get(key) else "gray")
-        
-        self._speed_expected_lbl.configure(
-            text=f"Expected Speed: {self._anomaly_speed_expected:.3f}"
-        )
-        self._speed_measured_lbl.configure(
-            text=f"Measured Speed: {self._anomaly_speed_measured:.3f}"
-        )
-
-        self._rudder_expected_lbl.configure(
-            text=f"Expected Rudder: {self._anomaly_rudder_expected:.3f}"
-        )
-        self._rudder_measured_lbl.configure(
-            text=f"Measured Rudder: {self._anomaly_rudder_measured:.3f}"
-        )
-
-        self._bicycle_speed_expected_lbl.configure(
-            text=f"Bicycle Expected Speed: {self._bicycle_speed_expected:.3f}"
-        )
-        self._bicycle_speed_measured_lbl.configure(
-            text=f"Bicycle Measured Speed: {self._bicycle_speed_measured:.3f}"
-        )
-        self._bicycle_rudder_expected_lbl.configure(
-            text=f"Bicycle Expected Rudder: {self._bicycle_rudder_expected:.3f}"
-        )
-        self._bicycle_rudder_measured_lbl.configure(
-            text=f"Bicycle Measured Rudder: {self._bicycle_rudder_measured:.3f}"
-        )
 
     def _set_connected(self):
         try:
