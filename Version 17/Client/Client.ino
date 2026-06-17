@@ -67,6 +67,8 @@ float sigma_meas_theta = 0.01f;
 float sigma_speed = 0.01f;
 float sigma_rudder = 0.01f;
 
+bool kalman_correction = true;
+
 float state_x = 0.0f;
 float state_y = 0.0f;
 float state_theta = 0.0f;
@@ -478,14 +480,26 @@ void loop() {
 
           ekfStep(v, rho, z_meas, dt);
 
+          bool xCheck = abs( z_meas(0,0) - xhat(0,0) ) > 8;
+          bool yCheck = abs( z_meas(1,0) - xhat(1,0) ) > 8;
+          float thetaError = wrapToPi(z_meas(2,0) - xhat(2,0));
+          bool thetaCheck = fabs(thetaError) > 3;
+          bool anomalyDetected = xCheck || yCheck || thetaCheck;
 
-          state_x     = xhat(0,0);
-          state_y     = xhat(1,0);
-          state_theta = xhat(2,0);
+          if( (anomalyDetected && kalman_correction) || !anomalyDetected){
+            state_x     = xhat(0,0);
+            state_y     = xhat(1,0);
+            state_theta = xhat(2,0);
+          }
+
+          else if( anomalyDetected && !kalman_correction){
+            state_x = z_meas(0,0);
+            state_y = z_meas(1,0);
+            state_theta = z_meas(2,0);
+          }
 
         }
         
-
         while (state_theta < 0) state_theta += 2.0f * PI;
         while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
 
