@@ -1,6 +1,7 @@
 customtkinter
 scapy
 netifaces2
-netfilterqueue
+netfilterqueue #only linux/mac
+pydivert #only windows
 requests
 flask

@@ -100,7 +100,7 @@ class MitmForm(CTkFrame):
         self.bind_input_alert()
         self.load_saved_input(self.context.net.table)
         self.bind_input_save(self.context.net.table) # Bind save button on entry change
-        self.deactivate() # Disable button on windows
+        # self.deactivate() # Disable button on windows
         
         
     def bind_input_save(self, table: ModTable):

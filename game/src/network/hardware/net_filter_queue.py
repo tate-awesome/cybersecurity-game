@@ -14,15 +14,10 @@ import platform
 os_name = platform.system()
 
 if os_name == "Windows":
-    # NFQ is not possible
-    # from iphelp import iphelp
-    # import iphlpapi
-    ...
+    import pydivert
 elif os_name == "Linux":
-    # NFQ is possible
     from netfilterqueue import NetfilterQueue as NFQ
 elif os_name == "Darwin":
-    # NFQ is possible
     from netfilterqueue import NetfilterQueue as NFQ
 else:
     print(f"Running on an unidentified system: {os_name}")
@@ -34,25 +29,72 @@ class NetFilterQueue:
         self.stop_event = None
         self.thread = None
         self.callback = None
+        self.windows_callback = None
         self.buffer = buffer
         self.table = mod_table
 
+
     def is_running(self):
-        return self.stop_event is not None or self.thread is not None or self.callback is not None
+        return self.stop_event is not None or self.thread is not None
 
 
     def start(self): 
         if self.is_running():
-            self.buffer.put("mitm", "NFQ is already running")
+            self.buffer.put("mitm", "MITM attack is already running")
             return
         self.callback = self.modify_and_accept
+        self.windows_callback = None
         self.stop_event = threading.Event()
+        self.buffer.put("mitm", "Starting MITM attack")
 
-        self.thread = threading.Thread(target=self._start, daemon=True)
+        # Run appropriate packet prerouter
+        if os_name == "Linux" or os_name == "Darwin":
+            self.thread = threading.Thread(target=self._start_linux, daemon=True)
+        elif os_name == "Windows":
+            self.thread = threading.Thread(target=self._start_windows, daemon=True)
         self.thread.start()
 
 
-    def _start(self):
+    def _start_windows(self):
+        self.buffer.put("mitm", "Starting WinDivert")
+
+        filt = (
+            "true"
+        )
+
+        with pydivert.WinDivert(filt) as w:
+            self.w = w
+
+            while not self.stop_event.is_set():
+
+                try:
+                    packet = w.recv()
+
+                    try:
+                        spkt = IP(bytes(packet.raw))
+                    except Exception:
+                        w.send(packet)
+                        continue
+
+                    newspkt = spkt # Alter packet here
+                    self.buffer.put("mitm", "WinDivert Packet", spkt)
+
+                    if newspkt is not None:
+                        packet.payload = bytes(newspkt)
+
+                    w.send(packet)
+
+                except Exception as e:
+                    self.buffer.put(
+                        "mitm",
+                        f"WinDivert error: {e}"
+                    )
+                    break
+
+        self.buffer.put("mitm", "Stopped WinDivert")
+
+
+    def _start_linux(self):
         # Calculate iface
         nmapper = NMapper(self.buffer)
         active_iface = nmapper.get_active_iface()
@@ -65,7 +107,7 @@ class NetFilterQueue:
             "-t", "mangle",
             "-A", "PREROUTING",
             "-i", active_iface,
-            "-p", "tcp",
+            # "-p", "tcp",
             "-j", "NFQUEUE",
             "--queue-num", "1",
         ]
@@ -119,7 +161,7 @@ class NetFilterQueue:
                 "-t", "mangle",
                 "-D", "PREROUTING",
                 "-i", active_iface,
-                "-p", "tcp",
+                # "-p", "tcp",
                 "-j", "NFQUEUE",
                 "--queue-num", "1",
             ]
@@ -129,20 +171,21 @@ class NetFilterQueue:
             print("stdout:", result.stdout)
             print("stderr:", result.stderr)
             print("returncode:", result.returncode)
+            self.buffer.put("mitm", "Stopped net filter queue")
 
 
     def stop(self):
-        if self.stop_event == None and self.thread == None:
-            self.buffer.put("mitm", "Net filter queue is not running")
+        if self.thread is None:
+            self.buffer.put("mitm", "MITM attack is not running")
             return
         else:
-            self.buffer.put("mitm", "Stopping net filter queue...")
             self.stop_event.set()
-            self.thread.join()
+            self.thread.join(timeout=2)
             self.stop_event = None
             self.thread = None
             self.callback = None
-            self.buffer.put("mitm", "Stopped net filter queue")
+            self.buffer.put("mitm", "Stopped MITM attack")
+
 
     # Callbacks
     def accept_only(self, pkt: Packet):
