@@ -68,6 +68,7 @@ float sigma_speed = 0.01f;
 float sigma_rudder = 0.01f;
 
 bool kalman_correction = true;
+bool g_anomaly_detected = false;
 
 float state_x = 0.0f;
 float state_y = 0.0f;
@@ -267,6 +268,7 @@ void restPost() {
   doc["theta"]     = state_theta;
   doc["speed"]     = state_speed;
   doc["rudder"]    = state_rudder;
+  doc["anomaly_detected"] = g_anomaly_detected;
 
   String payload;
   serializeJson(doc, payload);
@@ -487,6 +489,7 @@ void loop() {
           float thetaError = wrapToPi(z_meas(2,0) - xhat(2,0));
           bool thetaCheck = fabs(thetaError) > 3;
           bool anomalyDetected = xCheck || yCheck || thetaCheck;
+          g_anomaly_detected = anomalyDetected;
 
           if( (anomalyDetected && kalman_correction) || !anomalyDetected){
             state_x     = xhat(0,0);

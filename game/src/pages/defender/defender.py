@@ -466,6 +466,9 @@ class DefenderV0(Page):
             else:
                 self._last_bearing = None
 
+            latest_client = client_points[-1]
+            self._flags["kalman_filter_flag"] = bool(latest_client.get("anomaly_detected", False))
+
         self._refresh_flags()
 
     def _update_value_card(self, source: str, points: list):
