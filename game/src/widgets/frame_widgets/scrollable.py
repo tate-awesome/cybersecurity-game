@@ -25,7 +25,7 @@ class Scrollable(CTkScrollableFrame):
         canvas = self._parent_canvas
 
         def _on_mousewheel(event):
-            canvas.yview_scroll(-int(event.delta / 480), "units")
+            canvas.yview_scroll(-int(event.delta / 2), "units")
 
         def _bind_to_mousewheel(_):
             canvas.bind_all("<MouseWheel>", _on_mousewheel)
