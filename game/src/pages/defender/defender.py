@@ -51,11 +51,11 @@ class DefenderV0(Page):
 
         # Help popup text 
         self._enc_help_message = (
-            "Turning this on takes your key and sums the ASCII value of each character. "
+            "Turning this feature on takes your key and sums the ASCII value of each character. "
             "This number is used to XOR operate on the information as it is sent and received."
         )
         self._filter_help_message = (
-            "Turning this on allows the kalman filter to override the position change when a possible spoof is detected. "
+            "Turning this feature on allows the kalman filter to override the position change when a possible spoof is detected. "
             "If this feature is turned off the system will pass the possibly spoofed values which could result in the boat moving off course."
         )
 
