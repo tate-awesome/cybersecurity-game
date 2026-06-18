@@ -49,6 +49,16 @@ class DefenderV0(Page):
         self._log_source    = "client"   # "client" or "server"
         self._last_points   = {"client": [], "server": []}
 
+        # Help popup text 
+        self._enc_help_message = (
+            "Turning this on takes your key and sums the ASCII value of each character. "
+            "This number is used to XOR operate on the information as it is sent and received."
+        )
+        self._filter_help_message = (
+            "Turning this on allows the kalman filter to override the position change when a possible spoof is detected. "
+            "If this feature is turned off the system will pass the possibly spoofed values which could result in the boat moving off course."
+        )
+
         # Flag state — all False until logic sets them
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
 
@@ -167,6 +177,19 @@ class DefenderV0(Page):
 
         self._enc_button.configure(command=enc_button)
 
+        help_row = CTkFrame(section, fg_color="transparent")
+        help_row.pack(fill="x", padx=self.style.igap, pady=(0, 4))
+        CTkLabel(help_row, text="What does this do?", font=self.style.get_font("small"), text_color="gray").pack(anchor="w")
+        CTkButton(
+            help_row,
+            text="What does this do?",
+            font=self.style.get_font("small"),
+            fg_color = "#808080",
+            hover_color = "#666666",
+            text_color = "white",
+            command=lambda: popup.message(self, self.context, self._enc_help_message),
+        ).pack(fill="x", pady=(2, 0))
+
         self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_filter_correction_block(self, parent):
@@ -179,6 +202,19 @@ class DefenderV0(Page):
         self._filter_label = CTkLabel(section, text="Status: OFF",
                                     font=self.style.get_font(), text_color="gray")
         self._filter_label.pack(anchor="w", padx=self.style.igap)
+
+        help_row = CTkFrame(section, fg_color="transparent")
+        help_row.pack(fill="x", padx=self.style.igap, pady=(0, 4))
+        CTkLabel(help_row, text="What does this do?", font=self.style.get_font("small"), text_color="gray").pack(anchor="w")
+        CTkButton(
+            help_row,
+            text="What does this do?",
+            font=self.style.get_font("small"),
+            fg_color = "#808080",
+            hover_color = "#666666",
+            text_color = "white",
+            command=lambda: popup.message(self, self.context, self._filter_help_message),
+        ).pack(fill="x", pady=(2, 0))
 
         self._filter_button = CTkButton(section, text="Allow Filter Error Correction",
                                         font=self.style.get_font(),
@@ -575,9 +611,9 @@ class DefenderV0(Page):
     #         world_x = (event.x - self._map_offset[0]) / self._map_scale
     #         world_y = (event.y - self._map_offset[1]) / self._map_scale
 
-            # Clamp to valid map range
-            world_x = max(0.0, min(200.0, world_x))
-            world_y = max(0.0, min(200.0, world_y))
+    #         # Clamp to valid map range
+    #         world_x = max(0.0, min(200.0, world_x))
+    #         world_y = max(0.0, min(200.0, world_y))
 
     #         self._map_click_xy = (world_x, world_y)
 
