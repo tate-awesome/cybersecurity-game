@@ -13,3 +13,4 @@ from .forms.mitm2 import Mitm2Form
 
 from .canvases.test_triangle import TriangleCanvas
 from .canvases.world_map import WorldMap
+from .canvases.network_visualizer import NetworkVisualizer

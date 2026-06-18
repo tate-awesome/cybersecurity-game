@@ -3,6 +3,7 @@ from ...app_core.context import Context
 # Better Widgets
 from ...widgets import Trifold, MenuBar, Bifold, Scrollable
 from ...widgets import ArpForm, NmapForm, DosForm, MitmForm, Mitm2Form, SniffForm
+from ...widgets import NetworkVisualizer
 
 # Widgets
 from ...widgets import popup
@@ -57,4 +58,6 @@ class AttackerV0(Page):
         display = Bifold(right_p, context)
         system_model = SystemModel(display.top, context)
         # values = ValuesTable(style, top, context)
-        network_visualizer = Visualizer(display.bottom, context)
+        bottom = Scrollable(display.bottom, context)
+        network_visualizer = NetworkVisualizer(bottom, context)
+        bottom.add_deadspace(1000)
