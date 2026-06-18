@@ -173,14 +173,14 @@ class DefenderV0(Page):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
         section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
-        CTkLabel(section, text="FILTER CORRECTION", font=self.style.get_font()).pack(
+        CTkLabel(section, text="FILTER ERROR CORRECTION", font=self.style.get_font()).pack(
             anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
         )
         self._filter_label = CTkLabel(section, text="Status: OFF",
                                     font=self.style.get_font(), text_color="gray")
         self._filter_label.pack(anchor="w", padx=self.style.igap)
 
-        self._filter_button = CTkButton(section, text="Allow Filter Correction",
+        self._filter_button = CTkButton(section, text="Allow Filter Error Correction",
                                         font=self.style.get_font(),
                                         command=self._toggle_filter_correction)
         self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
@@ -359,10 +359,10 @@ class DefenderV0(Page):
         try:
             if self._filter_correction_on:
                 self._filter_label.configure(text="Status: ON", text_color="green")
-                self._filter_button.configure(text="Disable Filter Correction")
+                self._filter_button.configure(text="Disable Filter Error Correction")
             else:
                 self._filter_label.configure(text="Status: OFF", text_color="gray")
-                self._filter_button.configure(text="Allow Filter Correction")
+                self._filter_button.configure(text="Allow Filter Error Correction")
         except Exception as e:
             print("refresh_filter_correction_ui:", e)
 
