@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <ModbusIP_ESP8266.h>
 #include <math.h>
+#include <BasicLinearAlgebra.h>
 
 #ifndef PI
 #define PI 3.14159265358979323846f
@@ -19,6 +20,28 @@ const char* REST_URL = "http://192.168.4.1/data";
 // String g_router_ssid = "";
 // String g_router_pass = "";
 // String g_flask_ip    = "";
+
+using namespace BLA;
+
+BLA::Matrix<3,1> xhat;   // [x;y;heading angle]
+BLA::Matrix<3,3> P;     // covariance matrix
+BLA::Matrix<3,3> R;    // measurment noise matrix
+BLA::Matrix<2,2> Qu;  // control input noise 
+BLA::Matrix<3,3> I3; // identity matrix
+
+float u_prev_speed = 0.0f;
+float u_prev_rudder = 0.0f;
+
+float sigma_x = 0.01;
+float sigma_y = 0.01;
+float sigma_theta = 0.01;
+
+float sigma_meas_x = 1.0f;
+float sigma_meas_y = 1.0f;
+float sigma_meas_theta = 0.01f;
+
+float sigma_speed = 0.01f;
+float sigma_rudder = 0.01f;
 
 // ------- Encryption -------
 String key = (String)1234;
@@ -78,6 +101,8 @@ const float StopTol        = 0.3f;
 const float X_RANGE_M      = 200.0f;
 const float Y_RANGE_M      = 200.0f;
 const float RudderMax_deg  = 60.0f;
+const float K_theta = 0.6f;
+const float L_vehicle = 0.07f;
 
 const int LEDC_RES_BITS = 12;
 const int LEDC_FREQ_HZ  = 500;
@@ -100,6 +125,42 @@ float wrap_to_pi(float angle) {
     while (angle > PI)  angle -= 2.0f * PI;
     while (angle < -PI) angle += 2.0f * PI;
     return angle;
+}
+
+void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt)
+{
+  // Predict
+  BLA::Matrix<3,1> x_pred;
+  float th = xhat(2,0);
+
+  x_pred(0,0) = xhat(0,0) + speed_m_s * cos(th + rudder_rad) * dt;
+  x_pred(1,0) = xhat(1,0) + speed_m_s * sin(th + rudder_rad) * dt;
+  x_pred(2,0) = wrap_to_pi(xhat(2,0) + K_theta * (tan(rudder_rad) / L_vehicle) * dt);
+
+  Matrix<3,3> F = {
+    1, 0, -speed_m_s * sin(th + rudder_rad) * dt,
+    0, 1,  speed_m_s * cos(th + rudder_rad) * dt,
+    0, 0,  1
+  };
+
+  Matrix<3,2> G = {
+    cos(th + rudder_rad) * dt, -speed_m_s * sin(th + rudder_rad) * dt,
+    sin(th + rudder_rad) * dt,  speed_m_s * cos(th + rudder_rad) * dt,
+    0, (K_theta * dt / L_vehicle) * (1.0f / (cos(rudder_rad) * cos(rudder_rad)))
+  };
+
+  Matrix<3,3> P_pred = F * P * ~F + G * Qu * ~G;
+
+  // Update
+  Matrix<3,3> S = P_pred + R;      // H = I
+  Matrix<3,3> K = P_pred * Inverse(S);
+
+  Matrix<3,1> y = z_meas - x_pred;
+  y(2,0) = wrap_to_pi(y(2,0));
+
+  xhat = x_pred + K * y;
+
+  P = (I3 - K) * P_pred;
 }
 
 void computeControlCommands(float target_x, float target_y,float state_x, float state_y, float state_theta,float* speed_out, float* rudder_out) {
@@ -234,6 +295,33 @@ void setup() {
   pinMode(PIN_TARGET_Y, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
 
+  xhat.Fill(0);
+  xhat(0,0) = g_state_x;
+  xhat(1,0) = g_state_y;
+  xhat(2,0) = g_state_theta;
+
+  P = {
+    sigma_x, 0.0f, 0.0f,
+    0.0f, sigma_y, 0.0f,
+    0.0f, 0.0f, sigma_theta
+    };
+
+  R = {
+    sigma_meas_x, 0.0f, 0.0f,
+    0.0f, sigma_meas_y, 0.0f,
+    0.0f, 0.0f, sigma_meas_theta
+    };
+
+  Qu = {
+    sigma_speed, 0.0f,
+    0.0f, sigma_rudder
+    };
+
+  I3 = {1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+
   Serial.println("[SERVER] Ready.");
 }
 
@@ -281,6 +369,20 @@ void loop() {
         g_state_theta = ((int16_t)h_th) / 1000.0f;
     }
 
+    BLA::Matrix<3,1> z_meas;
+
+    z_meas(0,0) = g_state_x;
+    z_meas(1,0) = g_state_y;
+    z_meas(2,0) = g_state_theta;
+    z_meas(2,0) = wrap_to_pi(z_meas(2,0));
+
+    ekfStep(u_prev_speed, u_prev_rudder, z_meas, 0.05f);
+
+    g_state_x = xhat(0,0);
+    g_state_y = xhat(1,0);
+    g_state_theta = xhat(2,0);
+
+
     // Drive PWM outputs
     ledcWrite(PIN_X, phys_to_pwm12(g_state_x));
     ledcWrite(PIN_Y, phys_to_pwm12(g_state_y));
@@ -289,6 +391,9 @@ void loop() {
 
     // Compute control commands and write back to Modbus
     computeControlCommands(target_x, target_y,g_state_x, g_state_y, g_state_theta,&g_speed_cmd, &g_rudder_deg);
+
+    u_prev_speed = g_speed_cmd;
+    u_prev_rudder = radians(g_rudder_deg);
 
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
     uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);
