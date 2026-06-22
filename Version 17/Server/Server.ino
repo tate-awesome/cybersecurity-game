@@ -1,28 +1,53 @@
 #define REST_API_ENABLED  // Comment out to disable REST API
-// Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
 #include <Arduino.h>
 #include <WiFi.h>
-#ifdef REST_API_ENABLED
-  #include <HTTPClient.h>
-  #include <ArduinoJson.h>
-#endif
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include <ModbusIP_ESP8266.h>
 #include <math.h>
+#include <BasicLinearAlgebra.h>
 
 #ifndef PI
 #define PI 3.14159265358979323846f
 #endif
 
-// ---------- WiFi ----------
-const char* ssid     = "GL-SFT1200-ab1";
-const char* password = "goodlife";
+// AP ESP32 is always at this address 
+const char* AP_SSID     = "ESP32-Config";
+const char* AP_PASSWORD = "admin1234";
+const char* CONFIG_URL  = "http://192.168.4.1/config";
+const char* REST_URL = "http://192.168.4.1/data";
+
+// String g_router_ssid = "";
+// String g_router_pass = "";
+// String g_flask_ip    = "";
+
+using namespace BLA;
+
+BLA::Matrix<3,1> xhat;   // [x;y;heading angle]
+BLA::Matrix<3,3> P;     // covariance matrix
+BLA::Matrix<3,3> R;    // measurment noise matrix
+BLA::Matrix<2,2> Qu;  // control input noise 
+BLA::Matrix<3,3> I3; // identity matrix
+
+float u_prev_speed = 0.0f;
+float u_prev_rudder = 0.0f;
+
+float sigma_x = 0.01;
+float sigma_y = 0.01;
+float sigma_theta = 0.01;
+
+float sigma_meas_x = 1.0f;
+float sigma_meas_y = 1.0f;
+float sigma_meas_theta = 0.01f;
+
+float sigma_speed = 0.01f;
+float sigma_rudder = 0.01f;
 
 // ------- Encryption -------
 String key = (String)1234;
 
 // ---------- REST ----------
 #ifdef REST_API_ENABLED
-  const char* REST_URL         = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
   const uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs   = 0;
   static bool encrypt_status   = false;
@@ -76,6 +101,8 @@ const float StopTol        = 0.3f;
 const float X_RANGE_M      = 200.0f;
 const float Y_RANGE_M      = 200.0f;
 const float RudderMax_deg  = 60.0f;
+const float K_theta = 0.6f;
+const float L_vehicle = 0.07f;
 
 const int LEDC_RES_BITS = 12;
 const int LEDC_FREQ_HZ  = 500;
@@ -84,7 +111,6 @@ const int LEDC_FREQ_HZ  = 500;
   #define LED_BUILTIN 2
 #endif
 
-// ---------- Helpers ----------
 static inline float clampf_local(float v, float lo, float hi) {
     if (isnan(v)) return lo;
     return (v < lo) ? lo : (v > hi ? hi : v);
@@ -101,9 +127,43 @@ float wrap_to_pi(float angle) {
     return angle;
 }
 
-void computeControlCommands(float target_x, float target_y,
-                            float state_x, float state_y, float state_theta,
-                            float* speed_out, float* rudder_out) {
+void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt)
+{
+  // Predict
+  BLA::Matrix<3,1> x_pred;
+  float th = xhat(2,0);
+
+  x_pred(0,0) = xhat(0,0) + speed_m_s * cos(th + rudder_rad) * dt;
+  x_pred(1,0) = xhat(1,0) + speed_m_s * sin(th + rudder_rad) * dt;
+  x_pred(2,0) = wrap_to_pi(xhat(2,0) + K_theta * (tan(rudder_rad) / L_vehicle) * dt);
+
+  Matrix<3,3> F = {
+    1, 0, -speed_m_s * sin(th + rudder_rad) * dt,
+    0, 1,  speed_m_s * cos(th + rudder_rad) * dt,
+    0, 0,  1
+  };
+
+  Matrix<3,2> G = {
+    cos(th + rudder_rad) * dt, -speed_m_s * sin(th + rudder_rad) * dt,
+    sin(th + rudder_rad) * dt,  speed_m_s * cos(th + rudder_rad) * dt,
+    0, (K_theta * dt / L_vehicle) * (1.0f / (cos(rudder_rad) * cos(rudder_rad)))
+  };
+
+  Matrix<3,3> P_pred = F * P * ~F + G * Qu * ~G;
+
+  // Update
+  Matrix<3,3> S = P_pred + R;      // H = I
+  Matrix<3,3> K = P_pred * Inverse(S);
+
+  Matrix<3,1> y = z_meas - x_pred;
+  y(2,0) = wrap_to_pi(y(2,0));
+
+  xhat = x_pred + K * y;
+
+  P = (I3 - K) * P_pred;
+}
+
+void computeControlCommands(float target_x, float target_y,float state_x, float state_y, float state_theta,float* speed_out, float* rudder_out) {
     float head_x = state_x + HEAD_OFFSET_M * cos(state_theta);
     float head_y = state_y + HEAD_OFFSET_M * sin(state_theta);
     float Xerr   = target_x - head_x;
@@ -124,8 +184,6 @@ void computeControlCommands(float target_x, float target_y,
     *speed_out  = SpeedCmd;
     *rudder_out = rho_rad * 180.0f / PI;
 }
-
-//------------------------------- Encryption methods ------------------
 
 uint16_t xorCipher(uint16_t value, uint16_t key){
     return value ^ key;
@@ -190,38 +248,83 @@ void restPost() {
 }
 #endif
 
-// ---------- Setup ----------
 void setup() {
-    Serial.begin(115200);
-    delay(500);
-    Serial.println("\n[SERVER] Booting...");
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("\n[SERVER] Booting...");
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    WiFi.setSleep(false);
-    while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
-    Serial.printf("\n[SERVER] IP: %s\n", WiFi.localIP().toString().c_str());
+  IPAddress staticIP(192, 168, 4, 10);   // fixed address for Slave
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+  WiFi.config(staticIP, gateway, subnet);
 
-    // Modbus server
-    mb.server();
-    mb.addHreg(HREG_X_PHYS,     10000);
-    mb.addHreg(HREG_Y_PHYS,     10000);
-    mb.addHreg(HREG_THETA_MRAD, 0);
-    mb.addHreg(HREG_SPEED,      0);
-    mb.addHreg(HREG_RUDDER,     0);
+  // Connect directly to AP ESP32
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  Serial.print("[SERVER] Connecting to ESP32-Config AP");
 
-    ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println();
 
-    pinMode(PIN_TARGET_X, INPUT_PULLUP);
-    pinMode(PIN_TARGET_Y, INPUT_PULLUP);
-    pinMode(LED_BUILTIN, OUTPUT);
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("[SERVER] Connected to AP — IP: %s\n",
+                  WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("[SERVER] WiFi FAILED!");
+    while(1) { delay(1000); }
+  }
 
-    Serial.println("[SERVER] Ready.");
+  WiFi.setSleep(false);
+
+  // Modbus server starts on AP subnet
+  mb.server();
+  mb.addHreg(HREG_X_PHYS,     10000);
+  mb.addHreg(HREG_Y_PHYS,     10000);
+  mb.addHreg(HREG_THETA_MRAD, 0);
+  mb.addHreg(HREG_SPEED,      0);
+  mb.addHreg(HREG_RUDDER,     0);
+
+  ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  pinMode(PIN_TARGET_X, INPUT_PULLUP);
+  pinMode(PIN_TARGET_Y, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  xhat.Fill(0);
+  xhat(0,0) = g_state_x;
+  xhat(1,0) = g_state_y;
+  xhat(2,0) = g_state_theta;
+
+  P = {
+    sigma_x, 0.0f, 0.0f,
+    0.0f, sigma_y, 0.0f,
+    0.0f, 0.0f, sigma_theta
+    };
+
+  R = {
+    sigma_meas_x, 0.0f, 0.0f,
+    0.0f, sigma_meas_y, 0.0f,
+    0.0f, 0.0f, sigma_meas_theta
+    };
+
+  Qu = {
+    sigma_speed, 0.0f,
+    0.0f, sigma_rudder
+    };
+
+  I3 = {1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+
+  Serial.println("[SERVER] Ready.");
 }
 
-// ---------- Loop ----------
 void loop() {
     mb.task();
     yield();
@@ -249,7 +352,7 @@ void loop() {
     uint16_t h_y;
     uint16_t h_th;
 
-    // Read state from Modbus registers (written by Client/Master)
+    // Read state from Modbus registers (written by Client
     if(encrypt_status){
         h_x  = xorCipher(mb.Hreg(HREG_X_PHYS), keyToUint(key));
         h_y  = xorCipher(mb.Hreg(HREG_Y_PHYS), keyToUint(key));
@@ -266,6 +369,20 @@ void loop() {
         g_state_theta = ((int16_t)h_th) / 1000.0f;
     }
 
+    BLA::Matrix<3,1> z_meas;
+
+    z_meas(0,0) = g_state_x;
+    z_meas(1,0) = g_state_y;
+    z_meas(2,0) = g_state_theta;
+    z_meas(2,0) = wrap_to_pi(z_meas(2,0));
+
+    ekfStep(u_prev_speed, u_prev_rudder, z_meas, 0.05f);
+
+    g_state_x = xhat(0,0);
+    g_state_y = xhat(1,0);
+    g_state_theta = xhat(2,0);
+
+
     // Drive PWM outputs
     ledcWrite(PIN_X, phys_to_pwm12(g_state_x));
     ledcWrite(PIN_Y, phys_to_pwm12(g_state_y));
@@ -273,9 +390,10 @@ void loop() {
     ledcWrite(PIN_T, (uint16_t)(clampf_local(theta_norm, 0, 1) * 4095.0f));
 
     // Compute control commands and write back to Modbus
-    computeControlCommands(target_x, target_y,
-                           g_state_x, g_state_y, g_state_theta,
-                           &g_speed_cmd, &g_rudder_deg);
+    computeControlCommands(target_x, target_y,g_state_x, g_state_y, g_state_theta,&g_speed_cmd, &g_rudder_deg);
+
+    u_prev_speed = g_speed_cmd;
+    u_prev_rudder = radians(g_rudder_deg);
 
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
     uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);

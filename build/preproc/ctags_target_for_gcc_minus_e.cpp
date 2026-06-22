@@ -1,314 +1,991 @@
-# 1 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino"
+# 1 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino"
+# 2 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 3 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 4 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 5 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 6 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 7 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 8 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
+# 9 "/home/martin/Desktop/cybersecurity-game/Version 17/AP_ESP32/AP_ESP32.ino" 2
 
-// Serial.printf("[MASTER] encryption_key=%s\n", key.c_str());
-# 4 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
-# 5 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
+// ─── Soft-AP credentials (permanent, never change) ───────────
+const char* AP_SSID = "ESP32-Config";
+const char* AP_PASSWORD = "admin1234";
+const IPAddress AP_IP (192, 168, 4, 1);
+const IPAddress AP_GW (192, 168, 4, 1);
+const IPAddress AP_SUBNET(255, 255, 255, 0);
 
-# 7 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
-# 8 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
 
-# 10 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
-# 11 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino" 2
-
-
-
-
-
-
-# 16 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino"
-// ---------- WiFi ----------
-const char* ssid = "GL-SFT1200-ab1";
-const char* password = "goodlife";
-
-// ------- Encryption -------
-String key = (String)1234;
-
-// ---------- REST ----------
-
-  const char* REST_URL = "http://192.168.8.114:5000/data"; // Need to comment in your own IPV4- use ifconfig or ipconfig in terminal
-  const uint32_t REST_INTERVAL_MS = 2000;
-  static uint32_t lastRestMs = 0;
-  static bool encrypt_status = false;
-
-
-// -- Debug statements
-# 42 "/home/martin/Desktop/cybersecurity-game/Version 17/Server/Server.ino"
-// ---------- Modbus ----------
-ModbusIP mb;
-const uint16_t HREG_X_PHYS = 10;
-const uint16_t HREG_Y_PHYS = 11;
-const uint16_t HREG_THETA_MRAD = 12;
-const uint16_t HREG_SPEED = 3;
-const uint16_t HREG_RUDDER = 4;
-
-// ---------- Pins ----------
-const int PIN_X = 4;
-const int PIN_Y = 5;
-const int PIN_T = 18;
-const int PIN_TARGET_X = 6;
-const int PIN_TARGET_Y = 2;
-
-// ---------- Globals ----------
-float current_duty_x = 0.5f;
-float current_duty_y = 0.5f;
-
-// Expose current state so restPost() can read them
-static float g_state_x = 100.0f;
-static float g_state_y = 100.0f;
-static float g_state_theta = 0.0f;
-static float g_speed_cmd = 0.0f;
-static float g_rudder_deg = 0.0f;
-static float g_target_x = 100.0f;
-static float g_target_y = 100.0f;
-
-// ---------- Control Params ----------
-const float HEAD_OFFSET_M = 2.0f;
-const float Kps = 0.1f;
-const float Kp_rudder = 0.1f;
-const float SpeedMax = 50.0f;
-const float StopTol = 0.3f;
-const float X_RANGE_M = 200.0f;
-const float Y_RANGE_M = 200.0f;
-const float RudderMax_deg = 60.0f;
-
-const int LEDC_RES_BITS = 12;
-const int LEDC_FREQ_HZ = 500;
+// ─── NVS key names ────────────────────────────────────────────
 
 
 
 
 
-// ---------- Helpers ----------
-static inline float clampf_local(float v, float lo, float hi) {
-    if (isnan(v)) return lo;
-    return (v < lo) ? lo : (v > hi ? hi : v);
+// ─── Globals ──────────────────────────────────────────────────
+Preferences prefs;
+AsyncWebServer server(80);
+
+String g_ssid = "";
+String g_password = "";
+String g_flask_ip = "192.168.8.167";
+
+
+String g_client_payload = "{}";
+String g_server_payload = "{}";
+
+
+
+struct DeviceInfo {
+  String ip;
+  uint32_t lastSeenMs;
+  int pointCount;
+};
+std::map<String, DeviceInfo> g_devices;
+
+StaticJsonDocument<8192> g_client_doc; // stores array of points
+StaticJsonDocument<8192> g_server_doc;
+JsonArray g_client_arr = g_client_doc.to<JsonArray>();
+JsonArray g_server_arr = g_server_doc.to<JsonArray>();
+
+bool g_encryption_status = false;
+String g_encryption_key = "1234";
+float g_target_x = 100.0;
+float g_target_y = 100.0;
+
+bool g_filter_correction = false;
+
+// ─── Forward declarations ─────────────────────────────────────
+void loadPreferences();
+void savePreferences(const String& ssid, const String& pass, const String& flask_ip);
+void startAP();
+//void connectSTA();
+void setupRoutes();
+String buildConfigPage();
+void forwardToFlask(const String& endpoint, const String& body);
+
+void setup() {
+  Serial0.begin(115200);
+  delay(500);
+  Serial0.println("\n[AP-ESP32] Booting...");
+
+  loadPreferences();
+  startAP();
+
+  g_client_arr = g_client_doc.to<JsonArray>();
+  g_server_arr = g_server_doc.to<JsonArray>();
+
+  setupRoutes();
+  server.begin();
+  Serial0.println("[AP-ESP32] Web server started on http://192.168.4.1");
 }
 
-static inline uint16_t phys_to_pwm12(float phys_0_200) {
-    float val = clampf_local(phys_0_200, 0.0f, 200.0f);
-    return (uint16_t)lroundf((val / 200.0f) * 4095.0f);
+void loop() {
+  // // Re-attempt STA connection if it drops
+  // static uint32_t lastCheckMs = 0;
+  // if (g_ssid.length() > 0 && millis() - lastCheckMs > 10000) {
+  //   lastCheckMs = millis();
+  //   if (WiFi.status() != WL_CONNECTED) {
+  //     Serial.println("[AP-ESP32] STA disconnected — reconnecting...");
+  //     connectSTA();
+  //   }
+  // }
+  dnsServer.processNextRequest();
+  delay(10);
 }
 
-float wrap_to_pi(float angle) {
-    while (angle > 3.1415926535897932384626433832795) angle -= 2.0f * 3.1415926535897932384626433832795;
-    while (angle < -3.1415926535897932384626433832795) angle += 2.0f * 3.1415926535897932384626433832795;
-    return angle;
+void loadPreferences() {
+  prefs.begin("netcfg", true); // read-only
+  g_ssid = prefs.getString("ssid", "");
+  g_password = prefs.getString("password", "");
+  g_flask_ip = prefs.getString("flask_ip", "192.168.8.167");
+  prefs.end();
+
+  Serial0.printf("[AP-ESP32] Loaded NVS — SSID: '%s'  Flask: '%s'\n",g_ssid.c_str(), g_flask_ip.c_str());
 }
 
-void computeControlCommands(float target_x, float target_y,
-                            float state_x, float state_y, float state_theta,
-                            float* speed_out, float* rudder_out) {
-    float head_x = state_x + HEAD_OFFSET_M * cos(state_theta);
-    float head_y = state_y + HEAD_OFFSET_M * sin(state_theta);
-    float Xerr = target_x - head_x;
-    float Yerr = target_y - head_y;
-
-    float ThetaDes = atan2f(Yerr, Xerr);
-    float HeadingErr = wrap_to_pi(ThetaDes - state_theta);
-    float rho_rad = Kp_rudder * HeadingErr;
-
-    rho_rad = clampf_local(rho_rad, -3.1415926535897932384626433832795 / 3.0f, 3.1415926535897932384626433832795 / 3.0f);
-
-    float center_dist = sqrtf(powf(Xerr, 2) + powf(Yerr, 2));
-    float SpeedCmd = (center_dist < StopTol) ? 0.0f
-                        : clampf_local(Kps * center_dist, 0.0f, SpeedMax);
-
-    if (center_dist < StopTol) rho_rad = 0.0f;
-
-    *speed_out = SpeedCmd;
-    *rudder_out = rho_rad * 180.0f / 3.1415926535897932384626433832795;
+void savePreferences(const String& ssid, const String& pass, const String& flask_ip) {
+  prefs.begin("netcfg", false); // read-write
+  prefs.putString("ssid", ssid);
+  prefs.putString("password", pass);
+  prefs.putString("flask_ip", flask_ip);
+  prefs.end();
+  Serial0.println("[AP-ESP32] Preferences saved to NVS.");
 }
 
-//------------------------------- Encryption methods ------------------
+void startAP() {
+  WiFi.mode(WIFI_MODE_AP); // ← was WIFI_AP_STA
+  WiFi.softAPConfig(AP_IP, AP_GW, AP_SUBNET);
+  WiFi.softAP(AP_SSID, AP_PASSWORD);
+  Serial0.printf("[AP-ESP32] Soft-AP started: SSID='%s'  IP=%s\n", AP_SSID, WiFi.softAPIP().toString().c_str());
 
-uint16_t xorCipher(uint16_t value, uint16_t key){
-    return value ^ key;
+  //captive portal
+  dnsServer.start(DNS_PORT, "*", AP_IP);
+  Serial0.println("[AP-ESP32] Captive portal DNS started.");
 }
 
-uint16_t keyToUint(const String& key){
+// void connectSTA() {
+//   Serial.printf("[AP-ESP32] Connecting to router SSID='%s'...\n", g_ssid.c_str());
+//   WiFi.begin(g_ssid.c_str(), g_password.c_str());
 
-  int sum = 0;
+//   uint32_t start = millis();
+//   while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
+//     delay(500);
+//     Serial.print(".");
+//   }
+//   Serial.println();
 
-  for(int i = 0; i< key.length(); i++){
-    sum += key.charAt(i);
+//   if (WiFi.status() == WL_CONNECTED) {
+//     Serial.printf("[AP-ESP32] Router connected — IP: %s\n",
+//                   WiFi.localIP().toString().c_str());
+
+//     prefs.begin(NVS_NAMESPACE, false);
+//     prefs.putString("ap_router_ip", WiFi.localIP().toString());
+//     prefs.end();
+//   } else {
+//     Serial.println("[AP-ESP32] Router connection FAILED (will retry in 10s).");
+//   }
+// }
+
+// void forwardToFlask(const String& endpoint, const String& body) {
+//   if (WiFi.status() != WL_CONNECTED) {
+//     Serial.println("[AP-ESP32] Cannot forward — not connected to router.");
+//     return;
+//   }
+
+//   String url = "http://" + g_flask_ip + ":5000" + endpoint;
+//   HTTPClient http;
+//   http.begin(url);
+//   http.addHeader("Content-Type", "application/json");
+//   int code = http.POST(body);
+//   Serial.printf("[AP-ESP32] Forwarded to Flask %s  →  HTTP %d\n",
+//                 url.c_str(), code);
+//   http.end();
+// }
+
+
+// ============================================================
+//  HTML Config Page
+// ============================================================
+String buildConfigPage() {
+      String html = R"rawhtml(
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>ESP32 Network Configuration</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          background: #1a1a2e;
+          color: #e0e0e0;
+          min-height: 100vh;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 20px;
+        }
+
+        .layout {
+          display: flex;
+          gap: 16px;
+          width: 100%;
+          max-width: 960px;
+          flex-wrap: wrap;
+        }
+
+        .column {
+          flex: 1;
+          min-width: 280px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .card {
+          background: #16213e;
+          border: 1px solid #0f3460;
+          border-radius: 12px;
+          padding: 24px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #0f3460;
+          margin-bottom: 16px;
+        }
+
+        .header-icon { font-size: 24px; }
+
+        h1 {
+          font-size: 1.1rem;
+          color: #e94560;
+          letter-spacing: 0.5px;
+        }
+
+        h1 span {
+          display: block;
+          font-size: 0.72rem;
+          color: #888;
+          font-weight: normal;
+          margin-top: 2px;
+        }
+
+        .section-title {
+          font-size: 0.70rem;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          color: #e94560;
+          margin-bottom: 12px;
+          margin-top: 20px;
+        }
+
+        .section-title:first-child { margin-top: 0; }
+
+        .form-group { margin-bottom: 14px; }
+
+        label {
+          display: block;
+          font-size: 0.80rem;
+          color: #aaa;
+          margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+          width: 100%;
+          padding: 9px 12px;
+          background: #0a0a1a;
+          border: 1px solid #0f3460;
+          border-radius: 8px;
+          color: #e0e0e0;
+          font-size: 0.90rem;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+
+        input:focus { border-color: #e94560; }
+        input::placeholder { color: #444; }
+
+        .btn {
+          width: 100%;
+          padding: 10px;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          margin-top: 6px;
+          transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: #e94560; color: #fff; margin-top: 20px; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: #0f3460; color: #e0e0e0; margin-top: 8px; }
+        .btn-secondary:hover { opacity: 0.85; }
+
+        .toast {
+          display: none;
+          background: #0f3460;
+          border-left: 3px solid #e94560;
+          border-radius: 6px;
+          padding: 9px 12px;
+          font-size: 0.82rem;
+          margin-top: 14px;
+        }
+
+        /* ── Status Panel ── */
+        .stat-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 4px;
+        }
+
+        .stat-box {
+          background: #0a0a1a;
+          border: 1px solid #0f3460;
+          border-radius: 8px;
+          padding: 10px 12px;
+          text-align: center;
+        }
+
+        .stat-value {
+          font-size: 1.4rem;
+          font-weight: 700;
+          color: #e94560;
+          line-height: 1.2;
+        }
+
+        .stat-label {
+          font-size: 0.68rem;
+          color: #888;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          margin-top: 2px;
+        }
+
+        .status-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 0;
+          border-bottom: 1px solid #0f3460;
+          font-size: 0.82rem;
+        }
+
+        .status-row:last-child { border-bottom: none; }
+        .status-key { color: #888; }
+        .status-val { color: #e0e0e0; font-weight: 500; }
+        .status-val.green { color: #4caf50; }
+        .status-val.red   { color: #e94560; }
+
+        /* ── Device Table ── */
+        .device-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.80rem;
+          margin-top: 4px;
+        }
+
+        .device-table th {
+          text-align: left;
+          color: #888;
+          font-weight: normal;
+          font-size: 0.70rem;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          padding: 4px 6px 8px;
+          border-bottom: 1px solid #0f3460;
+        }
+
+        .device-table td {
+          padding: 8px 6px;
+          border-bottom: 1px solid #0a0a1a;
+          color: #e0e0e0;
+        }
+
+        .device-table tr:last-child td { border-bottom: none; }
+
+        .dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin-right: 6px;
+        }
+
+        .dot-green { background: #4caf50; }
+        .dot-yellow { background: #ff9800; }
+        .dot-red { background: #e94560; }
+
+        .no-devices {
+          text-align: center;
+          color: #555;
+          font-size: 0.82rem;
+          padding: 16px 0;
+        }
+
+        .footer {
+          font-size: 0.72rem;
+          color: #555;
+          text-align: center;
+          margin-top: 16px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="layout">
+
+        <!-- ── Left column: Config ── -->
+        <div class="column">
+          <div class="card">
+            <div class="header">
+              <div class="header-icon">&#128268;</div>
+              <h1>ESP32 Network Config
+                <span>Access Point / Relay Node</span>
+              </h1>
+            </div>
+
+            <div class="section-title">Router Credentials</div>
+
+            <div class="form-group">
+              <label for="ssid">Network SSID</label>
+              <input type="text" id="ssid" placeholder="e.g. MyLabRouter" value=")rawhtml" + g_ssid + R"rawhtml(">
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" placeholder="Router password">
+            </div>
+
+            <div class="section-title">Flask Server</div>
+
+            <div class="form-group">
+              <label for="flask_ip">Flask Server IP</label>
+              <input type="text" id="flask_ip" placeholder="e.g. 192.168.8.167" value=")rawhtml" + g_flask_ip + R"rawhtml(">
+            </div>
+
+            <button class="btn btn-primary" onclick="saveConfig()">
+              &#128190; Save &amp; Reconnect
+            </button>
+
+            <button class="btn btn-secondary" onclick="clearData()">
+              &#128465; Clear Telemetry Data
+            </button>
+
+            <button class="btn btn-secondary" onclick="rebootDevice()">
+              &#128260; Reboot ESP32
+            </button>
+
+            <div class="toast" id="toast"></div>
+
+            <div class="footer" style="margin-top:20px;">
+              AP IP: 192.168.4.1 &nbsp;|&nbsp; SSID: ESP32-Config
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Right column: Status + Devices ── -->
+        <div class="column">
+
+          <!-- System Status Card -->
+          <div class="card">
+            <div class="section-title" style="margin-top:0;">System Status
+              <span style="float:right; color:#555; font-size:0.65rem; letter-spacing:0;">
+                auto-refresh 5s
+              </span>
+            </div>
+
+            <div class="stat-grid">
+              <div class="stat-box">
+                <div class="stat-value" id="stat-clients">—</div>
+                <div class="stat-label">Connected</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value" id="stat-uptime">—</div>
+                <div class="stat-label">Uptime</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value" id="stat-client-pts">—</div>
+                <div class="stat-label">Client Points</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value" id="stat-server-pts">—</div>
+                <div class="stat-label">Server Points</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <div class="status-row">
+                <span class="status-key">Encryption</span>
+                <span class="status-val" id="stat-enc">—</span>
+              </div>
+              <div class="status-row">
+                <span class="status-key">Kalman Filter</span>
+                <span class="status-val" id="stat-filter">—</span>
+              </div>
+              <div class="status-row">
+                <span class="status-key">Target X / Y</span>
+                <span class="status-val" id="stat-target">—</span>
+              </div>
+              <div class="status-row">
+                <span class="status-key">AP IP</span>
+                <span class="status-val">192.168.4.1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connected Devices Card -->
+          <div class="card">
+            <div class="section-title" style="margin-top:0;">Connected Devices</div>
+            <table class="device-table">
+              <thead>
+                <tr>
+                  <th>IP Address</th>
+                  <th>Status</th>
+                  <th>Last Seen</th>
+                  <th>Points</th>
+                </tr>
+              </thead>
+              <tbody id="device-tbody">
+                <tr><td colspan="4" class="no-devices">No devices seen yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <script>
+        // ── Toast helper ──────────────────────────────────────────
+        function showToast(msg) {
+          const t = document.getElementById('toast');
+          t.textContent = msg;
+          t.style.display = 'block';
+          setTimeout(() => t.style.display = 'none', 4000);
+        }
+
+        // ── Format uptime ms → HH:MM:SS ──────────────────────────
+        function formatUptime(ms) {
+          const s   = Math.floor(ms / 1000);
+          const h   = Math.floor(s / 3600);
+          const m   = Math.floor((s % 3600) / 60);
+          const sec = s % 60;
+          return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+        }
+
+        // ── Dot colour based on last-seen seconds ─────────────────
+        function dotClass(lastSeenS) {
+          if (lastSeenS < 5)  return 'dot-green';
+          if (lastSeenS < 15) return 'dot-yellow';
+          return 'dot-red';
+        }
+
+        // ── Fetch status and update both panels ───────────────────
+        async function refreshStatus() {
+          try {
+            const resp = await fetch('/status');
+            if (!resp.ok) return;
+            const d = await resp.json();
+
+            // Stat boxes
+            document.getElementById('stat-clients').textContent =
+              (d.connected_clients ?? '—') + ' / 3';
+            document.getElementById('stat-uptime').textContent =
+              d.uptime_ms !== undefined ? formatUptime(d.uptime_ms) : '—';
+            document.getElementById('stat-client-pts').textContent =
+              d.client_point_count ?? '—';
+            document.getElementById('stat-server-pts').textContent =
+              d.server_point_count ?? '—';
+
+            // Status rows
+            const encEl = document.getElementById('stat-enc');
+            encEl.textContent    = d.encryption ? 'ON' : 'OFF';
+            encEl.className      = 'status-val ' + (d.encryption ? 'green' : 'red');
+            const filterEl = document.getElementById('stat-filter');           // ← add this block
+            filterEl.textContent = d.filter_correction ? 'ON' : 'OFF';
+            filterEl.className   = 'status-val ' + (d.filter_correction ? 'green' : 'red');
+
+            document.getElementById('stat-target').textContent =
+              `(${d.target_x ?? '—'}, ${d.target_y ?? '—'})`;
+
+            // Device table
+            const tbody = document.getElementById('device-tbody');
+            if (!d.devices || d.devices.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="4" class="no-devices">No devices seen yet</td></tr>';
+            } else {
+              tbody.innerHTML = d.devices.map(dev => {
+                const cls = dotClass(dev.last_seen_s);
+                const age = dev.last_seen_s < 60
+                  ? dev.last_seen_s + 's ago'
+                  : Math.floor(dev.last_seen_s / 60) + 'm ago';
+                const status = dev.last_seen_s < 5 ? 'Active'
+                            : dev.last_seen_s < 15 ? 'Slow'
+                            : 'Stale';
+                return `<tr>
+                  <td>${dev.ip}</td>
+                  <td><span class="dot ${cls}"></span>${status}</td>
+                  <td>${age}</td>
+                  <td>${dev.point_count}</td>
+                </tr>`;
+              }).join('');
+            }
+          } catch(e) {
+            console.warn('Status fetch failed:', e);
+          }
+        }
+
+        // ── Save config ───────────────────────────────────────────
+        async function saveConfig() {
+          const ssid     = document.getElementById('ssid').value.trim();
+          const password = document.getElementById('password').value;
+          const flask_ip = document.getElementById('flask_ip').value.trim();
+
+          if (!ssid) { showToast('SSID cannot be empty.'); return; }
+
+          const resp = await fetch('/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ssid, password, flask_ip })
+          });
+
+          if (resp.ok) {
+            showToast('Saved! Reconnecting...');
+            setTimeout(() => location.reload(), 4000);
+          } else {
+            showToast('Error saving config.');
+          }
+        }
+
+        // ── Clear telemetry ───────────────────────────────────────
+        async function clearData() {
+          await fetch('/clear', { method: 'POST' });
+          showToast('Telemetry data cleared.');
+          refreshStatus();
+        }
+
+        // ── Reboot ────────────────────────────────────────────────
+        async function rebootDevice() {
+          await fetch('/reboot', { method: 'POST' });
+          showToast('Rebooting ESP32...');
+        }
+
+        // ── Start auto-refresh ────────────────────────────────────
+        refreshStatus();
+        setInterval(refreshStatus, 5000);
+      </script>
+    </body>
+    </html>
+    )rawhtml";
+      return html;
   }
 
-  return(uint16_t)sum;
-}
+// void setupRoutes() {
 
+//   // ── GET /  →  Config page ──────────────────────────────────
+//   server.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     req->send(200, "text/html", buildConfigPage());
+//   });
 
-void restPost() {
-    if (WiFi.status() != WL_CONNECTED) return;
+//   // ── POST /config  →  Save credentials ─────────────────────
+//   server.on("/config", HTTP_POST,
+//     [](AsyncWebServerRequest* req) {},
+//     nullptr,
+//     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+//       StaticJsonDocument<256> doc;
+//       DeserializationError err = deserializeJson(doc, data, len);
+//       if (err) {
+//         req->send(400, "application/json", "{\"error\":\"bad json\"}");
+//         return;
+//       }
 
-    HTTPClient http;
-    http.begin(REST_URL);
-    http.addHeader("Content-Type", "application/json");
+//       String newSsid  = doc["ssid"]     | "";
+//       String newPass  = doc["password"] | "";
+//       String newFlask = doc["flask_ip"] | "";
 
-    // Build JSON payload with current state
-    StaticJsonDocument<128> doc;
-    doc["timestamp"] = (uint32_t)(millis() / 1000);
-    doc["source"] = "server";
-    doc["x"] = g_state_x;
-    doc["y"] = g_state_y;
-    doc["theta"] = g_state_theta;
-    doc["speed"] = g_speed_cmd;
-    doc["rudder"] = g_rudder_deg;
+//       if (newSsid.length() == 0 || newFlask.length() == 0) {
+//         req->send(400, "application/json", "{\"error\":\"missing fields\"}");
+//         return;
+//       }
 
-    String payload;
-    serializeJson(doc, payload);
+//       g_ssid     = newSsid;
+//       g_password = newPass;
+//       g_flask_ip = newFlask;
+//       savePreferences(g_ssid, g_password, g_flask_ip);
 
-    int code = http.POST(payload);
+//       req->send(200, "application/json", "{\"status\":\"saved\"}");
 
-    if (code == 200) {
-        String body = http.getString();
-        StaticJsonDocument<128> resp;
-        if (!deserializeJson(resp, body)) {
-            if (resp.containsKey("encryption_status")) {
-                encrypt_status = resp["encryption_status"].as<bool>();
-                key = resp["encryption_key"].as<String>();
-                Serial0.printf("[SERVER] encryption_key=%s\n", key.c_str());
-            }
+//       // Reconnect STA on a small delay so response can be sent first
+//       delay(500);
+//       connectSTA();
+//     }
+//   );
 
-            if (resp.containsKey("target_x") && resp.containsKey("target_y")) {
-            g_target_x = resp["target_x"].as<float>();
-            g_target_y = resp["target_y"].as<float>();
-            Serial0.printf("[SERVER] Target updated: %.1f, %.1f\n", g_target_x, g_target_y);
-            }
-        }
-        Serial0.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
-    } else {
-        Serial0.printf("[SERVER] REST POST failed  HTTP %d\n", code);
+//   // ── POST /reboot  →  Reboot ESP32 ─────────────────────────
+//   server.on("/reboot", HTTP_POST, [](AsyncWebServerRequest* req) {
+//     req->send(200, "application/json", "{\"status\":\"rebooting\"}");
+//     delay(500);
+//     ESP.restart();
+//   });
+
+//   // ── GET /status  →  JSON health check ─────────────────────
+//   server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     StaticJsonDocument<256> doc;
+//     doc["ap_ssid"]        = AP_SSID;
+//     doc["ap_ip"]          = WiFi.softAPIP().toString();
+//     doc["sta_ssid"]       = g_ssid;
+//     doc["sta_connected"]  = (WiFi.status() == WL_CONNECTED);
+//     doc["sta_ip"]         = WiFi.localIP().toString();
+//     doc["flask_ip"]       = g_flask_ip;
+
+//     String out;
+//     serializeJson(doc, out);
+//     req->send(200, "application/json", out);
+//   });
+
+//   // ── POST /data  →  Relay payload to Flask ─────────────────
+//   //   Body: { "source": "client"|"server", ...rest of payload }
+//   server.on("/data", HTTP_POST,
+//     [](AsyncWebServerRequest* req) {},
+//     nullptr,
+//     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+//       String body = String((char*)data, len);
+
+//       // Cache latest payload by source
+//       StaticJsonDocument<512> doc;
+//       if (!deserializeJson(doc, body)) {
+//         String src = doc["source"] | "unknown";
+//         if (src == "client") g_client_payload = body;
+//         else if (src == "server") g_server_payload = body;
+//       }
+
+//       // Forward to Flask asynchronously (non-blocking would need a task;
+//       // for 2s interval polling, a blocking call here is fine)
+//       forwardToFlask("/data", body);
+
+//       req->send(200, "application/json", "{\"status\":\"forwarded\"}");
+//     }
+//   );
+
+//   // ── GET /data  →  Return cached payloads to Defender ──────
+//   server.on("/api/data", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     String combined = "{\"client_points\":" + g_client_payload
+//                     + ",\"server_points\":" + g_server_payload + "}";
+//     req->send(200, "application/json", combined);
+//   });
+
+//   // ── GET /config  →  Return current config as JSON ─────────
+//   //   Used by other ESP32s to fetch stored credentials on boot
+//   server.on("/config", HTTP_GET, [](AsyncWebServerRequest* req) {
+//     StaticJsonDocument<256> doc;
+//     doc["ssid"]         = g_ssid;
+//     doc["password"]     = g_password;
+//     doc["flask_ip"]     = g_flask_ip;
+//     doc["ap_router_ip"] = WiFi.localIP().toString();  // ← add this
+//     String out;
+//     serializeJson(doc, out);
+//     req->send(200, "application/json", out);
+//   });
+
+//   // ── 404 catch-all ──────────────────────────────────────────
+//   server.onNotFound([](AsyncWebServerRequest* req) {
+//     req->send(404, "text/plain", "Not found");
+//   });
+// }
+
+void setupRoutes() {
+
+  // ── GET /  →  Config page ──────────────────────────────────
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
+    req->send(200, "text/html", buildConfigPage());
+  });
+
+  // ── GET /config  →  Return current config as JSON ──────────
+  //   Called by Master/Server ESP32s at boot to fetch credentials
+  server.on("/config", HTTP_GET, [](AsyncWebServerRequest* req) {
+    StaticJsonDocument<256> doc;
+    doc["ssid"] = AP_SSID; // ← always ESP32-Config
+    doc["password"] = AP_PASSWORD; // ← always admin1234
+    doc["flask_ip"] = "192.168.4.1"; // ← AP IP, no Flask needed
+    doc["ap_router_ip"] = "192.168.4.1"; // ← same, always static
+    String out;
+    serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
+  // ── POST /config  →  Save credentials ──────────────────────
+  server.on("/config", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<256> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+
+      String newSsid = doc["ssid"] | "";
+      String newPass = doc["password"] | "";
+      String newFlask = doc["flask_ip"] | "";
+
+      if (newSsid.length() == 0 || newFlask.length() == 0) {
+        req->send(400, "application/json", "{\"error\":\"missing fields\"}");
+        return;
+      }
+
+      g_ssid = newSsid;
+      g_password = newPass;
+      g_flask_ip = newFlask;
+      savePreferences(g_ssid, g_password, g_flask_ip);
+
+      req->send(200, "application/json", "{\"status\":\"saved\"}");
+      delay(500);
+      //connectSTA();
     }
+  );
 
-    http.end();
-}
-
-
-// ---------- Setup ----------
-void setup() {
-    Serial0.begin(115200);
+  // ── POST /reboot  →  Reboot ESP32 ──────────────────────────
+  server.on("/reboot", HTTP_POST, [](AsyncWebServerRequest* req) {
+    req->send(200, "application/json", "{\"status\":\"rebooting\"}");
     delay(500);
-    Serial0.println("\n[SERVER] Booting...");
+    ESP.restart();
+  });
 
-    WiFi.mode(WIFI_MODE_STA);
-    WiFi.begin(ssid, password);
-    WiFi.setSleep(false);
-    while (WiFi.status() != WL_CONNECTED) { delay(300); Serial0.print("."); }
-    Serial0.printf("\n[SERVER] IP: %s\n", WiFi.localIP().toString().c_str());
+  // ── GET /status  →  JSON health check ──────────────────────
+  server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
+  StaticJsonDocument<1024> doc;
+  doc["ap_ssid"] = AP_SSID;
+  doc["ap_ip"] = WiFi.softAPIP().toString();
+  doc["sta_ssid"] = g_ssid;
+  doc["sta_connected"] = (WiFi.status() == WL_CONNECTED);
+  doc["sta_ip"] = WiFi.localIP().toString();
+  doc["flask_ip"] = g_flask_ip;
+  doc["target_x"] = g_target_x;
+  doc["target_y"] = g_target_y;
+  doc["encryption"] = g_encryption_status;
+  doc["uptime_ms"] = millis();
+  doc["client_point_count"] = g_client_arr.size();
+  doc["server_point_count"] = g_server_arr.size();
+  doc["connected_clients"] = WiFi.softAPgetStationNum();
+  doc["filter_correction"] = g_filter_correction;
 
-    // Modbus server
-    mb.server();
-    mb.addHreg(HREG_X_PHYS, 10000);
-    mb.addHreg(HREG_Y_PHYS, 10000);
-    mb.addHreg(HREG_THETA_MRAD, 0);
-    mb.addHreg(HREG_SPEED, 0);
-    mb.addHreg(HREG_RUDDER, 0);
+  // device list
+  JsonArray devices = doc.createNestedArray("devices");
+  uint32_t now = millis();
+  for (auto& kv : g_devices) {
+    JsonObject d = devices.createNestedObject();
+    d["ip"] = kv.second.ip;
+    d["last_seen_s"] = (now - kv.second.lastSeenMs) / 1000;
+    d["point_count"] = kv.second.pointCount;
+  }
 
-    ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
-    ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  String out;
+  serializeJson(doc, out);
+  req->send(200, "application/json", out);
+});
 
-    pinMode(PIN_TARGET_X, 0x05);
-    pinMode(PIN_TARGET_Y, 0x05);
-    pinMode(LED_BUILTIN /* allow testing #ifdef LED_BUILTIN*/, 0x03);
+  // ── POST /data  →  Accumulate points, return control state ─
+  //   Body: { "source": "client"|"server", "x":..., "y":..., ... }
+  server.on("/data", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      DynamicJsonDocument incoming(512);
+      DeserializationError err = deserializeJson(incoming, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
 
-    Serial0.println("[SERVER] Ready.");
-}
+      incoming["received_at"] = String(millis() / 1000);
 
-// ---------- Loop ----------
-void loop() {
-    mb.task();
-    yield();
+      String src = incoming["source"] | "unknown";
 
-    float target_x = g_target_x;
-    float target_y = g_target_y;
+      // ── Track device last-seen ─────────────────────────────────
+      String clientIP = req->client()->remoteIP().toString();
+      g_devices[clientIP].ip = clientIP;
+      g_devices[clientIP].lastSeenMs = millis();
+      if (src == "client") {
+        if (g_client_arr.size() >= 20) g_client_arr.remove(0);
+        g_client_arr.add(incoming.as<JsonObject>());
+        g_devices[clientIP].pointCount = g_client_arr.size();
+      } else if (src == "server") {
+        if (g_server_arr.size() >= 20) g_server_arr.remove(0);
+        g_server_arr.add(incoming.as<JsonObject>());
+        g_devices[clientIP].pointCount = g_server_arr.size();
+      }
 
-    // Read target X from PWM pin
-    unsigned long txHigh = pulseInLong(PIN_TARGET_X, 0x1, 10000);
-    if (txHigh > 0) {
-        float duty = (float)txHigh / 4100.0f;
-        current_duty_x = clampf_local(1.0f - duty, 0.0f, 1.0f);
-        target_x = clampf_local(current_duty_x * X_RANGE_M, 0.0f, X_RANGE_M);
+      // Return control state
+      StaticJsonDocument<128> resp;
+      resp["encryption_status"] = g_encryption_status;
+      resp["encryption_key"] = g_encryption_key;
+      resp["target_x"] = g_target_x;
+      resp["target_y"] = g_target_y;
+      resp["filter_correction"] = g_filter_correction;
+
+      String out;
+      serializeJson(resp, out);
+      req->send(200, "application/json", out);
     }
+  );
 
-    // Read target Y from PWM pin
-    unsigned long tyHigh = pulseInLong(PIN_TARGET_Y, 0x1, 10000);
-    if (tyHigh > 0) {
-        float duty = (float)tyHigh / 4100.0f;
-        current_duty_y = clampf_local(1.0f - duty, 0.0f, 1.0f);
-        target_y = clampf_local(current_duty_y * Y_RANGE_M, 0.0f, Y_RANGE_M);
+  // ── GET /api/data  →  Serve accumulated points to Defender ─
+  server.on("/api/data", HTTP_GET, [](AsyncWebServerRequest* req) {
+    DynamicJsonDocument resp(8192);
+    resp["encryption_status"] = g_encryption_status;
+    resp["encryption_key"] = g_encryption_key;
+    resp["target_x"] = g_target_x;
+    resp["target_y"] = g_target_y;
+    resp["client_points"] = g_client_arr;
+    resp["server_points"] = g_server_arr;
+
+    String out;
+    serializeJson(resp, out);
+    req->send(200, "application/json", out);
+  });
+
+  // ── POST /set_encryption  →  Defender toggles encryption ───
+  server.on("/set_encryption", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<128> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_encryption_status = doc["encryption_status"] | false;
+      g_encryption_key = doc["encryption_key"] | "1234";
+      Serial0.printf("[AP-ESP32] Encryption set: %s  key=%s\n",
+                    g_encryption_status ? "ON" : "OFF",
+                    g_encryption_key.c_str());
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
+  );
 
-    uint16_t h_x;
-    uint16_t h_y;
-    uint16_t h_th;
-
-    // Read state from Modbus registers (written by Client/Master)
-    if(encrypt_status){
-        h_x = xorCipher(mb.Hreg(HREG_X_PHYS), keyToUint(key));
-        h_y = xorCipher(mb.Hreg(HREG_Y_PHYS), keyToUint(key));
-        h_th = xorCipher(mb.Hreg(HREG_THETA_MRAD), keyToUint(key));
-    }else{
-        h_x = mb.Hreg(HREG_X_PHYS);
-        h_y = mb.Hreg(HREG_Y_PHYS);
-        h_th = mb.Hreg(HREG_THETA_MRAD);
+  // ── POST /set_filter_correction  →  Defender toggles filter correction ─
+  server.on("/set_filter_correction", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<64> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_filter_correction = doc["filter_correction"] | false;
+      Serial0.printf("[AP-ESP32] filterCorrection set: %s\n",
+                    g_filter_correction ? "ON" : "OFF");
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
+  );
 
-    if (h_x != 0 || h_y != 0) {
-        g_state_x = clampf_local(h_x / 100.0f, 0.0f, X_RANGE_M);
-        g_state_y = clampf_local(h_y / 100.0f, 0.0f, Y_RANGE_M);
-        g_state_theta = ((int16_t)h_th) / 1000.0f;
+  // ── POST /set_target  →  Defender sets target position ─────
+  server.on("/set_target", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<128> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_target_x = doc["target_x"] | 100.0f;
+      g_target_y = doc["target_y"] | 100.0f;
+      Serial0.printf("[AP-ESP32] Target set: (%.1f, %.1f)\n",
+                    g_target_x, g_target_y);
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
+  );
 
-    // Drive PWM outputs
-    ledcWrite(PIN_X, phys_to_pwm12(g_state_x));
-    ledcWrite(PIN_Y, phys_to_pwm12(g_state_y));
-    float theta_norm = (g_state_theta + 3.1415926535897932384626433832795) / (2.0f * 3.1415926535897932384626433832795);
-    ledcWrite(PIN_T, (uint16_t)(clampf_local(theta_norm, 0, 1) * 4095.0f));
+  server.on("/clear", HTTP_POST, [](AsyncWebServerRequest* req) {
+      g_client_doc.clear();
+      g_server_doc.clear();
+      g_client_arr = g_client_doc.to<JsonArray>();
+      g_server_arr = g_server_doc.to<JsonArray>();
+      g_devices.clear();
+      Serial0.println("[AP-ESP32] Telemetry data cleared.");
+      req->send(200, "application/json", "{\"status\":\"cleared\"}");
+  });
 
-    // Compute control commands and write back to Modbus
-    computeControlCommands(target_x, target_y,
-                           g_state_x, g_state_y, g_state_theta,
-                           &g_speed_cmd, &g_rudder_deg);
-
-    float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
-    uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);
-    uint16_t unencrypted_rudder = (uint16_t)lroundf(clampf_local(rud_norm, 0, 1) * 4095.0f);
-
-    if(encrypt_status){
-        uint16_t encrypted_speed = xorCipher(unencrypted_speed, keyToUint(key));
-        uint16_t encrypted_rudder = xorCipher(unencrypted_rudder, keyToUint(key));
-        mb.Hreg(HREG_SPEED, encrypted_speed);
-        mb.Hreg(HREG_RUDDER, encrypted_rudder);
-    }else{
-        mb.Hreg(HREG_SPEED, unencrypted_speed);
-        mb.Hreg(HREG_RUDDER, unencrypted_rudder);
-    }
-
-    // REST POST every 2 seconds
-
-    if (millis() - lastRestMs >= REST_INTERVAL_MS) {
-        lastRestMs = millis();
-        restPost();
-    }
-
-
-    // Debug print every second
-    static uint32_t tPrint = 0;
-    if (millis() - tPrint > 1000) {
-        tPrint = millis();
-        Serial0.printf("[SERVER] Pos:%.1f,%.1f | Tar:%.1f,%.1f | DutyX:%.1f%% | DutyY:%.1f%% | Cmd:%.1f m/s, %.1f deg"
-
-                        " | encrypt=%d"
-
-                        "\n",
-                        g_state_x, g_state_y, g_target_x, g_target_y,
-                        current_duty_x * 100.0, current_duty_y * 100.0,
-                        g_speed_cmd, g_rudder_deg
-
-                        , encrypt_status
-
-            );
-        digitalWrite(LED_BUILTIN /* allow testing #ifdef LED_BUILTIN*/, !digitalRead(LED_BUILTIN /* allow testing #ifdef LED_BUILTIN*/));
-    }
+  // ── 404 catch-all ───────────────────────────────────────────
+  server.onNotFound([](AsyncWebServerRequest* req) {
+    req->send(404, "text/plain", "Not found");
+  });
 }

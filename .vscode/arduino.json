@@ -1,5 +1,5 @@
 {
-    "sketch": "Version 17/Server/Server.ino",
+    "sketch": "Version 17/AP_ESP32/AP_ESP32.ino",
     "board": "esp32:esp32:esp32s3",
     "port": "/dev/ttyACM1",
     "output": "./build",
