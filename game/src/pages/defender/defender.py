@@ -10,6 +10,10 @@ from ..page import Page
 # Network
 from ...network.network_controller import HardwareDefender
 
+# HVAC test dashboard, shown in place of the Submarine widgets when AP_ESP32
+# reports submarine_mode == False
+from .hvac_view import HVACView
+
 # customtkinter widgets
 from customtkinter import (
     CTkLabel, CTkEntry, CTkButton, CTkFrame,
@@ -48,6 +52,7 @@ class DefenderV0(Page):
         self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
         self._last_points   = {"client": [], "server": []}
+        self._submarine_mode = True
 
         # Flag state — all False until logic sets them
         self._flags = {key: False for key, _ in self.FLAG_DEFS}
@@ -63,22 +68,36 @@ class DefenderV0(Page):
         right_p = trifold.right
 
         # ── Left pane ────────────────────────────────────────────────────────
-        self._build_connection_block(left_p)
-        self._build_encryption_block(left_p)
-        self._build_filter_correction_block(left_p)
-        self._build_target_block(left_p)
-        self._build_values_block(left_p)
+        self._build_connection_block(left_p)   # mode-agnostic — always visible
+        self._mode_content_left = CTkFrame(left_p, fg_color="transparent")
+        self._mode_content_left.pack(fill="x")
+
+        self._submarine_left = CTkFrame(self._mode_content_left, fg_color="transparent")
+        self._submarine_left.pack(fill="x")
+        self._build_encryption_block(self._submarine_left)
+        self._build_filter_correction_block(self._submarine_left)
+        self._build_target_block(self._submarine_left)
+        self._build_values_block(self._submarine_left)
+
+        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url)
+
         common.scroll_deadspace(left_p, context)
 
         # ── Middle pane ──────────────────────────────────────────────────────
-        self._build_packet_log(middle_p)
-        self._build_flags_block(middle_p)
+        self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
+        self._submarine_middle.pack(fill="both", expand=True)
+        self._build_packet_log(self._submarine_middle)
+        self._build_flags_block(self._submarine_middle)
+
+        self._build_mode_block(middle_p)       # mode-agnostic — always visible
 
         self._map_scale  = None
         self._map_offset = None
         self._map_click_xy = None
 
-        # ── Right pane — live map ─────────────────────────────────────────────
+        self._map_container = CTkFrame(right_p, fg_color="transparent")
+        self._map_container.pack(fill="both", expand=True)
+
         def draw_defender_map(canvas, draw_lock, scale, offset):
             draw = ViewPort(canvas, scale, offset)
             with draw_lock:
@@ -93,7 +112,7 @@ class DefenderV0(Page):
                     return
                 draw.boat(self._positions[-1], self._last_bearing, "white", "black")
 
-        self._map = Map(right_p, context, draw_defender_map,
+        self._map = Map(self._map_container, context, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
         #self._map.canvas.bind("<Button-1>", self._on_map_click)
 
@@ -184,8 +203,41 @@ class DefenderV0(Page):
                                         command=self._toggle_filter_correction)
         self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
-    def _build_target_block(self, parent):
+    def _build_mode_block(self, parent):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="OPERATION MODE", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        # Read-only — this just reflects whatever submarine_mode AP_ESP32.ino
+        # is currently reporting. Mode is changed on the AP itself, not here.
+        self._mode_label = CTkLabel(section, text="Mode: SUBMARINE",
+                                    font=self.style.get_font(), text_color="green")
+        self._mode_label.pack(anchor="w", padx=self.style.igap, pady=self.style.gapbot)
+
+    def _refresh_mode_ui(self):
+        if not hasattr(self, '_mode_label'):
+            return
+        try:
+            if self._submarine_mode:
+                self._mode_label.configure(text="Mode: SUBMARINE", text_color="green")
+                self._hvac_view.hide()
+                self._submarine_left.pack(fill="x")
+                self._submarine_middle.pack(fill="both", expand=True)
+                self._map_container.pack(fill="both", expand=True)
+            else:
+                self._mode_label.configure(text="Mode: HVAC", text_color="orange")
+                self._submarine_left.pack_forget()
+                self._submarine_middle.pack_forget()
+                self._map_container.pack_forget()
+                self._hvac_view.show()
+        except Exception as e:
+            print("refresh_mode_ui:", e)
+
+    def _build_target_block(self, parent):
+        self._target_section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section = self._target_section
         section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
         CTkLabel(section, text="TARGET POSITION", font=self.style.get_font()).pack(
@@ -441,6 +493,17 @@ class DefenderV0(Page):
     def _on_data(self, data: dict):
         self._encryption_on = data.get("encryption_status", False)
         self._refresh_encryption_ui()
+
+        incoming_mode = data.get("submarine_mode", True)
+        if incoming_mode != self._submarine_mode:
+            self._submarine_mode = incoming_mode
+            self._refresh_mode_ui()
+
+        if not self._submarine_mode:
+            # HVAC mode — Submarine widgets are hidden, only the HVAC view
+            # needs this poll's data (current_temp / target_temp / heater_on)
+            self._hvac_view.update(data)
+            return
 
         # Flask returns separate lists; fall back to combined "points" if the
         # server hasn't been updated yet (backwards compatible)
