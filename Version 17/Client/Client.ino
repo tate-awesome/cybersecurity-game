@@ -20,10 +20,7 @@ const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL  = "http://192.168.4.1/config";
 const char* REST_URL    = "http://192.168.4.1/data";
 
-// Populated at boot from AP config
-// String g_router_ssid = "";
-// String g_router_pass = "";
-// String g_flask_ip    = "";
+static bool g_submarine_mode = true;
 
 #ifdef REST_API_ENABLED
   const uint32_t REST_INTERVAL_MS = 2000;
@@ -286,6 +283,9 @@ void restPost() {
         }
         if (resp.containsKey("filter_correction")) { 
             kalman_correction = resp["filter_correction"].as<bool>();
+        }
+        if (resp.containsKey("submarine_mode")) {
+            g_submarine_mode = resp["submarine_mode"].as<bool>();
         }
     }
   } else {
