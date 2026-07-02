@@ -1,8 +1,13 @@
+//  Combined Server — Submarine pose-control server + HVAC thermostat
+//  server, in one sketch. 
+
 #define REST_API_ENABLED  // Comment out to disable REST API
+//#define DEBUG_SERIAL      // Comment out to disable debug output
+
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 #include <ModbusIP_ESP8266.h>
 #include <math.h>
 
@@ -10,23 +15,6 @@
 #define PI 3.14159265358979323846f
 #endif
 
-// AP ESP32 is always at this address 
-const char* AP_SSID     = "ESP32-Config";
-const char* AP_PASSWORD = "admin1234";
-const char* CONFIG_URL  = "http://192.168.4.1/config";
-const char* REST_URL = "http://192.168.4.1/data";
-
-// ------- Encryption -------
-String key = (String)1234;
-
-// ---------- REST ----------
-#ifdef REST_API_ENABLED
-  const uint32_t REST_INTERVAL_MS = 2000;
-  static uint32_t lastRestMs   = 0;
-  static bool encrypt_status   = false;
-#endif
-
-// -- Debug statements
 #ifdef DEBUG_SERIAL
   #define DBG_PRINT(...)  Serial.print(__VA_ARGS__)
   #define DBG_PRINTLN(...) Serial.println(__VA_ARGS__)
@@ -37,13 +25,101 @@ String key = (String)1234;
   #define DBG_PRINTF(...)
 #endif
 
-// ---------- Modbus ----------
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN 2
+#endif
+
+//  SHARED — network, Modbus server setup, mode sync. 
+
+const char* AP_SSID     = "AP-Config";
+const char* AP_PASSWORD = "admin1234";
+const char* CONFIG_URL  = "http://192.168.4.1/config";
+const char* REST_URL    = "http://192.168.4.1/data";
+
 ModbusIP mb;
-const uint16_t HREG_X_PHYS       = 10;
-const uint16_t HREG_Y_PHYS       = 11;
-const uint16_t HREG_THETA_MRAD   = 12;
-const uint16_t HREG_SPEED        = 3;
-const uint16_t HREG_RUDDER       = 4;
+bool g_submarine_mode = true;
+
+const uint16_t HREG_X_PHYS     = 10;
+const uint16_t HREG_Y_PHYS     = 11;
+const uint16_t HREG_THETA_MRAD = 12;
+const uint16_t HREG_SPEED      = 3;
+const uint16_t HREG_RUDDER     = 4;
+
+const uint16_t HREG_TEMP_EST   = 10;  // == HREG_X_PHYS
+const uint16_t HREG_DAMPER_CMD = 3;   // == HREG_SPEED
+
+float setpoint_temp = 75.2f; // Target room temperature 75.2°F
+
+void connectWifi() {
+  IPAddress staticIP(192, 168, 4, 10);
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+  WiFi.config(staticIP, gateway, subnet);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  Serial.print("[SERVER] Connecting to ESP32-Config AP");
+
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("[SERVER] Connected to AP — IP: %s\n", WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("[SERVER] WiFi FAILED!");
+    while (1) { delay(1000); }
+  }
+
+  WiFi.setSleep(false);
+}
+
+void setupModbusRegisters() {
+  mb.server();
+  // Register 10's initial value picks Submarine's default (10000) since
+  // it collides with HVAC's (7160) — doesn't matter functionally, since
+  // whichever Client is actually active overwrites it within ~100ms of
+  // boot anyway. Register 3 had no real conflict; both models defaulted
+  // it to 0.
+  mb.addHreg(HREG_X_PHYS,     10000);
+  mb.addHreg(HREG_Y_PHYS,     10000);
+  mb.addHreg(HREG_THETA_MRAD, 0);
+  mb.addHreg(HREG_SPEED,      0);
+  mb.addHreg(HREG_RUDDER,     0);
+}
+
+
+void syncModeFromAPConfig() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  static uint32_t lastConfigSync = 0;
+  if (millis() - lastConfigSync < 1000) return;
+  lastConfigSync = millis();
+
+  HTTPClient http;
+  http.begin(CONFIG_URL);
+  int httpCode = http.GET();
+  if (httpCode == HTTP_CODE_OK) {
+    StaticJsonDocument<256> doc;
+    DeserializationError jsonErr = deserializeJson(doc, http.getString());
+    if (!jsonErr) {
+      if (doc.containsKey("target_temp")) {
+        setpoint_temp = doc["target_temp"];
+      }
+      if (doc.containsKey("submarine_mode")) {
+        g_submarine_mode = doc["submarine_mode"].as<bool>();
+      }
+    }
+  }
+  http.end();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  SUBMARINE MODE — proportional pose control, PWM I/O, telemetry
+
 
 // ---------- Pins ----------
 const int PIN_X        = 4;
@@ -55,7 +131,6 @@ const int PIN_TARGET_Y = 2;
 // ---------- Globals ----------
 float current_duty_x = 0.5f;
 float current_duty_y = 0.5f;
-static bool g_submarine_mode = true;
 
 // Expose current state so restPost() can read them
 static float g_state_x     = 100.0f;
@@ -65,6 +140,15 @@ static float g_speed_cmd   = 0.0f;
 static float g_rudder_deg  = 0.0f;
 static float g_target_x = 100.0f;
 static float g_target_y = 100.0f;
+
+// ---------- Encryption ----------
+String key = (String)1234;
+
+#ifdef REST_API_ENABLED
+  const uint32_t REST_INTERVAL_MS = 2000;
+  static uint32_t lastRestMs   = 0;
+  static bool encrypt_status   = false;
+#endif
 
 // ---------- Control Params ----------
 const float HEAD_OFFSET_M  = 2.0f;
@@ -78,10 +162,6 @@ const float RudderMax_deg  = 60.0f;
 
 const int LEDC_RES_BITS = 12;
 const int LEDC_FREQ_HZ  = 500;
-
-#ifndef LED_BUILTIN
-  #define LED_BUILTIN 2
-#endif
 
 static inline float clampf_local(float v, float lo, float hi) {
     if (isnan(v)) return lo;
@@ -99,7 +179,7 @@ float wrap_to_pi(float angle) {
     return angle;
 }
 
-void computeControlCommands(float target_x, float target_y,float state_x, float state_y, float state_theta,float* speed_out, float* rudder_out) {
+void computeControlCommands(float target_x, float target_y, float state_x, float state_y, float state_theta, float* speed_out, float* rudder_out) {
     float head_x = state_x + HEAD_OFFSET_M * cos(state_theta);
     float head_y = state_y + HEAD_OFFSET_M * sin(state_theta);
     float Xerr   = target_x - head_x;
@@ -126,14 +206,11 @@ uint16_t xorCipher(uint16_t value, uint16_t key){
 }
 
 uint16_t keyToUint(const String& key){
-
   int sum = 0;
-
   for(int i = 0; i< key.length(); i++){
     sum += key.charAt(i);
   }
-
-  return(uint16_t)sum;
+  return (uint16_t)sum;
 }
 
 #ifdef REST_API_ENABLED
@@ -144,10 +221,9 @@ void restPost() {
     http.begin(REST_URL);
     http.addHeader("Content-Type", "application/json");
 
-    // Build JSON payload with current state
     StaticJsonDocument<128> doc;
     doc["timestamp"] = (uint32_t)(millis() / 1000);
-    doc["source"]    = "server"; 
+    doc["source"]    = "server";
     doc["x"]         = g_state_x;
     doc["y"]         = g_state_y;
     doc["theta"]     = g_state_theta;
@@ -177,7 +253,6 @@ void restPost() {
 
             if (resp.containsKey("submarine_mode")) {
                 g_submarine_mode = resp["submarine_mode"].as<bool>();
-                Serial.printf("[SERVER] submarine_mode=%s\n", g_submarine_mode ? "true" : "false");
             }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
@@ -189,64 +264,11 @@ void restPost() {
 }
 #endif
 
-void setup() {
-  Serial.begin(115200);
-  delay(500);
-  Serial.println("\n[SERVER] Booting...");
 
-  IPAddress staticIP(192, 168, 4, 10);   // fixed address for Slave
-  IPAddress gateway(192, 168, 4, 1);
-  IPAddress subnet(255, 255, 255, 0);
-  WiFi.config(staticIP, gateway, subnet);
-
-  // Connect directly to AP ESP32
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(AP_SSID, AP_PASSWORD);
-  Serial.print("[SERVER] Connecting to ESP32-Config AP");
-
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    delay(300);
-    Serial.print(".");
-  }
-  Serial.println();
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("[SERVER] Connected to AP — IP: %s\n",
-                  WiFi.localIP().toString().c_str());
-  } else {
-    Serial.println("[SERVER] WiFi FAILED!");
-    while(1) { delay(1000); }
-  }
-
-  WiFi.setSleep(false);
-
-  // Modbus server starts on AP subnet
-  mb.server();
-  mb.addHreg(HREG_X_PHYS,     10000);
-  mb.addHreg(HREG_Y_PHYS,     10000);
-  mb.addHreg(HREG_THETA_MRAD, 0);
-  mb.addHreg(HREG_SPEED,      0);
-  mb.addHreg(HREG_RUDDER,     0);
-
-  ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
-  ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
-  ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
-  pinMode(PIN_TARGET_X, INPUT_PULLUP);
-  pinMode(PIN_TARGET_Y, INPUT_PULLUP);
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  Serial.println("[SERVER] Ready.");
-}
-
-void loop() {
-    mb.task();
-    yield();
-
+void runSubmarineCycle() {
     float target_x = g_target_x;
     float target_y = g_target_y;
 
-    if (g_submarine_mode) {
     // Read target X from PWM pin
     unsigned long txHigh = pulseInLong(PIN_TARGET_X, HIGH, 10000);
     if (txHigh > 0) {
@@ -267,12 +289,12 @@ void loop() {
     uint16_t h_y;
     uint16_t h_th;
 
-    // Read state from Modbus registers (written by Client
-    if(encrypt_status){
+    // Read state from Modbus registers (written by Client)
+    if (encrypt_status) {
         h_x  = xorCipher(mb.Hreg(HREG_X_PHYS), keyToUint(key));
         h_y  = xorCipher(mb.Hreg(HREG_Y_PHYS), keyToUint(key));
         h_th = xorCipher(mb.Hreg(HREG_THETA_MRAD), keyToUint(key));
-    }else{
+    } else {
         h_x  = mb.Hreg(HREG_X_PHYS);
         h_y  = mb.Hreg(HREG_Y_PHYS);
         h_th = mb.Hreg(HREG_THETA_MRAD);
@@ -290,29 +312,24 @@ void loop() {
     float theta_norm = (g_state_theta + PI) / (2.0f * PI);
     ledcWrite(PIN_T, (uint16_t)(clampf_local(theta_norm, 0, 1) * 4095.0f));
 
-    // Compute control commands and write back to Modbus
-    computeControlCommands(target_x, target_y,g_state_x, g_state_y, g_state_theta,&g_speed_cmd, &g_rudder_deg);
-    } else {
-        // Test mode: hold speed/rudder at neutral, no setpoint control
-        g_speed_cmd  = 0.0f;
-        g_rudder_deg = 0.0f;
-    }
+    // Compute control commands
+    computeControlCommands(target_x, target_y, g_state_x, g_state_y, g_state_theta, &g_speed_cmd, &g_rudder_deg);
 
+    // Write speed/rudder back to Modbus
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
     uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);
     uint16_t unencrypted_rudder = (uint16_t)lroundf(clampf_local(rud_norm, 0, 1) * 4095.0f);
 
-    if(encrypt_status){
+    if (encrypt_status) {
         uint16_t encrypted_speed = xorCipher(unencrypted_speed, keyToUint(key));
         uint16_t encrypted_rudder = xorCipher(unencrypted_rudder, keyToUint(key));
         mb.Hreg(HREG_SPEED, encrypted_speed);
         mb.Hreg(HREG_RUDDER, encrypted_rudder);
-    }else{
+    } else {
         mb.Hreg(HREG_SPEED, unencrypted_speed);
         mb.Hreg(HREG_RUDDER, unencrypted_rudder);
     }
 
-    // REST POST every 2 seconds
     #ifdef REST_API_ENABLED
     if (millis() - lastRestMs >= REST_INTERVAL_MS) {
         lastRestMs = millis();
@@ -320,7 +337,6 @@ void loop() {
     }
     #endif
 
-    // Debug print every second
     static uint32_t tPrint = 0;
     if (millis() - tPrint > 1000) {
         tPrint = millis();
@@ -337,5 +353,92 @@ void loop() {
             #endif
             );
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  HVAC MODE — hysteresis (on/off) thermostat control
+
+float hysteresis_band = 0.5f;
+bool heater_on = false;
+
+const float SCALE = 100.0f;
+
+
+void postHvacStatus(float current_temp) {
+  static uint32_t lastStatusPost = 0;
+  if (WiFi.status() != WL_CONNECTED || millis() - lastStatusPost < 1000) return;
+  lastStatusPost = millis();
+
+  HTTPClient statusHttp;
+  statusHttp.begin("http://192.168.4.1/hvac_status");
+  statusHttp.addHeader("Content-Type", "application/json");
+  StaticJsonDocument<128> statusDoc;
+  statusDoc["current_temp"] = current_temp;
+  statusDoc["heater_on"]    = heater_on;
+  String statusBody;
+  serializeJson(statusDoc, statusBody);
+  statusHttp.POST(statusBody);
+  statusHttp.end();
+}
+
+void runHvacCycle() {
+    static uint32_t lastControlTime = 0;
+    if (millis() - lastControlTime < 100) return;
+    lastControlTime = millis();
+
+    uint16_t raw_temp = mb.Hreg(HREG_TEMP_EST);
+    float current_temp = (float)raw_temp / SCALE;
+
+    float lower_threshold = setpoint_temp - hysteresis_band;
+    float upper_threshold = setpoint_temp + hysteresis_band;
+
+    if (current_temp <= lower_threshold) {
+        heater_on = true;   // Too cold -> switch heat ON
+    } else if (current_temp >= upper_threshold) {
+        heater_on = false;  // Too warm -> switch heat OFF
+    }
+    // else: inside the deadband -> hold whatever state we were already in
+
+    uint16_t damper_pct_out = heater_on ? 100 : 0;
+    mb.Hreg(HREG_DAMPER_CMD, damper_pct_out);
+
+    Serial.printf("[SERVER] Setpoint: %.2f°F | Current: %.2f°F | Band: [%.2f, %.2f]°F | Heater: %s\n",
+                  setpoint_temp, current_temp, lower_threshold, upper_threshold, heater_on ? "ON" : "OFF");
+
+    postHvacStatus(current_temp);
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("\n[SERVER] Booting (combined Submarine/HVAC)...");
+
+  connectWifi();
+  setupModbusRegisters();
+
+  // Submarine-specific pin setup runs unconditionally — the mode could
+  // flip to SUBMARINE at any point after boot, so the PWM/PLC I/O pins
+  // need to be ready regardless of which model starts out active.
+  ledcAttach(PIN_X, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  ledcAttach(PIN_Y, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  ledcAttach(PIN_T, LEDC_FREQ_HZ, LEDC_RES_BITS);
+  pinMode(PIN_TARGET_X, INPUT_PULLUP);
+  pinMode(PIN_TARGET_Y, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  Serial.println("[SERVER] Ready.");
+}
+
+void loop() {
+    mb.task();
+    yield();
+
+    syncModeFromAPConfig();   // Always runs (internally rate-limited to ~1Hz)
+
+    if (g_submarine_mode) {
+        runSubmarineCycle();
+    } else {
+        runHvacCycle();
     }
 }
