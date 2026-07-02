@@ -8,26 +8,23 @@ from .values_table import ValuesTable
 from ...network.data_buffer import DataBuffer
 from typing import cast
 
-class BoatModel:
+class BoatModel(CTkFrame):
     def __init__(self, parent, context: Context):
-        self.style = context.style
+        super().__init__(parent, fg_color=context.style.color("panel"))
+        style = context.style
+        self.pack(fill="both", expand=True, padx=style.nogap, pady=style.nogap, ipadx=style.nogap[0], ipady=style.nogap[0])
+        self.style = style
         self.parent = parent
         self.context = context
         self.buffer = cast(DataBuffer, self.context.net.data_buffer)
 
-        menu_bar = MenuBar(parent, context, "System Model")
+        menu_bar = MenuBar(self, context, "System Model")
+        menu_bar.configure(fg_color=style.color("widget"))
 
 
-        map = WorldMap(self.parent, context)
+        map = WorldMap(self, context)
 
         menu_bar.add_button("Customize")
         menu_bar.add_button("Reset View", map.camera.reset_scale)
         menu_bar.add_button("Clear Values")
         menu_bar.add_button("Center on Boat")
-
-
-    def create_menu_button(self, frame, text, function=None):
-        med = self.style.get_font()
-        button = CTkButton(frame, text=text, command=function, font=med)
-        button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-        return button
