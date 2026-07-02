@@ -8,7 +8,7 @@ from .values_table import ValuesTable
 from ...network.data_buffer import DataBuffer
 from typing import cast
 
-class SystemModel:
+class BoatModel:
     def __init__(self, parent, context: Context):
         self.style = context.style
         self.parent = parent

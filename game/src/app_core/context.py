@@ -164,6 +164,29 @@ class Context:
                 "boat_out_outline": "yellow",
                 "path_in": "yellow",
                 "path_out": "yellow"
+            },
+
+            "strip_chart_sprites": {
+                "grid_lines": 1,
+                "grid_axes": 1,
+                "grid_numbers": 1,
+                "head_in": 1,
+                "head_out": 1,
+                "path_in": 1,
+                "path_out": 1,
+                "head_in_label": 1,
+                "head_out_label": 1
+            },
+
+            "strip_chart_colors": {
+                "background": "white",
+                "grid_lines": "black",
+                "grid_axes": "red",
+                "grid_numbers": "black",
+                "path_in": "blue",
+                "path_out": "green",
+                "head_in": "blue",
+                "head_out": "green"
             }
         }
 

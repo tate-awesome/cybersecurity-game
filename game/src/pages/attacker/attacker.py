@@ -10,7 +10,8 @@ from ...widgets import popup
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole
-from ...widgets.displays.system_model import SystemModel
+from ...widgets.displays.boat_model import BoatModel
+from ...widgets import StripChart
 from ...widgets.displays.values_table import ValuesTable
 from ...widgets.displays.visualizer import Visualizer
 from ...pages.page import Page
@@ -56,8 +57,10 @@ class AttackerV0(Page):
 
     # Displays
         display = Bifold(right_p, context)
-        system_model = SystemModel(display.top, context)
+        system_model = BoatModel(display.top, context)
         # values = ValuesTable(style, top, context)
         bottom = Scrollable(display.bottom, context)
-        network_visualizer = NetworkVisualizer(bottom, context)
+        chart1 = StripChart(bottom, context, )
+
+
         bottom.add_deadspace(1000)
