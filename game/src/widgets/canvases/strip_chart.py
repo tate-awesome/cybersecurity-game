@@ -34,19 +34,32 @@ class StripChart(Canvas):
                 self.draw.strip_chart_grid(colors["grid_lines"])
 
             if int(sprites["path_in"]) == 1:
-                positions = context.net.data_buffer.get_simple_path("in")
-                self.draw.line(positions, colors["path_in"])
-                positions = context.net.data_buffer.get_simple_path("other")
-                self.draw.line(positions, colors["path_in"])
+                
+                data = getter()
+                if data:
+                    self.draw.strip_chart_path(data, colors["path_in"])
+                
+            # "strip_chart_sprites": {
+            #     "grid_lines": 1,
+            #     "grid_axes": 1,
+            #     "grid_numbers": 1,
+            #     "head_in": 1,
+            #     "head_out": 1,
+            #     "path_in": 1,
+            #     "path_out": 1,
+            #     "head_in_label": 1,
+            #     "head_out_label": 1
+            # },
 
-            if int(sprites["boat_in"]) == 1:
-                bearing = context.net.data_buffer.get_bearing("in")
-                position = context.net.data_buffer.get_position("in")
-                self.draw.boat(position, bearing, colors["boat_in_fill"], colors["boat_in_outline"])
-                bearing = context.net.data_buffer.get_bearing("other")
-                position = context.net.data_buffer.get_position("other")
-                self.draw.boat(position, bearing, colors["boat_in_fill"], colors["boat_in_outline"])
-
-        
+            # "strip_chart_colors": {
+            #     "background": "white",
+            #     "grid_lines": "black",
+            #     "grid_axes": "red",
+            #     "grid_numbers": "black",
+            #     "path_in": "blue",
+            #     "path_out": "green",
+            #     "head_in": "blue",
+            #     "head_out": "green"
+            # }
         self.set_frame_callback(frame_callback)
         self.start_animation()

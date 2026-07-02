@@ -1,10 +1,7 @@
 from customtkinter import *
 
 from ...app_core.context import Context
-from .. import WorldMap, MenuBar
-from ...drawing.viewport import ViewPort
-from .boat_focus import BoatFocus
-from .values_table import ValuesTable
+from .. import StripChart, MenuBar
 from ...network.data_buffer import DataBuffer
 from typing import cast, Callable
 
@@ -22,8 +19,8 @@ class VariableMonitor(CTkFrame):
         menu_bar.configure(fg_color=style.color("widget"))
         menu_bar.pack_configure(padx=style.nogap, pady=style.nogap) #TODO fix for padding
 
-        # for var_name, var_func in self.variables.items():
-            # strip_chart = StripChart(self, context, var_name, var_func)
+        for var_name, var_func in self.variables.items():
+            strip_chart = StripChart(self, context, var_func, var_name)
 
         menu_bar.add_button("Customize") # set the zero point of the variable monitor
         menu_bar.add_button("Pause") # pause or resume the variable monitor
