@@ -17,27 +17,6 @@ class StripChart(Canvas):
         super().__init__(master, context, ((0,0),(100,100)))
 
         def frame_callback():
-
-
-            "strip_chart_sprites": {
-                "head_in": 1,
-                "head_out": 1,
-                "path_in": 1,
-                "path_out": 1,
-                "head_in_label": 1,
-                "head_out_label": 1
-                },
-
-            "strip_chart_colors": {
-                "background": "white",
-                "grid_lines": "black",
-                "grid_axes": "red",
-                "grid_numbers": "black",
-                "path_in": "blue",
-                "path_out": "green",
-                "head_in": "blue",
-                "head_out": "green"
-            }
             sprites = context.states["strip_chart_sprites"]
             colors = context.states["strip_chart_colors"]
             

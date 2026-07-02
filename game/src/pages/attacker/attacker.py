@@ -10,8 +10,8 @@ from ...widgets import popup
 from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole
-from ...widgets.displays.boat_model import BoatModel
-from ...widgets import StripChart
+from ...widgets import BoatModel
+from ...widgets import VariableMonitor
 from ...widgets.displays.values_table import ValuesTable
 from ...widgets.displays.visualizer import Visualizer
 from ...pages.page import Page
@@ -60,7 +60,8 @@ class AttackerV0(Page):
         system_model = BoatModel(display.top, context)
         # values = ValuesTable(style, top, context)
         bottom = Scrollable(display.bottom, context)
-        chart1 = StripChart(bottom, context, )
-
+        monitor = VariableMonitor(bottom, context, {
+            #put the names and getters
+        })
 
         bottom.add_deadspace(1000)
