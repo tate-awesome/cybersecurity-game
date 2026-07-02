@@ -52,6 +52,11 @@ class Camera:
         canvas_undone = t.padded_fit_uniform_reverse(camera_undone, self.world_bounds[0], self.world_bounds[1], self.canvas, self.padding)
         return canvas_undone
 
+    def data_to_strip_chart(self, points_in: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        chart_fit = t.padded_fit_vertical_snap_right(points_in, self.canvas, self.padding)
+        time_scaled = t.zoom_and_pan_horizontal(chart_fit, self.scale, self.offset)
+        return time_scaled
+
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       EVENT CALLBACKS
 # --------------------------------------------------------------------------------------------------------------------------

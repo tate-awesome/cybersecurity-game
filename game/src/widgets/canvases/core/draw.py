@@ -163,3 +163,29 @@ class Draw:
 
                 spline.append((x, y))
         return spline
+    
+    def strip_chart_axes(self, axes_color="red", bounds=(0, 100)):
+        # Draw the axes lines
+        # self.line([(0, bounds[0]), (0, bounds[1])], axes_color, thickness=2)  # Y-axis
+        # self.line([(0, bounds[0]), (100, bounds[0])], axes_color, thickness=2)  # X-axis
+        ...
+
+    def strip_chart_grid(self, grid_color="gray", bounds=(0, 100)):
+        # Draw horizontal grid lines
+        # for y in range(bounds[0], bounds[1] + 1, 10):
+        #     self.line([(0, y), (100, y)], grid_color, thickness=1)
+        ...
+
+    def strip_chart_grid_numbers(self, number_color="black"):
+        # Draw numbers along the Y-axis
+        # for y in range(0, 101, 10):
+        #     x_pixel = self.camera.world_to_canvas([(0, y)])[0][0]
+        #     y_pixel = self.camera.world_to_canvas([(0, y)])[0][1]
+        #     self.canvas.create_text(x_pixel - 10, y_pixel, text=str(y), fill=number_color, font=("Courier", 7))
+        ...
+
+    def strip_chart_path(self, path_points: list[tuple[float, float]], path_color="red"):
+        if len(path_points) < 2:
+            return
+        path_points = self.camera.data_to_strip_chart(path_points)
+        self.canvas.create_line(path_points, width=2, fill=path_color)
