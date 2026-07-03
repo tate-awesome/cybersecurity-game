@@ -58,8 +58,8 @@ class AttackerV0(Page):
     # Displays
         display = Bifold(right_p, context)
         system_model = BoatModel(display.top, context)
+        # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
-        # bottom = Scrollable(display.bottom, context)
         monitor = VariableMonitor(display.bottom, context, {
             "Speed": lambda: net.data_buffer.get_tracer_data("speed", "other"),
             "Rudder": lambda: net.data_buffer.get_tracer_data("rudder", "other"),
@@ -67,5 +67,3 @@ class AttackerV0(Page):
             "X Position": lambda: net.data_buffer.get_tracer_data("x", "other"),
             "Y Position": lambda: net.data_buffer.get_tracer_data("y", "other"),
         })
-
-        # display.bottom.add_deadspace(1000)
