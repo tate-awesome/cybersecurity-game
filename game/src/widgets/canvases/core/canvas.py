@@ -6,7 +6,7 @@ from typing import Callable
 
 class Canvas(CTkCanvas):
     '''
-    Base class for specialized canvas widgets with cameras and events stuff.
+    Base class for specialized canvas widgets with worldspace, animations, and cameras.
     Special behavior is defined here, then activated in the specialized canvas.
     Canvases
     '''
