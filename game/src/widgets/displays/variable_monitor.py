@@ -20,6 +20,12 @@ class VariableMonitor(CTkFrame):
         # menu_bar.configure(fg_color=style.color("widget"))
 
         scrollable = Scrollable(self, context)
+        self.configure(fg_color=style.color("panel"))
+        scrollable.configure(fg_color=style.color("panel"))
+        menu_bar.configure(fg_color=style.color("widget"))
+        time_offset = [0.0, 0.0] # reference to two floats: time scale and time offset, used to synchronize the time axis of all strip charts in this monitor
+
+        self.strip_charts = []
 
         for var_name, var_func in self.variables.items():
             strip_chart = StripChart(scrollable, context, var_func, var_name)
