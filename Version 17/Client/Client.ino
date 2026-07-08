@@ -89,6 +89,15 @@ static int readFailures = 0;
 
 static String key = (String)1234;
 
+static float avX = 0.0f;
+static float avY = 0.0f;
+static float avT = 0.0f;
+static uint32_t countX = 0;
+static uint32_t countY = 0;
+static uint32_t countT = 0;
+
+bool targetChanged = false;
+
 //// Physical scaling constants 
 const float SpeedMax_m_s = 50.0f;
 const float RudderMax_deg = 60.0f;
@@ -136,6 +145,24 @@ void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float
   xhat(2,0) = wrapToPi(xhat(2,0));
 
   P = (I3 - K) * P_pred;
+}
+
+void resetEKF(float x0, float y0, float theta0)
+{
+  // Reset state estimate to a safe starting point
+  xhat(0,0) = x0;
+  xhat(1,0) = y0;
+  xhat(2,0) = theta0;
+
+  // Reset uncertainty
+  P = {
+    sigma_x, 0.0f,   0.0f,
+    0.0f,    sigma_y, 0.0f,
+    0.0f,    0.0f,    sigma_theta
+  };
+
+  // Clear anomaly state
+  g_anomaly_detected = false;
 }
 
 static inline uint16_t x_to_u16_100(float v) {
@@ -482,12 +509,31 @@ void loop() {
           z_meas(1,0) = state_y + random(-500,500)/100.0f;
           z_meas(2,0) = state_theta + radians(random(-100,100)/100.0f);
 
+          if(targetChanged){
+            resetEKF(z_meas(0,0), z_meas(1,0), z_meas(2,0));
+            targetChanged = !targetChanged;
+          }
+
           ekfStep(v, rho, z_meas, dt);
 
-          bool xCheck = abs( z_meas(0,0) - xhat(0,0) ) > 8;
-          bool yCheck = abs( z_meas(1,0) - xhat(1,0) ) > 8;
-          float thetaError = wrapToPi(z_meas(2,0) - xhat(2,0));
-          bool thetaCheck = fabs(thetaError) > 3;
+          countX++;
+          countY++;
+          countT++;
+
+          float xError = abs( z_meas(0,0) - xhat(0,0) );
+          float yError = abs( z_meas(1,0) - xhat(1,0) );
+          float tError = wrapToPi(z_meas(2,0) - xhat(2,0)); 
+
+          avX += (xError - avX) / countX;
+          avY += (yError - avY) / countY;
+          avT += (fabs(tError)-avT) / countT;
+
+          // Serial.printf("Average Errors: X = %.3f, Y = %.3f, Theta = %.3f\n",
+          //     avX, avY, avT);
+
+          bool xCheck = xError > 8;
+          bool yCheck = yError > 8;
+          bool thetaCheck = fabs(tError) > 3;
           bool anomalyDetected = xCheck || yCheck || thetaCheck;
           g_anomaly_detected = anomalyDetected;
 
