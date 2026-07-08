@@ -15,7 +15,7 @@
 #endif
 
 //  AP ESP32 is always at this address 
-const char* AP_SSID     = "ESP32-Config";
+const char* AP_SSID     = "AP-Config";
 const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL  = "http://192.168.4.1/config";
 const char* REST_URL    = "http://192.168.4.1/data";
