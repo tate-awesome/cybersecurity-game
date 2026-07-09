@@ -33,6 +33,7 @@ class VariableMonitor(CTkFrame):
 
         self.start_animation(framerate_ms=100)
 
+        menu_bar.minimize_button(scrollable)
         menu_bar.add_button("Customize") # set the zero point of the variable monitor
         menu_bar.add_button("Pause") # pause or resume the variable monitor
         menu_bar.add_button("Time Window") # change the time window duration of the variable monitor # move the time window

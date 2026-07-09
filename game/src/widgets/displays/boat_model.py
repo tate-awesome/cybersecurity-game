@@ -24,6 +24,7 @@ class BoatModel(CTkFrame):
 
         map = WorldMap(self, context)
 
+        menu_bar.minimize_button(map)
         menu_bar.add_button("Customize")
         menu_bar.add_button("Reset View", map.camera.reset_scale)
         menu_bar.add_button("Clear Values")

@@ -27,7 +27,7 @@ class PacketConsole(CTkFrame):
         self.treeview, body_container = self.create_treeview(self)
         self.refresh_columns()
 
-        minimize_button = menu_frame.minimize_button(body_container, self.style.packing())
+        minimize_button = menu_frame.minimize_button(body_container)
 
         jump_button = menu_frame.reversible_button(
             self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")

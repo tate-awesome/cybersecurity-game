@@ -48,8 +48,25 @@ class MenuBar(CTkFrame):
     def help_button(self):
         self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
 
-    def minimize_button(self, frame_widget, configure_options: dict = {}):
-        self.reversible_button(lambda: frame_widget.pack_forget(), lambda: frame_widget.pack(**configure_options), "Minimize", "Maximize")
+    def minimize_button(self, frame_widget):
+        manager = frame_widget.winfo_manager() 
+        if manager == "pack":
+            forget_func = lambda: frame_widget.pack_forget()
+            configure_options = frame_widget.pack_info()
+            replace_func = lambda: frame_widget.pack(**configure_options)
+        elif manager == "grid":
+            forget_func = lambda: frame_widget.grid_forget()
+            configure_options = frame_widget.grid_info()
+            replace_func = lambda: frame_widget.grid(**configure_options)
+        elif manager == "place":
+            forget_func = lambda: frame_widget.place_forget()
+            configure_options = frame_widget.place_info()
+            replace_func = lambda: frame_widget.place(**configure_options)
+        else:
+            forget_func = lambda: ...
+            configure_options = {}
+            replace_func = lambda: ...
+        self.reversible_button(forget_func, replace_func, "Minimize", "Maximize")
 
     def reversible_button(self, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
         button = self.add_button(inactive_name)
