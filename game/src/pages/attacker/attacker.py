@@ -13,7 +13,7 @@ from ...widgets.console.status_console import StatusConsole
 from ...widgets import BoatModel
 from ...widgets import VariableMonitor
 from ...widgets.displays.values_table import ValuesTable
-from ...widgets.displays.visualizer import Visualizer
+from ...widgets import NetworkVisualizer
 from ...pages.page import Page
 
 # Network
@@ -52,6 +52,7 @@ class AttackerV0(Page):
     # Console
         console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)
         packet_console = PacketConsole(console.pane(0), context)
+        network_visualizer = NetworkVisualizer(console.pane(1), context)
         status_console = StatusConsole(console.pane(2), context)
 
 
