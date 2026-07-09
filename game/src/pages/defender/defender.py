@@ -1,7 +1,7 @@
 from ...app_core.context import Context
 
 # Widgets
-from ...widgets import Trifold, MenuBar, Scrollable
+from ...widgets import Panes, MenuBar, Scrollable
 from ...widgets import popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
@@ -67,10 +67,10 @@ class DefenderV0(Page):
         menu_bar.all_buttons()
 
         # ── Three-pane layout ────────────────────────────────────────────────
-        trifold = Trifold(self, context)
-        left_p = Scrollable(trifold.left, context)
-        middle_p = trifold.middle
-        right_p = trifold.right
+        trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
+        left_p = Scrollable(trifold.pane(0), context)
+        middle_p = trifold.pane(1)
+        right_p = trifold.pane(2)
 
         # ── Left pane ────────────────────────────────────────────────────────
         self._build_connection_block(left_p)

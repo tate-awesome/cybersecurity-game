@@ -1,7 +1,7 @@
 from ...app_core.context import Context
 
 # Better Widgets
-from ...widgets import Trifold, MenuBar, Bifold, Scrollable
+from ...widgets import Panes, MenuBar, Scrollable
 from ...widgets import ArpForm, NmapForm, DosForm, MitmForm, Mitm2Form, SniffForm
 from ...widgets import NetworkVisualizer
 
@@ -34,11 +34,11 @@ class AttackerV0(Page):
         menu_bar = MenuBar(self, context, "Attacker V0")
         menu_bar.all_buttons()
 
-        trifold = Trifold(self, context)
+        trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
-        left_p = Scrollable(trifold.left, context)       
-        middle_p = trifold.middle
-        right_p = trifold.right
+        left_p = Scrollable(trifold.pane(0), context)       
+        middle_p = trifold.pane(1)
+        right_p = trifold.pane(2)
 
     # Forms
         nmap = NmapForm(left_p, context)
@@ -50,17 +50,17 @@ class AttackerV0(Page):
         left_p.add_deadspace()
 
     # Console
-        console = Bifold(middle_p, context)
-        packet_console = PacketConsole(console.top, context)
-        status_console = StatusConsole(console.bottom, context)
+        console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)
+        packet_console = PacketConsole(console.pane(0), context)
+        status_console = StatusConsole(console.pane(2), context)
 
 
     # Displays
-        display = Bifold(right_p, context)
-        system_model = BoatModel(display.top, context)
+        display = Panes(right_p, context, "vertical", 2, [2, 2], False)
+        system_model = BoatModel(display.pane(0), context)
         # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
-        monitor = VariableMonitor(display.bottom, context, {
+        monitor = VariableMonitor(display.pane(1), context, {
             "Speed": lambda: net.data_buffer.get_tracer_data("speed", "other"),
             "Rudder": lambda: net.data_buffer.get_tracer_data("rudder", "other"),
             "Heading": lambda: net.data_buffer.get_tracer_data("theta", "other"),
