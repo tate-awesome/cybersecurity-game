@@ -48,21 +48,22 @@ class MenuBar(CTkFrame):
     def help_button(self):
         self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
 
-    def minimize_button(self, frame_widget, pane = None):
-        manager = frame_widget.winfo_manager()
+    def minimize_button(self, frame_widget = None, pane = None):
+        if frame_widget is not None:
+            manager = frame_widget.winfo_manager()
 
-        if manager == "pack":
-            forget_func = lambda: frame_widget.pack_forget()
-            configure_options = frame_widget.pack_info()
-            replace_func = lambda: frame_widget.pack(**configure_options)
-        elif manager == "grid":
-            forget_func = lambda: frame_widget.grid_forget()
-            configure_options = frame_widget.grid_info()
-            replace_func = lambda: frame_widget.grid(**configure_options)
-        elif manager == "place":
-            forget_func = lambda: frame_widget.place_forget()
-            configure_options = frame_widget.place_info()
-            replace_func = lambda: frame_widget.place(**configure_options)
+            if manager == "pack":
+                forget_func = lambda: frame_widget.pack_forget()
+                configure_options = frame_widget.pack_info()
+                replace_func = lambda: frame_widget.pack(**configure_options)
+            elif manager == "grid":
+                forget_func = lambda: frame_widget.grid_forget()
+                configure_options = frame_widget.grid_info()
+                replace_func = lambda: frame_widget.grid(**configure_options)
+            elif manager == "place":
+                forget_func = lambda: frame_widget.place_forget()
+                configure_options = frame_widget.place_info()
+                replace_func = lambda: frame_widget.place(**configure_options)
         else:
             forget_func = lambda: ...
             configure_options = {}
