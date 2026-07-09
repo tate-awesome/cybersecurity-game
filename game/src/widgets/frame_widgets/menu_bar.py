@@ -13,7 +13,7 @@ class MenuBar(CTkFrame):
         self.context = context
         self.style = context.style
 
-        super().__init__(master)
+        super().__init__(master, fg_color=self.style.color("widget"))
         self.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x")
 
         game_label = CTkLabel(self, text=title_text, font=self.style.get_font(), padx=self.style.igap)

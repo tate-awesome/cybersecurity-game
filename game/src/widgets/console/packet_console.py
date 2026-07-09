@@ -10,17 +10,21 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
 from .. import MenuBar
+from customtkinter import CTkFrame
 
-class PacketConsole:
-    def __init__(self, parent, context: Context):
+class PacketConsole(CTkFrame):
+    def __init__(self, master, context: Context):
         self.context = context
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
 
-        menu_frame = MenuBar(parent, context, "Packet Console")
+        super().__init__(master, fg_color=self.style.color("panel"))
+        self.pack(**self.style.packing("panel"))
+
+        menu_frame = MenuBar(self, context, "Packet Console")
         #  self.create_filter_boxes(menu_frame)
 
-        self.treeview, body_container = self.create_treeview(parent)
+        self.treeview, body_container = self.create_treeview(self)
         self.refresh_columns()
 
         minimize_button = menu_frame.minimize_button(body_container, self.style.packing())

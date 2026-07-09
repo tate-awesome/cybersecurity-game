@@ -35,6 +35,14 @@ class Style:
                 "pady": self.gap
             }
 
+        if type == "panel":
+            options = {
+                "fill": "both",
+                "expand": True,
+                "padx": self.nogap,
+                "pady": self.nogap
+            }
+
         return options
 
     def get_scale_correction(self):
