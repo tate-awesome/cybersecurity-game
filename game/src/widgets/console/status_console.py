@@ -3,23 +3,26 @@ from ...network.meta_packet import MetaStatus
 from ...network.data_buffer import DataBuffer
 from ...app_core.context import Context
 from typing import cast
+from .. import MenuBar
 
-class StatusConsole:
-    def __init__(self, parent, context: Context):
+class StatusConsole(CTkFrame):
+    def __init__(self, master, context: Context):
         self.context = context
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
-         
-        menu_frame = self.create_menu_bar(parent)
-        #  self.create_filter_boxes(menu_frame)
 
-        pause_button = self.create_menu_button(menu_frame, "Pause")
-        self.configure_reversible_button(pause_button, self.pause, self.unpause, "Pause Printing", "Resume Printing")
+        super().__init__(master, fg_color=self.style.color("panel"))
+        self.pack(**self.style.packing("panel"))
 
-        jump_button = self.create_menu_button(menu_frame, "Unlock Scrolling")
-        self.configure_reversible_button(jump_button, self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
+        menu_frame = MenuBar(self, context, "Status Console")
 
-        self.text_box = self.create_text_box(parent)
+        self.text_box = self.create_text_box(self)
+
+        minimize_button = menu_frame.minimize_button(self.text_box)
+
+        pause_button = menu_frame.reversible_button(self.pause, self.unpause, "Pause", "Resume")
+
+        jump_button = menu_frame.reversible_button(self.unlock_scrolling, self.lock_scrolling, "Scroll Freely", "Jump to Live")
 
         # Printing Flags
         self.jump_to_bottom = True
@@ -89,30 +92,3 @@ class StatusConsole:
 
     def lock_scrolling(self):
         self.jump_to_bottom = True
-
-    # Menu Bar
-
-    def create_menu_bar(self, parent):
-        frame = CTkFrame(parent)
-        frame.pack(side="top", fill="x", pady=self.style.gaptop, padx=self.style.gap)
-
-        header = CTkLabel(frame, text="Hacking Status", font=self.style.get_font(), padx=self.style.igap)
-        header.pack(fill=Y, side="left", padx=self.style.gap)
-        return frame
-
-    def create_menu_button(self, frame, text, function=None):
-        med = self.style.get_font()
-        button = CTkButton(frame, text=text, command=function, font=med)
-        button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-        return button
-
-
-    def configure_reversible_button(self, the_button: CTkButton, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
-        def stop():
-            stop_func()
-            the_button.configure(command=start, text=inactive_name)
-
-        def start():
-            start_func()
-            the_button.configure(command=stop, text=active_name)
-        the_button.configure(command=start, text=inactive_name)
