@@ -22,6 +22,7 @@ class MenuBar(CTkFrame):
     def add_button(self, text, function=None):
         button = CTkButton(self, text=text, command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+        return button
 
     def quit_button(self):
         self.add_button("Quit", self.context.router.quit)
@@ -46,6 +47,22 @@ class MenuBar(CTkFrame):
     
     def help_button(self):
         self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
+
+    def minimize_button(self, frame_widget, configure_options: dict = {}):
+        self.reversible_button(lambda: frame_widget.pack_forget(), lambda: frame_widget.pack(**configure_options), "Minimize", "Maximize")
+
+    def reversible_button(self, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
+        button = self.add_button(inactive_name)
+        def stop():
+            stop_func()
+            button.configure(command=start, text=inactive_name)
+
+        def start():
+            start_func()
+            button.configure(command=stop, text=active_name)
+        button.configure(command=start, text=inactive_name)
+        return button
+
 
     def all_buttons(self):
         self.quit_button()

@@ -18,9 +18,24 @@ class Style:
         self.PANE_MIN = self.igap*4
         self.fonts = {}
 
+        
+
         # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
+
+    def packing(self, type = "default"):
+        options = {}
+
+        if type == "default":
+            options = {
+                "fill": "both",
+                "expand": True,
+                "padx": self.gap,
+                "pady": self.gap
+            }
+
+        return options
 
     def get_scale_correction(self):
         return ScalingTracker.get_widget_scaling(self.root)

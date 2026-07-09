@@ -9,6 +9,7 @@ from typing import cast
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
+from .. import MenuBar
 
 class PacketConsole:
     def __init__(self, parent, context: Context):
@@ -16,20 +17,22 @@ class PacketConsole:
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
 
-        menu_frame = self.create_menu_bar(parent)
+        menu_frame = MenuBar(parent, context, "Packet Console")
         #  self.create_filter_boxes(menu_frame)
 
-        jump_button = self.create_menu_button(menu_frame, "Unlock Scrolling")
-        self.configure_reversible_button(jump_button, self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
+        self.treeview, body_container = self.create_treeview(parent)
+        self.refresh_columns()
 
-        filter_button = self.create_menu_button(menu_frame, "Filters")
+        minimize_button = menu_frame.minimize_button(body_container, self.style.packing())
+
+        jump_button = menu_frame.reversible_button(
+            self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
+
+        filter_button = menu_frame.add_button("Filters")
         filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
 
-        columns_button = self.create_menu_button(menu_frame, "Columns")
+        columns_button = menu_frame.add_button("Columns")
         columns_button = ColumnOverlay(columns_button, context, self.refresh_columns)
-
-        self.treeview = self.create_treeview(parent)
-        self.refresh_columns()
 
         # Printing Flags
         self.jump_to_bottom = True
@@ -101,12 +104,7 @@ class PacketConsole:
 
         # Container for tree and scrollbars
         container = ttk.Frame(parent)
-        container.pack(
-            fill="both",
-            expand=True,
-            padx=self.style.gap,
-            pady=self.style.gap
-        )
+        container.pack(**self.style.packing())
 
         # Columns
         all_columns = list(self.context.labels["packet_columns"].keys())
@@ -166,7 +164,7 @@ class PacketConsole:
 
         self.columns = all_columns
 
-        return tree
+        return tree, container
     
     def submit_packet(self, tree, packet):
         values = []
@@ -200,29 +198,3 @@ class PacketConsole:
 
     def lock_scrolling(self):
         self.jump_to_bottom = True
-
-    # Menu Bar
-
-    def create_menu_bar(self, parent):
-        frame = CTkFrame(parent)
-        frame.pack(side="top", fill="x", pady=self.style.gaptop, padx=self.style.gap)
-
-        header = CTkLabel(frame, text="Packet Stream", font=self.style.get_font(), padx=self.style.igap)
-        header.pack(fill=Y, side="left", padx=self.style.gap)
-        return frame
-
-    def create_menu_button(self, frame, text, function=None):
-        med = self.style.get_font()
-        button = CTkButton(frame, text=text, command=function, font=med)
-        button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-        return button
-
-    def configure_reversible_button(self, the_button: CTkButton, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
-        def stop():
-            stop_func()
-            the_button.configure(command=start, text=inactive_name)
-
-        def start():
-            start_func()
-            the_button.configure(command=stop, text=active_name)
-        the_button.configure(command=start, text=inactive_name)
