@@ -18,7 +18,7 @@ class StatusConsole(CTkFrame):
 
         self.text_box = self.create_text_box(self)
 
-        minimize_button = menu_frame.minimize_button(self.text_box)
+        # minimize_button = menu_frame.minimize_button(self.text_box, master)
 
         pause_button = menu_frame.reversible_button(self.pause, self.unpause, "Pause", "Resume")
 
