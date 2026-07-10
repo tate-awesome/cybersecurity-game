@@ -7,7 +7,6 @@ from ...widgets import NetworkVisualizer
 
 # Widgets
 from ...widgets import popup
-from ...drawing.viewport import ViewPort
 from ...widgets.console.packet_console import PacketConsole
 from ...widgets.console.status_console import StatusConsole
 from ...widgets import BoatModel
