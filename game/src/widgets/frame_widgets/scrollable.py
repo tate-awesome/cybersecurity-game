@@ -28,11 +28,13 @@ class Scrollable(CTkScrollableFrame):
             canvas.yview_scroll(-int(event.delta / 2), "units")
 
         def _on_shift_mousewheel(event):
-            return
+            return "break"
 
         def _bind_to_mousewheel(_):
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
             canvas.bind_all("<Shift-MouseWheel>", _on_shift_mousewheel)
+            canvas.bind_all("<Shift-Button-4>", _on_shift_mousewheel)
+            canvas.bind_all("<Shift-Button-5>", _on_shift_mousewheel)
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
             canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
             canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
 
