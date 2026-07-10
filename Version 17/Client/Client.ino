@@ -103,6 +103,11 @@ float wrapToPi(float a) {
   return a;
 }
 
+static inline float clampf_local(float v, float lo, float hi) {
+    if (isnan(v)) return lo;
+    return (v < lo) ? lo : (v > hi ? hi : v);
+}
+
 void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt)
 {
   // Predict
@@ -517,6 +522,9 @@ void loop() {
           }
 
           ekfStep(v, rho, z_meas, dt);
+
+          xhat(0,0) = clampf_local(xhat(0,0), 0.0f, 200.0f);
+          xhat(1,0) = clampf_local(xhat(1,0), 0.0f, 200.0f);
 
           float xError = abs( z_meas(0,0) - xhat(0,0) );
           float yError = abs( z_meas(1,0) - xhat(1,0) );
