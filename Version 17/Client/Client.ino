@@ -89,13 +89,6 @@ static int readFailures = 0;
 
 static String key = (String)1234;
 
-static float avX = 0.0f;
-static float avY = 0.0f;
-static float avT = 0.0f;
-static uint32_t countX = 0;
-static uint32_t countY = 0;
-static uint32_t countT = 0;
-
 bool targetChanged = false;
 
 //// Physical scaling constants 
@@ -314,6 +307,14 @@ void restPost() {
         if (resp.containsKey("submarine_mode")) {
             g_submarine_mode = resp["submarine_mode"].as<bool>();
         }
+        if (resp.containsKey("target_changed") && resp["target_changed"].as<bool>()){
+            targetChanged = true;
+
+            HTTPClient ack;
+            ack.begin("http://192.168.4.1/ack_target_changed");
+            ack.POST("");
+            ack.end();
+        }
     }
   } else {
     Serial.printf("[CLIENT] REST POST failed  HTTP %d\n", code);
@@ -510,30 +511,21 @@ void loop() {
           z_meas(2,0) = state_theta + radians(random(-100,100)/100.0f);
 
           if(targetChanged){
-            resetEKF(z_meas(0,0), z_meas(1,0), z_meas(2,0));
-            targetChanged = !targetChanged;
+            resetEKF(xhat(0,0), xhat(1,0), xhat(2,0));
+            targetChanged = false;
+            return;
           }
 
           ekfStep(v, rho, z_meas, dt);
 
-          countX++;
-          countY++;
-          countT++;
-
           float xError = abs( z_meas(0,0) - xhat(0,0) );
           float yError = abs( z_meas(1,0) - xhat(1,0) );
-          float tError = wrapToPi(z_meas(2,0) - xhat(2,0)); 
-
-          avX += (xError - avX) / countX;
-          avY += (yError - avY) / countY;
-          avT += (fabs(tError)-avT) / countT;
-
-          // Serial.printf("Average Errors: X = %.3f, Y = %.3f, Theta = %.3f\n",
-          //     avX, avY, avT);
+          float tError = wrapToPi(z_meas(2,0) - xhat(2,0));
 
           bool xCheck = xError > 8;
           bool yCheck = yError > 8;
           bool thetaCheck = fabs(tError) > 3;
+
           bool anomalyDetected = xCheck || yCheck || thetaCheck;
           g_anomaly_detected = anomalyDetected;
 
