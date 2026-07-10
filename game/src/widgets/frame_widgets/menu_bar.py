@@ -94,7 +94,11 @@ class MenuBar(CTkFrame):
 
         def grow_pane():
             if pane is not None:
-                pane.master.add(pane, height=self.style.PANE_BIG)
+                if pane.default_size:
+                    size = pane.default_size
+                else:
+                    size = self.style.PANE_BIG
+                pane.master.add(pane, height=size*self.style.get_scale_correction())
 
         def click_minimize():
             button.configure(command=click_maximize, text="Maximize")

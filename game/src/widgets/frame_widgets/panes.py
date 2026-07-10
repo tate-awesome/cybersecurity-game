@@ -30,7 +30,9 @@ class Panes(PanedWindow):
 
         self.panes = []       
         for i in range(child_count):
-            pane = CTkFrame(self, height = s//child_sizes[i], width= s//child_sizes[i], background_corner_colors=(color, color, color, color))
+            size = s//child_sizes[i]
+            pane = CTkFrame(self, height = size, width= size, background_corner_colors=(color, color, color, color))
+            pane.default_size = size
             self.add(pane, minsize=style.PANE_MIN)
             self.panes.append(pane)
 
