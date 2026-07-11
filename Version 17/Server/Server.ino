@@ -32,8 +32,8 @@ float sigma_x = 0.01;
 float sigma_y = 0.01;
 float sigma_theta = 0.01;
 
-float sigma_meas_x = 1.0f;
-float sigma_meas_y = 1.0f;
+float sigma_meas_x = 8.3f;
+float sigma_meas_y = 8.3f;
 float sigma_meas_theta = 0.01f;
 
 float sigma_speed = 0.01f;
@@ -376,8 +376,7 @@ void loop() {
 
     z_meas(0,0) = g_state_x;
     z_meas(1,0) = g_state_y;
-    z_meas(2,0) = g_state_theta;
-    z_meas(2,0) = wrap_to_pi(z_meas(2,0));
+    z_meas(2,0) = wrap_to_pi(g_state_theta);
 
     ekfStep(u_prev_speed, u_prev_rudder, z_meas, 0.05f);
 
@@ -413,7 +412,7 @@ void loop() {
         mb.Hreg(HREG_RUDDER, unencrypted_rudder);
     }
 
-    // REST POST every 2 seconds
+    // REST POST evercy 2 seconds
     #ifdef REST_API_ENABLED
     if (millis() - lastRestMs >= REST_INTERVAL_MS) {
         lastRestMs = millis();

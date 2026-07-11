@@ -45,7 +45,6 @@ IPAddress serverIP(192, 168, 4, 10);   // ← was 192.168.8.137
 ModbusIP mb;
 
 using namespace BLA;
-bool filtering = true;
 
 BLA::Matrix<3,1> xhat;   // [x;y;heading angle]
 BLA::Matrix<3,3> P;     // covariance matrix
@@ -72,6 +71,9 @@ float state_y = 0.0f;
 float state_theta = 0.0f;
 float state_speed  = 0.0f;
 float state_rudder = 0.0f;
+float noise_x = 0.0f;
+float noise_y = 0.0f;
+float noise_theta = 0.0f;
 
 const float L_vehicle = 0.07f;
 const float K_theta = 0.6f;
@@ -108,8 +110,7 @@ static inline float clampf_local(float v, float lo, float hi) {
     return (v < lo) ? lo : (v > hi ? hi : v);
 }
 
-void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt)
-{
+void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt){
   // Predict
   BLA::Matrix<3,1> x_pred;
   float th = xhat(2,0);
@@ -159,7 +160,6 @@ void resetEKF(float x0, float y0, float theta0)
     0.0f,    0.0f,    sigma_theta
   };
 
-  // Clear anomaly state
   g_anomaly_detected = false;
 }
 
@@ -248,9 +248,9 @@ uint16_t keyToUint(const String& key){
 }
 
 void sendPose() {
-  uint16_t x_u = x_to_u16_100(state_x);
-  uint16_t y_u = x_to_u16_100(state_y);
-  uint16_t t_u = theta_to_mrad_u16(state_theta);
+  uint16_t x_u = x_to_u16_100(noise_x);
+  uint16_t y_u = x_to_u16_100(noise_y);
+  uint16_t t_u = theta_to_mrad_u16(noise_theta);
 
   if (writeH(HREG_X_PHYS, x_u) && writeH(HREG_Y_PHYS, y_u) && writeH(HREG_THETA_MRAD, t_u)) {
     // Success - values sent
@@ -260,9 +260,9 @@ void sendPose() {
 }
 
 void sendPoseEncrypted(){
-  uint16_t x_u = xorCipher(x_to_u16_100(state_x), keyToUint(key));
-  uint16_t y_u = xorCipher(x_to_u16_100(state_y), keyToUint(key));
-  uint16_t t_u = xorCipher(theta_to_mrad_u16(state_theta), keyToUint(key));
+  uint16_t x_u = xorCipher(x_to_u16_100(noise_x), keyToUint(key));
+  uint16_t y_u = xorCipher(x_to_u16_100(noise_y), keyToUint(key));
+  uint16_t t_u = xorCipher(theta_to_mrad_u16(noise_theta), keyToUint(key));
 
   bool x = writeH(HREG_X_PHYS, x_u);
   bool y = writeH(HREG_Y_PHYS, y_u);
@@ -492,8 +492,6 @@ void loop() {
         float v = speed_m_s;
         float rho = radians(rudder_deg);
 
-      if(!filtering){
-
         float xdot = v * cos(rho + state_theta);
         float ydot = v * sin(rho + state_theta);
         float thetadot = 0.0f;
@@ -503,53 +501,13 @@ void loop() {
           thetadot = K_theta / (L_vehicle / tan(rho));
         }
 
-        state_x += (xdot * dt) + random(-500,500)/100.0f;
-        state_y += (ydot * dt) + random(-500,500)/100.0f;
-        state_theta += (thetadot * dt) + radians(random(-100,100)/100.0f);
+        state_x += (xdot * dt);
+        state_y += (ydot * dt);
+        state_theta += (thetadot * dt);
 
-        }
-        else{
-
-          BLA::Matrix<3,1> z_meas;
-          z_meas(0,0) = state_x + random(-500,500)/100.0f;
-          z_meas(1,0) = state_y + random(-500,500)/100.0f;
-          z_meas(2,0) = state_theta + radians(random(-100,100)/100.0f);
-
-          if(targetChanged){
-            resetEKF(xhat(0,0), xhat(1,0), xhat(2,0));
-            targetChanged = false;
-            return;
-          }
-
-          ekfStep(v, rho, z_meas, dt);
-
-          xhat(0,0) = clampf_local(xhat(0,0), 0.0f, 200.0f);
-          xhat(1,0) = clampf_local(xhat(1,0), 0.0f, 200.0f);
-
-          float xError = abs( z_meas(0,0) - xhat(0,0) );
-          float yError = abs( z_meas(1,0) - xhat(1,0) );
-          float tError = wrapToPi(z_meas(2,0) - xhat(2,0));
-
-          bool xCheck = xError > 8;
-          bool yCheck = yError > 8;
-          bool thetaCheck = fabs(tError) > 3;
-
-          bool anomalyDetected = xCheck || yCheck || thetaCheck;
-          g_anomaly_detected = anomalyDetected;
-
-          if( (anomalyDetected && kalman_correction) || !anomalyDetected){
-            state_x     = xhat(0,0);
-            state_y     = xhat(1,0);
-            state_theta = xhat(2,0);
-          }
-
-          else if( anomalyDetected && !kalman_correction){
-            state_x = z_meas(0,0);
-            state_y = z_meas(1,0);
-            state_theta = z_meas(2,0);
-          }
-
-        }
+        noise_x = state_x + random(-500,500)/100.0f;
+        noise_y = state_y + random(-500,500)/100.0f;
+        noise_theta = state_theta + radians(random(-100,100)/100.0f);
         
         while (state_theta < 0) state_theta += 2.0f * PI;
         while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
