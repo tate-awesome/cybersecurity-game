@@ -44,28 +44,6 @@ IPAddress serverIP(192, 168, 4, 10);   // ← was 192.168.8.137
 
 ModbusIP mb;
 
-using namespace BLA;
-
-BLA::Matrix<3,1> xhat;   // [x;y;heading angle]
-BLA::Matrix<3,3> P;     // covariance matrix
-BLA::Matrix<3,3> R;    // measurment noise matrix
-BLA::Matrix<2,2> Qu;  // control input noise 
-BLA::Matrix<3,3> I3; // identity matrix
-
-float sigma_x = 0.01;
-float sigma_y = 0.01;
-float sigma_theta = 0.01;
-
-float sigma_meas_x = 8.3f;
-float sigma_meas_y = 8.3f;
-float sigma_meas_theta = 0.01f;
-
-float sigma_speed = 0.01f;
-float sigma_rudder = 0.01f;
-
-bool kalman_correction = true;
-bool g_anomaly_detected = false;
-
 float state_x = 0.0f;
 float state_y = 0.0f;
 float state_theta = 0.0f;
@@ -96,72 +74,6 @@ bool targetChanged = false;
 //// Physical scaling constants 
 const float SpeedMax_m_s = 50.0f;
 const float RudderMax_deg = 60.0f;
-
-//// Kalman Filter Helper Functions 
-
-float wrapToPi(float a) {
-  while (a > PI)  a -= 2.0f * PI;
-  while (a < -PI) a += 2.0f * PI;
-  return a;
-}
-
-static inline float clampf_local(float v, float lo, float hi) {
-    if (isnan(v)) return lo;
-    return (v < lo) ? lo : (v > hi ? hi : v);
-}
-
-void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt){
-  // Predict
-  BLA::Matrix<3,1> x_pred;
-  float th = xhat(2,0);
-
-  x_pred(0,0) = xhat(0,0) + speed_m_s * cos(th + rudder_rad) * dt;
-  x_pred(1,0) = xhat(1,0) + speed_m_s * sin(th + rudder_rad) * dt;
-  x_pred(2,0) = wrapToPi(xhat(2,0) + K_theta * (tan(rudder_rad) / L_vehicle) * dt);
-
-  Matrix<3,3> F = {
-    1, 0, -speed_m_s * sin(th + rudder_rad) * dt,
-    0, 1,  speed_m_s * cos(th + rudder_rad) * dt,
-    0, 0,  1
-  };
-
-  Matrix<3,2> G = {
-    cos(th + rudder_rad) * dt, -speed_m_s * sin(th + rudder_rad) * dt,
-    sin(th + rudder_rad) * dt,  speed_m_s * cos(th + rudder_rad) * dt,
-    0, (K_theta * dt / L_vehicle) * (1.0f / (cos(rudder_rad) * cos(rudder_rad)))
-  };
-
-  Matrix<3,3> P_pred = F * P * ~F + G * Qu * ~G;
-
-  // Update
-  Matrix<3,3> S = P_pred + R;      // H = I
-  Matrix<3,3> K = P_pred * Inverse(S);
-
-  Matrix<3,1> y = z_meas - x_pred;
-  y(2,0) = wrapToPi(y(2,0));
-
-  xhat = x_pred + K * y;
-  xhat(2,0) = wrapToPi(xhat(2,0));
-
-  P = (I3 - K) * P_pred;
-}
-
-void resetEKF(float x0, float y0, float theta0)
-{
-  // Reset state estimate to a safe starting point
-  xhat(0,0) = x0;
-  xhat(1,0) = y0;
-  xhat(2,0) = theta0;
-
-  // Reset uncertainty
-  P = {
-    sigma_x, 0.0f,   0.0f,
-    0.0f,    sigma_y, 0.0f,
-    0.0f,    0.0f,    sigma_theta
-  };
-
-  g_anomaly_detected = false;
-}
 
 static inline uint16_t x_to_u16_100(float v) {
   if (v < 0) v = 0;
@@ -290,7 +202,6 @@ void restPost() {
   doc["theta"]     = state_theta;
   doc["speed"]     = state_speed;
   doc["rudder"]    = state_rudder;
-  doc["anomaly_detected"] = g_anomaly_detected;
 
   String payload;
   serializeJson(doc, payload);
@@ -305,9 +216,6 @@ void restPost() {
         if (resp.containsKey("encryption_status")) {
             encrypt_status = resp["encryption_status"].as<bool>();
             key = resp["encryption_key"].as<String>();
-        }
-        if (resp.containsKey("filter_correction")) { 
-            kalman_correction = resp["filter_correction"].as<bool>();
         }
         if (resp.containsKey("submarine_mode")) {
             g_submarine_mode = resp["submarine_mode"].as<bool>();
@@ -382,32 +290,6 @@ void setup() {
   mb.connect(serverIP);
   delay(500);
 
-  xhat.Fill(0);
-  xhat(0,0) = state_x;
-  xhat(1,0) = state_y;
-  xhat(2,0) = state_theta;
-
-  P = {
-    sigma_x, 0.0f, 0.0f,
-    0.0f, sigma_y, 0.0f,
-    0.0f, 0.0f, sigma_theta
-    };
-
-  R = {
-    sigma_meas_x, 0.0f, 0.0f,
-    0.0f, sigma_meas_y, 0.0f,
-    0.0f, 0.0f, sigma_meas_theta
-    };
-
-  Qu = {
-    sigma_speed, 0.0f,
-    0.0f, sigma_rudder
-    };
-
-  I3 = {1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
-    };
 
   if (mb.isConnected(serverIP)) {
     Serial.println("[MASTER] Connected to Slave Modbus server.");
@@ -514,9 +396,13 @@ void loop() {
 
 
         if (state_x < 0.0f) state_x = 0.0f;
+        if (noise_x < 0.0f) noise_x = 0.0f;
         if (state_x > 200.0f) state_x = 200.0f;
+        if (noise_x > 200.0f) noise_x = 200.0f;
         if (state_y < 0.0f) state_y = 0.0f;
+        if (noise_y < 0.0f) noise_y = 0.0f;
         if (state_y > 200.0f) state_y = 200.0f;
+        if (noise_y > 200.0f) noise_y = 200.0f;
       }
 
       // Send updated pose back to Server
