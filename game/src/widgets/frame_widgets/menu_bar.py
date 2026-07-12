@@ -1,6 +1,7 @@
 from ...app_core.context import Context
 from customtkinter import *
 from ..popup import message
+from .overlay import Overlay
 
 class MenuBar(CTkFrame):
     '''
@@ -12,6 +13,7 @@ class MenuBar(CTkFrame):
     def __init__(self, master: CTkFrame, context: Context, title_text: str = "Page"):
         self.context = context
         self.style = context.style
+        self.buttons = {}
 
         super().__init__(master, fg_color=self.style.color("widget"))
         self.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x")
@@ -24,29 +26,10 @@ class MenuBar(CTkFrame):
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
         return button
 
-    def quit_button(self):
-        self.add_button("Quit", self.context.router.quit)
-    
-    def refresh_button(self):
-        self.add_button("Refresh", self.context.router.refresh)
+    # Panel Buttons
 
-    def back_button(self):
-        self.add_button("Back to Title", self.context.router.go_back)
-    
-    def toggle_button(self):
-        self.add_button("Toggle Theme", self.context.router.mode_toggle)
-    
-    def theme_button(self):
-        self.add_button("Select Theme", self.context.router.select_theme)
-
-    def pcap_button(self):
-        self.add_button("Load PCAP File", self.context.net.loader.load_pcap)
-    
-    def preset_button(self):
-        self.add_button("Load Preset", self.context.router.select_preset)
-    
-    def help_button(self):
-        self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
+    def overflow_overlay_button(self):
+        ...
 
     def minimize_button(self, frame_widget = None, pane = None):
         button = self.add_button("Minimize")
@@ -90,7 +73,7 @@ class MenuBar(CTkFrame):
 
         def shrink_pane():
             if pane is not None:
-                pane.master.add(pane, height=self.style.PANE_MIN)
+                pane.master.add(pane, height=self.style.PANE_MIN_HEIGHT)
 
         def grow_pane():
             if pane is not None:
@@ -118,13 +101,12 @@ class MenuBar(CTkFrame):
 
         def configure_handler(event=None):
             if pane is not None:
-                if pane.winfo_height() < self.style.PANE_MIN + self.style.igap:
+                if pane.winfo_height() < self.style.PANE_MIN_HEIGHT + self.style.igap:
                     click_minimize()
                 else:
                     manual_growth()
         if pane is not None:
             pane.bind("<Configure>", configure_handler)
-
 
     def reversible_button(self, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
         button = self.add_button(inactive_name)
@@ -138,8 +120,33 @@ class MenuBar(CTkFrame):
         button.configure(command=start, text=inactive_name)
         return button
 
+    # Page Buttons
 
-    def all_buttons(self):
+    def quit_button(self):
+        self.add_button("Quit", self.context.router.quit)
+    
+    def refresh_button(self):
+        self.add_button("Refresh", self.context.router.refresh)
+
+    def back_button(self):
+        self.add_button("Back to Title", self.context.router.go_back)
+    
+    def toggle_button(self):
+        self.add_button("Toggle Theme", self.context.router.mode_toggle)
+    
+    def theme_button(self):
+        self.add_button("Select Theme", self.context.router.select_theme)
+
+    def pcap_button(self):
+        self.add_button("Load PCAP File", self.context.net.loader.load_pcap)
+    
+    def preset_button(self):
+        self.add_button("Load Preset", self.context.router.select_preset)
+    
+    def help_button(self):
+        self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
+
+    def page_buttons(self):
         self.quit_button()
         self.refresh_button()
         self.back_button()

@@ -25,15 +25,17 @@ class Panes(PanedWindow):
 
         if direction == "horizontal":
             s = self.winfo_width() / context.style.get_scale_correction()
+            min_size = style.PANE_MIN_WIDTH
         else:
             s = self.winfo_height() / context.style.get_scale_correction()
+            min_size = style.PANE_MIN_HEIGHT
 
         self.panes = []       
         for i in range(child_count):
             size = s//child_sizes[i]
             pane = CTkFrame(self, height = size, width= size, background_corner_colors=(color, color, color, color))
             pane.default_size = size
-            self.add(pane, minsize=style.PANE_MIN)
+            self.add(pane, minsize=min_size)
             self.panes.append(pane)
 
         self.bind("<Configure>", self.on_pane_resize)
