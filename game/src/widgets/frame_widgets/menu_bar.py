@@ -28,7 +28,6 @@ class MenuBar(CTkFrame):
     def add_button(self, text, function=None):
         button = CTkButton(self, text=text, command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-        self.update_idletasks()
         self.update_requested_width()
         return button
 
@@ -49,20 +48,34 @@ class MenuBar(CTkFrame):
         button = CTkButton(self, text=text, command=None, font=self.style.get_font(), width=0)
         self.the_overflow_button = button
         # button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
+        self.overflow_overlay = Overlay(self.context.root, self.context, button, self.populate_overflow_overlay)
 
         button.pack_forget()
 
         def configure_handler(event=None):
             # If the requested width is calculated too early, for example, before a button is done rendering,
             # it will be about 1 button's width too small. So when it's updated in self.add_button, it does update_idletasks()
-            # self.update_requested_width()
+            self.update_requested_width()
             if event.width < self.requested_width:
                 button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
             else:
                 button.pack_forget()
 
         self.bind("<Configure>", configure_handler)
+    
+    def clone_button(self, original_button: CTkButton, frame: CTkFrame):
+        proxy_button = CTkButton(frame, text=original_button._text, command=original_button._command, font=self.style.get_font())
+        proxy_button.pack(side="bottom", padx=self.style.gap, pady=self.style.gap)
 
+        original_button.proxy = proxy_button
+
+    def populate_overflow_overlay(self, overlay):
+        # Get squashed children and add a duplicate to the overlay
+        for child in self.winfo_children():
+            print(f"{child.winfo_width()} < {child.winfo_reqwidth()}")
+            if child.winfo_width() < child.winfo_reqwidth() and isinstance(child, CTkButton):
+                self.clone_button(child, overlay)
+        
 
 
     # Panel Buttons
@@ -122,11 +135,15 @@ class MenuBar(CTkFrame):
 
         def click_minimize():
             button.configure(command=click_maximize, text="Maximize")
+            if hasattr(button, "proxy"):
+                button.proxy.configure(command=click_maximize, text=f"Maximize")
             shrink_pane()
             hide_body()
         
         def click_maximize():
             button.configure(command=click_minimize, text="Minimize")
+            if hasattr(button, "proxy"):
+                button.proxy.configure(command=click_minimize, text=f"Minimize")
             grow_pane()
             show_body()
         
@@ -149,10 +166,14 @@ class MenuBar(CTkFrame):
         button = self.add_button(inactive_name)
         def stop():
             stop_func()
+            if hasattr(button, "proxy"):
+                button.proxy.configure(command=start, text=inactive_name)
             button.configure(command=start, text=inactive_name)
 
         def start():
             start_func()
+            if hasattr(button, "proxy"):
+                button.proxy.configure(command=stop, text=active_name)
             button.configure(command=stop, text=active_name)
         button.configure(command=start, text=inactive_name)
         return button

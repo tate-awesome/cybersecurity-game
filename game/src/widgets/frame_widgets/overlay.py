@@ -15,12 +15,17 @@ class Overlay(CTkFrame):
         super().__init__(self.master, border_color=self.style.color("accent"), border_width=2)
 
         self.bind_overlay_button(button)
+        self.populate_func = populate_func
 
-        populate_func(self)
 
     def place_overlay(self):
         if self.winfo_ismapped():
             return
+        
+        if hasattr(self.button, "proxy") and self.button.proxy is not None:
+            active_button = self.button.proxy
+        else:
+            active_button = self.button
         
         # 1. Force initial layout update so button coordinates are accurate
         self.context.root.update_idletasks()
@@ -34,9 +39,9 @@ class Overlay(CTkFrame):
         
         # 2. Map coordinates relative to the top-left (NW) of the frame instead of center (N)
         # This aligns the math with your clipping constraints
-        btn_left = (self.button.winfo_rootx() - self.context.root.winfo_rootx()) / scale
-        btn_w = self.button.winfo_width() / scale
-        btn_h = self.button.winfo_height() / scale
+        btn_left = (active_button.winfo_rootx() - self.context.root.winfo_rootx()) / scale
+        btn_w = active_button.winfo_width() / scale
+        btn_h = active_button.winfo_height() / scale
         igap = self.style.igap / scale
 
         # Ideal target: Center the overlay horizontally relative to the button
@@ -59,8 +64,8 @@ class Overlay(CTkFrame):
         safe_x = max(0, safe_x)               # Prevents left edge clipping
         
         # 5. Calculate final Y (Check if it clips the bottom, flip above button if it does)
-        ideal_y_below = (self.button.winfo_rooty() - self.context.root.winfo_rooty()) / scale + btn_h + igap
-        ideal_y_above = (self.button.winfo_rooty() - self.context.root.winfo_rooty()) / scale - frame_h - igap
+        ideal_y_below = (active_button.winfo_rooty() - self.context.root.winfo_rooty()) / scale + btn_h + igap
+        ideal_y_above = (active_button.winfo_rooty() - self.context.root.winfo_rooty()) / scale - frame_h - igap
 
         if ideal_y_below + frame_h > win_h:
             # If it clips the bottom edge, check if it fits above the button
@@ -72,19 +77,27 @@ class Overlay(CTkFrame):
             safe_y = ideal_y_below # Fits perfectly below
 
         # 6. Apply final calculated positions using anchor="nw"
+        self.populate_func(self)
+        self.update_idletasks()
         self.place(x=safe_x, y=safe_y, anchor="nw")
         self.lift()
 
     def unplace_overlay(self):
         if self.winfo_ismapped():
+            for child in self.winfo_children():
+                child.destroy()
             self.place_forget()
 
 
     def bind_overlay_button(self, button: CTkButton):
         def configure_opened():
             button.configure(command=close, text=f"Close")
+            if hasattr(button, "proxy"):
+                button.proxy.configure(command=close, text=f"Close")
         def configure_closed():
             button.configure(command=open, text=self.open_text)
+            if hasattr(button, "proxy"):
+                button.proxy.configure(command=open, text=self.open_text)
         def close():
             configure_closed()
             self.unplace_overlay()

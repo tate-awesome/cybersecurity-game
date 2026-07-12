@@ -36,7 +36,7 @@ class PacketConsole(CTkFrame):
         filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
 
         columns_button = menu_frame.add_button("Columns")
-        columns_button = ColumnOverlay(columns_button, context, self.refresh_columns)
+        columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
 
         # Printing Flags
         self.jump_to_bottom = True
