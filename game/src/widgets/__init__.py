@@ -2,6 +2,7 @@ from .frame_widgets.menu_bar import MenuBar
 from .frame_widgets.title_menu import TitleMenu
 from .frame_widgets.panes import Panes
 from .frame_widgets.scrollable import Scrollable
+from .frame_widgets.overlay import Overlay
 
 from .forms.arp import ArpForm
 from .forms.nmap import NmapForm

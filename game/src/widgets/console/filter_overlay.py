@@ -1,6 +1,7 @@
 from ...app_core.context import Context
 from ...network.meta_packet import MetaPacket
 from ...network.data_buffer import DataBuffer
+from ...widgets import Overlay
 
 from typing import cast
 import customtkinter as ctk
@@ -14,8 +15,7 @@ class FilterOverlay:
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
-
-        self.bind_overlay_button(button, self.create_filter_overlay, self.destroy_filter_overlay)
+        self.filter_overlay = Overlay(self.context.root, context, button, "Filters")
 
         self.filter_columns = {
             "source": [
@@ -41,27 +41,17 @@ class FilterOverlay:
                 "other"
             ]
         }
+        self.create_filter_gui(self.filter_overlay)
 
-    def create_filter_overlay(self, button: CTkButton):
+
+    def create_filter_gui(self, overlay):
         '''
         Creates a filter overlay just below the button, with checkboxes for each filter in self.context.states["packet_filter_checkboxes"]
         Creates text entries for each filter in self.context.inputs["packet_filter_entries"].
         '''
         apply_filters = lambda: ...
 
-        # Place overlay just below button
-        # 150%
-        
-        # 100%
-        x = (button.winfo_rootx() - self.context.root.winfo_rootx() + button.winfo_width() / 2) / self.style.get_scale_correction()
-        y = (button.winfo_rooty() - self.context.root.winfo_rooty() + button.winfo_height() + self.style.igap) / self.style.get_scale_correction()
-
-        overlay = CTkFrame(self.context.root, border_color=self.style.color("accent"), border_width=2)
-        overlay.place(x=x, y=y, anchor="n")
-        overlay.lift()
-
         # Save reference for later destruction
-        self.filter_overlay = overlay
 
         # Create filter checkbox frame
         box_slots = self.context.states["packet_filter_checkboxes"]
@@ -143,28 +133,6 @@ class FilterOverlay:
         apply_filters = activate
 
         # activator_button.configure(command=activate)
-
-    def destroy_filter_overlay(self, button: CTkButton):
-        try:
-            self.filter_overlay.destroy()
-        finally:
-            return
-
-    def bind_overlay_button(self, button: CTkButton, open_func: callable, close_func: callable):
-            def configure_opened():
-                button.configure(command=close, text=f"Close")
-            def configure_closed():
-                button.configure(command=open, text=f"Filters")
-            def close():
-                close_func(button)
-                configure_closed()
-            def open():
-                open_func(button)
-                configure_opened()
-            def event_callback(event=None):
-                close()
-            self.context.root.bind("<Escape>", event_callback)
-            configure_closed()
 
     def compile_filter(self):
             '''

@@ -1,5 +1,6 @@
 from ...network.data_buffer import DataBuffer
 from ...app_core.context import Context
+from ...widgets import Overlay
 from customtkinter import *
 from typing import cast
 
@@ -14,20 +15,12 @@ class ColumnOverlay:
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
-
-        self.bind_overlay_button(button, self.create_column_overlay, self.destroy_column_overlay)
+        self.overlay = Overlay(self.context.root, context, button, "Columns")
+        self.create_column_overlay(self.overlay)
 
         
 
-    def create_column_overlay(self, button: CTkButton):
-
-        # Place overlay just below button
-        x = button.winfo_rootx() - self.context.root.winfo_rootx() + button.winfo_width() / 2
-        y = button.winfo_rooty() - self.context.root.winfo_rooty() + button.winfo_height() + self.style.igap
-        overlay = CTkFrame(self.context.root, border_color=self.style.color("accent"), border_width=2)
-        overlay.place(x=x/self.style.get_scale_correction(), y=y/self.style.get_scale_correction(), anchor="n")
-        overlay.lift()
-        self.column_overlay = overlay
+    def create_column_overlay(self, overlay):
         
         box_slots = self.context.states["packet_columns"]
         med = self.style.get_font()
@@ -53,26 +46,3 @@ class ColumnOverlay:
                 value[key] = str(b.get())
                 self.refresh_function()
             column_box.configure(command=autosave)
-
-
-    def destroy_column_overlay(self, button: CTkButton):
-        try:
-            self.column_overlay.destroy()
-        finally:
-            return
-
-    def bind_overlay_button(self, button: CTkButton, open_func: callable, close_func: callable):
-            def configure_opened():
-                button.configure(command=close, text=f"Close")
-            def configure_closed():
-                button.configure(command=open, text=f"Columns")
-            def close():
-                close_func(button)
-                configure_closed()
-            def open():
-                open_func(button)
-                configure_opened()
-            def event_callback(event=None):
-                close()
-            self.context.root.bind("<Escape>", event_callback)
-            configure_closed()
