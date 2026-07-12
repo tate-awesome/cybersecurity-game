@@ -21,27 +21,40 @@ class MenuBar(CTkFrame):
         self.game_label.pack(fill="y", side="left", padx=self.style.gap)
 
         self.the_overflow_button = None
-        self.requested_width = self.update_requested_width()
+        self.fine_buttons = []
+        self.squashed_buttons = []
 
         self.overflow_button()
 
     def add_button(self, text, function=None):
         button = CTkButton(self, text=text, command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-        self.update_requested_width()
         return button
 
     # Button overflow overlay
 
-    def update_requested_width(self):
-        total_req = 0
+    def update_squashing(self):
+        # Calculate the required width (not including the overflow button)
+        required_width = 0
         for child in self.winfo_children():
             if self.the_overflow_button is not None and child == self.the_overflow_button:
                 continue
-            # Add up what everything wants, plus your styling gaps
-            total_req += child.winfo_reqwidth() + self.style.igap*2
-        self.requested_width = total_req
-        return total_req
+            required_width += child.winfo_reqwidth() + self.style.igap*2
+
+        # Calculate which buttons are squashed or not
+        self.fine_buttons = []
+        self.squashed_buttons = []
+        available_width = self.winfo_width()
+        for child in self.winfo_children():
+            if child == self.the_overflow_button:
+                continue
+            available_width -= child.winfo_reqwidth() + self.style.igap*2
+            if child == self.game_label:
+                continue
+            if available_width < 0:
+                self.squashed_buttons.append(child)
+            else:
+                self.fine_buttons.append(child)
 
     def overflow_button(self):
         text = "..."
@@ -55,8 +68,12 @@ class MenuBar(CTkFrame):
         def configure_handler(event=None):
             # If the requested width is calculated too early, for example, before a button is done rendering,
             # it will be about 1 button's width too small. So when it's updated in self.add_button, it does update_idletasks()
-            self.update_requested_width()
-            if event.width < self.requested_width:
+            self.update_squashing()
+            for squashed in self.squashed_buttons:
+                squashed.pack_forget()
+            for fine in self.fine_buttons:
+                fine.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+            if len(self.squashed_buttons) > 0:
                 button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
             else:
                 button.pack_forget()
@@ -70,13 +87,10 @@ class MenuBar(CTkFrame):
         original_button.proxy = proxy_button
 
     def populate_overflow_overlay(self, overlay):
-        # Get squashed children and add a duplicate to the overlay
-        for child in self.winfo_children():
-            print(f"{child.winfo_width()} < {child.winfo_reqwidth()}")
-            if child.winfo_width() < child.winfo_reqwidth() and isinstance(child, CTkButton):
-                self.clone_button(child, overlay)
+        for squashed in self.squashed_buttons:
+            self.clone_button(squashed, overlay)
+            # if (child.winfo_width() < child.winfo_reqwidth() or self.the_overflow_button.) and isinstance(child, CTkButton):
         
-
 
     # Panel Buttons
 
