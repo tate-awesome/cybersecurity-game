@@ -13,23 +13,59 @@ class MenuBar(CTkFrame):
     def __init__(self, master: CTkFrame, context: Context, title_text: str = "Page"):
         self.context = context
         self.style = context.style
-        self.buttons = {}
 
         super().__init__(master, fg_color=self.style.color("widget"))
         self.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x")
 
-        game_label = CTkLabel(self, text=title_text, font=self.style.get_font(), padx=self.style.igap)
-        game_label.pack(fill="y", side="left", padx=self.style.gap)
+        self.game_label = CTkLabel(self, text=title_text, font=self.style.get_font(), padx=self.style.igap)
+        self.game_label.pack(fill="y", side="left", padx=self.style.gap)
+
+        self._overflow_button = None
+        self.requested_width = self.update_requested_width()
+
+        self.overflow_button()
 
     def add_button(self, text, function=None):
         button = CTkButton(self, text=text, command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+        self.update_idletasks()
+        self.update_requested_width()
         return button
+
+    # Button overflow overlay
+
+    def update_requested_width(self):
+        total_req = 0
+        for child in self.winfo_children():
+            if self._overflow_button is not None and child == self._overflow_button:
+                continue
+            # Add up what everything wants, plus your styling gaps
+            total_req += child.winfo_reqwidth() + self.style.igap*2
+        self.requested_width = total_req
+        return total_req
+
+    def overflow_button(self):
+        button = CTkButton(self, text="...", command=None, font=self.style.get_font(), width=0)
+        self._overflow_button = button
+        # button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
+
+        button.pack_forget()
+
+        def configure_handler(event=None):
+            # If the requested width is calculated too early, for example, before a button is done rendering,
+            # it will be about 1 button's width too small. So when it's updated in self.add_button, it does update_idletasks()
+            # self.update_requested_width()
+            if event.width < self.requested_width:
+                button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
+            else:
+                button.pack_forget()
+
+        self.bind("<Configure>", configure_handler)
+
+
 
     # Panel Buttons
 
-    def overflow_overlay_button(self):
-        ...
 
     def minimize_button(self, frame_widget = None, pane = None):
         button = self.add_button("Minimize")
