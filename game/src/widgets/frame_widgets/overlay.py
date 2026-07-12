@@ -1,20 +1,22 @@
 from customtkinter import CTkFrame, CTkButton
 from ...app_core.context import Context
+from typing import Callable
 
 class Overlay(CTkFrame):
     '''
     CTkFrame that is .place()'d below its trigger button on click. Is also .place_forget()'d when clicking outside the Overlay (this is expected behavior)
     '''
-    def __init__(self, master, context: Context, button: CTkButton, open_text: str):
+    def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[CTkFrame, None]):
         self.master = master
         self.context = context
         self.style = context.style
         self.button = button
-        self.open_text = open_text
+        self.open_text = button._text
         super().__init__(self.master, border_color=self.style.color("accent"), border_width=2)
 
         self.bind_overlay_button(button)
 
+        populate_func(self)
 
     def place_overlay(self):
         if self.winfo_ismapped():
@@ -85,7 +87,6 @@ class Overlay(CTkFrame):
             button.configure(command=open, text=self.open_text)
         def close():
             configure_closed()
-            print("close")
             self.unplace_overlay()
         def open():
             configure_opened()

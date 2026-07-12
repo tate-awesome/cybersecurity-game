@@ -15,12 +15,11 @@ class ColumnOverlay:
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
-        self.overlay = Overlay(self.context.root, context, button, "Columns")
-        self.create_column_overlay(self.overlay)
+        self.overlay = Overlay(self.context.root, context, button, self.populate_column_overlay)
 
         
 
-    def create_column_overlay(self, overlay):
+    def populate_column_overlay(self, overlay):
         
         box_slots = self.context.states["packet_columns"]
         med = self.style.get_font()

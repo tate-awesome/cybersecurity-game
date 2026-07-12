@@ -20,7 +20,7 @@ class MenuBar(CTkFrame):
         self.game_label = CTkLabel(self, text=title_text, font=self.style.get_font(), padx=self.style.igap)
         self.game_label.pack(fill="y", side="left", padx=self.style.gap)
 
-        self._overflow_button = None
+        self.the_overflow_button = None
         self.requested_width = self.update_requested_width()
 
         self.overflow_button()
@@ -37,7 +37,7 @@ class MenuBar(CTkFrame):
     def update_requested_width(self):
         total_req = 0
         for child in self.winfo_children():
-            if self._overflow_button is not None and child == self._overflow_button:
+            if self.the_overflow_button is not None and child == self.the_overflow_button:
                 continue
             # Add up what everything wants, plus your styling gaps
             total_req += child.winfo_reqwidth() + self.style.igap*2
@@ -45,8 +45,9 @@ class MenuBar(CTkFrame):
         return total_req
 
     def overflow_button(self):
-        button = CTkButton(self, text="...", command=None, font=self.style.get_font(), width=0)
-        self._overflow_button = button
+        text = "..."
+        button = CTkButton(self, text=text, command=None, font=self.style.get_font(), width=0)
+        self.the_overflow_button = button
         # button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
 
         button.pack_forget()

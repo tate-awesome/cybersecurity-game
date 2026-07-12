@@ -15,7 +15,6 @@ class FilterOverlay:
         self.style = context.style
         self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
-        self.filter_overlay = Overlay(self.context.root, context, button, "Filters")
 
         self.filter_columns = {
             "source": [
@@ -41,10 +40,10 @@ class FilterOverlay:
                 "other"
             ]
         }
-        self.create_filter_gui(self.filter_overlay)
+        self.filter_overlay = Overlay(self.context.root, context, button, self.populate_filter_overlay)
 
 
-    def create_filter_gui(self, overlay):
+    def populate_filter_overlay(self, overlay):
         '''
         Creates a filter overlay just below the button, with checkboxes for each filter in self.context.states["packet_filter_checkboxes"]
         Creates text entries for each filter in self.context.inputs["packet_filter_entries"].
