@@ -88,12 +88,14 @@ float sigma_rudder = 0.01f;
 float sigma_x_meas = 0.1f;
 float sigma_y_meas = 0.1f;
 float sigma_theta_meas = 0.1f;
+float sigma_speed_meas = 0.5f;
+float sigma_rudder_meas = 0.5f;
 
 float q_x = 0.01f;
 float q_y = 0.01f;
-float q_theta = 0.001f;
-float q_speed = 0.1f;
-float q_rudder = 0.1f;
+float q_theta = 0.5f;
+float q_speed = 5.0f;
+float q_rudder = 5.0f;
 
 //// Physical scaling constants 
 const float SpeedMax_m_s = 50.0f;
@@ -200,7 +202,7 @@ void ekfStep(float x_meas, float y_meas, float theta_meas, float speed_meas, flo
 
     float x_pred   = x + v * cosf(th + d) * dt;
     float y_pred   = y + v * sinf(th + d) * dt;
-    float th_pred  = wrap_to_pi(th + (K_theta / L_vehicle) * tanf(d) * dt);
+    float th_pred  = wrap_to_pi(th + K_theta * (tan(rudder_meas) / L_vehicle) * dt);
     float v_pred   = v;
     float d_pred   = d;
 
@@ -393,8 +395,8 @@ void setup() {
     sigma_x_meas * sigma_x_meas, 0.0f, 0.0f, 0.0f, 0.0f,
     0.0f, sigma_y_meas * sigma_y_meas, 0.0f, 0.0f, 0.0f,
     0.0f, 0.0f, sigma_theta_meas * sigma_theta_meas, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+    0.0f, 0.0f, 0.0f, sigma_speed_meas*sigma_speed_meas, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, sigma_rudder_meas*sigma_rudder_meas
   };
 
   Qu = {

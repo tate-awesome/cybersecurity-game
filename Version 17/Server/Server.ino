@@ -34,10 +34,10 @@ float sigma_theta = 0.01;
 
 float sigma_meas_x = 8.3f;
 float sigma_meas_y = 8.3f;
-float sigma_meas_theta = 0.01f;
+float sigma_meas_theta = 0.001f;
 
-float sigma_speed = 0.01f;
-float sigma_rudder = 0.01f;
+float sigma_speed = 0.001f;
+float sigma_rudder = 0.001f;
 
 // ------- Encryption -------
 String key = (String)1234;
