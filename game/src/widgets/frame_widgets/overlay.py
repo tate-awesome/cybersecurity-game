@@ -22,7 +22,7 @@ class Overlay(CTkFrame):
         if self.winfo_ismapped():
             return
         
-        if hasattr(self.button, "proxy") and self.button.proxy is not None:
+        if hasattr(self.button, "proxy") and self.button.proxy.winfo_exists():
             active_button = self.button.proxy
         else:
             active_button = self.button
@@ -77,9 +77,9 @@ class Overlay(CTkFrame):
             safe_y = ideal_y_below # Fits perfectly below
 
         # 6. Apply final calculated positions using anchor="nw"
-        self.populate_func(self)
         self.update_idletasks()
         self.place(x=safe_x, y=safe_y, anchor="nw")
+        self.populate_func(self)
         self.lift()
 
     def unplace_overlay(self):
@@ -92,11 +92,11 @@ class Overlay(CTkFrame):
     def bind_overlay_button(self, button: CTkButton):
         def configure_opened():
             button.configure(command=close, text=f"Close")
-            if hasattr(button, "proxy"):
+            if hasattr(button, "proxy") and button.proxy.winfo_exists():
                 button.proxy.configure(command=close, text=f"Close")
         def configure_closed():
             button.configure(command=open, text=self.open_text)
-            if hasattr(button, "proxy"):
+            if hasattr(button, "proxy") and button.proxy.winfo_exists():
                 button.proxy.configure(command=open, text=self.open_text)
         def close():
             configure_closed()
