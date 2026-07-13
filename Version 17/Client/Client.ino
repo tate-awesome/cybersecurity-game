@@ -71,6 +71,30 @@ static String key = (String)1234;
 
 bool targetChanged = false;
 
+using namespace BLA;
+
+BLA::Matrix<5,1> x_hat;   // [x, y, theta, speed, rudder]
+BLA::Matrix<5,5> P;
+BLA::Matrix<5,5> Qu;
+BLA::Matrix<5,5> R;
+BLA::Matrix<5,5> I5;
+
+float sigma_x = 0.01f;
+float sigma_y = 0.01f;
+float sigma_theta = 0.01f;
+float sigma_speed = 0.01f;
+float sigma_rudder = 0.01f;
+
+float sigma_x_meas = 0.1f;
+float sigma_y_meas = 0.1f;
+float sigma_theta_meas = 0.1f;
+
+float q_x = 0.01f;
+float q_y = 0.01f;
+float q_theta = 0.001f;
+float q_speed = 0.1f;
+float q_rudder = 0.1f;
+
 //// Physical scaling constants 
 const float SpeedMax_m_s = 50.0f;
 const float RudderMax_deg = 60.0f;
@@ -157,6 +181,66 @@ uint16_t keyToUint(const String& key){
   }
 
   return(uint16_t)sum;
+}
+
+//// Kalman filtering functions
+
+float wrap_to_pi(float angle) {
+    while (angle > PI)  angle -= 2.0f * PI;
+    while (angle < -PI) angle += 2.0f * PI;
+    return angle;
+}
+
+void ekfStep(float x_meas, float y_meas, float theta_meas, float speed_meas, float rudder_meas, float dt){
+    float x = x_hat(0,0);
+    float y = x_hat(1,0);
+    float th = x_hat(2,0);
+    float v = x_hat(3,0);
+    float d = x_hat(4,0);
+
+    float x_pred   = x + v * cosf(th + d) * dt;
+    float y_pred   = y + v * sinf(th + d) * dt;
+    float th_pred  = wrap_to_pi(th + (K_theta / L_vehicle) * tanf(d) * dt);
+    float v_pred   = v;
+    float d_pred   = d;
+
+    x_hat(0,0) = x_pred;
+    x_hat(1,0) = y_pred;
+    x_hat(2,0) = th_pred;
+    x_hat(3,0) = v_pred;
+    x_hat(4,0) = d_pred;
+
+    Matrix<5,5> F = {
+        1.0f, 0.0f, -v * sinf(th + d) * dt,  cosf(th + d) * dt, -v * sinf(th + d) * dt,
+        0.0f, 1.0f,  v * cosf(th + d) * dt,  sinf(th + d) * dt,  v * cosf(th + d) * dt,
+        0.0f, 0.0f,  1.0f,                   0.0f,                (K_theta / L_vehicle) * (1.0f / (cosf(d) * cosf(d))) * dt,
+        0.0f, 0.0f,  0.0f,                   1.0f,                0.0f,
+        0.0f, 0.0f,  0.0f,                   0.0f,                1.0f
+    };
+
+    P = F * P * ~F + Qu;
+
+    Matrix<5,1> z = { x_meas, y_meas, theta_meas, speed_meas, rudder_meas };
+    Matrix<5,1> h = { x_hat(0,0), x_hat(1,0), x_hat(2,0), x_hat(3,0), x_hat(4,0) };
+
+    Matrix<5,1> y_res = z - h;
+    y_res(2,0) = wrap_to_pi(y_res(2,0));
+    y_res(4,0) = wrap_to_pi(y_res(4,0));
+
+    Matrix<5,5> H = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
+                      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 
+                      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 
+                      0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 
+                      0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+
+    Matrix<5,5> S = H * P * ~H + R;
+    Matrix<5,5> K = P * ~H * Inverse(S);
+
+    x_hat = x_hat + K * y_res;
+    x_hat(2,0) = wrap_to_pi(x_hat(2,0));
+    x_hat(4,0) = wrap_to_pi(x_hat(4,0));
+
+    P = (I5 - K * H) * P;
 }
 
 void sendPose() {
@@ -290,6 +374,45 @@ void setup() {
   mb.connect(serverIP);
   delay(500);
 
+  x_hat.Fill(0);
+  x_hat(0,0) = state_x;
+  x_hat(1,0) = state_y;
+  x_hat(2,0) = state_theta;
+  x_hat(3,0) = state_speed;
+  x_hat(4,0) = state_rudder;
+
+  P = {
+    sigma_x, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, sigma_y, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, sigma_theta, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, sigma_speed, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, sigma_rudder
+  };
+
+  R = {
+    sigma_x_meas * sigma_x_meas, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, sigma_y_meas * sigma_y_meas, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, sigma_theta_meas * sigma_theta_meas, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+  };
+
+  Qu = {
+    q_x,  0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, q_y,  0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, q_theta, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, q_speed, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, q_rudder
+  };
+
+  I5 = {
+    1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+  };
+
 
   if (mb.isConnected(serverIP)) {
     Serial.println("[MASTER] Connected to Slave Modbus server.");
@@ -366,13 +489,20 @@ void loop() {
       // Convert counts to physical units
       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
+      float rudder_rad = radians(rudder_deg);
+
       state_speed  = speed_m_s;
       state_rudder  = rudder_deg;
 
+      ekfStep(state_x, state_y, state_theta, speed_m_s, rudder_rad, 0.05f);
+
+      state_speed = x_hat(3,0);
+      state_rudder = x_hat(4,0);
+
       // Only integrate if there's meaningful motion
       if (fabs(speed_m_s) > 0.01f) {
-        float v = speed_m_s;
-        float rho = radians(rudder_deg);
+        float v = state_speed;
+        float rho = state_rudder;
 
         float xdot = v * cos(rho + state_theta);
         float ydot = v * sin(rho + state_theta);
