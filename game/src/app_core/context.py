@@ -4,6 +4,7 @@ Shared data for a page. Passed to next pages on navigation.
 
 from .style import Style
 from ..network.network_controller import NetworkController
+from .click_manager import ClickManager
 
 class Context:
     '''
@@ -13,6 +14,7 @@ class Context:
 
     def __init__(self, root, router, style: Style):
         self.net =  NetworkController()
+        self.click_manager = ClickManager(root)
         self.router = router
         self.root = root
         self.style = style
