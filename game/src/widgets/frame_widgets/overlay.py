@@ -6,27 +6,158 @@ class Overlay(CTkFrame):
     '''
     CTkFrame that is .place()'d below its trigger button on click. Is also .place_forget()'d when clicking outside the Overlay (this is expected behavior)
     '''
+
     def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[CTkFrame, None]):
         self.master = master
         self.context = context
         self.style = context.style
         self.button = button
         self.open_text = button._text
+        self.manage_list()
+        self.safe = False
+        self.populate_func = populate_func
         super().__init__(self.master, border_color=self.style.color("accent"), border_width=2)
 
-        self.bind_overlay_button(button)
-        self.populate_func = populate_func
+        # Set up
+        self.click_close()
+        def event_callback(event=None):
+            self.click_close()
+        self.context.root.bind("<Escape>", event_callback)
+        self.context.click_manager.add_listener("overlay_click", self.click_handler)
+        
 
+    # Place / Unplace overlay
 
     def place_overlay(self):
+        # Exit if already open
         if self.winfo_ismapped():
             return
         
+        self.populate_func(self)
+        self.update_idletasks()
+        safe_x, safe_y = self.calculate_placement()
+        
+        self.place(x=safe_x, y=safe_y, anchor="nw")
+        self.lift()
+
+    def unplace_overlay(self):
+        if self.winfo_ismapped():
+            for child in self.winfo_children():
+                child.destroy()
+            self.place_forget()
+
+    # Open/Close logic (clicking open button or clicking out to exit)
+
+    def manage_list(self):
+        if not hasattr(self.context, "overlay_list"):
+            self.context.overlay_list = []
+        if not self in self.context.overlay_list:
+            self.context.overlay_list.append(self)
+
+    def click_handler(self, event=None):
+        print("\n\n\nclick")
+        
+        # 1. Force a single layout update before reading coordinates
+        # self.context.root.update_idletasks()
+        
+        # Use a set to store overlays that are explicitly marked safe
+        safe_overlays = set()
+        visible_overlays = 0
+
+        # 2. First Pass: Find who was clicked and mark their entire ancestry safe
+        for overlay in list(self.context.overlay_list):
+            if overlay.winfo_exists() and overlay.winfo_ismapped():
+                visible_overlays += 1
+                if overlay.click_checker(event):
+                    # If this overlay was clicked, climb up its lineage and save all parents
+                    widget = overlay
+                    while widget is not None and isinstance(widget, Overlay):
+                        safe_overlays.add(widget)
+                        # Move to the button that spawned this overlay, then get its parent overlay
+                        trigger_button = widget.get_button()
+                        if trigger_button:
+                            # Look up the tree to find the overlay containing the trigger button
+                            widget = self._find_parent_overlay(trigger_button)
+                        else:
+                            widget = None
+        if visible_overlays < 1:
+            ...
+        self.context.root.update_idletasks()
+        # 3. Second Pass: Safely close anything NOT in the safe set
+        for overlay in list(self.context.overlay_list):
+            if overlay not in safe_overlays:
+                overlay.click_close()
+
+    def _find_parent_overlay(self, widget):
+        """Helper to climb the Tkinter hierarchy to find the containing Overlay class"""
+        current = widget
+        while hasattr(current, "master") and current.master is not None:
+            if isinstance(current.master, Overlay):
+                return current.master
+            current = current.master
+        return None
+        
+        
+    def click_checker(self, event=None):
+        """
+        Return True if the click is inside the overlay OR the trigger button.
+        """
+        if not self.winfo_exists() or not self.winfo_ismapped():
+            return
+        # 1. Check Overlay Bounding Box
+        ox1 = self.winfo_rootx()
+        oy1 = self.winfo_rooty()
+        ox2 = ox1 + self.winfo_width()
+        oy2 = oy1 + self.winfo_height()
+
+        inside_overlay = (ox1 <= event.x_root <= ox2 and oy1 <= event.y_root <= oy2)
+
+        # 2. Check Button Bounding Box
+        button = self.get_button()
+        if button and button.winfo_exists():
+            bx1 = button.winfo_rootx()
+            by1 = button.winfo_rooty()
+            bx2 = bx1 + button.winfo_width()
+            by2 = by1 + button.winfo_height()
+            
+            inside_button = (bx1 <= event.x_root <= bx2 and by1 <= event.y_root <= by2)
+        else:
+            inside_button = False
+        print(f"{self} - overlay: {inside_overlay}. button: {inside_button}")
+        # Return True if the click hit either area
+        return inside_overlay or inside_button
+
+    def click_close(self):
+        self.configure_closed()
+        self.unplace_overlay()
+
+    def click_open(self):
+        self.configure_opened()
+        self.place_overlay()
+
+    def configure_closed(self):
+        if self.button._text == self.open_text and self.button._command == self.click_open:
+            ...
+        else:
+            self.button.configure(command=self.click_open, text=self.open_text)
+        if hasattr(self.button, "proxy") and self.button.proxy.winfo_exists():
+            self.button.proxy.configure(command=self.click_open, text=self.open_text)
+
+    def configure_opened(self):
+        self.button.configure(command=self.click_close, text="Close")
+        if hasattr(self.button, "proxy") and self.button.proxy.winfo_exists():
+            self.button.proxy.configure(command=self.click_close, text="Close")
+
+    # Placement helper
+
+    def get_button(self):
         if hasattr(self.button, "proxy") and self.button.proxy.winfo_exists():
             active_button = self.button.proxy
         else:
             active_button = self.button
-        
+        return active_button
+    
+    def calculate_placement(self):
         # 1. Force initial layout update so button coordinates are accurate
         self.context.root.update_idletasks()
         
@@ -36,6 +167,8 @@ class Overlay(CTkFrame):
         # Get current window boundaries
         win_w = self.context.root.winfo_width() / scale
         win_h = self.context.root.winfo_height() / scale
+
+        active_button = self.get_button()
         
         # 2. Map coordinates relative to the top-left (NW) of the frame instead of center (N)
         # This aligns the math with your clipping constraints
@@ -75,36 +208,5 @@ class Overlay(CTkFrame):
                 safe_y = max(0, win_h - frame_h) # Window is too small entirely; clamp to bottom edge
         else:
             safe_y = ideal_y_below # Fits perfectly below
-
-        # 6. Apply final calculated positions using anchor="nw"
-        self.update_idletasks()
-        self.place(x=safe_x, y=safe_y, anchor="nw")
-        self.populate_func(self)
-        self.lift()
-
-    def unplace_overlay(self):
-        if self.winfo_ismapped():
-            for child in self.winfo_children():
-                child.destroy()
-            self.place_forget()
-
-
-    def bind_overlay_button(self, button: CTkButton):
-        def configure_opened():
-            button.configure(command=close, text=f"Close")
-            if hasattr(button, "proxy") and button.proxy.winfo_exists():
-                button.proxy.configure(command=close, text=f"Close")
-        def configure_closed():
-            button.configure(command=open, text=self.open_text)
-            if hasattr(button, "proxy") and button.proxy.winfo_exists():
-                button.proxy.configure(command=open, text=self.open_text)
-        def close():
-            configure_closed()
-            self.unplace_overlay()
-        def open():
-            configure_opened()
-            self.place_overlay()
-        def event_callback(event=None):
-            close()
-        self.context.root.bind("<Escape>", event_callback)
-        configure_closed()
+        
+        return safe_x, safe_y
