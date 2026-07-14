@@ -36,8 +36,6 @@ String g_flask_ip = "192.168.8.167";
 String g_client_payload = "{}";
 String g_server_payload = "{}";
 
-bool g_target_changed = false;
-
 #define MAX_POINTS 20 
 
 struct DeviceInfo {
@@ -1407,7 +1405,6 @@ void setupRoutes() {
       resp["target_y"]          = g_target_y;
       resp["filter_correction"]  = g_filter_correction;
       resp["submarine_mode"] = g_submarine_mode;
-      resp["target_changed"] = g_target_changed;
 
       String out;
       serializeJson(resp, out);
@@ -1474,30 +1471,22 @@ void setupRoutes() {
 
   // ── POST /set_target  →  Defender sets target position ─────
   server.on("/set_target", HTTP_POST,
-  [](AsyncWebServerRequest* req) {},
-  nullptr,
-  [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
-    StaticJsonDocument<128> doc;
-    DeserializationError err = deserializeJson(doc, data, len);
-    if (err) {
-      req->send(400, "application/json", "{\"error\":\"bad json\"}");
-      return;
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<128> doc;
+      DeserializationError err = deserializeJson(doc, data, len);
+      if (err) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+      g_target_x = doc["target_x"] | 100.0f;
+      g_target_y = doc["target_y"] | 100.0f;
+      Serial.printf("[AP] Target set: (%.1f, %.1f)\n",
+                    g_target_x, g_target_y);
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
-
-    float newX = doc["target_x"] | g_target_x;
-    float newY = doc["target_y"] | g_target_y;
-
-    g_target_changed =
-      (fabs(newX - g_target_x) > 0.0001f) ||
-      (fabs(newY - g_target_y) > 0.0001f);
-
-    g_target_x = newX;
-    g_target_y = newY;
-
-    Serial.printf("[AP] Target set: (%.1f, %.1f)\n", g_target_x, g_target_y);
-    req->send(200, "application/json", "{\"status\":\"ok\"}");
-  }
-);
+  );
 
   server.on("/set_mode", HTTP_POST,
       [](AsyncWebServerRequest* req) {},
@@ -1572,12 +1561,6 @@ void setupRoutes() {
       Serial.println("[AP] Telemetry data cleared.");
       req->send(200, "application/json", "{\"status\":\"cleared\"}");
   });
-
-  server.on("/ack_target_changed", HTTP_POST,
-      [](AsyncWebServerRequest* req) {
-      g_target_changed = false;
-      req->send(200, "application/json", "{\"status\":\"ok\"}");
-    });
 
   // ── 404 catch-all ───────────────────────────────────────────
   server.onNotFound([](AsyncWebServerRequest* req) {
