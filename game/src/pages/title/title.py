@@ -14,4 +14,5 @@ class Title(Page):
         
         panel = TitleMenu(self, context, "The Game")
         panel.button("Play", lambda: self.router.show("title/select_mode"))
+        panel.button("Open AP Config Page", self.router.open_ap_config_page)
         panel.button("Quit", self.router.quit)

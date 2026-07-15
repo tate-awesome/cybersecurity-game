@@ -1,6 +1,6 @@
 from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
 from tkinter.filedialog import askopenfilename
-import os, json
+import os, json, webbrowser, subprocess
 
 from .context import Context
 from .style import Style
@@ -166,3 +166,15 @@ class Router:
             print("Error in select theme")
         finally:
             return
+        
+    def open_ap_config_page(self):
+        url = "http://192.168.4.1"
+
+        sudo_user = os.environ.get("SUDO_USER")
+
+        if sudo_user:
+            # Open browser as not sudo
+            subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", url])
+        else:
+            # 3. Fallback for when you run the script normally without sudo
+            webbrowser.open(url)
