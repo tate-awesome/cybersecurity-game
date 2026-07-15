@@ -150,9 +150,9 @@ class Context:
             "hacking_forms": {
                 "nmap": 1,
                 "arp": 1,
-                "dos": 1,
+                "dos": 0,
                 "sniff": 1,
-                "mitm": 1,
+                "mitm": 0,
                 "mitm2": 1
             },
 

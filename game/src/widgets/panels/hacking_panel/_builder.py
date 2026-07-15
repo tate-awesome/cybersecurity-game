@@ -35,13 +35,16 @@ class Builder(CTkFrame):
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
+        self.refresh_forms()
         scrollable.columnconfigure(0, weight=1)
         scrollable.add_deadspace("grid")
 
         forms_button = menu_bar.add_button("Forms")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
+
     def refresh_forms(self):
+        self.update_idletasks()
         for key in self.context.states["hacking_forms"]:
             if self.context.states["hacking_forms"][key] == "1" or self.context.states["hacking_forms"][key] == 1:
                 self.show_form(key)
