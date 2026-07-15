@@ -1,43 +1,20 @@
 from customtkinter import CTkFrame, CTkLabel, CTkButton
 from .....app_core.context import Context
+from .base_form import BaseForm
 
-class SniffForm(CTkFrame):
+class SniffForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
-        # Widgets
-        style = context.style
+        super().__init__(master, context)
 
-        super().__init__(master, fg_color=style.color("widget"))
-        self.columnconfigure(0, weight=0)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=0)
+        self.header = self.add_header("Packet Sniffing")
 
-        header = CTkLabel(self, text="Packet Sniffing", font=style.get_font())
-        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
-        self.header = header
-
-        # label1 = CTkLabel(frame, text="Print to GUI:", font=style.get_font(), anchor="e")
-        # label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-        # self.label1 = label1
-
-        # box1 = CTkCheckBox(frame, text="")
-        # box1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-        # self.box1 = box1
-
-        # label2 = CTkLabel(frame, text="Print to Console:", font=style.get_font(), anchor="e")
-        # label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-        # self.label2 = label2
-
-        # box2 = CTkCheckBox(frame, text="")
-        # box2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-        # self.box2 = box2
-
-        status = CTkLabel(self, text="", font=style.get_font(), anchor="e")
-        status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
+        status.grid(row=3, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
         self.status = status
 
-        button = CTkButton(self, text="Start sniffing", font=style.get_font(), command=None)
-        button.grid(row=3, column=2, sticky="ew", pady=style.gap, padx=style.gap)
+        button = CTkButton(self, text="Start sniffing", font=self.style.get_font(), command=None)
+        button.grid(row=3, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
         self.button = button
 
         # self.inputs = [box1, box2]

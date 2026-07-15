@@ -4,23 +4,25 @@ from .....network.mod_table import ModTable
 from .....network.meta_packet import MetaPacket
 from .....network.data_buffer import DataBuffer
 from typing import cast
+from .base_form import BaseForm
 
-class Mitm2Form(CTkFrame):
+class Mitm2Form(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
+
+        super().__init__(master, context)
         # Assign local references
         self.context = context
         self.buffer = cast(DataBuffer, context.net.data_buffer)
-        style = context.style
         
         # Create form
-        super().__init__(master, fg_color=style.color("widget"))
+        
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
         self.columnconfigure(3, weight=1)
 
-        header = CTkLabel(self, text="MITM Readings", font=style.get_font())
-        header.grid(row=0, column=0, columnspan="10", sticky="ew", pady=style.gaptop)
+        header = CTkLabel(self, text="MITM Readings", font=self.style.get_font())
+        header.grid(row=0, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
         self.header = header
 
         # Create value table entries
@@ -41,25 +43,25 @@ class Mitm2Form(CTkFrame):
         w = 90
         for name in ["", "x", "y", "theta", "speed", "rudder"]:
             label = CTkLabel(self, text=f"{self.names[name]}")
-            label.grid(row=r, column=0, sticky="ew", pady=style.gaptop, padx=style.gap)
+            label.grid(row=r, column=0, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
             self.outgoing_labels[name] = label
 
-            incoming = CTkLabel(self, text="0", font=style.get_font("mono"))
+            incoming = CTkLabel(self, text="0", font=self.style.get_font("mono"))
             if name == "":
                 incoming.configure(text="in")
-            incoming.grid(row=r, column=1, pady=style.gaptop, padx=style.gap, sticky="ew")
+            incoming.grid(row=r, column=1, pady=self.style.gaptop, padx=self.style.gap, sticky="ew")
             self.incoming_labels[name] = incoming
 
-            delta = CTkLabel(self, text="0", width=w, font=style.get_font("mono"))
+            delta = CTkLabel(self, text="0", width=w, font=self.style.get_font("mono"))
             if name == "":
                 delta.configure(text="delta")
-            delta.grid(row=r, column=2, pady=style.gaptop, sticky="ew")
+            delta.grid(row=r, column=2, pady=self.style.gaptop, sticky="ew")
             self.delta_labels[name] = delta
 
-            outgoing = CTkLabel(self, text="0", width=w, font=style.get_font("mono"))
+            outgoing = CTkLabel(self, text="0", width=w, font=self.style.get_font("mono"))
             if name == "":
                 outgoing.configure(text="out")
-            outgoing.grid(row=r, column=3, pady=style.gaptop, sticky="ew")
+            outgoing.grid(row=r, column=3, pady=self.style.gaptop, sticky="ew")
             self.outgoing_labels[name] = outgoing
 
             r = r+1

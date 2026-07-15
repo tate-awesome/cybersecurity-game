@@ -1,44 +1,40 @@
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
 from .....app_core.context import Context
+from .base_form import BaseForm
 
 
-class ArpForm(CTkFrame):
+class ArpForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
+        super().__init__(master, context)
         # Widgets
-        style = context.style
 
-        super().__init__(master, fg_color=style.color("widget"))
-        self.columnconfigure(0, weight=0)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=0)
-
-        header = CTkLabel(self, text="ARP Spoofing", font=style.get_font())
-        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
+        header = CTkLabel(self, text="ARP Spoofing", font=self.style.get_font())
+        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=self.style.gaptop)
         self.header = header
 
-        label1 = CTkLabel(self, text="Target IP:", font=style.get_font(), anchor="e")
-        label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        label1 = CTkLabel(self, text="Target IP:", font=self.style.get_font(), anchor="e")
+        label1.grid(row=1, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
         self.label1 = label1
 
-        entry1 = CTkEntry(self, font=style.get_font())
-        entry1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
+        entry1 = CTkEntry(self, font=self.style.get_font())
+        entry1.grid(row=1, column=2, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
         self.entry1 = entry1
 
-        label2 = CTkLabel(self, text="Host IP:", font=style.get_font(), anchor="e")
-        label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        label2 = CTkLabel(self, text="Host IP:", font=self.style.get_font(), anchor="e")
+        label2.grid(row=2, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
         self.label2 = label2
 
-        entry2 = CTkEntry(self, font=style.get_font())
-        entry2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
+        entry2 = CTkEntry(self, font=self.style.get_font())
+        entry2.grid(row=2, column=2, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
         self.entry2 = entry2
 
-        status = CTkLabel(self, text="", font=style.get_font(), anchor="e")
-        status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
+        status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
+        status.grid(row=3, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
         self.status = status
 
-        button = CTkButton(self, text="Start ARP Spoof", font=style.get_font(), command=None)
-        button.grid(row=3, column=2, sticky="e", pady=style.gap, padx=style.gap)
+        button = CTkButton(self, text="Start ARP Spoof", font=self.style.get_font(), command=None)
+        button.grid(row=3, column=2, sticky="e", pady=self.style.gap, padx=self.style.gap)
         self.button = button
 
         self.inputs = [entry1, entry2]
