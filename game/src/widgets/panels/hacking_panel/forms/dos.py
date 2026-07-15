@@ -1,24 +1,23 @@
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
-from ...app_core.context import Context
+from .....app_core.context import Context
 
 
-class ArpForm(CTkFrame):
+class DosForm(CTkFrame):
     def __init__(self, master: CTkFrame, context: Context):
 
         # Widgets
         style = context.style
 
         super().__init__(master, fg_color=style.color("widget"))
-        self.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=0)
 
-        header = CTkLabel(self, text="ARP Spoofing", font=style.get_font())
+        header = CTkLabel(self, text="Denial of Service", font=style.get_font())
         header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
         self.header = header
 
-        label1 = CTkLabel(self, text="Target IP:", font=style.get_font(), anchor="e")
+        label1 = CTkLabel(self, text="Target IP:Port", font=style.get_font(), anchor="e")
         label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.label1 = label1
 
@@ -26,7 +25,7 @@ class ArpForm(CTkFrame):
         entry1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
         self.entry1 = entry1
 
-        label2 = CTkLabel(self, text="Host IP:", font=style.get_font(), anchor="e")
+        label2 = CTkLabel(self, text="Target IP:Port", font=style.get_font(), anchor="e")
         label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.label2 = label2
 
@@ -38,7 +37,7 @@ class ArpForm(CTkFrame):
         status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
         self.status = status
 
-        button = CTkButton(self, text="Start ARP Spoof", font=style.get_font(), command=None)
+        button = CTkButton(self, text="Start DoS Attack", font=style.get_font(), command=None)
         button.grid(row=3, column=2, sticky="e", pady=style.gap, padx=style.gap)
         self.button = button
 
@@ -47,20 +46,20 @@ class ArpForm(CTkFrame):
         # Bindings
 
         def start():
-            context.states["game_progress"]["arp"] = True
-            target_ip = str(self.entry1.get())
-            host_ip = str(self.entry2.get())
+            context.states["game_progress"]["dos"] = True
+            ip_1 = str(self.entry1.get())
+            ip_2 = str(self.entry2.get())
             context.root.update_idletasks()
-            context.net.start_arp(target_ip, host_ip)
+            context.net.start_dos(ip_1, ip_2)
         def stop():
             context.root.update_idletasks()
-            context.net.stop_arp()
+            context.net.stop_dos()
         
-        start_on = context.net.arp_is_running()
-        self.bind_reversible(start, stop, "ARP Spoof", start_on)
+        start_on = context.net.dos_is_running()
+        self.bind_reversible(start, stop, "DoS Attack", start_on)
 
-        self.load_saved_input(context.states["hack_forms"]["arp"])
-        self.bind_input_autosave(context.states["hack_forms"]["arp"])
+        self.load_saved_input(context.states["hack_forms"]["dos"])
+        self.bind_input_autosave(context.states["hack_forms"]["dos"])
 
     def bind_input_autosave(self, save_slots: list[str]):
         for entry, slot_index in zip(self.inputs, range(len(save_slots))):

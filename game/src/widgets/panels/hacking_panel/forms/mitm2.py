@@ -1,8 +1,8 @@
 from customtkinter import CTkFrame, CTkLabel
-from ...app_core.context import Context
-from ...network.mod_table import ModTable
-from ...network.meta_packet import MetaPacket
-from ...network.data_buffer import DataBuffer
+from .....app_core.context import Context
+from .....network.mod_table import ModTable
+from .....network.meta_packet import MetaPacket
+from .....network.data_buffer import DataBuffer
 from typing import cast
 
 class Mitm2Form(CTkFrame):
@@ -14,7 +14,6 @@ class Mitm2Form(CTkFrame):
         
         # Create form
         super().__init__(master, fg_color=style.color("widget"))
-        self.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.gaptop)
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)

@@ -2,7 +2,7 @@ from ...app_core.context import Context
 
 # Better Widgets
 from ...widgets import Panes, MenuBar, Scrollable
-from ...widgets import ArpForm, NmapForm, DosForm, MitmForm, Mitm2Form, SniffForm
+from ...widgets import HackingPanel
 from ...widgets import NetworkVisualizer
 
 # Widgets
@@ -35,18 +35,12 @@ class AttackerV0(Page):
 
         trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
-        left_p = Scrollable(trifold.pane(0), context)       
+        left_p = trifold.pane(0)       
         middle_p = trifold.pane(1)
         right_p = trifold.pane(2)
 
     # Forms
-        nmap = NmapForm(left_p, context)
-        arp = ArpForm(left_p, context)
-        dos = DosForm(left_p, context)
-        sniff = SniffForm(left_p, context)
-        mitm = MitmForm(left_p, context)
-        mitm2 = Mitm2Form(left_p, context)
-        left_p.add_deadspace()
+        hacking_panel = HackingPanel(left_p, context)
 
     # Console
         console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)

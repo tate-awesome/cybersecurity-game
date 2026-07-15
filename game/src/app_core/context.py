@@ -43,6 +43,15 @@ class Context:
                 "modbus": "MODBUS Info"
             },
 
+            "hacking_forms": {
+                "nmap": "NMapping",
+                "arp": "ARP Spoofing",
+                "dos": "Denial of Service",
+                "sniff": "Packet Sniffing",
+                "mitm": "MITM Attack",
+                "mitm2": "MITM Readings"
+            },
+
             "packet_filter_categories": {
                 "source": "From Source",
                 "protocol": "Includes Protocol",
@@ -136,6 +145,15 @@ class Context:
                 "purpose": 1,
                 "summary": 1,
                 "modbus": 0
+            },
+
+            "hacking_forms": {
+                "nmap": 1,
+                "arp": 1,
+                "dos": 1,
+                "sniff": 1,
+                "mitm": 1,
+                "mitm2": 1
             },
 
             "world_map_sprites": {

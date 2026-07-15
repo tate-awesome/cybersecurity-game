@@ -1,5 +1,5 @@
 from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkEntry
-from ...app_core.context import Context
+from .....app_core.context import Context
 
 class NmapForm(CTkFrame):
     def __init__(self, master: CTkFrame, context: Context):
@@ -8,7 +8,6 @@ class NmapForm(CTkFrame):
         style = context.style
 
         super().__init__(master, fg_color=style.color("widget"))
-        self.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=0)

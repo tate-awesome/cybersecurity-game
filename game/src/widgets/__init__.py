@@ -4,12 +4,7 @@ from .frame_widgets.panes import Panes
 from .frame_widgets.scrollable import Scrollable
 from .frame_widgets.overlay import Overlay
 
-from .forms.arp import ArpForm
-from .forms.nmap import NmapForm
-from .forms.dos import DosForm
-from .forms.sniff import SniffForm
-from .forms.mitm import MitmForm
-from .forms.mitm2 import Mitm2Form
+from .panels import HackingPanel
 
 from .canvases.test_triangle import TriangleCanvas
 from .canvases.world_map import WorldMap

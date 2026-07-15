@@ -11,6 +11,7 @@ class Scrollable(CTkScrollableFrame):
         self.context = context
         self.master = master
         style = context.style
+        self.style = style
 
         super().__init__(master, fg_color=style.color("panel"))
         
@@ -46,7 +47,7 @@ class Scrollable(CTkScrollableFrame):
         canvas.bind("<Enter>", _bind_to_mousewheel)
         canvas.bind("<Leave>", _unbind_from_mousewheel)
 
-    def add_deadspace(self, height: float | int = 0.8):
+    def add_deadspace(self, type: str = "pack", height: float | int = 0.8):
         style = self.context.style
         self.update_idletasks()
         if isinstance(height, float):
@@ -57,5 +58,8 @@ class Scrollable(CTkScrollableFrame):
             h = self.winfo_height() * 0.8
         
         frame = CTkFrame(self, fg_color=style.color("panel"), height=h)
-        frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
+        if type == "pack":
+            frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
+        elif type == "grid":
+            frame.grid(row=100, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
         return frame
