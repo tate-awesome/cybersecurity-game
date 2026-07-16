@@ -6,99 +6,10 @@ from .base_form import BaseForm
 class DosForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context)
-        # Widgets
+        super().__init__(master, context, "dos", "DoS Attack")
 
-        header = CTkLabel(self, text="Denial of Service", font=self.style.get_font())
-        header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=self.style.gaptop)
-        self.header = header
+        self.add_header("Denial of Service")
 
-        label1 = CTkLabel(self, text="Target IP:Port", font=self.style.get_font(), anchor="e")
-        label1.grid(row=1, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
-        self.label1 = label1
-
-        entry1 = CTkEntry(self, font=self.style.get_font())
-        entry1.grid(row=1, column=2, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
-        self.entry1 = entry1
-
-        label2 = CTkLabel(self, text="Target IP:Port", font=self.style.get_font(), anchor="e")
-        label2.grid(row=2, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
-        self.label2 = label2
-
-        entry2 = CTkEntry(self, font=self.style.get_font())
-        entry2.grid(row=2, column=2, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
-        self.entry2 = entry2
-
-        status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
-        status.grid(row=3, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
-        self.status = status
-
-        button = CTkButton(self, text="Start DoS Attack", font=self.style.get_font(), command=None)
-        button.grid(row=3, column=2, sticky="e", pady=self.style.gap, padx=self.style.gap)
-        self.button = button
-
-        self.inputs = [entry1, entry2]
-
-        # Bindings
-
-        def start():
-            context.states["game_progress"]["dos"] = True
-            ip_1 = str(self.entry1.get())
-            ip_2 = str(self.entry2.get())
-            context.root.update_idletasks()
-            context.net.start_dos(ip_1, ip_2)
-        def stop():
-            context.root.update_idletasks()
-            context.net.stop_dos()
-        
-        start_on = context.net.dos_is_running()
-        self.bind_reversible(start, stop, "DoS Attack", start_on)
-
-        self.load_saved_input(context.states["hack_forms"]["dos"])
-        self.bind_input_autosave(context.states["hack_forms"]["dos"])
-
-    def bind_input_autosave(self, save_slots: list[str]):
-        for entry, slot_index in zip(self.inputs, range(len(save_slots))):
-            def autosave(event=None, e=entry, idx=slot_index):
-                save_slots[idx] = e.get()
-            entry.bind("<KeyRelease>", autosave)
-
-    def load_saved_input(self, save_slots: list[str]):
-        entries = self.inputs
-        for i in range(len(entries)):
-            entries[i].delete(0, "end")
-            entries[i].insert(0, save_slots[i])
-
-    def bind_reversible(self, start_func: callable, stop_func: callable, func_name: str, start_on):
-        button = self.button
-        entries = self.inputs
-        status = self.status
-
-        def configure_on():
-            button.configure(command=stop, text=f"Stop {func_name}")
-            status.configure(text=f"{func_name} is on")
-        def configure_off():
-            button.configure(command=start, text=f"Start {func_name}")
-            status.configure(text=f"{func_name} is off")
-        
-        def stop():
-            button.configure(text=f"Stopping {func_name}...")
-            stop_func()
-            configure_off()
-
-        def start():
-            button.configure(text=f"Starting {func_name}...")
-            start_func()
-            configure_on()
-
-        if start_on:
-            configure_on()
-        else:
-            configure_off()
-
-        if entries is None:
-            return
-        def event_callback(event=None):
-            start()
-        for entry in entries:
-            entry.bind("<Return>", event_callback)
+        label1, entry1 = self.add_labeled_entry("Target IP:Port")
+        label2, entry2 = self.add_labeled_entry("Target IP:Port")
+        self.add_attack_button(lambda: context.net.start_dos(entry1.get(), entry2.get()), context.net.stop_dos, context.net.dos_is_running)

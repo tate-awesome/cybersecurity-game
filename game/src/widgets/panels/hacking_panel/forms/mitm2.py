@@ -8,10 +8,8 @@ from .base_form import BaseForm
 
 class Mitm2Form(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-
-        super().__init__(master, context)
+        super().__init__(master, context, "mitm2", "MITM Attack")
         # Assign local references
-        self.context = context
         self.buffer = cast(DataBuffer, context.net.data_buffer)
         
         # Create form

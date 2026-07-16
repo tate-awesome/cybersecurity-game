@@ -8,7 +8,8 @@ class MitmForm(BaseForm):
 
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context)
+        super().__init__(master, context, "mitm", "MITM Attack")
+        self.style = context.style
         # Assign local references
         self.context = context
         
@@ -141,7 +142,6 @@ class MitmForm(BaseForm):
         for name in ["x", "y", "theta", "speed", "rudder"]:
             self.mults[name].bind("<Key>", alert)
             self.offsets[name].bind("<Key>", alert)
-
 
     def load_saved_input(self, table: ModTable):
         for name in ["x", "y", "theta", "speed", "rudder"]:

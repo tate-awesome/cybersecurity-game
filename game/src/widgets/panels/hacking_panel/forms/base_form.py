@@ -1,11 +1,18 @@
-from customtkinter import CTkFrame, CTkLabel, CTkButton
+from customtkinter import CTkFrame, CTkEntry, CTkLabel, CTkButton
+from abc import ABC, abstractmethod
+from typing import Callable
 from .....app_core.context import Context
 
-class BaseForm(CTkFrame):
-    def __init__(self, master: CTkFrame, context: Context):
+class BaseForm(ABC, CTkFrame):
+    def __init__(self, master: CTkFrame, context: Context, key: str, attack_noun: str):
+        '''
+        attack_noun is used like "start sniffer" "start DoS attack" "stopping MITM attack" "ARP Spoofer is running" "MITM attack is on"
+        '''
 
         self.style = context.style
         self.context = context
+        self.key = key
+        self.attack_noun = attack_noun
 
         super().__init__(master, fg_color=self.style.color("widget"))
 
@@ -13,105 +20,106 @@ class BaseForm(CTkFrame):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=0)
 
+        self.current_row = 0
+        self.entry_index = 0
+        self.entries = []
+        self.start_attack = lambda: None
+        self.stop_attack = lambda: None
+
 
     def add_header(self, text: str):
-        header = CTkLabel(self, text=text, font=self.style.get_font())
-        header.grid(row=0, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
-    #     super().__init__(master, fg_color=style.color("widget"))
-    #     self.columnconfigure(0, weight=0)
-    #     self.columnconfigure(1, weight=1)
-    #     self.columnconfigure(2, weight=0)
+        self.header = CTkLabel(self, text=text, font=self.style.get_font())
+        self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
+        self.current_row += 1
 
-    #     header = CTkLabel(self, text="Packet Sniffing", font=style.get_font())
-    #     header.grid(row=0, column=0, columnspan="3", sticky="ew", pady=style.gaptop)
-    #     self.header = header
+    def add_labeled_entry(self, label: str):
+        '''
+        Adds a labeled entry for the curent row in the form.
+        This entry has autosave and auto-loading for its text input.
+        '''
 
-    #     # label1 = CTkLabel(frame, text="Print to GUI:", font=style.get_font(), anchor="e")
-    #     # label1.grid(row=1, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-    #     # self.label1 = label1
+        # Create widgets
+        label = CTkLabel(self, text=label, font=self.style.get_font(), anchor="e")
+        label.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
 
-    #     # box1 = CTkCheckBox(frame, text="")
-    #     # box1.grid(row=1, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-    #     # self.box1 = box1
+        entry = CTkEntry(self, font=self.style.get_font())
+        entry.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
+        self.entries.append(entry)
 
-    #     # label2 = CTkLabel(frame, text="Print to Console:", font=style.get_font(), anchor="e")
-    #     # label2.grid(row=2, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-    #     # self.label2 = label2
+        # Bind autosave
+        save_slots = self.context.states["hack_forms"][self.key]
+        def autosave(event=None, e=entry, idx=self.entry_index):
+            save_slots[idx] = e.get()
+        entry.bind("<KeyRelease>", autosave)
 
-    #     # box2 = CTkCheckBox(frame, text="")
-    #     # box2.grid(row=2, column=2, sticky="ew", pady=style.gaptop, padx=style.gap)
-    #     # self.box2 = box2
+        # Load saved entry input
+        entry.delete(0, "end")
+        entry.insert(0, save_slots[self.entry_index])
 
-    #     status = CTkLabel(self, text="", font=style.get_font(), anchor="e")
-    #     status.grid(row=3, column=1, sticky="w", pady=style.gaptop, padx=style.gap)
-    #     self.status = status
+        # Update current index
+        self.current_row += 1
+        self.entry_index += 1
 
-    #     button = CTkButton(self, text="Start sniffing", font=style.get_font(), command=None)
-    #     button.grid(row=3, column=2, sticky="ew", pady=style.gap, padx=style.gap)
-    #     self.button = button
+        return label, entry
 
-    #     # self.inputs = [box1, box2]
+    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[None, bool], default_status: str = ""):
 
-    #     # Bindings
+        # Create widgets
+        self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
+        self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
 
-    #     def start():
-    #         context.states["game_progress"]["sniff"] = True
-    #         context.root.update_idletasks()
-    #         context.net.start_sniff()
+        self.attack_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
+        self.attack_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
 
-    #     def stop():
-    #         context.root.update_idletasks()
-    #         context.net.stop_sniff()
+        # Set function definitions
+        self.start_attack = start_attack_func
+        self.stop_attack = stop_attack_func
 
-    #     start_on = context.net.sniff_is_running()
-    #     self.bind_reversible(start, stop, "Sniffing", start_on)
-
-    # def bind_input_autosave(self, save_slots: list[str]):
-    #     """
-    #     Binds a callback to self.boxes (list of CTkCheckBoxes) that saves the
-    #     selected state to the corresponding save slot whenever toggled.
-    #     """
-    #     for box, idx in zip(self.inputs, range(len(save_slots))):
-    #         def autosave(i=idx, b=box):
-    #             # Save as string to match save_slots type
-    #             save_slots[i] = str(b.get())
-
-    #         box.configure(command=autosave)
-
-
-    # def load_saved_input(self, save_slots: list[str]):
-    #     """
-    #     Sets the selected state of each CTkCheckBox from the corresponding save slot.
-    #     """
-    #     for box, value in zip(self.inputs, save_slots):
-    #         if value == "1":
-    #             box.select()
-    #         else:
-    #             box.deselect()
-
-
-    # def bind_reversible(self, start_func: callable, stop_func: callable, func_name: str, start_on):
-    #     button = self.button
-    #     status = self.status
-
-    #     def configure_on():
-    #         button.configure(command=stop, text=f"Stop {func_name}")
-    #         status.configure(text=f"{func_name} is on")
-    #     def configure_off():
-    #         button.configure(command=start, text=f"Start {func_name}")
-    #         status.configure(text=f"{func_name} is off")
+        # Configure attack state
+        if attack_status_func():
+            self.configure_on()
+        else:
+            self.configure_off()
         
-    #     def stop():
-    #         button.configure(text=f"Stopping {func_name}...")
-    #         stop_func()
-    #         configure_off()
+        # Bind <Return>
+        def return_handler(event=None):
+            self.click_start()
+        for entry in self.entries:
+            entry.bind("<Return>", return_handler)
+        
+        # Update current index
+        self.current_row += 1
 
-    #     def start():
-    #         button.configure(text=f"Starting {func_name}...")
-    #         start_func()
-    #         configure_on()
+    def click_start(self):
+        self.context.states["game_progress"][self.key] = True
+        self.attack_button.configure(text=f"Starting {self.attack_noun}...")
+        self.start_attack()
+        self.context.root.update_idletasks()
+        self.configure_on()
+    
+    def configure_on(self):
+        self.attack_button.configure(command=self.click_stop, text=f"Stop {self.attack_noun}")
+        self.attack_status.configure(text=f"{self.attack_noun} is on")
 
-    #     if start_on:
-    #         configure_on()
-    #     else:
-    #         configure_off()
+    def click_stop(self):
+        self.attack_button.configure(text=f"Stopping {self.attack_noun}...")
+        self.stop_attack()
+        self.context.root.update_idletasks()
+        self.configure_off()
+    
+    def configure_off(self):
+        self.attack_button.configure(command=self.click_start, text=f"Start {self.attack_noun}")
+        self.attack_status.configure(text=f"{self.attack_noun} is off")
+
+    def add_button(self, default_status: str = "", button_text: str= "", button_func: Callable = None):
+        # Create widgets
+        status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
+        status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+
+        button = CTkButton(self, text=button_text, font=self.style.get_font(), command=button_func)
+        button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+
+        # Update current index
+        self.current_row += 1
+
+        return status, button
