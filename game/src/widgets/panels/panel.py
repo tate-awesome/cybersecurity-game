@@ -17,4 +17,4 @@ class Panel(CTkFrame):
         self.pack(**self.style.packing("panel"))
 
         if menu_bar_text is not None:
-            self.menu_bar = MenuBar(self, context, "Attacks")
+            self.menu_bar = MenuBar(self, context, menu_bar_text)
