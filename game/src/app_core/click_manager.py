@@ -16,10 +16,10 @@ class ClickManager:
         Dynamically a click callback function.
         """
         if name in self.listeners.keys():
-            print(f"[ClickManager] Refused to add duplicate listener: '{name}'")
-            return
+            print(f"[ClickManager] Replaced listener: '{name}'")
+        else:
+            print(f"[ClickManager] Added listener: '{name}'")
         self.listeners[name] = callback_func
-        print(f"[ClickManager] Added listener: '{name}'")
 
     def remove_listener(self, name: str):
         """
