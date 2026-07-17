@@ -215,6 +215,9 @@ class MenuBar(CTkFrame):
     def preset_button(self):
         self.add_button("Load Preset", self.context.router.select_preset)
     
+    def labels_button(self):
+        self.add_button("Load Labels", self.context.router.select_labels)
+    
     def help_button(self):
         self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
 
@@ -222,9 +225,10 @@ class MenuBar(CTkFrame):
         self.quit_button()
         self.refresh_button()
         self.back_button()
+        self.help_button()
         self.toggle_button()
         self.theme_button()
         self.pcap_button()
         self.preset_button()
-        self.help_button()
+        self.labels_button()
         

@@ -1,0 +1,120 @@
+{
+
+    "game_progress": {
+        "nmap": 0,
+        "arp": 0,
+        "sniff": 0,
+        "mitm": 0,
+        "dos": 0
+        },
+    
+    "hack_forms": {
+        "arp": ["",""],
+        "sniff": ["",""],
+        "dos": ["",""]
+    },
+
+    "packet_filter_checkboxes": {
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "mitm": 0,
+        "pcap": 0,
+        "TCP": 0,
+        "ARP": 0,
+        "UDP": 0,
+        "DNS": 0,
+        "misc": 0,
+        "MODBUSADU": 0,
+        "WRITE SINGLE REGISTER": 0,
+        "READ HOLDING REGISTERS RESPONSE": 0,
+        "out": 0,
+        "in": 0,
+        "other": 0
+    },
+
+    "packet_filter_entries": {
+        "address_filter": ""
+    },
+
+    "packet_filter_function": {
+        "summary": "Currently filtering for any packets.",
+        "function": "lambda mpkt: True",
+        "secret explanation for awful coding practice": "This is just the default filter on startup. It gets changed to eval() of itself"
+    },
+
+    "packet_columns": {
+        "time": 1,
+        "number": 1,
+        "length": 0,
+        "hack_info": 0,
+        "transaction": 0,
+        "layers": 0,
+        "purpose": 1,
+        "summary": 1,
+        "modbus": 0
+    },
+
+    "hacking_forms": {
+        "nmap": 1,
+        "arp": 1,
+        "dos": 0,
+        "sniff": 1,
+        "mitm": 0,
+        "mitm2": 1
+    },
+
+    "world_map_sprites": {
+        "boat_in": 1,
+        "boat_out": 1,
+        "path_in": 1,
+        "path_out": 1,
+
+        "boat_in_label": 1,
+        "boat_out_label": 1,
+        "boat_in_position": 1,
+        "boat_out_position": 1,
+
+        "grid_numbers": 1,
+        "grid_lines": 1,
+
+        "ocean": 1
+    },
+    
+    "world_map_colors": {
+        "ocean": "#003459",
+        "grid_lines": "white",
+        "grid_axes": "red",
+        "grid_numbers": "white",
+        "boat_in_fill": "yellow",
+        "boat_in_outline": "yellow",
+        "boat_out_fill": "yellow",
+        "boat_out_outline": "yellow",
+        "path_in": "yellow",
+        "path_out": "yellow"
+    },
+
+    "strip_chart_sprites": {
+        "grid_lines": 1,
+        "grid_axes": 1,
+        "grid_numbers": 1,
+        "head_in": 1,
+        "head_out": 1,
+        "path_in": 1,
+        "path_out": 1,
+        "head_in_label": 1,
+        "head_out_label": 1
+    },
+
+    "strip_chart_colors": {
+        "background": "white",
+        "grid_lines": "black",
+        "grid_axes": "red",
+        "grid_numbers": "black",
+        "path_in": "blue",
+        "path_out": "green",
+        "head_in": "blue",
+        "head_out": "green"
+    }
+}

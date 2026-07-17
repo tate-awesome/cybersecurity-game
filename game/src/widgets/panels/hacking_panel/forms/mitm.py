@@ -83,7 +83,7 @@ class MitmForm(BaseForm):
 
         # Define stop/start
         def start_mitm():
-            self.context.states["game_progress"]["mitm"] = True
+            self.context.states["game_progress"]["mitm"] = 1
             self.context.root.update_idletasks()
             self.context.net.start_mitm()
 

@@ -64,6 +64,8 @@ class PacketConsole(CTkFrame):
     def print_tick(self):
         # self.buffer.reset_packet_cursor()
         # self.treeview.delete(*self.treeview.get_children())
+        if isinstance(self.context.states["packet_filter_function"]["function"], str):
+            self.context.states["packet_filter_function"]["function"] = eval(self.context.states["packet_filter_function"]["function"])
         packets = self.buffer.get_new_packets(self.context.states["packet_filter_function"]["function"])
         if len(packets) == 0:
             # Don't print

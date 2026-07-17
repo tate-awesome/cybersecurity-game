@@ -91,7 +91,7 @@ class BaseForm(ABC, CTkFrame):
         self.current_row += 1
 
     def click_start(self):
-        self.context.states["game_progress"][self.key] = True
+        self.context.states["game_progress"][self.key] = 1
         self.attack_button.configure(text=f"Starting {self.attack_noun}...")
         self.start_attack()
         self.context.root.update_idletasks()
