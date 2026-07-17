@@ -1,16 +1,11 @@
 from ...app_core.context import Context
 
 # Better Widgets
-from ...widgets import Panes, MenuBar, Scrollable
-from ...widgets import HackingPanel, StatusConsole, PacketConsole
-from ...widgets import NetworkVisualizer
+from ...widgets import Panes, MenuBar
+from ...widgets import HackingPanel, StatusConsole, PacketConsole, NetworkDiagram, BoatModel, VariableMonitor
 
 # Widgets
 from ...widgets import popup
-from ...widgets import BoatModel
-from ...widgets import VariableMonitor
-from ...widgets.displays.values_table import ValuesTable
-from ...widgets import NetworkVisualizer
 from ...pages.page import Page
 
 # Network
@@ -43,7 +38,7 @@ class AttackerV0(Page):
     # Console
         console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)
         packet_console = PacketConsole(console.pane(0), context)
-        network_visualizer = NetworkVisualizer(console.pane(1), context)
+        network_visualizer = NetworkDiagram(console.pane(1), context)
         status_console = StatusConsole(console.pane(2), context)
 
 
