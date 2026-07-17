@@ -1,28 +1,24 @@
-from customtkinter import *
-from ...network.meta_packet import MetaStatus
-from ...network.data_buffer import DataBuffer
-from ...app_core.context import Context
+from customtkinter import CTkTextbox
+from ....network.meta_packet import MetaStatus
+from ....network.data_buffer import DataBuffer
+from ....app_core.context import Context
 from typing import cast
-from .. import MenuBar
+from ... import MenuBar
+from ..panel import Panel
 
-class StatusConsole(CTkFrame):
+class Builder(Panel):
     def __init__(self, master, context: Context):
-        self.context = context
-        self.style = context.style
-        self.buffer = cast(DataBuffer, context.net.data_buffer)
+        super().__init__(master, context, "Status Console")
 
-        super().__init__(master, fg_color=self.style.color("panel"))
-        self.pack(**self.style.packing("panel"))
-
-        menu_frame = MenuBar(self, context, "Status Console")
+        self.buffer = context.net.data_buffer
 
         self.text_box = self.create_text_box(self)
 
-        # minimize_button = menu_frame.minimize_button(self.text_box, master)
+        # minimize_button = self.menu_bar.minimize_button(self.text_box, master)
 
-        pause_button = menu_frame.reversible_button(self.pause, self.unpause, "Pause", "Resume")
+        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "Pause", "Resume")
 
-        jump_button = menu_frame.reversible_button(self.unlock_scrolling, self.lock_scrolling, "Scroll Freely", "Jump to Live")
+        jump_button = self.menu_bar.reversible_button(self.unlock_scrolling, self.lock_scrolling, "Scroll Freely", "Jump to Live")
 
         # Printing Flags
         self.jump_to_bottom = True

@@ -2,13 +2,11 @@ from ...app_core.context import Context
 
 # Better Widgets
 from ...widgets import Panes, MenuBar, Scrollable
-from ...widgets import HackingPanel
+from ...widgets import HackingPanel, StatusConsole, PacketConsole
 from ...widgets import NetworkVisualizer
 
 # Widgets
 from ...widgets import popup
-from ...widgets.console.packet_console import PacketConsole
-from ...widgets.console.status_console import StatusConsole
 from ...widgets import BoatModel
 from ...widgets import VariableMonitor
 from ...widgets.displays.values_table import ValuesTable

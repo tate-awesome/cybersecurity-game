@@ -1,7 +1,7 @@
-from ...app_core.context import Context
-from ...network.meta_packet import MetaPacket
-from ...network.data_buffer import DataBuffer
-from ...widgets import Overlay
+from ....app_core.context import Context
+from ....network.meta_packet import MetaPacket
+from ....network.data_buffer import DataBuffer
+from ... import Overlay
 
 from typing import cast
 import customtkinter as ctk

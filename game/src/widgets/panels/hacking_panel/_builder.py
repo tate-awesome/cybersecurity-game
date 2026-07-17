@@ -1,5 +1,6 @@
 from customtkinter import CTkFrame
 from ....app_core.context import Context
+from ..panel import Panel
 
 from .forms.arp import ArpForm
 from .forms.nmap import NmapForm
@@ -7,21 +8,16 @@ from .forms.dos import DosForm
 from .forms.sniff import SniffForm
 from .forms.mitm import MitmForm
 from .forms.mitm2 import Mitm2Form
-
 from .form_overlay import FormOverlay
 
 from ....widgets import Scrollable, MenuBar, Overlay
 
-class Builder(CTkFrame):
+class Builder(Panel):
 
     def __init__(self, master: CTkFrame, context: Context):
-        self.style = context.style
-        self.context = context
 
-        super().__init__(master, fg_color=self.style.color("panel"))
-        self.pack(**self.style.packing("panel"))
+        super().__init__(master, context, "Attacks")
 
-        menu_bar = MenuBar(self, context, "Attacks")
         scrollable = Scrollable(self, context)
 
         self.forms = {}
@@ -39,7 +35,7 @@ class Builder(CTkFrame):
         scrollable.columnconfigure(0, weight=1)
         scrollable.add_deadspace("grid")
 
-        forms_button = menu_bar.add_button("Forms")
+        forms_button = self.menu_bar.add_button("Forms")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
 

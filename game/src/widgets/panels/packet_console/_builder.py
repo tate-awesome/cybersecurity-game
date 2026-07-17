@@ -1,41 +1,37 @@
 from customtkinter import *
 
-from ...network.meta_packet import MetaPacket
-from ...network.data_buffer import DataBuffer
+from ....network.meta_packet import MetaPacket
+from ....network.data_buffer import DataBuffer
 from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay
-from ...app_core.context import Context
+from ....app_core.context import Context
 from typing import cast
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
-from .. import MenuBar
+from ... import MenuBar
+from ..panel import Panel
 from customtkinter import CTkFrame
 
-class PacketConsole(CTkFrame):
+class Builder(Panel):
     def __init__(self, master, context: Context):
-        self.context = context
-        self.style = context.style
+        super().__init__(master, context, "Packet Console")
+
         self.buffer = cast(DataBuffer, context.net.data_buffer)
-
-        super().__init__(master, fg_color=self.style.color("panel"))
-        self.pack(**self.style.packing("panel"))
-
-        menu_frame = MenuBar(self, context, "Packet Console")
         #  self.create_filter_boxes(menu_frame)
 
         self.treeview, body_container = self.create_treeview(self)
         self.refresh_columns()
 
-        minimize_button = menu_frame.minimize_button(body_container, master)
+        minimize_button = self.menu_bar.minimize_button(body_container, master)
 
-        jump_button = menu_frame.reversible_button(
+        jump_button = self.menu_bar.reversible_button(
             self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
 
-        filter_button = menu_frame.add_button("Filters")
+        filter_button = self.menu_bar.add_button("Filters")
         filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
 
-        columns_button = menu_frame.add_button("Columns")
+        columns_button = self.menu_bar.add_button("Columns")
         columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
 
         # Printing Flags

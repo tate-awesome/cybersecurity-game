@@ -1,6 +1,6 @@
-from ...network.data_buffer import DataBuffer
-from ...app_core.context import Context
-from ...widgets import Overlay
+from ....network.data_buffer import DataBuffer
+from ....app_core.context import Context
+from ... import Overlay
 from customtkinter import *
 from typing import cast
 
