@@ -66,6 +66,18 @@ const uint16_t HREG_RUDDER = 4;
 static int readAttempts = 0;
 static int readFailures = 0;
 
+float speed_estimate = 0.0f;
+float speed_covariance = 1.0f;
+float speed_process_variance = 0.05f;
+float speed_measurement_variance = 1.0f;
+float speed_kalman_gain = 0.0f;
+
+float rudder_estimate = 0.0f;
+float rudder_covariance = 1.0f;
+float rudder_process_variance = 0.02f;
+float rudder_measurement_variance = 4.0f;
+float rudder_kalman_gain = 0.0f;
+
 static String key = (String)1234;
 
 //// Physical scaling constants 
@@ -154,6 +166,38 @@ uint16_t keyToUint(const String& key){
   }
 
   return(uint16_t)sum;
+}
+
+float speedKF(float measurement, float dt) {
+    // Prediction
+    speed_covariance += speed_process_variance * dt;
+
+    // Kalman Gain
+    speed_kalman_gain = speed_covariance / (speed_covariance + speed_measurement_variance);
+
+    // Correction
+    speed_estimate += speed_kalman_gain * (measurement - speed_estimate);
+
+    // Covariance Update
+    speed_covariance *= (1.0f - speed_kalman_gain);
+
+    return speed_estimate;
+}
+
+float rudderKF(float measurement, float dt) {
+    // Prediction
+    rudder_covariance += rudder_process_variance * dt;
+
+    // Kalman Gain
+    rudder_kalman_gain = rudder_covariance / (rudder_covariance + rudder_measurement_variance);
+
+    // Correction
+    rudder_estimate += rudder_kalman_gain * (measurement - rudder_estimate);
+
+    // Covariance Update
+    rudder_covariance *= (1.0f - rudder_kalman_gain);
+
+    return rudder_estimate;
 }
 
 void sendPose() {
@@ -355,8 +399,8 @@ void loop() {
       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
 
-      state_speed  = speed_m_s;
-      state_rudder  = rudder_deg;
+      state_speed  = speedKF(speed_m_s, dt);
+      state_rudder  = rudderKF(rudder_deg, dt);
 
       // Only integrate if there's meaningful motion
       if (fabs(speed_m_s) > 0.01f) {
