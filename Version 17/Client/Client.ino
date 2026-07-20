@@ -78,6 +78,10 @@ float rudder_process_variance = 0.02f;
 float rudder_measurement_variance = 4.0f;
 float rudder_kalman_gain = 0.0f;
 
+static bool speed_anomaly_detected = false;
+static bool rudder_anomaly_detected = false;
+float last_speed_error = 0.0f;
+
 static String key = (String)1234;
 
 //// Physical scaling constants 
@@ -95,6 +99,12 @@ static inline uint16_t theta_to_mrad_u16(float t) {
   while (t < 0) t += 2.0f * PI;
   while (t >= 2.0f * PI) t -= 2.0f * PI;
   return (uint16_t)lroundf(t * 1000.0f);
+}
+
+float wrap_to_pi(float angle) {
+    while (angle > PI)  angle -= 2.0f * PI;
+    while (angle < -PI) angle += 2.0f * PI;
+    return angle;
 }
 
 bool writeH(uint16_t addr, uint16_t val) {
@@ -243,6 +253,8 @@ void restPost() {
   doc["theta"]     = state_theta;
   doc["speed"]     = state_speed;
   doc["rudder"]    = state_rudder;
+  doc["speed_anomaly_detected"] = speed_anomaly_detected;
+  doc["rudder_anomaly_detected"] = rudder_anomaly_detected;
 
   String payload;
   serializeJson(doc, payload);
@@ -399,8 +411,35 @@ void loop() {
       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
 
+      float last_speed = speed_m_s;
+      float last_rudder = rudder_deg;
+
       state_speed  = speedKF(speed_m_s, dt);
       state_rudder  = rudderKF(rudder_deg, dt);
+
+      float speed_error = abs(last_speed - state_speed);
+      float rudder_error = fabs(wrap_to_pi(last_rudder - state_rudder));
+
+      if(speed_error > 3.0f && last_speed_error < speed_error){
+        speed_anomaly_detected = true;
+      }else{
+        speed_anomaly_detected = false;
+      }
+
+      last_speed_error = speed_error;
+
+      rudder_anomaly_detected = rudder_error > 3.25f;
+
+      if(speed_anomaly_detected){
+        Serial.print("SPEED ERROR: ");
+        Serial.print(speed_error);
+        Serial.println(" ");
+      }
+      if(rudder_anomaly_detected){
+        Serial.print("RUDDER ERROR: ");
+        Serial.print(rudder_error);
+        Serial.println(" ");
+      }
 
       // Only integrate if there's meaningful motion
       if (fabs(speed_m_s) > 0.01f) {
