@@ -35,7 +35,7 @@ class DefenderV0(Page):
     # Flag definitions — (key, display label).
     # Set the corresponding key to True in self._flags to light it up.
     FLAG_DEFS = [
-        ("kalman_filter_flag", "Kalman Filtering Threshold Surpassed"),
+        ("state_filter_flag", "State Filtering Threshold Surpassed"),
         ("speed_filter_flag", "Speed Filtering Treshold Surpassed"),
         ("rudder_filter_flag", "Rudder Filtering Treshold Surpassed")
     ]
@@ -533,7 +533,7 @@ class DefenderV0(Page):
 
         if server_points:
             latest_server = server_points[-1]
-            self._flags["kalman_filter_flag"] = bool(latest_server.get("state_anomaly_detected", False))
+            self._flags["state_filter_flag"] = bool(latest_server.get("state_anomaly_detected", False))
 
         if client_points:
             latest_client = client_points[-1]
