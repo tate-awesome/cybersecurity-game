@@ -55,7 +55,6 @@ String g_encryption_key  = "1234";
 float g_target_x = 100.0;
 float g_target_y = 100.0;
 
-bool g_filter_correction = false;
 float g_target_temp = 75.2f;
 
 // Live HVAC readings, reported in by HVAC_Server.ino's /hvac_status posts.
@@ -1302,7 +1301,6 @@ void setupRoutes() {
   doc["client_point_count"] = g_client_arr.size();
   doc["server_point_count"] = g_server_arr.size();
   doc["connected_clients"] = WiFi.softAPgetStationNum();
-  doc["filter_correction"] = g_filter_correction;
   doc["submarine_mode"] = g_submarine_mode;
   doc["target_temp"]    = g_target_temp;
   doc["current_temp"]   = g_current_room_temp;
@@ -1403,7 +1401,6 @@ void setupRoutes() {
       resp["encryption_key"]    = g_encryption_key;
       resp["target_x"]          = g_target_x;
       resp["target_y"]          = g_target_y;
-      resp["filter_correction"]  = g_filter_correction;
       resp["submarine_mode"] = g_submarine_mode;
 
       String out;
@@ -1462,9 +1459,6 @@ void setupRoutes() {
         req->send(400, "application/json", "{\"error\":\"bad json\"}");
         return;
       }
-      g_filter_correction = doc["filter_correction"] | false;
-      Serial.printf("[AP] filterCorrection set: %s\n",
-                    g_filter_correction ? "ON" : "OFF");
       req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
   );
