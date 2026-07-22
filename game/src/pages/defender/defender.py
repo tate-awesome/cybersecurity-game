@@ -50,7 +50,7 @@ class DefenderV0(Page):
         self._positions     = []
         self._last_bearing  = None
         self._encryption_on = False
-        self._filter_correction_on = False
+        self._AP_communication_on = False
         self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
         self._last_points   = {"client": [], "server": []}
@@ -77,7 +77,7 @@ class DefenderV0(Page):
         self._submarine_left = CTkFrame(self._mode_content_left, fg_color="transparent")
         self._submarine_left.pack(fill="x")
         self._build_encryption_block(self._submarine_left)
-        self._build_filter_correction_block(self._submarine_left)
+        self._build_AP_communication_block(self._submarine_left)
         self._build_target_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
@@ -189,20 +189,20 @@ class DefenderV0(Page):
 
         self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
-    def _build_filter_correction_block(self, parent):
+    def _build_AP_communication_block(self, parent):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
         section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
 
-        CTkLabel(section, text="FILTER CORRECTION", font=self.style.get_font()).pack(
+        CTkLabel(section, text="COMMUNICATE VIA ACCESS POINT", font=self.style.get_font()).pack(
             anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
         )
         self._filter_label = CTkLabel(section, text="Status: OFF",
                                     font=self.style.get_font(), text_color="gray")
         self._filter_label.pack(anchor="w", padx=self.style.igap)
 
-        self._filter_button = CTkButton(section, text="Enable Filter Correction",
+        self._filter_button = CTkButton(section, text="Enable Communication Through AP",
                                         font=self.style.get_font(),
-                                        command=self._toggle_filter_correction)
+                                        command=self._toggle_AP_communication)
         self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_mode_block(self, parent):
@@ -390,34 +390,34 @@ class DefenderV0(Page):
 
         threading.Thread(target=_request, daemon=True).start()
 
-    def _toggle_filter_correction(self):
-        new_state = not self._filter_correction_on
+    def _toggle_AP_communication(self):
+        new_state = not self._AP_communication_on
 
         def _request():
             try:
                 resp = requests.post(
-                    f"{self._get_url()}/set_filter_correction",
-                    json={"filter_correction": new_state},
+                    f"{self._get_url()}/set_AP_communication",
+                    json={"AP_communication": new_state},
                     timeout=3,
                 )
                 if resp.ok:
-                    self._filter_correction_on = new_state
-                    self.after(0, self._refresh_filter_correction_ui)
+                    self._AP_communication_on = new_state
+                    self.after(0, self._refresh_AP_communication_ui)
             except Exception:
                 pass
 
         threading.Thread(target=_request, daemon=True).start()
 
-    def _refresh_filter_correction_ui(self):
+    def _refresh_AP_communication_ui(self):
         try:
-            if self._filter_correction_on:
+            if self._AP_communication_on:
                 self._filter_label.configure(text="Status: ON", text_color="green")
-                self._filter_button.configure(text="Disable Filter Correction")
+                self._filter_button.configure(text="Disable Communication Through AP")
             else:
                 self._filter_label.configure(text="Status: OFF", text_color="gray")
-                self._filter_button.configure(text="Enable Filter Correction")
+                self._filter_button.configure(text="Enable Communication Through AP")
         except Exception as e:
-            print("refresh_filter_correction_ui:", e)
+            print("refresh_AP_communication_ui:", e)
 
     def _send_target(self):
         raw_x = self._target_x_entry.get().strip()

@@ -27,6 +27,10 @@ const byte DNS_PORT = 53;
 Preferences   prefs;
 AsyncWebServer server(80);
 bool g_submarine_mode = true;
+bool g_AP_communication = false;
+
+static constexpr uint32_t CLIENT_STATE_TTL_MS = 500;
+static constexpr uint32_t SERVER_CONTROL_TTL_MS = 500;
 
 String g_ssid     = "";
 String g_password = "";
@@ -56,6 +60,16 @@ float g_target_x = 100.0;
 float g_target_y = 100.0;
 
 float g_target_temp = 75.2f;
+
+// Latest client telemetry
+float g_client_x = 0, g_client_y = 0, g_client_heading = 0;
+bool  g_has_client = false;
+uint32_t g_client_ms = 0;
+
+// Latest server control
+float g_server_velocity = 0, g_server_rudder = 0;
+bool  g_has_control = false;
+uint32_t g_control_ms = 0;
 
 // Live HVAC readings, reported in by HVAC_Server.ino's /hvac_status posts.
 // AP doesn't compute these itself — it just relays whatever the Server last sent.
@@ -1240,6 +1254,8 @@ void setupRoutes() {
     doc["ap_router_ip"] = "192.168.4.1"; // ← same, always static
     doc["target_temp"]    = g_target_temp;    // ← live HVAC setpoint
     doc["submarine_mode"] = g_submarine_mode; // ← so HVAC devices know if they should run
+    doc["AP_communication"] = g_AP_communication;
+
     String out;
     serializeJson(doc, out);
     req->send(200, "application/json", out);
@@ -1282,6 +1298,73 @@ void setupRoutes() {
     req->send(200, "application/json", "{\"status\":\"rebooting\"}");
     delay(500);
     ESP.restart();
+  });
+
+    // Client -> AP
+  server.on("/client_state", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+      StaticJsonDocument<128> doc;
+      if (deserializeJson(doc, data, len)) {
+        req->send(400, "application/json", "{\"error\":\"bad json\"}");
+        return;
+      }
+
+      g_client_x = doc["x"] | 0.0f;
+      g_client_y = doc["y"] | 0.0f;
+      g_client_heading = doc["heading"] | 0.0f;
+      g_has_client = true;
+      g_client_ms = millis();
+
+      req->send(200, "application/json", "{\"status\":\"ok\"}");
+    }
+  );
+
+  // Server reads latest client state
+  server.on("/client_state", HTTP_GET, [](AsyncWebServerRequest* req) {
+    StaticJsonDocument<128> doc;
+    uint32_t age = g_has_client ? (millis() - g_client_ms) : 999999;
+    bool fresh = g_has_client && age <= CLIENT_STATE_TTL_MS;
+
+    doc["valid"] = fresh;
+    doc["x"] = g_client_x;
+    doc["y"] = g_client_y;
+    doc["heading"] = g_client_heading;
+    doc["age_ms"] = g_has_client ? age : -1;
+
+    String out;
+    serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
+  // Server -> AP
+  server.on("/server_control", HTTP_GET, [](AsyncWebServerRequest* req) {
+    StaticJsonDocument<128> doc;
+    uint32_t age = g_has_control ? (millis() - g_control_ms) : 999999;
+    bool fresh = g_has_control && age <= SERVER_CONTROL_TTL_MS;
+
+    doc["valid"] = fresh;
+    doc["velocity"] = g_server_velocity;
+    doc["rudder"] = g_server_rudder;
+    doc["age_ms"] = g_has_control ? age : -1;
+
+    String out;
+    serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
+  // Client reads latest server control
+  server.on("/server_control", HTTP_GET, [](AsyncWebServerRequest* req) {
+    StaticJsonDocument<128> doc;
+    doc["valid"] = g_has_control;
+    doc["velocity"] = g_server_velocity;
+    doc["rudder"] = g_server_rudder;
+    doc["age_ms"] = g_has_control ? (millis() - g_control_ms) : -1;
+
+    String out;
+    serializeJson(doc, out);
+    req->send(200, "application/json", out);
   });
 
   // ── GET /status  →  JSON health check ──────────────────────
@@ -1448,17 +1531,21 @@ void setupRoutes() {
     }
   );
 
-  // ── POST /set_filter_correction  →  Defender toggles filter correction ─
-  server.on("/set_filter_correction", HTTP_POST,
+  server.on("/set_AP_communication", HTTP_POST,
     [](AsyncWebServerRequest* req) {},
     nullptr,
     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
       StaticJsonDocument<64> doc;
-      DeserializationError err = deserializeJson(doc, data, len);
-      if (err) {
+      if (deserializeJson(doc, data, len)) {
         req->send(400, "application/json", "{\"error\":\"bad json\"}");
         return;
       }
+
+      g_AP_communication = doc["AP_communication"] | false;
+
+      Serial.printf("[AP] AP communication = %s\n",
+                    g_AP_communication ? "ON" : "OFF");
+
       req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
   );

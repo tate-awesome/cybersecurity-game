@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════
 //  Combined Client — Submarine pose-tracking client + HVAC thermostat
 //  client, in one sketch. Only one model's logic runs at a time; which one
-//  is decided by AP_ESP32.ino's submarine_mode, polled continuously below.
+//  is decided by ESP32.ino's submarine_mode, polled continuously below.
 //  This device never sets the mode itself — it only reads it.
 // ════════════════════════════════════════════════════════════════════════
 
@@ -40,6 +40,11 @@ const char* AP_SSID     = "AP-Config";
 const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL  = "http://192.168.4.1/config";
 const char* REST_URL    = "http://192.168.4.1/data";
+const char* CLIENT_STATE_URL   = "http://192.168.4.1/client_state";
+const char* SERVER_CONTROL_URL = "http://192.168.4.1/server_control";
+
+float g_remote_velocity = 0.0f;
+float g_remote_rudder = 0.0f;
 
 IPAddress serverIP(192, 168, 4, 10);   // Server lives here regardless of mode
 ModbusIP mb;
@@ -51,6 +56,8 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 // unchanged if the AP can't be reached yet, matching HVAC_Server.ino's
 // existing convention for the same flag.
 bool g_submarine_mode = true;
+bool AP_communication = false;
+bool g_has_remote_control = false;
 
 // Generic Modbus holding-register write with one retry on timeout. Used by
 // both models — neither needs anything register-specific baked in here.
@@ -171,6 +178,9 @@ void syncModeFromAP() {
     if (!deserializeJson(doc, http.getString())) {
       if (doc.containsKey("submarine_mode")) {
         g_submarine_mode = doc["submarine_mode"].as<bool>();
+      }
+      if (doc.containsKey("AP_communication")) {
+        AP_communication = doc["AP_communication"].as<bool>();
       }
     }
   }
@@ -371,6 +381,52 @@ void restPost() {
 }
 #endif
 
+void postClientState() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  HTTPClient http;
+  http.begin(CLIENT_STATE_URL);
+  http.addHeader("Content-Type", "application/json");
+
+  StaticJsonDocument<128> doc;
+  doc["source"]  = "client";
+  doc["x"]       = noise_x;
+  doc["y"]       = noise_y;
+  doc["heading"] = noise_theta;
+
+  String payload;
+  serializeJson(doc, payload);
+
+  int code = http.POST(payload);
+  if (code != 200) {
+    Serial.printf("[CLIENT] postClientState failed HTTP %d\n", code);
+  }
+  http.end();
+}
+
+void getServerControl() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  HTTPClient http;
+  http.begin(SERVER_CONTROL_URL);
+  int code = http.GET();
+
+  if (code == HTTP_CODE_OK) {
+    StaticJsonDocument<128> doc;
+    if (!deserializeJson(doc, http.getString())) {
+      g_has_remote_control = doc["valid"] | false;
+      if (g_has_remote_control) {
+        g_remote_velocity = doc["velocity"] | 0.0f;
+        g_remote_rudder   = doc["rudder"]   | 0.0f;
+      }
+    }
+  } else {
+    Serial.printf("[CLIENT] getServerControl failed HTTP %d\n", code);
+  }
+
+  http.end();
+}
+
 // Runs the full Submarine pose-feedback cycle. Internally gated at ~20Hz
 // for the Modbus feedback loop and its own slower timers for pose pushes,
 // LCD updates, and REST posts — exactly the original timing, just no
@@ -396,6 +452,11 @@ void runSubmarineCycle() {
 
       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
+
+      if(AP_communication && g_has_remote_control){
+        speed_m_s = g_remote_velocity;
+        rudder_deg = g_remote_rudder;
+      }
 
       float last_speed = speed_m_s;
       float last_rudder = rudder_deg;
@@ -456,6 +517,10 @@ void runSubmarineCycle() {
       if (millis() - lastPoseMs >= 200) {
         lastPoseMs = millis();
         sendPoseAuto();
+        if(AP_communication){
+          postClientState();
+          getServerControl();
+        }
       }
 
       static uint32_t lastLcdUpdate = 0;

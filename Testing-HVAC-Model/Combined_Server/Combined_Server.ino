@@ -36,9 +36,17 @@ const char* AP_SSID     = "AP-Config";
 const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL  = "http://192.168.4.1/config";
 const char* REST_URL    = "http://192.168.4.1/data";
+const char* CLIENT_STATE_URL   = "http://192.168.4.1/client_state";
+const char* SERVER_CONTROL_URL = "http://192.168.4.1/server_control";
+
+float g_client_x = 0.0f;
+float g_client_y = 0.0f;
+float g_client_theta = 0.0f;
+bool  g_has_client_pose = false;
 
 ModbusIP mb;
 bool g_submarine_mode = true;
+bool AP_communication = false;
 
 const uint16_t HREG_X_PHYS     = 10;
 const uint16_t HREG_Y_PHYS     = 11;
@@ -112,6 +120,9 @@ void syncModeFromAPConfig() {
       }
       if (doc.containsKey("submarine_mode")) {
         g_submarine_mode = doc["submarine_mode"].as<bool>();
+      }
+      if (doc.containsKey("AP_communication")) {
+        AP_communication = doc["AP_communication"].as<bool>();
       }
     }
   }
@@ -324,6 +335,61 @@ void restPost() {
 }
 #endif
 
+bool fetchClientState() {
+    if (WiFi.status() != WL_CONNECTED) {
+        g_has_client_pose = false;
+        return false;
+    }
+
+    HTTPClient http;
+    http.begin(CLIENT_STATE_URL);
+    int code = http.GET();
+
+    if (code == HTTP_CODE_OK) {
+        StaticJsonDocument<128> doc;
+        if (!deserializeJson(doc, http.getString())) {
+            bool valid = doc["valid"] | false;
+            uint32_t age = doc["age_ms"] | 999999;
+
+            if (valid && age <= 500) {
+                g_client_x = doc["x"] | 0.0f;
+                g_client_y = doc["y"] | 0.0f;
+                g_client_theta = doc["heading"] | 0.0f;
+                g_has_client_pose = true;
+                http.end();
+                return true;
+            }
+        }
+    }
+
+    g_has_client_pose = false;
+    http.end();
+    return false;
+}
+
+void postServerControl() {
+    if (WiFi.status() != WL_CONNECTED) return;
+
+    HTTPClient http;
+    http.begin(SERVER_CONTROL_URL);
+    http.addHeader("Content-Type", "application/json");
+
+    StaticJsonDocument<128> doc;
+    doc["source"]   = "server";
+    doc["velocity"] = g_speed_cmd;
+    doc["rudder"]   = g_rudder_deg;
+
+    String body;
+    serializeJson(doc, body);
+
+    int code = http.POST(body);
+    if (code != 200) {
+        Serial.printf("[SERVER] postServerControl failed HTTP %d\n", code);
+    }
+
+    http.end();
+}
+
 
 void runSubmarineCycle() {
     float target_x = g_target_x;
@@ -345,12 +411,8 @@ void runSubmarineCycle() {
         target_y       = clampf_local(current_duty_y * Y_RANGE_M, 0.0f, Y_RANGE_M);
     }
 
-    uint16_t h_x;
-    uint16_t h_y;
-    uint16_t h_th;
-    float last_state_x;
-    float last_state_y;
-    float last_state_theta;
+    uint16_t h_x, h_y, h_th;
+    float last_state_x, last_state_y, last_state_theta;
     bool new_value = false;
 
     // Read state from Modbus registers (written by Client)
@@ -368,6 +430,17 @@ void runSubmarineCycle() {
         g_state_x     = clampf_local(h_x / 100.0f, 0.0f, X_RANGE_M);
         g_state_y     = clampf_local(h_y / 100.0f, 0.0f, Y_RANGE_M);
         g_state_theta = ((int16_t)h_th) / 1000.0f;
+    }
+
+    if(AP_communication){
+      fetchClientState();
+      if(g_has_client_pose){
+        g_state_x     = clampf_local(g_client_x, 0.0f, X_RANGE_M);
+        g_state_y     = clampf_local(g_client_y, 0.0f, Y_RANGE_M);
+        g_state_theta = wrap_to_pi(g_client_theta);
+      }else{
+        return;
+      }
     }
 
     if(last_state_x == g_state_x && last_state_y == g_state_y && last_state_theta == g_state_theta){
@@ -413,6 +486,10 @@ void runSubmarineCycle() {
 
     u_prev_speed = g_speed_cmd;
     u_prev_rudder = g_rudder_deg * PI / 180.0f;
+
+    if(AP_communication){
+      postServerControl();
+    }
 
     // Write speed/rudder back to Modbus
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
