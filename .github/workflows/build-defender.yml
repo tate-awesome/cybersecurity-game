@@ -27,7 +27,9 @@ jobs:
 
       - name: Confirm defender imports cleanly with zero hardware deps
         working-directory: game
-        run: python -c "from src.pages.defender.defender import DefenderV0; print('OK: defender imports clean')"
+        run: |
+          python -c "from src.pages.defender.defender import DefenderV0; print('OK: defender imports clean')"
+
 
   # ── Build matrix ─────────────────────────────────────────────
   build:
