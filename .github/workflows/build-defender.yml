@@ -1,0 +1,96 @@
+name: Build Defender Client
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  # ── Canary check ──────────────────────────────────────────────
+  #   Fails fast on any PR that reintroduces a hardware/scapy coupling
+  #   into defender's import chain, instead of discovering it weeks
+  #   later during a rebuild. Runs before the (slower) build matrix.
+  import-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install defender-only dependencies
+        run: pip install -r requirements-defender.txt
+
+      - name: Confirm defender imports cleanly with zero hardware deps
+        working-directory: game
+        run: |
+          python -c "from src.pages.defender.defender import DefenderV0; print('OK: defender imports clean')"
+
+
+  # ── Build matrix ─────────────────────────────────────────────
+  build:
+    needs: import-check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-defender.txt
+          pip install pyinstaller
+
+      - name: Build frozen binary
+        working-directory: game
+        run: pyinstaller defender_public.spec
+
+      - name: Rename artifact per platform
+        working-directory: game/dist
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            mv DefenderClient.exe DefenderClient-windows.exe
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            mv DefenderClient DefenderClient-macos
+          else
+            mv DefenderClient DefenderClient-linux
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DefenderClient-${{ matrix.os }}
+          path: game/dist/DefenderClient-*
+          if-no-files-found: error
+
+  # ── Publish to a GitHub Release ──────────────────────────────
+  #   Only fires on version tags (e.g. v0.1.0), not every push/PR.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifact folders
+        run: |
+          mkdir release-files
+          find artifacts -type f -exec cp {} release-files/ \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/*
+          generate_release_notes: true

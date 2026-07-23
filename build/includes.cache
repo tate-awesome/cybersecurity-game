@@ -10,62 +10,87 @@
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/variants/esp32s3"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "WiFi.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "Network.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "Preferences.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Preferences/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "ESPAsyncWebServer.h",
     "Includepath": "/home/martin/Arduino/libraries/ESPAsyncWebServer/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "FS.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/FS/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "AsyncTCP.h",
     "Includepath": "/home/martin/Arduino/libraries/AsyncTCP/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "HTTPClient.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/HTTPClient/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "NetworkClientSecure.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/NetworkClientSecure/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "DNSServer.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/DNSServer/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "AsyncUDP.h",
     "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/AsyncUDP/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
     "Include": "ArduinoJson.h",
     "Includepath": "/home/martin/Arduino/libraries/ArduinoJson/src"
   },
   {
-    "Sourcefile": "/home/martin/Desktop/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/AP_ESP32.ino.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/Combined_Client.ino.cpp",
+    "Include": "ModbusIP_ESP8266.h",
+    "Includepath": "/home/martin/Arduino/libraries/modbus-esp8266/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/Combined_Client.ino.cpp",
+    "Include": "Wire.h",
+    "Includepath": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Wire/src"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/Combined_Client.ino.cpp",
+    "Include": "LiquidCrystal_I2C.h",
+    "Includepath": "/home/martin/Arduino/libraries/LiquidCrystal_I2C"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/Combined_Client.ino.cpp",
+    "Include": "BasicLinearAlgebra.h",
+    "Includepath": "/home/martin/Arduino/libraries/BasicLinearAlgebra"
+  },
+  {
+    "Sourcefile": "/home/martin/Desktop/Research-dir/cybersecurity-game/build/sketch/Combined_Client.ino.cpp",
     "Include": "",
     "Includepath": null
   },
@@ -251,6 +276,26 @@
   },
   {
     "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/AsyncUDP/src/AsyncUDP.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Arduino/libraries/modbus-esp8266/src/Modbus.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Arduino/libraries/modbus-esp8266/src/ModbusRTU.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Wire/src/Wire.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/home/martin/Arduino/libraries/LiquidCrystal_I2C/LiquidCrystal_I2C.cpp",
     "Include": "",
     "Includepath": null
   },

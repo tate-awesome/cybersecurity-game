@@ -1,4 +1,4 @@
-/home/martin/Desktop/cybersecurity-game/build/libraries/Network/NetworkInterface.cpp.o: \
+/home/martin/Desktop/Research-dir/cybersecurity-game/build/libraries/Network/NetworkInterface.cpp.o: \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkInterface.cpp \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkInterface.h \
  /home/martin/.arduino15/packages/esp32/tools/esp32s3-libs/3.3.8/include/esp_netif/include/esp_netif_types.h \

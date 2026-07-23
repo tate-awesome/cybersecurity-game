@@ -1,4 +1,4 @@
-/home/martin/Desktop/cybersecurity-game/build/libraries/WiFi/WiFiMulti.cpp.o: \
+/home/martin/Desktop/Research-dir/cybersecurity-game/build/libraries/WiFi/WiFiMulti.cpp.o: \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiMulti.cpp \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/WiFi/src/WiFiMulti.h \
  /home/martin/.arduino15/packages/esp32/tools/esp32s3-libs/3.3.8/include/soc/esp32s3/include/soc/soc_caps.h \

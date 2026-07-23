@@ -1,4 +1,4 @@
-/home/martin/Desktop/cybersecurity-game/build/libraries/NetworkClientSecure/ssl_client.cpp.o: \
+/home/martin/Desktop/Research-dir/cybersecurity-game/build/libraries/NetworkClientSecure/ssl_client.cpp.o: \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/NetworkClientSecure/src/ssl_client.cpp \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/cores/esp32/Arduino.h \
  /home/martin/.arduino15/packages/esp32/tools/esp32s3-libs/3.3.8/include/newlib/platform_include/stdio.h \

@@ -1,4 +1,4 @@
-/home/martin/Desktop/cybersecurity-game/build/libraries/HTTPClient/HTTPClient.cpp.o: \
+/home/martin/Desktop/Research-dir/cybersecurity-game/build/libraries/HTTPClient/HTTPClient.cpp.o: \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/HTTPClient/src/HTTPClient.cpp \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/cores/esp32/HardwareSerial.h \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/cores/esp32/Stream.h \
