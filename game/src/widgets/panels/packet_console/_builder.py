@@ -89,24 +89,81 @@ class Builder(Panel):
 
         # Styling options
         style = ttk.Style()
+        style.theme_use('clam')
+        style.layout("Treeview", [
+            ('Treeview.treearea', {'sticky': 'nswe', 'border': '0'})
+        ])
+        style.configure("TFrame", borderwidth=0, relief="flat")
         tree_font = tkfont.Font(
             family="Consolas",
             size=self.style.get_font_size("treeview")
         )
         row_height = tree_font.metrics("linespace") * 2 + 6
+        
+        # 1. Treeview Body & Empty Rows Area
         style.configure(
             "Treeview",
             font=("Consolas", self.style.get_font_size("treeview"), "normal"),
-            rowheight=row_height
+            rowheight=row_height,
+            background=self.style.color("field"),
+            fieldbackground=self.style.color("field"),
+            foreground=self.style.color("field_text"),
+            borderwidth=0,
+            relief="flat"
         )
-        style.configure(
-            "Treeview.Heading",
-            font=("Consolas", self.style.get_font_size("treeview"), "bold")
+        # Highlight colors when a cell/row is selected
+        style.map(
+            "Treeview",
+            background=[("selected", self.style.color("accent"))],
+            foreground=[("selected", self.style.color("field_text"))]
         )
 
-        # Container for tree and scrollbars
+        # 2. Table Headers Style
+        style.configure(
+            "Treeview.Heading",
+            font=("Consolas", self.style.get_font_size("treeview"), "bold"),
+            background=self.style.color("widget"),      # Contrasted panel color for headers
+            foreground=self.style.color("field_text"),
+            borderwidth=1,
+            relief="flat"
+        )
+        style.map(
+            "Treeview.Heading",
+            background=[("active", self.style.color("accent"))],    # Accent color on hover
+            foreground=[("active", self.style.color("field_text"))] # Text stays readable
+        )
+
+        # 3. Layout Container Frame Style
+        style.configure(
+            "TFrame",
+            background=self.style.color("panel")  # Blends frame container with parent view
+        )
+
+        # 4. Scrollbar Track and Slider Elements
+        style.configure(
+            "TScrollbar",
+            gripcount=0,
+            background=self.style.color("scrollbar"),      # The slider handle color
+            troughcolor=self.style.color("panel"),      # The tracking channel backdrop
+            bordercolor=self.style.color("panel"),      # Outer slider thin border line
+            arrowcolor=self.style.color("field_text"),  # Tiny arrow icons on cap ends
+            lightcolor=self.style.color("panel"),       # Eliminates default 3D highlights
+            darkcolor=self.style.color("panel"),
+            borderwidth=0,
+            thickness=self.style.get_scrollbar_size(),
+            arrowsize=self.style.get_scrollbar_size()
+        )
+        style.map(
+            "TScrollbar",
+            background=[("active", self.style.color("scrollbar_hover"))] # Hover slider color shifts to accent
+        )
+
+        # Container for tree and scrollbars (Now safely targeted by TFrame styles)
         container = ttk.Frame(parent)
-        container.pack(**self.style.packing())
+        container.pack(
+            padx=self.style.pad_corrected(),  # Matches CustomTkinter's standard frame padding layout
+            pady=self.style.pad_corrected()
+        )
 
         # Columns
         all_columns = list(self.context.labels["packet_columns"].keys())
