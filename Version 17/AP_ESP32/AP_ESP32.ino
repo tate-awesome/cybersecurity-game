@@ -29,9 +29,6 @@ AsyncWebServer server(80);
 bool g_submarine_mode = true;
 bool g_AP_communication = false;
 
-static constexpr uint32_t CLIENT_STATE_TTL_MS = 500;
-static constexpr uint32_t SERVER_CONTROL_TTL_MS = 500;
-
 String g_ssid     = "";
 String g_password = "";
 String g_flask_ip = "192.168.8.167";
@@ -61,16 +58,6 @@ float g_target_y = 100.0;
 
 float g_target_temp = 75.2f;
 
-// Latest client telemetry
-float g_client_x = 0, g_client_y = 0, g_client_heading = 0;
-bool  g_has_client = false;
-uint32_t g_client_ms = 0;
-
-// Latest server control
-float g_server_velocity = 0, g_server_rudder = 0;
-bool  g_has_control = false;
-uint32_t g_control_ms = 0;
-
 // Live HVAC readings, reported in by HVAC_Server.ino's /hvac_status posts.
 // AP doesn't compute these itself — it just relays whatever the Server last sent.
 float g_current_room_temp = 0.0f;
@@ -87,6 +74,11 @@ float g_client_live_y   = 0.0f;
 bool  g_has_server_live = false;
 float g_server_live_x   = 0.0f;
 float g_server_live_y   = 0.0f;
+float g_client_noise_x = 0.0f;
+float g_client_noise_y = 0.0f;
+float g_client_noise_theta = 0.0f;
+float g_server_speed_cmd = 0.0f;
+float g_server_rudder_deg = 0.0f;
 
 // ─── HVAC temperature history (for the setpoint-vs-live chart) ─
 #define HVAC_HISTORY_LEN 40
@@ -1300,73 +1292,6 @@ void setupRoutes() {
     ESP.restart();
   });
 
-    // Client -> AP
-  server.on("/client_state", HTTP_POST,
-    [](AsyncWebServerRequest* req) {},
-    nullptr,
-    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
-      StaticJsonDocument<128> doc;
-      if (deserializeJson(doc, data, len)) {
-        req->send(400, "application/json", "{\"error\":\"bad json\"}");
-        return;
-      }
-
-      g_client_x = doc["x"] | 0.0f;
-      g_client_y = doc["y"] | 0.0f;
-      g_client_heading = doc["heading"] | 0.0f;
-      g_has_client = true;
-      g_client_ms = millis();
-
-      req->send(200, "application/json", "{\"status\":\"ok\"}");
-    }
-  );
-
-  // Server reads latest client state
-  server.on("/client_state", HTTP_GET, [](AsyncWebServerRequest* req) {
-    StaticJsonDocument<128> doc;
-    uint32_t age = g_has_client ? (millis() - g_client_ms) : 999999;
-    bool fresh = g_has_client && age <= CLIENT_STATE_TTL_MS;
-
-    doc["valid"] = fresh;
-    doc["x"] = g_client_x;
-    doc["y"] = g_client_y;
-    doc["heading"] = g_client_heading;
-    doc["age_ms"] = g_has_client ? age : -1;
-
-    String out;
-    serializeJson(doc, out);
-    req->send(200, "application/json", out);
-  });
-
-  // Server -> AP
-  server.on("/server_control", HTTP_GET, [](AsyncWebServerRequest* req) {
-    StaticJsonDocument<128> doc;
-    uint32_t age = g_has_control ? (millis() - g_control_ms) : 999999;
-    bool fresh = g_has_control && age <= SERVER_CONTROL_TTL_MS;
-
-    doc["valid"] = fresh;
-    doc["velocity"] = g_server_velocity;
-    doc["rudder"] = g_server_rudder;
-    doc["age_ms"] = g_has_control ? age : -1;
-
-    String out;
-    serializeJson(doc, out);
-    req->send(200, "application/json", out);
-  });
-
-  // Client reads latest server control
-  server.on("/server_control", HTTP_GET, [](AsyncWebServerRequest* req) {
-    StaticJsonDocument<128> doc;
-    doc["valid"] = g_has_control;
-    doc["velocity"] = g_server_velocity;
-    doc["rudder"] = g_server_rudder;
-    doc["age_ms"] = g_has_control ? (millis() - g_control_ms) : -1;
-
-    String out;
-    serializeJson(doc, out);
-    req->send(200, "application/json", out);
-  });
-
   // ── GET /status  →  JSON health check ──────────────────────
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
   StaticJsonDocument<2048> doc;
@@ -1471,9 +1396,14 @@ void setupRoutes() {
           g_client_live_x = px;
           g_client_live_y = py;
           g_has_client_live = true;
+          if (incoming.containsKey("noise_x"))     g_client_noise_x = incoming["noise_x"];
+          if (incoming.containsKey("noise_y"))     g_client_noise_y = incoming["noise_y"];
+          if (incoming.containsKey("noise_theta")) g_client_noise_theta = incoming["noise_theta"];
         } else if (src == "server") {
           g_server_live_x = px;
           g_server_live_y = py;
+          if (incoming.containsKey("speed"))  g_server_speed_cmd = incoming["speed"];
+          if (incoming.containsKey("rudder")) g_server_rudder_deg = incoming["rudder"];
           g_has_server_live = true;
         }
       }
@@ -1485,6 +1415,11 @@ void setupRoutes() {
       resp["target_x"]          = g_target_x;
       resp["target_y"]          = g_target_y;
       resp["submarine_mode"] = g_submarine_mode;
+      resp["client_noise_x"] = g_client_noise_x;
+      resp["client_noise_y"] = g_client_noise_y;
+      resp["client_noise_theta"] = g_client_noise_theta;
+      resp["server_speed"] = g_server_speed_cmd;
+      resp["server_rudder"] = g_server_rudder_deg;
 
       String out;
       serializeJson(resp, out);

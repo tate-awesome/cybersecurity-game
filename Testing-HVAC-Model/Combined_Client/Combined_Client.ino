@@ -236,7 +236,7 @@ const float SpeedMax_m_s = 50.0f;
 const float RudderMax_deg = 60.0f;
 
 #ifdef REST_API_ENABLED
-  const uint32_t REST_INTERVAL_MS = 2000;
+  uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs = 0;
   static bool encrypt_status = false;
 #endif
@@ -354,6 +354,9 @@ void restPost() {
   doc["rudder"]    = state_rudder;
   doc["speed_anomaly_detected"] = speed_anomaly_detected;
   doc["rudder_anomaly_detected"] = rudder_anomaly_detected;
+  doc["noise_x"] = noise_x;
+  doc["noise_y"] = noise_y;
+  doc["noise_theta"] = noise_theta;
 
   String payload;
   serializeJson(doc, payload);
@@ -372,6 +375,12 @@ void restPost() {
         if (resp.containsKey("submarine_mode")) {
             g_submarine_mode = resp["submarine_mode"].as<bool>();
         }
+        if(resp.containsKey("server_speed")){
+          g_remote_velocity = resp["server_speed"].as<float>();
+        }
+        if(resp.containsKey("server_rudder")){
+          g_remote_rudder = resp["server_rudder"].as<float>();
+        }
     }
   } else {
     Serial.printf("[CLIENT] REST POST failed  HTTP %d\n", code);
@@ -380,52 +389,6 @@ void restPost() {
   http.end();
 }
 #endif
-
-void postClientState() {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  http.begin(CLIENT_STATE_URL);
-  http.addHeader("Content-Type", "application/json");
-
-  StaticJsonDocument<128> doc;
-  doc["source"]  = "client";
-  doc["x"]       = noise_x;
-  doc["y"]       = noise_y;
-  doc["heading"] = noise_theta;
-
-  String payload;
-  serializeJson(doc, payload);
-
-  int code = http.POST(payload);
-  if (code != 200) {
-    Serial.printf("[CLIENT] postClientState failed HTTP %d\n", code);
-  }
-  http.end();
-}
-
-void getServerControl() {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  http.begin(SERVER_CONTROL_URL);
-  int code = http.GET();
-
-  if (code == HTTP_CODE_OK) {
-    StaticJsonDocument<128> doc;
-    if (!deserializeJson(doc, http.getString())) {
-      g_has_remote_control = doc["valid"] | false;
-      if (g_has_remote_control) {
-        g_remote_velocity = doc["velocity"] | 0.0f;
-        g_remote_rudder   = doc["rudder"]   | 0.0f;
-      }
-    }
-  } else {
-    Serial.printf("[CLIENT] getServerControl failed HTTP %d\n", code);
-  }
-
-  http.end();
-}
 
 // Runs the full Submarine pose-feedback cycle. Internally gated at ~20Hz
 // for the Modbus feedback loop and its own slower timers for pose pushes,
@@ -453,7 +416,7 @@ void runSubmarineCycle() {
       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
 
-      if(AP_communication && g_has_remote_control){
+      if(AP_communication){
         speed_m_s = g_remote_velocity;
         rudder_deg = g_remote_rudder;
       }
@@ -480,6 +443,11 @@ void runSubmarineCycle() {
       last_speed_error = speed_error;
 
       rudder_anomaly_detected = rudder_error > 3.25f;
+
+      if(AP_communication){
+        speed_m_s *= 15.0f;
+        rudder_deg *= 3.0f;
+      }
 
       if (fabs(speed_m_s) > 0.01f) {
         float v = speed_m_s;
@@ -517,10 +485,6 @@ void runSubmarineCycle() {
       if (millis() - lastPoseMs >= 200) {
         lastPoseMs = millis();
         sendPoseAuto();
-        if(AP_communication){
-          postClientState();
-          getServerControl();
-        }
       }
 
       static uint32_t lastLcdUpdate = 0;
@@ -579,6 +543,11 @@ void runSubmarineCycle() {
   }
 
   #ifdef REST_API_ENABLED
+    if(AP_communication){
+        REST_INTERVAL_MS = 50;
+      }else{
+        REST_INTERVAL_MS = 2000;
+      }
     if (millis() - lastRestMs >= REST_INTERVAL_MS) {
       lastRestMs = millis();
       restPost();
