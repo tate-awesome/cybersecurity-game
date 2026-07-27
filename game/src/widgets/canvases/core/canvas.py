@@ -24,6 +24,7 @@ class Canvas(CTkCanvas):
         # Create and pack the canvas to fill its frame
         super().__init__(master)
         self.pack(side="top", fill="both", expand=True, pady=context.style.gap, padx=context.style.gap)
+        self.context = context
 
         # Make a Camera that tracks panning and zooming and maps. Canvas events change the values, Draw methods use the values
         self.camera = Camera(self, context, world_bounds)
@@ -48,7 +49,8 @@ class Canvas(CTkCanvas):
     def start_animation(self, framerate_ms: float = 50):
         self.framerate_ms = framerate_ms
         self.do_animation_loop = True
-        self.animation_loop()
+        # self.animation_loop()
+        self.context.animation_manager.add_callback(self.__class__.__name__, self.frame_callback)
 
     
     def animation_loop(self):
@@ -60,13 +62,11 @@ class Canvas(CTkCanvas):
 
     def stop_animation(self):
         self.do_animation_loop = False
-        if self.after_id is not None:
-            self.after_cancel(self.after_id)
-            self.after_id = None
+        self.context.animation_manager.remove_callback(self.__class__.__name__)
 
 
     def resize_handler(self, event=None):
-        if self.frame_callback is not None and self.do_animation_loop:
-            self.camera.reset_scale()
-            self.camera.update_padding()
-            self.frame_callback()
+        # if self.frame_callback is not None and self.do_animation_loop:
+        self.camera.reset_scale()
+        self.camera.update_padding()
+        self.frame_callback()

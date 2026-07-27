@@ -25,7 +25,7 @@ class Draw:
         points = []
         for i in range(0, 2000):
             x = i
-            y = 100 + 500 * math.sin(i / 20.0)
+            y = 100 + 500 * math.sin(time.time() + i / 20.0)
             points.append((x, y))
         transformed_points = self.camera.data_to_strip_chart(points)
         self.canvas.create_line(transformed_points, width=2, fill="red")

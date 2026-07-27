@@ -81,8 +81,8 @@ class Camera:
         self.pan_start = [event.x, event.y]
 
         # Redraw for each mouse position
-        if self.canvas.frame_callback is not None:
-            self.canvas.frame_callback()
+        # if self.canvas.frame_callback is not None:
+        #     self.canvas.frame_callback()
 
     def apply_scale_about(self, C: tuple[float, float], k: float):
         # Changes scale and offset based on zoom event and direction
@@ -115,13 +115,13 @@ class Camera:
         self.apply_scale_about((x_focus,y_focus), factor)
 
         # Redraw for each zoom scroll
-        if self.canvas.frame_callback is not None:
-            self.canvas.frame_callback()
+        # if self.canvas.frame_callback is not None:
+        #     self.canvas.frame_callback()
 
     def reset_camera(self, event=None):
         self.time_scale[0] = 1.0
         self.time_offset[0] = 0.0
         self.vertical_scale = 1.0
         # Redraw on reset scale
-        if self.canvas.frame_callback:
-            self.canvas.frame_callback()  
+        # if self.canvas.frame_callback:
+        #     self.canvas.frame_callback()  

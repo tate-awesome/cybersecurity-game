@@ -11,10 +11,12 @@ class StripChart(CTkCanvas):
     It can grow to fit the variable.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
+    def __init__(self, master: CTkFrame, context: Context, var_name = "Variable", time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
 
         # Create and pack the canvas to fill its frame
         super().__init__(master)
+        self.var_name = var_name
+        self.context = context
         self.pack(side="top", fill="both", expand=True, pady=context.style.gap, padx=context.style.gap)
 
         # Make a Camera that tracks time scaling and offset. Canvas events change the values, Draw methods use the values in transform functions
@@ -42,3 +44,22 @@ class StripChart(CTkCanvas):
             self.camera.reset_camera()
             self.camera.update_padding()
             self.frame_callback()
+
+    
+
+    def animation_loop(self):
+        for strip_chart in self.strip_charts:
+            strip_chart.frame_callback()
+        if self.do_animation_loop:
+            self.after_id = self.after(self.framerate_ms, self.animation_loop)
+            
+    def start_animation(self, framerate_ms: float = 100):
+        self.framerate_ms = framerate_ms
+        self.do_animation_loop = True
+        self.context.animation_manager.add_callback(f"{self.__class__.__name__}: {self.var_name}", self.frame_callback)
+
+
+
+    def stop_animation(self):
+        self.do_animation_loop = False
+        self.context.animation_manager.remove_callback(f"{self.__class__.__name__}: {self.var_name}")

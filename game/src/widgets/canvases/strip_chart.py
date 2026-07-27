@@ -14,7 +14,7 @@ class StripChart(StripChart):
     def __init__(self, master: CTkFrame, context: Context, getter: Callable[[None], list[tuple[float, float]]], name: "Variable", time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
 
         # Create the canvas widget
-        super().__init__(master, context, time_scale, time_offset)
+        super().__init__(master, context, name, time_scale, time_offset)
 
         def frame_callback():
             sprites = context.states["strip_chart_sprites"]
