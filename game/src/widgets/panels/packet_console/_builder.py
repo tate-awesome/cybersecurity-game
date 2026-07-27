@@ -162,7 +162,9 @@ class Builder(Panel):
         container = ttk.Frame(parent)
         container.pack(
             padx=self.style.pad_corrected(),  # Matches CustomTkinter's standard frame padding layout
-            pady=self.style.pad_corrected()
+            pady=self.style.pad_corrected(),
+            fill="both",
+            expand=True
         )
 
         # Columns

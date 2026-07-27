@@ -12,6 +12,7 @@ class Draw:
     def __init__(self, canvas: CTkCanvas, context: Context, camera: Camera):
         self.canvas = canvas
         self.camera = camera
+        self.context = context
 
     def background(self, color: str):
         w = self.canvas.winfo_width()
@@ -28,7 +29,8 @@ class Draw:
             y = 100 + 500 * math.sin(time.time() + i / 20.0)
             points.append((x, y))
         transformed_points = self.camera.data_to_strip_chart(points)
-        self.canvas.create_line(transformed_points, width=2, fill="red")
+        self.background(self.context.style.color("field"))
+        self.canvas.create_line(transformed_points, width=2, fill=self.context.style.color("field_text"))
 
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
