@@ -175,6 +175,36 @@ class Builder(Panel):
             show="headings"
         )
 
+        # TODO tune scrolling on all platforms
+        def custom_scroll_handler(event):
+            # Determine if Shift key is actively held down
+            # State 1 = Shift, 9 = Shift + NumLock, 17 = Shift + CapsLock, etc.
+            is_shift = bool(event.state & 0x0001)
+            
+            # Select the target view method based on Shift state
+            scroll_method = treeview.xview_scroll if is_shift else treeview.yview_scroll
+
+            if sys.platform == "win32":
+                # Windows sends multiples of 120. Normalize to standard steps.
+                steps = -1 * int(event.delta / 120) * multiplier
+                scroll_method(steps, "units")
+                
+            elif sys.platform == "darwin":
+                # macOS tracks small acceleration changes.
+                steps = -1 * event.delta * multiplier
+                scroll_method(steps, "units")
+                
+            elif sys.platform == "linux":
+                # Linux maps Shift + Scroll to separate discrete events (<Shift-Button-4/5>).
+                # If those events fire, event.num tells us the direction.
+                if event.num in (4, 6):    # Scroll Up / Scroll Left
+                    scroll_method(-1 * multiplier, "units")
+                elif event.num in (5, 7):  # Scroll Down / Scroll Right
+                    scroll_method(1 * multiplier, "units")
+                    
+            # Block default system Tkinter behaviors from running
+            return "break"
+
         # Configure columns
         for col in all_columns:
 
