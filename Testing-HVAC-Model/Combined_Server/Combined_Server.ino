@@ -155,6 +155,7 @@ static float g_rudder_deg  = 0.0f;
 static float g_target_x = 100.0f;
 static float g_target_y = 100.0f;
 static bool g_state_anomaly_detected = false;
+static bool g_HVAC_anomaly_detected = false;
 
 using namespace BLA;
 
@@ -483,6 +484,8 @@ void runSubmarineCycle() {
 
 float hysteresis_band = 0.5f;
 bool heater_on = false;
+float last_temp = 71.6f;
+float est_temp = 71.6f;
 
 const float SCALE = 100.0f;
 
@@ -498,6 +501,7 @@ void postHvacStatus(float current_temp) {
   StaticJsonDocument<128> statusDoc;
   statusDoc["current_temp"] = current_temp;
   statusDoc["heater_on"]    = heater_on;
+  statusDoc["HVAC_anomaly_detected"] = g_HVAC_anomaly_detected;
   String statusBody;
   serializeJson(statusDoc, statusBody);
   statusHttp.POST(statusBody);
@@ -511,6 +515,23 @@ void runHvacCycle() {
 
     uint16_t raw_temp = mb.Hreg(HREG_TEMP_EST);
     float current_temp = (float)raw_temp / SCALE;
+    float heat_gain = 9.0f;
+
+    if(last_temp != current_temp){
+      float heat_loss = 0.05f * (last_temp - 59.0f);
+      if(heater_on){
+        heat_gain = 9.0f;
+      }else{
+        heat_gain = 0.0f;
+      }
+      est_temp += (heat_gain - heat_loss) * 0.1f;
+
+      float error_value = abs(est_temp - current_temp);
+
+      g_HVAC_anomaly_detected = error_value > 5.0f;
+    }
+
+    last_temp = current_temp;
 
     float lower_threshold = setpoint_temp - hysteresis_band;
     float upper_threshold = setpoint_temp + hysteresis_band;

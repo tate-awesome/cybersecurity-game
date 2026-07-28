@@ -35,7 +35,7 @@ class HVACView:
     MAX_POINTS = 300     # rolling window cap
     MAX_AGE_S  = 300.0    # ...and a 5-minute time cap, whichever trims more
 
-    def __init__(self, style, left_parent, right_parent, get_url_fn):
+    def __init__(self, style, left_parent, right_parent, get_url_fn, on_hvac_anomaly=None):
         """
         style        - the Style object DefenderV0 already uses (self.style)
         left_parent  - container to build the setpoint/readout cards into
@@ -45,11 +45,13 @@ class HVACView:
         """
         self.style    = style
         self._get_url = get_url_fn
+        self._on_hvac_anomaly = on_hvac_anomaly
 
         self._t0            = time.monotonic()
         self._times          = []
         self._room_temps     = []
         self._target_temps   = []
+        self._HVAC_anomaly = False
 
         self._build_left(left_parent)
         self._build_graph(right_parent)
@@ -203,6 +205,7 @@ class HVACView:
         current_temp = data.get("current_temp")
         target_temp  = data.get("target_temp")
         heater_on    = data.get("heater_on")
+        HVAC_anomaly = data.get("HVAC_anomaly_detected")
 
         if current_temp is not None:
             self._current_label.configure(text=f"{float(current_temp):.1f}°F")
@@ -212,6 +215,10 @@ class HVACView:
             on = bool(heater_on)
             self._heater_label.configure(text="ON" if on else "OFF",
                                          text_color="green" if on else "gray")
+        if HVAC_anomaly is not None:
+            self._HVAC_anomaly = bool(HVAC_anomaly)
+            if self._on_hvac_anomaly is not None:
+                self._on_hvac_anomaly(self._HVAC_anomaly)
 
         if current_temp is None and target_temp is None:
             return  # nothing worth plotting yet
@@ -233,3 +240,6 @@ class HVACView:
         self._ax.relim()
         self._ax.autoscale_view()
         self._canvas.draw_idle()
+
+    def get_hvac_anomaly(self):
+        return self._HVAC_anomaly

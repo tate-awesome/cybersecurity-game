@@ -33,8 +33,11 @@ class DefenderV0(Page):
     POLL_INTERVAL_MS = 2000
 
     # Flag definitions — (key, display label).
-    # Set the corresponding key to True in self._flags to light it up.
-    FLAG_DEFS = [
+    HVAC_FLAG_DEFS = [
+            ("HVAC_filter_flag", "State Filtering Threshold Surpassed")
+        ]
+    
+    SUBMARINE_FLAG_DEFS = [
         ("state_filter_flag", "State Filtering Threshold Surpassed"),
         ("speed_filter_flag", "Speed Filtering Treshold Surpassed"),
         ("rudder_filter_flag", "Rudder Filtering Treshold Surpassed")
@@ -57,7 +60,8 @@ class DefenderV0(Page):
         self._submarine_mode = True
 
         # Flag state — all False until logic sets them
-        self._flags = {key: False for key, _ in self.FLAG_DEFS}
+        self._submarine_flags = {key: False for key, _ in self.SUBMARINE_FLAG_DEFS}
+        self._HVAC_flags = {key: False for key, _ in self.HVAC_FLAG_DEFS}
 
         # ── Menu bar ─────────────────────────────────────────────────────────
         menu_bar = MenuBar(self, context, "Defender V0")
@@ -81,17 +85,25 @@ class DefenderV0(Page):
         self._build_target_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
-        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url)
+        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, on_hvac_anomaly=self._set_hvac_flag)
 
         common.scroll_deadspace(left_p, context)
 
         # ── Middle pane ──────────────────────────────────────────────────────
         self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
-        self._submarine_middle.pack(fill="both", expand=True)
         self._build_packet_log(self._submarine_middle)
-        self._build_flags_block(self._submarine_middle)
+        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS",
+        self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",
+        )
+
+
+        self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
+        self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAGS",
+            self.HVAC_FLAG_DEFS, "_hvac_flag_labels",
+        )
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
+        self._refresh_mode_ui()
 
         self._map_scale  = None
         self._map_offset = None
@@ -124,6 +136,10 @@ class DefenderV0(Page):
     # ════════════════════════════════════════════════════════════════════════
     #  UI builder helpers
     # ════════════════════════════════════════════════════════════════════════
+
+    def _set_hvac_flag(self, value: bool):
+                self._HVAC_flags["HVAC_filter_flag"] = bool(value)
+                self._refresh_flags()
 
     def _build_connection_block(self, parent):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
@@ -212,6 +228,7 @@ class DefenderV0(Page):
         CTkLabel(section, text="OPERATION MODE", font=self.style.get_font()).pack(
             anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
         )
+
         # Read-only — this just reflects whatever submarine_mode AP_ESP32.ino
         # is currently reporting. Mode is changed on the AP itself, not here.
         self._mode_label = CTkLabel(section, text="Mode: SUBMARINE",
@@ -225,6 +242,8 @@ class DefenderV0(Page):
             if self._submarine_mode:
                 self._mode_label.configure(text="Mode: SUBMARINE", text_color="green")
                 self._hvac_view.hide()
+                self._hvac_middle.pack_forget()
+
                 self._submarine_left.pack(fill="x")
                 self._submarine_middle.pack(fill="both", expand=True)
                 self._map_container.pack(fill="both", expand=True)
@@ -233,7 +252,9 @@ class DefenderV0(Page):
                 self._submarine_left.pack_forget()
                 self._submarine_middle.pack_forget()
                 self._map_container.pack_forget()
+
                 self._hvac_view.show()
+                self._hvac_middle.pack(fill="both", expand=True)
         except Exception as e:
             print("refresh_mode_ui:", e)
 
@@ -338,30 +359,30 @@ class DefenderV0(Page):
 
         self._log_rows = []
 
-    def _build_flags_block(self, parent):
-        """Flags panel — dots light red when a flag is set."""
+    def _build_flags_block(self, parent, title, defs, label_attr):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
         section.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
 
-        CTkLabel(section, text="ERROR DETECTION FLAGS\n(CLIENT/SERVER MODBUS COMMUNICATION)", font=self.style.get_font()).pack(
+        CTkLabel(section, text=title,font=self.style.get_font()).pack(
             anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
         )
 
-        self._flag_labels = {}
-        for key, label_text in self.FLAG_DEFS:
+        labels = {}
+        for key, label_text in defs:
             row = CTkFrame(section, fg_color="transparent")
             row.pack(fill="x", padx=self.style.igap, pady=2)
 
             dot = CTkLabel(row, text="●", font=self.style.get_font("small"),
-                           text_color="gray", width=20)
+                        text_color="gray", width=20)
             dot.pack(side="left")
 
             CTkLabel(row, text=label_text,
-                     font=self.style.get_font("small"), anchor="w").pack(
+                    font=self.style.get_font("small"), anchor="w").pack(
                 side="left", fill="x", expand=True
             )
-            self._flag_labels[key] = dot
+            labels[key] = dot
 
+        setattr(self, label_attr, labels)
         CTkFrame(section, fg_color="transparent", height=self.style.igap).pack()
 
     # ════════════════════════════════════════════════════════════════════════
@@ -505,6 +526,8 @@ class DefenderV0(Page):
             # HVAC mode — Submarine widgets are hidden, only the HVAC view
             # needs this poll's data (current_temp / target_temp / heater_on)
             self._hvac_view.update(data)
+            self._HVAC_flags["HVAC_filter_flag"] = self._hvac_view.get_hvac_anomaly()
+            self._refresh_flags()
             return
 
         # Flask returns separate lists; fall back to combined "points" if the
@@ -533,12 +556,12 @@ class DefenderV0(Page):
 
         if server_points:
             latest_server = server_points[-1]
-            self._flags["state_filter_flag"] = bool(latest_server.get("state_anomaly_detected", False))
+            self._submarine_flags["state_filter_flag"] = bool(latest_server.get("state_anomaly_detected", False))
 
         if client_points:
             latest_client = client_points[-1]
-            self._flags["speed_filter_flag"] = bool(latest_client.get("speed_anomaly_detected", False))
-            self._flags["rudder_filter_flag"] = bool(latest_client.get("rudder_anomaly_detected", False))
+            self._submarine_flags["speed_filter_flag"] = bool(latest_client.get("speed_anomaly_detected", False))
+            self._submarine_flags["rudder_filter_flag"] = bool(latest_client.get("rudder_anomaly_detected", False))
 
         self._refresh_flags()
 
@@ -614,9 +637,12 @@ class DefenderV0(Page):
             print("refresh_encryption_ui:", e)
 
     def _refresh_flags(self):
-        """Dots turn red when flag is True, gray when clear."""
-        for key, dot in self._flag_labels.items():
-            dot.configure(text_color="red" if self._flags.get(key) else "gray")
+        for labels, flags in (
+            (getattr(self, "_submarine_flag_labels", {}), self._submarine_flags),
+            (getattr(self, "_hvac_flag_labels", {}), self._HVAC_flags),
+        ):
+            for key, dot in labels.items():
+                dot.configure(text_color="red" if flags.get(key, False) else "gray")
 
     def _set_connected(self):
         try:

@@ -62,9 +62,10 @@ float g_target_temp = 75.2f;
 // AP doesn't compute these itself — it just relays whatever the Server last sent.
 float g_current_room_temp = 0.0f;
 bool  g_heater_on          = false;
+bool  g_HVAC_anomaly_detected = false;
 
 // ─── Live submarine telemetry position ─────────────────────────
-//   Most recent (x, y) reported by each source via POST /data.
+//  Most recent (x, y) reported by each source via POST /data.
 //   NOTE: this assumes the incoming /data payload includes numeric
 //   "x" and "y" fields — adjust the field names below if the
 //   Submarine_Client/Submarine_Server sketches use different keys.
@@ -1440,6 +1441,7 @@ void setupRoutes() {
     resp["target_temp"]    = g_target_temp;
     resp["current_temp"]   = g_current_room_temp;
     resp["heater_on"]      = g_heater_on;
+    resp["HVAC_anomaly_detected"] = g_HVAC_anomaly_detected;
 
     String out;
     serializeJson(resp, out);
@@ -1562,6 +1564,9 @@ void setupRoutes() {
       }
       if (doc.containsKey("heater_on")) {
         g_heater_on = doc["heater_on"].as<bool>();
+      }
+      if (doc.containsKey("HVAC_anomaly_detected")) {
+         g_HVAC_anomaly_detected = doc["HVAC_anomaly_detected"].as<bool>();
       }
       recordHvacSample(g_current_room_temp, g_target_temp);
       req->send(200, "application/json", "{\"status\":\"ok\"}");
