@@ -343,7 +343,7 @@ class DefenderV0(Page):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
         section.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
 
-        CTkLabel(section, text="FLAGS", font=self.style.get_font()).pack(
+        CTkLabel(section, text="ERROR DETECTION FLAGS\n(CLIENT/SERVER MODBUS COMMUNICATION)", font=self.style.get_font()).pack(
             anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
         )
 
