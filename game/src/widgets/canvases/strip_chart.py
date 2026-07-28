@@ -1,17 +1,17 @@
-from .time_core.stripchart import StripChart
+from .time_core.stripchart import StripChartBase
 from customtkinter import CTkFrame
 from ...app_core.context import Context
 from typing import Callable
 
 
-class StripChart(StripChart):
+class StripChart(StripChartBase):
     '''
     Canvas that displays a running value of the provided getter.
     The getter must return list[tuple[time: float, value: float]].
     Its time axis is synchronized with other strip charts in the same context.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, getter: Callable[[None], list[tuple[float, float]]], name: "Variable", time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
+    def __init__(self, master: CTkFrame, context: Context, getter: Callable[[None], list[tuple[float, float]]], name: "variable", time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
 
         # Create the canvas widget
         super().__init__(master, context, name, time_scale, time_offset)
@@ -19,10 +19,12 @@ class StripChart(StripChart):
         def frame_callback():
             sprites = context.states["strip_chart_sprites"]
             colors = context.states["strip_chart_colors"]
-            
+            data = getter()
             self.delete("all")
-            
-            self.draw.test_data()
+            # self.draw.strip_chart_axes(data)
+            # self.draw.test_data()
+            print(data)
+            self.draw.strip_chart_path(data)
             # self.draw.background(colors["background"])
 
             # if int(sprites["grid_axes"]) == 1:

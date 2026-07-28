@@ -45,9 +45,9 @@ class Camera:
 #                                                       TRANSFORMERS
 # --------------------------------------------------------------------------------------------------------------------------
 
-    def data_to_strip_chart(self, points_in: list[tuple[float, float]]) -> list[tuple[float, float]]:
-        right_aligned = t.right_align(points_in, self.canvas)
-        chart_fit = t.padded_vertical_fit(right_aligned, self.canvas, self.padding)
+    def data_to_strip_chart(self, points_in: list[tuple[float, float]], data_bounds: tuple[float, float], time_bounds: tuple[float, float]) -> list[tuple[float, float]]:
+        right_aligned = t.right_align(points_in, time_bounds, self.canvas)
+        chart_fit = t.padded_vertical_fit(right_aligned, data_bounds, self.canvas, self.padding)
         panned = t.zoom_and_pan(chart_fit, self.vertical_scale, self.time_scale[0], self.time_offset[0])
         return panned
     
