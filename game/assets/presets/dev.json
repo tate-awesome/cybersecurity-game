@@ -11,7 +11,16 @@
     "hack_forms": {
         "arp": ["192.168.4.2","192.168.4.10"],
         "sniff": ["",""],
-        "dos": ["192.168.8.114:200","192.168.8.114:201"]
+        "dos": ["192.168.4.2","192.168.4.10"]
+    },
+
+    "hacking_forms": {
+        "nmap": 1,
+        "arp": 1,
+        "dos": 0,
+        "sniff": 1,
+        "mitm": 1,
+        "mitm2": 1
     },
 
 
@@ -45,11 +54,11 @@
         "number": 1,
         "length": 0,
         "hack_info": 1,
-        "transaction": 1,
-        "layers": 1,
+        "transaction": 0,
+        "layers": 0,
         "purpose": 0,
-        "summary": 1,
-        "modbus": 0
+        "summary": 0,
+        "modbus": 1
     },
 
     "world_map_sprites": {
