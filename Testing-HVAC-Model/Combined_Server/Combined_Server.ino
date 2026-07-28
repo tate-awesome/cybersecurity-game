@@ -302,6 +302,7 @@ void restPost() {
     doc["theta"]     = g_state_theta;
     doc["speed"]     = g_speed_cmd;
     doc["rudder"]    = g_rudder_deg;
+    doc["state_anomaly_detected"] = g_state_anomaly_detected;
 
     String payload;
     serializeJson(doc, payload);
@@ -412,9 +413,9 @@ void runSubmarineCycle() {
       float yError = abs( z_meas(1,0) - xhat(1,0) );
       float tError = wrap_to_pi(z_meas(2,0) - xhat(2,0));
 
-      bool xCheck = xError > 8;
-      bool yCheck = yError > 8;
-      bool thetaCheck = fabs(tError) > 3;
+      bool xCheck = xError > 8.0f;
+      bool yCheck = yError > 8.0f;
+      bool thetaCheck = fabs(tError) > 3.0f;
 
       g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
     }

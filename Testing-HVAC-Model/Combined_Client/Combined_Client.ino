@@ -57,7 +57,6 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 // existing convention for the same flag.
 bool g_submarine_mode = true;
 bool AP_communication = false;
-bool g_has_remote_control = false;
 
 // Generic Modbus holding-register write with one retry on timeout. Used by
 // both models — neither needs anything register-specific baked in here.
@@ -227,8 +226,6 @@ float rudder_kalman_gain = 0.0f;
 
 static bool speed_anomaly_detected = false;
 static bool rudder_anomaly_detected = false;
-float last_speed_error = 0.0f;
-int speed_error_count = 0;
 
 static String key = (String)1234;
 
@@ -430,20 +427,9 @@ void runSubmarineCycle() {
       float speed_error = abs(last_speed - state_speed);
       float rudder_error = fabs(wrapToPi(last_rudder - state_rudder));
 
-      if(speed_error > 3.0f && last_speed_error < speed_error){
-        speed_error_count++;
-        if(speed_error_count > 9){
-        speed_anomaly_detected = true;
-        }
-      }else{
-        speed_anomaly_detected = false;
-        speed_error_count = 0;
-      }
-
-      last_speed_error = speed_error;
-
-      rudder_anomaly_detected = rudder_error > 3.25f;
-
+      speed_anomaly_detected = speed_error > 2.0f;
+      rudder_anomaly_detected = rudder_error > 2.75f;
+      
       if(AP_communication){
         speed_m_s *= 15.0f;
         rudder_deg *= 3.0f;
