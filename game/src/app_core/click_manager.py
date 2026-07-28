@@ -43,3 +43,7 @@ class ClickManager:
                 callback(event)
             except Exception as e:
                 print(f"[ClickManager] Error executing callback: {e}")
+
+    def delete(self):
+        self.listeners.clear()
+        self.root.unbind("<Button-1>")

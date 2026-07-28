@@ -200,6 +200,9 @@ class MenuBar(CTkFrame):
     def refresh_button(self):
         self.add_button("Refresh", self.context.router.refresh)
 
+    def reset_button(self):
+        self.add_button("Reset", self.context.router.reset)
+
     def back_button(self):
         self.add_button("Back to Title", self.context.router.go_back)
     
@@ -224,6 +227,7 @@ class MenuBar(CTkFrame):
     def page_buttons(self):
         self.quit_button()
         self.refresh_button()
+        self.reset_button()
         self.back_button()
         self.help_button()
         self.toggle_button()

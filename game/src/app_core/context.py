@@ -15,16 +15,30 @@ class Context:
     '''
 
     def __init__(self, root, router, style: Style):
-        self.net =  NetworkController()
-        self.click_manager = ClickManager(root)
-        self.animation_manager = AnimationManager(root)
         self.router = router
         self.root = root
         self.style = style
+        self.generate()
 
-        # Go to assets/presets to edit default values
+    def generate(self):
+        self.net =  NetworkController()
+        self.click_manager = ClickManager(self.root)
+        self.animation_manager = AnimationManager(self.root)
         self.states = self.get_base_preset()
         self.labels = self.get_base_labels()
+
+    def destroy_context(self):
+        if self.net is not None:
+            self.net.abort_all()
+            self.net = None 
+        self.load_preset()
+        self.load_labels()
+        self.animation_manager.delete()
+        self.click_manager.delete()
+
+    def reset(self):
+        self.destroy_context()
+        self.generate()
     
     def get_base_preset(self):
         data = {}
@@ -80,12 +94,3 @@ class Context:
         else:
             self.net = constructor()
             return self.net
-
-    def destroy_net(self):
-        if self.net is not None:
-            self.net.abort_all()
-            self.net = None # Set to None is as good as clearing it manually, since all references to the old net will be lost and it will be garbage collected.
-    
-    def destroy_context(self):
-        self.destroy_net()
-        self.load_preset()

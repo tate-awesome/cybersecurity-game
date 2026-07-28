@@ -54,3 +54,7 @@ class AnimationManager:
 
     def stop_loop(self):
         self.run = False
+
+    def delete(self):
+        self.stop_loop()
+        self.callbacks.clear()

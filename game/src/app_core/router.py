@@ -91,6 +91,10 @@ class Router:
         Useful for updating the UI after changing themes or making changes to the context.
         '''
         self.show(self.navigation_stack[-1])
+
+    def reset(self):
+        self.context.reset()
+        self.refresh()
     
 
     def quit(self):
@@ -160,7 +164,7 @@ class Router:
         '''
         if len(self.navigation_stack) < 1:
             return
-        self.context.destroy_context()
+        self.context.reset()
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])
 
