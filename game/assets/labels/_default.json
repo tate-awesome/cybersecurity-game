@@ -47,5 +47,19 @@
 
     "packet_filter_entries": {
         "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
+    },
+
+    "tooltips": {
+        "labels_button": "Load localized labels and text from a json file.",
+        "preset_button": "Load options for a specific scenario/lesson.",
+        "pcap_button": "Load a saved pcap file for viewing in this program.",
+        "theme_button": "Choose a CustomTkinter theme from a json file.",
+        "toggle_button": "Toggle between light/dark modes.",
+        "help_button": "View a help message based on your progress.",
+        "back_button": "Return to the title screen of the game.",
+        "reset_button": "Reset the persistent data - attack threads, entries, settings.",
+        "refresh_button": "Rebuild the page without losing persistent data - attack threads, entries, settings.",
+        "quit_button": "Close the program."
+        
     }
 }

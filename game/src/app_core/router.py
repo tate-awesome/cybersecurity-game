@@ -34,6 +34,7 @@ class Router:
         '''
         self.style = Style(root)
         self.context = Context(root, self, self.style)
+        self.style.add_context(self.context)
         self.navigation_stack = []
         self.current_frame = None
         self.show(start_page)

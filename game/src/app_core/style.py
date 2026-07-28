@@ -1,4 +1,5 @@
 from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker
+from CTkToolTip import CTkToolTip
 
 class Style:
 
@@ -20,6 +21,8 @@ class Style:
         self.PANE_BIG = self.igap*100
         self.fonts = {}
 
+    def add_context(self, context):
+        self.context = context
         
 
         # DATA_FONT = CTkFont(family="Courier", size=16)
@@ -137,3 +140,11 @@ class Style:
     
     def pad_corrected(self):
         return int(self.igap * self.get_scale_correction())
+
+    def add_tooltip(self, widget, key: str):
+        CTkToolTip(widget,
+                   self.context.labels["tooltips"][key],
+                   follow=False,
+                   font=self.get_font(),
+                   x_offset=self.igap, y_offset=self.igap, border_width=2,
+                   border_color=self.color("accent"))

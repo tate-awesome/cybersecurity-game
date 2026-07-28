@@ -2,6 +2,7 @@ from ...app_core.context import Context
 from customtkinter import *
 from ..popup import message
 from .overlay import Overlay
+from CTkToolTip import CTkToolTip
 
 class MenuBar(CTkFrame):
     '''
@@ -195,34 +196,44 @@ class MenuBar(CTkFrame):
     # Page Buttons
 
     def quit_button(self):
-        self.add_button("Quit", self.context.router.quit)
+        button = self.add_button("Quit", self.context.router.quit)
+        self.style.add_tooltip(button, "quit_button")
     
     def refresh_button(self):
-        self.add_button("Refresh", self.context.router.refresh)
+        button = self.add_button("Refresh", self.context.router.refresh)
+        self.style.add_tooltip(button, "refresh_button")
 
     def reset_button(self):
-        self.add_button("Reset", self.context.router.reset)
+        button = self.add_button("Reset", self.context.router.reset)
+        self.style.add_tooltip(button, "reset_button")
 
     def back_button(self):
-        self.add_button("Back to Title", self.context.router.go_back)
+        button = self.add_button("Back to Title", self.context.router.go_back)
+        self.style.add_tooltip(button, "back_button")
     
     def toggle_button(self):
-        self.add_button("Toggle Theme", self.context.router.mode_toggle)
+        button = self.add_button("Toggle Theme", self.context.router.mode_toggle)
+        self.style.add_tooltip(button, "toggle_button")
     
     def theme_button(self):
-        self.add_button("Select Theme", self.context.router.select_theme)
+        button = self.add_button("Select Theme", self.context.router.select_theme)
+        self.style.add_tooltip(button, "theme_button")
 
     def pcap_button(self):
-        self.add_button("Load PCAP File", self.context.net.loader.load_pcap)
+        button = self.add_button("Load PCAP File", self.context.net.loader.load_pcap)
+        self.style.add_tooltip(button, "pcap_button")
     
     def preset_button(self):
-        self.add_button("Load Preset", self.context.router.select_preset)
+        button = self.add_button("Load Preset", self.context.router.select_preset)
+        self.style.add_tooltip(button, "preset_button")
     
     def labels_button(self):
-        self.add_button("Load Labels", self.context.router.select_labels)
+        button = self.add_button("Load Labels", self.context.router.select_labels)
+        self.style.add_tooltip(button, "labels_button")
     
     def help_button(self):
-        self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
+        button = self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
+        self.style.add_tooltip(button, "help_button")
 
     def page_buttons(self):
         self.quit_button()
