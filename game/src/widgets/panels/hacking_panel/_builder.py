@@ -38,6 +38,8 @@ class Builder(Panel):
         forms_button = self.menu_bar.add_button("Forms")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
+        stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+
 
     def refresh_forms(self):
         self.update_idletasks()
@@ -58,3 +60,7 @@ class Builder(Panel):
         if form.winfo_ismapped():
             return
         form.grid()
+
+    def stop_all(self):
+        for form in self.forms.values():
+            form.click_stop()

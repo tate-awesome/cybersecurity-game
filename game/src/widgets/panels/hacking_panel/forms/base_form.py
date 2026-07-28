@@ -13,6 +13,7 @@ class BaseForm(ABC, CTkFrame):
         self.context = context
         self.key = key
         self.attack_noun = attack_noun
+        self.has_attack_button = False
 
         super().__init__(master, fg_color=self.style.color("widget"))
 
@@ -64,6 +65,9 @@ class BaseForm(ABC, CTkFrame):
 
     def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[None, bool], default_status: str = ""):
 
+        if self.has_attack_button:
+            return
+
         # Create widgets
         self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
         self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
@@ -90,6 +94,8 @@ class BaseForm(ABC, CTkFrame):
         # Update current index
         self.current_row += 1
 
+        self.has_attack_button = True
+
     def click_start(self):
         self.context.states["game_progress"][self.key] = 1
         self.attack_button.configure(text=f"Starting {self.attack_noun}...")
@@ -102,6 +108,8 @@ class BaseForm(ABC, CTkFrame):
         self.attack_status.configure(text=f"{self.attack_noun} is on")
 
     def click_stop(self):
+        if not self.has_attack_button:
+            return
         self.attack_button.configure(text=f"Stopping {self.attack_noun}...")
         self.stop_attack()
         self.context.root.update_idletasks()
