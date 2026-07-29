@@ -87,7 +87,7 @@ class DefenderV0(Page):
 
         self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, on_hvac_anomaly=self._set_hvac_flag)
 
-        common.scroll_deadspace(left_p, context)
+        left_p.add_deadspace()
 
         # ── Middle pane ──────────────────────────────────────────────────────
         self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
