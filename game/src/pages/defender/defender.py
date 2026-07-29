@@ -82,7 +82,6 @@ class DefenderV0(Page):
         self._submarine_left.pack(fill="x")
         self._build_encryption_block(self._submarine_left)
         self._build_AP_communication_block(self._submarine_left)
-        self._build_target_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
         self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, on_hvac_anomaly=self._set_hvac_flag)
@@ -203,19 +202,6 @@ class DefenderV0(Page):
 
         self._enc_button.configure(command=enc_button)
 
-        help_row = CTkFrame(section, fg_color="transparent")
-        help_row.pack(fill="x", padx=self.style.igap, pady=(0, 4))
-        CTkLabel(help_row, text="What does this do?", font=self.style.get_font("small"), text_color="gray").pack(anchor="w")
-        CTkButton(
-            help_row,
-            text="What does this do?",
-            font=self.style.get_font("small"),
-            fg_color = "#808080",
-            hover_color = "#666666",
-            text_color = "white",
-            command=lambda: popup.message(self, self.context, self._enc_help_message),
-        ).pack(fill="x", pady=(2, 0))
-
         self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_AP_communication_block(self, parent):
@@ -270,37 +256,6 @@ class DefenderV0(Page):
                 self._hvac_middle.pack(fill="both", expand=True)
         except Exception as e:
             print("refresh_mode_ui:", e)
-
-    def _build_target_block(self, parent):
-        self._target_section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section = self._target_section
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
-
-        CTkLabel(section, text="TARGET POSITION", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=self.style.gaptop
-        )
-        self._target_status = CTkLabel(section, text="Status: Not set",
-                                       font=self.style.get_font(), text_color="gray")
-        self._target_status.pack(anchor="w", padx=self.style.igap)
-
-        # X entry
-        CTkLabel(section, text="X Target", font=self.style.get_font("small"),
-                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
-        self._target_x_entry = CTkEntry(section, font=self.style.get_font(),
-                                        placeholder_text="Enter X…")
-        self._target_x_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
-
-        # Y entry
-        CTkLabel(section, text="Y Target", font=self.style.get_font("small"),
-                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.nogap)
-        self._target_y_entry = CTkEntry(section, font=self.style.get_font(),
-                                        placeholder_text="Enter Y…")
-        self._target_y_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
-
-        CTkButton(section, text="Set Target Position", font=self.style.get_font(),
-                  command=self._send_target).pack(
-            fill="x", padx=self.style.igap, pady=self.style.gapbot
-        )
 
     def _build_values_block(self, parent):
         """Client values card and Server values card, side by side."""
@@ -450,54 +405,6 @@ class DefenderV0(Page):
                 self._filter_button.configure(text="Enable Communication Through AP")
         except Exception as e:
             print("refresh_AP_communication_ui:", e)
-
-    def _send_target(self):
-        raw_x = self._target_x_entry.get().strip()
-        raw_y = self._target_y_entry.get().strip()
-
-        try:
-            target_x = float(raw_x)
-            target_y = float(raw_y)
-
-            if not(0 <= target_x <= 200 and 0 <= target_y <= 200):
-                self.after(0, lambda: self._target_status.configure(
-                    text="Status: Invalid input", text_color="red"
-                ))
-                popup.message(self, self.context, "The target X and target Y field must both be filled with values between 0 and 200")
-                return
-        
-            self._target_x = target_x
-            self._target_y = target_y
-        except ValueError:
-            self.after(0, lambda: self._target_status.configure(
-                text="Status: Invalid input", text_color="red"
-            ))
-            popup.message(self, self.context, "The target X and target Y field must both be filled with values between 0 and 200")
-            return
-
-        def _request():
-            try:
-                resp = requests.post(
-                    f"{self._get_url()}/set_target",
-                    json={"target_x": target_x, "target_y": target_y},
-                    timeout=3,
-                )
-                if resp.ok:
-                    self.after(0, lambda: self._target_status.configure(
-                        text=f"Status: Set to ({target_x:.1f}, {target_y:.1f})",
-                        text_color="green"
-                    ))
-                else:
-                    self.after(0, lambda: self._target_status.configure(
-                        text=f"Status: Server error {resp.status_code}",
-                        text_color="red"
-                    ))
-            except Exception:
-                self.after(0, lambda: self._target_status.configure(
-                    text="Status: Connection failed", text_color="red"
-                ))
-
-        threading.Thread(target=_request, daemon=True).start()
 
     def _poll(self):
         def _request():
@@ -672,23 +579,3 @@ class DefenderV0(Page):
             )
         except Exception as e:
             print("set_disconnected:", e)
-
-    # def _on_map_click(self, event):
-    #         if self._map_scale is None or self._map_offset is None:
-    #             return
-
-    #         if not (0.0 <= world_x <= 200.0 and 0.0 <= world_y <= 200.0):
-    #             return
-    #         world_x = (event.x - self._map_offset[0]) / self._map_scale
-    #         world_y = (event.y - self._map_offset[1]) / self._map_scale
-
-    #         # Clamp to valid map range
-    #         world_x = max(0.0, min(200.0, world_x))
-    #         world_y = max(0.0, min(200.0, world_y))
-
-    #         self._map_click_xy = (world_x, world_y)
-
-    #         self._target_x_entry.delete(0, "end")
-    #         self._target_x_entry.insert(0, f"{world_x:.1f}")
-    #         self._target_y_entry.delete(0, "end")
-    #         self._target_y_entry.insert(0, f"{world_y:.1f}")

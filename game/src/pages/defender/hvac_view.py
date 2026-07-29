@@ -3,8 +3,7 @@ Read-only HVAC test dashboard for DefenderV0.
 
 DefenderV0 owns the connection, polling, and mode detection (reading
 submarine_mode from AP_ESP32.ino). This module only knows how to render
-whatever HVAC fields it's handed via update(), and how to push a manual
-setpoint to the AP's /set_hvac_target test endpoint. It has no opinion
+whatever HVAC fields it's handed via update(). It has no opinion
 about Submarine mode and doesn't touch any Submarine-only state.
 """
 
@@ -38,7 +37,7 @@ class HVACView:
     def __init__(self, style, left_parent, right_parent, get_url_fn, on_hvac_anomaly=None):
         """
         style        - the Style object DefenderV0 already uses (self.style)
-        left_parent  - container to build the setpoint/readout cards into
+        left_parent  - container to build the readout cards into
         right_parent - container to build the trajectory graph into
         get_url_fn   - callable returning the current base server URL,
                        shared with DefenderV0 so both hit the same AP
@@ -62,35 +61,6 @@ class HVACView:
 
     def _build_left(self, parent):
         self._left_root = CTkFrame(parent, fg_color="transparent")
-
-        # ── Setpoint card ──────────────────────────────────────────────
-        setpoint_card = CTkFrame(self._left_root, fg_color=self.style.color("widget"))
-        setpoint_card.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
-
-        CTkLabel(setpoint_card, text="HVAC SETPOINT", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
-        CTkLabel(setpoint_card, text="Test rig — sets target_temp on AP_ESP32",
-                 font=self.style.get_font("small"), text_color="gray").pack(
-            anchor="w", padx=self.style.igap
-        )
-
-        CTkLabel(setpoint_card, text="Target Temperature (°F)",
-                 font=self.style.get_font("small"), text_color="gray").pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
-        self._setpoint_entry = CTkEntry(setpoint_card, font=self.style.get_font(),
-                                        placeholder_text="e.g. 75.2")
-        self._setpoint_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
-
-        CTkButton(setpoint_card, text="Set Temperature", font=self.style.get_font(),
-                  command=self._send_setpoint).pack(
-            fill="x", padx=self.style.igap, pady=(0, 4)
-        )
-
-        self._setpoint_status = CTkLabel(setpoint_card, text="Status: Not set",
-                                         font=self.style.get_font(), text_color="gray")
-        self._setpoint_status.pack(anchor="w", padx=self.style.igap, pady=self.style.gapbot)
 
         # ── Live readout card ──────────────────────────────────────────
         readout_card = CTkFrame(self._left_root, fg_color=self.style.color("widget"))
@@ -157,45 +127,6 @@ class HVACView:
     def hide(self):
         self._left_root.pack_forget()
         self._graph_root.pack_forget()
-
-    # ════════════════════════════════════════════════════════════════════
-    #  Network — manual setpoint push
-    # ════════════════════════════════════════════════════════════════════
-
-    def _send_setpoint(self):
-        raw = self._setpoint_entry.get().strip()
-        try:
-            value = float(raw)
-        except ValueError:
-            self._setpoint_status.configure(text="Status: Invalid input", text_color="red")
-            return
-
-        if not (0.0 <= value <= 150.0):
-            self._setpoint_status.configure(text="Status: Out of range (0–150°F)",
-                                            text_color="red")
-            return
-
-        def _request():
-            try:
-                resp = requests.post(
-                    f"{self._get_url()}/set_hvac_target",
-                    json={"target_temp": value},
-                    timeout=3,
-                )
-                if resp.ok:
-                    self._setpoint_status.after(0, lambda: self._setpoint_status.configure(
-                        text=f"Status: Set to {value:.1f}°F", text_color="green"
-                    ))
-                else:
-                    self._setpoint_status.after(0, lambda: self._setpoint_status.configure(
-                        text=f"Status: Server error {resp.status_code}", text_color="red"
-                    ))
-            except Exception:
-                self._setpoint_status.after(0, lambda: self._setpoint_status.configure(
-                    text="Status: Connection failed", text_color="red"
-                ))
-
-        threading.Thread(target=_request, daemon=True).start()
 
     # ════════════════════════════════════════════════════════════════════
     #  Data — DefenderV0 feeds the polled /api/data JSON straight through
