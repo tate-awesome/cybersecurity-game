@@ -15,12 +15,37 @@ class Style:
         self.gapbot = (0, 10)
         self.igap = 10
         self.cgap = 2
-        self.PANE_MIN = self.igap*4
+        self.PANE_MIN_WIDTH = self.igap*50
+        self.PANE_MIN_HEIGHT = self.igap*10
+        self.PANE_BIG = self.igap*100
         self.fonts = {}
+
+        
 
         # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
 # TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
+
+    def packing(self, type = "default"):
+        options = {}
+
+        if type == "default":
+            options = {
+                "fill": "both",
+                "expand": True,
+                "padx": self.gap,
+                "pady": self.gap
+            }
+
+        if type == "panel":
+            options = {
+                "fill": "both",
+                "expand": True,
+                "padx": self.nogap,
+                "pady": self.nogap
+            }
+
+        return options
 
     def get_scale_correction(self):
         return ScalingTracker.get_widget_scaling(self.root)
@@ -58,25 +83,32 @@ class Style:
     def color(self, type: str) -> str:
         '''
         Returns a theme color:
-        "root": root color,
+        "root": root_color,
         "panel": fg_color,
-        "widget": top_fg_color
-        "accent": button fg_color
+        "widget": top_fg_color,
+        "accent": button fg_color,
+        "field": CTkTextBox fg_color
+        "field_text": CTkTextBox text_color
+        "scrollbar": CTkScrollbar button_color
+        "scrollbar_hover": CTkScrollbar button_hover_color
         '''
-        root_color = self.root.cget("fg_color")
         mode = get_appearance_mode()
         colors = {}
         if mode == "Light":
-            colors["root"] = root_color[0]
-            colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"][0]
-            colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][0]
-            colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"][0]
+            i = 0
         else:
-            colors["root"] = root_color[1]
-            colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"][1]
-            colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"][1]
-            colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"][1]
-        return colors[type]
+            i = 1
+        colors["root"] = self.root.cget("fg_color")
+        colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"]
+        colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"]
+        colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"]
+        colors["field"] = ThemeManager.theme["CTkTextbox"]["fg_color"]
+        colors["field_text"] = ThemeManager.theme["CTkTextbox"]["text_color"]
+        colors["scrollbar"] = ThemeManager.theme["CTkScrollbar"]["button_color"]
+        colors["scrollbar_hover"] = ThemeManager.theme["CTkScrollbar"]["button_hover_color"]
+        if not type in colors:
+            return "purple"
+        return colors[type][i]
 
     def get_column_width(self, column_name):
         match column_name:
@@ -99,3 +131,9 @@ class Style:
             case "modbus":
                 return int(400*self.get_scale_correction())
         return 100
+    
+    def get_scrollbar_size(self):
+        return 12 * self.get_scale_correction()
+    
+    def pad_corrected(self):
+        return int(self.igap * self.get_scale_correction())

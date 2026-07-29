@@ -394,6 +394,8 @@ class DataBuffer:
         '''
         x = self.get_latest_value("x", direction)
         y = self.get_latest_value("y", direction)
+        if x is None or y is None:
+            return None
         return (x, y)
     
     def get_simple_path(self, direction: str) -> list[tuple[float,float]]:

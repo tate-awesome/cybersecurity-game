@@ -2,6 +2,8 @@ import customtkinter as ctk
 
 from .router import Router
 
+import platform
+
 
 class App():
     '''
@@ -36,5 +38,15 @@ class App():
         else:
             self.root.after(
                 50,
-                lambda: self.root.state("zoomed")
+                self.maximize
             )
+
+    
+    def maximize(self):
+        try:
+            self.root.state("zoomed")
+        except Exception:
+            try:
+                self.root.attributes("-zoomed", True)
+            except Exception:
+                pass

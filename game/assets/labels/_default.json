@@ -1,0 +1,51 @@
+{
+    "packet_columns": {
+        "time": "Time",
+        "number": "No.",
+        "length": "Length",
+        "hack_info": "Hack Info",
+        "transaction": "Transaction",
+        "layers": "Layers",
+        "purpose": "Purpose",
+        "summary": "Summary",
+        "modbus": "MODBUS Info"
+    },
+
+    "hacking_forms": {
+        "nmap": "NMapping",
+        "arp": "ARP Spoofing",
+        "dos": "Denial of Service",
+        "sniff": "Packet Sniffing",
+        "mitm": "MITM Attack",
+        "mitm2": "MITM Readings"
+    },
+
+    "packet_filter_categories": {
+        "source": "From Source",
+        "protocol": "Includes Protocol",
+        "direction": "Direction"
+    },
+
+    "packet_filter_checkboxes": {            
+        "nmap": "NMapping",
+        "arp": "ARP Spoofing",
+        "dos": "Denial of Service",
+        "sniff": "Packet Sniffing",
+        "mitm": "MITM Attack",
+        "pcap": "PCAP File",
+        "TCP": "TCP",
+        "ARP": "ARP",
+        "UDP": "UDP",
+        "DNS": "DNS",
+        "MODBUSADU": "MODBUSADU",
+        "WRITE SINGLE REGISTER": "WRITE SINGLE REGISTER",
+        "READ HOLDING REGISTERS RESPONSE": "READ HOLDING REGISTERS RESPONSE",
+        "out": "Sent",
+        "in": "Received",
+        "other": "Observed"
+    },
+
+    "packet_filter_entries": {
+        "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
+    }
+}

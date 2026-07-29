@@ -1,8 +1,8 @@
 from ...app_core.context import Context
 
 # Widgets
-from ...widgets import Trifold, MenuBar
-from ...widgets import common, popup
+from ...widgets import Panes, MenuBar, Scrollable
+from ...widgets import popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ..page import Page
@@ -65,13 +65,13 @@ class DefenderV0(Page):
 
         # ── Menu bar ─────────────────────────────────────────────────────────
         menu_bar = MenuBar(self, context, "Defender V0")
-        menu_bar.all_buttons()
+        menu_bar.page_buttons()
 
         # ── Three-pane layout ────────────────────────────────────────────────
-        trifold = Trifold(self, context)
-        left_p = common.scrollable(trifold.left, context)
-        middle_p = trifold.middle
-        right_p = trifold.right
+        trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
+        left_p = Scrollable(trifold.pane(0), context)
+        middle_p = trifold.pane(1)
+        right_p = trifold.pane(2)
 
         # ── Left pane ────────────────────────────────────────────────────────
         self._build_connection_block(left_p)   # mode-agnostic — always visible
@@ -202,6 +202,19 @@ class DefenderV0(Page):
                 self._toggle_encryption()
 
         self._enc_button.configure(command=enc_button)
+
+        help_row = CTkFrame(section, fg_color="transparent")
+        help_row.pack(fill="x", padx=self.style.igap, pady=(0, 4))
+        CTkLabel(help_row, text="What does this do?", font=self.style.get_font("small"), text_color="gray").pack(anchor="w")
+        CTkButton(
+            help_row,
+            text="What does this do?",
+            font=self.style.get_font("small"),
+            fg_color = "#808080",
+            hover_color = "#666666",
+            text_color = "white",
+            command=lambda: popup.message(self, self.context, self._enc_help_message),
+        ).pack(fill="x", pady=(2, 0))
 
         self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
@@ -351,9 +364,7 @@ class DefenderV0(Page):
                      text_color="gray").grid(row=0, column=i, padx=6, pady=4, sticky="w")
             col_frame.grid_columnconfigure(i, weight=1)
 
-        self._log_frame = CTkScrollableFrame(parent, fg_color=self.style.color("panel"), height=240)
-        self._log_frame.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
-        common.bind_scroll(self._log_frame)
+        self._log_frame = Scrollable(parent, self.context, 240, "x", False)
         for i in range(len(cols)):
             self._log_frame.grid_columnconfigure(i, weight=1)
 
@@ -396,7 +407,7 @@ class DefenderV0(Page):
         new_state = not self._encryption_on
         enc_key   = self._enc_key_entry.get().strip()
 
-        def _request():
+        def _request():      
             try:
                 resp = requests.post(
                     f"{self._get_url()}/set_encryption",
@@ -671,9 +682,9 @@ class DefenderV0(Page):
     #         world_x = (event.x - self._map_offset[0]) / self._map_scale
     #         world_y = (event.y - self._map_offset[1]) / self._map_scale
 
-            # Clamp to valid map range
-            world_x = max(0.0, min(200.0, world_x))
-            world_y = max(0.0, min(200.0, world_y))
+    #         # Clamp to valid map range
+    #         world_x = max(0.0, min(200.0, world_x))
+    #         world_y = max(0.0, min(200.0, world_y))
 
     #         self._map_click_xy = (world_x, world_y)
 

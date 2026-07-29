@@ -1,6 +1,6 @@
 from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeManager
 from tkinter.filedialog import askopenfilename
-import os, json
+import os, json, webbrowser, subprocess
 
 from .context import Context
 from .style import Style
@@ -121,9 +121,9 @@ class Router:
         Context presets populate fields and checkboxes.
         '''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        presets_dir = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
+        directory = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
         file_path = askopenfilename(
-        initialdir=presets_dir,
+        initialdir=directory,
         title="Select a preset file",
         filetypes=(("json", "*.json"),)
         )
@@ -132,6 +132,25 @@ class Router:
         with open(file_path) as json_file:
             data = json.load(json_file)
         self.context.load_preset(data)
+        self.refresh()
+
+    def select_labels(self):
+        '''
+        Opens a dialog for the user to select a context labels
+        Context labels change text in labels
+        '''
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        directory = os.path.join(BASE_DIR, "..", "..", "assets", "labels")
+        file_path = askopenfilename(
+        initialdir=directory,
+        title="Select a labels file",
+        filetypes=(("json", "*.json"),)
+        )
+        if file_path == "":
+            return
+        with open(file_path) as json_file:
+            data = json.load(json_file)
+        self.context.load_labels(data)
         self.refresh()
 
     
@@ -166,3 +185,15 @@ class Router:
             print("Error in select theme")
         finally:
             return
+        
+    def open_ap_config_page(self):
+        url = "http://192.168.4.1"
+
+        sudo_user = os.environ.get("SUDO_USER")
+
+        if sudo_user:
+            # Open browser as not sudo
+            subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", url])
+        else:
+            # 3. Fallback for when you run the script normally without sudo
+            webbrowser.open(url)

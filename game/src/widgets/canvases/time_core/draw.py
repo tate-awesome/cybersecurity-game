@@ -12,54 +12,25 @@ class Draw:
     def __init__(self, canvas: CTkCanvas, context: Context, camera: Camera):
         self.canvas = canvas
         self.camera = camera
+        self.context = context
 
     def background(self, color: str):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
         self.canvas.create_rectangle(0, 0, w, h, fill=color)
 
-    def ocean(self):
-        self.background("#003459")
-    
-    def bbox(self):
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
-        o = 3
-        self.canvas.create_rectangle(0,0,w-o/2,h-o/2,fill="",outline="black", width=o)
-
-    def test_triangle(self):
+    def test_data(self):
         '''
         Visualize the transformations
         '''
-
-        # Gridlines
-        for i in range(-5, 6):
-            h_line = [ (-1, i), (1, i) ]
-            h_line = t.scale(h_line, 5)
-            v_line = t.rotate(h_line, math.pi/2, (0, 0))
-
-            h_line = self.camera.world_to_canvas(h_line)
-            v_line = self.camera.world_to_canvas(v_line)
-            color = "black"
-            if i == 0:
-                color = "red"
-
-            self.canvas.create_line(t.flatten(h_line), width=2, fill=color)
-            self.canvas.create_line(t.flatten(v_line), width=2, fill=color)
-
-        # Triangle
-        triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
-        triangle = t.scale(triangle, 2.0, (0,0))
-        angle = (time.time() % 20.0) * math.pi / 10.0
-        triangle = t.rotate(triangle, angle, (0,0))  #   <.   
-        triangle = self.camera.world_to_canvas(triangle)
-        self.canvas.create_polygon(triangle, fill="green", width="5", outline="blue")
-
-        # Inscribed circle
-        circle_box = [ (-2,-2), (2,2) ]
-        circle_box = t.scale(circle_box, 2.0, (0,0)) 
-        circle_box = self.camera.world_to_canvas(circle_box)
-        self.canvas.create_oval(circle_box, fill="", outline="blue", width="3")
+        points = []
+        for i in range(0, 2000):
+            x = i
+            y = 100 + 500 * math.sin(time.time() + i / 20.0)
+            points.append((x, y))
+        transformed_points = self.camera.data_to_strip_chart(points)
+        self.background(self.context.style.color("field"))
+        self.canvas.create_line(transformed_points, width=2, fill=self.context.style.color("field_text"))
 
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):

@@ -17,27 +17,9 @@ const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL  = "http://192.168.4.1/config";
 const char* REST_URL = "http://192.168.4.1/data";
 
-using namespace BLA;
-
-BLA::Matrix<3,1> xhat;   // [x;y;heading angle]
-BLA::Matrix<3,3> P;     // covariance matrix
-BLA::Matrix<3,3> R;    // measurment noise matrix
-BLA::Matrix<2,2> Qu;  // control input noise 
-BLA::Matrix<3,3> I3; // identity matrix
-
-float u_prev_speed = 0.0f;
-float u_prev_rudder = 0.0f;
-
-float var_x        = 0.5;
-float var_y        = 0.5;
-float var_theta    = 0.05;
-
-float var_meas_x = 8.33333f;
-float var_meas_y = 8.33333f;
-float var_meas_theta = 0.01f;
-
-float var_speed    = 0.2f;
-float var_rudder   = 0.2f;
+// String g_router_ssid = "";
+// String g_router_pass = "";
+// String g_flask_ip    = "";
 
 // ------- Encryption -------
 String key = (String)1234;
@@ -123,40 +105,6 @@ float wrap_to_pi(float angle) {
     while (angle > PI)  angle -= 2.0f * PI;
     while (angle < -PI) angle += 2.0f * PI;
     return angle;
-}
-
-void ekfStep(float speed_m_s, float rudder_rad, const Matrix<3,1>& z_meas, float dt){
-
-  BLA::Matrix<3,1> x_pred;
-  float th = xhat(2,0);
-
-  x_pred(0,0) = xhat(0,0) + speed_m_s * cos(th + rudder_rad) * dt;
-  x_pred(1,0) = xhat(1,0) + speed_m_s * sin(th + rudder_rad) * dt;
-  x_pred(2,0) = wrap_to_pi(th + K_theta * (tan(rudder_rad) / L_vehicle) * dt);
-
-  Matrix<3,3> F = {
-    1, 0, -speed_m_s * sin(th + rudder_rad) * dt,
-    0, 1,  speed_m_s * cos(th + rudder_rad) * dt,
-    0, 0,  1
-  };
-
-  Matrix<3,2> G = {
-    cos(th + rudder_rad) * dt, -speed_m_s * sin(th + rudder_rad) * dt,
-    sin(th + rudder_rad) * dt,  speed_m_s * cos(th + rudder_rad) * dt,
-    0, (K_theta * dt / L_vehicle) * (1.0f / (cos(rudder_rad) * cos(rudder_rad)))
-  };
-
-  Matrix<3,3> P_pred = F * P * ~F + G * Qu * ~G;
-
-  Matrix<3,3> S = P_pred + R;      // H = I
-  Matrix<3,3> K = P_pred * Inverse(S);
-
-  Matrix<3,1> y = z_meas - x_pred;
-  y(2,0) = wrap_to_pi(y(2,0));
-
-  xhat = x_pred + K * y;
-
-  P = (I3 - K) * P_pred; 
 }
 
 void computeControlCommands(float target_x, float target_y,float state_x, float state_y, float state_theta,float* speed_out, float* rudder_out) {
@@ -297,33 +245,6 @@ void setup() {
   pinMode(PIN_TARGET_Y, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  xhat.Fill(0);
-  xhat(0,0) = g_state_x;
-  xhat(1,0) = g_state_y;
-  xhat(2,0) = g_state_theta;
-
-  P = {
-    var_x, 0.0f, 0.0f,
-    0.0f, var_y, 0.0f,
-    0.0f, 0.0f, var_theta
-    };
-
-  R = {
-    var_meas_x, 0.0f, 0.0f,
-    0.0f, var_meas_y, 0.0f,
-    0.0f, 0.0f, var_meas_theta
-    };
-
-  Qu = {
-    var_speed, 0.0f,
-    0.0f, var_rudder
-    };
-
-  I3 = {1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
-    };
-
   Serial.println("[SERVER] Ready.");
 }
 
@@ -376,38 +297,6 @@ void loop() {
         g_state_theta = ((int16_t)h_th) / 1000.0f;
     }
 
-    if(last_state_x == g_state_x && last_state_y == g_state_y && last_state_theta == g_state_theta){
-      new_value = true;
-    }
-
-    last_state_x = g_state_x;
-    last_state_y = g_state_y;
-    last_state_theta = g_state_theta;
-
-    BLA::Matrix<3,1> z_meas;
-
-    z_meas(0,0) = g_state_x;
-    z_meas(1,0) = g_state_y;
-    z_meas(2,0) = wrap_to_pi(g_state_theta);
-
-    if(new_value){
-      ekfStep(u_prev_speed, u_prev_rudder, z_meas, 0.05f);
-
-      g_state_x = xhat(0,0);
-      g_state_y = xhat(1,0);
-      g_state_theta = xhat(2,0);
-
-      float xError = abs( z_meas(0,0) - xhat(0,0) );
-      float yError = abs( z_meas(1,0) - xhat(1,0) );
-      float tError = wrap_to_pi(z_meas(2,0) - xhat(2,0));
-
-      bool xCheck = xError > 8;
-      bool yCheck = yError > 8;
-      bool thetaCheck = fabs(tError) > 3;
-
-      g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
-    }
-
     // Drive PWM outputs
     ledcWrite(PIN_X, phys_to_pwm12(g_state_x));
     ledcWrite(PIN_Y, phys_to_pwm12(g_state_y));
@@ -416,15 +305,6 @@ void loop() {
 
     // Compute control commands and write back to Modbus
     computeControlCommands(target_x, target_y,g_state_x, g_state_y, g_state_theta,&g_speed_cmd, &g_rudder_deg);
-
-    u_prev_speed = g_speed_cmd;
-    u_prev_rudder = g_rudder_deg * PI / 180.0f;
-
-    } else {
-        // Test mode: hold speed/rudder at neutral, no setpoint control
-        g_speed_cmd  = 0.0f;
-        g_rudder_deg = 0.0f;
-    }
 
     float rud_norm = (g_rudder_deg / RudderMax_deg + 1.0f) / 2.0f;
     uint16_t unencrypted_speed = (uint16_t)lroundf(clampf_local(g_speed_cmd / SpeedMax, 0, 1) * 4095.0f);

@@ -4,6 +4,9 @@ Shared data for a page. Passed to next pages on navigation.
 
 from .style import Style
 from ..network.network_controller import NetworkController
+from .click_manager import ClickManager
+from .animation_manager import AnimationManager
+import os, json
 
 class Context:
     '''
@@ -13,158 +16,31 @@ class Context:
 
     def __init__(self, root, router, style: Style):
         self.net =  NetworkController()
+        self.click_manager = ClickManager(root)
+        self.animation_manager = AnimationManager(root)
         self.router = router
         self.root = root
         self.style = style
 
+        # Go to assets/presets to edit default values
         self.states = self.get_base_preset()
         self.labels = self.get_base_labels()
-        
-        '''
-        Tracks the state of the hacks on the GUI.
-        False = Fresh state
-        True = Has been done - use network_controller to see if it's running.
-        TODO: Use for game progression and unlocking elements
-        '''
-
-    def get_base_labels(self):
-        return {
-            "packet_columns": {
-                "time": "Time",
-                "number": "No.",
-                "length": "Length",
-                "hack_info": "Hack Info",
-                "transaction": "Transaction",
-                "layers": "Layers",
-                "purpose": "Purpose",
-                "summary": "Summary",
-                "modbus": "MODBUS Info"
-            },
-
-            "packet_filter_categories": {
-                "source": "From Source",
-                "protocol": "Includes Protocol",
-                "direction": "Direction"
-            },
-
-            "packet_filter_checkboxes": {            
-                "nmap": "NMapping",
-                "arp": "ARP Spoofing",
-                "dos": "Denial of Service",
-                "sniff": "Packet Sniffing",
-                "mitm": "MITM Attack",
-                "pcap": "PCAP File",
-                "TCP": "TCP",
-                "ARP": "ARP",
-                "UDP": "UDP",
-                "DNS": "DNS",
-                "MODBUSADU": "MODBUSADU",
-                "WRITE SINGLE REGISTER": "WRITE SINGLE REGISTER",
-                "READ HOLDING REGISTERS RESPONSE": "READ HOLDING REGISTERS RESPONSE",
-                "out": "Sent",
-                "in": "Received",
-                "other": "Observed"
-            },
-
-            "packet_filter_entries": {
-                "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
-            }
-        }
-
-
+    
     def get_base_preset(self):
-        '''
-        Returns a preset with default values for all checkboxes and entries.
-        Useful for resetting the game states before loading a .json preset file, which may not have all values defined.
-        Add a default value here if you want to include data that should survive a soft refresh.
-        '''
-        
-        return {
-
-            "game_progress": {
-                "nmap": False,
-                "arp": False,
-                "sniff": False,
-                "mitm": False,
-                "dos": False
-                },
-            
-            "hack_forms": {
-                "arp": ["",""],
-                "sniff": ["",""],
-                "dos": ["",""]
-            },
-
-            "packet_filter_checkboxes": {
-                "nmap": 0,
-                "arp": 0,
-                "dos": 0,
-                "sniff": 0,
-                "mitm": 0,
-                "pcap": 0,
-                "TCP": 0,
-                "ARP": 0,
-                "UDP": 0,
-                "DNS": 0,
-                "misc": 0,
-                "MODBUSADU": 0,
-                "WRITE SINGLE REGISTER": 0,
-                "READ HOLDING REGISTERS RESPONSE": 0,
-                "out": 0,
-                "in": 0,
-                "other": 0
-            },
-
-            "packet_filter_entries": {
-                "address_filter": ""
-            },
-
-            "packet_filter_function": {
-                "summary": "Currently filtering for any packets.",
-                "function": lambda mpkt: True
-            },
-
-            "packet_columns": {
-                "time": 1,
-                "number": 1,
-                "length": 0,
-                "hack_info": 0,
-                "transaction": 0,
-                "layers": 0,
-                "purpose": 1,
-                "summary": 1,
-                "modbus": 0
-            },
-
-            "map_customization": {
-                "Show/Hide Elements": {
-                    "in Boat": "1",
-                    "in Path": "1",
-                    "in Path Discontinuity": "1",
-                    "out Boat": "1",
-                    "out Path": "1",
-                    "out Path Discontinuity": "1"
-                },
-                "Show/Hide Labels": {
-                    "in Boat": "1",
-                    "in Boat Position": "1",
-                    "out Boat": "1",
-                    "out Boat Position": "1",
-                    "Grid Numbers": "1",
-                    "Grid Lines": "1"
-                },
-                "Colors": {
-                    "in Boat": "yellow",
-                    "in Path": "yellow",
-                    "in Path Discontinuity": "yellow",
-                    "out Boat": "cyan",
-                    "out Path": "cyan",
-                    "out Path Discontinuity": "cyan"
-                },
-            }
-        }
-
-
+        data = {}
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(BASE_DIR, "..", "..", "assets", "presets", "_default.json")
+        with open(file_path) as json_file:
+            data = json.load(json_file)
+        return data
+    
+    def get_base_labels(self):
+        data = {}
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(BASE_DIR, "..", "..", "assets", "labels", "_default.json")
+        with open(file_path) as json_file:
+            data = json.load(json_file)
+        return data
 
     def load_preset(self, preset: dict = {}):
         '''
@@ -178,6 +54,13 @@ class Context:
         merged_preset = {**base_preset, **preset}
 
         self.states = merged_preset
+
+    def load_labels(self, labels: dict = {}):
+        base_labels = self.get_base_labels()
+
+        merged_labels = {**base_labels, **labels}
+
+        self.labels = merged_labels
 
 
     def help_message(self, widget="root"):

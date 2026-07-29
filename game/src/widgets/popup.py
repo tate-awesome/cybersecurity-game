@@ -23,7 +23,7 @@ def message(master: CTkBaseClass, context: Context, message: str):
         frame = CTkFrame(window)
         frame.pack(fill="both", side="top", expand=True, padx=style.gap, pady=style.gap)
 
-        label = CTkLabel(frame, text=message, font=style.get_font(), wraplength=width - 2*style.igap)
+        label = CTkLabel(frame, text=message, font=style.get_font(), wraplength=width - 4*style.igap) 
         label.pack(pady=style.gap, padx=style.gap)
 
         close_button = CTkButton(frame, text="Dismiss", command=window.destroy, font=style.get_font())

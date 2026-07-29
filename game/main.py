@@ -1,4 +1,4 @@
-import os, subprocess, sys, platform
+import os, subprocess, sys, platform, ctypes
 
 from src.app_core.app import App
 
@@ -6,10 +6,11 @@ from src.app_core.app import App
 ENTRY POINT FOR APP
 
 Requirements:
-    Must run as root for permissions to access iptables, ip forwarding, and sockets
-    Must be on the same network as the target device
+    The Game tries to do privelege elevation on all platforms, but it's better to run VSCode as Admin on Windows.
+    Must be on the same network as the target device - our ESP32-config router
     Must be in the venv
-    Must run with linux or macos for full functionality. Windows doesn't allow many of the hacking features to work properly, but some GUI features will work.
+        Install requirements.txt. IDK how to do platform-dependent package installs
+    We are working on cross-platform features
 
 Known issues:
     As far as I know, the daemon threads close when the program is closed.
@@ -19,10 +20,27 @@ Known issues:
 
 os_name = platform.system()
 
-# GUI apps usually don't run as root, but this app constantly accesses iptables, ip forwarding, and sockets
+
+def is_admin_windows():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except Exception:
+        return False
+
+
 if os_name == "Windows":
-    print("Running on Windows. Many features will not work properly.")
-    ...
+    if not is_admin_windows():
+        print("Requesting administrator privileges...")
+
+        ctypes.windll.shell32.ShellExecuteW(
+            None,
+            "runas",                  # UAC elevation
+            sys.executable,
+            " ".join(f'"{arg}"' for arg in sys.argv),
+            None,
+            1
+        )
+        sys.exit()
 elif os_name == "Linux" or os_name == "Darwin":
     if os.geteuid() != 0:
         print("Requesting root privileges for permissions...\a")

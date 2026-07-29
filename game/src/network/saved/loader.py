@@ -55,5 +55,5 @@ class Loader:
         for spkt in self.packets:
             self.buffer.put("pcap", "Loaded packet", spkt)
 
-        self.buffer.put("pcap", f"Finished loading {len(self.packets)} packets from {file_path}")
+        self.buffer.put("pcap", f"Finished loading {len(self.packets)} packets from {file_path.split("/")[-1]}")
 

@@ -1,29 +1,15 @@
 from ...app_core.context import Context
 
-# Frame widgets
-from ...widgets import Trifold, MenuBar
+# Better Widgets
+from ...widgets import Panes, MenuBar
+from ...widgets import HackingPanel, StatusConsole, PacketConsole, NetworkDiagram, BoatModel, VariableMonitor
 
 # Widgets
-from ...widgets import common, popup
-from ...widgets.map import Map
-from ...drawing.viewport import ViewPort
-from ...widgets.console.packet_console import PacketConsole
-from ...widgets.console.status_console import StatusConsole
-from ...widgets.displays.system_model import SystemModel
-from ...widgets.displays.values_table import ValuesTable
-from ...widgets.displays.visualizer import Visualizer
+from ...widgets import popup
 from ...pages.page import Page
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
-
-# Form widgets
-from ...widgets.forms.nmap import NMap
-from ...widgets.forms.arp import ARP
-from ...widgets.forms.sniff import Sniff
-from ...widgets.forms.mitm import MITM
-from ...widgets.forms.dos import DoS
-from ...widgets.forms.mitm2 import MITM2
 
 # Packet
 from ...network.meta_packet import MetaPacket
@@ -38,31 +24,33 @@ class AttackerV0(Page):
         net = context.refresh_net(HardwareNetwork)
 
         menu_bar = MenuBar(self, context, "Attacker V0")
-        menu_bar.all_buttons()
+        menu_bar.page_buttons()
 
-        trifold = Trifold(self, context)
+        trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
-        left_p = common.scrollable(trifold.left, context)       
-        middle_p = trifold.middle
-        right_p = trifold.middle
+        left_p = trifold.pane(0)       
+        middle_p = trifold.pane(1)
+        right_p = trifold.pane(2)
 
     # Forms
-        nmap = NMap(left_p, context)
-        arp = ARP(left_p, context)
-        dos = DoS(left_p, context)
-        sniff = Sniff(left_p, context)
-        mitm = MITM(left_p, context)
-        mitm2 = MITM2(left_p, context)
-        common.scroll_deadspace(left_p, context)
+        hacking_panel = HackingPanel(left_p, context)
 
     # Console
-        top, bottom = common.create_bifold(middle_p, context)
-        packet_console = PacketConsole(top, context)
-        status_console = StatusConsole(bottom, context)
+        console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)
+        packet_console = PacketConsole(console.pane(0), context)
+        network_visualizer = NetworkDiagram(console.pane(1), context)
+        status_console = StatusConsole(console.pane(2), context)
 
 
     # Displays
-        top, bottom = common.create_bifold(right_p, context)
-        system_model = SystemModel(top, context)
+        display = Panes(right_p, context, "vertical", 2, [2, 2], False)
+        system_model = BoatModel(display.pane(0), context)
+        # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
-        network_visualizer = Visualizer(bottom, context)
+        monitor = VariableMonitor(display.pane(1), context, {
+            "Speed": lambda: net.data_buffer.get_tracer_data("speed", "other"),
+            "Rudder": lambda: net.data_buffer.get_tracer_data("rudder", "other"),
+            "Heading": lambda: net.data_buffer.get_tracer_data("theta", "other"),
+            "X Position": lambda: net.data_buffer.get_tracer_data("x", "other"),
+            "Y Position": lambda: net.data_buffer.get_tracer_data("y", "other"),
+        })

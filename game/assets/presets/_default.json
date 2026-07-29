@@ -1,28 +1,18 @@
 {
-    "game_progress": {
-        "nmap": true,
-        "arp": true,
-        "sniff": true,
-        "mitm": true,
-        "dos": true
-    },
 
+    "game_progress": {
+        "nmap": 0,
+        "arp": 0,
+        "sniff": 0,
+        "mitm": 0,
+        "dos": 0
+        },
     
     "hack_forms": {
-        "arp": ["192.168.4.2","192.168.4.10"],
+        "arp": ["",""],
         "sniff": ["",""],
-        "dos": ["192.168.4.2","192.168.4.10"]
+        "dos": ["",""]
     },
-
-    "hacking_forms": {
-        "nmap": 1,
-        "arp": 1,
-        "dos": 0,
-        "sniff": 1,
-        "mitm": 1,
-        "mitm2": 1
-    },
-
 
     "packet_filter_checkboxes": {
         "nmap": 0,
@@ -35,6 +25,7 @@
         "ARP": 0,
         "UDP": 0,
         "DNS": 0,
+        "misc": 0,
         "MODBUSADU": 0,
         "WRITE SINGLE REGISTER": 0,
         "READ HOLDING REGISTERS RESPONSE": 0,
@@ -43,22 +34,35 @@
         "other": 0
     },
 
-
     "packet_filter_entries": {
         "address_filter": ""
     },
 
+    "packet_filter_function": {
+        "summary": "Currently filtering for any packets.",
+        "function": "lambda mpkt: True",
+        "secret explanation for awful coding practice": "This is just the default filter on startup. It gets changed to eval() of itself"
+    },
 
     "packet_columns": {
         "time": 1,
         "number": 1,
         "length": 0,
-        "hack_info": 1,
+        "hack_info": 0,
         "transaction": 0,
         "layers": 0,
-        "purpose": 0,
-        "summary": 0,
-        "modbus": 1
+        "purpose": 1,
+        "summary": 1,
+        "modbus": 0
+    },
+
+    "hacking_forms": {
+        "nmap": 1,
+        "arp": 1,
+        "dos": 0,
+        "sniff": 1,
+        "mitm": 0,
+        "mitm2": 1
     },
 
     "world_map_sprites": {
@@ -83,12 +87,12 @@
         "grid_lines": "white",
         "grid_axes": "red",
         "grid_numbers": "white",
-        "boat_in_fill": "cyan",
+        "boat_in_fill": "yellow",
         "boat_in_outline": "yellow",
-        "boat_out_fill": "cyan",
+        "boat_out_fill": "yellow",
         "boat_out_outline": "yellow",
-        "path_in": "cyan",
-        "path_out": "cyan"
+        "path_in": "yellow",
+        "path_out": "yellow"
     },
 
     "strip_chart_sprites": {
