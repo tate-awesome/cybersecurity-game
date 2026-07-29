@@ -75,11 +75,12 @@ float g_client_live_y   = 0.0f;
 bool  g_has_server_live = false;
 float g_server_live_x   = 0.0f;
 float g_server_live_y   = 0.0f;
-float g_client_noise_x = 0.0f;
-float g_client_noise_y = 0.0f;
-float g_client_noise_theta = 0.0f;
-float g_server_speed_cmd = 0.0f;
-float g_server_rudder_deg = 0.0f;
+bool  g_has_live_speed  = false;
+float g_live_speed      = 0.0f;
+bool  g_has_live_rudder = false;
+float g_live_rudder     = 0.0f;
+
+
 
 // ─── HVAC temperature history (for the setpoint-vs-live chart) ─
 #define HVAC_HISTORY_LEN 40
@@ -643,6 +644,15 @@ String buildConfigPage() {
                   <span class="status-key">Current Target X / Y</span>
                   <span class="status-val" id="stat-target">—</span>
                 </div>
+                                <div class="status-row">
+                  <span class="status-key">Speed</span>
+                  <span class="status-val" id="stat-speed">—</span>
+                </div>
+                <div class="status-row" style="margin-bottom:14px;">
+                  <span class="status-key">Rudder</span>
+                  <span class="status-val" id="stat-rudder">—</span>
+                </div>
+
 
                 <div class="minimap-wrap">
                   <svg class="minimap-svg" id="target-minimap" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
@@ -929,6 +939,14 @@ String buildConfigPage() {
           return k.slice(0, 1) + '•'.repeat(k.length - 1);
         }
 
+        function formatRudder(deg) {
+          if (deg === undefined || deg === null || isNaN(deg)) return '—';
+          if (Math.abs(deg) < 0.05) return '0.0° (amidships)';
+          return `${Math.abs(deg).toFixed(1)}° ${deg > 0 ? 'R' : 'L'}`;
+        }
+
+
+
         // ── Map a raw (x, y) telemetry value onto the mini-map's SVG ──
         //    Fixed 0–200 display range on each axis, clamped so an
         //    out-of-range point still shows at the nearest edge.
@@ -1070,6 +1088,12 @@ String buildConfigPage() {
             document.getElementById('stat-target').textContent =
               `(${d.target_x ?? '—'}, ${d.target_y ?? '—'})`;
             updateTargetMinimap(d);
+
+            document.getElementById('stat-speed').textContent =
+              d.has_live_speed ? d.live_speed.toFixed(1) + ' kn' : '—';
+            document.getElementById('stat-rudder').textContent =
+              d.has_live_rudder ? formatRudder(d.live_rudder) : '—';
+
 
             // HVAC setpoint readout (test tool)
             document.getElementById('stat-hvac-target').textContent =
@@ -1322,6 +1346,12 @@ void setupRoutes() {
   doc["has_server_live"] = g_has_server_live;
   doc["server_live_x"]   = g_server_live_x;
   doc["server_live_y"]   = g_server_live_y;
+  doc["has_live_speed"]  = g_has_live_speed;
+  doc["live_speed"]      = g_live_speed;
+  doc["has_live_rudder"] = g_has_live_rudder;
+  doc["live_rudder"]     = g_live_rudder;
+
+
 
   // device list
   JsonArray devices = doc.createNestedArray("devices");
@@ -1408,6 +1438,18 @@ void setupRoutes() {
           g_has_server_live = true;
         }
       }
+
+      // ── Track live speed / rudder from whichever source posts them ──
+      if (incoming.containsKey("speed")) {
+        g_live_speed     = incoming["speed"];
+        g_has_live_speed = true;
+      }
+      if (incoming.containsKey("rudder")) {
+        g_live_rudder     = incoming["rudder"];
+        g_has_live_rudder = true;
+      }
+
+
 
       // Return control state
       StaticJsonDocument<128> resp;
