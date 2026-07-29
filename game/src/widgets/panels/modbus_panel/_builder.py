@@ -23,7 +23,7 @@ class Builder(Panel):
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
-        self.refresh_forms()
+        # self.refresh_forms()
         scrollable.columnconfigure(0, weight=1)
         scrollable.add_deadspace("grid")
 
@@ -35,19 +35,20 @@ class Builder(Panel):
 
     def refresh_forms(self):
         self.update_idletasks()
-        for key in self.context.states["modbus_forms"]:
-            if self.context.states["modbus_forms"][key] == "1" or self.context.states["modbus_forms"][key] == 1:
-                self.show_form(key)
+        for key in self.context.states["modbus_variables"]:
+            state = self.context.states["modbus_variables"][key]["show"]
+            if state == "1" or state == 1:
+                self.show_variable(key)
             else:
-                self.hide_form(key)
+                self.hide_variable(key)
 
-    def hide_form(self, name: str):
+    def hide_variable(self, name: str):
         form = self.forms[name]
         if not form.winfo_ismapped():
             return
         form.grid_remove()  
 
-    def show_form(self, name: str):
+    def show_variable(self, name: str):
         form = self.forms[name]
         if form.winfo_ismapped():
             return

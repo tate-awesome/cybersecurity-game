@@ -6,7 +6,7 @@ from .....network.data_buffer import DataBuffer
 from typing import cast
 from .base_form import BaseForm
 
-class Mitm2Form(BaseForm):
+class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
         super().__init__(master, context, "mitm2", "MITM Attack")
         # Assign local references
@@ -19,60 +19,90 @@ class Mitm2Form(BaseForm):
         self.columnconfigure(2, weight=1)
         self.columnconfigure(3, weight=1)
 
-        header = CTkLabel(self, text="MITM Readings", font=self.style.get_font())
-        header.grid(row=0, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
-        self.header = header
+        self.add_header("ModBus Readings")
 
         # Create value table entries
-        self.outgoing_labels = {}
-        self.frames = {}
-        self.outgoing_labels = {}
-        self.incoming_labels = {}
-        self.delta_labels = {}
-        self.names = {
-            "": "",
-            "x": "X",
-            "y": "Y",
-            "theta": "T",
-            "speed": "S",
-            "rudder": "R"
-        }
-        r = 1
+        self.rows = {}
+
+        self.add_title_row()
+
+        for key in self.context.states["modbus_variables"]:
+            self.add_row(key)
+
+
+    def add_title_row(self):
+        self.current_column = 0
+
+        def label(text):
+            text = self.context.labels["modbus_table_columns"][text]
+            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
+            label.grid(row=self.current_row, column=self.current_column, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+            self.current_column += 1
+            return label
+
+        label("name")
+        label("in")
+        label("out")
+        label("source")
+        self.current_row += 1
+
+    def add_row(self, key):
+        this_row = {}
         w = 90
-        for name in ["", "x", "y", "theta", "speed", "rudder"]:
-            label = CTkLabel(self, text=f"{self.names[name]}")
-            label.grid(row=r, column=0, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
-            self.outgoing_labels[name] = label
+        self.current_column = 0
+        slot = self.context.states["modbus_variables"][key]
 
-            incoming = CTkLabel(self, text="0", font=self.style.get_font("mono"))
-            if name == "":
-                incoming.configure(text="in")
-            incoming.grid(row=r, column=1, pady=self.style.gaptop, padx=self.style.gap, sticky="ew")
-            self.incoming_labels[name] = incoming
+        def label(text):
+            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
+            label.grid(row=self.current_row, column=self.current_column, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
+            self.current_column += 1
+            return label
 
-            delta = CTkLabel(self, text="0", width=w, font=self.style.get_font("mono"))
-            if name == "":
-                delta.configure(text="delta")
-            delta.grid(row=r, column=2, pady=self.style.gaptop, sticky="ew")
-            self.delta_labels[name] = delta
 
-            outgoing = CTkLabel(self, text="0", width=w, font=self.style.get_font("mono"))
-            if name == "":
-                outgoing.configure(text="out")
-            outgoing.grid(row=r, column=3, pady=self.style.gaptop, sticky="ew")
-            self.outgoing_labels[name] = outgoing
+        # Resolve nickname and add label
+        if len(slot["nickname"]) > 0:
+            variable_name = slot["nickname"]
+        else:
+            variable_name = self.context.labels["modbus_variables"][key]
 
-            r = r+1
-        self.update()
+        this_row["name"] = label(variable_name)
+
+        # Source
+
+        this_row["incoming"] = label("-")
+        this_row["outgoing"] = label("-")
+        this_row["source"] = label("-")
+        self.rows[key] = this_row
+        self.current_row += 1
+
+    def refresh_rows(self):
+        for key in self.context.states["modbus_variables"]:
+            state = self.context.states["modbus_forms"][key]["show"]
+            if state == "1" or state == 1:
+                self.show_row(key)
+            else:
+                self.hide_row(key)
+
+    def show_row(self, key: str):
+        row = self.rows[key]
+        if not row.winfo_ismapped():
+            return
+        row.grid_remove()  
+
+    def hide_row(self, key: str):
+        row = self.forms[key]
+        if row.winfo_ismapped():
+            return
+        row.grid()
 
     def update(self):
-        for name in self.names.keys():
-            if name == "":
-                continue
-            in_value = self.buffer.get_latest_value(name,"in")
-            out_value = self.buffer.get_latest_value(name,"out")
-            delta_value = out_value - in_value
-            self.incoming_labels[name].configure(text=f"{in_value:.3f}")
-            self.delta_labels[name].configure(text=f"{delta_value:.3f}")
-            self.outgoing_labels[name].configure(text=f"{out_value:.3f}")
+        for key in self.rows:
+            this_row = self.rows[key]
+            
+            in_value = self.buffer.get_latest_value(key,"in")
+            out_value = self.buffer.get_latest_value(key,"out")
+            source = self.buffer.get_latest_source(key)
+            this_row["incoming"].configure(text=f"{in_value:.3f}")
+            this_row["outgoing"].configure(text=f"{out_value:.3f}")
+            this_row["source"].configure(text=source)
         self.after(100, self.update)

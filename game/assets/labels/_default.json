@@ -15,9 +15,12 @@
         "nmap": "NMapping",
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
-        "sniff": "Packet Sniffing",
+        "sniff": "Packet Sniffing"
+    },
+
+    "modbus_form": {
         "mitm": "MITM Attack",
-        "mitm2": "MITM Readings"
+        "table": "MITM Readings"
     },
 
     "packet_filter_categories": {
@@ -63,22 +66,29 @@
         
     },
 
+    "modbus_table_columns": {
+        "name": "Variable",
+        "in": "Received",
+        "out": "Sent",
+        "source": "Source"
+    },
+
     "modbus_variables": {
-        "register_1": "Modbus Register 1",
-        "register_2": "Modbus Register 2",
-        "register_3": "Modbus Register 3",
-        "register_4": "Modbus Register 4",
-        "register_5": "Modbus Register 5",
-        "register_6": "Modbus Register 6",
-        "register_7": "Modbus Register 7",
-        "register_8": "Modbus Register 8",
-        "register_9": "Modbus Register 9",
-        "register_10": "Modbus Register 10",
-        "register_11": "Modbus Register 11",
-        "register_12": "Modbus Register 12",
-        "register_13": "Modbus Register 13",
-        "register_14": "Modbus Register 14",
-        "register_15": "Modbus Register 15",
+        "register_1": "Register 1",
+        "register_2": "Register 2",
+        "register_3": "Register 3",
+        "register_4": "Register 4",
+        "register_5": "Register 5",
+        "register_6": "Register 6",
+        "register_7": "Register 7",
+        "register_8": "Register 8",
+        "register_9": "Register 9",
+        "register_10": "Register 10",
+        "register_11": "Register 11",
+        "register_12": "Register 12",
+        "register_13": "Register 13",
+        "register_14": "Register 14",
+        "register_15": "Register 15",
 
         "x": "X Position",
         "y": "Y Position",

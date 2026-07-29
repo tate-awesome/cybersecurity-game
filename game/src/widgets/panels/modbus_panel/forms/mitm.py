@@ -3,6 +3,7 @@ from .....app_core.context import Context
 from .....network.mod_table import ModTable
 from .....network.meta_packet import MetaPacket
 from .base_form import BaseForm
+from typing import Callable
 
 class MitmForm(BaseForm):
 
@@ -10,7 +11,7 @@ class MitmForm(BaseForm):
 
         super().__init__(master, context, "mitm", "MITM Attack")
         self.add_header("MITM Attack")
-
+        self.has_attack_button = False
         # Create value table entries
         self.labels = {}
         self.frames = {}
@@ -130,3 +131,72 @@ class MitmForm(BaseForm):
             self.offsets[name].insert(0, offset)
         
         self.save_status.configure(text="Modifiers Saved.")
+
+    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[None, bool], default_status: str = ""):
+
+        if self.has_attack_button:
+            return
+
+        # Create widgets
+        self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
+        self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+
+        self.attack_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
+        self.attack_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+
+        # Set function definitions
+        self.start_attack = start_attack_func
+        self.stop_attack = stop_attack_func
+
+        # Configure attack state
+        if attack_status_func():
+            self.configure_on()
+        else:
+            self.configure_off()
+        
+        # Bind <Return>
+        def return_handler(event=None):
+            self.click_start()
+        for entry in self.entries:
+            entry.bind("<Return>", return_handler)
+        
+        # Update current index
+        self.current_row += 1
+
+        self.has_attack_button = True
+
+    def click_start(self):
+        self.context.states["game_progress"][self.key] = 1
+        self.attack_button.configure(text=f"Starting {self.attack_noun}...")
+        self.start_attack()
+        self.context.root.update_idletasks()
+        self.configure_on()
+    
+    def configure_on(self):
+        self.attack_button.configure(command=self.click_stop, text=f"Stop {self.attack_noun}")
+        self.attack_status.configure(text=f"{self.attack_noun} is on")
+
+    def click_stop(self):
+        if not self.has_attack_button:
+            return
+        self.attack_button.configure(text=f"Stopping {self.attack_noun}...")
+        self.stop_attack()
+        self.context.root.update_idletasks()
+        self.configure_off()
+    
+    def configure_off(self):
+        self.attack_button.configure(command=self.click_start, text=f"Start {self.attack_noun}")
+        self.attack_status.configure(text=f"{self.attack_noun} is off")
+
+    def add_button(self, default_status: str = "", button_text: str= "", button_func: Callable = None):
+        # Create widgets
+        status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
+        status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+
+        button = CTkButton(self, text=button_text, font=self.style.get_font(), command=button_func)
+        button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+
+        # Update current index
+        self.current_row += 1
+
+        return status, button
