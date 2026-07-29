@@ -9,6 +9,7 @@ class Panes(PanedWindow):
         if not direction in ["horizontal", "vertical"] or child_count < 2:
             return
 
+        self.panels = []
         self.context = context
         style = context.style
 
@@ -29,22 +30,18 @@ class Panes(PanedWindow):
         else:
             s = self.winfo_height() / context.style.get_scale_correction()
             min_size = style.PANE_MIN_HEIGHT
-
-        self.panes = []       
         for i in range(child_count):
             size = s//child_sizes[i]
             pane = CTkFrame(self, height = size, width= size, background_corner_colors=(color, color, color, color))
             pane.default_size = size
             self.add(pane, minsize=min_size)
-            self.panes.append(pane)
+            self.panels.append(pane)
 
         self.bind("<Configure>", self.on_pane_resize)
 
     def on_pane_resize(self, event=None):
         self.context.root.update_idletasks()
-    
-    def panes(self):
-        return self.panes
 
     def pane(self, index: int):
-        return self.panes[index]
+        if hasattr(self, "panels"):
+            return self.panels[index]

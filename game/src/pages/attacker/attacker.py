@@ -28,26 +28,24 @@ class AttackerV0(Page):
 
         trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
-        left_p = trifold.pane(0)       
-        middle_p = trifold.pane(1)
-        right_p = trifold.pane(2)
-
     # Forms
-        hacking_panel = HackingPanel(left_p, context)
+        hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [2, 2], False)
+        HackingPanel(hacking_side.pane(0), context)
+        HackingPanel(hacking_side.pane(1), context)
 
     # Console
-        console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)
-        packet_console = PacketConsole(console.pane(0), context)
-        network_visualizer = NetworkDiagram(console.pane(1), context)
-        status_console = StatusConsole(console.pane(2), context)
+        console = Panes(trifold.pane(1), context, "vertical", 3, [3, 3, 3], False)
+        PacketConsole(console.pane(0), context)
+        NetworkDiagram(console.pane(1), context)
+        StatusConsole(console.pane(2), context)
 
 
     # Displays
-        display = Panes(right_p, context, "vertical", 2, [2, 2], False)
-        system_model = BoatModel(display.pane(0), context)
+        display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
+        BoatModel(display.pane(0), context)
         # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
-        monitor = VariableMonitor(display.pane(1), context, {
+        VariableMonitor(display.pane(1), context, {
             "Speed": lambda: net.data_buffer.get_tracer_data("speed", "other"),
             "Rudder": lambda: net.data_buffer.get_tracer_data("rudder", "other"),
             "Heading": lambda: net.data_buffer.get_tracer_data("theta", "other"),
