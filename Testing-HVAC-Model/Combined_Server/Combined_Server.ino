@@ -529,6 +529,7 @@ void runHvacCycle() {
       float error_value = abs(est_temp - current_temp);
 
       g_HVAC_anomaly_detected = error_value > 5.0f;
+      current_temp = est_temp;
     }
 
     last_temp = current_temp;

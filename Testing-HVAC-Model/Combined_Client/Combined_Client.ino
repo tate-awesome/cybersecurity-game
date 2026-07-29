@@ -213,15 +213,15 @@ static int readAttempts = 0;
 static int readFailures = 0;
 
 float speed_estimate = 0.0f;
-float speed_covariance = 1.0f;
+float speed_covariance = 0.5f;
 float speed_process_variance = 0.05f;
-float speed_measurement_variance = 1.0f;
+float speed_measurement_variance = 0.1f;
 float speed_kalman_gain = 0.0f;
 
 float rudder_estimate = 0.0f;
-float rudder_covariance = 1.0f;
+float rudder_covariance = 0.5f;
 float rudder_process_variance = 0.02f;
-float rudder_measurement_variance = 4.0f;
+float rudder_measurement_variance = 0.1f;
 float rudder_kalman_gain = 0.0f;
 
 static bool speed_anomaly_detected = false;
@@ -423,6 +423,9 @@ void runSubmarineCycle() {
 
       state_speed  = speedKF(speed_m_s, dt);
       state_rudder  = rudderKF(rudder_deg, dt);
+
+      speed_m_s = state_speed;
+      rudder_deg = state_rudder;
 
       float speed_error = abs(last_speed - state_speed);
       float rudder_error = fabs(wrapToPi(last_rudder - state_rudder));
