@@ -5,7 +5,12 @@ from ...app_core.context import Context
 class Panes(PanedWindow):
 
     def __init__(self, master, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] = [4, 3, 2], pad_around = True):
-
+        '''
+        Args:
+            child_sizes: pane size is total size divided by child_size[i]. e.g. child_size = [3, 2, 1]
+            means the first pane is 1/3 the size of the parent, the second pane is half the size of the parent,
+            and the last pane takes the remaining space.
+        '''
         if not direction in ["horizontal", "vertical"] or child_count < 2:
             return
 

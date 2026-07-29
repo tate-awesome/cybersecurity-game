@@ -27,7 +27,7 @@ class AttackerV0(Page):
         trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
     # Forms
-        hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [4, 2], False)
+        hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [2.5, 2], False)
         HackingPanel(hacking_side.pane(0), context)
         ModbusPanel(hacking_side.pane(1), context)
 

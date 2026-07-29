@@ -3,7 +3,7 @@ from ....app_core.context import Context
 from ..panel import Panel
 
 from .forms.mitm import MitmForm
-from .forms.mitm2 import Mitm2Form
+from .forms.table import MitmTable
 from .form_overlay import FormOverlay
 
 from ....widgets import Scrollable, MenuBar, Overlay
@@ -19,7 +19,7 @@ class Builder(Panel):
         self.forms = {}
         
         self.forms["mitm"] = MitmForm(scrollable, context)
-        self.forms["mitm2"] = Mitm2Form(scrollable, context)
+        self.forms["table"] = MitmTable(scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")

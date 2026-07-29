@@ -19,7 +19,7 @@ class FormOverlay:
 
     def populate_overlay(self, overlay):
         
-        slot_name = "hacking_forms"
+        slot_name = "modbus_forms"
         box_slots = self.context.states[slot_name]
         med = self.style.get_font()
 
