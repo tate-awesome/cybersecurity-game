@@ -79,7 +79,11 @@ bool  g_has_live_speed  = false;
 float g_live_speed      = 0.0f;
 bool  g_has_live_rudder = false;
 float g_live_rudder     = 0.0f;
-
+float g_client_noise_x = 0.0f;
+float g_client_noise_y = 0.0f;
+float g_client_noise_theta = 0.0f;
+float g_server_speed_cmd = 0.0f;
+float g_server_rudder_deg = 0.0f;
 
 
 // ─── HVAC temperature history (for the setpoint-vs-live chart) ─
