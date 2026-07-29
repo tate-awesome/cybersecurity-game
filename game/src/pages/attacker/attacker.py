@@ -1,9 +1,7 @@
 from ...app_core.context import Context
 
 # Better Widgets
-from ...widgets import Panes, MenuBar
-from ...widgets import HackingPanel, StatusConsole, PacketConsole, NetworkDiagram, BoatModel, VariableMonitor
-
+from ...widgets import *
 # Widgets
 from ...widgets import popup
 from ...pages.page import Page
@@ -29,9 +27,9 @@ class AttackerV0(Page):
         trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
     # Forms
-        hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [2, 2], False)
+        hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [4, 2], False)
         HackingPanel(hacking_side.pane(0), context)
-        HackingPanel(hacking_side.pane(1), context)
+        ModbusPanel(hacking_side.pane(1), context)
 
     # Console
         console = Panes(trifold.pane(1), context, "vertical", 3, [3, 3, 3], False)

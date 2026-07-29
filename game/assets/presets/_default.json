@@ -60,8 +60,11 @@
         "nmap": 1,
         "arp": 1,
         "dos": 0,
-        "sniff": 1,
-        "mitm": 0,
+        "sniff": 1
+    },
+
+    "modbus_forms": {
+        "mitm": 1,
         "mitm2": 1
     },
 

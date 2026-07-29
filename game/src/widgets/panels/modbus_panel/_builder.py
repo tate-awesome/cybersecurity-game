@@ -2,10 +2,8 @@ from customtkinter import CTkFrame
 from ....app_core.context import Context
 from ..panel import Panel
 
-from .forms.arp import ArpForm
-from .forms.nmap import NmapForm
-from .forms.dos import DosForm
-from .forms.sniff import SniffForm
+from .forms.mitm import MitmForm
+from .forms.mitm2 import Mitm2Form
 from .form_overlay import FormOverlay
 
 from ....widgets import Scrollable, MenuBar, Overlay
@@ -20,10 +18,8 @@ class Builder(Panel):
 
         self.forms = {}
         
-        self.forms["nmap"] = NmapForm(scrollable, context)
-        self.forms["arp"] = ArpForm(scrollable, context)
-        self.forms["dos"] = DosForm(scrollable, context)
-        self.forms["sniff"] = SniffForm(scrollable, context)
+        self.forms["mitm"] = MitmForm(scrollable, context)
+        self.forms["mitm2"] = Mitm2Form(scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
@@ -39,8 +35,8 @@ class Builder(Panel):
 
     def refresh_forms(self):
         self.update_idletasks()
-        for key in self.context.states["hacking_forms"]:
-            if self.context.states["hacking_forms"][key] == "1" or self.context.states["hacking_forms"][key] == 1:
+        for key in self.context.states["modbus_forms"]:
+            if self.context.states["modbus_forms"][key] == "1" or self.context.states["modbus_forms"][key] == 1:
                 self.show_form(key)
             else:
                 self.hide_form(key)
