@@ -227,6 +227,41 @@ class DataBuffer:
             values = []
 
         return variables, values
+
+    def extract_agnostic_modbus(self, source: str, pkt: Packet) -> tuple[list[str], list[float]]:
+        variables = []
+        values = []
+
+        
+
+        if pkt.haslayer("Read Holding Registers Response"):
+            variables = ["speed"]
+            mbl = pkt.getlayer(ModbusADUResponse)
+            values = [self.convert["speed"](mbl.payload.registerVal[0])]
+
+            if len(mbl.payload.registerVal) > 1:
+                variables.append("rudder")
+                values.append(self.convert["rudder"](mbl.payload.registerVal[1]))
+
+        elif pkt.haslayer("Write Single Register"):
+            mbl = pkt.getlayer(ModbusADURequest)
+            if mbl.payload.registerAddr == 10: # X address
+                var = "x"
+            elif mbl.payload.registerAddr == 11: # Y address
+                var = "y"
+            else: # Theta address
+                var = "theta"
+
+            z = mbl.payload.registerValue
+
+            variables = [var]
+            values = [self.convert[var](z)]
+        
+        else:
+            variables = []
+            values = []
+
+        return variables, values
     
     def put_position(self, variable: str, direction: str, value: float, time: float):
         '''

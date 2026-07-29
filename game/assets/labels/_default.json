@@ -61,5 +61,29 @@
         "refresh_button": "Rebuild the page without losing persistent data - attack threads, entries, settings.",
         "quit_button": "Close the program."
         
+    },
+
+    "modbus_variables": {
+        "register_1": "Modbus Register 1",
+        "register_2": "Modbus Register 2",
+        "register_3": "Modbus Register 3",
+        "register_4": "Modbus Register 4",
+        "register_5": "Modbus Register 5",
+        "register_6": "Modbus Register 6",
+        "register_7": "Modbus Register 7",
+        "register_8": "Modbus Register 8",
+        "register_9": "Modbus Register 9",
+        "register_10": "Modbus Register 10",
+        "register_11": "Modbus Register 11",
+        "register_12": "Modbus Register 12",
+        "register_13": "Modbus Register 13",
+        "register_14": "Modbus Register 14",
+        "register_15": "Modbus Register 15",
+
+        "x": "X Position",
+        "y": "Y Position",
+        "theta": "Bearing",
+        "speed": "Speed",
+        "rudder": "Rudder Angle"
     }
 }

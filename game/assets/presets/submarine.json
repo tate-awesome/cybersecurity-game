@@ -1,0 +1,94 @@
+{
+    "modbus_variables": {
+        "register_1": {
+            "label": "register_1",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_2": {
+            "label": "register_2",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_3": {
+            "label": "register_3",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_4": {
+            "label": "register_4",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_5": {
+            "label": "register_5",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_6": {
+            "label": "register_6",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_7": {
+            "label": "register_7",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_8": {
+            "label": "register_8",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_9": {
+            "label": "register_9",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_10": {
+            "label": "register_10",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_11": {
+            "label": "register_11",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_12": {
+            "label": "register_12",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_13": {
+            "label": "register_13",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_14": {
+            "label": "register_14",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        },
+        "register_15": {
+            "label": "register_15",
+            "nickname": "",
+            "factor": 1.0,
+            "units": ""
+        }
+    }
+}
