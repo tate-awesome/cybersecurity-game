@@ -29,6 +29,8 @@ class MitmTable(BaseForm):
         for key in self.context.states["modbus_variables"]:
             self.add_row(key)
 
+        # self.context.animation_manager.add_callback("modbus_table", self.update)
+
 
     def add_title_row(self):
         self.current_column = 0
@@ -105,4 +107,3 @@ class MitmTable(BaseForm):
             this_row["incoming"].configure(text=f"{in_value:.3f}")
             this_row["outgoing"].configure(text=f"{out_value:.3f}")
             this_row["source"].configure(text=source)
-        self.after(100, self.update)
