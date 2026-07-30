@@ -168,16 +168,16 @@ BLA::Matrix<3,3> I3; // identity matrix
 float u_prev_speed = 0.0f;
 float u_prev_rudder = 0.0f;
 
-float var_x        = 0.5;
-float var_y        = 0.5;
-float var_theta    = 0.05;
+float var_x        = 0.1;
+float var_y        = 0.1;
+float var_theta    = 0.03;
 
 float var_meas_x = 8.33333f;
 float var_meas_y = 8.33333f;
 float var_meas_theta = 0.01f;
 
-float var_speed    = 0.2f;
-float var_rudder   = 0.2f;
+float var_speed    = 0.01f;
+float var_rudder   = 0.01f;
 
 // ---------- Encryption ----------
 String key = (String)1234;
@@ -414,8 +414,8 @@ void runSubmarineCycle() {
       float yError = abs( z_meas(1,0) - xhat(1,0) );
       float tError = wrap_to_pi(z_meas(2,0) - xhat(2,0));
 
-      bool xCheck = xError > 8.0f;
-      bool yCheck = yError > 8.0f;
+      bool xCheck = xError > 9.0f;
+      bool yCheck = yError > 9.0f;
       bool thetaCheck = fabs(tError) > 3.0f;
 
       g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
@@ -486,8 +486,26 @@ float hysteresis_band = 0.5f;
 bool heater_on = false;
 float last_temp = 71.6f;
 float est_temp = 71.6f;
+float temp_estimate = 0.0f;
+float temp_covariance = 0.1f;
+float temp_process_variance = 0.05f;
+float temp_measurement_variance = 0.1f;
+float temp_kalman_gain = 0.0f;
 
 const float SCALE = 100.0f;
+
+float tempKF(float measured_temp, float dt){
+
+  temp_covariance += temp_process_variance * dt;
+
+  temp_kalman_gain = temp_covariance / (temp_covariance + temp_measurement_variance);
+
+  temp_estimate += temp_kalman_gain * (measured_temp - temp_estimate);
+
+  temp_covariance *= (1.0f - temp_kalman_gain);
+
+  return temp_estimate;
+}
 
 
 void postHvacStatus(float current_temp) {
@@ -515,20 +533,15 @@ void runHvacCycle() {
 
     uint16_t raw_temp = mb.Hreg(HREG_TEMP_EST);
     float current_temp = (float)raw_temp / SCALE;
-    float heat_gain = 9.0f;
 
     if(last_temp != current_temp){
-      float heat_loss = 0.05f * (last_temp - 59.0f);
-      if(heater_on){
-        heat_gain = 9.0f;
-      }else{
-        heat_gain = 0.0f;
-      }
-      est_temp += (heat_gain - heat_loss) * 0.1f;
+ 
+      est_temp = tempKF(current_temp, 0.1f);
 
       float error_value = abs(est_temp - current_temp);
 
       g_HVAC_anomaly_detected = error_value > 5.0f;
+
       current_temp = est_temp;
     }
 
