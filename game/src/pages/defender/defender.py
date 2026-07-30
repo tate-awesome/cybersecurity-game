@@ -91,7 +91,7 @@ class DefenderV0(Page):
         # ── Middle pane ──────────────────────────────────────────────────────
         self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
         self._build_packet_log(self._submarine_middle)
-        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS",
+        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS\nMODBUS",
         self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",
         )
 
