@@ -124,6 +124,7 @@
     "modbus_variables": {
         "register_1": {
             "label": "register_1",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -132,6 +133,7 @@
         },
         "register_2": {
             "label": "register_2",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -140,6 +142,7 @@
         },
         "register_3": {
             "label": "register_3",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -148,6 +151,7 @@
         },
         "register_4": {
             "label": "register_4",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -156,6 +160,7 @@
         },
         "register_5": {
             "label": "register_5",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -164,6 +169,7 @@
         },
         "register_6": {
             "label": "register_6",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -172,6 +178,7 @@
         },
         "register_7": {
             "label": "register_7",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -180,6 +187,7 @@
         },
         "register_8": {
             "label": "register_8",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -188,6 +196,7 @@
         },
         "register_9": {
             "label": "register_9",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -196,6 +205,7 @@
         },
         "register_10": {
             "label": "register_10",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -204,6 +214,7 @@
         },
         "register_11": {
             "label": "register_11",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -212,6 +223,7 @@
         },
         "register_12": {
             "label": "register_12",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -220,6 +232,7 @@
         },
         "register_13": {
             "label": "register_13",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -228,6 +241,7 @@
         },
         "register_14": {
             "label": "register_14",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
@@ -236,6 +250,7 @@
         },
         "register_15": {
             "label": "register_15",
+            "show": 1.0,
             "nickname": "",
             "factor": 1.0,
             "units": "",
