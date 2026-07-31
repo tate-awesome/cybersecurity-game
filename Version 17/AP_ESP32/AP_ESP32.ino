@@ -63,6 +63,8 @@ float g_target_temp = 75.2f;
 float g_current_room_temp = 0.0f;
 bool  g_heater_on          = false;
 bool  g_HVAC_anomaly_detected = false;
+float g_client_noisy_temp = 0.0f;
+uint16_t g_damper_status = 0;
 
 // ─── Live submarine telemetry position ─────────────────────────
 //  Most recent (x, y) reported by each source via POST /data.
@@ -1614,8 +1616,22 @@ void setupRoutes() {
       if (doc.containsKey("HVAC_anomaly_detected")) {
          g_HVAC_anomaly_detected = doc["HVAC_anomaly_detected"].as<bool>();
       }
+      if (doc.containsKey("client_temp")) {
+         g_client_noisy_temp = doc["client_temp"];
+      }
+      if (doc.containsKey("damper_status")) {
+         g_damper_status = doc["damper_status"];
+      }
       recordHvacSample(g_current_room_temp, g_target_temp);
-      req->send(200, "application/json", "{\"status\":\"ok\"}");
+      StaticJsonDocument<128> resp;
+      resp["encryption_status"] = g_encryption_status;
+      resp["encryption_key"]    = g_encryption_key;
+      resp["client_temp"]       = g_client_noisy_temp;
+      resp["damper_status"]     = g_damper_status;
+
+      String out;
+      serializeJson(resp, out);
+      req->send(200, "application/json", out);
     }
   );
 

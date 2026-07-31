@@ -551,6 +551,8 @@ void runSubmarineCycle() {
 float true_room_temp = 71.6f; // Starts at 71.6°F (Equivalent to 22°C)
 float state_damper   = 0.0f;
 float ambient_temp   = 59.0f;
+float noisy_measurement = 0.0f;
+uint16_t g_damper = 0;
 
 // Scale factor to preserve decimals across Modbus integer registers
 // (e.g., 71.64°F -> 7164)
@@ -558,6 +560,39 @@ const float SCALE = 100.0f;
 
 const uint16_t HREG_TEMP_EST   = 10;
 const uint16_t HREG_DAMPER_CMD = 3;
+
+void postHvac(){
+  static uint32_t lastStatusPost = 0;
+  if (WiFi.status() != WL_CONNECTED || millis() - lastStatusPost < 1000) return;
+  lastStatusPost = millis();
+
+  HTTPClient statusHttp;
+  statusHttp.begin("http://192.168.4.1/hvac_status");
+  statusHttp.addHeader("Content-Type", "application/json");
+  StaticJsonDocument<128> statusDoc;
+  statusDoc["client_temp"] = noisy_measurement;
+  String statusBody;
+  serializeJson(statusDoc, statusBody);
+  int code = statusHttp.POST(statusBody);
+  if (code == 200) {
+        String body = statusHttp.getString();
+        StaticJsonDocument<128> resp;
+        if (!deserializeJson(resp, body)) {
+            if (resp.containsKey("encryption_status")) {
+                encrypt_status = resp["encryption_status"].as<bool>();
+                key = resp["encryption_key"].as<String>();
+                Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
+            }
+            if (resp.containsKey("damper_status")) {
+                g_damper = resp["damper_status"];
+            }
+        }
+        Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
+    } else {
+        Serial.printf("[SERVER] REST POST failed  HTTP %d\n", code);
+    }
+  statusHttp.end();
+}
 
 // Runs the HVAC thermal physics tick. Internally gated at 10Hz, matching
 // HVAC_Client.ino's original rate. Now routed through the shared
@@ -587,7 +622,7 @@ void runHvacCycle() {
 
   // 3. Noisy Sensor Reading (Raw measurement)
   float noise = (random(-270, 271) / 100.0f); // -2.7°F to +2.7°F
-  float noisy_measurement = true_room_temp + noise;
+  noisy_measurement = true_room_temp + noise;
 
   // 4. Send RAW Noisy Measurement Directly to Server
   uint16_t tx_val = (uint16_t)lroundf(noisy_measurement * SCALE);
@@ -597,6 +632,9 @@ void runHvacCycle() {
 
   Serial.printf("[CLIENT] True Room Temp: %.2f°F | Sent Raw Measurement: %.2f°F | Damper: %.1f%%\n",
                 true_room_temp, noisy_measurement, state_damper * 100.0f);
+
+  postHvac();
+  Serial.println(g_damper);
 
   // Optional LCD readout for HVAC mode — the original HVAC_Client.ino had
   // no LCD output, but since this is the same physical board the Submarine

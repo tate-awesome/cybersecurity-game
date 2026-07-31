@@ -491,6 +491,8 @@ float temp_covariance = 0.1f;
 float temp_process_variance = 0.05f;
 float temp_measurement_variance = 0.1f;
 float temp_kalman_gain = 0.0f;
+uint16_t damper_pct_out = 0;
+float g_client_temp = 0.0f;
 
 const float SCALE = 100.0f;
 
@@ -508,7 +510,7 @@ float tempKF(float measured_temp, float dt){
 }
 
 
-void postHvacStatus(float current_temp) {
+void postHvac(float current_temp) {
   static uint32_t lastStatusPost = 0;
   if (WiFi.status() != WL_CONNECTED || millis() - lastStatusPost < 1000) return;
   lastStatusPost = millis();
@@ -520,9 +522,27 @@ void postHvacStatus(float current_temp) {
   statusDoc["current_temp"] = current_temp;
   statusDoc["heater_on"]    = heater_on;
   statusDoc["HVAC_anomaly_detected"] = g_HVAC_anomaly_detected;
+  statusDoc["damper_status"] = damper_pct_out;
   String statusBody;
   serializeJson(statusDoc, statusBody);
-  statusHttp.POST(statusBody);
+  int code = statusHttp.POST(statusBody);
+  if (code == 200) {
+        String body = statusHttp.getString();
+        StaticJsonDocument<128> resp;
+        if (!deserializeJson(resp, body)) {
+            if (resp.containsKey("encryption_status")) {
+                encrypt_status = resp["encryption_status"].as<bool>();
+                key = resp["encryption_key"].as<String>();
+                Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
+            }
+            if (resp.containsKey("client_temp")) {
+                 g_client_temp = resp["client_temp"];
+            }
+        }
+        Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
+    } else {
+        Serial.printf("[SERVER] REST POST failed  HTTP %d\n", code);
+    }
   statusHttp.end();
 }
 
@@ -557,13 +577,14 @@ void runHvacCycle() {
     }
     // else: inside the deadband -> hold whatever state we were already in
 
-    uint16_t damper_pct_out = heater_on ? 100 : 0;
+    damper_pct_out = heater_on ? 100 : 0;
     mb.Hreg(HREG_DAMPER_CMD, damper_pct_out);
 
     Serial.printf("[SERVER] Setpoint: %.2f°F | Current: %.2f°F | Band: [%.2f, %.2f]°F | Heater: %s\n",
                   setpoint_temp, current_temp, lower_threshold, upper_threshold, heater_on ? "ON" : "OFF");
 
-    postHvacStatus(current_temp);
+    postHvac(current_temp);
+    Serial.println(g_client_temp);
 }
 
 void setup() {
