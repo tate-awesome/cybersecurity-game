@@ -1,7 +1,6 @@
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
 from .....app_core.context import Context
 from .....network.mod_table import ModTable
-from .....network.meta_packet import MetaPacket
 from .base_form import BaseForm
 from typing import Callable
 

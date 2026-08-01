@@ -9,9 +9,6 @@ from ...pages.page import Page
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
 
-# Packet
-from ...network.meta_packet import MetaPacket
-
 class AttackerV0(Page):
     '''
     Page constructor for attacker/attackerv0. Inherits CTkFrame
