@@ -22,10 +22,19 @@ class Context:
 
     def generate(self):
         self.net =  NetworkController()
-        self.click_manager = ClickManager(self.root)
-        self.animation_manager = AnimationManager(self.root)
         self.states = self.get_base_preset()
         self.labels = self.get_base_labels()
+        self.create_managers()
+
+    def create_managers(self):
+        self.click_manager = ClickManager(self.root)
+        self.animation_manager = AnimationManager(self.root)
+
+    def destroy_managers(self):
+        if hasattr(self, "click_manager"):
+            self.click_manager.delete()
+        if hasattr(self, "animation_manager"):
+            self.animation_manager.delete()
 
     def destroy_context(self):
         if self.net is not None:
@@ -33,8 +42,7 @@ class Context:
             self.net = None 
         self.load_preset()
         self.load_labels()
-        self.animation_manager.delete()
-        self.click_manager.delete()
+        self.destroy_managers()
 
     def reset(self):
         self.destroy_context()

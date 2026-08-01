@@ -1,6 +1,5 @@
 from customtkinter import *
 
-from ....network.meta_packet import MetaPacket
 from ....network.data_buffer import DataBuffer
 from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay

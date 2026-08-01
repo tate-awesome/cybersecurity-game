@@ -18,9 +18,7 @@
         "nmap": 1,
         "arp": 1,
         "dos": 0,
-        "sniff": 1,
-        "mitm": 1,
-        "mitm2": 1
+        "sniff": 1
     },
 
 
@@ -112,5 +110,10 @@
         "path_out": "green",
         "head_in": "blue",
         "head_out": "green"
+    },
+
+    "modbus_forms": {
+        "mitm": 1,
+        "table": 1
     }
 }

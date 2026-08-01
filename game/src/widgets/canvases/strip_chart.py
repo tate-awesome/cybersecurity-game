@@ -23,6 +23,7 @@ class StripChart(StripChartBase):
             self.delete("all")
             # self.draw.strip_chart_axes(data)
             # self.draw.test_data()
+            self.draw.background(context.style.color("field"))
             self.draw.strip_chart_path(data)
             # self.draw.background(colors["background"])
 
