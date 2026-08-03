@@ -1,2 +1,2 @@
 from .status import StatusBuffer
-from .packets import PacketBuffer
+from .packet import PacketBuffer
