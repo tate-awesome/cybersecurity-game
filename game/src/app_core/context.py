@@ -21,7 +21,7 @@ class Context:
         self.generate()
 
     def generate(self):
-        self.net =  NetworkController()
+        self.net =  NetworkController(self)
         self.states = self.get_base_preset()
         self.labels = self.get_base_labels()
         self.create_managers()
@@ -100,5 +100,5 @@ class Context:
         if type(self.net) is constructor:
             return self.net
         else:
-            self.net = constructor()
+            self.net = constructor(self)
             return self.net

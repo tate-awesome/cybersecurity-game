@@ -1,44 +1,26 @@
 
 
-class PacketBuffer:
-    def __init__(self, max_size=5000):
-        self.max_size = max_size
-            # Buffers for console use
-        self.console_buffers = {}
-        '''
-        For the Console:
-            "packets":
-                "numbers": {
-                    "absolute": n,
-                    "this_hack": n
-                }
-                "buffer": deque[MetaPacket],
-                "lock": Lock()
-            "status":
-                "number": n,
-                "buffer": deque[MetaStatus],
-                "lock": Lock()
+from collections import deque
+from multiprocessing import Lock
+from ...meta_packet import MetaPacket
 
-        '''
-        self.console_buffers["packets"] = {
-                "numbers": {},
-                "last_displayed": 0,
-                "buffer": deque(maxlen=self.max_size),
-                "lock": Lock()
-            }
+class PacketBuffer:
+    def __init__(self, context, max_size=5000):
+        self.max_size = max_size
+        self.context = context
+
+        self.last_displayed = 0
+        self.buffer = deque(maxlen=self.max_size)
+        self.lock = Lock()
+
+        self.numbers = {}
         for key in ["absolute", "nmap", "arp", "sniff", "dos", "mitm", "pcap"]:
-            self.console_buffers["packets"]["numbers"][key] = 1
-        self.console_buffers["status"] = {
-            "number": 1,
-            "last_displayed": 0,
-            "buffer": deque(maxlen=self.max_size),
-            "lock": Lock()
-        }
+            self.numbers[key] = 1
 
     
     def get_new_packets(self, filter: callable) -> list[MetaPacket]:
-        with self.console_buffers["packets"]["lock"]:
-            snapshot = list(self.console_buffers["packets"]["buffer"])
+        with self.lock:
+            snapshot = list(self.buffer)
 
         new_packets = [
             meta_packet for meta_packet in snapshot

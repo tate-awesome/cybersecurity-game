@@ -1,12 +1,14 @@
 from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap, dos
 from .virtual import master, slave
 from .saved import loader
-from . import packet_buffer, mod_table, data_buffer
+from . import mod_table, data_buffer
+from .buffer import Buffer
 
 class NetworkController:
 
-    def __init__(self):
+    def __init__(self, context):
         self.data_buffer = data_buffer.DataBuffer()
+        self.buffer = Buffer(context)
         self.table = mod_table.ModTable()
 
         self.loader = loader.Loader(self.data_buffer)
@@ -17,10 +19,10 @@ class NetworkController:
         self.table.reset_table()
 
 class HardwareController(NetworkController):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, context):
+        super().__init__(context)
         self.nmap = nmap.NMapper(self.data_buffer)
-        self.sniffer = sniffing.Sniffer(self.data_buffer)
+        self.sniffer = sniffing.Sniffer(self.buffer)
 
     def do_nmap(self):
         self.nmap.do_nmap()
@@ -39,8 +41,8 @@ class HardwareController(NetworkController):
         self.stop_sniff()
     
 class HardwareAttacker(HardwareController):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, context):
+        super().__init__(context)
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
         self.mitm = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
         self.dos = dos.Denier(self.data_buffer)
@@ -80,5 +82,5 @@ class HardwareAttacker(HardwareController):
         self.dos.stop()
 
 class HardwareDefender(HardwareController):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, context):
+        super().__init__(context)
