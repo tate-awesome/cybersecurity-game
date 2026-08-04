@@ -45,16 +45,12 @@ class Builder(Panel):
         
 
     def start_printing(self):
-        print("start")
         self.run = True
-        self.print_tick()
+        self.context.animation_manager.add_callback("packet_console", self.print_tick)
     
     def stop_printing(self):
-        print("stop")
         self.run = False
-        if self.after_id:
-            self.text_box.after_cancel(self.after_id)
-            self.after_id = None
+        self.context.animation_manager.remove_callback("packet_console")
 
     def print_tick(self):
         # self.buffer.reset_packet_cursor()
@@ -76,8 +72,6 @@ class Builder(Panel):
             # Auto scroll
             if self.jump_to_bottom:
                 self.treeview.yview_moveto(1)
-        if self.run:
-            self.after_id = self.treeview.after(100, self.print_tick)
     
     def apply_filters(self):
         self.buffer.reset_packet_cursor()
