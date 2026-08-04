@@ -24,18 +24,21 @@ class StatusBuffer:
         self.number += 1
 
     def get_new_statuses(self) -> list[MetaStatus]:
+        new_statuses = []
+        
         with self.lock:
-            snapshot = list(self.buffer)
-
-        new_statuses = [
-            meta_status for meta_status in snapshot
-            if meta_status.number > self.last_displayed
-        ]
-
+            # Scan backward from the newest items (right side of deque)
+            for meta_status in reversed(self.buffer):
+                if meta_status.number > self.last_displayed:
+                    new_statuses.append(meta_status)
+                else:
+                    # Because it's ordered, everything before this is older. Stop scanning!
+                    break
+                    
         if new_statuses:
-            self.last_displayed = max(
-                status.number for status in new_statuses
-            )
+            # Reverse back to normal chronological order (oldest to newest)
+            new_statuses.reverse()
+            self.last_displayed = new_statuses[-1].number
 
         return new_statuses
 
