@@ -7,7 +7,6 @@ from typing import cast
 class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, "Submarine System Model")
-        self.buffer = cast(DataBuffer, self.context.net.data_buffer)
 
         map = WorldMap(self, context)
 

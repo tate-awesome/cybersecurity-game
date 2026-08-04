@@ -45,6 +45,11 @@ class Buffer:
 
     def stop_worker(self):
         self.worker_thread.join(timeout=1)
+
+    def capacity(self) -> float:
+        capacity = float(len(self.put_queue) / self.max_size)
+        print(capacity)
+        return capacity
     
     def put(self, source: str, purpose: str, data: Packet | None=None):
         '''

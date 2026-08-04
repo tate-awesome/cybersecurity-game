@@ -11,11 +11,12 @@ class NetworkController:
         self.buffer = Buffer(context)
         self.table = mod_table.ModTable()
 
-        self.loader = loader.Loader(self.data_buffer)
+        self.loader = loader.Loader(self.buffer)
 
     def abort_all(self):
         self.data_buffer.reset_packet_cursor()
         self.data_buffer.reset_status_cursor()
+        self.loader.stop()
         self.table.reset_table()
 
 class HardwareController(NetworkController):
