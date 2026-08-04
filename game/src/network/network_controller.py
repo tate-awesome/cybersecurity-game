@@ -16,7 +16,7 @@ class NetworkController:
     def abort_all(self):
         self.data_buffer.reset_packet_cursor()
         self.data_buffer.reset_status_cursor()
-        self.loader.stop()
+        self.loader.abort()
         self.table.reset_table()
 
 class HardwareController(NetworkController):
