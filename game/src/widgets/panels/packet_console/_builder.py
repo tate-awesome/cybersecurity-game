@@ -1,10 +1,8 @@
 from customtkinter import *
 
-from ....network.data_buffer import DataBuffer
 from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay
 from ....app_core.context import Context
-from typing import cast
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont
@@ -16,7 +14,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, "Packet Console")
 
-        self.buffer = cast(DataBuffer, context.net.data_buffer)
+        self.buffer = context.net.buffer.packets
         #  self.create_filter_boxes(menu_frame)
 
         self.treeview, body_container = self.create_treeview(self)
@@ -53,25 +51,32 @@ class Builder(Panel):
         self.context.animation_manager.remove_callback("packet_console")
 
     def print_tick(self):
-        # self.buffer.reset_packet_cursor()
-        # self.treeview.delete(*self.treeview.get_children())
+
+        # Evaluate default filter (return True)
         if isinstance(self.context.states["packet_filter_function"]["function"], str):
             self.context.states["packet_filter_function"]["function"] = eval(self.context.states["packet_filter_function"]["function"])
-        packets = self.buffer.get_new_packets(self.context.states["packet_filter_function"]["function"])
-        if len(packets) == 0:
-            # Don't print
-            ...
-        else:
-            # Do print
-            for packet in packets:
-                self.submit_packet(self.treeview, packet)
-            max_rows = 1000
-            while len(self.treeview.get_children()) > max_rows:
-                    self.treeview.delete(self.treeview.get_children()[0])
+
+        # Get new packets
+        packets = self.buffer.get_new_packets(self.context.states["packet_filter_function"]["function"], max_return=1000)
+        if not packets:
+            return
+
+        # Submit to treeview
+        for packet in packets:
+            self.submit_packet(self.treeview, packet)
+
+        children = self.treeview.get_children()
+        max_rows = 1000
+        overflow_count = len(children) - max_rows
         
-            # Auto scroll
-            if self.jump_to_bottom:
-                self.treeview.yview_moveto(1)
+        if overflow_count > 0:
+            # Delete the block slice of old items simultaneously
+            for i in range(overflow_count):
+                self.treeview.delete(children[i])
+    
+        # Auto scroll
+        if self.jump_to_bottom:
+            self.treeview.yview_moveto(1)
     
     def apply_filters(self):
         self.buffer.reset_packet_cursor()

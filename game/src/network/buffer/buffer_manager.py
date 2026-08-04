@@ -12,7 +12,8 @@ import threading
 from collections import deque
 from scapy.all import Packet
 
-from .channels import StatusBuffer, PacketBuffer
+from .channels import StatusBuffer, PacketBuffer, ModbusBuffer
+from .meta_packet import MetaPacket
 
 class Buffer:
     def __init__(self, context, max_size = 5000):
@@ -28,7 +29,8 @@ class Buffer:
 
         # Buffers
         self.status = StatusBuffer(max_size=self.max_size)
-        self.packets = PacketBuffer(max_size=self.max_size, context=self.context)
+        self.packets = PacketBuffer(max_size=self.max_size)
+        self.modbus = ModbusBuffer(self.context, max_size=self.max_size)
 
         self.start_worker()
 
@@ -87,7 +89,7 @@ class Buffer:
             self.distribute_packet(source, purpose, data)
         return
 
-    def distribute_packet(self, source: str, purpose: str, data: Packet):
+    def distribute_packet(self, source: str, purpose: str, pkt: Packet):
         '''
         Puts packets into appropriate buffers.
 
@@ -95,5 +97,13 @@ class Buffer:
 
         purpose: a message about the packet
         '''
+        # Put all packets in the "packets" buffer for use by the packet console
         # self.packets.put(source, purpose, data, current_time)
-        ...
+        
+        # Generate meta packet
+        variables, values = self.modbus.old_extract_modbus(source, pkt)
+
+        mpkt = MetaPacket(pkt, self.packets.get_first_packet_time(pkt), self.packets.numbers["absolute"],
+                          self.packets.numbers[source], source, purpose, variables, values)
+
+        self.packets.put(source, purpose, mpkt)
