@@ -51,7 +51,7 @@ class Builder(Panel):
         self.text_box.insert("end", text_block)
         self.text_box.configure(state="disabled")
 
-        if self.jump_to_bottom:
+        if self.jump_to_bottom and len(text_block) > 0:
             self.text_box.see("end")
 
     # Text box
