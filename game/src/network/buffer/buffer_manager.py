@@ -12,7 +12,7 @@ import threading
 from collections import deque
 from scapy.all import Packet
 
-from .channels import StatusBuffer, PacketBuffer, ModbusBuffer
+from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer
 from .meta_packet import MetaPacket
 
 class Buffer:
@@ -31,6 +31,7 @@ class Buffer:
         self.status = StatusBuffer(max_size=self.max_size)
         self.packets = PacketBuffer(max_size=self.max_size)
         self.modbus = ModbusBuffer(self.context, max_size=self.max_size)
+        self.map = MapBuffer(self.context, max_size=self.max_size)
 
         self.start_worker()
 
@@ -114,3 +115,5 @@ class Buffer:
 
         if len(variables) > 0 and len(values) > 0:
             self.modbus.put(mpkt)
+
+            self.map.put(mpkt)

@@ -1,16 +1,11 @@
 from customtkinter import CTkFrame, CTkLabel
 from .....app_core.context import Context
-from .....network.mod_table import ModTable
-from .....network.meta_packet import MetaPacket
-from .....network.data_buffer import DataBuffer
-from typing import cast
 from .base_form import BaseForm
 
 class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
         super().__init__(master, context, "mitm2", "MITM Attack")
         # Assign local references
-        self.buffer = cast(DataBuffer, context.net.data_buffer)
         
         # Create form
         
@@ -101,9 +96,9 @@ class MitmTable(BaseForm):
         for key in self.rows:
             this_row = self.rows[key]
             
-            in_value = self.buffer.get_latest_value(key,"in")
-            out_value = self.buffer.get_latest_value(key,"out")
-            source = self.buffer.get_latest_source(key)
+            in_value = 0
+            out_value = 0
+            source = "source"
             this_row["incoming"].configure(text=f"{in_value:.3f}")
             this_row["outgoing"].configure(text=f"{out_value:.3f}")
             this_row["source"].configure(text=source)

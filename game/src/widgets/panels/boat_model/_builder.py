@@ -1,5 +1,4 @@
 from ....app_core.context import Context
-from ....network.data_buffer import DataBuffer
 from ...canvases.world_map import WorldMap
 from ..panel import Panel
 from typing import cast

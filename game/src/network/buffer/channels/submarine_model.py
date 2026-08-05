@@ -10,11 +10,30 @@ out bearing
 
 '''
 
-class MapBuffer:
-    def __init__(self, max_size: int = 5000):
-        self.max_size = max_size
+from threading import Lock
+from collections import deque
+from math import hypot
+from ..meta_packet import MetaPacket
 
-    
+class MapBuffer:
+    def __init__(self, context, max_size: int = 5000):
+        self.max_size = max_size
+        self.context = context
+        self.tracer_buffers = {}
+        '''
+        Tracers hold modbus values over time for dot plots and stuff
+        Tracer elements: 
+
+            "x_in", "y_in", "theta_in", "speed_in", "rudder_in": list[tuple[time,value]]
+            "x_out", "y_out", "theta_out", "speed_out", "rudder_out": list[tuple[time,value]]
+        '''
+        for var in ["x", "y", "theta", "speed", "rudder"]:
+            for dir in ["in", "out", "other"]:
+                key = f"{var}_{dir}"
+                self.tracer_buffers[key] = {
+                    "deque": deque(maxlen=self.max_size),
+                    "lock": Lock()
+                }
 
             # Buffers for the map
         self.map_buffers = {}
@@ -118,80 +137,87 @@ class MapBuffer:
             snapshot = list(buffer["deque"])
         return [(point["x"], point["y"]) for point in snapshot]
 
-def put_position(self, variable: str, direction: str, value: float, time: float):
-        '''
-        variable: "x" or "y"
-        direction: "in" or "out"
-        value: the value of the variable (0-200)
-        time: the time the variable was recorded, relative to the start of the program
-        (put any data in the dict self.map_buffers. Each buffer has a "deque" and a "lock".)
-        '''
+    def put(self, mpkt: MetaPacket):
+        for i, variable in enumerate(mpkt.variables):
+            self.put_position(variable, mpkt.direction, float(mpkt.values[i]), mpkt.time)
+            with self.tracer_buffers[f"{variable}_{mpkt.direction}"]["lock"]:
+                self.tracer_buffers[f"{variable}_{mpkt.direction}"]["deque"].append((mpkt.time, mpkt.values[i]))
+        
 
-        MAX_PAIR_DT = 0.25     # max x/y timestamp mismatch
-        MAX_GAP = 2.0          # seconds before segment break
-        MAX_SPEED = 40.0       # units/sec before segment break
+    def put_position(self, variable: str, direction: str, value: float, time: float):
+            '''
+            variable: "x" or "y"
+            direction: "in" or "out"
+            value: the value of the variable (0-200)
+            time: the time the variable was recorded, relative to the start of the program
+            (put any data in the dict self.map_buffers. Each buffer has a "deque" and a "lock".)
+            '''
 
-        status = self.map_buffers[f"status_{direction}"]
+            MAX_PAIR_DT = 0.25     # max x/y timestamp mismatch
+            MAX_GAP = 2.0          # seconds before segment break
+            MAX_SPEED = 40.0       # units/sec before segment break
 
-        if variable == "x":
-            status["latest_x"] = (value, time)
+            status = self.map_buffers[f"status_{direction}"]
 
-        elif variable == "y":
-            status["latest_y"] = (value, time)
+            if variable == "x":
+                status["latest_x"] = (value, time)
 
-        else:
-            return
+            elif variable == "y":
+                status["latest_y"] = (value, time)
 
-        latest_x = status["latest_x"]
-        latest_y = status["latest_y"]
-
-        # Need both before composing
-        if latest_x is None or latest_y is None:
-            return
-
-        x, tx = latest_x
-        y, ty = latest_y
-
-        # Do not accept point pairs with wildly different timestamps
-        if abs(tx - ty) > MAX_PAIR_DT:
-            return
-
-        # Use average time
-        point_time = (tx + ty) / 2.0
-
-        new_point = {
-            "x": x,
-            "y": y,
-            "time": point_time,
-            "segment": status["segment"],
-        }
-
-        last_point = status["last_point"]
-
-        if last_point is not None:
-
-            dt = point_time - last_point["time"]
-
-            # Time went backwards
-            if dt <= 0:
+            else:
                 return
 
-            dx = x - last_point["x"]
-            dy = y - last_point["y"]
+            latest_x = status["latest_x"]
+            latest_y = status["latest_y"]
 
-            distance = hypot(dx, dy)
-            speed = float(distance) / float(dt)
+            # Need both before composing
+            if latest_x is None or latest_y is None:
+                return
 
-            # Break track if:
-            # - data gap too large
-            # - impossible movement
-            if dt > MAX_GAP or speed > MAX_SPEED:
-                status["segment"] += 1
-                new_point["segment"] = status["segment"]
+            x, tx = latest_x
+            y, ty = latest_y
 
-        buffer = self.map_buffers["points_"+direction]
+            # Do not accept point pairs with wildly different timestamps
+            if abs(tx - ty) > MAX_PAIR_DT:
+                return
 
-        with buffer["lock"]:
-            buffer["deque"].append(new_point)
+            # Use average time
+            point_time = (tx + ty) / 2.0
 
-        status["last_point"] = new_point
+            new_point = {
+                "x": x,
+                "y": y,
+                "time": point_time,
+                "segment": status["segment"],
+            }
+
+            last_point = status["last_point"]
+
+            if last_point is not None:
+
+                dt = point_time - last_point["time"]
+
+                # Time went backwards
+                if dt <= 0:
+                    return
+
+                dx = x - last_point["x"]
+                dy = y - last_point["y"]
+
+                distance = hypot(dx, dy)
+                speed = float(distance) / float(dt)
+
+                # Break track if:
+                # - data gap too large
+                # - impossible movement
+                if dt > MAX_GAP or speed > MAX_SPEED:
+                    status["segment"] += 1
+                    new_point["segment"] = status["segment"]
+
+            buffer = self.map_buffers["points_"+direction]
+
+            with buffer["lock"]:
+                buffer["deque"].append(new_point)
+
+            status["last_point"] = new_point
