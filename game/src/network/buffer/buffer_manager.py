@@ -110,4 +110,4 @@ class Buffer:
         mpkt = MetaPacket(pkt, self.packets.get_first_packet_time(pkt), self.packets.numbers["absolute"],
                           self.packets.numbers[source], source, purpose, variables, values)
 
-        self.packets.put(source, purpose, mpkt)
+        self.packets.put(mpkt)
