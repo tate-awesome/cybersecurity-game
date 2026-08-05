@@ -111,3 +111,6 @@ class Buffer:
                           self.packets.numbers[source], source, purpose, variables, values)
 
         self.packets.put(mpkt)
+
+        if len(variables) > 0 and len(values) > 0:
+            self.modbus.put(mpkt)

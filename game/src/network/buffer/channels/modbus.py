@@ -2,6 +2,7 @@ from collections import deque
 from threading import Lock
 from scapy.all import Packet
 
+from ..meta_packet import MetaPacket
 from scapy.contrib.modbus import *
 
 class ModbusBuffer:
@@ -10,7 +11,8 @@ class ModbusBuffer:
         self.max_size = max_size
         self.buffer = deque(maxlen=self.max_size)
         self.transactions = {}
-        self.lock = Lock()
+        self.singles_lock = Lock()
+        self.path_lock = Lock()
         self.last_displayed = 0
 
         self.slot_name = "modbus_variables"
@@ -29,7 +31,38 @@ class ModbusBuffer:
             float
         '''
 
-    def put(self, source: str, purpose: str, pkt: Packet):
+        self.tracer_buffers = {}
+        '''
+        Tracers hold modbus values over time for dot plots and stuff
+        Tracer elements: 
+
+            "x_in", "y_in", "theta_in", "speed_in", "rudder_in": list[tuple[time,value]]
+            "x_out", "y_out", "theta_out", "speed_out", "rudder_out": list[tuple[time,value]]
+        '''
+        for var in ["x", "y", "theta", "speed", "rudder"]:
+            for dir in ["in", "out", "other"]:
+                key = f"{var}_{dir}"
+                self.tracer_buffers[key] = {
+                    "deque": deque(maxlen=self.max_size),
+                    "lock": Lock()
+                }
+
+    def put(self, mpkt: MetaPacket):
+        for i, var in enumerate(mpkt.variables):
+            with self.tracer_buffers[f"{var}_{mpkt.direction}"]["lock"]:
+                self.tracer_buffers[f"{var}_{mpkt.direction}"]["deque"].append((mpkt.time, mpkt.values[i]))
+        
+
+
+    def get_tracer_data(self, variable: str, direction: str) -> list[tuple[float,float]]:
+        '''
+        Returns a list of (time, value) tuples for the given variable and direction.
+        '''
+        with self.tracer_buffers[f"{variable}_{direction}"]["lock"]:
+            snapshot = list(self.tracer_buffers[f"{variable}_{direction}"]["deque"])
+        return snapshot
+
+    def purt(self, source: str, purpose: str, pkt: Packet):
         variables = []
         values = []
         if pkt.haslayer(ModbusADURequest):
@@ -193,7 +226,7 @@ register_meanings = {
     12: "Theta (Heading)"   # milli-radians
 }
 
-def is_modbus(pkt: Packet) -> bool:
+def is_modbus(self, pkt: Packet) -> bool:
     '''
     Returns True if pkt has a ModBus layer. Returns False otherwise
 
