@@ -2,16 +2,15 @@
 Arp spoofing module. Stateless functions that can be used whenever + Stateful class that manages persistent/async things
 '''
 import scapy.all as scapy
-from scapy.all import Packet, ARP
+from scapy.all import  ARP
 import threading, subprocess
-from ..data_buffer import DataBuffer
-from .nmap import NMapper
-import ipaddress, netifaces, platform
+from ..buffer import Buffer
+import platform
 # TODO get mac address better
 
 class ArpSpoofer:
 
-    def __init__(self, buffer: DataBuffer, interval=1.0):
+    def __init__(self, buffer: Buffer, interval=1.0):
         self.buffer = buffer
         self.interval = interval
 

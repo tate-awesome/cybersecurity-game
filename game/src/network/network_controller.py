@@ -1,28 +1,26 @@
 from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap, dos
 from .virtual import master, slave
 from .saved import loader
-from . import mod_table, data_buffer
+from . import mod_table
 from .buffer import Buffer
 
 class NetworkController:
 
     def __init__(self, context):
-        self.data_buffer = data_buffer.DataBuffer()
         self.buffer = Buffer(context)
         self.table = mod_table.ModTable()
 
         self.loader = loader.Loader(self.buffer)
 
     def abort_all(self):
-        self.data_buffer.reset_packet_cursor()
-        self.data_buffer.reset_status_cursor()
+        self.buffer.reset()
         self.loader.abort()
         self.table.reset_table()
 
 class HardwareController(NetworkController):
     def __init__(self, context):
         super().__init__(context)
-        self.nmap = nmap.NMapper(self.data_buffer)
+        self.nmap = nmap.NMapper(self.buffer)
         self.sniffer = sniffing.Sniffer(self.buffer)
 
     def do_nmap(self):
@@ -44,9 +42,9 @@ class HardwareController(NetworkController):
 class HardwareAttacker(HardwareController):
     def __init__(self, context):
         super().__init__(context)
-        self.arp_spoofer = arp_spoofing.ArpSpoofer(self.data_buffer)
-        self.mitm = net_filter_queue.NetFilterQueue(self.data_buffer, self.table)
-        self.dos = dos.Denier(self.data_buffer)
+        self.arp_spoofer = arp_spoofing.ArpSpoofer(self.buffer)
+        self.mitm = net_filter_queue.NetFilterQueue(self.buffer, self.table)
+        self.dos = dos.Denier(self.buffer)
     
     def abort_all(self):
         super().abort_all()

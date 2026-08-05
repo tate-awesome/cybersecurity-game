@@ -5,10 +5,9 @@ NFQ module. Callbacks and persistent object
 from scapy.all import IP, TCP, Packet
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 import threading, os, select, subprocess
-from .. import modbus_util as mb
 from .nmap import NMapper
 from ..mod_table import ModTable
-from ..data_buffer import DataBuffer
+from ..buffer import Buffer
 
 import platform
 os_name = platform.system()
@@ -25,7 +24,7 @@ else:
 
 class NetFilterQueue:
 
-    def __init__(self, buffer: DataBuffer, mod_table: ModTable):
+    def __init__(self, buffer: Buffer, mod_table: ModTable):
         self.stop_event = None
         self.thread = None
         self.callback = None

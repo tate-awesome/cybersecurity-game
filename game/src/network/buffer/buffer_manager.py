@@ -38,6 +38,8 @@ class Buffer:
     def reset(self):
         self.accept_puts = True
         self.put_queue.clear()
+        self.packets.reset_packet_cursor()
+        self.status.reset_cursor()
 
     def start_worker(self):
         if self.worker_thread.is_alive():

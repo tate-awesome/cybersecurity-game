@@ -1,7 +1,6 @@
 import socket
 import threading
 import random
-# from ..data_buffer import DataBuffer
 
 class Denier:
 	'''

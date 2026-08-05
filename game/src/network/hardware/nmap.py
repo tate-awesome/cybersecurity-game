@@ -4,10 +4,10 @@ Module
 import scapy.all as scapy
 from scapy.all import Packet, ARP, get_if_addr, get_working_if, get_if_hwaddr
 import ipaddress, netifaces
-from ..data_buffer import DataBuffer
+from ..buffer import Buffer
 
 class NMapper:
-    def __init__(self, buffer: DataBuffer):
+    def __init__(self, buffer: Buffer):
         self.buffer = buffer
 
     def get_active_iface(self):

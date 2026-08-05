@@ -1,5 +1,4 @@
 from customtkinter import CTkTextbox
-from ....network.meta_packet import MetaStatus
 from ....app_core.context import Context
 from typing import cast
 from ... import MenuBar
