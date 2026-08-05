@@ -60,7 +60,7 @@ class Style:
             elif name == "title_btn":
                 self.fonts[name] = CTkFont(size=self.get_font_size("title_btn"))
             elif name == "mono":
-                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("default"))
+                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("small"))
             elif name == "treeview":
                 self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("treeview"))
             elif name == "title":
@@ -81,6 +81,8 @@ class Style:
             size = 20.0
         elif name == "title":
             size = 72
+        elif name == "small":
+            size = 15.0
         return int(size * self.ui_scale / 100.0)
 
     def color(self, type: str) -> str:

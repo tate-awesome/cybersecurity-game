@@ -70,7 +70,7 @@
         "name": "Variable",
         "in": "Received",
         "out": "Sent",
-        "source": "Source"
+        "source": "Command"
     },
 
     "modbus_variables": {
