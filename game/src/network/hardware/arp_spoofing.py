@@ -113,8 +113,8 @@ class ArpSpoofer:
         psrc=spoof_ip
         )
 
-        scapy.sendp(packet, verbose=False)
         self.buffer.put("arp", "Spoofing packet", packet)
+        scapy.sendp(packet, verbose=False)
 
 
     def restore(self, destination_ip, source_ip):
