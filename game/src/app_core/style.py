@@ -123,7 +123,7 @@ class Style:
                 return int(70*self.get_scale_correction())
             case "length":
                 return int(80*self.get_scale_correction())
-            case "hack_info":
+            case "observer":
                 return int(120*self.get_scale_correction())
             case "transaction_word":
                 return int(100*self.get_scale_correction())

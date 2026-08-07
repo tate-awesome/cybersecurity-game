@@ -83,7 +83,15 @@ class MetaPacket:
 
         # Summary fields
         self.summary = self.get_info()
-        self.hack_word = f"{self.hack} {self.hack_number}".strip()
+        if self.hack == "nfq":
+            if self.src == "send":
+                self.observer = "postrouting nfq"
+            elif self.src == "recv":
+                self.observer = "prerouting nfq"
+            else:
+                self.observer = self.hack
+        else:
+            self.observer = self.hack
         self.mac_word = f"{self.mac_src} → {self.mac_dst}" if pkt.haslayer(Ether) else "-"
         self.ip_word = f"{self.ip_src} → {self.ip_dst}" if pkt.haslayer(IP) else "-"
         self.transaction_word = f"{self.direction_verbose}\n{self.mac_word}\n{self.ip_word}"
@@ -91,7 +99,7 @@ class MetaPacket:
         for i, variable in enumerate(self.variables):
             modbus_associations.append(f"{str(self.variables[i])} = {self.values[i]:.2f}")
         if len(modbus_associations) == 0:
-            self.modbus_word = "No Data"
+            self.modbus_word = "-"
         else:
             self.modbus_word = " , ".join(modbus_associations)
 
@@ -103,8 +111,8 @@ class MetaPacket:
                 return self.absolute_number
             case "length":
                 return self.length
-            case "hack_info":
-                return self.hack_word
+            case "observer":
+                return self.observer
             case "transaction_word":
                 return self.direction_verbose
             case "transaction_ip":

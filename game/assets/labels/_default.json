@@ -3,7 +3,7 @@
         "time": "Time",
         "number": "No.",
         "length": "Length",
-        "hack_info": "Hack Info",
+        "observer": "Observer",
         "transaction_word": "Sent/Received",
         "transaction_ip": "IP Origin/Destination",
         "transaction_mac": "MAC Origin/Destination",

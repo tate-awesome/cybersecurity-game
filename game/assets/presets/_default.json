@@ -48,7 +48,7 @@
         "time": 1,
         "number": 1,
         "length": 0,
-        "hack_info": 0,
+        "observer": 0,
         "transaction_word": 0,
         "transaction_ip": 0,
         "transaction_mac": 0,
