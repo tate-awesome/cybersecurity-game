@@ -4,7 +4,9 @@
         "number": "No.",
         "length": "Length",
         "hack_info": "Hack Info",
-        "transaction": "Transaction",
+        "transaction_word": "Sent/Received",
+        "transaction_ip": "IP Origin/Destination",
+        "transaction_mac": "MAC Origin/Destination",
         "layers": "Layers",
         "purpose": "Purpose",
         "summary": "Summary",
@@ -19,7 +21,7 @@
     },
 
     "modbus_form": {
-        "mitm": "MITM Attack",
+        "nfq": "MITM Attack",
         "table": "MITM Readings"
     },
 
@@ -34,7 +36,7 @@
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
         "sniff": "Packet Sniffing",
-        "mitm": "MITM Attack",
+        "nfq": "MITM Attack",
         "pcap": "PCAP File",
         "TCP": "TCP",
         "ARP": "ARP",

@@ -53,20 +53,22 @@ class Buffer:
         capacity = float(len(self.put_queue) / self.max_size)
         return capacity
     
-    def put(self, source: str, purpose: str, data: Packet | None=None):
+    def put(self, source: str, purpose: str, data: Packet | None=None, src: str | None=None):
         '''
         Put status messages and packets into appropriate buffers.
 
-        source: the network action - "nmap", "arp", "dos", "sniff", "mitm", "pcap"
+        source: the network action - "nmap", "arp", "dos", "sniff", "nfq", "pcap"
 
         purpose: a message about the packet, or a status message
+
+        src: "send" or "recv"
         '''
         if not self.accept_puts:
             return
         if not isinstance(data, Packet) and data is not None:
             return
         with self.put_lock:
-            self.put_queue.append((source, purpose, data))
+            self.put_queue.append((source, purpose, data, src))
     
     def worker(self):
         while True:
@@ -81,11 +83,13 @@ class Buffer:
 
             time.sleep(0.01)
 
-    def worker_put(self, source: str, purpose: str, data: Packet | None=None):
+    def worker_put(self, source: str, purpose: str, data: Packet | None=None, src: str | None=None):
         '''
-        source: the network action - "nmap", "arp", "dos", "sniff", "mitm", "pcap"
+        source: the network action - "nmap", "arp", "dos", "sniff", "nfq", "pcap"
 
         purpose: a message about the packet, or a status message
+
+        src: "send" or "recv"
         '''
 
         # Put status message in "status" buffer
@@ -93,16 +97,18 @@ class Buffer:
             self.status.put(source, purpose)
 
         if isinstance(data, Packet) and isinstance(purpose, str) and isinstance(source, str):
-            self.distribute_packet(source, purpose, data)
+            self.distribute_packet(source, purpose, data, src)
         return
 
-    def distribute_packet(self, source: str, purpose: str, pkt: Packet):
+    def distribute_packet(self, source: str, purpose: str, pkt: Packet, src: str | None=None):
         '''
         Puts packets into appropriate buffers.
 
-        source: the network action - "nmap", "arp", "dos", "sniff", "mitm", "pcap"
+        source: the network action - "nmap", "arp", "dos", "sniff", "nfq", "pcap"
 
         purpose: a message about the packet
+
+        src: "send" or "recv"
         '''
         # Put all packets in the "packets" buffer for use by the packet console
         # self.packets.put(source, purpose, data, current_time)
@@ -111,7 +117,7 @@ class Buffer:
         variables, values = self.modbus.old_extract_modbus(source, pkt)
 
         mpkt = MetaPacket(pkt, self.packets.get_first_packet_time(pkt), self.packets.numbers["absolute"],
-                          self.packets.numbers[source], source, purpose, variables, values)
+                          self.packets.numbers[source], source, src, purpose, variables, values)
 
         self.packets.put(mpkt)
 

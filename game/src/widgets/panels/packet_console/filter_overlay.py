@@ -19,7 +19,7 @@ class FilterOverlay:
                 "arp",
                 "dos",
                 "sniff",
-                "mitm",
+                "nfq",
                 "pcap"
             ],
             "protocol": [

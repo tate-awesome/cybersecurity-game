@@ -22,14 +22,14 @@ class NetFilterQueueBaseClass:
 
     def stop(self):
         if not self.is_running():
-            self.buffer.put("mitm", "MITM attack is not running")
+            self.buffer.put("nfq", "MITM attack is not running")
             return
         else:
             self.stop_event.set()
             self.thread.join(timeout=2)
             self.stop_event = None
             self.thread = None
-            self.buffer.put("mitm", "Stopped MITM attack")
+            self.buffer.put("nfq", "Stopped MITM attack")
             self.running = False
 
     def modify_spkt(self, spkt: Packet) -> tuple[Packet, bool]:

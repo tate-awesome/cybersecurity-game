@@ -6,7 +6,7 @@ import json, socket, uuid
 
 class MetaPacket:
     def __init__(  self, pkt: Packet, first_packet_time: float, absolute_number: int, hack_number: int,
-    hack: str, purpose: str = "None",
+    hack: str, src="None", purpose: str = "None",
     variables: list[str] = [], values: list[str] = []):
 
         # Essential info
@@ -19,6 +19,7 @@ class MetaPacket:
 
         # External info
         self.hack = hack
+        self.src = src
         self.purpose = purpose
 
         # MAC
@@ -66,7 +67,12 @@ class MetaPacket:
         ):
             self.direction = "in"
             self.direction_verbose = "Received"
-
+        elif self.src == "recv":
+            self.direction = "in"
+            self.direction_verbose = "Received"
+        elif self.src == "send":
+            self.direction = "out"
+            self.direction_verbose = "Sent"
         else:
             self.direction = "other"   # 👈 important for promiscuous mode
             self.direction_verbose = "Observed"
@@ -99,8 +105,12 @@ class MetaPacket:
                 return self.length
             case "hack_info":
                 return self.hack_word
-            case "transaction":
-                return self.transaction_word
+            case "transaction_word":
+                return self.direction_verbose
+            case "transaction_ip":
+                return self.ip_word
+            case "transaction_mac":
+                return self.mac_word
             case "layers":
                 return self.proto_str
             case "purpose":
@@ -126,8 +136,8 @@ class MetaPacket:
                 return self.hack == "dos"
             case "sniff":
                 return self.hack == "sniff"
-            case "mitm":
-                return self.hack == "mitm"
+            case "nfq":
+                return self.hack == "nfq"
             case "pcap":
                 return self.hack == "pcap"
 

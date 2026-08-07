@@ -19,7 +19,7 @@ class Builder(Panel):
 
         self.forms = {}
         
-        self.forms["mitm"] = MitmForm(scrollable, context)
+        self.forms["nfq"] = MitmForm(scrollable, context)
         self.forms["table"] = MitmTable(scrollable, context)
 
         for i, form in enumerate(self.forms.values()):

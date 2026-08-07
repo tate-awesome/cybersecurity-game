@@ -16,11 +16,11 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
     def start(self): 
         if self.is_running():
-            self.buffer.put("mitm", "MITM attack is already running")
+            self.buffer.put("nfq", "MITM attack is already running")
             return
         self.running = True
         self.stop_event = threading.Event()
-        self.buffer.put("mitm", "Starting MITM attack")
+        self.buffer.put("nfq", "Starting MITM attack")
 
         # Run appropriate packet prerouter
         self.thread = threading.Thread(target=self.start_thread, daemon=True)
@@ -57,8 +57,8 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             print(result.stdout)
             print(result.stderr)
         
-        self.buffer.put("mitm", f"Adding iptables rule:")
-        self.buffer.put("mitm", f"sudo iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
+        self.buffer.put("nfq", f"Adding iptables rule:")
+        self.buffer.put("nfq", f"sudo iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
         # Part	Meaning
         # iptables	Configure Linux packet filtering rules
         # -t mangle	Use the mangle table (used for packet modification/inspection)
@@ -85,7 +85,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         # Pipe for stop signaling
         stop_r, stop_w = os.pipe()
         poller.register(stop_r, select.POLLIN)
-        self.buffer.put("mitm", "Starting NFQ")
+        self.buffer.put("nfq", "Starting NFQ")
         try:
             while not self.stop_event.is_set():
                 events = poller.poll(500)
@@ -127,18 +127,18 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
             for cmd in rules:
                 subprocess.run(cmd, capture_output=True, text=True)
-            self.buffer.put("mitm", "Stopped net filter queue")
+            self.buffer.put("nfq", "Stopped net filter queue")
 
     def accept_only(self, pkt: Packet):
             pkt.accept()        
 
     def old_callback(self, pkt):
         spkt = IP(pkt.get_payload())
-        self.buffer.put("mitm", "incoming mitm packet", spkt)
+        self.buffer.put("nfq", "incoming mitm packet", spkt)
         
         spkt, modified = self.modify_spkt(spkt)
 
-        self.buffer.put("mitm", "outgoing mitm packet", spkt)
+        self.buffer.put("nfq", "outgoing mitm packet", spkt)
 
         pkt.set_payload(bytes(spkt))
         pkt.accept()
@@ -146,11 +146,11 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     def prerouting_callback(self, pkt):
         spkt = self.get_spkt(pkt)
 
-        self.buffer.put("mitm", "PREROUTING NFQ unmodded", spkt)
+        self.buffer.put("nfq", "PREROUTING NFQ", spkt, "recv")
         # TODO add logic and timeline flags if it really does get modded
         spkt, modified = self.modify_spkt(spkt)
         if modified:
-            self.buffer.put("mitm", "PREROUTING NFQ modified", spkt)
+            self.buffer.put("nfq", "MODIFIED NFQ", spkt, "recv")
             pkt.set_payload(bytes(spkt))
 
         pkt.accept()
@@ -158,7 +158,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     def postrouting_callback(self, pkt):
         spkt = self.get_spkt(pkt)
 
-        self.buffer.put("mitm", "POSTROUTING NFQ", spkt)
+        self.buffer.put("nfq", "POSTROUTING NFQ", spkt, "send")
 
         pkt.accept()
 

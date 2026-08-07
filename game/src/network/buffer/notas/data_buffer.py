@@ -62,7 +62,7 @@ class DataBuffer:
                 "buffer": deque(maxlen=self.max_size),
                 "lock": Lock()
             }
-        for key in ["absolute", "nmap", "arp", "sniff", "dos", "mitm", "pcap"]:
+        for key in ["absolute", "nmap", "arp", "sniff", "dos", "nfq", "pcap"]:
             self.console_buffers["packets"]["numbers"][key] = 1
         self.console_buffers["status"] = {
             "number": 1,
@@ -139,7 +139,7 @@ class DataBuffer:
         '''
         Put status messages and packets into appropriate buffers.
 
-        source: the network action - "nmap", "arp", "dos", "sniff", "mitm", "pcap"
+        source: the network action - "nmap", "arp", "dos", "sniff", "nfq", "pcap"
 
         purpose: a message about the packet, or a status message
         '''

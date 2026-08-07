@@ -125,8 +125,12 @@ class Style:
                 return int(80*self.get_scale_correction())
             case "hack_info":
                 return int(120*self.get_scale_correction())
-            case "transaction":
-                return int(500*self.get_scale_correction())
+            case "transaction_word":
+                return int(100*self.get_scale_correction())
+            case "transaction_ip":
+                return int(450*self.get_scale_correction())
+            case "transaction_mac":
+                return int(450*self.get_scale_correction())
             case "layers":
                 return int(250*self.get_scale_correction())
             case "purpose":

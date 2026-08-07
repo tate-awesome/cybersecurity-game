@@ -15,17 +15,17 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
     def start(self): 
         if self.is_running():
-            self.buffer.put("mitm", "MITM attack is already running")
+            self.buffer.put("nfq", "MITM attack is already running")
             return
         self.running = True
         self.stop_event = threading.Event()
-        self.buffer.put("mitm", "Starting MITM attack")
+        self.buffer.put("nfq", "Starting MITM attack")
 
         self.thread = threading.Thread(target=self.start_thread, daemon=True)
         self.thread.start()
 
     def start_thread(self):
-        self.buffer.put("mitm", "Starting WinDivert")
+        self.buffer.put("nfq", "Starting WinDivert")
 
         filt = (
             "true"
@@ -45,9 +45,9 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                         w.send(packet)
                         continue
 
-                    self.buffer.put("mitm", "Incoming mitm packet", spkt)
+                    self.buffer.put("nfq", "Incoming mitm packet", spkt, "recv")
                     newspkt = self.modify_spkt(spkt)
-                    self.buffer.put("mitm", "Outgoing mitm Packet", spkt)
+                    self.buffer.put("nfq", "Outgoing mitm Packet", spkt, "recv")
 
                     if newspkt is not None:
                         packet.payload = bytes(newspkt)
@@ -56,10 +56,10 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
                 except Exception as e:
                     self.buffer.put(
-                        "mitm",
+                        "nfq",
                         f"WinDivert error: {e}"
                     )
-                    self.buffer.put("mitm", "Problematic Packet", spkt)
+                    self.buffer.put("nfq", "Problematic Packet", spkt)
                     pass
 
-        self.buffer.put("mitm", "Stopped WinDivert")
+        self.buffer.put("nfq", "Stopped WinDivert")

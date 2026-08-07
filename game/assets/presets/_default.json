@@ -4,7 +4,7 @@
         "nmap": 0,
         "arp": 0,
         "sniff": 0,
-        "mitm": 0,
+        "nfq": 0,
         "dos": 0
         },
     
@@ -19,7 +19,7 @@
         "arp": 0,
         "dos": 0,
         "sniff": 0,
-        "mitm": 0,
+        "nfq": 0,
         "pcap": 0,
         "TCP": 0,
         "ARP": 0,
@@ -49,7 +49,9 @@
         "number": 1,
         "length": 0,
         "hack_info": 0,
-        "transaction": 0,
+        "transaction_word": 0,
+        "transaction_ip": 0,
+        "transaction_mac": 0,
         "layers": 0,
         "purpose": 1,
         "summary": 1,
@@ -117,7 +119,7 @@
     },
 
     "modbus_forms": {
-        "mitm": 1,
+        "nfq": 1,
         "table": 1
     },
 

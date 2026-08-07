@@ -8,7 +8,7 @@ class MitmForm(BaseForm):
 
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "mitm", "MITM Attack")
+        super().__init__(master, context, "nfq", "MITM Attack")
         self.add_header("MITM Attack")
         self.has_attack_button = False
         # Create value table entries

@@ -10,7 +10,7 @@ class PacketBuffer:
         self.buffer = deque(maxlen=self.max_size)
         self.lock = Lock()
         self.numbers = {}
-        for key in ["absolute", "nmap", "arp", "sniff", "dos", "mitm", "pcap"]:
+        for key in ["absolute", "nmap", "arp", "sniff", "dos", "nfq", "pcap"]:
             self.numbers[key] = 1
         self.last_displayed = 0
         self.first_packet_time = None
