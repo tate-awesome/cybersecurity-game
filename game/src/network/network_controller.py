@@ -1,4 +1,4 @@
-from .hardware import arp_spoofing, sniffing, net_filter_queue, nmap, dos
+from .hardware import arp_spoofing, sniffing, nmap, dos
 from .virtual import master, slave
 from .saved import loader
 from . import mod_table
@@ -9,7 +9,6 @@ class NetworkController:
     def __init__(self, context):
         self.buffer = Buffer(context)
         self.table = mod_table.ModTable()
-
         self.loader = loader.Loader(self.buffer)
 
     def abort_all(self):
@@ -43,7 +42,12 @@ class HardwareAttacker(HardwareController):
     def __init__(self, context):
         super().__init__(context)
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.buffer)
-        self.mitm = net_filter_queue.NetFilterQueue(self.buffer, self.table)
+        if context.os_name == "Windows":
+            from .hardware import  nfq_windows
+            self.mitm = nfq_windows.NetFilterQueue(self.buffer, self.table)
+        else:
+            from .hardware import  nfq_linux
+            self.mitm = nfq_linux.NetFilterQueue(self.buffer, self.table)
         self.dos = dos.Denier(self.buffer)
     
     def abort_all(self):

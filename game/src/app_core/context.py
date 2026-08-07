@@ -6,7 +6,7 @@ from .style import Style
 from ..network.network_controller import NetworkController
 from .click_manager import ClickManager
 from .animation_manager import AnimationManager
-import os, json
+import os, json, platform
 
 class Context:
     '''
@@ -21,6 +21,7 @@ class Context:
         self.generate()
 
     def generate(self):
+        self.os_name = self.get_os()
         self.states = self.get_base_preset()
         self.labels = self.get_base_labels()
         self.net =  NetworkController(self)
@@ -102,3 +103,6 @@ class Context:
         else:
             self.net = constructor(self)
             return self.net
+
+    def get_os(self):
+        return platform.system()
