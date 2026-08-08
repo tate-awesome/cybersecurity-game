@@ -334,16 +334,16 @@ class MetaPacket:
             
             if m := p.getlayer(ModbusPDU03ReadHoldingRegistersRequest):
                 for i in range(m.startAddr, m.startAddr + m.quantity):
-                    variables.append(f"register_{i}")
+                    variables.append(f"hreg_{i}")
             elif m := p.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
                 for value in p.payload.registerVal:
                     values.append(value)
 
             elif m := p.getlayer(ModbusPDU06WriteSingleRegisterRequest):
-                variables.append(f"register_{p.payload.registerAddr}")
+                variables.append(f"hreg_{p.payload.registerAddr}")
                 values.append(p.payload.registerValue)
             elif m := p.getlayer(ModbusPDU06WriteSingleRegisterResponse):
-                variables.append(f"register_{p.payload.registerAddr}")
+                variables.append(f"hreg_{p.payload.registerAddr}")
                 values.append(p.payload.registerValue)
 
             if m is not None:

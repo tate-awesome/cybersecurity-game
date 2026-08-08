@@ -124,8 +124,8 @@
     },
 
     "modbus_variables": {
-        "register_1": {
-            "label": "register_1",
+        "hreg_1": {
+            "label": "hreg_1",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -133,8 +133,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_2": {
-            "label": "register_2",
+        "hreg_2": {
+            "label": "hreg_2",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -142,8 +142,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_3": {
-            "label": "register_3",
+        "hreg_3": {
+            "label": "hreg_3",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -151,8 +151,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_4": {
-            "label": "register_4",
+        "hreg_4": {
+            "label": "hreg_4",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -160,8 +160,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_5": {
-            "label": "register_5",
+        "hreg_5": {
+            "label": "hreg_5",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -169,8 +169,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_6": {
-            "label": "register_6",
+        "hreg_6": {
+            "label": "hreg_6",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -178,8 +178,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_7": {
-            "label": "register_7",
+        "hreg_7": {
+            "label": "hreg_7",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -187,8 +187,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_8": {
-            "label": "register_8",
+        "hreg_8": {
+            "label": "hreg_8",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -196,8 +196,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_9": {
-            "label": "register_9",
+        "hreg_9": {
+            "label": "hreg_9",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -205,8 +205,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_10": {
-            "label": "register_10",
+        "hreg_10": {
+            "label": "hreg_10",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -214,8 +214,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_11": {
-            "label": "register_11",
+        "hreg_11": {
+            "label": "hreg_11",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -223,8 +223,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_12": {
-            "label": "register_12",
+        "hreg_12": {
+            "label": "hreg_12",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -232,8 +232,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_13": {
-            "label": "register_13",
+        "hreg_13": {
+            "label": "hreg_13",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -241,8 +241,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_14": {
-            "label": "register_14",
+        "hreg_14": {
+            "label": "hreg_14",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
@@ -250,8 +250,8 @@
             "multiplier": 1.0,
             "offset": 0.0
         },
-        "register_15": {
-            "label": "register_15",
+        "hreg_15": {
+            "label": "hreg_15",
             "show": 1.0,
             "nickname": "",
             "factor": 1.0,
