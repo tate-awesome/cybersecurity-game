@@ -14,12 +14,12 @@ from scapy.all import Packet
 
 from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer
 from .meta_packet import MetaPacket
+from .channels.transaction_manager import TransactionManager
 
 class Buffer:
     def __init__(self, context, max_size = 5000):
         self.context = context
         self.max_size = max_size
-
 
         # Putting logic
         self.accept_puts = True
@@ -28,6 +28,7 @@ class Buffer:
         self.worker_thread = threading.Thread(target=self.worker, daemon=True)
 
         # Buffers
+        self.transaction_manager = TransactionManager()
         self.status = StatusBuffer(max_size=self.max_size)
         self.packets = PacketBuffer(max_size=self.max_size)
         self.modbus = ModbusBuffer(self.context, max_size=self.max_size)
@@ -53,9 +54,10 @@ class Buffer:
         capacity = float(len(self.put_queue) / self.max_size)
         return capacity
     
-    def put(self, source: str, purpose: str, data: Packet | None=None, src: str | None=None):
+    def put(self, source: str, purpose: str, data: Packet | None=None, src: str | None=None) -> None | MetaPacket:
         '''
-        Put status messages and packets into appropriate buffers.
+        Put status messages and packets into the worker queue.
+        Returns an enriched MetaPacket for those who need it
 
         source: the network action - "nmap", "arp", "dos", "sniff", "nfq", "pcap"
 
@@ -63,17 +65,27 @@ class Buffer:
 
         src: "send" or "recv"
         '''
-        if not self.accept_puts:
-            return
+        output = None
+        # Return on weird data
         if not isinstance(data, Packet) and data is not None:
             return
-        with self.put_lock:
-            self.put_queue.append((source, purpose, data, src))
+        # Create and enrich MetaPacket
+        if isinstance(data, Packet) and isinstance(purpose, str) and isinstance(source, str):
+            mpkt = MetaPacket(data, self.packets.get_first_packet_time(data), self.packets.numbers["absolute"],
+                            self.packets.numbers[source], source, src, purpose)
+            if mpkt.is_modbus:
+                self.transaction_manager.enrich(mpkt)
+            output = mpkt
+
+        if self.accept_puts:
+            with self.put_lock:
+                self.put_queue.append((source, purpose, output, src))
+
+        return output
     
     def worker(self):
         while True:
             items_to_put = []
-            
             with self.put_lock:
                 while self.put_queue:
                     items_to_put.append(self.put_queue.popleft())
@@ -83,7 +95,7 @@ class Buffer:
 
             time.sleep(0.01)
 
-    def worker_put(self, source: str, purpose: str, data: Packet | None=None, src: str | None=None):
+    def worker_put(self, source: str, purpose: str, data: MetaPacket | None=None, src: str | None=None):
         '''
         source: the network action - "nmap", "arp", "dos", "sniff", "nfq", "pcap"
 
@@ -96,11 +108,11 @@ class Buffer:
         if data is None and isinstance(purpose, str) and isinstance(source, str):
             self.status.put(source, purpose)
 
-        if isinstance(data, Packet) and isinstance(purpose, str) and isinstance(source, str):
-            self.distribute_packet(source, purpose, data, src)
+        if isinstance(data, MetaPacket):
+            self.distribute_packet(data)
         return
 
-    def distribute_packet(self, source: str, purpose: str, pkt: Packet, src: str | None=None):
+    def distribute_packet(self, mpkt: MetaPacket):
         '''
         Puts packets into appropriate buffers.
 
@@ -113,10 +125,6 @@ class Buffer:
         # Put all packets in the "packets" buffer for use by the packet console
         # self.packets.put(source, purpose, data, current_time)
 
-        mpkt = MetaPacket(pkt, self.packets.get_first_packet_time(pkt), self.packets.numbers["absolute"],
-                          self.packets.numbers[source], source, src, purpose)
-        if mpkt.is_modbus:
-            self.modbus.put(mpkt)
 
         self.packets.put(mpkt)
 

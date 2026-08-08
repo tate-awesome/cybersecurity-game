@@ -44,10 +44,10 @@ class HardwareAttacker(HardwareController):
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.buffer)
         if context.os_name == "Windows":
             from .hardware import  nfq_windows
-            self.mitm = nfq_windows.NetFilterQueue(self.buffer, self.table)
+            self.mitm = nfq_windows.NetFilterQueue(self.buffer, context)
         else:
             from .hardware import  nfq_linux
-            self.mitm = nfq_linux.NetFilterQueue(self.buffer, self.table)
+            self.mitm = nfq_linux.NetFilterQueue(self.buffer, context)
         self.dos = dos.Denier(self.buffer)
     
     def abort_all(self):

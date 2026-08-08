@@ -78,11 +78,14 @@ class TransactionManager:
         self.max_size = 20
 
     def enrich(self, mpkt: MetaPacket) -> None:
-        transaction = self.try_add(mpkt)
+        '''
+        Adds this MetaPacket to the transaction dict, and adds transaction data if applicable.
+        '''
+        transaction = self._try_add(mpkt)
         transaction.add_mpkt(mpkt)
         transaction.enrich(mpkt)
 
-    def try_add(self, mpkt: MetaPacket) -> Transaction:
+    def _try_add(self, mpkt: MetaPacket) -> Transaction:
         '''
         Creates a new Transaction based on the MetaPacket's key.
         Adds it to the dict if it's a new key.
@@ -121,10 +124,5 @@ class TransactionManager:
         else:
             return None
         return (client_ip, server_ip, tid)
-
-    def get_command(self, mpkt: MetaPacket) -> tuple[list[str], list[float], str, str]:
-        # example return: {register_2 = 44, register_3 = 91}, "in", "Read Response"
-        direction = mpkt.direction
-        command = ""
 
         

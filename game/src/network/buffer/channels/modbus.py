@@ -11,7 +11,6 @@ class ModbusBuffer:
         self.context = context
         self.max_size = max_size
         self.buffer = deque(maxlen=self.max_size)
-        self.transactions = TransactionManager()
         self.singles_lock = Lock()
         self.path_lock = Lock()
         self.last_displayed = 0
@@ -55,7 +54,6 @@ class ModbusBuffer:
             # with self.tracer_buffers[f"{var}_{mpkt.direction}"]["lock"]:
             #     self.tracer_buffers[f"{var}_{mpkt.direction}"]["deque"].append((mpkt.time, mpkt.values[i]))
 
-        self.transactions.enrich(mpkt)
 
         # try to put mpkt in the transactions
         # if it's a request, return command, registers, values

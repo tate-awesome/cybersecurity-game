@@ -1,5 +1,4 @@
 from ..buffer import Buffer
-from ..mod_table import ModTable
 from .net_filter_queue import NetFilterQueueBaseClass
 from netfilterqueue import NetfilterQueue as NFQ
 
@@ -11,8 +10,8 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     '''
     Linux Version
     '''
-    def __init__(self, buffer: Buffer, table: ModTable):
-        super().__init__(buffer, table)
+    def __init__(self, buffer: Buffer, context):
+        super().__init__(buffer, context)
 
     def start(self): 
         if self.is_running():
@@ -146,9 +145,9 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     def prerouting_callback(self, pkt):
         spkt = self.get_spkt(pkt)
 
-        self.buffer.put("nfq", "PREROUTING NFQ", spkt, "recv")
+        enriched_mpkt = self.buffer.put("nfq", "PREROUTING NFQ", spkt, "recv")
         # TODO add logic and timeline flags if it really does get modded
-        spkt, modified = self.modify_spkt(spkt)
+        spkt, modified = self.modify_mpkt(enriched_mpkt)
         if modified:
             self.buffer.put("nfq", "MODIFIED NFQ", spkt, "recv")
             pkt.set_payload(bytes(spkt))
