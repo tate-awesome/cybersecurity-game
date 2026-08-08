@@ -102,13 +102,7 @@ class MetaPacket:
         #     self.modbus_word = "-"
         # else:
         #     self.modbus_word = " , ".join(modbus_associations)
-        if self.is_modbus:
-            values_strings = []
-            for num in self.values:
-                values_strings.append(f"{num:.2f}")
-            self.modbus_word = f"{", ".join(self.variables)} = {", ".join(values_strings)}"
-        else:
-            self.modbus_word = "-"
+        self.set_modbus_word()
 
     def get_column_value(self, column_name: str):
         match column_name:
@@ -357,6 +351,15 @@ class MetaPacket:
                 is_modbus = True
 
             return variables, values, command, is_modbus
+
+    def set_modbus_word(self) -> None:
+        if self.is_modbus:
+            values_strings = []
+            for num in self.values:
+                values_strings.append(f"{num:.2f}")
+            self.modbus_word = f"{", ".join(self.variables)} = {", ".join(values_strings)}"
+        else:
+            self.modbus_word = "-"
 
     def old_extract_modbus(self, source: str, pkt: Packet) -> tuple[list[str], list[float]]:
             '''

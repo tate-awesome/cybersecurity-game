@@ -115,10 +115,10 @@ class Buffer:
 
         mpkt = MetaPacket(pkt, self.packets.get_first_packet_time(pkt), self.packets.numbers["absolute"],
                           self.packets.numbers[source], source, src, purpose)
+        if mpkt.is_modbus:
+            self.modbus.put(mpkt)
 
         self.packets.put(mpkt)
 
-        if mpkt.is_modbus:
-            self.modbus.put(mpkt)
 
             # self.map.put(mpkt)
