@@ -2,12 +2,12 @@ from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether, conf
 from scapy.arch import get_if_addr, get_if_hwaddr
 from scapy.contrib import modbus
 import json, socket, uuid
+from scapy.contrib.modbus import *
 
 
 class MetaPacket:
     def __init__(  self, pkt: Packet, first_packet_time: float, absolute_number: int, hack_number: int,
-    hack: str, src="None", purpose: str = "None",
-    variables: list[str] = [], values: list[str] = []):
+    hack: str, src="None", purpose: str = "None"):
 
         # Essential info
         self.pkt = pkt
@@ -78,8 +78,7 @@ class MetaPacket:
             self.direction_verbose = "Observed"
 
         # Modbus info
-        self.variables = variables
-        self.values = values
+        self.variables, self.values, self.command, self.is_modbus = self.get_modbus_command()
 
         # Summary fields
         self.summary = self.get_info()
@@ -95,13 +94,21 @@ class MetaPacket:
         self.mac_word = f"{self.mac_src} → {self.mac_dst}" if pkt.haslayer(Ether) else "-"
         self.ip_word = f"{self.ip_src} → {self.ip_dst}" if pkt.haslayer(IP) else "-"
         self.transaction_word = f"{self.direction_verbose}\n{self.mac_word}\n{self.ip_word}"
-        modbus_associations = []
-        for i, variable in enumerate(self.variables):
-            modbus_associations.append(f"{str(self.variables[i])} = {self.values[i]:.2f}")
-        if len(modbus_associations) == 0:
-            self.modbus_word = "-"
+        # modbus_associations = []
+        # for i, variable in enumerate(self.variables):
+
+        #     modbus_associations.append(f"{str(self.variables[i])} = {self.values[i]:.2f}")
+        # if len(modbus_associations) == 0:
+        #     self.modbus_word = "-"
+        # else:
+        #     self.modbus_word = " , ".join(modbus_associations)
+        if self.is_modbus:
+            values_strings = []
+            for num in self.values:
+                values_strings.append(f"{num:.2f}")
+            self.modbus_word = f"{", ".join(self.variables)} = {", ".join(values_strings)}"
         else:
-            self.modbus_word = " , ".join(modbus_associations)
+            self.modbus_word = "-"
 
     def get_column_value(self, column_name: str):
         match column_name:
@@ -319,5 +326,69 @@ class MetaPacket:
             info = pkt.summary()
 
         return f"{proto}: {info}"
-
     
+    def get_modbus_command(self) -> tuple[list[str], list[float], str]:
+            # return variables, values, command string
+            # Return command
+            # 2 of 18 instructions implemented lol
+            p = self.pkt
+            variables = []
+            values = []
+            command = ""
+            m = None
+            is_modbus = False
+            
+            if m := p.getlayer(ModbusPDU03ReadHoldingRegistersRequest):
+                for i in range(m.startAddr, m.startAddr + m.quantity):
+                    variables.append(f"register_{i}")
+            elif m := p.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
+                for value in p.payload.registerVal:
+                    values.append(value)
+
+            elif m := p.getlayer(ModbusPDU06WriteSingleRegisterRequest):
+                variables.append(f"register_{p.payload.registerAddr}")
+                values.append(p.payload.registerValue)
+            elif m := p.getlayer(ModbusPDU06WriteSingleRegisterResponse):
+                variables.append(f"register_{p.payload.registerAddr}")
+                values.append(p.payload.registerValue)
+
+            if m is not None:
+                command = m.name
+                is_modbus = True
+
+            return variables, values, command, is_modbus
+
+    def old_extract_modbus(self, source: str, pkt: Packet) -> tuple[list[str], list[float]]:
+            '''
+            Returns the modbus variables and values in the packet.
+            If there's no modbus, return empty lists
+            '''
+            # Extract variables
+            if pkt.haslayer("Read Holding Registers Response"):
+                variables = ["speed"]
+                mbl = pkt.getlayer(ModbusADUResponse)
+                values = [self.convert["speed"](mbl.payload.registerVal[0])]
+    
+                if len(mbl.payload.registerVal) > 1:
+                    variables.append("rudder")
+                    values.append(self.convert["rudder"](mbl.payload.registerVal[1]))
+    
+            elif pkt.haslayer("Write Single Register"):
+                mbl = pkt.getlayer(ModbusADURequest)
+                if mbl.payload.registerAddr == 10: # X address
+                    var = "x"
+                elif mbl.payload.registerAddr == 11: # Y address
+                    var = "y"
+                else: # Theta address
+                    var = "theta"
+    
+                z = mbl.payload.registerValue
+    
+                variables = [var]
+                values = [self.convert[var](z)]
+            
+            else:
+                variables = []
+                values = []
+    
+            return variables, values

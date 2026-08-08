@@ -112,16 +112,13 @@ class Buffer:
         '''
         # Put all packets in the "packets" buffer for use by the packet console
         # self.packets.put(source, purpose, data, current_time)
-        
-        # Generate meta packet
-        variables, values = self.modbus.old_extract_modbus(source, pkt)
 
         mpkt = MetaPacket(pkt, self.packets.get_first_packet_time(pkt), self.packets.numbers["absolute"],
-                          self.packets.numbers[source], source, src, purpose, variables, values)
+                          self.packets.numbers[source], source, src, purpose)
 
         self.packets.put(mpkt)
 
-        if len(variables) > 0 and len(values) > 0:
+        if mpkt.is_modbus:
             self.modbus.put(mpkt)
 
-            self.map.put(mpkt)
+            # self.map.put(mpkt)
