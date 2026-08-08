@@ -9,6 +9,7 @@ from tkinter import font as tkfont
 from ... import MenuBar
 from ..panel import Panel
 from customtkinter import CTkFrame
+from ....network.buffer.meta_packet import MetaPacket
 
 class Builder(Panel):
     def __init__(self, master, context: Context):
@@ -255,14 +256,38 @@ class Builder(Panel):
 
         return tree, container
     
-    def submit_packet(self, tree, packet):
-        values = []
+    def submit_packet(self, tree: ttk.Treeview, packet: MetaPacket):
+        values = [packet.get_column_value(col) for col in self.columns]
+        
+        try:
+            new_val = float(values[0])
+        except (ValueError, TypeError):
+            new_val = values[0]  # Fallback to string if non-numeric
 
-        for col in self.columns:
-            value = packet.get_column_value(col)
-            values.append(value)
+        children = tree.get_children("")
+        insert_index = "end"
 
-        tree.insert("", "end", values=values)
+        # Search from the bottom up (since packets usually arrive sequentially)
+        for child in reversed(children):
+            current_val_str = tree.set(child, self.columns[0])
+            
+            try:
+                current_val = float(current_val_str)
+            except (ValueError, TypeError):
+                current_val = current_val_str
+
+            # If the existing row is smaller than or equal to our new packet,
+            # it means our packet belongs right AFTER this row.
+            if current_val <= new_val:
+                # Get the top-down index of this child and add 1 to place it below
+                insert_index = tree.index(child) + 1
+                break
+        
+        # If all items in the tree are larger than new_val, 
+        # the loop finishes without breaking, insert_index stays "end" 
+        # (or you could force it to 0 if it belongs at the very top).
+
+        tree.insert("", insert_index, values=values)
 
     def refresh_columns(self):
 
