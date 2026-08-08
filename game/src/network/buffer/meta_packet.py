@@ -78,7 +78,9 @@ class MetaPacket:
             self.direction_verbose = "Observed"
 
         # Modbus info
-        self.variables, self.values, self.command, self.is_modbus = self.get_modbus_command()
+        self.variables, self.values, self.command, self.is_modbus, self.is_useful_modbus = self.get_modbus_command()
+        self.is_primary_modbus = False
+        self.command_word = f"{self.command.split(" ")[0]} {self.command.split(" ")[-1]}" 
 
         # Summary fields
         self.summary = self.get_info()
@@ -331,6 +333,7 @@ class MetaPacket:
             command = ""
             m = None
             is_modbus = False
+            is_useful_modbus = False
             
             if m := p.getlayer(ModbusPDU03ReadHoldingRegistersRequest):
                 for i in range(m.startAddr, m.startAddr + m.quantity):
@@ -338,10 +341,12 @@ class MetaPacket:
             elif m := p.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
                 for value in p.payload.registerVal:
                     values.append(value)
+                is_useful_modbus = True
 
             elif m := p.getlayer(ModbusPDU06WriteSingleRegisterRequest):
                 variables.append(f"hreg_{p.payload.registerAddr}")
                 values.append(p.payload.registerValue)
+                is_useful_modbus = True
             elif m := p.getlayer(ModbusPDU06WriteSingleRegisterResponse):
                 variables.append(f"hreg_{p.payload.registerAddr}")
                 values.append(p.payload.registerValue)
@@ -350,7 +355,7 @@ class MetaPacket:
                 command = m.name
                 is_modbus = True
 
-            return variables, values, command, is_modbus
+            return variables, values, command, is_modbus, is_useful_modbus
 
     def set_modbus_word(self) -> None:
         if self.is_modbus:

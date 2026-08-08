@@ -6,7 +6,7 @@ class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
         super().__init__(master, context, "mitm2", "MITM Attack")
         # Assign local references
-        
+        self.buffer = context.net.buffer.modbus
         # Create form
         
         self.columnconfigure(0, weight=1)
@@ -24,7 +24,7 @@ class MitmTable(BaseForm):
         for key in self.context.states["modbus_variables"]:
             self.add_row(key)
 
-        # self.context.animation_manager.add_callback("modbus_table", self.update)
+        self.context.animation_manager.add_callback("modbus_table", self.update)
 
 
     def add_title_row(self):
@@ -95,10 +95,22 @@ class MitmTable(BaseForm):
     def update(self):
         for key in self.rows:
             this_row = self.rows[key]
-            
-            in_value = 0
-            out_value = 0
-            source = "source"
-            this_row["incoming"].configure(text=f"{in_value:.3f}")
-            this_row["outgoing"].configure(text=f"{out_value:.3f}")
-            this_row["source"].configure(text=source)
+            in_str = "-"
+            out_str = "-"
+            command = "-"
+            # TODO switch to a get dump type of thing where it dumps all the changed values
+
+            in_value = self.buffer.get_single(key, "in")
+            if not in_value == "-":
+                in_str = f"{in_value:.2f}"
+
+            out_value = self.buffer.get_single(key, "out")
+            if not out_value == "-":
+                out_str = f"{out_value:.2f}"
+
+            command = self.buffer.get_command(key)
+
+
+            this_row["incoming"].configure(text=in_str)
+            this_row["outgoing"].configure(text=out_str)
+            this_row["source"].configure(text=command)

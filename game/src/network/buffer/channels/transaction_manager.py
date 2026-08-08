@@ -57,13 +57,17 @@ class Transaction:
         if mpkt.pkt.getlayer(ModbusADURequest):
             if mpkt.direction == "in" and self.request_in is None:
                 self.request_in = mpkt
+                mpkt.is_primary_modbus = True
             elif mpkt.direction == "out" and self.request_out is None:
                 self.request_out = mpkt
+                mpkt.is_primary_modbus = True
         elif mpkt.pkt.getlayer(ModbusADUResponse):
             if mpkt.direction == "in" and self.response_in is None:
                 self.response_in = mpkt
+                mpkt.is_primary_modbus = True
             elif mpkt.direction == "out" and self.response_out is None:
                 self.response_out = mpkt
+                mpkt.is_primary_modbus = True
 
     def _set_completeness(self):
         if (self.request_out is not None and
