@@ -1,38 +1,30 @@
 {
-    "factors": {
-            "x": 0.01,
-            "y": 0.01,
-            "theta": 0.001,
-            "speed": "5.0 / 4096.0",
-            "rudder": "5.0 / 4095.0"
-    },
-
     "modbus_variables": {
         "hreg_1": {
             "show": 0
         },
         "hreg_2": {
-            "show": 1.0
+            "show": 0
         },
         "hreg_3": {
             "label": "hreg_3",
             "show": 1.0,
             "nickname": "Speed",
-            "factor": 1.0,
-            "units": "",
+            "factor": 0.00122,
+            "units": "TODO",
             "multiplier": 1.0,
             "offset": 0.0,
-            "modify": 0
+            "modify": 1
         },
         "hreg_4": {
             "label": "hreg_4",
             "show": 1.0,
-            "nickname": "",
-            "factor": 1.0,
-            "units": "",
+            "nickname": "Rudder",
+            "factor": 0.00122,
+            "units": "TODO",
             "multiplier": 1.0,
             "offset": 0.0,
-            "modify": 0
+            "modify": 1
         },
         "hreg_5": {
             "show": 0
@@ -52,32 +44,32 @@
         "hreg_10": {
             "label": "hreg_10",
             "show": 1.0,
-            "nickname": "",
-            "factor": 1.0,
-            "units": "",
+            "nickname": "X Position",
+            "factor": 0.01,
+            "units": "Meters",
             "multiplier": 1.0,
             "offset": 0.0,
-            "modify": 0
+            "modify": 1
         },
         "hreg_11": {
             "label": "hreg_11",
             "show": 1.0,
-            "nickname": "",
-            "factor": 1.0,
+            "nickname": "Y Position",
+            "factor": 0.01,
             "units": "",
             "multiplier": 1.0,
             "offset": 0.0,
-            "modify": 0
+            "modify": 1
         },
         "hreg_12": {
             "label": "hreg_12",
             "show": 1.0,
-            "nickname": "",
-            "factor": 1.0,
-            "units": "",
+            "nickname": "Bearing",
+            "factor": 0.0572958,
+            "units": "Degrees",
             "multiplier": 1.0,
             "offset": 0.0,
-            "modify": 0
+            "modify": 1
         },
         "hreg_13": {
             "show": 0
