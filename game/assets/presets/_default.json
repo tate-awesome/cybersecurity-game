@@ -5,7 +5,8 @@
         "arp": 0,
         "sniff": 0,
         "nfq": 0,
-        "dos": 0
+        "dos": 0,
+        "modify": 0
         },
     
     "hack_forms": {
@@ -123,6 +124,8 @@
         "table": 1,
         "modify": 1
     },
+
+    "modbus_modify_enabled": 1,
 
     "modbus_variables": {
         "hreg_1": {

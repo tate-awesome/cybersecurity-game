@@ -39,6 +39,9 @@ class NetFilterQueueBaseClass:
         if not mpkt.is_modbus or len(mpkt.variables) < 1:
             return mpkt.pkt, modified_flag
 
+        if not self.context.states["modbus_modify_enabled"] == 1:
+            return mpkt.pkt, modified_flag
+
         for i, variable in enumerate(mpkt.variables):
             slot = slots[variable]
             mult = float(slot["multiplier"])

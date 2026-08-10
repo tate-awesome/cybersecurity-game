@@ -17,6 +17,7 @@ class Modify(BaseForm):
 
         # Create value table entries
         self.rows = {}
+        self.entries = []
 
         self.add_title_row()
 
@@ -27,6 +28,9 @@ class Modify(BaseForm):
         self.save_button()
         self.bind_input_save()
         self.bind_input_alert()
+
+        self.add_attack_button(self.enable_modify, self.disable_modify, self.modify_is_enabled)
+
         self.load_saved_input()
 
 
@@ -58,6 +62,7 @@ class Modify(BaseForm):
         def entry():
             entry = CTkEntry(self, font=self.style.get_font("mono"))
             entry.grid(row=self.current_row, column=self.current_column, sticky="")
+            self.entries.append(entry)
             self.current_column += 1
             return entry
 
@@ -142,17 +147,15 @@ class Modify(BaseForm):
         def event_callback(event=None):
             save()
         
-        for _, row in self.rows.items():
-            row["multiplier"].bind("<Return>", event_callback)
-            row["offset"].bind("<Return>", event_callback)
+        for entry in self.entries:
+            entry.bind("<Return>", event_callback)
 
     
     def bind_input_alert(self):
         def alert(event=None):
             self.save_status.configure(text="! Unsaved Modifiers !")
-        for key, row in self.rows.items():
-            row["multiplier"].bind("<Key>", alert)
-            row["offset"].bind("<Key>", alert)
+        for entry in self.entries:
+            entry.bind("<Key>", alert)
 
     def load_saved_input(self):
         for key, row in self.rows.items():
@@ -168,4 +171,14 @@ class Modify(BaseForm):
         
         self.save_status.configure(text="Modifiers Saved.")
 
-    
+    def enable_modify(self):
+        self.context.states["modbus_modify_enabled"] = 1
+
+    def disable_modify(self):
+        self.context.states["modbus_modify_enabled"] = 0
+
+    def modify_is_enabled(self):
+        state = self.context.states["modbus_modify_enabled"]
+        if state == 1: return True
+        else: return False
+        

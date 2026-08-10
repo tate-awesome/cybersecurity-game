@@ -12,6 +12,7 @@ class BaseForm(ABC, CTkFrame):
         self.style = context.style
         self.context = context
         self.attack_noun = attack_noun
+        self.key = "modify"
 
         super().__init__(master, fg_color=self.style.color("widget"))
 
@@ -27,9 +28,9 @@ class BaseForm(ABC, CTkFrame):
         self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
         self.current_row += 1
 
-    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[None, bool], default_status: str = ""):
+    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[[None], bool], default_status: str = ""):
     
-        if self.has_attack_button:
+        if hasattr(self, "has_attack_button") and self.has_attack_button:
             return
 
         # Create widgets
@@ -50,10 +51,10 @@ class BaseForm(ABC, CTkFrame):
             self.configure_off()
         
         # Bind <Return>
-        def return_handler(event=None):
-            self.click_start()
-        for entry in self.entries:
-            entry.bind("<Return>", return_handler)
+        # def return_handler(event=None):
+        #     self.click_start()
+        # for entry in self.entries:
+        #     entry.bind("<Return>", return_handler)
         
         # Update current index
         self.current_row += 1
