@@ -116,7 +116,7 @@
     },
 
     "modbus_forms": {
-        "nfq": 1,
-        "table": 1
+        "table": 1,
+        "modify": 1
     }
 }

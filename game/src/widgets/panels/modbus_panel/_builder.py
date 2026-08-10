@@ -2,8 +2,8 @@ from customtkinter import CTkFrame
 from ....app_core.context import Context
 from ..panel import Panel
 
-from .forms.mitm import MitmForm
 from .forms.table import MitmTable
+from .forms.modify import Modify
 from .form_overlay import FormOverlay
 from .variable_overlay import VariableOverlay
 
@@ -19,8 +19,8 @@ class Builder(Panel):
 
         self.forms = {}
         
-        self.forms["nfq"] = MitmForm(scrollable, context)
         self.forms["table"] = MitmTable(scrollable, context)
+        self.forms["modify"] = Modify(scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
@@ -35,6 +35,11 @@ class Builder(Panel):
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
         stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+
+        self.update_idletasks()
+        self.refresh_nicknames()
+        self.refresh_rows()
+        self.refresh_forms()
 
 
     def refresh_forms(self):
@@ -62,9 +67,11 @@ class Builder(Panel):
 
     def refresh_rows(self):
         self.forms["table"].refresh_rows()
+        self.forms["modify"].refresh_rows()
 
     def refresh_nicknames(self):
         self.forms["table"].refresh_nicknames()
+        self.forms["modify"].refresh_nicknames()
 
     def stop_all(self):
         for form in self.forms.values():

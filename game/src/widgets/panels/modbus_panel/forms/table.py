@@ -4,7 +4,7 @@ from .base_form import BaseForm
 
 class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, "mitm2", "MITM Attack")
+        super().__init__(master, context, "MITM Attack")
         # Assign local references
         self.buffer = context.net.buffer.modbus
         # Create form
@@ -25,9 +25,6 @@ class MitmTable(BaseForm):
             self.add_row(key)
 
         self.context.animation_manager.add_callback("modbus_table", self.update)
-
-        self.refresh_rows()
-        self.refresh_nicknames()
 
 
     def add_title_row(self):

@@ -22,8 +22,8 @@
     },
 
     "modbus_forms": {
-        "nfq": "MITM Attack",
-        "table": "MITM Readings"
+        "table": "MITM Readings",
+        "modify": "ModBus Modifiers"
     },
 
     "packet_filter_categories": {
@@ -74,6 +74,12 @@
         "in": "Received",
         "out": "Sent",
         "source": "Command"
+    },
+
+    "modbus_modifier_columns": {
+        "variable": "Variable",
+        "multiplier": "Mult",
+        "offset": "Offset"
     },
 
     "modbus_variables": {
