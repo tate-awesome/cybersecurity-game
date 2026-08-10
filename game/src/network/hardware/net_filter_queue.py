@@ -44,14 +44,28 @@ class NetFilterQueueBaseClass:
 
         for i, variable in enumerate(mpkt.variables):
             slot = slots[variable]
-            mult = float(slot["multiplier"])
-            offs = float(slot["offset"])
+
+            factor_str = self.context.states["modbus_variables"][variable]["factor"]
+            mult_str = self.context.states["modbus_variables"][variable]["multiplier"]
+            offs_str = self.context.states["modbus_variables"][variable]["offset"]
+            fact = 1.0
+            mult = 1.0
+            offs = 0.0
+            try: 
+                fact = float(factor_str)
+                mult = float(mult_str)
+                offs = float(offs_str)
+            except:
+                continue
+
 
             if slot["modify"] == 0 or slot["modify"] == "0":
                 continue
 
             if mult == 1.0 and offs == 0.0:
                 continue
+
+            offs = offs / fact
 
             if m := mpkt.pkt.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
                 val = m.registerVal[i]
