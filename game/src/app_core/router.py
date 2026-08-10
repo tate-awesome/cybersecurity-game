@@ -122,23 +122,23 @@ class Router:
         self.refresh()
     
 
-    def select_preset(self):
+    def select_settings(self):
         '''
         Opens a dialog for the user to select a context preset.
         Context presets populate fields and checkboxes.
         '''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        directory = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
+        directory = os.path.join(BASE_DIR, "..", "..", "assets", "settings")
         file_path = askopenfilename(
         initialdir=directory,
-        title="Select a preset file",
+        title="Select a settings file",
         filetypes=(("json", "*.json"),)
         )
         if file_path == "":
             return
         with open(file_path) as json_file:
             data = json.load(json_file)
-        self.context.load_preset(data)
+        self.context.add_settings(data)
         self.refresh()
 
     def select_labels(self):

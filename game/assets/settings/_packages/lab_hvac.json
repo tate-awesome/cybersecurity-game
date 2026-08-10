@@ -1,0 +1,8 @@
+{
+    "_files": {
+        "color_settings": "alt.json",
+        "hack_settings": "lab.json",
+        "modbus_settings": "submarine.json",
+        "packet_console_settings": "hvac.json"
+    }
+}

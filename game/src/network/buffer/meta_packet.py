@@ -135,7 +135,7 @@ class MetaPacket:
 
     def matches(self, requirement: str):
         '''
-        Returns whether the given requirement is true given a primary key string found in presets.json - "packet_filter_columns".
+        Returns whether the given requirement is true given a primary key string found in settings.json - "packet_filter_columns".
         '''
         
         match requirement:

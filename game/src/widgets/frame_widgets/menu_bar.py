@@ -224,7 +224,7 @@ class MenuBar(CTkFrame):
         self.style.add_tooltip(button, "pcap_button")
     
     def preset_button(self):
-        button = self.add_button("Load Preset", self.context.router.select_preset)
+        button = self.add_button("Load Preset", self.context.router.select_settings)
         self.style.add_tooltip(button, "preset_button")
     
     def labels_button(self):
