@@ -30,7 +30,6 @@ class NetFilterQueueBaseClass:
             self.thread.join(timeout=2)
             self.stop_event = None
             self.thread = None
-            self.buffer.put("nfq", "Stopped MITM attack")
             self.running = False
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:

@@ -18,7 +18,8 @@
         "nmap": 1,
         "arp": 1,
         "dos": 0,
-        "sniff": 1
+        "sniff": 1,
+        "nfq": 1
     },
 
 

@@ -68,7 +68,7 @@ class MitmForm(BaseForm):
 
         self.entries = list(self.mults.values())
         self.entries.extend(list(self.offsets.values()))
-        self.add_attack_button(context.net.start_mitm, context.net.stop_mitm, context.net.mitm_is_running)
+        self.add_attack_button(context.net.start_nfq, context.net.stop_nfq, context.net.nfq_is_running)
 
 
         self.bind_input_alert()

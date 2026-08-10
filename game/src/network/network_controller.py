@@ -44,16 +44,16 @@ class HardwareAttacker(HardwareController):
         self.arp_spoofer = arp_spoofing.ArpSpoofer(self.buffer)
         if context.os_name == "Windows":
             from .hardware import  nfq_windows
-            self.mitm = nfq_windows.NetFilterQueue(self.buffer, context)
+            self.nfq = nfq_windows.NetFilterQueue(self.buffer, context)
         else:
             from .hardware import  nfq_linux
-            self.mitm = nfq_linux.NetFilterQueue(self.buffer, context)
+            self.nfq = nfq_linux.NetFilterQueue(self.buffer, context)
         self.dos = dos.Denier(self.buffer)
     
     def abort_all(self):
         super().abort_all()
         self.stop_arp()
-        self.stop_mitm()
+        self.stop_nfq()
         self.stop_dos()
 
     def start_arp(self, target_ip, host_ip):
@@ -66,14 +66,14 @@ class HardwareAttacker(HardwareController):
     def stop_arp(self):
         self.arp_spoofer.stop()
 
-    def start_mitm(self):
-        self.mitm.start()
+    def start_nfq(self):
+        self.nfq.start()
 
-    def mitm_is_running(self):
-        return self.mitm.is_running()
+    def nfq_is_running(self):
+        return self.nfq.is_running()
     
-    def stop_mitm(self):
-        self.mitm.stop()
+    def stop_nfq(self):
+        self.nfq.stop()
 
     def start_dos(self, target_1, target_2):
         self.dos.start([target_1, target_2])

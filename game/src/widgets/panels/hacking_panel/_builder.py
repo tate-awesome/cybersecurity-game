@@ -6,6 +6,7 @@ from .forms.arp import ArpForm
 from .forms.nmap import NmapForm
 from .forms.dos import DosForm
 from .forms.sniff import SniffForm
+from .forms.nfq import NFQForm
 from .form_overlay import FormOverlay
 
 from ....widgets import Scrollable, MenuBar, Overlay
@@ -24,6 +25,7 @@ class Builder(Panel):
         self.forms["arp"] = ArpForm(scrollable, context)
         self.forms["dos"] = DosForm(scrollable, context)
         self.forms["sniff"] = SniffForm(scrollable, context)
+        self.forms["nfq"] = NFQForm(scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")

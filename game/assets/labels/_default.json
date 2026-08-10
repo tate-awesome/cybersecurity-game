@@ -17,7 +17,8 @@
         "nmap": "NMapping",
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
-        "sniff": "Packet Sniffing"
+        "sniff": "Packet Sniffing",
+        "nfq": "Net Filter Queue"
     },
 
     "modbus_form": {
