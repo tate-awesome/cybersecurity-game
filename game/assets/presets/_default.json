@@ -132,7 +132,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_2": {
             "label": "hreg_2",
@@ -141,7 +142,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_3": {
             "label": "hreg_3",
@@ -150,7 +152,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_4": {
             "label": "hreg_4",
@@ -159,7 +162,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_5": {
             "label": "hreg_5",
@@ -168,7 +172,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_6": {
             "label": "hreg_6",
@@ -177,7 +182,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_7": {
             "label": "hreg_7",
@@ -186,7 +192,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_8": {
             "label": "hreg_8",
@@ -195,7 +202,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_9": {
             "label": "hreg_9",
@@ -204,7 +212,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_10": {
             "label": "hreg_10",
@@ -213,7 +222,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 1
         },
         "hreg_11": {
             "label": "hreg_11",
@@ -222,7 +232,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_12": {
             "label": "hreg_12",
@@ -231,7 +242,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_13": {
             "label": "hreg_13",
@@ -240,7 +252,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_14": {
             "label": "hreg_14",
@@ -249,7 +262,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         },
         "hreg_15": {
             "label": "hreg_15",
@@ -258,7 +272,8 @@
             "factor": 1.0,
             "units": "",
             "multiplier": 1.0,
-            "offset": 0.0
+            "offset": 0.0,
+            "modify_on": 0
         }
     }
 }

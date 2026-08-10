@@ -33,15 +33,20 @@ class NetFilterQueueBaseClass:
             self.running = False
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:
+        slots = self.context.states[self.slot_name]
         modified_flag = False
+
         if not mpkt.is_modbus or len(mpkt.variables) < 1:
             return mpkt.pkt, modified_flag
 
-        slots = self.context.states[self.slot_name]
         for i, variable in enumerate(mpkt.variables):
             slot = slots[variable]
             mult = float(slot["multiplier"])
             offs = float(slot["offset"])
+
+            if slot["modify_on"] == 0 or slot["modify_on"] == "0":
+                continue
+
             if mult == 1.0 and offs == 0.0:
                 continue
 
