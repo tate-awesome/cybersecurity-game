@@ -17,9 +17,11 @@ class PacketBuffer:
 
     def put(self, mpkt: MetaPacket):
         with self.lock:
+            mpkt.absolute_number = self.numbers["absolute"]
+            mpkt.hack_number = self.numbers[mpkt.hack]
+            self.numbers[mpkt.hack] += 1
+            self.numbers["absolute"] += 1
             self.buffer.append(mpkt)
-        self.numbers[mpkt.hack] += 1
-        self.numbers["absolute"] += 1
 
     def get_new_packets(self, filter_func, max_return: int = 1000) -> list:
         new_packets = []

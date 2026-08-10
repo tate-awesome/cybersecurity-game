@@ -71,8 +71,8 @@ class Buffer:
             return
         # Create and enrich MetaPacket
         if isinstance(data, Packet) and isinstance(purpose, str) and isinstance(source, str):
-            mpkt = MetaPacket(data, self.packets.get_first_packet_time(data), self.packets.numbers["absolute"],
-                            self.packets.numbers[source], source, src, purpose)
+            mpkt = MetaPacket(data, self.packets.get_first_packet_time(data), 0,
+                            0, source, src, purpose)
             if mpkt.is_modbus:
                 self.transaction_manager.enrich(mpkt)
             output = mpkt
