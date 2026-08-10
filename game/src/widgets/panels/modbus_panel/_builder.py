@@ -32,15 +32,15 @@ class Builder(Panel):
         forms_overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
         variables_button = self.menu_bar.add_button("Variables")
-        variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows)
+        variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
         stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
 
 
     def refresh_forms(self):
         self.update_idletasks()
-        for key in self.context.states["modbus_variables"]:
-            state = self.context.states["modbus_variables"][key]["show"]
+        for key in self.context.states["modbus_forms"]:
+            state = self.context.states["modbus_forms"][key]
             if state == "1" or state == 1:
                 self.show_forms(key)
             else:
@@ -57,9 +57,14 @@ class Builder(Panel):
         if form.winfo_ismapped():
             return
         form.grid()
+        self.refresh_rows()
+        self.refresh_nicknames()
 
     def refresh_rows(self):
-        ...
+        self.forms["table"].refresh_rows()
+
+    def refresh_nicknames(self):
+        self.forms["table"].refresh_nicknames()
 
     def stop_all(self):
         for form in self.forms.values():

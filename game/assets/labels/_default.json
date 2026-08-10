@@ -21,7 +21,7 @@
         "nfq": "Net Filter Queue"
     },
 
-    "modbus_form": {
+    "modbus_forms": {
         "nfq": "MITM Attack",
         "table": "MITM Readings"
     },
@@ -98,5 +98,14 @@
         "theta": "Bearing",
         "speed": "Speed",
         "rudder": "Rudder Angle"
+    },
+
+    "modbus_settings": {
+        "label": "Modbus Variable",
+        "show": "Show\nin tables below",
+        "nickname": "Nickname\nfor display",
+        "factor": "Conversion Factor\nunits/int",
+        "units": "Units\nfor display",
+        "modify_on": "Modify\nin NFQ callback"
     }
 }

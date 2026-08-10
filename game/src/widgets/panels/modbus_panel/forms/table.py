@@ -26,6 +26,9 @@ class MitmTable(BaseForm):
 
         self.context.animation_manager.add_callback("modbus_table", self.update)
 
+        self.refresh_rows()
+        self.refresh_nicknames()
+
 
     def add_title_row(self):
         self.current_column = 0
@@ -55,26 +58,27 @@ class MitmTable(BaseForm):
             self.current_column += 1
             return label
 
-
-        # Resolve nickname and add label
-        if len(slot["nickname"]) > 0:
-            variable_name = slot["nickname"]
-        else:
-            variable_name = self.context.labels["modbus_variables"][key]
-
-        this_row["name"] = label(variable_name)
-
-        # Source
-
+        this_row["name"] = label("-")
         this_row["incoming"] = label("-")
         this_row["outgoing"] = label("-")
         this_row["source"] = label("-")
         self.rows[key] = this_row
         self.current_row += 1
 
+    def refresh_nicknames(self):
+        for key, row in self.rows.items():
+            # Resolve nickname and configure label
+            slot = self.context.states["modbus_variables"][key]
+            if len(slot["nickname"]) > 0:
+                variable_name = slot["nickname"]
+            else:
+                variable_name = self.context.labels["modbus_variables"][key]
+            row["name"].configure(text=variable_name)
+
     def refresh_rows(self):
-        for key in self.context.states["modbus_variables"]:
-            state = self.context.states["modbus_forms"][key]["show"]
+        self.update_idletasks()
+        for key, variable in self.context.states["modbus_variables"].items():
+            state = variable["show"]
             if state == "1" or state == 1:
                 self.show_row(key)
             else:
@@ -82,15 +86,15 @@ class MitmTable(BaseForm):
 
     def show_row(self, key: str):
         row = self.rows[key]
-        if not row.winfo_ismapped():
-            return
-        row.grid_remove()  
+        for _, widget in row.items():
+            if not widget.winfo_ismapped():
+                widget.grid()
 
     def hide_row(self, key: str):
-        row = self.forms[key]
-        if row.winfo_ismapped():
-            return
-        row.grid()
+        row = self.rows[key]
+        for _, widget in row.items():
+            if widget.winfo_ismapped():
+                widget.grid_remove()
 
     def update(self):
         for key in self.rows:
