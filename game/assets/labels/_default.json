@@ -112,6 +112,6 @@
         "nickname": "Nickname\nfor display",
         "factor": "Conversion Factor\nunits per raw",
         "units": "Units\nfor display",
-        "modify_on": "Modify\nin NFQ callback"
+        "modify": "Modify\nin NFQ callback"
     }
 }

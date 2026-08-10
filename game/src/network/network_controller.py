@@ -1,20 +1,17 @@
 from .hardware import arp_spoofing, sniffing, nmap, dos
 from .virtual import master, slave
 from .saved import loader
-from . import mod_table
 from .buffer import Buffer
 
 class NetworkController:
 
     def __init__(self, context):
         self.buffer = Buffer(context)
-        self.table = mod_table.ModTable()
         self.loader = loader.Loader(self.buffer)
 
     def abort_all(self):
         self.buffer.reset()
         self.loader.abort()
-        self.table.reset_table()
 
 class HardwareController(NetworkController):
     def __init__(self, context):

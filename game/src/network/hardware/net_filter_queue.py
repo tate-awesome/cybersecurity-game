@@ -47,7 +47,7 @@ class NetFilterQueueBaseClass:
             mult = float(slot["multiplier"])
             offs = float(slot["offset"])
 
-            if slot["modify_on"] == 0 or slot["modify_on"] == "0":
+            if slot["modify"] == 0 or slot["modify"] == "0":
                 continue
 
             if mult == 1.0 and offs == 0.0:

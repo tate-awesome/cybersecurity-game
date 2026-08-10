@@ -78,10 +78,10 @@ class VariableOverlay:
             self.enrich_entry(units_entry, slot, "units")
             units_entries.append(units_entry)
             col += 1
-            # "modify_on": 0
+            # "modify": 0
             modify_checkbox = CTkCheckBox(frame, text="")
             modify_checkbox.grid(row=row, column=col, sticky="e", padx=self.style.gap, pady=self.style.gap)
-            self.enrich_checkbox(modify_checkbox, slot, "modify_on")
+            self.enrich_checkbox(modify_checkbox, slot, "modify")
             modify_checkboxes.append(modify_checkbox)
 
             col = 0
