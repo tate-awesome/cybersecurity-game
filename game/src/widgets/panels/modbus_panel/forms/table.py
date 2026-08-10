@@ -102,15 +102,28 @@ class MitmTable(BaseForm):
             in_str = "-"
             out_str = "-"
             command = "-"
+            factor_str = self.context.states["modbus_variables"][key]["factor"]
+            factor = 1.0
+            try: 
+                f = float(factor_str)
+                factor = f
+            except:
+                message = "err: factor"
+                this_row["incoming"].configure(text=message)
+                this_row["outgoing"].configure(text=message)
+                this_row["source"].configure(text=message)
+                continue
+
+
             # TODO switch to a get dump type of thing where it dumps all the changed values
 
             in_value = self.buffer.get_single(key, "in")
             if not in_value == "-":
-                in_str = f"{in_value:.2f}"
+                in_str = f"{in_value*factor:.2f}"
 
             out_value = self.buffer.get_single(key, "out")
             if not out_value == "-":
-                out_str = f"{out_value:.2f}"
+                out_str = f"{out_value*factor:.2f}"
 
             command = self.buffer.get_command(key)
 
