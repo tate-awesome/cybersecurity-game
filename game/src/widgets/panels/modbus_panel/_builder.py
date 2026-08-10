@@ -15,18 +15,18 @@ class Builder(Panel):
 
         super().__init__(master, context, "Attacks")
 
-        scrollable = Scrollable(self, context)
+        self.scrollable = Scrollable(self, context)
 
         self.forms = {}
         
-        self.forms["table"] = MitmTable(scrollable, context)
-        self.forms["modify"] = Modify(scrollable, context)
+        self.forms["table"] = MitmTable(self.scrollable, context)
+        self.forms["modify"] = Modify(self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
         # self.refresh_forms()
-        scrollable.columnconfigure(0, weight=1)
-        scrollable.add_deadspace("grid")
+        self.scrollable.columnconfigure(0, weight=1)
+        self.scrollable.add_deadspace("grid")
 
         forms_button = self.menu_bar.add_button("Forms")
         forms_overlay = FormOverlay(forms_button, context, self.refresh_forms)
@@ -34,7 +34,7 @@ class Builder(Panel):
         variables_button = self.menu_bar.add_button("Variables")
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
-        stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+        # stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
 
         self.update_idletasks()
         self.refresh_nicknames()
@@ -50,6 +50,7 @@ class Builder(Panel):
                 self.show_forms(key)
             else:
                 self.hide_forms(key)
+        self.scrollable.top()
 
     def hide_forms(self, name: str):
         form = self.forms[name]
@@ -68,6 +69,7 @@ class Builder(Panel):
     def refresh_rows(self):
         self.forms["table"].refresh_rows()
         self.forms["modify"].refresh_rows()
+        self.scrollable.top()
 
     def refresh_nicknames(self):
         self.forms["table"].refresh_nicknames()

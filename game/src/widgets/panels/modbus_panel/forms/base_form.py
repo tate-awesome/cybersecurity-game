@@ -35,10 +35,10 @@ class BaseForm(ABC, CTkFrame):
 
         # Create widgets
         self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+        self.attack_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gaptop, padx=self.style.gap)
 
         self.attack_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
-        self.attack_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+        self.attack_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gap, padx=self.style.gap)
 
         # Set function definitions
         self.start_attack = start_attack_func

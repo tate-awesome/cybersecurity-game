@@ -52,7 +52,7 @@ class VariableOverlay:
             # "label": "hreg_8",
             variable_name = self.context.labels["modbus_variables"][slot["label"]]
             var_label = CTkLabel(frame, text=variable_name, font=med)
-            var_label.grid(row=row, column=col, sticky="e")
+            var_label.grid(row=row, column=col, sticky="")
             col += 1
             # "show": 1.0,
             show_checkbox = CTkCheckBox(frame, text="")

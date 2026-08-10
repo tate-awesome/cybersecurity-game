@@ -55,7 +55,7 @@ class Modify(BaseForm):
 
         def label(text):
             label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=self.current_column, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
+            label.grid(row=self.current_row, column=self.current_column, sticky="", pady=self.style.gapbot, padx=self.style.gap)
             self.current_column += 1
             return label
 

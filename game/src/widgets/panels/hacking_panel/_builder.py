@@ -17,21 +17,21 @@ class Builder(Panel):
 
         super().__init__(master, context, "Attacks")
 
-        scrollable = Scrollable(self, context)
+        self.scrollable = Scrollable(self, context)
 
         self.forms = {}
         
-        self.forms["nmap"] = NmapForm(scrollable, context)
-        self.forms["arp"] = ArpForm(scrollable, context)
-        self.forms["dos"] = DosForm(scrollable, context)
-        self.forms["sniff"] = SniffForm(scrollable, context)
-        self.forms["nfq"] = NFQForm(scrollable, context)
+        self.forms["nmap"] = NmapForm(self.scrollable, context)
+        self.forms["arp"] = ArpForm(self.scrollable, context)
+        self.forms["dos"] = DosForm(self.scrollable, context)
+        self.forms["sniff"] = SniffForm(self.scrollable, context)
+        self.forms["nfq"] = NFQForm(self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
         self.refresh_forms()
-        scrollable.columnconfigure(0, weight=1)
-        scrollable.add_deadspace("grid")
+        self.scrollable.columnconfigure(0, weight=1)
+        self.scrollable.add_deadspace("grid")
 
         forms_button = self.menu_bar.add_button("Forms")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
@@ -46,6 +46,7 @@ class Builder(Panel):
                 self.show_form(key)
             else:
                 self.hide_form(key)
+        self.scrollable.top()
 
     def hide_form(self, name: str):
         form = self.forms[name]
