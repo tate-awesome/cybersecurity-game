@@ -57,7 +57,7 @@ const uint16_t HREG_SPEED      = 3;
 const uint16_t HREG_RUDDER     = 4;
 
 const uint16_t HREG_TEMP_EST   = 10;  // == HREG_X_PHYS
-const uint16_t HREG_DAMPER_CMD = 3;   // == HREG_SPEED
+const uint16_t HREG_DAMPER_CMD = 6;   // == HREG_SPEED
 
 float setpoint_temp = 75.2f; // Target room temperature 75.2°F
 
