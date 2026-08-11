@@ -9,8 +9,8 @@ class Builder(Panel):
 
         map = WorldMap(self, context)
 
-        self.menu_bar.minimize_button(map, master)
         self.menu_bar.add_button("Customize")
         self.menu_bar.add_button("Reset View", map.camera.reset_scale)
         self.menu_bar.add_button("Clear Values")
         self.menu_bar.add_button("Center on Boat")
+        self.menu_bar.minimize_button(map, master)

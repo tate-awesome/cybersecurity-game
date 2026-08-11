@@ -14,7 +14,7 @@ class VariableOverlay:
         self.style = context.style
         self.refresh_rows = refresh_rows
         self.refresh_nicknames = refresh_nicknames
-        self.overlay = Overlay(self.context.root, context, button, self.populate_overlay)
+        self.overlay = Overlay(self.context.root, context, button, self.populate_overlay, "east")
 
 
 

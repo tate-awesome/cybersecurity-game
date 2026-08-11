@@ -21,7 +21,6 @@ class Builder(Panel):
         self.treeview, body_container = self.create_treeview(self)
         self.refresh_columns()
 
-        minimize_button = self.menu_bar.minimize_button(body_container, master)
 
         filter_button = self.menu_bar.add_button("Filters")
         filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
@@ -31,6 +30,7 @@ class Builder(Panel):
 
         jump_button = self.menu_bar.reversible_button(
             self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
+        minimize_button = self.menu_bar.minimize_button(body_container, master)
 
         # Printing Flags
         self.jump_to_bottom = True

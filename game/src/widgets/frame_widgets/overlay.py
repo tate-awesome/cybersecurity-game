@@ -7,7 +7,8 @@ class Overlay(CTkFrame):
     CTkFrame that is .place()'d below its trigger button on click. Is also .place_forget()'d when clicking outside the Overlay (this is expected behavior)
     '''
 
-    def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[CTkFrame, None]):
+    def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[CTkFrame, None], anchor="south"):
+        self.anchor = anchor
         self.master = master
         self.context = context
         self.style = context.style
@@ -35,7 +36,7 @@ class Overlay(CTkFrame):
         
         self.populate_func(self)
         self.update_idletasks()
-        safe_x, safe_y = self.calculate_placement()
+        safe_x, safe_y = self.calculate_placement(self.anchor)
         
         self.place(x=safe_x, y=safe_y, anchor="nw")
         self.lift()
@@ -157,56 +158,130 @@ class Overlay(CTkFrame):
             active_button = self.button
         return active_button
     
-    def calculate_placement(self):
+    def calculate_placement(self, anchor):
         # 1. Force initial layout update so button coordinates are accurate
         self.context.root.update_idletasks()
-        
+
         # Scale correction factor
         scale = self.style.get_scale_correction()
-        
+
         # Get current window boundaries
         win_w = self.context.root.winfo_width() / scale
         win_h = self.context.root.winfo_height() / scale
 
         active_button = self.get_button()
-        
-        # 2. Map coordinates relative to the top-left (NW) of the frame instead of center (N)
-        # This aligns the math with your clipping constraints
-        btn_left = (active_button.winfo_rootx() - self.context.root.winfo_rootx()) / scale
+
+        # Button position relative to the root window
+        btn_left = (
+            active_button.winfo_rootx()
+            - self.context.root.winfo_rootx()
+        ) / scale
+
+        btn_top = (
+            active_button.winfo_rooty()
+            - self.context.root.winfo_rooty()
+        ) / scale
+
         btn_w = active_button.winfo_width() / scale
         btn_h = active_button.winfo_height() / scale
         igap = self.style.igap / scale
 
-        # Ideal target: Center the overlay horizontally relative to the button
-        # We will measure the actual width in the next step to offset this properly
-        target_x = btn_left + (btn_w / 2)
-        target_y = btn_left + btn_h + igap
-
-        # 3. Temporarily place the frame out of view to force CustomTkinter to measure its true packed size
+        # 3. Temporarily place the frame out of view to force
+        # CustomTkinter to measure its true packed size
         self.place(x=-1000, y=-1000, anchor="nw")
         self.update_idletasks()
-        
-        # Now these dimensions are 100% accurate
+
         frame_w = self.winfo_width() / scale
         frame_h = self.winfo_height() / scale
-        
-        # 4. Calculate final X (Centered under button, but clamped within left/right window edges)
-        # Start by shifting X left by half the frame width to achieve center-alignment
-        safe_x = target_x - (frame_w / 2)
-        safe_x = min(safe_x, win_w - frame_w) # Prevents right edge clipping
-        safe_x = max(0, safe_x)               # Prevents left edge clipping
-        
-        # 5. Calculate final Y (Check if it clips the bottom, flip above button if it does)
-        ideal_y_below = (active_button.winfo_rooty() - self.context.root.winfo_rooty()) / scale + btn_h + igap
-        ideal_y_above = (active_button.winfo_rooty() - self.context.root.winfo_rooty()) / scale - frame_h - igap
 
-        if ideal_y_below + frame_h > win_h:
-            # If it clips the bottom edge, check if it fits above the button
-            if ideal_y_above >= 0:
-                safe_y = ideal_y_above # Fits perfectly above
+        # Button center points
+        btn_center_x = btn_left + btn_w / 2
+        btn_center_y = btn_top + btn_h / 2
+
+        # ---------------------------------------------------------
+        # NORTH: overlay below button
+        # ---------------------------------------------------------
+        if anchor == "south":
+            safe_x = btn_center_x - frame_w / 2
+            ideal_y = btn_top + btn_h + igap
+            opposite_y = btn_top - frame_h - igap
+
+            # Clamp X to window
+            safe_x = min(safe_x, win_w - frame_w)
+            safe_x = max(0, safe_x)
+
+            # Prefer below, flip above if necessary
+            if ideal_y + frame_h <= win_h:
+                safe_y = ideal_y
+            elif opposite_y >= 0:
+                safe_y = opposite_y
             else:
-                safe_y = max(0, win_h - frame_h) # Window is too small entirely; clamp to bottom edge
+                safe_y = max(0, win_h - frame_h)
+
+        # ---------------------------------------------------------
+        # SOUTH: overlay above button
+        # ---------------------------------------------------------
+        elif anchor == "north":
+            safe_x = btn_center_x - frame_w / 2
+            ideal_y = btn_top - frame_h - igap
+            opposite_y = btn_top + btn_h + igap
+
+            # Clamp X to window
+            safe_x = min(safe_x, win_w - frame_w)
+            safe_x = max(0, safe_x)
+
+            # Prefer above, flip below if necessary
+            if ideal_y >= 0:
+                safe_y = ideal_y
+            elif opposite_y + frame_h <= win_h:
+                safe_y = opposite_y
+            else:
+                safe_y = max(0, min(ideal_y, win_h - frame_h))
+
+        # ---------------------------------------------------------
+        # EAST: overlay to right of button
+        # ---------------------------------------------------------
+        elif anchor == "east":
+            safe_y = btn_center_y - frame_h / 2
+            ideal_x = btn_left + btn_w + igap
+            opposite_x = btn_left - frame_w - igap
+
+            # Clamp Y to window
+            safe_y = min(safe_y, win_h - frame_h)
+            safe_y = max(0, safe_y)
+
+            # Prefer right, flip left if necessary
+            if ideal_x + frame_w <= win_w:
+                safe_x = ideal_x
+            elif opposite_x >= 0:
+                safe_x = opposite_x
+            else:
+                safe_x = max(0, win_w - frame_w)
+
+        # ---------------------------------------------------------
+        # WEST: overlay to left of button
+        # ---------------------------------------------------------
+        elif anchor == "west":
+            safe_y = btn_center_y - frame_h / 2
+            ideal_x = btn_left - frame_w - igap
+            opposite_x = btn_left + btn_w + igap
+
+            # Clamp Y to window
+            safe_y = min(safe_y, win_h - frame_h)
+            safe_y = max(0, safe_y)
+
+            # Prefer left, flip right if necessary
+            if ideal_x >= 0:
+                safe_x = ideal_x
+            elif opposite_x + frame_w <= win_w:
+                safe_x = opposite_x
+            else:
+                safe_x = max(0, min(ideal_x, win_w - frame_w))
+
         else:
-            safe_y = ideal_y_below # Fits perfectly below
-        
+            raise ValueError(
+                f"Invalid anchor '{anchor}'. "
+                "Expected 'north', 'south', 'east', or 'west'."
+            )
+
         return safe_x, safe_y

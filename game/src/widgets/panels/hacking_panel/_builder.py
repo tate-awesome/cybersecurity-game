@@ -33,12 +33,12 @@ class Builder(Panel):
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
 
-        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
         forms_button = self.menu_bar.add_button("Forms")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
         stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
 
     def refresh_forms(self):
