@@ -46,14 +46,14 @@ class ModbusBuffer:
                     "deque": deque(maxlen=self.max_size),
                     "lock": Lock()
                 }
-
-        
-
         self.stripchart_buffers = {}
         self.stripchart_locks = {}
         self.singles = {}
         self.single_times = {}
         self.commands = {}
+        self.reset()
+
+    def reset(self):
         for var_name in self.context.states[self.slot_name]:
             for dir in ["in", "out"]:
                 key = f"{var_name}_{dir}"
@@ -101,47 +101,6 @@ class ModbusBuffer:
         with self.tracer_buffers[f"{variable}_{direction}"]["lock"]:
             snapshot = list(self.tracer_buffers[f"{variable}_{direction}"]["deque"])
         return snapshot
-
-    def purt(self, source: str, purpose: str, pkt: Packet):
-        variables = []
-        values = []
-        if pkt.haslayer(ModbusADURequest):
-            type = "Request"
-        elif pkt.haslayer(ModbusADUResponse):
-            type = "Response"
-        else:
-            type = ""
-
-        if pkt.haslayer("Read Holding Registers Response"):
-            variables = ["speed"]
-            mbl = pkt.getlayer(ModbusADUResponse)
-            values = [self.convert["speed"](mbl.payload.registerVal[0])]
-
-            if len(mbl.payload.registerVal) > 1:
-                variables.append("rudder")
-                values.append(self.convert["rudder"](mbl.payload.registerVal[1]))
-
-        elif pkt.haslayer("Write Single Register"):
-            mbl = pkt.getlayer(ModbusADURequest)
-            if mbl.payload.registerAddr == 10: # X address
-                var = "x"
-            elif mbl.payload.registerAddr == 11: # Y address
-                var = "y"
-            else: # Theta address
-                var = "theta"
-
-            z = mbl.payload.registerValue
-
-            variables = [var]
-            values = [self.convert[var](z)]
-        
-        else:
-            variables = []
-            values = []
-
-        return variables, values
-
-    
 
     def extract_variables(self, pkt: Packet) -> tuple[list[str], list[float]]:
         variables = []
