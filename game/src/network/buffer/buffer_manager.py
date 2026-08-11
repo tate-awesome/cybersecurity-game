@@ -42,6 +42,14 @@ class Buffer:
         self.put_queue.clear()
         self.packets.reset_packet_cursor()
         self.status.reset_cursor()
+        self.modbus.reset()
+        self.submarine.reset()
+        self.hvac.reset()
+
+    def reset_modbus(self):
+        self.modbus.reset()
+        self.submarine.reset()
+        self.hvac.reset()
 
     def start_worker(self):
         if self.worker_thread.is_alive():

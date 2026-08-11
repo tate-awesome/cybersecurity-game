@@ -49,6 +49,11 @@ class MapBuffer:
             "theta": 0.001
         }
 
+        self.path_buffers = {}
+        self.path_locks = {}
+        self.reset()
+
+    def reset(self):
         self.path_buffers = {
             "point_in": list(),
             "simple_in": deque(),
@@ -64,17 +69,6 @@ class MapBuffer:
             "segment": Lock(),
             "segments": Lock()
         }
-
-    def reset(self):
-        # for var_name in self.context.states[self.slot_name]:
-        #     for dir in ["in", "out"]:
-        #         key = f"{var_name}_{dir}"
-        #         self.stripchart_buffers[key] = deque(maxlen=self.max_size)
-        #         self.stripchart_locks[key] = Lock()
-        #         self.singles[key] = None
-        #         self.single_times[key] = time()
-        #     self.commands[var_name] = None
-        ...
     
     def put(self, mpkt: MetaPacket):
         # Modbuffer already has the single values - bearing, rudder, speed

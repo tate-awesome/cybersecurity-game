@@ -25,11 +25,14 @@ class Modify(BaseForm):
             self.add_row(key)
 
         # self.context.animation_manager.add_callback("modbus_table", self.update)
-        self.save_button()
+        self.save_status, self.save_button = self.add_button("Save Modifiers")
         self.bind_input_save()
         self.bind_input_alert()
 
         self.add_attack_button(self.enable_modify, self.disable_modify, self.modify_is_enabled)
+
+        _, reset_button = self.add_button("Reset Modifiers")
+        reset_button.configure(command=self.reset_modifiers)
 
         self.load_saved_input()
 
@@ -107,16 +110,15 @@ class Modify(BaseForm):
             if widget.winfo_ismapped():
                 widget.grid_remove()
 
-    def save_button(self):
-        save_status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
-        save_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gaptop, padx=self.style.gap)
-        self.save_status = save_status
+    def add_button(self, text) -> tuple[CTkLabel, CTkButton]:
+        status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
+        status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gaptop, padx=self.style.gap)
 
-        save_button = CTkButton(self, text="Save Modifiers", font=self.style.get_font(), command=None)
-        save_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gaptop, padx=self.style.gap)
-        self.save_button = save_button
-
+        button = CTkButton(self, text=text, font=self.style.get_font(), command=None)
+        button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gaptop, padx=self.style.gap)
         self.current_row += 1
+
+        return status, button
 
     def bind_input_save(self):
         def save():
@@ -181,4 +183,9 @@ class Modify(BaseForm):
         state = self.context.states["modbus_modify_enabled"]
         if state == 1: return True
         else: return False
-        
+
+    def reset_modifiers(self):
+        for key, row in self.rows.items():
+            self.context.states["modbus_variables"][key]["multiplier"] = 1
+            self.context.states["modbus_variables"][key]["offset"] = 0
+        self.load_saved_input()

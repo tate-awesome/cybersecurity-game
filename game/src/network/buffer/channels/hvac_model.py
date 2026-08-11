@@ -7,3 +7,6 @@ class HouseBuffer:
 
     def put(self, mpkt: MetaPacket):
         ...
+
+    def reset(self):
+        ...
