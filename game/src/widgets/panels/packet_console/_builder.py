@@ -23,14 +23,14 @@ class Builder(Panel):
 
         minimize_button = self.menu_bar.minimize_button(body_container, master)
 
-        jump_button = self.menu_bar.reversible_button(
-            self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
-
         filter_button = self.menu_bar.add_button("Filters")
         filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
 
         columns_button = self.menu_bar.add_button("Columns")
         columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
+
+        jump_button = self.menu_bar.reversible_button(
+            self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
 
         # Printing Flags
         self.jump_to_bottom = True

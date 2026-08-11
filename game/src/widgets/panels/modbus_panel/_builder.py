@@ -31,10 +31,10 @@ class Builder(Panel):
         forms_button = self.menu_bar.add_button("Forms")
         forms_overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
-        clear_button = self.menu_bar.add_button("Clear Readings", self.context.net.buffer.modbus.reset)
 
         variables_button = self.menu_bar.add_button("Variables")
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
+        clear_button = self.menu_bar.add_button("Clear Readings", self.context.net.buffer.modbus.reset)
 
         # stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
 
