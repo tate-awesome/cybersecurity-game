@@ -80,7 +80,7 @@ class MapBuffer:
         # Modbuffer already has the single values - bearing, rudder, speed
         # Only build paths here
 
-        if mpkt.is_useful_modbus and len(mpkt.variables) == 1 and len(mpkt.values) == 1:
+        if mpkt.is_useful_modbus and mpkt.is_primary_modbus and len(mpkt.variables) == 1 and len(mpkt.values) == 1:
             if mpkt.variables[0] in ["hreg_10", "hreg_11"]:
                 variable = self.registers[mpkt.variables[0]]
                 direction = mpkt.direction
