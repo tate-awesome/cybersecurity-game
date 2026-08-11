@@ -41,9 +41,9 @@ class AttackerV0(Page):
         # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
         VariableMonitor(display.pane(1), context, {
-            "Speed": lambda: net.buffer.modbus.get_tracer_data("speed", "in"),
-            "Rudder": lambda: net.buffer.modbus.get_tracer_data("rudder", "in"),
-            "Heading": lambda: net.buffer.modbus.get_tracer_data("theta", "in"),
-            "X Position": lambda: net.buffer.modbus.get_tracer_data("x", "in"),
-            "Y Position": lambda: net.buffer.modbus.get_tracer_data("y", "in"),
+            "Speed": lambda: net.buffer.modbus.get_history("hreg_3", "in"),
+            "Rudder": lambda: net.buffer.modbus.get_history("hreg_4", "in"),
+            "Heading": lambda: net.buffer.modbus.get_history("hreg_12", "in"),
+            "X Position": lambda: net.buffer.modbus.get_history("hreg_10", "in"),
+            "Y Position": lambda: net.buffer.modbus.get_history("hreg_11", "in"),
         })

@@ -12,6 +12,7 @@ class WorldMap(Canvas):
 
         # Create the canvas widget
         super().__init__(master, context, ((0,0),(200,200)))
+        self.buffer = context.net.buffer.submarine
 
         def frame_callback():
 
@@ -27,18 +28,18 @@ class WorldMap(Canvas):
                 self.draw.grid_lines(colors["grid_lines"], colors["grid_axes"])
 
             if int(sprites["path_in"]) == 1:
-                positions = context.net.buffer.map.get_simple_path("in")
+                positions = self.buffer.get_simple_path("in")
                 self.draw.line(positions, colors["path_in"])
-                positions = context.net.buffer.map.get_simple_path("other")
-                self.draw.line(positions, colors["path_in"])
+                positions = self.buffer.get_simple_path("out")
+                self.draw.line(positions, colors["path_out"])
 
             if int(sprites["boat_in"]) == 1:
-                bearing = context.net.buffer.map.get_bearing("in")
-                position = context.net.buffer.map.get_position("in")
+                bearing = self.buffer.get_bearing("in")
+                position = self.buffer.get_position("in")
                 self.draw.boat(position, bearing, colors["boat_in_fill"], colors["boat_in_outline"])
-                bearing = context.net.buffer.map.get_bearing("other")
-                position = context.net.buffer.map.get_position("other")
-                self.draw.boat(position, bearing, colors["boat_in_fill"], colors["boat_in_outline"])
+                bearing = self.buffer.get_bearing("out")
+                position = self.buffer.get_position("out")
+                self.draw.boat(position, bearing, colors["boat_out_fill"], colors["boat_out_outline"])
 
         
         self.set_frame_callback(frame_callback)

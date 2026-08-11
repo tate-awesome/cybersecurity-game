@@ -23,11 +23,11 @@
         "grid_axes": "red",
         "grid_numbers": "white",
         "boat_in_fill": "cyan",
-        "boat_in_outline": "yellow",
-        "boat_out_fill": "cyan",
-        "boat_out_outline": "yellow",
+        "boat_in_outline": "cyan",
         "path_in": "cyan",
-        "path_out": "cyan"
+        "boat_out_fill": "pink",
+        "boat_out_outline": "pink",
+        "path_out": "pink"
     },
 
     "strip_chart_sprites": {
