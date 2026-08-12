@@ -21,6 +21,8 @@ class Style:
         self.PANE_BIG = self.igap*100
         self.fonts = {}
 
+        self.current_theme = "blue"
+
     def add_context(self, context):
         self.context = context
         
@@ -154,3 +156,6 @@ class Style:
                    font=self.get_font(),
                    x_offset=self.igap, y_offset=self.igap, border_width=2,
                    border_color=self.color("accent"))
+
+    def mode(self):
+        return get_appearance_mode()

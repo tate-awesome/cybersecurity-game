@@ -235,6 +235,12 @@ class MenuBar(CTkFrame):
         button = self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
         self.style.add_tooltip(button, "help_button")
 
+    def data_button(self):
+        button = self.add_button("Save Fields", self.context.save_data)
+
+    def preferences_button(self):
+        button = self.add_button("Save Preferences", self.context.save_preferences)
+
     def page_buttons(self):
         self.quit_button()
         self.refresh_button()
@@ -246,4 +252,6 @@ class MenuBar(CTkFrame):
         self.pcap_button()
         self.preset_button()
         self.labels_button()
+        self.data_button()
+        self.preferences_button()
         

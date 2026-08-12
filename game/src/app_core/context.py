@@ -6,6 +6,7 @@ from .style import Style
 from ..network.network_controller import NetworkController
 from .click_manager import ClickManager
 from .animation_manager import AnimationManager
+from .preferences import Preferences
 import os, json, platform
 
 class Context:
@@ -22,8 +23,9 @@ class Context:
 
     def generate(self):
         self.os_name = self.get_os()
-        self.states = self.get_default_settings()
-        self.labels = self.get_default_labels()
+        self.preferences = Preferences()
+        self.states = self.get_preferred_settings()
+        self.labels = self.get_preferred_labels()
         self.net =  NetworkController(self)
         self.create_managers()
 
@@ -41,6 +43,7 @@ class Context:
         if self.net is not None:
             self.net.abort_all()
             self.net = None 
+        self.preferences.clear()
         self.destroy_managers()
 
     def reset(self):
@@ -58,6 +61,14 @@ class Context:
                 base_dict[key] = value
 
         return base_dict
+
+    def get_preferred_settings(self):
+        default = self.get_default_settings()
+        if self.preferences.has("settings"):
+            data = self.deep_merge(default, self.preferences.data["settings"])
+        else:
+            data = default
+        return data
     
     def get_default_settings(self):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -95,6 +106,25 @@ class Context:
 
         merged_settings = self.deep_merge(base_settings, unpacked_settings)
         self.states = merged_settings
+
+    def get_preferred_labels(self):
+        default = self.get_default_labels()
+        if self.preferences.has("labels"):
+            data = self.deep_merge(default, self.preferences.data["labels"])
+        else:
+            data = default
+        return data
+
+    def save_preferences(self):
+        self.preferences.set("labels", self.labels)
+        self.preferences.set("mode", self.style.mode())
+        self.preferences.set("theme", self.style.current_theme)
+        self.preferences.set("page", self.router.current_page)
+        self.preferences.save()
+
+    def save_data(self):
+        self.preferences.set("settings", self.states)
+
 
     def get_default_labels(self):
         data = {}

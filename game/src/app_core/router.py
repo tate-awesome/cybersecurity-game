@@ -37,6 +37,9 @@ class Router:
         self.style.add_context(self.context)
         self.navigation_stack = []
         self.current_frame = None
+        self.current_page = None
+        self.load_preferred_theme()
+        self.load_preferred_mode()
         self.show(start_page)
 
         # Bind window commands (zoom, f11, Quit)
@@ -83,6 +86,7 @@ class Router:
             self.current_frame.destroy()
 
         # Call the page builder
+        self.current_page = next_page
         self.current_frame = pages[next_page](self.context)
 
 
@@ -97,6 +101,7 @@ class Router:
 
     def reset(self):
         self.context.reset()
+        self.refresh_themes()
         self.refresh()
     
 
@@ -114,10 +119,12 @@ class Router:
         '''
         Toggles the appearance mode (light/dark mode)
         '''
-        if get_appearance_mode() == "Dark":
-            set_appearance_mode("Light")
+        mode = get_appearance_mode()
+        if mode  == "Dark":
+            mode = "Light"
         else:
-            set_appearance_mode("Dark")
+            mode = "Dark"
+        set_appearance_mode(mode)
         # set_appearance_mode refreshes all CTk elements automatically, but we have some TK elements and custom colors.
         self.refresh()
     
@@ -171,6 +178,26 @@ class Router:
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])
 
+    def load_preferred_theme(self):
+        if self.context.preferences.has("theme"):
+            file_path = self.context.preferences.data["theme"]
+            try:
+                ThemeManager.load_theme(file_path)
+            except:
+                pass
+        else:
+            ThemeManager.load_theme("blue")
+
+    def load_preferred_mode(self):
+        if self.context.preferences.has("mode"):
+            mode = self.context.preferences.data["mode"]
+            set_appearance_mode(mode)
+        else:
+            set_appearance_mode("Light")
+
+    def refresh_themes(self):
+        self.load_preferred_theme()
+        self.load_preferred_mode()
 
     def select_theme(self):
         '''
@@ -187,6 +214,7 @@ class Router:
             if file_path == "":
                 return
             ThemeManager.load_theme(file_path)
+            self.style.current_theme = file_path
             self.refresh()
         except:
             print("Error in select theme")

@@ -13,6 +13,9 @@ class Title(Page):
         super().__init__(context)
         
         panel = TitleMenu(self, context, "The Game")
+        if self.context.preferences.has("page"):
+            page = self.context.preferences.get("page")
+            panel.button("Resume", lambda: self.router.show(page))
         panel.button("Play", lambda: self.router.show("title/select_mode"))
         panel.button("Open AP Config Page", self.router.open_ap_config_page)
         panel.button("Quit", self.router.quit)
