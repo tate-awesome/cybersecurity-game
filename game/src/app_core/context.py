@@ -39,15 +39,19 @@ class Context:
         if hasattr(self, "animation_manager"):
             self.animation_manager.delete()
 
-    def destroy_context(self):
+    def go_back(self):
+        self.forget_page()
+        self.generate()
+
+    def forget_page(self):
         if self.net is not None:
             self.net.abort_all()
             self.net = None 
-        self.preferences.clear()
         self.destroy_managers()
 
     def reset(self):
-        self.destroy_context()
+        self.preferences.clear()
+        self.forget_page()
         self.generate()
 
     def deep_merge(self, base_dict: dict, better_dict: dict):

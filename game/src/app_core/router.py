@@ -174,7 +174,7 @@ class Router:
         '''
         if len(self.navigation_stack) < 1:
             return
-        self.context.reset()
+        self.context.go_back()
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])
 
