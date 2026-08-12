@@ -23,7 +23,8 @@ class Builder(Panel):
 
 
         filter_button = self.menu_bar.add_button("Filters")
-        filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
+        self.filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
+        self.filter_overlay.compile_filter()
 
         columns_button = self.menu_bar.add_button("Columns")
         columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
@@ -53,12 +54,8 @@ class Builder(Panel):
 
     def print_tick(self):
 
-        # Evaluate default filter (return True)
-        if isinstance(self.context.states["packet_filter_function"]["function"], str):
-            self.context.states["packet_filter_function"]["function"] = eval(self.context.states["packet_filter_function"]["function"])
-
         # Get new packets
-        packets = self.buffer.get_new_packets(self.context.states["packet_filter_function"]["function"], max_return=1000)
+        packets = self.buffer.get_new_packets(self.filter_overlay.function, max_return=1000)
         if not packets:
             return
 

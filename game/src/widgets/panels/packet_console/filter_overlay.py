@@ -132,7 +132,7 @@ class FilterOverlay:
 
     def compile_filter(self):
             '''
-            Compile and save the mpkt filter to self.context.states["packet_filter_function"]["function"]
+            Compile and save the mpkt filter to self.function
             The filter ORs within categories (e.g. show packets with any of these protocols),
             and ANDs between categories (e.g. only show packets that match the source filters AND the protocol filters).
             Save the summary to self.context.states["packet_filter_function"]["summary"]
@@ -176,7 +176,7 @@ class FilterOverlay:
                 return address_condition and checkboxes_condition
             
             # Save the function
-            self.context.states["packet_filter_function"]["function"] = lambda mpkt: packet_filter(mpkt)
+            self.function = lambda mpkt: packet_filter(mpkt)
 
             # Create the summary
             full_summary = "Currently filtering for"
