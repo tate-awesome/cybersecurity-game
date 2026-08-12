@@ -47,7 +47,7 @@ class Scrollable(CTkScrollableFrame):
         canvas.bind("<Enter>", _bind_to_mousewheel)
         canvas.bind("<Leave>", _unbind_from_mousewheel)
 
-    def add_deadspace(self, type: str = "pack", height: float | int = 0.8):
+    def add_deadspace(self, type: str = "pack", height: float | int = 100):
         style = self.context.style
         self.update_idletasks()
         if isinstance(height, float):

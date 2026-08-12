@@ -56,7 +56,7 @@ class Overlay(CTkFrame):
             self.context.overlay_list.append(self)
 
     def click_handler(self, event=None):
-        print("\n\n\nclick")
+        # print("\n\n\nclick")
         
         # 1. Force a single layout update before reading coordinates
         # self.context.root.update_idletasks()
@@ -124,7 +124,7 @@ class Overlay(CTkFrame):
             inside_button = (bx1 <= event.x_root <= bx2 and by1 <= event.y_root <= by2)
         else:
             inside_button = False
-        print(f"{self} - overlay: {inside_overlay}. button: {inside_button}")
+        # print(f"{self} - overlay: {inside_overlay}. button: {inside_button}")
         # Return True if the click hit either area
         return inside_overlay or inside_button
 
