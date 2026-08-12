@@ -38,7 +38,7 @@
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
         "sniff": "Packet Sniffing",
-        "nfq": "MITM Attack",
+        "nfq": "Net Filter Queue",
         "pcap": "PCAP File",
         "TCP": "TCP",
         "ARP": "ARP",

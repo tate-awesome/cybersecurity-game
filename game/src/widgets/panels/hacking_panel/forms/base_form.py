@@ -6,7 +6,7 @@ from .....app_core.context import Context
 class BaseForm(ABC, CTkFrame):
     def __init__(self, master: CTkFrame, context: Context, key: str, attack_noun: str):
         '''
-        attack_noun is used like "start sniffer" "start DoS attack" "stopping MITM attack" "ARP Spoofer is running" "MITM attack is on"
+        attack_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
         '''
 
         self.style = context.style

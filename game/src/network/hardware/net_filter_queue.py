@@ -23,7 +23,7 @@ class NetFilterQueueBaseClass:
 
     def stop(self):
         if not self.is_running():
-            self.buffer.put("nfq", "MITM attack is not running")
+            self.buffer.put("nfq", "NFQ is not running")
             return
         else:
             self.stop_event.set()

@@ -15,11 +15,11 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
     def start(self): 
         if self.is_running():
-            self.buffer.put("nfq", "MITM attack is already running")
+            self.buffer.put("nfq", "NFQ is already running")
             return
         self.running = True
         self.stop_event = threading.Event()
-        self.buffer.put("nfq", "Starting MITM attack")
+        self.buffer.put("nfq", "Starting NFQ")
 
         # Run appropriate packet prerouter
         self.thread = threading.Thread(target=self.start_thread, daemon=True)
