@@ -1,6 +1,4 @@
 from ....app_core.context import Context
-from ....network.meta_packet import MetaPacket
-from ....network.data_buffer import DataBuffer
 from ... import Overlay
 
 from typing import cast
@@ -13,7 +11,6 @@ class FilterOverlay:
     def __init__(self, button, context: Context, refresh_function):
         self.context = context
         self.style = context.style
-        self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
 
         self.filter_columns = {
@@ -22,7 +19,7 @@ class FilterOverlay:
                 "arp",
                 "dos",
                 "sniff",
-                "mitm",
+                "nfq",
                 "pcap"
             ],
             "protocol": [

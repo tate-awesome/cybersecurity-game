@@ -1,6 +1,4 @@
 from customtkinter import CTkTextbox
-from ....network.meta_packet import MetaStatus
-from ....network.data_buffer import DataBuffer
 from ....app_core.context import Context
 from typing import cast
 from ... import MenuBar
@@ -10,7 +8,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, "Status Console")
 
-        self.buffer = context.net.data_buffer
+        self.buffer = context.net.buffer.status
 
         self.text_box = self.create_text_box(self)
 
@@ -25,23 +23,19 @@ class Builder(Panel):
         self.run = True
 
         # Reset print pointer on refresh
-        self.buffer.reset_status_cursor()
+        self.buffer.reset_cursor()
 
         # Start printing loop
         self.start_printing()
         
 
     def start_printing(self):
-        print("start")
         self.run = True
-        self.print_tick()
+        self.context.animation_manager.add_callback("status_console", self.print_tick)
     
     def stop_printing(self):
-        print("stop")
         self.run = False
-        if self.after_id:
-            self.text_box.after_cancel(self.after_id)
-            self.after_id = None
+        self.context.animation_manager.remove_callback("status_console")
 
     def print_tick(self):
         '''
@@ -49,26 +43,15 @@ class Builder(Panel):
         The buffer's getter returns all new lines since the last print, so we don't need to loop.
         Empty lines go after every cluster of statuses
         '''
-        # Get new lines
-        statuses = self.buffer.get_new_statuses()
-        if len(statuses) == 0:
-            # Don't print
-            ...
-        else:
-            # Do print
-            status_strings = [str(status) for status in statuses]
-            text_block = "\n".join(status_strings) + "\n\n"
-            
-            # Add to text box
-            self.text_box.configure(state="normal")
-            self.text_box.insert("end", text_block)
-            self.text_box.configure(state="disabled")
+        text_block = self.buffer.get_new_lines()
+        
+        # Add to text box
+        self.text_box.configure(state="normal")
+        self.text_box.insert("end", text_block)
+        self.text_box.configure(state="disabled")
 
-            if self.jump_to_bottom:
-                self.text_box.see("end")
-
-        if self.run:
-            self.after_id = self.text_box.after(100, self.print_tick)
+        if self.jump_to_bottom and len(text_block) > 0:
+            self.text_box.see("end")
 
     # Text box
     def create_text_box(self, parent):

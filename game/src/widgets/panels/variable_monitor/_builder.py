@@ -1,15 +1,13 @@
 from ....app_core.context import Context
-from ....network.data_buffer import DataBuffer
 from ... import Scrollable
 from ...canvases.strip_chart import StripChart
 from ..panel import Panel
-from typing import cast, Callable
+from typing import Callable
 
 class Builder(Panel):
     def __init__(self, master, context: Context, variables: dict[str, Callable[None, list[float, float]]]):
         super().__init__(master, context, "Variable Monitor")
         self.variables = variables
-        self.buffer = cast(DataBuffer, self.context.net.data_buffer)
 
         scrollable = Scrollable(self, context)
         scrollable.configure(fg_color=self.style.color("panel"))

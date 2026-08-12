@@ -14,7 +14,7 @@ class Canvas(CTkCanvas):
     def __init__(self, master: CTkFrame, context: Context, world_bounds: tuple[tuple[float,float],tuple[float,float]] = ((0.0, 0.0), (0.0, 0.0))):
         '''
         world_bounds defines the world-space domain that the frame_callback will try to draw stuff in.
-        Consider the range of values from the context.net.data_buffer
+        Consider the range of values from the context.net.buffer
         The world position should be relatable to canvas position
         For example:    the frame_callback will draw every boat inside [(0, 0), (200, 200)] - world coordinates
         and:            the frame_callback will draw the past theta values inside [(0, -180), (100, 180)] - graph domains

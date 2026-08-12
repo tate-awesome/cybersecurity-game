@@ -6,7 +6,7 @@ from .style import Style
 from ..network.network_controller import NetworkController
 from .click_manager import ClickManager
 from .animation_manager import AnimationManager
-import os, json
+import os, json, platform
 
 class Context:
     '''
@@ -15,26 +15,88 @@ class Context:
     '''
 
     def __init__(self, root, router, style: Style):
-        self.net =  NetworkController()
-        self.click_manager = ClickManager(root)
-        self.animation_manager = AnimationManager(root)
         self.router = router
         self.root = root
         self.style = style
+        self.generate()
 
-        # Go to assets/presets to edit default values
-        self.states = self.get_base_preset()
-        self.labels = self.get_base_labels()
+    def generate(self):
+        self.os_name = self.get_os()
+        self.states = self.get_default_settings()
+        self.labels = self.get_default_labels()
+        self.net =  NetworkController(self)
+        self.create_managers()
+
+    def create_managers(self):
+        self.click_manager = ClickManager(self.root)
+        self.animation_manager = AnimationManager(self.root)
+
+    def destroy_managers(self):
+        if hasattr(self, "click_manager"):
+            self.click_manager.delete()
+        if hasattr(self, "animation_manager"):
+            self.animation_manager.delete()
+
+    def destroy_context(self):
+        if self.net is not None:
+            self.net.abort_all()
+            self.net = None 
+        self.destroy_managers()
+
+    def reset(self):
+        self.destroy_context()
+        self.generate()
+
+    def deep_merge(self, base_dict: dict, better_dict: dict):
+        for key, value in better_dict.items():
+            if (
+                isinstance(value, dict)
+                and isinstance(base_dict.get(key), dict)
+            ):
+                self.deep_merge(base_dict[key], value)
+            else:
+                base_dict[key] = value
+
+        return base_dict
     
-    def get_base_preset(self):
-        data = {}
+    def get_default_settings(self):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(BASE_DIR, "..", "..", "assets", "presets", "_default.json")
+        file_path = os.path.join(BASE_DIR, "..", "..", "assets", "settings", "_packages", "_default.json")
         with open(file_path) as json_file:
-            data = json.load(json_file)
+            package = json.load(json_file)
+        default = self.unpack_settings(package)
+        return default
+
+    def unpack_settings(self, package: dict):
+        '''
+        returns a merged dict of all the files specified in the given package
+        '''
+        data = {}
+        if "_files" in package.keys():
+            files = package["_files"]
+            for folder, file in files.items():
+                BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+                file_path = os.path.join(BASE_DIR, "..", "..", "assets", "settings", folder, file)
+                with open(file_path) as json_file:
+                    new = json.load(json_file)
+                self.deep_merge(data, new)
+        else:
+            data = package
         return data
-    
-    def get_base_labels(self):
+
+    def add_settings(self, new_settings: dict = {}):
+        '''
+        Loads settings to overwrite parts of the current states
+        If the new settings includes a "_files" key, it will unpack the given files shallowly
+        '''
+        base_settings = self.states.copy()
+
+        unpacked_settings = self.unpack_settings(new_settings)
+
+        merged_settings = self.deep_merge(base_settings, unpacked_settings)
+        self.states = merged_settings
+
+    def get_default_labels(self):
         data = {}
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(BASE_DIR, "..", "..", "assets", "labels", "_default.json")
@@ -42,24 +104,9 @@ class Context:
             data = json.load(json_file)
         return data
 
-    def load_preset(self, preset: dict = {}):
-        '''
-        Loads a preset from a .json file or a provided dictionary.
-        If the preset is missing any values, it will use the default values from get_base_preset() to fill in the gaps.
-        This allows for easy creation of new presets without having to define every single value.
-        Call with preset=None to reset all values to their defaults.
-        '''
-        base_preset = self.get_base_preset()
-
-        merged_preset = {**base_preset, **preset}
-
-        self.states = merged_preset
-
     def load_labels(self, labels: dict = {}):
         base_labels = self.get_base_labels()
-
-        merged_labels = {**base_labels, **labels}
-
+        merged_labels = self.deep_merge(base_labels, labels)
         self.labels = merged_labels
 
 
@@ -78,14 +125,8 @@ class Context:
         if type(self.net) is constructor:
             return self.net
         else:
-            self.net = constructor()
+            self.net = constructor(self)
             return self.net
 
-    def destroy_net(self):
-        if self.net is not None:
-            self.net.abort_all()
-            self.net = None # Set to None is as good as clearing it manually, since all references to the old net will be lost and it will be garbage collected.
-    
-    def destroy_context(self):
-        self.destroy_net()
-        self.load_preset()
+    def get_os(self):
+        return platform.system()

@@ -1,0 +1,17 @@
+{
+
+    "packet_columns": {
+        "time": 1,
+        "number": 0,
+        "length": 0,
+        "observer": 1,
+        "transaction_word": 0,
+        "transaction_ip": 0,
+        "transaction_mac": 0,
+        "layers": 1,
+        "purpose": 1,
+        "summary": 0,
+        "modbus": 1
+    }
+
+}

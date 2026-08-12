@@ -1,18 +1,13 @@
 from ...app_core.context import Context
 
 # Better Widgets
-from ...widgets import Panes, MenuBar
-from ...widgets import HackingPanel, StatusConsole, PacketConsole, NetworkDiagram, BoatModel, VariableMonitor
-
+from ...widgets import *
 # Widgets
 from ...widgets import popup
 from ...pages.page import Page
 
 # Network
 from ...network.network_controller import HardwareAttacker as HardwareNetwork
-
-# Packet
-from ...network.meta_packet import MetaPacket
 
 class AttackerV0(Page):
     '''
@@ -28,29 +23,27 @@ class AttackerV0(Page):
 
         trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
 
-        left_p = trifold.pane(0)       
-        middle_p = trifold.pane(1)
-        right_p = trifold.pane(2)
-
     # Forms
-        hacking_panel = HackingPanel(left_p, context)
+        hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [2.3, 2], False)
+        HackingPanel(hacking_side.pane(0), context)
+        ModbusPanel(hacking_side.pane(1), context)
 
     # Console
-        console = Panes(middle_p, context, "vertical", 3, [3, 3, 3], False)
-        packet_console = PacketConsole(console.pane(0), context)
-        network_visualizer = NetworkDiagram(console.pane(1), context)
-        status_console = StatusConsole(console.pane(2), context)
+        console = Panes(trifold.pane(1), context, "vertical", 3, [3, 3, 3], False)
+        PacketConsole(console.pane(0), context)
+        NetworkDiagram(console.pane(1), context)
+        StatusConsole(console.pane(2), context)
 
 
     # Displays
-        display = Panes(right_p, context, "vertical", 2, [2, 2], False)
-        system_model = BoatModel(display.pane(0), context)
+        display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
+        BoatModel(display.pane(0), context)
         # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
-        monitor = VariableMonitor(display.pane(1), context, {
-            "Speed": lambda: net.data_buffer.get_tracer_data("speed", "other"),
-            "Rudder": lambda: net.data_buffer.get_tracer_data("rudder", "other"),
-            "Heading": lambda: net.data_buffer.get_tracer_data("theta", "other"),
-            "X Position": lambda: net.data_buffer.get_tracer_data("x", "other"),
-            "Y Position": lambda: net.data_buffer.get_tracer_data("y", "other"),
+        VariableMonitor(display.pane(1), context, {
+            "Speed": lambda: net.buffer.modbus.get_history("hreg_3", "in"),
+            "Rudder": lambda: net.buffer.modbus.get_history("hreg_4", "in"),
+            "Heading": lambda: net.buffer.modbus.get_history("hreg_12", "in"),
+            "X Position": lambda: net.buffer.modbus.get_history("hreg_10", "in"),
+            "Y Position": lambda: net.buffer.modbus.get_history("hreg_11", "in"),
         })

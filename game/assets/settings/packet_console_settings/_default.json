@@ -1,0 +1,46 @@
+{
+
+    "packet_filter_checkboxes": {
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "pcap": 0,
+        "TCP": 0,
+        "ARP": 0,
+        "UDP": 0,
+        "DNS": 0,
+        "misc": 0,
+        "MODBUSADU": 0,
+        "WRITE SINGLE REGISTER": 0,
+        "READ HOLDING REGISTERS RESPONSE": 0,
+        "out": 0,
+        "in": 0,
+        "other": 0
+    },
+
+    "packet_filter_entries": {
+        "address_filter": ""
+    },
+
+    "packet_filter_function": {
+        "summary": "Currently filtering for any packets.",
+        "function": "lambda mpkt: True",
+        "secret explanation for awful coding practice": "This is just the default filter on startup. It gets changed to eval() of itself"
+    },
+
+    "packet_columns": {
+        "time": 1,
+        "number": 1,
+        "length": 0,
+        "observer": 0,
+        "transaction_word": 0,
+        "transaction_ip": 0,
+        "transaction_mac": 0,
+        "layers": 0,
+        "purpose": 1,
+        "summary": 1,
+        "modbus": 0
+    }
+}

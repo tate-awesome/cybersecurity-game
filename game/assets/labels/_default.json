@@ -3,8 +3,10 @@
         "time": "Time",
         "number": "No.",
         "length": "Length",
-        "hack_info": "Hack Info",
-        "transaction": "Transaction",
+        "observer": "Observer",
+        "transaction_word": "Sent/Received",
+        "transaction_ip": "IP Origin/Destination",
+        "transaction_mac": "MAC Origin/Destination",
         "layers": "Layers",
         "purpose": "Purpose",
         "summary": "Summary",
@@ -16,8 +18,12 @@
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
         "sniff": "Packet Sniffing",
-        "mitm": "MITM Attack",
-        "mitm2": "MITM Readings"
+        "nfq": "Net Filter Queue"
+    },
+
+    "modbus_forms": {
+        "table": "MITM Readings",
+        "modify": "ModBus Modifiers"
     },
 
     "packet_filter_categories": {
@@ -31,7 +37,7 @@
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
         "sniff": "Packet Sniffing",
-        "mitm": "MITM Attack",
+        "nfq": "MITM Attack",
         "pcap": "PCAP File",
         "TCP": "TCP",
         "ARP": "ARP",
@@ -47,5 +53,66 @@
 
     "packet_filter_entries": {
         "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
+    },
+
+    "tooltips": {
+        "labels_button": "Load localized labels and text from a json file.",
+        "preset_button": "Load options for a specific scenario/lesson.",
+        "pcap_button": "Load a saved pcap file for viewing in this program.",
+        "theme_button": "Choose a CustomTkinter theme from a json file.",
+        "toggle_button": "Toggle between light/dark modes.",
+        "help_button": "View a help message based on your progress.",
+        "back_button": "Return to the title screen of the game.",
+        "reset_button": "Reset the persistent data - attack threads, entries, settings.",
+        "refresh_button": "Rebuild the page without losing persistent data - attack threads, entries, settings.",
+        "quit_button": "Close the program."
+        
+    },
+
+    "modbus_table": {
+        "name": "Variable",
+        "in": "Received",
+        "out": "Sent",
+        "source": "Command",
+        "-": "-"
+    },
+
+    "modbus_modifier": {
+        "variable": "Variable",
+        "multiplier": "Mult",
+        "offset": "Offset"
+    },
+
+    "modbus_variables": {
+        "hreg_1": "HReg 1",
+        "hreg_2": "HReg 2",
+        "hreg_3": "HReg 3",
+        "hreg_4": "HReg 4",
+        "hreg_5": "HReg 5",
+        "hreg_6": "HReg 6",
+        "hreg_7": "HReg 7",
+        "hreg_8": "HReg 8",
+        "hreg_9": "HReg 9",
+        "hreg_10": "HReg 10",
+        "hreg_11": "HReg 11",
+        "hreg_12": "HReg 12",
+        "hreg_13": "HReg 13",
+        "hreg_14": "HReg 14",
+        "hreg_15": "HReg 15",
+
+        "x": "X Position",
+        "y": "Y Position",
+        "theta": "Bearing",
+        "speed": "Speed",
+        "rudder": "Rudder Angle"
+    },
+
+    "modbus_settings": {
+        "label": "Modbus Variable",
+        "show": "Show\nin tables below",
+        "nickname": "Nickname\nfor display",
+        "factor": "Conversion Factor\nunits per raw",
+        "units": "Units\nfor display",
+        "modify": "Modify\nin NFQ callback"
     }
 }

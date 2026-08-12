@@ -1,6 +1,5 @@
 from scapy.contrib.modbus import ModbusADURequest, ModbusADUResponse
 from scapy.all import Packet
-from .mod_table import ModTable
 
 # Safely decodes and modifies modbus packets. 
 
@@ -225,40 +224,3 @@ def print_scannable(pkt, show_transId = False, show_x = True, show_y = True, sho
         print(out)
     else:
         return out
-
-
-def modify_coord(pkt, table: ModTable):
-    mbl = pkt.getlayer(ModbusADURequest)
-
-    if mbl.payload.registerAddr == 10: # X address
-        var = "x"
-    elif mbl.payload.registerAddr == 11: # Y address
-        var = "y"
-    else: # Theta address
-        var = "theta"
-
-    z = mbl.payload.registerValue
-    mult = table.get_raw(var, "mult")
-    offset = table.get_raw(var, "offset")
-    mbl.payload.registerValue = int(z * mult + offset)
-    return pkt
-
-def modify_commands(pkt, table: ModTable):
-    mbl = pkt.getlayer(ModbusADUResponse)
-
-    mult = table.get_raw("speed", "mult")
-    offset = table.get_raw("speed", "offset")
-
-    speed = mbl.payload.registerVal[0]
-    mbl.payload.registerVal[0] = int(speed * mult + offset)
-
-     # Rarely there is no rudder command
-    if len(mbl.payload.registerVal) < 2:
-        return pkt
-
-    mult = table.get_raw("rudder", "mult")
-    offset = table.get_raw("rudder", "offset")
-
-    rudder = mbl.payload.registerVal[1]
-    mbl.payload.registerVal[1] = int(rudder * mult + offset)
-    return pkt

@@ -1,10 +1,9 @@
 from scapy.all import TCP, AsyncSniffer
-from .. import modbus_util as mb
-from ..data_buffer import DataBuffer
+from ..buffer import Buffer
 
 
 class Sniffer:
-    def __init__(self, buffer: DataBuffer):
+    def __init__(self, buffer: Buffer):
         self.sniffer = None
         self.buffer = buffer
 

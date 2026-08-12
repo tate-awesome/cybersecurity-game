@@ -63,3 +63,6 @@ class Scrollable(CTkScrollableFrame):
         elif type == "grid":
             frame.grid(row=100, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
         return frame
+
+    def top(self):
+        self._parent_canvas.yview_moveto(0)

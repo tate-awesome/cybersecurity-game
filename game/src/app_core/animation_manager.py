@@ -45,12 +45,16 @@ class AnimationManager:
         active_callbacks = list(self.callbacks.values())
         
         for callback in active_callbacks:
-            try:
-                callback()
-            except Exception as e:
-                print(f"[AnimationManager] Error executing callback: {e}")
+            # try:
+            callback()
+            # except Exception as e:
+            #     print(f"[AnimationManager] Error executing callback: {e}")
         if self.run:
             self.root.after(self.time, self.do_loop)
 
     def stop_loop(self):
         self.run = False
+
+    def delete(self):
+        self.stop_loop()
+        self.callbacks.clear()

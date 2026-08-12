@@ -1,0 +1,63 @@
+{
+    "modbus_variables": {
+        "hreg_1": {
+            "show": 0
+        },
+        "hreg_2": {
+            "show": 0
+        },
+        "hreg_3": {
+            "label": "hreg_3",
+            "show": 1.0,
+            "nickname": "Heater",
+            "factor": 0.01,
+            "units": "State",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 1
+        },
+        "hreg_4": {
+            "show": 0
+        },
+        "hreg_5": {
+            "show": 0
+        },
+        "hreg_6": {
+            "show": 0
+        },
+        "hreg_7": {
+            "show": 0
+        },
+        "hreg_8": {
+            "show": 0
+        },
+        "hreg_9": {
+            "show": 0
+        },
+        "hreg_10": {
+            "label": "hreg_10",
+            "show": 1.0,
+            "nickname": "Temperature",
+            "factor": 0.01,
+            "units": "Degrees (F)",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 1
+        },
+        "hreg_11": {
+            "show": 0
+        },
+        "hreg_12": {
+            "show": 0
+        },
+        "hreg_13": {
+            "show": 0
+        },
+        "hreg_14": {
+            "show": 0
+        },
+        "hreg_15": {
+            "show": 0
+        }
+    }
+}

@@ -1,4 +1,5 @@
 from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker
+from CTkToolTip import CTkToolTip
 
 class Style:
 
@@ -20,6 +21,8 @@ class Style:
         self.PANE_BIG = self.igap*100
         self.fonts = {}
 
+    def add_context(self, context):
+        self.context = context
         
 
         # DATA_FONT = CTkFont(family="Courier", size=16)
@@ -57,7 +60,7 @@ class Style:
             elif name == "title_btn":
                 self.fonts[name] = CTkFont(size=self.get_font_size("title_btn"))
             elif name == "mono":
-                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("default"))
+                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("small"))
             elif name == "treeview":
                 self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("treeview"))
             elif name == "title":
@@ -78,6 +81,8 @@ class Style:
             size = 20.0
         elif name == "title":
             size = 72
+        elif name == "small":
+            size = 15.0
         return int(size * self.ui_scale / 100.0)
 
     def color(self, type: str) -> str:
@@ -118,10 +123,14 @@ class Style:
                 return int(70*self.get_scale_correction())
             case "length":
                 return int(80*self.get_scale_correction())
-            case "hack_info":
+            case "observer":
                 return int(120*self.get_scale_correction())
-            case "transaction":
-                return int(500*self.get_scale_correction())
+            case "transaction_word":
+                return int(100*self.get_scale_correction())
+            case "transaction_ip":
+                return int(450*self.get_scale_correction())
+            case "transaction_mac":
+                return int(450*self.get_scale_correction())
             case "layers":
                 return int(250*self.get_scale_correction())
             case "purpose":
@@ -137,3 +146,11 @@ class Style:
     
     def pad_corrected(self):
         return int(self.igap * self.get_scale_correction())
+
+    def add_tooltip(self, widget, key: str):
+        CTkToolTip(widget,
+                   self.context.labels["tooltips"][key],
+                   follow=False,
+                   font=self.get_font(),
+                   x_offset=self.igap, y_offset=self.igap, border_width=2,
+                   border_color=self.color("accent"))

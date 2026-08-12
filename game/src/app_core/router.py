@@ -34,6 +34,7 @@ class Router:
         '''
         self.style = Style(root)
         self.context = Context(root, self, self.style)
+        self.style.add_context(self.context)
         self.navigation_stack = []
         self.current_frame = None
         self.show(start_page)
@@ -90,7 +91,13 @@ class Router:
         Refreshes the current page by clearing the root CTk object and rebuilding the current page.
         Useful for updating the UI after changing themes or making changes to the context.
         '''
+        self.context.destroy_managers()
+        self.context.create_managers()
         self.show(self.navigation_stack[-1])
+
+    def reset(self):
+        self.context.reset()
+        self.refresh()
     
 
     def quit(self):
@@ -115,23 +122,23 @@ class Router:
         self.refresh()
     
 
-    def select_preset(self):
+    def select_settings(self):
         '''
         Opens a dialog for the user to select a context preset.
         Context presets populate fields and checkboxes.
         '''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        directory = os.path.join(BASE_DIR, "..", "..", "assets", "presets")
+        directory = os.path.join(BASE_DIR, "..", "..", "assets", "settings")
         file_path = askopenfilename(
         initialdir=directory,
-        title="Select a preset file",
+        title="Select a settings file",
         filetypes=(("json", "*.json"),)
         )
         if file_path == "":
             return
         with open(file_path) as json_file:
             data = json.load(json_file)
-        self.context.load_preset(data)
+        self.context.add_settings(data)
         self.refresh()
 
     def select_labels(self):
@@ -160,7 +167,7 @@ class Router:
         '''
         if len(self.navigation_stack) < 1:
             return
-        self.context.destroy_context()
+        self.context.reset()
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])
 

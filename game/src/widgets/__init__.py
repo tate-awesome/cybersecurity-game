@@ -10,5 +10,6 @@ from .panels.packet_console._builder import Builder as PacketConsole
 from .panels.boat_model._builder import Builder as BoatModel
 from .panels.network_diagram._builder import Builder as NetworkDiagram
 from .panels.variable_monitor._builder import Builder as VariableMonitor
+from .panels.modbus_panel._builder import Builder as ModbusPanel
 
 from .canvases.test_triangle import TriangleCanvas
