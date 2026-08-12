@@ -29,8 +29,9 @@ class Builder(Panel):
         columns_button = self.menu_bar.add_button("Columns")
         columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
 
-        jump_button = self.menu_bar.reversible_button(
-            self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
+        # jump_button = self.menu_bar.reversible_button(
+        #     self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
+        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "Pause", "Unpause")
         minimize_button = self.menu_bar.minimize_button(body_container, master)
 
         # Printing Flags
