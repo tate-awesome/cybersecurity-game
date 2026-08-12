@@ -24,7 +24,7 @@ class VariableOverlay:
         slots = self.context.states[slot_name]
         med = self.style.get_font()
         frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
-        frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
+        frame.pack(side="top", padx=self.style.gap, pady=self.style.gap)
 
 
         row = 0
@@ -52,35 +52,35 @@ class VariableOverlay:
             # "label": "hreg_8",
             variable_name = self.context.labels["modbus_variables"][slot["label"]]
             var_label = CTkLabel(frame, text=variable_name, font=med)
-            var_label.grid(row=row, column=col, sticky="")
+            var_label.grid(row=row, column=col, sticky="", pady=self.style.gap)
             col += 1
             # "show": 1.0,
             show_checkbox = CTkCheckBox(frame, text="")
-            show_checkbox.grid(row=row, column=col, sticky="e", padx=self.style.gap, pady=self.style.gap)
+            show_checkbox.grid(row=row, column=col, sticky="e", padx=self.style.gap, pady=self.style.gapbot)
             self.enrich_checkbox(show_checkbox, slot, "show")
             show_checkboxes.append(show_checkbox)
             col += 1
             # "nickname": "",
             nick_entry = CTkEntry(frame, font=med)
-            nick_entry.grid(row=row, column=col, sticky="ew", padx=self.style.gap, pady=self.style.gap)
+            nick_entry.grid(row=row, column=col, sticky="ew", padx=self.style.gap, pady=self.style.gapbot)
             self.enrich_entry(nick_entry, slot, "nickname")
             nick_entries.append(nick_entry)
             col += 1
             # "factor": 1.0,
             factor_entry = CTkEntry(frame, font=med)
-            factor_entry.grid(row=row, column=col, sticky="", padx=self.style.gap, pady=self.style.gap)
+            factor_entry.grid(row=row, column=col, sticky="", padx=self.style.gap, pady=self.style.gapbot)
             self.enrich_entry(factor_entry, slot, "factor")
             factor_entries.append(factor_entry)
             col += 1
             # "units": "",
             units_entry = CTkEntry(frame, font=med)
-            units_entry.grid(row=row, column=col, sticky="ew", padx=self.style.gap, pady=self.style.gap)
+            units_entry.grid(row=row, column=col, sticky="ew", padx=self.style.gap, pady=self.style.gapbot)
             self.enrich_entry(units_entry, slot, "units")
             units_entries.append(units_entry)
             col += 1
             # "modify": 0
             modify_checkbox = CTkCheckBox(frame, text="")
-            modify_checkbox.grid(row=row, column=col, sticky="e", padx=self.style.gap, pady=self.style.gap)
+            modify_checkbox.grid(row=row, column=col, sticky="e", padx=self.style.gap, pady=self.style.gapbot)
             self.enrich_checkbox(modify_checkbox, slot, "modify")
             modify_checkboxes.append(modify_checkbox)
 
@@ -96,31 +96,31 @@ class VariableOverlay:
             self.clear_entries(units_entries)
             self.deselect_all(modify_checkboxes)
         button = CTkButton(frame, font=med, text="Reset All", command=reset_all)
-        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gap, sticky="e")
+        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gapbot, sticky="e")
         col += 1
         # Show
         button = CTkButton(frame, font=med, text="Select All", command=lambda: self.select_all(show_checkboxes))
-        button.grid(row = row, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row, column = col, padx = self.style.gap, pady=self.style.gapbot)
         button = CTkButton(frame, font=med, text="Deselect All", command=lambda: self.deselect_all(show_checkboxes))
-        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gapbot)
         col += 1
         # Nicknames
         button = CTkButton(frame, font=med, text="Clear All", command=lambda: self.clear_entries(nick_entries))
-        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gapbot)
         col += 1
         # Factors
         button = CTkButton(frame, font=med, text="Reset All", command=lambda: self.set_entries(factor_entries, "1.0"))
-        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gapbot)
         col += 1
         # Units
         button = CTkButton(frame, font=med, text="Clear All", command=lambda: self.clear_entries(units_entries))
-        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gapbot)
         col += 1
         # Modify
         button = CTkButton(frame, font=med, text="Select All", command=lambda: self.select_all(modify_checkboxes))
-        button.grid(row = row, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row, column = col, padx = self.style.gap, pady=self.style.gapbot)
         button = CTkButton(frame, font=med, text="Deselect All", command=lambda: self.deselect_all(modify_checkboxes))
-        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gap)
+        button.grid(row = row+1, column = col, padx = self.style.gap, pady=self.style.gapbot)
         col += 1
 
 
