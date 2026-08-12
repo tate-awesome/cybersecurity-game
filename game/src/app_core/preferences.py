@@ -49,7 +49,6 @@ class Preferences:
             "labels": {},
             "page": "",
             "panes": {}, # TODO save and load pane sizes between refreshes at least
-            "wifi": "", # TODO save wifi connections and allow one-button switching
 
             "settings": {}
         }
