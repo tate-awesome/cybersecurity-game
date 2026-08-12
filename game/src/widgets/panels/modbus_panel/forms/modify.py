@@ -19,10 +19,10 @@ class Modify(BaseForm):
         self.rows = {}
         self.entries = []
 
-        self.add_title_row()
+        self.add_label_row("modbus_modifier", ["variable", "multiplier", "offset"])
 
         for key in self.context.states["modbus_variables"]:
-            self.add_row(key)
+            self.add_var_row(key)
 
         # self.context.animation_manager.add_callback("modbus_table", self.update)
         self.save_status, self.save_button = self.add_button("Save Modifiers")
@@ -36,29 +36,13 @@ class Modify(BaseForm):
 
         self.load_saved_input()
 
-
-    def add_title_row(self):
-        self.current_column = 0
-        def label(text):
-            text = self.context.labels["modbus_modifier_columns"][text]
-            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=self.current_column, sticky="ew", pady=self.style.gap, padx=self.style.gap)
-            self.current_column += 1
-            return label
-        label("variable")
-        label("multiplier")
-        label("offset")
-        self.current_row += 1
-
-    def add_row(self, key):
+    def add_var_row(self, key):
         this_row = {}
-        w = 90
         self.current_column = 0
-        slot = self.context.states["modbus_variables"][key]
 
         def label(text):
             label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=self.current_column, sticky="", pady=self.style.gapbot, padx=self.style.gap)
+            label.grid(row=self.current_row, column=self.current_column, sticky="", pady=self.style.gapbot)
             self.current_column += 1
             return label
 
@@ -75,8 +59,7 @@ class Modify(BaseForm):
         self.rows[key] = this_row
         self.current_row += 1
 
-        if slot["show"] == 0 or slot["show"] == "0":
-            self.hide_row(key)
+        self.row_visibility(key)
 
 
     def refresh_nicknames(self):
@@ -91,31 +74,24 @@ class Modify(BaseForm):
 
     def refresh_rows(self):
         self.update_idletasks()
-        for key, variable in self.context.states["modbus_variables"].items():
-            state = variable["show"]
-            if state == "1" or state == 1:
-                self.show_row(key)
-            else:
-                self.hide_row(key)
+        for key in self.context.states["modbus_variables"]:
+            self.row_visibility(key)
 
-    def show_row(self, key: str):
+    def row_visibility(self, key: str):
+        state = self.context.states["modbus_variables"][key]["show"]
         row = self.rows[key]
         for _, widget in row.items():
-            if not widget.winfo_ismapped():
-                widget.grid()
-
-    def hide_row(self, key: str):
-        row = self.rows[key]
-        for _, widget in row.items():
-            if widget.winfo_ismapped():
+            if (state == 0 or state == "0") and widget.winfo_ismapped():
                 widget.grid_remove()
+            elif (state == 1 or state == "1") and not widget.winfo_ismapped():
+                widget.grid()
 
     def add_button(self, text) -> tuple[CTkLabel, CTkButton]:
         status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
-        status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gaptop, padx=self.style.gap)
+        status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gapbot)
 
         button = CTkButton(self, text=text, font=self.style.get_font(), command=None)
-        button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gaptop, padx=self.style.gap)
+        button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gapbot)
         self.current_row += 1
 
         return status, button
@@ -152,7 +128,6 @@ class Modify(BaseForm):
         for entry in self.entries:
             entry.bind("<Return>", event_callback)
 
-    
     def bind_input_alert(self):
         def alert(event=None):
             self.save_status.configure(text="! Unsaved Modifiers !")
@@ -173,6 +148,8 @@ class Modify(BaseForm):
         
         self.save_status.configure(text="Modifiers Saved.")
 
+    # Enable Modify Button
+
     def enable_modify(self):
         self.context.states["modbus_modify_enabled"] = 1
 
@@ -183,6 +160,8 @@ class Modify(BaseForm):
         state = self.context.states["modbus_modify_enabled"]
         if state == 1: return True
         else: return False
+
+    # Reset button
 
     def reset_modifiers(self):
         for key, row in self.rows.items():

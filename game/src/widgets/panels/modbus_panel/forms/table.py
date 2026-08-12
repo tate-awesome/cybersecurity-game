@@ -19,48 +19,17 @@ class MitmTable(BaseForm):
         # Create value table entries
         self.rows = {}
 
-        self.add_title_row()
+        self.add_label_row("modbus_table", ["name", "in", "out", "source"])
 
         for key in self.context.states["modbus_variables"]:
-            self.add_row(key)
+            labels = self.add_label_row("modbus_table", ["-", "-", "-", "-"])
+            self.rows[key] = {}
+            self.rows[key]["name"] = labels[0]
+            self.rows[key]["incoming"] = labels[1]
+            self.rows[key]["outgoing"] = labels[2]
+            self.rows[key]["source"] = labels[3]
 
         self.context.animation_manager.add_callback("modbus_table", self.update)
-
-
-    def add_title_row(self):
-        self.current_column = 0
-
-        def label(text):
-            text = self.context.labels["modbus_table_columns"][text]
-            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=self.current_column, sticky="ew", pady=self.style.gap, padx=self.style.gap)
-            self.current_column += 1
-            return label
-
-        label("name")
-        label("in")
-        label("out")
-        label("source")
-        self.current_row += 1
-
-    def add_row(self, key):
-        this_row = {}
-        w = 90
-        self.current_column = 0
-        slot = self.context.states["modbus_variables"][key]
-
-        def label(text):
-            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=self.current_column, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
-            self.current_column += 1
-            return label
-
-        this_row["name"] = label("-")
-        this_row["incoming"] = label("-")
-        this_row["outgoing"] = label("-")
-        this_row["source"] = label("-")
-        self.rows[key] = this_row
-        self.current_row += 1
 
     def refresh_nicknames(self):
         for key, row in self.rows.items():

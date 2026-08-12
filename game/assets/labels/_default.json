@@ -69,14 +69,15 @@
         
     },
 
-    "modbus_table_columns": {
+    "modbus_table": {
         "name": "Variable",
         "in": "Received",
         "out": "Sent",
-        "source": "Command"
+        "source": "Command",
+        "-": "-"
     },
 
-    "modbus_modifier_columns": {
+    "modbus_modifier": {
         "variable": "Variable",
         "multiplier": "Mult",
         "offset": "Offset"

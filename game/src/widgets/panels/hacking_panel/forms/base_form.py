@@ -30,7 +30,7 @@ class BaseForm(ABC, CTkFrame):
 
     def add_header(self, text: str):
         self.header = CTkLabel(self, text=text, font=self.style.get_font())
-        self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
+        self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gap)
         self.current_row += 1
 
     def add_labeled_entry(self, label: str):
@@ -41,10 +41,10 @@ class BaseForm(ABC, CTkFrame):
 
         # Create widgets
         label = CTkLabel(self, text=label, font=self.style.get_font(), anchor="e")
-        label.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+        label.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
 
         entry = CTkEntry(self, font=self.style.get_font())
-        entry.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gaptop, padx=self.style.gap)
+        entry.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
         self.entries.append(entry)
 
         # Bind autosave
@@ -70,10 +70,10 @@ class BaseForm(ABC, CTkFrame):
 
         # Create widgets
         self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+        self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
 
         self.attack_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
-        self.attack_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+        self.attack_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
 
         # Set function definitions
         self.start_attack = start_attack_func
@@ -122,10 +122,10 @@ class BaseForm(ABC, CTkFrame):
     def add_button(self, default_status: str = "", button_text: str= "", button_func: Callable = None):
         # Create widgets
         status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gaptop, padx=self.style.gap)
+        status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
 
         button = CTkButton(self, text=button_text, font=self.style.get_font(), command=button_func)
-        button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gap, padx=self.style.gap)
+        button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
 
         # Update current index
         self.current_row += 1

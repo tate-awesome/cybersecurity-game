@@ -12,7 +12,6 @@ class BaseForm(ABC, CTkFrame):
         self.style = context.style
         self.context = context
         self.attack_noun = attack_noun
-        self.key = "modify"
 
         super().__init__(master, fg_color=self.style.color("widget"))
 
@@ -25,8 +24,20 @@ class BaseForm(ABC, CTkFrame):
 
     def add_header(self, text: str):
         self.header = CTkLabel(self, text=text, font=self.style.get_font())
-        self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gaptop)
+        self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gap)
         self.current_row += 1
+
+    def add_label_row(self, label_slot: str, label_keys: list[str]) -> list[CTkLabel]:
+        column = 0
+        output = []
+        for key in label_keys:
+            text = self.context.labels[label_slot][key]
+            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
+            label.grid(row=self.current_row, column=column, sticky="ew", pady=self.style.gapbot, padx=self.style.nogap)
+            column += 1
+            output.append(label)
+        self.current_row += 1
+        return output
 
     def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[[None], bool], default_status: str = ""):
     
@@ -35,10 +46,10 @@ class BaseForm(ABC, CTkFrame):
 
         # Create widgets
         self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        self.attack_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gaptop, padx=self.style.gap)
+        self.attack_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gapbot)
 
         self.attack_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
-        self.attack_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gap, padx=self.style.gap)
+        self.attack_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gapbot)
 
         # Set function definitions
         self.start_attack = start_attack_func
@@ -62,7 +73,6 @@ class BaseForm(ABC, CTkFrame):
         self.has_attack_button = True
 
     def click_start(self):
-        self.context.states["game_progress"][self.key] = 1
         self.attack_button.configure(text=f"Starting {self.attack_noun}...")
         self.start_attack()
         self.context.root.update_idletasks()
