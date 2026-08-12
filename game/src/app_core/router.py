@@ -160,7 +160,7 @@ class Router:
         title="Select a labels file",
         filetypes=(("json", "*.json"),)
         )
-        if file_path == "":
+        if file_path == "" or not isinstance(file_path, str):
             return
         with open(file_path) as json_file:
             data = json.load(json_file)

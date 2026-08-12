@@ -63,7 +63,7 @@ class BaseForm(ABC, CTkFrame):
 
         return label, entry
 
-    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[None, bool], default_status: str = ""):
+    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[[None], bool], default_status: str = ""):
 
         if self.has_attack_button:
             return
@@ -99,8 +99,8 @@ class BaseForm(ABC, CTkFrame):
     def click_start(self):
         self.context.states["game_progress"][self.key] = 1
         self.attack_button.configure(text=f"Starting {self.attack_noun}...")
-        self.start_attack()
         self.context.root.update_idletasks()
+        self.start_attack()
         self.configure_on()
     
     def configure_on(self):
@@ -111,8 +111,8 @@ class BaseForm(ABC, CTkFrame):
         if not self.has_attack_button:
             return
         self.attack_button.configure(text=f"Stopping {self.attack_noun}...")
-        self.stop_attack()
         self.context.root.update_idletasks()
+        self.stop_attack()
         self.configure_off()
     
     def configure_off(self):

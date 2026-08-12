@@ -8,6 +8,7 @@ from .forms.dos import DosForm
 from .forms.sniff import SniffForm
 from .forms.nfq import NFQForm
 from .form_overlay import FormOverlay
+from .forms.wifi import WifiForm
 
 from ....widgets import Scrollable, MenuBar, Overlay
 
@@ -20,7 +21,8 @@ class Builder(Panel):
         self.scrollable = Scrollable(self, context)
 
         self.forms = {}
-        
+
+        self.forms["wifi"] = WifiForm(self.scrollable, context)
         self.forms["nmap"] = NmapForm(self.scrollable, context)
         self.forms["arp"] = ArpForm(self.scrollable, context)
         self.forms["dos"] = DosForm(self.scrollable, context)

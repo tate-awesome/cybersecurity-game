@@ -1,4 +1,4 @@
-from .hardware import arp_spoofing, sniffing, nmap, dos
+from .hardware import arp_spoofing, sniffing, nmap, dos, wifi
 from .virtual import master, slave
 from .saved import loader
 from .buffer import Buffer
@@ -16,8 +16,18 @@ class NetworkController:
 class HardwareController(NetworkController):
     def __init__(self, context):
         super().__init__(context)
+        self.wifi = wifi.Wifi(self.buffer)
         self.nmap = nmap.NMapper(self.buffer)
         self.sniffer = sniffing.Sniffer(self.buffer)
+
+    def start_wifi(self, match_name: str):
+        self.wifi.start(match_name)
+
+    def wifi_is_running(self):
+        self.wifi.is_running()
+
+    def stop_wifi(self):
+        self.wifi.stop()
 
     def do_nmap(self):
         self.nmap.do_nmap()
@@ -33,6 +43,7 @@ class HardwareController(NetworkController):
     
     def abort_all(self):
         super().abort_all()
+        self.stop_wifi()
         self.stop_sniff()
     
 class HardwareAttacker(HardwareController):
