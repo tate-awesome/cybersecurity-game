@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 
 # Better Widgets
 from ...widgets import *

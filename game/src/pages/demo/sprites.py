@@ -1,5 +1,5 @@
 from ...widgets.map import Map
-from ...app_core.context import Context
+from ...app_core import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort

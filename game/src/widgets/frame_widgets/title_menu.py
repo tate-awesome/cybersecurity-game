@@ -1,5 +1,5 @@
 from customtkinter import *
-from ...app_core.context import Context
+from ...app_core import Context
 
 class TitleMenu(CTkFrame):
     '''

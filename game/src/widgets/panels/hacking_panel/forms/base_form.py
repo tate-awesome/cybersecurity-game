@@ -1,7 +1,7 @@
 from customtkinter import CTkFrame, CTkEntry, CTkLabel, CTkButton
 from abc import ABC, abstractmethod
 from typing import Callable
-from .....app_core.context import Context
+from .....app_core import Context
 
 class BaseForm(ABC, CTkFrame):
     def __init__(self, master: CTkFrame, context: Context, key: str, attack_noun: str):

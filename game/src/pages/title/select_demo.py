@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 from ...widgets import TitleMenu
 from ..page import Page
 from ..demo.v0.main import run

@@ -1,6 +1,6 @@
 from .core.canvas import Canvas
 from customtkinter import CTkFrame
-from ...app_core.context import Context
+from ...app_core import Context
 
 
 class WorldMap(Canvas):

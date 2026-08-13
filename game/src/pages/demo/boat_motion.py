@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 from ...drawing.viewport import ViewPort
 from ...drawing import sprites
 from ...widgets.map import Map

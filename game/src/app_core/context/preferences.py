@@ -1,33 +1,32 @@
 import json, os
 
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .. import Context
+
 class Preferences:
-    def __init__(self):
+    def __init__(self, context: "Context"):
         '''
         Manages persistent data across multiple sessions.
         Created before the root in App().
         Other classes use it to populate their fields.
         '''
+        self.context = context
         self.data = dict()
         self.load()
 
     def load(self):
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(BASE_DIR, "..", "..", "assets", "preferences", "preferences.json")
-        try:
-            with open(file_path) as json_file:
-                data = json.load(json_file)
-        except:
-            data = {}
-            pass
+        data = {}
+        path = self.context.paths.preferences / "preferences.json"
+        self.context.json.merge_from_file(data, path)
         
         for key, value in data.items():
             self.data[key] = value
 
     def save(self):
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(BASE_DIR, "..", "..", "assets", "preferences", "preferences.json")
-        with open(file_path, "w") as file:
-            json.dump(self.data, file)
+        path = self.context.paths.preferences / "preferences.json"
+        self.context.json.save_to_file(self.data, path)
 
     def has(self, key: str):
         if key in self.data.keys() and len(self.data[key]) > 0:
@@ -53,3 +52,14 @@ class Preferences:
             "settings": {}
         }
         self.save()
+
+    def save_settings(self):
+        self.set("settings", self.context.states)
+
+    def save_preferences(self):
+        self.set("labels", self.context.labels)
+        self.set("mode", self.context.style.mode())
+        self.set("theme", self.context.style.current_theme)
+
+    def save_page(self):
+        self.set("page", self.context.router.current_page)

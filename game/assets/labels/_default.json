@@ -64,10 +64,12 @@
         "toggle_button": "Toggle between light/dark modes.",
         "help_button": "View a help message based on your progress.",
         "back_button": "Return to the title screen of the game.",
-        "reset_button": "Reset the persistent data - attack threads, entries, settings.",
+        "reset_button": "Wipes preferences file and refreshes the page.",
         "refresh_button": "Rebuild the page without losing persistent data - attack threads, entries, settings.",
-        "quit_button": "Close the program."
-        
+        "quit_button": "Close the program.",
+        "preferences_button": "Saves the current theme, mode, and localization for next time.",
+        "fields_button": "Saves the current checkboxes and entries for next time.",
+        "page_button": "Save the current page for a shortcut on startup."
     },
 
     "modbus_table": {

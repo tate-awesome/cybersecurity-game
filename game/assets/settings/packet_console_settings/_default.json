@@ -1,4 +1,7 @@
 {
+    "_files": {
+        "_packages": "_default.json"
+    },
 
     "packet_filter_checkboxes": {
         "nmap": 0,

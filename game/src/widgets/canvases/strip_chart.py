@@ -1,6 +1,6 @@
 from .time_core.stripchart import StripChartBase
 from customtkinter import CTkFrame
-from ...app_core.context import Context
+from ...app_core import Context
 from typing import Callable
 
 

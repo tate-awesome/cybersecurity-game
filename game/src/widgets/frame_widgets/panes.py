@@ -1,6 +1,6 @@
 from tkinter import PanedWindow
 from customtkinter import CTkFrame
-from ...app_core.context import Context
+from ...app_core import Context
 
 class Panes(PanedWindow):
 

@@ -2,9 +2,7 @@ from customtkinter import CTk, get_appearance_mode, set_appearance_mode, ThemeMa
 from tkinter.filedialog import askopenfilename
 import os, json, webbrowser, subprocess
 
-from .context import Context
-from .style import Style
-from .keybinds import KeyBinds
+from . import Context
 
 # Import page builder objects here
 # /demo
@@ -32,19 +30,12 @@ class Router:
         '''
         Creates the app's Context object and shows the first page.
         '''
-        self.style = Style(root)
-        self.context = Context(root, self, self.style)
-        self.style.add_context(self.context)
+        self.context = Context(root, self)
+        self.style = self.context.style
         self.navigation_stack = []
         self.current_frame = None
         self.current_page = None
-        self.load_preferred_theme()
-        self.load_preferred_mode()
         self.show(start_page)
-
-        # Bind window commands (zoom, f11, Quit)
-        KeyBinds(root, self.style, self.refresh, self.quit)
-
 
     def show(self, next_page: str):
         '''
@@ -89,84 +80,21 @@ class Router:
         self.current_page = next_page
         self.current_frame = pages[next_page](self.context)
 
-
     def refresh(self):
         '''
         Refreshes the current page by clearing the root CTk object and rebuilding the current page.
         Useful for updating the UI after changing themes or making changes to the context.
         '''
-        self.context.destroy_managers()
-        self.context.create_managers()
+        self.context.reset_build()
         self.show(self.navigation_stack[-1])
-
-    def reset(self):
-        self.context.reset()
-        self.refresh_themes()
-        self.refresh()
-    
 
     def quit(self):
         '''
         Deletes all ongoing processes and destroys the CTk root.
         Called on Close event or by the Quit button.
         '''
-        if self.context.net is not None:
-            self.context.net.abort_all()
+        self.context.reset_page()
         self.context.root.destroy()
-
-
-    def mode_toggle(self):
-        '''
-        Toggles the appearance mode (light/dark mode)
-        '''
-        mode = get_appearance_mode()
-        if mode  == "Dark":
-            mode = "Light"
-        else:
-            mode = "Dark"
-        set_appearance_mode(mode)
-        # set_appearance_mode refreshes all CTk elements automatically, but we have some TK elements and custom colors.
-        self.refresh()
-    
-
-    def select_settings(self):
-        '''
-        Opens a dialog for the user to select a context preset.
-        Context presets populate fields and checkboxes.
-        '''
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        directory = os.path.join(BASE_DIR, "..", "..", "assets", "settings")
-        file_path = askopenfilename(
-        initialdir=directory,
-        title="Select a settings file",
-        filetypes=(("json", "*.json"),)
-        )
-        if file_path == "":
-            return
-        with open(file_path) as json_file:
-            data = json.load(json_file)
-        self.context.add_settings(data)
-        self.refresh()
-
-    def select_labels(self):
-        '''
-        Opens a dialog for the user to select a context labels
-        Context labels change text in labels
-        '''
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        directory = os.path.join(BASE_DIR, "..", "..", "assets", "labels")
-        file_path = askopenfilename(
-        initialdir=directory,
-        title="Select a labels file",
-        filetypes=(("json", "*.json"),)
-        )
-        if file_path == "" or not isinstance(file_path, str):
-            return
-        with open(file_path) as json_file:
-            data = json.load(json_file)
-        self.context.load_labels(data)
-        self.refresh()
-
     
     def go_back(self):
         '''
@@ -174,61 +102,6 @@ class Router:
         '''
         if len(self.navigation_stack) < 1:
             return
-        self.context.go_back()
+        self.context.reset_page()
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])
-
-    def load_preferred_theme(self):
-        if self.context.preferences.has("theme"):
-            file_path = self.context.preferences.data["theme"]
-            try:
-                ThemeManager.load_theme(file_path)
-            except:
-                pass
-        else:
-            ThemeManager.load_theme("blue")
-
-    def load_preferred_mode(self):
-        if self.context.preferences.has("mode"):
-            mode = self.context.preferences.data["mode"]
-            set_appearance_mode(mode)
-        else:
-            set_appearance_mode("Light")
-
-    def refresh_themes(self):
-        self.load_preferred_theme()
-        self.load_preferred_mode()
-
-    def select_theme(self):
-        '''
-        Opens a dialog for the user to select a CTk theme.
-        '''
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        themes_dir = os.path.join(BASE_DIR, "..", "..", "assets", "themes")
-        try:
-            file_path = askopenfilename(
-                initialdir=themes_dir,
-                title="Select a theme file",
-                filetypes=(("json", "*.json"),)
-            )
-            if file_path == "":
-                return
-            ThemeManager.load_theme(file_path)
-            self.style.current_theme = file_path
-            self.refresh()
-        except:
-            print("Error in select theme")
-        finally:
-            return
-        
-    def open_ap_config_page(self):
-        url = "http://192.168.4.1"
-
-        sudo_user = os.environ.get("SUDO_USER")
-
-        if sudo_user:
-            # Open browser as not sudo
-            subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", url])
-        else:
-            # 3. Fallback for when you run the script normally without sudo
-            webbrowser.open(url)

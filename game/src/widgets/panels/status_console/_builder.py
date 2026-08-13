@@ -1,5 +1,5 @@
 from customtkinter import CTkTextbox
-from ....app_core.context import Context
+from ....app_core import Context
 from typing import cast
 from ... import MenuBar
 from ..panel import Panel

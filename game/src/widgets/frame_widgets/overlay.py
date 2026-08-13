@@ -1,5 +1,5 @@
 from customtkinter import CTkFrame, CTkButton
-from ...app_core.context import Context
+from ...app_core import Context
 from typing import Callable
 
 class Overlay(CTkFrame):

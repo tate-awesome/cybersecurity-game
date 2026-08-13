@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 from customtkinter import *
 from ..popup import message
 from .overlay import Overlay
@@ -204,7 +204,7 @@ class MenuBar(CTkFrame):
         self.style.add_tooltip(button, "refresh_button")
 
     def reset_button(self):
-        button = self.add_button("Reset", self.context.router.reset)
+        button = self.add_button("Reset", self.context.reset_data)
         self.style.add_tooltip(button, "reset_button")
 
     def back_button(self):
@@ -212,11 +212,11 @@ class MenuBar(CTkFrame):
         self.style.add_tooltip(button, "back_button")
     
     def toggle_button(self):
-        button = self.add_button("Toggle Theme", self.context.router.mode_toggle)
+        button = self.add_button("Toggle Theme", self.context.style.toggle_mode)
         self.style.add_tooltip(button, "toggle_button")
     
     def theme_button(self):
-        button = self.add_button("Select Theme", self.context.router.select_theme)
+        button = self.add_button("Select Theme", self.context.style.select_theme)
         self.style.add_tooltip(button, "theme_button")
 
     def pcap_button(self):
@@ -224,11 +224,11 @@ class MenuBar(CTkFrame):
         self.style.add_tooltip(button, "pcap_button")
     
     def preset_button(self):
-        button = self.add_button("Load Preset", self.context.router.select_settings)
+        button = self.add_button("Load Preset", self.context.select_settings)
         self.style.add_tooltip(button, "preset_button")
     
     def labels_button(self):
-        button = self.add_button("Load Labels", self.context.router.select_labels)
+        button = self.add_button("Load Labels", self.context.select_labels)
         self.style.add_tooltip(button, "labels_button")
     
     def help_button(self):
@@ -236,10 +236,16 @@ class MenuBar(CTkFrame):
         self.style.add_tooltip(button, "help_button")
 
     def data_button(self):
-        button = self.add_button("Save Fields", self.context.save_data)
+        button = self.add_button("Save Fields", self.context.preferences.save_settings)
+        self.style.add_tooltip(button, "fields_button")
 
     def preferences_button(self):
-        button = self.add_button("Save Preferences", self.context.save_preferences)
+        button = self.add_button("Save Preferences", self.context.preferences.save_preferences)
+        self.style.add_tooltip(button, "preferences_button")
+
+    def page_button(self):
+        button = self.add_button("Favorite Page", self.context.preferences.save_page)
+        self.style.add_tooltip(button, "page_button")
 
     def page_buttons(self):
         self.quit_button()
@@ -254,4 +260,5 @@ class MenuBar(CTkFrame):
         self.labels_button()
         self.data_button()
         self.preferences_button()
+        self.page_button()
         

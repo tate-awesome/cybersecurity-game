@@ -2,7 +2,7 @@ from customtkinter import *
 
 from .filter_overlay import FilterOverlay
 from .column_overlay import ColumnOverlay
-from ....app_core.context import Context
+from ....app_core import Context
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tkfont

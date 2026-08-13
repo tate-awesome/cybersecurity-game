@@ -1,5 +1,5 @@
 from ..page import Page
-from ...app_core.context import Context
+from ...app_core import Context
 from ...widgets import TitleMenu
 
 
@@ -17,5 +17,5 @@ class Title(Page):
             page = self.context.preferences.get("page")
             panel.button("Resume", lambda: self.router.show(page))
         panel.button("Play", lambda: self.router.show("title/select_mode"))
-        panel.button("Open AP Config Page", self.router.open_ap_config_page)
+        panel.button("Open AP Config Page", self.context.open_ap_config_page)
         panel.button("Quit", self.router.quit)

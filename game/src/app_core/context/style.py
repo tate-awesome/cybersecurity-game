@@ -1,9 +1,13 @@
-from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker
+from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker, set_appearance_mode
 from CTkToolTip import CTkToolTip
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .. import Context
 
 class Style:
 
-    def __init__(self, root):
+    def __init__(self, root, context: "Context"):
 
         self.ui_scale = 100.0
         self.ui_scales = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 133, 140, 150, 175, 200, 250, 300, 400, 500]
@@ -22,10 +26,7 @@ class Style:
         self.fonts = {}
 
         self.current_theme = "blue"
-
-    def add_context(self, context):
-        self.context = context
-        
+        self.context = context        
 
         # DATA_FONT = CTkFont(family="Courier", size=16)
 # HEADER_FONT = CTkFont(family="Arial", size=24)
@@ -159,3 +160,49 @@ class Style:
 
     def mode(self):
         return get_appearance_mode()
+
+    def load_preferred_theme(self):
+        if self.context.preferences.has("theme"):
+            file_path = self.context.preferences.data["theme"]
+            try:
+                ThemeManager.load_theme(file_path)
+            except:
+                pass
+        else:
+            ThemeManager.load_theme("blue")
+
+    def load_default_theme(self):
+        ThemeManager.load_theme("blue")
+
+    def load_preferred_mode(self):
+        if self.context.preferences.has("mode"):
+            mode = self.context.preferences.data["mode"]
+            set_appearance_mode(mode)
+        else:
+            set_appearance_mode("Light")
+
+    def load_default_mode(self):
+        set_appearance_mode("Light")
+
+    def toggle_mode(self):
+        '''
+        Toggles the appearance mode (light/dark mode)
+        '''
+        mode = get_appearance_mode()
+        if mode  == "Dark":
+            mode = "Light"
+        else:
+            mode = "Dark"
+        set_appearance_mode(mode)
+        # set_appearance_mode refreshes all CTk elements automatically, but we have some TK elements and custom colors.
+        self.context.router.refresh()
+
+    def select_theme(self):
+        '''
+        Opens a dialog for the user to select a CTk theme.
+        '''
+        themes_dir = self.context.paths.themes
+        file_path = self.context.paths.select_path(themes_dir, "Select a Theme File")
+        ThemeManager.load_theme(file_path)
+        self.current_theme = file_path
+        self.context.router.refresh()

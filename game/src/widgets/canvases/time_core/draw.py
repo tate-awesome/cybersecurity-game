@@ -1,5 +1,5 @@
 from customtkinter import CTkCanvas
-from....app_core.context import Context
+from....app_core import Context
 from .camera import Camera
 from . import transforms as t
 import math, time

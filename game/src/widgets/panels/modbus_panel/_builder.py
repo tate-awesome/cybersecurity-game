@@ -1,5 +1,5 @@
 from customtkinter import CTkFrame
-from ....app_core.context import Context
+from ....app_core import Context
 from ..panel import Panel
 
 from .forms.table import MitmTable

@@ -1,4 +1,4 @@
-from ....app_core.context import Context
+from ....app_core import Context
 from ... import Scrollable
 from ...canvases.strip_chart import StripChart
 from ..panel import Panel

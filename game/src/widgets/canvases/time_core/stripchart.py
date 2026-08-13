@@ -1,5 +1,5 @@
 from customtkinter import CTkCanvas, CTkFrame
-from ....app_core.context import Context
+from ....app_core import Context
 from .draw import Draw
 from .camera import Camera
 from typing import Callable

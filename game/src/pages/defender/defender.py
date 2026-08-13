@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 
 # Widgets
 from ...widgets import Panes, MenuBar, Scrollable

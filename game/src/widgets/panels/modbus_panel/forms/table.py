@@ -1,5 +1,5 @@
 from customtkinter import CTkFrame, CTkLabel
-from .....app_core.context import Context
+from .....app_core import Context
 from .base_form import BaseForm
 
 class MitmTable(BaseForm):
