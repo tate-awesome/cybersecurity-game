@@ -86,6 +86,7 @@ class Router:
         Useful for updating the UI after changing themes or making changes to the context.
         '''
         self.context.reset_build()
+        self.context.start_build()
         self.show(self.navigation_stack[-1])
 
     def quit(self):
@@ -93,6 +94,7 @@ class Router:
         Deletes all ongoing processes and destroys the CTk root.
         Called on Close event or by the Quit button.
         '''
+        self.context.reset_build()
         self.context.reset_page()
         self.context.root.destroy()
     
@@ -102,6 +104,7 @@ class Router:
         '''
         if len(self.navigation_stack) < 1:
             return
+        self.context.reset_build()
         self.context.reset_page()
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])

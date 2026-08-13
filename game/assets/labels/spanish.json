@@ -22,6 +22,50 @@
         "nfq": "Cola de filtrado de red"
     },
 
+    "hacking_panels": {
+        "wifi_on": "Conectado.",
+        "wifi_off": "Desconectado.",
+        "wifi_start": "Conectarse al WiFi",
+        "wifi_starting": "Conectando...",
+        "wifi_stop": "Desconectar",
+        "wifi_stopping": "Desconectando...",
+
+        "nmap_on": "",
+        "nmap_off": "",
+        "nmap_start": "",
+        "nmap_starting": "",
+        "nmap_stop": "",
+        "nmap_stopping": "",
+
+        "arp_on": "La suplantación está activa",
+        "arp_off": "La suplantación está desactivada",
+        "arp_start": "Iniciar suplantador",
+        "arp_starting": "Iniciando...",
+        "arp_stop": "Detener suplantador",
+        "arp_stopping": "Deteniendo...",
+
+        "dos_on": "El DoS está activo",
+        "dos_off": "El DoS está desactivado",
+        "dos_start": "Iniciar ataque",
+        "dos_starting": "Iniciando...",
+        "dos_stop": "Detener ataque",
+        "dos_stopping": "Deteniendo...",
+
+        "sniff_on": "El capturador está activo",
+        "sniff_off": "El capturador está desactivado",
+        "sniff_start": "Iniciar captura",
+        "sniff_starting": "Iniciando...",
+        "sniff_stop": "Detener captura",
+        "sniff_stopping": "Deteniendo...",
+
+        "nfq_on": "NFQ está activo",
+        "nfq_off": "NFQ está desactivado",
+        "nfq_start": "Iniciar NFQ",
+        "nfq_starting": "Iniciando...",
+        "nfq_stop": "Detener NFQ",
+        "nfq_stopping": "Deteniendo..."
+    },
+
     "modbus_forms": {
         "table": "Lecturas MITM",
         "modify": "Modificadores de ModBus"

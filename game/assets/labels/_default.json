@@ -63,7 +63,7 @@
         "nfq_start": "Start NFQ",
         "nfq_starting": "Starting...",
         "nfq_stop": "Stop NFQ",
-        "nfq_stopping": "Stopping"
+        "nfq_stopping": "Stopping..."
     },
 
     "modbus_forms": {
