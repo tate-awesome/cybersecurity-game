@@ -11,12 +11,13 @@ import threading
 import time
 
 import requests
-from customtkinter import CTkButton, CTkEntry, CTkFrame, CTkLabel
+from customtkinter import CTkButton, CTkEntry, CTkFrame, CTkLabel, CTkSlider
 
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from ...widgets import popup
 
 # Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette.
 # Not pulled from the app's Style object on purpose — CTk colors can be
@@ -34,7 +35,7 @@ class HVACView:
     MAX_POINTS = 300     # rolling window cap
     MAX_AGE_S  = 300.0    # ...and a 5-minute time cap, whichever trims more
 
-    def __init__(self, style, left_parent, right_parent, get_url_fn, on_hvac_anomaly=None):
+    def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_hvac_anomaly=None):
         """
         style        - the Style object DefenderV0 already uses (self.style)
         left_parent  - container to build the readout cards into
@@ -51,6 +52,13 @@ class HVACView:
         self._room_temps     = []
         self._target_temps   = []
         self._HVAC_anomaly = False
+        self._encryption_on = False
+        self._context = context
+        self._AP_communication_on = False
+        self._ui_master = left_parent
+        self.sensor_noise_variance = 0.1
+        self.kalman_expected_sensor_variance = 0.1
+        self.state_error_threshold = 5.0
 
         self._build_left(left_parent)
         self._build_graph(right_parent)
@@ -76,6 +84,190 @@ class HVACView:
 
         CTkFrame(readout_card, fg_color="transparent", height=self.style.igap).pack()
 
+        self._build_encryption_block(self._left_root)
+        self._build_AP_communication_block(self._left_root)
+        self._build_slider_block(self._left_root)
+
+    def _build_encryption_block(self, parent):
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="ENCRYPTION", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        self._enc_label = CTkLabel(section, text="Status: OFF",
+                                    font=self.style.get_font(), text_color="gray")
+        self._enc_label.pack(anchor="w", padx=self.style.igap)
+
+        # Key entry
+        CTkLabel(section, text="Encryption Key", font=self.style.get_font("small"),
+                    text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
+        self._enc_key_entry = CTkEntry(section, font=self.style.get_font(),
+                                        placeholder_text="Enter key…")
+        self._enc_key_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
+
+        self._enc_button = CTkButton(section, text="Enable Encryption",
+                                        font=self.style.get_font())
+        def enc_button():
+            if not self._encryption_on:
+                # Encryption is off - try to turn it on
+                if self._enc_key_entry.get().strip() == "":
+                    # Empty key — show error
+                    popup.message(parent, self._context, "Please enter an encryption key before enabling encryption.")
+                elif not str.isascii(self._enc_key_entry.get().strip()):
+                    # Non-ASCII key — show error
+                    popup.message(parent, self._context, "Encryption key must be ASCII.")
+                else:
+                    # Key looks good — toggle encryption on behavior
+                    self._enc_key_entry.configure(state="disabled")
+                    self._enc_button.configure(text="Disable Encryption")
+                    self._toggle_encryption()
+            else:
+                # Encryption is on - turn it off
+                self._enc_key_entry.configure(state="normal")
+                self._enc_key_entry.delete(0, "end")
+                self._enc_button.configure(text="Enable Encryption")
+                self._toggle_encryption()
+
+        self._enc_button.configure(command=enc_button)
+
+        self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+
+    def _toggle_encryption(self):
+        if not self._encryption_on:
+            self._enc_key_entry.configure(state="disabled")
+            self._enc_button.configure(text="Disable Encryption")
+            self._encryption_on = True
+        else:
+            self._enc_key_entry.configure(state="normal")
+            self._enc_key_entry.delete(0, "end")
+            self._enc_key_entry.insert(0, "1234")
+            self._enc_button.configure(text="Enable Encryption")
+            self._encryption_on = False
+
+        self._push_hvac_controls()
+
+    def _build_AP_communication_block(self, parent):
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="COMMUNICATE VIA ACCESS POINT", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        self._filter_label = CTkLabel(section, text="Status: OFF",
+                                    font=self.style.get_font(), text_color="gray")
+        self._filter_label.pack(anchor="w", padx=self.style.igap)
+
+        self._filter_button = CTkButton(section, text="Enable Communication Through AP",
+                                        font=self.style.get_font(),
+                                        command=self._toggle_AP_communication)
+        self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+
+    def _toggle_AP_communication(self):
+        self._AP_communication_on = not self._AP_communication_on
+        self._push_hvac_controls()
+
+    def _refresh_encryption_ui(self):
+        if self._encryption_on:
+            self._enc_label.configure(text="Status: ON", text_color="green")
+            self._enc_button.configure(text="Disable Encryption")
+            self._enc_key_entry.configure(state="disabled")
+        else:
+            self._enc_label.configure(text="Status: OFF", text_color="gray")
+            self._enc_button.configure(text="Enable Encryption")
+            self._enc_key_entry.configure(state="normal")
+
+    def _refresh_AP_communication_ui(self):
+        if self._AP_communication_on:
+            self._filter_label.configure(text="Status: ON", text_color="green")
+            self._filter_button.configure(text="Disable Communication Through AP")
+        else:
+            self._filter_label.configure(text="Status: OFF", text_color="gray")
+            self._filter_button.configure(text="Enable Communication Through AP")
+
+    def _refresh_hvac_controls_ui(self):
+        self._refresh_encryption_ui()
+        self._refresh_AP_communication_ui()
+
+    def _push_hvac_controls(self):
+        payload = {
+        "encryption_status": self._encryption_on,
+        "encryption_key": self._enc_key_entry.get().strip() if self._encryption_on else "1234",
+        "AP_communication": self._AP_communication_on,
+        "sensor_noise_variance": self.sensor_noise_variance,
+        "hvac_kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
+        "hvac_state_error_threshold": self.state_error_threshold,
+        }
+
+        def _request():
+            try:
+                resp = requests.post(
+                    f"{self._get_url()}/hvac_status",
+                    json=payload,
+                    timeout=3,
+                )
+                if resp.ok:
+                    self._ui_master.after(0, self._refresh_hvac_controls_ui)
+            except Exception:
+                pass
+
+        threading.Thread(target=_request, daemon=True).start()
+
+    def _build_slider_block(self, parent):
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(
+            section,
+            text="HVAC SETTINGS",
+            font=self.style.get_font()
+        ).pack(anchor="w", padx=self.style.igap, pady=(self.style.igap, 8))
+
+        slider_defs = [
+            ("Sensor Noise Variance", 0.0, 1.0, 0.1, "sensor_noise_variance", 2),
+            ("Kalman Expected Sensor Variance", 0.0, 1.0, 0.1, "kalman_expected_sensor_variance", 2),
+            ("State Error Threshold", 0.0, 10.0, 5.0, "state_error_threshold", 1),
+        ]
+
+        self._sliders = {}
+        self._slider_value_labels = {}
+
+        for title, min_val, max_val, default, attr_name, decimals in slider_defs:
+            header = CTkFrame(section, fg_color="transparent")
+            header.pack(fill="x", padx=self.style.igap)
+
+            CTkLabel(
+                header,
+                text=title,
+                font=self.style.get_font("small")
+            ).pack(side="left")
+
+            value_label = CTkLabel(
+                header,
+                text=f"{default:.{decimals}f}",
+                font=self.style.get_font("small"),
+                text_color="gray"
+            )
+            value_label.pack(side="right")
+
+            def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
+                value = float(value)
+                setattr(self, attr, float(value))
+                lbl.configure(text=f"{float(value):.{d}f}")
+                self._push_hvac_controls()
+
+            slider = CTkSlider(
+                section,
+                from_=min_val,
+                to=max_val,
+                command=slider_callback
+            )
+            slider.set(default)
+            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+
+            self._sliders[title] = slider
+            self._slider_value_labels[title] = value_label
+    
     def _readout_row(self, parent, label_text):
         row = CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x", padx=self.style.igap, pady=2)

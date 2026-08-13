@@ -17,7 +17,7 @@ from .hvac_view import HVACView
 # customtkinter widgets
 from customtkinter import (
     CTkLabel, CTkEntry, CTkButton, CTkFrame,
-    CTkScrollableFrame, CTkSegmentedButton
+    CTkScrollableFrame, CTkSegmentedButton, CTkSlider
 )
 
 import threading
@@ -58,6 +58,10 @@ class DefenderV0(Page):
         self._log_source    = "client"   # "client" or "server"
         self._last_points   = {"client": [], "server": []}
         self._submarine_mode = True
+        self.sensor_noise_variance = 8.3
+        self.kalman_expected_sensor_variance = 8.3
+        self.rudder_error_threshold = 2.75
+        self.speed_error_threshold = 2.0
 
         # Flag state — all False until logic sets them
         self._submarine_flags = {key: False for key, _ in self.SUBMARINE_FLAG_DEFS}
@@ -82,9 +86,10 @@ class DefenderV0(Page):
         self._submarine_left.pack(fill="x")
         self._build_encryption_block(self._submarine_left)
         self._build_AP_communication_block(self._submarine_left)
+        self._build_slider_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
-        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, on_hvac_anomaly=self._set_hvac_flag)
+        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, context, on_hvac_anomaly=self._set_hvac_flag)
 
         left_p.add_deadspace()
 
@@ -94,7 +99,6 @@ class DefenderV0(Page):
         self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS\nMODBUS",
         self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",
         )
-
 
         self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
         self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAGS",
@@ -350,6 +354,84 @@ class DefenderV0(Page):
 
         setattr(self, label_attr, labels)
         CTkFrame(section, fg_color="transparent", height=self.style.igap).pack()
+
+    def _build_slider_block(self, parent):
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(
+            section,
+            text="SUBMARINE SETTINGS",
+            font=self.style.get_font()
+        ).pack(anchor="w", padx=self.style.igap, pady=(self.style.igap, 8))
+
+        slider_defs = [
+            ("Sensor Noise Variance", 0.0, 20, 8.3, "sensor_noise_variance", 2),
+            ("Kalman Expected Sensor Variance", 0.0, 20, 8.3, "kalman_expected_sensor_variance", 2),
+            ("Rudder Error Threshold", 0.0, 10, 2.75, "rudder_error_threshold", 1),
+            ("Speed Error Threshold", 0.0, 10, 2.0, "speed_error_threshold", 1),
+        ]
+
+        self._sliders = {}
+        self._slider_value_labels = {}
+
+        for title, min_val, max_val, default, attr_name, decimals in slider_defs:
+            header = CTkFrame(section, fg_color="transparent")
+            header.pack(fill="x", padx=self.style.igap)
+
+            CTkLabel(
+                header,
+                text=title,
+                font=self.style.get_font("small")
+            ).pack(side="left")
+
+            value_label = CTkLabel(
+                header,
+                text=f"{default:.{decimals}f}",
+                font=self.style.get_font("small"),
+                text_color="gray"
+            )
+            value_label.pack(side="right")
+
+            def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
+                value = float(value)
+                setattr(self, attr, value)
+                lbl.configure(text=f"{value:.{d}f}")
+                self._post_slider_settings()
+                
+            slider = CTkSlider(
+                section,
+                from_=min_val,
+                to=max_val,
+                command=slider_callback
+            )
+            slider.set(default)
+            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+
+            self._sliders[title] = slider
+            self._slider_value_labels[title] = value_label
+
+    def _post_slider_settings(self):
+        payload = {
+            "sensor_noise_variance": self.sensor_noise_variance,
+            "kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
+            "rudder_error_threshold": self.rudder_error_threshold,
+            "speed_error_threshold": self.speed_error_threshold,
+        }
+
+        def _request():
+            try:
+                resp = requests.post(
+                    f"{self._get_url()}/set_settings",
+                    json=payload,
+                    timeout=3,
+                )
+                if resp.ok:
+                    print("Settings posted")
+            except Exception as e:
+                print("post_slider_settings:", e)
+
+        threading.Thread(target=_request, daemon=True).start()
 
     # ════════════════════════════════════════════════════════════════════════
     #  Network actions
