@@ -7,3 +7,4 @@ requests
 flask
 matplotlib
 CTkToolTip
+python-nmap
