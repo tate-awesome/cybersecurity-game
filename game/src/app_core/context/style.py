@@ -7,12 +7,12 @@ if TYPE_CHECKING:
 
 class Style:
 
-    def __init__(self, root, context: "Context"):
+    def __init__(self, context: "Context"):
 
         self.ui_scale = 100.0
         self.ui_scales = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 133, 140, 150, 175, 200, 250, 300, 400, 500]
 
-        self.root = root
+        self.root = context.root
         self.gap = (10, 10)
         self.gap2 = (20,20)
         self.nogap = (0, 0)

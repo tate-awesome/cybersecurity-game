@@ -33,9 +33,8 @@ Shared data for a page. Passed to next pages on navigation.
         self.root = root
         self.paths = Paths()
         self.json = Json(self.paths)
-        self.style = Style(self.root, self)
+        self.style = Style(self)
         self.os_name = platform.system()
-        KeyBinds(self.root, self.style, self.router.refresh, self.router.quit)
         self.start_session()
         self.start_page()
         self.start_build()
@@ -43,9 +42,10 @@ Shared data for a page. Passed to next pages on navigation.
     def start_session(self):
         '''
         Creates mutable and resettable members for a session with the app
-        Often saved for the next session.
+        Often saved by the user for the next session.
         '''
         self.preferences = Preferences(self)
+        KeyBinds(self)
         self.states = self.get_preferred_settings()
         self.labels = self.get_preferred_labels()
         self.style.load_preferred_theme()

@@ -2,6 +2,9 @@ from customtkinter import CTk
 
 from .style import Style
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .. import Context
 
 class KeyBinds:
     '''
@@ -10,36 +13,39 @@ class KeyBinds:
     Also runs Router.quit() when the window is closed.
     '''
 
-    def __init__(self, root: CTk, style: Style, refresh: callable, quit: callable):
+    def __init__(self, context: "Context"):
         '''
         Binds all events
         '''
-
-        self.root = root
-        self.style = style
-        self.refresh = refresh
-        self.quit = quit
+        self.context = context
+        self.root = context.root
+        self.style = context.style
+        self.refresh = context.router.refresh
+        self.quit = context.router.quit
 
         # Page zoom control
-        root.bind("<Control-plus>", self.zoom_in)            # Ctrl +
-        root.bind("<Control-minus>", self.zoom_out)          # Ctrl -
-        root.bind("<Control-0>", self.zoom_default)          # Ctrl 0
-        root.bind("<Control-equal>", self.zoom_in)   # (linux) Ctrl = also works as Ctrl +
+        self.root.bind("<Control-plus>", self.zoom_in)            # Ctrl +
+        self.root.bind("<Control-minus>", self.zoom_out)          # Ctrl -
+        self.root.bind("<Control-0>", self.zoom_default)          # Ctrl 0
+        self.root.bind("<Control-equal>", self.zoom_in)   # (linux) Ctrl = also works as Ctrl +
 
         # Key events
         # self.style.root.bind("<Key>", self.print_key)
 
         # Fullscreen control
-        root.bind("<F11>", self.toggle_fullscreen)
-        root.bind("<Escape>", self.exit_fullscreen)
+        self.root.bind("<F11>", self.toggle_fullscreen)
+        self.root.bind("<Escape>", self.exit_fullscreen)
 
         # On close event
-        root.protocol("WM_DELETE_WINDOW", self.quit)
+        self.root.protocol("WM_DELETE_WINDOW", self.quit)
         # self.root.bind("<FocusOut>", self.minimize_on_tab_if_fullscreen)
 
+        if start_fullscreen := self.context.preferences.get("fullscreen"):
+            self.root.after(50,lambda:self.root.attributes("-fullscreen", start_fullscreen))
 
     def toggle_fullscreen(self, event=None):
         switch_fullscreen = not bool(self.root.attributes("-fullscreen"))
+        self.context.preferences.set("fullscreen", str(switch_fullscreen))
         self.root.attributes("-fullscreen", switch_fullscreen)
 
     def minimize_on_tab_if_fullscreen(self, event=None):
