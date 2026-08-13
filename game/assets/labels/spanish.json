@@ -1,0 +1,121 @@
+{
+    "packet_columns": {
+        "time": "Hora",
+        "number": "N.º",
+        "length": "Longitud",
+        "observer": "Observador",
+        "transaction_word": "Enviado/Recibido",
+        "transaction_ip": "IP de origen/destino",
+        "transaction_mac": "MAC de origen/destino",
+        "layers": "Capas",
+        "purpose": "Propósito",
+        "summary": "Resumen",
+        "modbus": "Información de MODBUS"
+    },
+
+    "hacking_forms": {
+        "wifi": "Conexiones WiFi",
+        "nmap": "Mapeo NMap",
+        "arp": "Suplantación ARP",
+        "dos": "Denegación de servicio",
+        "sniff": "Captura de paquetes",
+        "nfq": "Cola de filtrado de red"
+    },
+
+    "modbus_forms": {
+        "table": "Lecturas MITM",
+        "modify": "Modificadores de ModBus"
+    },
+
+    "packet_filter_categories": {
+        "source": "Desde el origen",
+        "protocol": "Incluye protocolo",
+        "direction": "Dirección"
+    },
+
+    "packet_filter_checkboxes": {            
+        "nmap": "Mapeo NMap",
+        "arp": "Suplantación ARP",
+        "dos": "Denegación de servicio",
+        "sniff": "Captura de paquetes",
+        "nfq": "Cola de filtrado de red",
+        "pcap": "Archivo PCAP",
+        "TCP": "TCP",
+        "ARP": "ARP",
+        "UDP": "UDP",
+        "DNS": "DNS",
+        "MODBUSADU": "MODBUSADU",
+        "WRITE SINGLE REGISTER": "ESCRIBIR REGISTRO ÚNICO",
+        "READ HOLDING REGISTERS RESPONSE": "RESPUESTA DE LECTURA DE REGISTROS DE RETENCIÓN",
+        "out": "Enviado",
+        "in": "Recibido",
+        "other": "Observado"
+    },
+
+    "packet_filter_entries": {
+        "address_filter": "Direcciones IP/MAC involucradas (separadas por \"|\")"
+    },
+
+    "tooltips": {
+        "labels_button": "Cargar etiquetas y textos localizados desde un archivo json.",
+        "preset_button": "Cargar opciones para un escenario/lección específico.",
+        "pcap_button": "Cargar un archivo pcap guardado para visualizarlo en este programa.",
+        "theme_button": "Elegir un tema de CustomTkinter desde un archivo json.",
+        "toggle_button": "Alternar entre los modos claro/oscuro.",
+        "help_button": "Ver un mensaje de ayuda basado en tu progreso.",
+        "back_button": "Volver a la pantalla de título del juego.",
+        "reset_button": "Borrar el archivo de preferencias y actualizar la página.",
+        "refresh_button": "Reconstruir la página sin perder los datos persistentes: hilos de ataque, entradas y configuraciones.",
+        "quit_button": "Cerrar el programa.",
+        "preferences_button": "Guardar el tema, modo y localización actuales para la próxima vez.",
+        "fields_button": "Guardar las casillas de verificación y entradas actuales para la próxima vez.",
+        "page_button": "Guardar la página actual como acceso directo al iniciar."
+    },
+
+    "modbus_table": {
+        "name": "Variable",
+        "in": "Recibido",
+        "out": "Enviado",
+        "source": "Comando",
+        "-": "-"
+    },
+
+    "modbus_modifier": {
+        "variable": "Variable",
+        "multiplier": "Mult",
+        "offset": "Desplazamiento"
+    },
+
+    "modbus_variables": {
+        "hreg_1": "HReg 1",
+        "hreg_2": "HReg 2",
+        "hreg_3": "HReg 3",
+        "hreg_4": "HReg 4",
+        "hreg_5": "HReg 5",
+        "hreg_6": "HReg 6",
+        "hreg_7": "HReg 7",
+        "hreg_8": "HReg 8",
+        "hreg_9": "HReg 9",
+        "hreg_10": "HReg 10",
+        "hreg_11": "HReg 11",
+        "hreg_12": "HReg 12",
+        "hreg_13": "HReg 13",
+        "hreg_14": "HReg 14",
+        "hreg_15": "HReg 15",
+
+        "x": "Posición X",
+        "y": "Posición Y",
+        "theta": "Orientación",
+        "speed": "Velocidad",
+        "rudder": "Ángulo del timón"
+    },
+
+    "modbus_settings": {
+        "label": "Variable de Modbus",
+        "show": "Mostrar\nen las tablas de abajo",
+        "nickname": "Apodo\npara mostrar",
+        "factor": "Factor de conversión\nunidades por valor bruto",
+        "units": "Unidades\npara mostrar",
+        "modify": "Modificar\nen la devolución de llamada NFQ"
+    }
+}
