@@ -7,7 +7,7 @@ class NmapForm(BaseForm):
         
         super().__init__(master, context, "nmap", "Network Map")
 
-        self.header = self.add_header("Network Mapping")
+        self.header = self.add_header()
 
         status, button = self.add_button("", "Map Network")
 

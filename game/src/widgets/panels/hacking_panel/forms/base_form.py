@@ -4,7 +4,7 @@ from typing import Callable
 from .....app_core import Context
 
 class BaseForm(ABC, CTkFrame):
-    def __init__(self, master: CTkFrame, context: Context, key: str, attack_noun: str):
+    def __init__(self, master: CTkFrame, context: Context, key: str, attack_noun: str = "Attack"):
         '''
         attack_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
         '''
@@ -21,6 +21,13 @@ class BaseForm(ABC, CTkFrame):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=0)
 
+        self.status_on_text = self.context.labels["hacking_panels"][f"{self.key}_on"]
+        self.status_off_text = self.context.labels["hacking_panels"][f"{self.key}_off"]
+        self.start_attack_text = self.context.labels["hacking_panels"][f"{self.key}_start"]
+        self.starting_attack_text = self.context.labels["hacking_panels"][f"{self.key}_starting"]
+        self.stop_attack_text = self.context.labels["hacking_panels"][f"{self.key}_stop"]
+        self.stopping_attack_text = self.context.labels["hacking_panels"][f"{self.key}_stopping"]
+
         self.current_row = 0
         self.entry_index = 0
         self.entries = []
@@ -28,8 +35,8 @@ class BaseForm(ABC, CTkFrame):
         self.stop_attack = lambda: None
 
 
-    def add_header(self, text: str):
-        self.header = CTkLabel(self, text=text, font=self.style.get_font())
+    def add_header(self):
+        self.header = CTkLabel(self, text=self.context.labels["hacking_forms"][self.key], font=self.style.get_font())
         self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gap)
         self.current_row += 1
 
@@ -98,26 +105,26 @@ class BaseForm(ABC, CTkFrame):
 
     def click_start(self):
         self.context.states["game_progress"][self.key] = 1
-        self.attack_button.configure(text=f"Starting {self.attack_noun}...")
+        self.attack_button.configure(text=self.starting_attack_text)
         self.context.root.update_idletasks()
         self.start_attack()
         self.configure_on()
     
     def configure_on(self):
-        self.attack_button.configure(command=self.click_stop, text=f"Stop {self.attack_noun}")
-        self.attack_status.configure(text=f"{self.attack_noun} is on")
+        self.attack_button.configure(command=self.click_stop, text=self.stop_attack_text)
+        self.attack_status.configure(text=self.status_on_text)
 
     def click_stop(self):
         if not self.has_attack_button:
             return
-        self.attack_button.configure(text=f"Stopping {self.attack_noun}...")
+        self.attack_button.configure(text=self.stopping_attack_text)
         self.context.root.update_idletasks()
         self.stop_attack()
         self.configure_off()
     
     def configure_off(self):
-        self.attack_button.configure(command=self.click_start, text=f"Start {self.attack_noun}")
-        self.attack_status.configure(text=f"{self.attack_noun} is off")
+        self.attack_button.configure(command=self.click_start, text=self.start_attack_text)
+        self.attack_status.configure(text=self.status_off_text)
 
     def add_button(self, default_status: str = "", button_text: str= "", button_func: Callable = None):
         # Create widgets
