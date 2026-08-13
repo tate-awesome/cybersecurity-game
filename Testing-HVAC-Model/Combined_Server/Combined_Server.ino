@@ -45,6 +45,9 @@ float g_client_theta = 0.0f;
 float last_state_x = 0.0f;
 float last_state_y = 0.0f;
 float last_state_theta = 0.0f;
+float g_kalman_expected_sensor_variance = 8.3f;
+float g_hvac_kalman_expected_sensor_variance = 0.1f;
+float g_hvac_state_error_threshold = 5.0f;
 
 ModbusIP mb;
 bool g_submarine_mode = true;
@@ -221,6 +224,12 @@ float wrap_to_pi(float angle) {
 
 void ekfStep(float speed_m_s, float rudder_rad, const BLA::Matrix<3,1>& z_meas, float dt){
 
+  R = {
+    g_kalman_expected_sensor_variance, 0.0f, 0.0f,
+    0.0f, g_kalman_expected_sensor_variance, 0.0f,
+    0.0f, 0.0f, var_meas_theta
+  };
+
   BLA::Matrix<3,1> x_pred;
   float th = xhat(2,0);
 
@@ -287,6 +296,19 @@ uint16_t keyToUint(const String& key){
   return (uint16_t)sum;
 }
 
+float randomNoiseWithVariance(float variance) {
+    if (variance <= 0.0f) {
+        return 0.0f;
+    }
+
+    float range = sqrtf(3.0f * variance);
+
+    // Generate approximately uniform random value from -1 to +1
+    float normalized = (float)random(-1000000, 1000001) / 1000000.0f;
+
+    return normalized * range;
+}
+
 #ifdef REST_API_ENABLED
 void restPost() {
     if (WiFi.status() != WL_CONNECTED) return;
@@ -335,6 +357,10 @@ void restPost() {
             }
             if (resp.containsKey("client_noise_theta")) {
                 g_client_theta = resp["client_noise_theta"].as<float>();
+            }
+            if (resp.containsKey("kalman_expected_sensor_variance")) {
+                g_kalman_expected_sensor_variance =
+                    resp["kalman_expected_sensor_variance"].as<float>();
             }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
@@ -489,10 +515,12 @@ float est_temp = 71.6f;
 float temp_estimate = 0.0f;
 float temp_covariance = 0.1f;
 float temp_process_variance = 0.05f;
-float temp_measurement_variance = 0.1f;
 float temp_kalman_gain = 0.0f;
 uint16_t damper_pct_out = 0;
 float g_client_temp = 0.0f;
+bool hvac_encryption_status = false;
+String hvac_key = "1234";
+bool hvac_AP_communication = false;
 
 const float SCALE = 100.0f;
 
@@ -500,7 +528,7 @@ float tempKF(float measured_temp, float dt){
 
   temp_covariance += temp_process_variance * dt;
 
-  temp_kalman_gain = temp_covariance / (temp_covariance + temp_measurement_variance);
+  temp_kalman_gain = temp_covariance / (temp_covariance + g_hvac_kalman_expected_sensor_variance);
 
   temp_estimate += temp_kalman_gain * (measured_temp - temp_estimate);
 
@@ -531,12 +559,24 @@ void postHvac(float current_temp) {
         StaticJsonDocument<128> resp;
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
-                encrypt_status = resp["encryption_status"].as<bool>();
-                key = resp["encryption_key"].as<String>();
-                Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
+                hvac_encryption_status = resp["encryption_status"].as<bool>();
+                hvac_key = resp["encryption_key"].as<String>();
+                Serial.printf("[SERVER] encryption_key=%s\n", hvac_key.c_str());
             }
             if (resp.containsKey("client_temp")) {
                  g_client_temp = resp["client_temp"];
+            }
+            if (resp.containsKey("AP_communication")) {
+                hvac_AP_communication = resp["AP_communication"].as<bool>();
+            }
+            if (resp.containsKey("hvac_kalman_expected_sensor_variance")) {
+                g_hvac_kalman_expected_sensor_variance =
+                    resp["hvac_kalman_expected_sensor_variance"].as<float>();
+            }
+
+            if (resp.containsKey("hvac_state_error_threshold")) {
+                g_hvac_state_error_threshold =
+                    resp["hvac_state_error_threshold"].as<float>();
             }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
@@ -552,7 +592,15 @@ void runHvacCycle() {
     lastControlTime = millis();
 
     uint16_t raw_temp = mb.Hreg(HREG_TEMP_EST);
+    if(hvac_encryption_status){
+      raw_temp = xorCipher(raw_temp, keyToUint(hvac_key));
+    }
+    
     float current_temp = (float)raw_temp / SCALE;
+
+    if(hvac_AP_communication){
+      current_temp = g_client_temp;
+    }
 
     if(last_temp != current_temp){
  
@@ -560,9 +608,10 @@ void runHvacCycle() {
 
       float error_value = abs(est_temp - current_temp);
 
-      g_HVAC_anomaly_detected = error_value > 5.0f;
+      g_HVAC_anomaly_detected = error_value > g_hvac_state_error_threshold;
 
       current_temp = est_temp;
+
     }
 
     last_temp = current_temp;
@@ -578,13 +627,19 @@ void runHvacCycle() {
     // else: inside the deadband -> hold whatever state we were already in
 
     damper_pct_out = heater_on ? 100 : 0;
-    mb.Hreg(HREG_DAMPER_CMD, damper_pct_out);
+
+    uint16_t damper_reg = damper_pct_out;
+
+    if(hvac_encryption_status){
+      damper_reg = xorCipher(damper_reg, keyToUint(hvac_key));
+    }
+
+    mb.Hreg(HREG_DAMPER_CMD, damper_reg);
 
     Serial.printf("[SERVER] Setpoint: %.2f°F | Current: %.2f°F | Band: [%.2f, %.2f]°F | Heater: %s\n",
                   setpoint_temp, current_temp, lower_threshold, upper_threshold, heater_on ? "ON" : "OFF");
 
     postHvac(current_temp);
-    Serial.println(g_client_temp);
 }
 
 void setup() {
@@ -617,8 +672,8 @@ void setup() {
     };
 
   R = {
-    var_meas_x, 0.0f, 0.0f,
-    0.0f, var_meas_y, 0.0f,
+    g_kalman_expected_sensor_variance, 0.0f, 0.0f,
+    0.0f, g_kalman_expected_sensor_variance, 0.0f,
     0.0f, 0.0f, var_meas_theta
     };
 

@@ -45,6 +45,9 @@ const char* SERVER_CONTROL_URL = "http://192.168.4.1/server_control";
 
 float g_remote_velocity = 0.0f;
 float g_remote_rudder = 0.0f;
+float g_sensor_noise_variance = 8.3f;
+float g_rudder_error_threshold = 2.0f;
+float g_speed_error_threshold = 2.75f;
 
 IPAddress serverIP(192, 168, 4, 10);   // Server lives here regardless of mode
 ModbusIP mb;
@@ -298,6 +301,19 @@ uint16_t keyToUint(const String& key){
   return (uint16_t)sum;
 }
 
+float randomNoiseWithVariance(float variance) {
+    if (variance <= 0.0f) {
+        return 0.0f;
+    }
+
+    float range = sqrtf(3.0f * variance);
+
+    // Generate approximately uniform random value from -1 to +1
+    float normalized = (float)random(-1000000, 1000001) / 1000000.0f;
+
+    return normalized * range;
+}
+
 void sendPose() {
   uint16_t x_u = x_to_u16_100(noise_x);
   uint16_t y_u = x_to_u16_100(noise_y);
@@ -378,6 +394,15 @@ void restPost() {
         if(resp.containsKey("server_rudder")){
           g_remote_rudder = resp["server_rudder"].as<float>();
         }
+        if (resp.containsKey("sensor_noise_variance")) {
+            g_sensor_noise_variance = resp["sensor_noise_variance"].as<float>();
+        }
+        if (resp.containsKey("rudder_error_threshold")) {
+            g_rudder_error_threshold = resp["rudder_error_threshold"].as<float>();
+        }
+        if (resp.containsKey("speed_error_threshold")) {
+            g_speed_error_threshold = resp["speed_error_threshold"].as<float>();
+        }
     }
   } else {
     Serial.printf("[CLIENT] REST POST failed  HTTP %d\n", code);
@@ -430,8 +455,8 @@ void runSubmarineCycle() {
       float speed_error = abs(last_speed - state_speed);
       float rudder_error = fabs(wrapToPi(last_rudder - state_rudder));
 
-      speed_anomaly_detected = speed_error > 2.0f;
-      rudder_anomaly_detected = rudder_error > 2.75f;
+      speed_anomaly_detected = speed_error > g_speed_error_threshold;
+      rudder_anomaly_detected = rudder_error > g_rudder_error_threshold;
       
       if(AP_communication){
         speed_m_s *= 15.0f;
@@ -454,13 +479,13 @@ void runSubmarineCycle() {
         state_y += (ydot * dt);
         state_theta += (thetadot * dt);
 
-        noise_x = state_x + random(-500,500)/100.0f;
-        noise_y = state_y + random(-500,500)/100.0f;
+        noise_x = state_x + randomNoiseWithVariance(g_sensor_noise_variance);
+        noise_y = state_y + randomNoiseWithVariance(g_sensor_noise_variance);
         noise_theta = state_theta + radians(random(-100,100)/100.0f);
       
         while (state_theta < 0) state_theta += 2.0f * PI;
         while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
-
+        
         if (state_x < 0.0f) state_x = 0.0f;
         if (noise_x < 0.0f) noise_x = 0.0f;
         if (state_x > 200.0f) state_x = 200.0f;
@@ -553,6 +578,10 @@ float state_damper   = 0.0f;
 float ambient_temp   = 59.0f;
 float noisy_measurement = 0.0f;
 uint16_t g_damper = 0;
+bool hvac_encryption_status = false;
+String hvac_key = "1234";
+bool hvac_AP_communication = false;
+float g_hvac_sensor_noise_variance = 0.1f;
 
 // Scale factor to preserve decimals across Modbus integer registers
 // (e.g., 71.64°F -> 7164)
@@ -579,12 +608,18 @@ void postHvac(){
         StaticJsonDocument<128> resp;
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
-                encrypt_status = resp["encryption_status"].as<bool>();
-                key = resp["encryption_key"].as<String>();
-                Serial.printf("[SERVER] encryption_key=%s\n", key.c_str());
+                hvac_encryption_status = resp["encryption_status"].as<bool>();
+                hvac_key = resp["encryption_key"].as<String>();
+                Serial.printf("[SERVER] encryption_key=%s\n", hvac_key.c_str());
             }
             if (resp.containsKey("damper_status")) {
                 g_damper = resp["damper_status"];
+            }
+            if (resp.containsKey("AP_communication")) {
+                hvac_AP_communication = resp["AP_communication"].as<bool>();
+            }
+            if (resp.containsKey("sensor_noise_variance")) {
+                g_hvac_sensor_noise_variance = resp["sensor_noise_variance"].as<float>();
             }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
@@ -608,9 +643,17 @@ void runHvacCycle() {
   // 1. Read Damper Actuator Command from Server
   uint16_t raw_damper = 0;
   if (readH(HREG_DAMPER_CMD, &raw_damper, 1)) {
-    state_damper = (float)raw_damper / 100.0f; // Decode 0-100% back to 0.0-1.0
+    if(hvac_encryption_status){
+      state_damper = (float) xorCipher(raw_damper, keyToUint(hvac_key)) / 100.0f;
+    } else{
+      state_damper = (float)raw_damper / 100.0f; // Decode 0-100% back to 0.0-1.0
+    }
   } else {
     DBG_PRINTLN("[CLIENT] HVAC: damper read failed, holding last state_damper");
+  }
+
+  if(hvac_AP_communication){
+    state_damper = (float)g_damper / 100.0f;
   }
 
   // Thermal Dynamics Physics Simulation
@@ -621,11 +664,15 @@ void runHvacCycle() {
   true_room_temp += (random(-18, 19) / 100.0f); // Random physical perturbation (-0.18 to +0.18°F)
 
   // 3. Noisy Sensor Reading (Raw measurement)
-  float noise = (random(-270, 271) / 100.0f); // -2.7°F to +2.7°F
-  noisy_measurement = true_room_temp + noise;
+  noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
 
   // 4. Send RAW Noisy Measurement Directly to Server
   uint16_t tx_val = (uint16_t)lroundf(noisy_measurement * SCALE);
+
+  if(hvac_encryption_status){
+    tx_val = xorCipher(tx_val, keyToUint(hvac_key));
+  }
+
   if (!writeH(HREG_TEMP_EST, tx_val)) {
     DBG_PRINTLN("[CLIENT] HVAC: failed to send temperature measurement");
   }
@@ -634,7 +681,6 @@ void runHvacCycle() {
                 true_room_temp, noisy_measurement, state_damper * 100.0f);
 
   postHvac();
-  Serial.println(g_damper);
 
   // Optional LCD readout for HVAC mode — the original HVAC_Client.ino had
   // no LCD output, but since this is the same physical board the Submarine
