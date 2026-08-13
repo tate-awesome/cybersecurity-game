@@ -56,7 +56,7 @@
         "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
     },
 
-    "tooltips": {
+    "menu_bar_tooltips": {
         "labels_button": "Load localized labels and text from a json file.",
         "preset_button": "Load options for a specific scenario/lesson.",
         "pcap_button": "Load a saved pcap file for viewing in this program.",
@@ -70,6 +70,59 @@
         "preferences_button": "Saves the current theme, mode, and localization for next time.",
         "fields_button": "Saves the current checkboxes and entries for next time.",
         "page_button": "Save the current page for a shortcut on startup."
+    },
+    
+    "menu_bar_titles": {
+        "_default": "Menu",
+        "attacker": "Attacker X",
+        "defender": "Defender X",
+        "boat_motion_demo": "Boat Motion Demo",
+        "triangle_demo": "Triangle Demo",
+        "sprites_demo": "Sprites Demo",
+
+        "submarine_panel": "Submarine Model",
+        "stripchart_panel": "ModBus Monitors",
+        "attack_panel": "Hacks",
+        "modbus_panel": "ModBus Data",
+        "network_panel": "Network Graph",
+
+        "packet_console": "Packets",
+        "status_console": "Status"
+    },
+
+    "menu_bar_buttons": {
+        "_default": "Button",
+        "labels_button": "Load Labels",
+        "preset_button": "Load Presets",
+        "pcap_button": "Load PCAP",
+        "theme_button": "Select Theme",
+        "toggle_button": "Toggle Theme",
+        "help_button": "Help",
+        "back_button": "Back to Title", 
+        "reset_button": "Reset Preferences",
+        "refresh_button": "Refresh",
+        "quit_button": "Quit",
+        "preferences_button": "Save Preferences",
+        "fields_button": "Save Inputs",
+        "page_button": "Favorite Page",
+
+        "minimize": "Minimize",
+        "maximize": "Maximize",
+        "abort_all": "Stop All",
+
+        "pause": "Pause",
+        "unpause": "Resume",
+
+        "free_scroll": "Free Scroll",
+        "live_scroll": "Auto Scroll",
+        
+        "forms_overlay": "Forms",
+        "variables_overlay": "Variables",
+        "clear_modbus": "Clear Readings",
+        "filters_overlay": "Filters",
+        "columns_overlay": "Columns",
+        "close_overlay": "Close"
+
     },
 
     "modbus_table": {

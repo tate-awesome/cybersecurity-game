@@ -13,7 +13,7 @@ from ....network.buffer.meta_packet import MetaPacket
 
 class Builder(Panel):
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "Packet Console")
+        super().__init__(master, context, "packet_console")
 
         self.buffer = context.net.buffer.packets
         #  self.create_filter_boxes(menu_frame)
@@ -22,16 +22,16 @@ class Builder(Panel):
         self.refresh_columns()
 
 
-        filter_button = self.menu_bar.add_button("Filters")
+        filter_button = self.menu_bar.add_button("filters_overlay")
         self.filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
         self.filter_overlay.compile_filter()
 
-        columns_button = self.menu_bar.add_button("Columns")
+        columns_button = self.menu_bar.add_button("columns_overlay")
         columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
 
         # jump_button = self.menu_bar.reversible_button(
         #     self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
-        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "Pause", "Unpause")
+        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "pause", "unpause")
         minimize_button = self.menu_bar.minimize_button(body_container, master)
 
         # Printing Flags

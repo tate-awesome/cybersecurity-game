@@ -18,7 +18,7 @@ class AttackerV0(Page):
         super().__init__(context)
         net = context.refresh_net(HardwareNetwork)
 
-        menu_bar = MenuBar(self, context, "Attacker V0")
+        menu_bar = MenuBar(self, context, "attacker")
         menu_bar.page_buttons()
 
         trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)

@@ -7,13 +7,14 @@ class Overlay(CTkFrame):
     CTkFrame that is .place()'d below its trigger button on click. Is also .place_forget()'d when clicking outside the Overlay (this is expected behavior)
     '''
 
-    def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[CTkFrame, None], anchor="south"):
+    def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[[CTkFrame], None], anchor="south"):
         self.anchor = anchor
         self.master = master
         self.context = context
         self.style = context.style
         self.button = button
         self.open_text = button._text
+        self.close_text = self.context.labels["menu_bar_buttons"]["close_overlay"]
         self.manage_list()
         self.safe = False
         self.populate_func = populate_func
@@ -145,9 +146,9 @@ class Overlay(CTkFrame):
             self.button.proxy.configure(command=self.click_open, text=self.open_text)
 
     def configure_opened(self):
-        self.button.configure(command=self.click_close, text="Close")
+        self.button.configure(command=self.click_close, text=self.close_text)
         if hasattr(self.button, "proxy") and self.button.proxy.winfo_exists():
-            self.button.proxy.configure(command=self.click_close, text="Close")
+            self.button.proxy.configure(command=self.click_close, text=self.close_text)
 
     # Placement helper
 

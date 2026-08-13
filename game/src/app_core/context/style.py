@@ -150,9 +150,9 @@ class Style:
     def pad_corrected(self):
         return int(self.igap * self.get_scale_correction())
 
-    def add_tooltip(self, widget, key: str):
+    def add_tooltip(self, widget, class_key: str, widget_key: str):
         CTkToolTip(widget,
-                   self.context.labels["tooltips"][key],
+                   self.context.labels[class_key][widget_key],
                    follow=False,
                    font=self.get_font(),
                    x_offset=self.igap, y_offset=self.igap, border_width=2,

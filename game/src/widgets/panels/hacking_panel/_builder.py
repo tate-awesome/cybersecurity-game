@@ -16,7 +16,7 @@ class Builder(Panel):
 
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "Attacks")
+        super().__init__(master, context, "attack_panel")
 
         self.scrollable = Scrollable(self, context)
 
@@ -36,10 +36,10 @@ class Builder(Panel):
         self.scrollable.add_deadspace("grid")
 
 
-        forms_button = self.menu_bar.add_button("Forms")
+        forms_button = self.menu_bar.add_button("forms_overlay")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
-        stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+        stop_button = self.menu_bar.add_button("abort_all", self.stop_all)
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
 

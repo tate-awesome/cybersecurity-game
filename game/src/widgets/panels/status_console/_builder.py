@@ -6,7 +6,7 @@ from ..panel import Panel
 
 class Builder(Panel):
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "Status Console")
+        super().__init__(master, context, "status_console")
 
         self.buffer = context.net.buffer.status
 
@@ -14,9 +14,9 @@ class Builder(Panel):
 
         # minimize_button = self.menu_bar.minimize_button(self.text_box, master)
 
-        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "Pause", "Resume")
+        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "pause", "unpause")
 
-        jump_button = self.menu_bar.reversible_button(self.unlock_scrolling, self.lock_scrolling, "Scroll Freely", "Jump to Live")
+        jump_button = self.menu_bar.reversible_button(self.unlock_scrolling, self.lock_scrolling, "free_scroll", "live_scroll")
 
         # Printing Flags
         self.jump_to_bottom = True

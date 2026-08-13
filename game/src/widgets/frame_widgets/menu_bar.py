@@ -11,14 +11,14 @@ class MenuBar(CTkFrame):
     Inherits CTkFrame.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, title_text: str = "Page"):
+    def __init__(self, master: CTkFrame, context: Context, title_label: str = "_default"):
         self.context = context
         self.style = context.style
 
         super().__init__(master, fg_color=self.style.color("widget"))
         self.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x")
 
-        self.game_label = CTkLabel(self, text=title_text, font=self.style.get_font(), padx=self.style.igap)
+        self.game_label = CTkLabel(self, text=self.context.labels["menu_bar_titles"][title_label], font=self.style.get_font(), padx=self.style.igap)
         self.game_label.pack(fill="y", side="left", padx=self.style.gap)
 
         self.the_overflow_button = None
@@ -27,8 +27,11 @@ class MenuBar(CTkFrame):
 
         self.overflow_button()
 
-    def add_button(self, text, function=None):
-        button = CTkButton(self, text=text, command=function, font=self.style.get_font())
+    def add_tooltip(self, widget, key: str):
+        self.context.style.add_tooltip(widget, "menu_bar_tooltips", key)
+
+    def add_button(self, label: str="_default", function=None):
+        button = CTkButton(self, text=self.context.labels["menu_bar_buttons"][label], command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
         return button
 
@@ -97,7 +100,9 @@ class MenuBar(CTkFrame):
 
 
     def minimize_button(self, frame_widget = None, pane = None):
-        button = self.add_button("Minimize")
+        minimize_text = self.context.labels["menu_bar_buttons"]["minimize"]
+        maximize_text = self.context.labels["menu_bar_buttons"]["maximize"]
+        button = self.add_button("minimize")
         body_packed = True
         configure_options = {}
         manager = "none"
@@ -149,21 +154,21 @@ class MenuBar(CTkFrame):
                 pane.master.add(pane, height=size*self.style.get_scale_correction())
 
         def click_minimize():
-            button.configure(command=click_maximize, text="Maximize")
+            button.configure(command=click_maximize, text=maximize_text)
             if hasattr(button, "proxy"):
-                button.proxy.configure(command=click_maximize, text=f"Maximize")
+                button.proxy.configure(command=click_maximize, text=maximize_text)
             shrink_pane()
             hide_body()
         
         def click_maximize():
-            button.configure(command=click_minimize, text="Minimize")
+            button.configure(command=click_minimize, text=minimize_text)
             if hasattr(button, "proxy"):
-                button.proxy.configure(command=click_minimize, text=f"Minimize")
+                button.proxy.configure(command=click_minimize, text=minimize_text)
             grow_pane()
             show_body()
         
         def manual_growth():
-            button.configure(command=click_minimize, text="Minimize")
+            button.configure(command=click_minimize, text=minimize_text)
             show_body()
         
         button.configure(command=click_minimize)
@@ -177,8 +182,10 @@ class MenuBar(CTkFrame):
         if pane is not None:
             pane.bind("<Configure>", configure_handler)
 
-    def reversible_button(self, start_func: callable, stop_func: callable, inactive_name: str, active_name: str):
-        button = self.add_button(inactive_name)
+    def reversible_button(self, start_func: callable, stop_func: callable, inactive_label: str, active_label: str):
+        inactive_name = self.context.labels["menu_bar_buttons"][inactive_label]
+        active_name = self.context.labels["menu_bar_buttons"][active_label]
+        button = self.add_button(inactive_label)
         def stop():
             stop_func()
             if hasattr(button, "proxy"):
@@ -196,56 +203,56 @@ class MenuBar(CTkFrame):
     # Page Buttons
 
     def quit_button(self):
-        button = self.add_button("Quit", self.context.router.quit)
-        self.style.add_tooltip(button, "quit_button")
+        button = self.add_button("quit_button", self.context.router.quit)
+        self.add_tooltip(button, "quit_button")
     
     def refresh_button(self):
-        button = self.add_button("Refresh", self.context.router.refresh)
-        self.style.add_tooltip(button, "refresh_button")
+        button = self.add_button("refresh_button", self.context.router.refresh)
+        self.add_tooltip(button, "refresh_button")
 
     def reset_button(self):
-        button = self.add_button("Reset", self.context.reset_data)
-        self.style.add_tooltip(button, "reset_button")
+        button = self.add_button("reset_button", self.context.reset_data)
+        self.add_tooltip(button, "reset_button")
 
     def back_button(self):
-        button = self.add_button("Back to Title", self.context.router.go_back)
-        self.style.add_tooltip(button, "back_button")
+        button = self.add_button("back_button", self.context.router.go_back)
+        self.add_tooltip(button, "back_button")
     
     def toggle_button(self):
-        button = self.add_button("Toggle Theme", self.context.style.toggle_mode)
-        self.style.add_tooltip(button, "toggle_button")
+        button = self.add_button("toggle_button", self.context.style.toggle_mode)
+        self.add_tooltip(button, "toggle_button")
     
     def theme_button(self):
-        button = self.add_button("Select Theme", self.context.style.select_theme)
-        self.style.add_tooltip(button, "theme_button")
+        button = self.add_button("theme_button", self.context.style.select_theme)
+        self.add_tooltip(button, "theme_button")
 
     def pcap_button(self):
-        button = self.add_button("Load PCAP File", self.context.net.loader.load_pcap)
-        self.style.add_tooltip(button, "pcap_button")
+        button = self.add_button("pcap_button", self.context.net.loader.load_pcap)
+        self.add_tooltip(button, "pcap_button")
     
     def preset_button(self):
-        button = self.add_button("Load Preset", self.context.select_settings)
-        self.style.add_tooltip(button, "preset_button")
+        button = self.add_button("preset_button", self.context.select_settings)
+        self.add_tooltip(button, "preset_button")
     
     def labels_button(self):
-        button = self.add_button("Load Labels", self.context.select_labels)
-        self.style.add_tooltip(button, "labels_button")
+        button = self.add_button("labels_button", self.context.select_labels)
+        self.add_tooltip(button, "labels_button")
     
     def help_button(self):
-        button = self.add_button("Help", lambda: message(self, self.context, self.context.help_message()))
-        self.style.add_tooltip(button, "help_button")
+        button = self.add_button("help_button", lambda: message(self, self.context, self.context.help_message()))
+        self.add_tooltip(button, "help_button")
 
     def data_button(self):
-        button = self.add_button("Save Fields", self.context.preferences.save_settings)
-        self.style.add_tooltip(button, "fields_button")
+        button = self.add_button("fields_button", self.context.preferences.save_settings)
+        self.add_tooltip(button, "fields_button")
 
     def preferences_button(self):
-        button = self.add_button("Save Preferences", self.context.preferences.save_preferences)
-        self.style.add_tooltip(button, "preferences_button")
+        button = self.add_button("preferences_button", self.context.preferences.save_preferences)
+        self.add_tooltip(button, "preferences_button")
 
     def page_button(self):
-        button = self.add_button("Favorite Page", self.context.preferences.save_page)
-        self.style.add_tooltip(button, "page_button")
+        button = self.add_button("page_button", self.context.preferences.save_page)
+        self.add_tooltip(button, "page_button")
 
     def page_buttons(self):
         self.quit_button()

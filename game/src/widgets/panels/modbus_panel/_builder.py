@@ -13,7 +13,7 @@ class Builder(Panel):
 
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "ModBus")
+        super().__init__(master, context, "modbus_panel")
 
         self.scrollable = Scrollable(self, context)
 
@@ -28,15 +28,13 @@ class Builder(Panel):
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
 
-        variables_button = self.menu_bar.add_button("Variables")
+        variables_button = self.menu_bar.add_button("variables_overlay")
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
-        forms_button = self.menu_bar.add_button("Forms")
+        forms_button = self.menu_bar.add_button("forms_overlay")
         forms_overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
-        clear_button = self.menu_bar.add_button("Clear Readings", self.context.net.buffer.reset_modbus)
-
-        # stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+        clear_button = self.menu_bar.add_button("clear_modbus", self.context.net.buffer.reset_modbus)
 
         self.update_idletasks()
         self.refresh_nicknames()

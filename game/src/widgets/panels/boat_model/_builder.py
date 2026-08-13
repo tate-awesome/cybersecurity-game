@@ -5,12 +5,8 @@ from typing import cast
 
 class Builder(Panel):
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "Submarine System Model")
+        super().__init__(master, context, "submarine_panel")
 
         map = WorldMap(self, context)
 
-        self.menu_bar.add_button("Customize")
-        self.menu_bar.add_button("Reset View", map.camera.reset_scale)
-        self.menu_bar.add_button("Clear Values")
-        self.menu_bar.add_button("Center on Boat")
         self.menu_bar.minimize_button(map, master)
