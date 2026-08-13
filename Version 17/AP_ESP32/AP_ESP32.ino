@@ -76,6 +76,19 @@ float g_hvac_state_error_threshold = 5.0f;
 float g_rudder_error_threshold = 2.75f;
 float g_speed_error_threshold = 2.0f;
 
+float g_client_sensor_noise_variance = 8.3f;
+float g_client_rudder_error_threshold = 2.0f;
+float g_client_speed_error_threshold = 2.75f;
+float g_hvac_client_sensor_noise_variance = 0.1f;
+
+float g_hvac_server_kalman_expected_sensor_variance = 0.1f;
+float g_hvac_server_state_error_threshold = 5.0f;
+float g_server_kalman_expected_sensor_variance = 8.3f;
+
+uint32_t g_submarine_settings_revision = 0;
+uint32_t g_client_settings_revision = 0;
+uint32_t g_server_settings_revision = 0;
+
 // ─── Live submarine telemetry position ─────────────────────────
 //  Most recent (x, y) reported by each source via POST /data.
 //   NOTE: this assumes the incoming /data payload includes numeric
@@ -1446,12 +1459,37 @@ void setupRoutes() {
           if (incoming.containsKey("noise_x"))     g_client_noise_x = incoming["noise_x"];
           if (incoming.containsKey("noise_y"))     g_client_noise_y = incoming["noise_y"];
           if (incoming.containsKey("noise_theta")) g_client_noise_theta = incoming["noise_theta"];
+          if (incoming.containsKey("sensor_noise_variance")) {
+              g_client_sensor_noise_variance =
+                  incoming["sensor_noise_variance"].as<float>();
+          }
+
+          if (incoming.containsKey("rudder_error_threshold")) {
+              g_client_rudder_error_threshold =
+                  incoming["rudder_error_threshold"].as<float>();
+          }
+
+          if (incoming.containsKey("speed_error_threshold")) {
+              g_client_speed_error_threshold =
+                  incoming["speed_error_threshold"].as<float>();
+          }
+              if (incoming.containsKey("settings_revision")) {
+              g_client_settings_revision =
+                  incoming["settings_revision"].as<uint32_t>();
+          }
         } else if (src == "server") {
           g_server_live_x = px;
           g_server_live_y = py;
+          g_has_server_live = true;
           if (incoming.containsKey("speed"))  g_server_speed_cmd = incoming["speed"];
           if (incoming.containsKey("rudder")) g_server_rudder_deg = incoming["rudder"];
-          g_has_server_live = true;
+          if (incoming.containsKey("kalman_expected_sensor_variance")) {
+              g_server_kalman_expected_sensor_variance =
+                  incoming["kalman_expected_sensor_variance"].as<float>();
+          }
+          if (incoming.containsKey("settings_revision")) {
+              g_server_settings_revision = incoming["settings_revision"].as<uint32_t>();
+          }
         }
       }
 
@@ -1481,6 +1519,7 @@ void setupRoutes() {
       resp["rudder_error_threshold"] = g_rudder_error_threshold;
       resp["speed_error_threshold"]  = g_speed_error_threshold;
       resp["kalman_expected_sensor_variance"] = g_kalman_expected_sensor_variance;
+      resp["settings_revision"] = g_submarine_settings_revision;
 
       String out;
       serializeJson(resp, out);
@@ -1502,6 +1541,16 @@ void setupRoutes() {
     resp["current_temp"]   = g_current_room_temp;
     resp["heater_on"]      = g_heater_on;
     resp["HVAC_anomaly_detected"] = g_HVAC_anomaly_detected;
+    resp["sensor_noise_variance"] = g_client_sensor_noise_variance;
+    resp["rudder_error_threshold"] = g_client_rudder_error_threshold;
+    resp["speed_error_threshold"] = g_client_speed_error_threshold;
+    resp["kalman_expected_sensor_variance"] = g_server_kalman_expected_sensor_variance;
+    resp["hvac_sensor_noise_variance"] = g_hvac_client_sensor_noise_variance;
+    resp["hvac_kalman_expected_sensor_variance"] = g_hvac_server_kalman_expected_sensor_variance;
+    resp["hvac_state_error_threshold"] = g_hvac_server_state_error_threshold;
+    resp["settings_revision"] = g_submarine_settings_revision;
+    resp["client_settings_revision"] = g_client_settings_revision;
+    resp["server_settings_revision"] = g_server_settings_revision;
 
     String out;
     serializeJson(resp, out);
@@ -1582,6 +1631,90 @@ void setupRoutes() {
         req->send(200, "application/json", "{\"status\":\"ok\"}");
     }
   );
+
+  server.on("/set_hvac_settings", HTTP_POST,
+  [](AsyncWebServerRequest* req) {},
+  nullptr,
+  [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+
+    StaticJsonDocument<256> doc;
+
+    DeserializationError err = deserializeJson(doc, data, len);
+
+    if (err) {
+      req->send(
+        400,
+        "application/json",
+        "{\"error\":\"bad json\"}"
+      );
+      return;
+    }
+
+    if (doc.containsKey("encryption_status")) {
+      g_hvac_encryption_status =
+          doc["encryption_status"].as<bool>();
+    }
+
+    if (doc.containsKey("encryption_key")) {
+      g_hvac_encryption_key =
+          doc["encryption_key"].as<String>();
+    }
+
+    if (doc.containsKey("AP_communication")) {
+      g_hvac_AP_communication =
+          doc["AP_communication"].as<bool>();
+    }
+
+    if (doc.containsKey("sensor_noise_variance")) {
+      g_hvac_sensor_noise_variance =
+          doc["sensor_noise_variance"].as<float>();
+
+      g_hvac_client_sensor_noise_variance =
+          g_hvac_sensor_noise_variance;
+    }
+
+    if (doc.containsKey("hvac_kalman_expected_sensor_variance")) {
+      g_hvac_kalman_expected_sensor_variance =
+          doc["hvac_kalman_expected_sensor_variance"].as<float>();
+
+      g_hvac_server_kalman_expected_sensor_variance =
+          g_hvac_kalman_expected_sensor_variance;
+    }
+
+    if (doc.containsKey("hvac_state_error_threshold")) {
+      g_hvac_state_error_threshold =
+          doc["hvac_state_error_threshold"].as<float>();
+
+      g_hvac_server_state_error_threshold =
+          g_hvac_state_error_threshold;
+    }
+
+    StaticJsonDocument<256> resp;
+
+    resp["status"] = "ok";
+    resp["encryption_status"] =
+        g_hvac_encryption_status;
+    resp["encryption_key"] =
+        g_hvac_encryption_key;
+    resp["AP_communication"] =
+        g_hvac_AP_communication;
+    resp["sensor_noise_variance"] =
+        g_hvac_sensor_noise_variance;
+    resp["hvac_kalman_expected_sensor_variance"] =
+        g_hvac_kalman_expected_sensor_variance;
+    resp["hvac_state_error_threshold"] =
+        g_hvac_state_error_threshold;
+
+    String out;
+    serializeJson(resp, out);
+
+    req->send(
+      200,
+      "application/json",
+      out
+    );
+  }
+);
 
   // ── POST /set_hvac_target  →  Manually push a setpoint ──────
   //   TEMPORARY TEST TOOL: lets you punch in a target_temp from the
@@ -1707,24 +1840,31 @@ void setupRoutes() {
         g_speed_error_threshold =
           doc["speed_error_threshold"].as<float>();
       }
+      
+      g_submarine_settings_revision++;
 
-      Serial.printf(
-        "[AP] Settings updated:\n"
-        "  sensor noise: %.2f\n"
-        "  kalman variance: %.2f\n"
-        "  rudder threshold: %.2f\n"
-        "  speed threshold: %.2f\n",
-        g_sensor_noise_variance,
-        g_kalman_expected_sensor_variance,
-        g_rudder_error_threshold,
-        g_speed_error_threshold
-      );
+      StaticJsonDocument<256> resp;
 
-      req->send(
-        200,
-        "application/json",
-        "{\"status\":\"ok\"}"
-      );
+      resp["status"] = "ok";
+      resp["settings_revision"] =
+          g_submarine_settings_revision;
+
+      resp["sensor_noise_variance"] =
+          g_sensor_noise_variance;
+
+      resp["kalman_expected_sensor_variance"] =
+          g_kalman_expected_sensor_variance;
+
+      resp["rudder_error_threshold"] =
+          g_rudder_error_threshold;
+
+      resp["speed_error_threshold"] =
+          g_speed_error_threshold;
+
+      String out;
+      serializeJson(resp, out);
+
+      req->send(200, "application/json", out);
     }
   );
 

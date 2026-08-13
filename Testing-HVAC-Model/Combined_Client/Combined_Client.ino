@@ -48,6 +48,7 @@ float g_remote_rudder = 0.0f;
 float g_sensor_noise_variance = 8.3f;
 float g_rudder_error_threshold = 2.0f;
 float g_speed_error_threshold = 2.75f;
+uint32_t g_settings_revision = 0;
 
 IPAddress serverIP(192, 168, 4, 10);   // Server lives here regardless of mode
 ModbusIP mb;
@@ -370,6 +371,10 @@ void restPost() {
   doc["noise_x"] = noise_x;
   doc["noise_y"] = noise_y;
   doc["noise_theta"] = noise_theta;
+  doc["sensor_noise_variance"] = g_sensor_noise_variance;
+  doc["rudder_error_threshold"] = g_rudder_error_threshold;
+  doc["speed_error_threshold"]  = g_speed_error_threshold;
+  doc["settings_revision"] = g_settings_revision;
 
   String payload;
   serializeJson(doc, payload);
@@ -402,6 +407,9 @@ void restPost() {
         }
         if (resp.containsKey("speed_error_threshold")) {
             g_speed_error_threshold = resp["speed_error_threshold"].as<float>();
+        }
+        if (resp.containsKey("settings_revision")) {
+            g_settings_revision = resp["settings_revision"].as<uint32_t>();
         }
     }
   } else {
@@ -598,14 +606,14 @@ void postHvac(){
   HTTPClient statusHttp;
   statusHttp.begin("http://192.168.4.1/hvac_status");
   statusHttp.addHeader("Content-Type", "application/json");
-  StaticJsonDocument<128> statusDoc;
+  StaticJsonDocument<256> statusDoc;
   statusDoc["client_temp"] = noisy_measurement;
   String statusBody;
   serializeJson(statusDoc, statusBody);
   int code = statusHttp.POST(statusBody);
   if (code == 200) {
         String body = statusHttp.getString();
-        StaticJsonDocument<128> resp;
+        StaticJsonDocument<512> resp;
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
                 hvac_encryption_status = resp["encryption_status"].as<bool>();

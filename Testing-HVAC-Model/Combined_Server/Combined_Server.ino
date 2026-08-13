@@ -326,6 +326,7 @@ void restPost() {
     doc["speed"]     = g_speed_cmd;
     doc["rudder"]    = g_rudder_deg;
     doc["state_anomaly_detected"] = g_state_anomaly_detected;
+    doc["kalman_expected_sensor_variance"] = g_kalman_expected_sensor_variance;
 
     String payload;
     serializeJson(doc, payload);
@@ -546,7 +547,7 @@ void postHvac(float current_temp) {
   HTTPClient statusHttp;
   statusHttp.begin("http://192.168.4.1/hvac_status");
   statusHttp.addHeader("Content-Type", "application/json");
-  StaticJsonDocument<128> statusDoc;
+  StaticJsonDocument<256> statusDoc;
   statusDoc["current_temp"] = current_temp;
   statusDoc["heater_on"]    = heater_on;
   statusDoc["HVAC_anomaly_detected"] = g_HVAC_anomaly_detected;
@@ -556,7 +557,7 @@ void postHvac(float current_temp) {
   int code = statusHttp.POST(statusBody);
   if (code == 200) {
         String body = statusHttp.getString();
-        StaticJsonDocument<128> resp;
+        StaticJsonDocument<512> resp;
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
                 hvac_encryption_status = resp["encryption_status"].as<bool>();
@@ -573,7 +574,6 @@ void postHvac(float current_temp) {
                 g_hvac_kalman_expected_sensor_variance =
                     resp["hvac_kalman_expected_sensor_variance"].as<float>();
             }
-
             if (resp.containsKey("hvac_state_error_threshold")) {
                 g_hvac_state_error_threshold =
                     resp["hvac_state_error_threshold"].as<float>();
