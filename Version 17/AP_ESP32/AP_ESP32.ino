@@ -65,6 +65,16 @@ bool  g_heater_on          = false;
 bool  g_HVAC_anomaly_detected = false;
 float g_client_noisy_temp = 0.0f;
 uint16_t g_damper_status = 0;
+bool g_hvac_encryption_status = false;
+String g_hvac_encryption_key ="1234";
+bool g_hvac_AP_communication = false;
+float g_sensor_noise_variance = 8.3f;
+float g_hvac_sensor_noise_variance = 0.1f;
+float g_kalman_expected_sensor_variance = 8.3f;
+float g_hvac_kalman_expected_sensor_variance = 0.1f;
+float g_hvac_state_error_threshold = 5.0f;
+float g_rudder_error_threshold = 2.75f;
+float g_speed_error_threshold = 2.0f;
 
 // ─── Live submarine telemetry position ─────────────────────────
 //  Most recent (x, y) reported by each source via POST /data.
@@ -1455,8 +1465,6 @@ void setupRoutes() {
         g_has_live_rudder = true;
       }
 
-
-
       // Return control state
       StaticJsonDocument<128> resp;
       resp["encryption_status"] = g_encryption_status;
@@ -1469,6 +1477,10 @@ void setupRoutes() {
       resp["client_noise_theta"] = g_client_noise_theta;
       resp["server_speed"] = g_server_speed_cmd;
       resp["server_rudder"] = g_server_rudder_deg;
+      resp["sensor_noise_variance"] = g_sensor_noise_variance;
+      resp["rudder_error_threshold"] = g_rudder_error_threshold;
+      resp["speed_error_threshold"]  = g_speed_error_threshold;
+      resp["kalman_expected_sensor_variance"] = g_kalman_expected_sensor_variance;
 
       String out;
       serializeJson(resp, out);
@@ -1601,7 +1613,7 @@ void setupRoutes() {
     [](AsyncWebServerRequest* req) {},
     nullptr,
     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
-      StaticJsonDocument<128> doc;
+      StaticJsonDocument<256> doc;
       DeserializationError err = deserializeJson(doc, data, len);
       if (err) {
         req->send(400, "application/json", "{\"error\":\"bad json\"}");
@@ -1622,16 +1634,97 @@ void setupRoutes() {
       if (doc.containsKey("damper_status")) {
          g_damper_status = doc["damper_status"];
       }
+      if (doc.containsKey("encryption_status")) {
+        g_hvac_encryption_status = doc["encryption_status"].as<bool>();
+      }
+      if (doc.containsKey("encryption_key")) {
+        g_hvac_encryption_key = doc["encryption_key"].as<String>();
+      }
+      if (doc.containsKey("AP_communication")) {
+        g_hvac_AP_communication = doc["AP_communication"].as<bool>();
+      }
+      if (doc.containsKey("sensor_noise_variance")) {
+        g_hvac_sensor_noise_variance = doc["sensor_noise_variance"].as<float>();
+      }
+      if (doc.containsKey("hvac_kalman_expected_sensor_variance")) {
+        g_hvac_kalman_expected_sensor_variance = doc["hvac_kalman_expected_sensor_variance"].as<float>();
+      }
+      if (doc.containsKey("hvac_state_error_threshold")) {
+        g_hvac_state_error_threshold = doc["hvac_state_error_threshold"].as<float>();
+      }
       recordHvacSample(g_current_room_temp, g_target_temp);
-      StaticJsonDocument<128> resp;
-      resp["encryption_status"] = g_encryption_status;
-      resp["encryption_key"]    = g_encryption_key;
+      StaticJsonDocument<256> resp;
       resp["client_temp"]       = g_client_noisy_temp;
       resp["damper_status"]     = g_damper_status;
+      resp["encryption_status"] = g_hvac_encryption_status;
+      resp["encryption_key"]    = g_hvac_encryption_key;
+      resp["AP_communication"]   = g_hvac_AP_communication;
+      resp["sensor_noise_variance"] = g_hvac_sensor_noise_variance;
+      resp["hvac_kalman_expected_sensor_variance"] = g_hvac_kalman_expected_sensor_variance;
+      resp["hvac_state_error_threshold"] = g_hvac_state_error_threshold;
 
       String out;
       serializeJson(resp, out);
       req->send(200, "application/json", out);
+    }
+  );
+
+  server.on("/set_settings", HTTP_POST,
+    [](AsyncWebServerRequest* req) {},
+    nullptr,
+    [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
+
+      StaticJsonDocument<256> doc;
+
+      DeserializationError err = deserializeJson(doc, data, len);
+
+      if (err) {
+        req->send(
+          400,
+          "application/json",
+          "{\"error\":\"bad json\"}"
+        );
+        return;
+      }
+
+      // Pull each value out of the received JSON
+      if (doc.containsKey("sensor_noise_variance")) {
+        g_sensor_noise_variance =
+          doc["sensor_noise_variance"].as<float>();
+      }
+
+      if (doc.containsKey("kalman_expected_sensor_variance")) {
+        g_kalman_expected_sensor_variance =
+          doc["kalman_expected_sensor_variance"].as<float>();
+      }
+
+      if (doc.containsKey("rudder_error_threshold")) {
+        g_rudder_error_threshold =
+          doc["rudder_error_threshold"].as<float>();
+      }
+
+      if (doc.containsKey("speed_error_threshold")) {
+        g_speed_error_threshold =
+          doc["speed_error_threshold"].as<float>();
+      }
+
+      Serial.printf(
+        "[AP] Settings updated:\n"
+        "  sensor noise: %.2f\n"
+        "  kalman variance: %.2f\n"
+        "  rudder threshold: %.2f\n"
+        "  speed threshold: %.2f\n",
+        g_sensor_noise_variance,
+        g_kalman_expected_sensor_variance,
+        g_rudder_error_threshold,
+        g_speed_error_threshold
+      );
+
+      req->send(
+        200,
+        "application/json",
+        "{\"status\":\"ok\"}"
+      );
     }
   );
 
