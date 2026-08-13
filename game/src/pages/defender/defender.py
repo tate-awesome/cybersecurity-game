@@ -62,6 +62,8 @@ class DefenderV0(Page):
         self.kalman_expected_sensor_variance = 8.3
         self.rudder_error_threshold = 2.75
         self.speed_error_threshold = 2.0
+        self._syncing_sliders = False
+        self._submarine_pending_revision = 0
 
         # Flag state — all False until logic sets them
         self._submarine_flags = {key: False for key, _ in self.SUBMARINE_FLAG_DEFS}
@@ -395,9 +397,13 @@ class DefenderV0(Page):
 
             def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
                 value = float(value)
+
                 setattr(self, attr, value)
                 lbl.configure(text=f"{value:.{d}f}")
-                self._post_slider_settings()
+
+                # Only POST when the USER moved the slider.
+                if not self._syncing_sliders:
+                    self._post_slider_settings()
                 
             slider = CTkSlider(
                 section,
@@ -410,6 +416,18 @@ class DefenderV0(Page):
 
             self._sliders[title] = slider
             self._slider_value_labels[title] = value_label
+
+        reset_button = CTkButton(
+            section,
+            text="Reset to Defaults",
+            font=self.style.get_font(),
+            command=self._reset_slider_defaults
+        )
+        reset_button.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=self.style.igap
+        )
 
     def _post_slider_settings(self):
         payload = {
@@ -427,11 +445,133 @@ class DefenderV0(Page):
                     timeout=3,
                 )
                 if resp.ok:
-                    print("Settings posted")
+                    body = resp.json()
+                    self._submarine_pending_revision = int(
+                        body.get("settings_revision", 0)
+                    )
+                    print(
+                        "Settings posted, revision:",
+                        self._submarine_pending_revision
+                    )
             except Exception as e:
                 print("post_slider_settings:", e)
 
         threading.Thread(target=_request, daemon=True).start()
+
+    def _sync_submarine_sliders(self, data: dict):
+        client_revision = int(
+            data.get("client_settings_revision", 0)
+        )
+
+        server_revision = int(
+            data.get("server_settings_revision", 0)
+        )
+
+        if self._submarine_pending_revision > 0:
+
+            if (
+                client_revision < self._submarine_pending_revision
+                or server_revision < self._submarine_pending_revision
+            ):
+                return
+
+            self._submarine_pending_revision = 0
+            
+        values = {
+            "Sensor Noise Variance":
+                data.get("sensor_noise_variance"),
+
+            "Kalman Expected Sensor Variance":
+                data.get("kalman_expected_sensor_variance"),
+
+            "Rudder Error Threshold":
+                data.get("rudder_error_threshold"),
+
+            "Speed Error Threshold":
+                data.get("speed_error_threshold"),
+        }
+
+        self._syncing_sliders = True
+
+        try:
+            for title, value in values.items():
+                if value is None:
+                    continue
+
+                slider = self._sliders.get(title)
+                label = self._slider_value_labels.get(title)
+
+                if slider is None:
+                    continue
+
+                value = float(value)
+
+                # Move the UI slider to the MCU's current value.
+                slider.set(value)
+
+                # Keep the Python-side variable synchronized too.
+                attr_map = {
+                    "Sensor Noise Variance": "sensor_noise_variance",
+                    "Kalman Expected Sensor Variance":
+                        "kalman_expected_sensor_variance",
+                    "Rudder Error Threshold":
+                        "rudder_error_threshold",
+                    "Speed Error Threshold":
+                        "speed_error_threshold",
+                }
+
+                setattr(self, attr_map[title], value)
+
+                if label is not None:
+                    decimals = 1 if title in (
+                        "Rudder Error Threshold",
+                        "Speed Error Threshold"
+                    ) else 2
+
+                    label.configure(
+                        text=f"{value:.{decimals}f}"
+                    )
+
+        finally:
+            self._syncing_sliders = False
+
+    def _reset_slider_defaults(self):
+        defaults = {
+            "Sensor Noise Variance": (
+                8.3, "sensor_noise_variance", 2
+            ),
+            "Kalman Expected Sensor Variance": (
+                8.3, "kalman_expected_sensor_variance", 2
+            ),
+            "Rudder Error Threshold": (
+                2.75, "rudder_error_threshold", 1
+            ),
+            "Speed Error Threshold": (
+                2.0, "speed_error_threshold", 1
+            ),
+        }
+
+        # Prevent each slider.set() from generating its own POST
+        self._syncing_sliders = True
+
+        try:
+            for title, (value, attr, decimals) in defaults.items():
+
+                # Update Python variable
+                setattr(self, attr, value)
+
+                # Move slider
+                self._sliders[title].set(value)
+
+                # Update displayed number
+                self._slider_value_labels[title].configure(
+                    text=f"{value:.{decimals}f}"
+                )
+
+        finally:
+            self._syncing_sliders = False
+
+        self._post_slider_settings()
 
     # ════════════════════════════════════════════════════════════════════════
     #  Network actions
@@ -518,9 +658,13 @@ class DefenderV0(Page):
         self._refresh_encryption_ui()
 
         incoming_mode = data.get("submarine_mode", True)
+        
         if incoming_mode != self._submarine_mode:
             self._submarine_mode = incoming_mode
             self._refresh_mode_ui()
+
+        if self._submarine_mode:
+            self._sync_submarine_sliders(data)
 
         if not self._submarine_mode:
             # HVAC mode — Submarine widgets are hidden, only the HVAC view

@@ -59,6 +59,7 @@ class HVACView:
         self.sensor_noise_variance = 0.1
         self.kalman_expected_sensor_variance = 0.1
         self.state_error_threshold = 5.0
+        self._syncing_sliders = False
 
         self._build_left(left_parent)
         self._build_graph(right_parent)
@@ -202,7 +203,7 @@ class HVACView:
         def _request():
             try:
                 resp = requests.post(
-                    f"{self._get_url()}/hvac_status",
+                    f"{self._get_url()}/set_hvac_settings",
                     json=payload,
                     timeout=3,
                 )
@@ -252,9 +253,12 @@ class HVACView:
 
             def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
                 value = float(value)
-                setattr(self, attr, float(value))
-                lbl.configure(text=f"{float(value):.{d}f}")
-                self._push_hvac_controls()
+
+                setattr(self, attr, value)
+                lbl.configure(text=f"{value:.{d}f}")
+
+                if not self._syncing_sliders:
+                    self._push_hvac_controls()
 
             slider = CTkSlider(
                 section,
@@ -267,6 +271,18 @@ class HVACView:
 
             self._sliders[title] = slider
             self._slider_value_labels[title] = value_label
+
+        reset_button = CTkButton(
+            section,
+            text="Reset to Defaults",
+            font=self.style.get_font(),
+            command=self._reset_slider_defaults
+        )
+        reset_button.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=self.style.igap
+        )
     
     def _readout_row(self, parent, label_text):
         row = CTkFrame(parent, fg_color="transparent")
@@ -308,6 +324,88 @@ class HVACView:
         self._canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
         self._canvas.draw()
 
+    def _sync_hvac_sliders(self, data: dict):
+        values = {
+            "Sensor Noise Variance":
+                data.get("hvac_sensor_noise_variance"),
+
+            "Kalman Expected Sensor Variance":
+                data.get("hvac_kalman_expected_sensor_variance"),
+
+            "State Error Threshold":
+                data.get("hvac_state_error_threshold"),
+        }
+
+        self._syncing_sliders = True
+
+        try:
+            for title, value in values.items():
+                if value is None:
+                    continue
+
+                slider = self._sliders.get(title)
+                label = self._slider_value_labels.get(title)
+
+                if slider is None:
+                    continue
+
+                value = float(value)
+
+                slider.set(value)
+
+                attr_map = {
+                    "Sensor Noise Variance":
+                        "sensor_noise_variance",
+
+                    "Kalman Expected Sensor Variance":
+                        "kalman_expected_sensor_variance",
+
+                    "State Error Threshold":
+                        "state_error_threshold",
+                }
+
+                setattr(self, attr_map[title], value)
+
+                if label is not None:
+                    decimals = 1 if title == "State Error Threshold" else 2
+                    label.configure(
+                        text=f"{value:.{decimals}f}"
+                    )
+
+        finally:
+            self._syncing_sliders = False
+
+    def _reset_slider_defaults(self):
+        defaults = {
+            "Sensor Noise Variance": (
+                0.1, "sensor_noise_variance", 2
+            ),
+            "Kalman Expected Sensor Variance": (
+                0.1, "kalman_expected_sensor_variance", 2
+            ),
+            "State Error Threshold": (
+                5.0, "state_error_threshold", 1
+            ),
+        }
+
+        self._syncing_sliders = True
+
+        try:
+            for title, (value, attr, decimals) in defaults.items():
+
+                setattr(self, attr, value)
+
+                self._sliders[title].set(value)
+
+                self._slider_value_labels[title].configure(
+                    text=f"{value:.{decimals}f}"
+                )
+
+        finally:
+            self._syncing_sliders = False
+
+        self._push_hvac_controls()
+
     # ════════════════════════════════════════════════════════════════════
     #  Visibility — DefenderV0 calls these on mode change
     # ════════════════════════════════════════════════════════════════════
@@ -325,6 +423,8 @@ class HVACView:
     # ════════════════════════════════════════════════════════════════════
 
     def update(self, data: dict):
+        self._sync_hvac_sliders(data)
+
         current_temp = data.get("current_temp")
         target_temp  = data.get("target_temp")
         heater_on    = data.get("heater_on")
