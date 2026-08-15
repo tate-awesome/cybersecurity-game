@@ -65,5 +65,5 @@ class Builder(Panel):
         form.grid()
 
     def stop_all(self):
-        for form in self.forms.values():
+        for form in reversed(self.forms.values()):
             form.click_stop()

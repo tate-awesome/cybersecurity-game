@@ -43,7 +43,6 @@ class HardwareController(NetworkController):
     
     def abort_all(self):
         super().abort_all()
-        self.stop_wifi()
         self.stop_sniff()
     
 class HardwareAttacker(HardwareController):
@@ -63,6 +62,7 @@ class HardwareAttacker(HardwareController):
         self.stop_arp()
         self.stop_nfq()
         self.stop_dos()
+        self.stop_wifi()
 
     def start_arp(self, target_ip, host_ip):
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
@@ -95,3 +95,7 @@ class HardwareAttacker(HardwareController):
 class HardwareDefender(HardwareController):
     def __init__(self, context):
         super().__init__(context)
+
+    def abort_all(self):
+        self.stop_wifi()
+        super().abort_all()
