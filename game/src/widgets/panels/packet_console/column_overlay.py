@@ -30,7 +30,7 @@ class ColumnOverlay:
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
         for key in self.context.states.get("packet_columns"):
-            column_box = CTkCheckBox(category_frame, text=self.context.labels["packet_columns"][key], font=med)
+            column_box = CTkCheckBox(category_frame, text=self.context.labels.get("packet_columns", key), font=med)
             column_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input
             value = box_slots[key]

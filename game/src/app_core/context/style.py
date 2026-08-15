@@ -154,7 +154,7 @@ class Style:
 
     def add_tooltip(self, widget, class_key: str, widget_key: str):
         CTkToolTip(widget,
-                   self.context.labels[class_key][widget_key],
+                   self.context.labels.get(class_key, widget_key),
                    follow=False,
                    font=self.get_font(),
                    x_offset=self.igap, y_offset=self.igap, border_width=2,

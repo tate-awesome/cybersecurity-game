@@ -5,6 +5,7 @@ from .animation_manager import AnimationManager
 from .preferences import Preferences
 from .keybinds import KeyBinds
 from .input_manager import InputManager
+from .localization_manager import LocalizationManager
 import os, json, platform
 from .paths import Paths
 from .json import Json
@@ -49,7 +50,7 @@ Shared data for a page. Passed to next pages on navigation.
         self.preferences = Preferences(self)
         KeyBinds(self)
         self.states = InputManager(self)
-        self.labels = self.get_preferred_labels()
+        self.labels = LocalizationManager(self)
         self.style.load_preferred_theme()
         self.style.load_preferred_mode()
 
@@ -58,7 +59,7 @@ Shared data for a page. Passed to next pages on navigation.
         Resets members in a session
         '''
         self.states.reset()
-        self.labels = self.get_default_labels()
+        self.labels.reset()
         self.style.load_default_theme()
         self.style.load_default_mode()
 
@@ -98,28 +99,6 @@ Shared data for a page. Passed to next pages on navigation.
     def reset_data(self):
         self.reset_session()
         self.preferences.clear()
-        self.router.refresh()
-
-    def get_preferred_labels(self):
-        default = self.get_default_labels()
-        if self.preferences.has("labels"):
-            self.json.deep_merge(default, self.preferences.data["labels"])
-        return default
-
-    def get_default_labels(self):
-        data = {}
-        file_path = self.paths.labels / "_default.json"
-        self.json.merge_from_file(data, file_path)
-        return data
-
-    def select_labels(self):
-        '''
-        Opens a dialog for the user to select a context labels
-        Context labels change text in labels
-        '''
-        directory = self.paths.labels
-        file_path = self.paths.select_path(directory, "Select a Labels File")
-        self.json.merge_from_file(self.labels, file_path)
         self.router.refresh()
 
     def help_message(self, widget="root"):

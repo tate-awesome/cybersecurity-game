@@ -21,12 +21,12 @@ class BaseForm(ABC, CTkFrame):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=0)
 
-        self.status_on_text = self.context.labels["hacking_panels"][f"{self.key}_on"]
-        self.status_off_text = self.context.labels["hacking_panels"][f"{self.key}_off"]
-        self.start_attack_text = self.context.labels["hacking_panels"][f"{self.key}_start"]
-        self.starting_attack_text = self.context.labels["hacking_panels"][f"{self.key}_starting"]
-        self.stop_attack_text = self.context.labels["hacking_panels"][f"{self.key}_stop"]
-        self.stopping_attack_text = self.context.labels["hacking_panels"][f"{self.key}_stopping"]
+        self.status_on_text = self.context.labels.get("hacking_panels", f"{self.key}_on")
+        self.status_off_text = self.context.labels.get("hacking_panels", f"{self.key}_off")
+        self.start_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_start")
+        self.starting_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_starting")
+        self.stop_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_stop")
+        self.stopping_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_stopping")
 
         self.current_row = 0
         self.entry_index = 0
@@ -36,7 +36,7 @@ class BaseForm(ABC, CTkFrame):
 
 
     def add_header(self):
-        self.header = CTkLabel(self, text=self.context.labels["hacking_forms"][self.key], font=self.style.get_font())
+        self.header = CTkLabel(self, text=self.context.labels.get("hacking_forms", self.key), font=self.style.get_font())
         self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gap)
         self.current_row += 1
 

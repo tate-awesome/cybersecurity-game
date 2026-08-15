@@ -13,7 +13,7 @@
         "summary": "Summary",
         "modbus": "MODBUS Info"
     },
-
+    
     "hacking_forms": {
         "wifi": "WiFi Connection",
         "nmap": "NMapping",
@@ -22,7 +22,7 @@
         "sniff": "Packet Sniffing",
         "nfq": "Net Filter Queue"
     },
-
+    
     "hacking_panels": {
         "wifi_on": "Connected.",
         "wifi_off": "Disconnected.",
@@ -30,35 +30,35 @@
         "wifi_starting": "Connecting...",
         "wifi_stop": "Disconnect",
         "wifi_stopping": "Disconnecting...",
-
+        
         "nmap_on": "",
         "nmap_off": "",
         "nmap_start": "",
         "nmap_starting": "",
         "nmap_stop": "",
         "nmap_stopping": "",
-
+        
         "arp_on": "Spoofing is on",
         "arp_off": "Spoofing is off",
         "arp_start": "Start Spoofer",
         "arp_starting": "Starting...",
         "arp_stop": "Stop Spoofer",
         "arp_stopping": "Stopping...",
-
+        
         "dos_on": "DoS is on",
         "dos_off": "DoS is off",
         "dos_start": "Start Attack",
         "dos_starting": "Starting...",
         "dos_stop": "Stop Attack",
         "dos_stopping": "Stopping...",
-
+        
         "sniff_on": "Sniffer is on",
         "sniff_off": "Sniffer is off",
         "sniff_start": "Start Sniffing",
         "sniff_starting": "Starting...",
         "sniff_stop": "Stop Sniffing",
         "sniff_stopping": "Stopping...",
-
+        
         "nfq_on": "NFQ is on",
         "nfq_off": "NFQ is off",
         "nfq_start": "Start NFQ",
@@ -66,18 +66,18 @@
         "nfq_stop": "Stop NFQ",
         "nfq_stopping": "Stopping..."
     },
-
+    
     "modbus_forms": {
         "table": "MITM Readings",
         "modify": "ModBus Modifiers"
     },
-
+    
     "packet_filter_categories": {
         "source": "From Source",
         "protocol": "Includes Protocol",
         "direction": "Direction"
     },
-
+    
     "packet_filter_checkboxes": {            
         "nmap": "NMapping",
         "arp": "ARP Spoofing",
@@ -96,11 +96,11 @@
         "in": "Received",
         "other": "Observed"
     },
-
+    
     "packet_filter_entries": {
         "address_filter": "IP/MAC Addresses Involved (Separated by \"|\")"
     },
-
+    
     "menu_bar_tooltips": {
         "labels_button": "Load localized labels and text from a json file.",
         "preset_button": "Load options for a specific scenario/lesson.",
@@ -116,6 +116,34 @@
         "fields_button": "Saves the current checkboxes and entries for next time.",
         "page_button": "Save the current page for a shortcut on startup."
     },
+
+    "title_text": {
+        "_default": "Title Text",
+        "main_title": "The Game",
+        "select_demo": "Select Demo",
+        "select_mode": "Select Mode"
+    },
+
+    "title_buttons": {
+        "_default": "Title Button",
+
+        "play": "Play",
+        "ap_page": "Open AP Config",
+        "resume": "Open Favorite",
+
+        "hardware_attacker": "Device Attacker",
+        "hardware_defender": "Device Defender",
+        "select_demo": "Run a Demo",
+
+        "boat_motion": "Boat Motion Demo",
+        "sprites": "Sprites Demo",
+        "triangle": "Triangle Demo",
+        "proof": "Proof of Concept",
+
+
+        "back": "Back",
+        "quit": "Quit"
+    },
     
     "menu_bar_titles": {
         "_default": "Menu",
@@ -124,17 +152,17 @@
         "boat_motion_demo": "Boat Motion Demo",
         "triangle_demo": "Triangle Demo",
         "sprites_demo": "Sprites Demo",
-
+        
         "submarine_panel": "Submarine Model",
         "stripchart_panel": "ModBus Monitors",
         "attack_panel": "Hacks",
         "modbus_panel": "ModBus Data",
         "network_panel": "Network Graph",
-
+        
         "packet_console": "Packets",
         "status_console": "Status"
     },
-
+    
     "menu_bar_buttons": {
         "_default": "Button",
         "labels_button": "Load Labels",

@@ -116,6 +116,33 @@
         "fields_button": "Guardar las casillas de verificación y entradas actuales para la próxima vez.",
         "page_button": "Guardar la página actual como acceso directo al iniciar."
     },
+
+    "title_text": {
+        "_default": "Texto del título",
+        "main_title": "El juego",
+        "select_demo": "Seleccionar demostración",
+        "select_mode": "Seleccionar modo"
+    },
+
+    "title_buttons": {
+        "_default": "Botón del título",
+
+        "play": "Jugar",
+        "ap_page": "Abrir configuración del AP",
+        "resume": "Abrir favorito",
+
+        "hardware_attacker": "Atacante de dispositivo",
+        "hardware_defender": "Defensor de dispositivo",
+        "select_demo": "Ejecutar una demostración",
+
+        "boat_motion": "Demostración del movimiento del barco",
+        "sprites": "Demostración de sprites",
+        "triangle": "Demostración del triángulo",
+        "proof": "Prueba de concepto",
+
+        "back": "Atrás",
+        "quit": "Salir"
+    },
     
     "menu_bar_titles": {
         "_default": "Menú",

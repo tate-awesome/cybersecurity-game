@@ -55,7 +55,7 @@ class Preferences:
         self.set("settings", self.context.states.get())
 
     def save_preferences(self):
-        self.set("labels", self.context.labels)
+        self.set("labels", self.context.labels.get())
         self.set("mode", self.context.style.mode())
         self.set("theme", self.context.style.current_theme)
 

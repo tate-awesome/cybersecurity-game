@@ -7,9 +7,10 @@ class TitleMenu(CTkFrame):
     Comes with a title and has a button maker.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, title_text: str = "Title Menu"):
+    def __init__(self, master: CTkFrame, context: Context, title_label: str = "_default"):
         self.context = context
         self.style = context.style
+        title_text = self.context.labels.get("title_text", title_label)
 
         super().__init__(master, fg_color="transparent")
         self.pack(expand="True", fill="both")
@@ -29,8 +30,8 @@ class TitleMenu(CTkFrame):
         self.rowconfigure(2, weight=1)
 
     
-    def button(self, text: str, function = None):
-        button = CTkButton(self, text=text, command=function, font=self.style.get_font("title_btn"))
+    def button(self, label: str = "_default", function = None):
+        button = CTkButton(self, text=self.context.labels.get("title_buttons", label), command=function, font=self.style.get_font("title_btn"))
         button.grid(row = self.current_row, column=1, pady=self.style.gap, ipady=self.style.igap)
         self.rowconfigure(self.current_row, weight=0)
         self.current_row = self.current_row + 1

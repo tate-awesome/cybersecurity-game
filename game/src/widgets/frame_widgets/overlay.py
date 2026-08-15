@@ -14,7 +14,7 @@ class Overlay(CTkFrame):
         self.style = context.style
         self.button = button
         self.open_text = button._text
-        self.close_text = self.context.labels["menu_bar_buttons"]["close_overlay"]
+        self.close_text = self.context.labels.get("menu_bar_buttons", "close_overlay")
         self.manage_list()
         self.safe = False
         self.populate_func = populate_func

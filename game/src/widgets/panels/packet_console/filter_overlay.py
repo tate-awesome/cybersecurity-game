@@ -59,13 +59,13 @@ class FilterOverlay:
 
             category_frame = CTkFrame(checkbox_frame, fg_color=self.style.color("widget"))
             category_frame.pack(side="left", padx=self.style.gap, pady=self.style.gap, anchor="n")
-            category_label = CTkLabel(category_frame, text=self.context.labels["packet_filter_categories"][category], font=self.style.get_font())
+            category_label = CTkLabel(category_frame, text=self.context.labels.get("packet_filter_categories", category), font=self.style.get_font())
             category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
             # Create each checkbox in the category
             for filter_key in self.filter_columns[category]:
 
-                filter_box = CTkCheckBox(category_frame, text=self.context.labels["packet_filter_checkboxes"][filter_key], font=self.style.get_font())
+                filter_box = CTkCheckBox(category_frame, text=self.context.labels.get("packet_filter_checkboxes", filter_key), font=self.style.get_font())
                 filter_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
                 
                 # Load previous input
@@ -87,7 +87,7 @@ class FilterOverlay:
         # Create each text filter label and entry
         for text_slot in text_slots:
 
-            filter_label = CTkLabel(entry_frame, text=self.context.labels["packet_filter_entries"][text_slot], font=self.style.get_font())
+            filter_label = CTkLabel(entry_frame, text=self.context.labels.get("packet_filter_entries", text_slot), font=self.style.get_font())
             filter_label.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
             filter_entry = CTkEntry(entry_frame, font=self.style.get_font())
             filter_entry.pack(fill="x", side="top", padx=self.style.gap, pady=self.style.gap)
@@ -189,7 +189,7 @@ class FilterOverlay:
 
                 for checkbox_key in self.filter_columns[category]:
                     if box_slots[checkbox_key] == "1" or box_slots[checkbox_key] == 1:
-                        category_conditions.append(self.context.labels["packet_filter_checkboxes"][checkbox_key])
+                        category_conditions.append(self.context.labels.get("packet_filter_checkboxes", checkbox_key))
 
                 if len(category_conditions) > 0:
                     category_summary = f"{category_summary} {' OR '.join(category_conditions)}"

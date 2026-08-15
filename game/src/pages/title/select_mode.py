@@ -11,9 +11,9 @@ class SelectMode(Page):
     def __init__(self, context: Context):
         super().__init__(context)
 
-        panel = TitleMenu(self, context, "Select Mode")
-        panel.button("Hardware Attacker", lambda:self.router.show("attacker/v0"))
-        panel.button("Hardware Defender", lambda:self.router.show("defender/v0"))
-        panel.button("Select a Demo", lambda:self.router.show("title/select_demo"))
-        panel.button("Back", self.router.go_back)
-        panel.button("Quit", self.router.quit)
+        panel = TitleMenu(self, context, "select_mode")
+        panel.button("hardware_attacker", lambda:self.router.show("attacker/v0"))
+        panel.button("hardware_defender", lambda:self.router.show("defender/v0"))
+        panel.button("select_demo", lambda:self.router.show("title/select_demo"))
+        panel.button("back", self.router.go_back)
+        panel.button("quit", self.router.quit)

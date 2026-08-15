@@ -18,7 +18,7 @@ class MenuBar(CTkFrame):
         super().__init__(master, fg_color=self.style.color("widget"))
         self.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x")
 
-        self.game_label = CTkLabel(self, text=self.context.labels["menu_bar_titles"][title_label], font=self.style.get_font(), padx=self.style.igap)
+        self.game_label = CTkLabel(self, text=self.context.labels.get("menu_bar_titles", title_label), font=self.style.get_font(), padx=self.style.igap)
         self.game_label.pack(fill="y", side="left", padx=self.style.gap)
 
         self.the_overflow_button = None
@@ -31,7 +31,7 @@ class MenuBar(CTkFrame):
         self.context.style.add_tooltip(widget, "menu_bar_tooltips", key)
 
     def add_button(self, label: str="_default", function=None):
-        button = CTkButton(self, text=self.context.labels["menu_bar_buttons"][label], command=function, font=self.style.get_font())
+        button = CTkButton(self, text=self.context.labels.get("menu_bar_buttons", label), command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
         return button
 
@@ -100,8 +100,8 @@ class MenuBar(CTkFrame):
 
 
     def minimize_button(self, frame_widget = None, pane = None):
-        minimize_text = self.context.labels["menu_bar_buttons"]["minimize"]
-        maximize_text = self.context.labels["menu_bar_buttons"]["maximize"]
+        minimize_text = self.context.labels.get("menu_bar_buttons", "minimize")
+        maximize_text = self.context.labels.get("menu_bar_buttons", "maximize")
         button = self.add_button("minimize")
         body_packed = True
         configure_options = {}
@@ -183,8 +183,8 @@ class MenuBar(CTkFrame):
             pane.bind("<Configure>", configure_handler)
 
     def reversible_button(self, start_func: callable, stop_func: callable, inactive_label: str, active_label: str):
-        inactive_name = self.context.labels["menu_bar_buttons"][inactive_label]
-        active_name = self.context.labels["menu_bar_buttons"][active_label]
+        inactive_name = self.context.labels.get("menu_bar_buttons", inactive_label)
+        active_name = self.context.labels.get("menu_bar_buttons", active_label)
         button = self.add_button(inactive_label)
         def stop():
             stop_func()
@@ -235,7 +235,7 @@ class MenuBar(CTkFrame):
         self.add_tooltip(button, "preset_button")
     
     def labels_button(self):
-        button = self.add_button("labels_button", self.context.select_labels)
+        button = self.add_button("labels_button", self.context.labels.select)
         self.add_tooltip(button, "labels_button")
     
     def help_button(self):

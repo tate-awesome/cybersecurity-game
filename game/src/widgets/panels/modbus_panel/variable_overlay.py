@@ -28,7 +28,7 @@ class VariableOverlay:
         col = 0
 
         # Top Row
-        top_labels = self.context.labels["modbus_settings"]
+        top_labels = self.context.labels.get("modbus_settings")
         for key, text in top_labels.items():
             top_label = CTkLabel(frame, text=text, font=med)
             top_label.grid(row=row, column=col, padx=self.style.gap, pady=self.style.gap)
@@ -47,7 +47,7 @@ class VariableOverlay:
 
         for slot in self.context.states.get_registers().values():
             # "label": "hreg_8",
-            variable_name = self.context.labels["modbus_variables"][slot["label"]]
+            variable_name = self.context.labels.get("modbus_variables", slot["label"])
             var_label = CTkLabel(frame, text=variable_name, font=med)
             var_label.grid(row=row, column=col, sticky="", pady=self.style.gap)
             col += 1

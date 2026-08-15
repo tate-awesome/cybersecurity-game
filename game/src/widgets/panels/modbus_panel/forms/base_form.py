@@ -31,7 +31,7 @@ class BaseForm(ABC, CTkFrame):
         column = 0
         output = []
         for key in label_keys:
-            text = self.context.labels[label_slot][key]
+            text = self.context.labels.get(label_slot, key)
             label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
             label.grid(row=self.current_row, column=column, sticky="ew", pady=self.style.gapbot, padx=self.style.nogap)
             column += 1

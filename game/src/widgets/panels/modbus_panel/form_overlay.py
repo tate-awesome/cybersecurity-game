@@ -32,7 +32,7 @@ class FormOverlay:
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
         for key in self.context.states.get("modbus_forms"):
-            checkbox = CTkCheckBox(category_frame, text=self.context.labels["modbus_forms"][key], font=med)
+            checkbox = CTkCheckBox(category_frame, text=self.context.labels.get("modbus_forms", key), font=med)
             checkbox.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input
             value = box_slots[key]

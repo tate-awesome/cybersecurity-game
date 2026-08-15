@@ -38,7 +38,7 @@ class MitmTable(BaseForm):
             if len(nickname) > 0:
                 variable_name = nickname
             else:
-                variable_name = self.context.labels["modbus_variables"][key]
+                variable_name = self.context.labels.get("modbus_variables", key)
             row["name"].configure(text=variable_name)
 
     def refresh_rows(self):

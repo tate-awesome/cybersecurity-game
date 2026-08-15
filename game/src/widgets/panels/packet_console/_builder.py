@@ -165,7 +165,7 @@ class Builder(Panel):
         )
 
         # Columns
-        all_columns = list(self.context.labels["packet_columns"].keys())
+        all_columns = list(self.context.labels.get("packet_columns").keys())
 
         # Treeview
         tree = ttk.Treeview(
@@ -209,7 +209,7 @@ class Builder(Panel):
 
             stretch = (col == "Info")
 
-            tree.heading(col, text=self.context.labels["packet_columns"][col])
+            tree.heading(col, text=self.context.labels.get("packet_columns", col))
 
             tree.column(
                 col,
