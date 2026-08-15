@@ -136,6 +136,8 @@ class Style:
                 return int(450*self.get_scale_correction())
             case "layers":
                 return int(250*self.get_scale_correction())
+            case "protocol":
+                return int(100*self.get_scale_correction())
             case "purpose":
                 return int(200*self.get_scale_correction())
             case "summary":

@@ -8,7 +8,8 @@
         "transaction_word": 0,
         "transaction_ip": 0,
         "transaction_mac": 0,
-        "layers": 1,
+        "layers": 0,
+        "protocol": 1,
         "purpose": 1,
         "summary": 0,
         "modbus": 1

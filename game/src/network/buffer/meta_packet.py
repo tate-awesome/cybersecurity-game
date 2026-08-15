@@ -124,6 +124,8 @@ class MetaPacket:
                 return self.mac_word
             case "layers":
                 return self.proto_str
+            case "protocol":
+                return self.protocols[-1]
             case "purpose":
                 return self.purpose
             case "summary":

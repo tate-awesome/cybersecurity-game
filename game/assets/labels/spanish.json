@@ -8,6 +8,7 @@
         "transaction_ip": "IP de origen/destino",
         "transaction_mac": "MAC de origen/destino",
         "layers": "Capas",
+        "protocol": "Protocolo",
         "purpose": "Propósito",
         "summary": "Resumen",
         "modbus": "Información de MODBUS"

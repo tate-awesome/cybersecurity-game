@@ -42,6 +42,7 @@
         "transaction_ip": 0,
         "transaction_mac": 0,
         "layers": 0,
+        "protocol": 1,
         "purpose": 1,
         "summary": 1,
         "modbus": 0
