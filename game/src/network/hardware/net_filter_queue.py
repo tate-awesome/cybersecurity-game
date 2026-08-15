@@ -7,12 +7,15 @@ from scapy.contrib.modbus import *
 from ..buffer import Buffer
 from ..buffer.meta_packet import MetaPacket
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ...app_core import Context
+
 class NetFilterQueueBaseClass:
 
-    def __init__(self, buffer: Buffer, context):
+    def __init__(self, buffer: Buffer, context: "Context"):
         self.buffer = buffer
         self.context = context
-        self.slot_name = "modbus_variables"
 
         self.running = False
         self.stop_event = None
@@ -33,21 +36,19 @@ class NetFilterQueueBaseClass:
             self.running = False
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:
-        slots = self.context.states[self.slot_name]
         modified_flag = False
 
         if not mpkt.is_modbus or len(mpkt.variables) < 1:
             return mpkt.pkt, modified_flag
 
-        if not self.context.states["modbus_modify_enabled"] == 1:
+        if not self.context.states.get("modbus_modify_enabled") == 1:
             return mpkt.pkt, modified_flag
 
         for i, variable in enumerate(mpkt.variables):
-            slot = slots[variable]
 
-            factor_str = self.context.states["modbus_variables"][variable]["factor"]
-            mult_str = self.context.states["modbus_variables"][variable]["multiplier"]
-            offs_str = self.context.states["modbus_variables"][variable]["offset"]
+            factor_str = self.context.states.get_register(variable, "factor")
+            mult_str = self.context.states.get_register(variable, "multiplier")
+            offs_str = self.context.states.get_register(variable, "offset")
             fact = 1.0
             mult = 1.0
             offs = 0.0
@@ -58,8 +59,8 @@ class NetFilterQueueBaseClass:
             except:
                 continue
 
-
-            if slot["modify"] == 0 or slot["modify"] == "0":
+            modify = self.context.states.get_register(variable, "modify")
+            if modify == 0 or modify == "0":
                 continue
 
             if mult == 1.0 and offs == 0.0:

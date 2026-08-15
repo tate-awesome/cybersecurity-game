@@ -17,7 +17,7 @@ class ColumnOverlay:
 
     def populate_column_overlay(self, overlay):
         
-        box_slots = self.context.states["packet_columns"]
+        box_slots = self.context.states.get("packet_columns")
         med = self.style.get_font()
 
         # Create box filter widgets
@@ -29,7 +29,7 @@ class ColumnOverlay:
         category_label = CTkLabel(category_frame, text="Show Columns", font=med)
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
-        for key in self.context.states["packet_columns"]:
+        for key in self.context.states.get("packet_columns"):
             column_box = CTkCheckBox(category_frame, text=self.context.labels["packet_columns"][key], font=med)
             column_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input

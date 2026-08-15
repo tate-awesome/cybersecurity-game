@@ -42,7 +42,7 @@ class FilterOverlay:
 
     def populate_filter_overlay(self, overlay):
         '''
-        Creates a filter overlay just below the button, with checkboxes for each filter in self.context.states["packet_filter_checkboxes"]
+        Creates a filter overlay just below the button, with checkboxes for each filter in settings["packet_filter_checkboxes"]
         Creates text entries for each filter in self.context.inputs["packet_filter_entries"].
         '''
         apply_filters = lambda: ...
@@ -50,7 +50,7 @@ class FilterOverlay:
         # Save reference for later destruction
 
         # Create filter checkbox frame
-        box_slots = self.context.states["packet_filter_checkboxes"]
+        box_slots = self.context.states.get("packet_filter_checkboxes")
         checkbox_frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
         checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
 
@@ -80,7 +80,7 @@ class FilterOverlay:
                 filter_box.configure(command=autosave)
         
         # Create text filter widgets
-        text_slots = self.context.states["packet_filter_entries"]
+        text_slots = self.context.states.get("packet_filter_entries")
         entry_frame = CTkFrame(overlay)
         entry_frame.pack(side="top", fill="x", padx=self.style.gap2, pady=self.style.gap2)
 
@@ -110,7 +110,7 @@ class FilterOverlay:
         # activator_button = CTkButton(activator_frame, text="Apply Filters", font=self.style.get_font())
         # activator_button.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap)
 
-        summary = self.context.states["packet_filter_function"]["summary"]
+        summary = self.context.states.get("packet_filter_function", "summary")
         width = activator_frame.winfo_width() - 50
 
         filter_label = CTkLabel(activator_frame, text=summary, font=self.style.get_font(), justify="left", wraplength=width/self.style.get_scale_correction())
@@ -118,7 +118,7 @@ class FilterOverlay:
 
         def activate():
             self.compile_filter()
-            new_summary = self.context.states["packet_filter_function"]["summary"]
+            new_summary = self.context.states.get("packet_filter_function", "summary")
 
             width = activator_frame.winfo_width() - 50
 
@@ -135,12 +135,12 @@ class FilterOverlay:
             Compile and save the mpkt filter to self.function
             The filter ORs within categories (e.g. show packets with any of these protocols),
             and ANDs between categories (e.g. only show packets that match the source filters AND the protocol filters).
-            Save the summary to self.context.states["packet_filter_function"]["summary"]
+            Save the summary to settings["packet_filter_function"]["summary"]
             '''
             # Grab the filter states only when pressing the button
             import copy
-            checkbox_slots = copy.deepcopy(self.context.states["packet_filter_checkboxes"]) 
-            address_filter = copy.deepcopy(self.context.states["packet_filter_entries"]["address_filter"])
+            checkbox_slots = copy.deepcopy(self.context.states.get("packet_filter_checkboxes")) 
+            address_filter = copy.deepcopy(self.context.states.get("packet_filter_entries", "address_filter"))
             
             def packet_filter(mpkt):
 
@@ -182,7 +182,7 @@ class FilterOverlay:
             full_summary = "Currently filtering for"
 
             category_summaries = []
-            box_slots = self.context.states["packet_filter_checkboxes"]
+            box_slots = self.context.states.get("packet_filter_checkboxes")
             for category in self.filter_columns:
                 category_conditions = []
                 category_summary = f"{category}s including"
@@ -196,7 +196,7 @@ class FilterOverlay:
                     category_summaries.append(category_summary)
             category_summaries = " AND ".join(category_summaries)
 
-            entry_str = self.context.states["packet_filter_entries"]["address_filter"]
+            entry_str = self.context.states.get("packet_filter_entries", "address_filter")
             print(entry_str)
             addresses = entry_str.split("|")
             
@@ -215,4 +215,4 @@ class FilterOverlay:
                     full_summary = f"{full_summary} packets with {category_summaries}, and involving addresses matching {addresses}."
 
             # Save summary
-            self.context.states["packet_filter_function"]["summary"] = full_summary
+            self.context.states.set("packet_filter_function", "summary", value=full_summary)

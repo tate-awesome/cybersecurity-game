@@ -21,7 +21,7 @@ class MitmTable(BaseForm):
 
         self.add_label_row("modbus_table", ["name", "in", "out", "source"])
 
-        for key in self.context.states["modbus_variables"]:
+        for key in self.context.states.get_registers():
             labels = self.add_label_row("modbus_table", ["-", "-", "-", "-"])
             self.rows[key] = {}
             self.rows[key]["name"] = labels[0]
@@ -34,17 +34,17 @@ class MitmTable(BaseForm):
     def refresh_nicknames(self):
         for key, row in self.rows.items():
             # Resolve nickname and configure label
-            slot = self.context.states["modbus_variables"][key]
-            if len(slot["nickname"]) > 0:
-                variable_name = slot["nickname"]
+            nickname = self.context.states.get_register(key, "nickname")
+            if len(nickname) > 0:
+                variable_name = nickname
             else:
                 variable_name = self.context.labels["modbus_variables"][key]
             row["name"].configure(text=variable_name)
 
     def refresh_rows(self):
         self.update_idletasks()
-        for key, variable in self.context.states["modbus_variables"].items():
-            state = variable["show"]
+        for key in self.context.states.get_registers():
+            state = self.context.states.get_register(key, "show")
             if state == "1" or state == 1:
                 self.show_row(key)
             else:
@@ -68,7 +68,7 @@ class MitmTable(BaseForm):
             in_str = "-"
             out_str = "-"
             command = "-"
-            factor_str = self.context.states["modbus_variables"][key]["factor"]
+            factor_str = self.context.states.get_register(key, "factor")
             factor = 1.0
             try: 
                 f = float(factor_str)

@@ -21,7 +21,7 @@ class Modify(BaseForm):
 
         self.add_label_row("modbus_modifier", ["variable", "multiplier", "offset"])
 
-        for key in self.context.states["modbus_variables"]:
+        for key in self.context.states.get_registers():
             self.add_var_row(key)
 
         # self.context.animation_manager.add_callback("modbus_table", self.update)
@@ -65,20 +65,20 @@ class Modify(BaseForm):
     def refresh_nicknames(self):
         for key, row in self.rows.items():
             # Resolve nickname and configure label
-            slot = self.context.states["modbus_variables"][key]
-            if len(slot["nickname"]) > 0:
-                variable_name = slot["nickname"]
+            nickname = self.context.states.get_register(key, "nickname")
+            if len(nickname) > 0:
+                variable_name = nickname
             else:
                 variable_name = self.context.labels["modbus_variables"][key]
             row["name"].configure(text=variable_name)
 
     def refresh_rows(self):
         self.update_idletasks()
-        for key in self.context.states["modbus_variables"]:
+        for key in self.context.states.get_registers():
             self.row_visibility(key)
 
     def row_visibility(self, key: str):
-        state = self.context.states["modbus_variables"][key]["show"]
+        state = self.context.states.get_register(key, "show")
         row = self.rows[key]
         for _, widget in row.items():
             if (state == 0 or state == "0") and widget.winfo_ismapped():
@@ -115,9 +115,9 @@ class Modify(BaseForm):
             # Then save
             for key, row in self.rows.items():
                 mult = float(row["multiplier"].get())
-                self.context.states["modbus_variables"][key]["multiplier"] = mult
+                self.context.states.set_register(key, "multiplier", mult)
                 offset = float(row["offset"].get())
-                self.context.states["modbus_variables"][key]["offset"] = offset
+                self.context.states.set_register(key, "offset", offset)
 
             self.save_status.configure(text="Modifiers Saved.")
 
@@ -136,13 +136,14 @@ class Modify(BaseForm):
 
     def load_saved_input(self):
         for key, row in self.rows.items():
-            slot = self.context.states["modbus_variables"][key]
+            multiplier_str = self.context.states.get_register(key, "multiplier")
+            offset_str = self.context.states.get_register(key, "offset")
 
-            mult = f"{float(slot["multiplier"]):g}"
+            mult = f"{float(multiplier_str):g}"
             row["multiplier"].delete(0, "end")
             row["multiplier"].insert(0, mult)
 
-            offset = f"{float(slot["offset"]):g}"
+            offset = f"{float(offset_str):g}"
             row["offset"].delete(0, "end")
             row["offset"].insert(0, offset)
         
@@ -151,13 +152,13 @@ class Modify(BaseForm):
     # Enable Modify Button
 
     def enable_modify(self):
-        self.context.states["modbus_modify_enabled"] = 1
+        self.context.states.set("modbus_modify_enabled", value=1)
 
     def disable_modify(self):
-        self.context.states["modbus_modify_enabled"] = 0
+        self.context.states.set("modbus_modify_enabled", value=0)
 
     def modify_is_enabled(self):
-        state = self.context.states["modbus_modify_enabled"]
+        state = self.context.states.get("modbus_modify_enabled")
         if state == 1: return True
         else: return False
 
@@ -165,6 +166,6 @@ class Modify(BaseForm):
 
     def reset_modifiers(self):
         for key, row in self.rows.items():
-            self.context.states["modbus_variables"][key]["multiplier"] = 1
-            self.context.states["modbus_variables"][key]["offset"] = 0
+            self.context.states.set_register(key, "multiplier", 1)
+            self.context.states.set_register(key, "offset", 0)
         self.load_saved_input()

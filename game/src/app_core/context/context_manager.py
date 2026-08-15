@@ -4,6 +4,7 @@ from .click_manager import ClickManager
 from .animation_manager import AnimationManager
 from .preferences import Preferences
 from .keybinds import KeyBinds
+from .input_manager import InputManager
 import os, json, platform
 from .paths import Paths
 from .json import Json
@@ -34,6 +35,7 @@ Shared data for a page. Passed to next pages on navigation.
         self.paths = Paths()
         self.json = Json(self.paths)
         self.style = Style(self)
+    
         self.os_name = platform.system()
         self.start_session()
         self.start_page()
@@ -46,7 +48,7 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         self.preferences = Preferences(self)
         KeyBinds(self)
-        self.states = self.get_preferred_settings()
+        self.states = InputManager(self)
         self.labels = self.get_preferred_labels()
         self.style.load_preferred_theme()
         self.style.load_preferred_mode()
@@ -55,7 +57,7 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         Resets members in a session
         '''
-        self.states = self.get_default_settings()
+        self.states.reset()
         self.labels = self.get_default_labels()
         self.style.load_default_theme()
         self.style.load_default_mode()
@@ -96,28 +98,6 @@ Shared data for a page. Passed to next pages on navigation.
     def reset_data(self):
         self.reset_session()
         self.preferences.clear()
-        self.router.refresh()
-
-    def get_preferred_settings(self):
-        default = self.get_default_settings()
-        if self.preferences.has("settings"):
-            self.json.deep_merge(default, self.preferences.data["settings"])
-        return default
-    
-    def get_default_settings(self):
-        file_path = self.paths.packages / "_default.json"
-        default = {}
-        self.json.merge_from_file(default, file_path)
-        return default
-
-    def select_settings(self):
-        '''
-        Opens a dialog for the user to select a context preset.
-        Context presets populate fields and checkboxes.
-        '''
-        directory = self.paths.settings
-        file_path = self.paths.select_path(directory, "Select Settings")
-        self.json.merge_from_file(self.states, file_path)
         self.router.refresh()
 
     def get_preferred_labels(self):

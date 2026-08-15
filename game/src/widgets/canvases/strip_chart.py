@@ -17,8 +17,8 @@ class StripChart(StripChartBase):
         super().__init__(master, context, name, time_scale, time_offset)
 
         def frame_callback():
-            sprites = context.states["strip_chart_sprites"]
-            colors = context.states["strip_chart_colors"]
+            sprites = context.states.get("strip_chart_sprites")
+            colors = context.states.get("strip_chart_colors")
             data = getter()
             self.delete("all")
             # self.draw.strip_chart_axes(data)

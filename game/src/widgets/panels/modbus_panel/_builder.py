@@ -44,8 +44,8 @@ class Builder(Panel):
 
     def refresh_forms(self):
         self.update_idletasks()
-        for key in self.context.states["modbus_forms"]:
-            state = self.context.states["modbus_forms"][key]
+        for key in self.context.states.get("modbus_forms"):
+            state = self.context.states.get("modbus_forms", key)
             if state == "1" or state == 1:
                 self.show_forms(key)
             else:

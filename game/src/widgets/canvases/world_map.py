@@ -16,8 +16,8 @@ class WorldMap(Canvas):
 
         def frame_callback():
 
-            sprites = context.states["world_map_sprites"]
-            colors = context.states["world_map_colors"]
+            sprites = context.states.get("world_map_sprites")
+            colors = context.states.get("world_map_colors")
             
             self.delete("all")
             

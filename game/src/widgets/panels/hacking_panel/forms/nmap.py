@@ -13,7 +13,7 @@ class NmapForm(BaseForm):
 
         # Bind button
         def do_attack():
-            context.states["game_progress"]["nmap"] = 1
+            context.states.set("game_progress", "nmap", value=1)
 
             status.configure(text="Pinging...")
             context.root.update_idletasks()
@@ -25,7 +25,7 @@ class NmapForm(BaseForm):
         button.configure(command = do_attack)
 
         # Load status
-        if context.states["game_progress"]["nmap"] == 1:
+        if context.states.get("game_progress", "nmap") == 1:
             status.configure(text="NMap Complete")
         else:
             status.configure(text="")

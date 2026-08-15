@@ -55,7 +55,7 @@ class BaseForm(ABC, CTkFrame):
         self.entries.append(entry)
 
         # Bind autosave
-        save_slots = self.context.states["hack_forms"][self.key]
+        save_slots = self.context.states.get("hack_forms", self.key)
         def autosave(event=None, e=entry, idx=self.entry_index):
             save_slots[idx] = e.get()
         entry.bind("<KeyRelease>", autosave)
@@ -104,7 +104,7 @@ class BaseForm(ABC, CTkFrame):
         self.has_attack_button = True
 
     def click_start(self):
-        self.context.states["game_progress"][self.key] = 1
+        self.context.states.set("game_progress", self.key, value=1)
         self.attack_button.configure(text=self.starting_attack_text)
         self.context.root.update_idletasks()
         self.start_attack()

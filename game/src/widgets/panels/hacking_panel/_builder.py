@@ -45,8 +45,8 @@ class Builder(Panel):
 
     def refresh_forms(self):
         self.update_idletasks()
-        for key in self.context.states["hacking_forms"]:
-            if self.context.states["hacking_forms"][key] == "1" or self.context.states["hacking_forms"][key] == 1:
+        for key in self.context.states.get("hacking_forms"):
+            if self.context.states.get("hacking_forms", key) == "1" or self.context.states.get("hacking_forms", key) == 1:
                 self.show_form(key)
             else:
                 self.hide_form(key)

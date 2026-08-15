@@ -1,6 +1,3 @@
-import json, os
-
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
@@ -55,7 +52,7 @@ class Preferences:
         self.save()
 
     def save_settings(self):
-        self.set("settings", self.context.states)
+        self.set("settings", self.context.states.get())
 
     def save_preferences(self):
         self.set("labels", self.context.labels)

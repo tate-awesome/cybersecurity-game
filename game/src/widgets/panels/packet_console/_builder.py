@@ -291,9 +291,9 @@ class Builder(Panel):
 
         active_columns = []
 
-        for key in self.context.states["packet_columns"]:
+        for key in self.context.states.get("packet_columns"):
 
-            if self.context.states["packet_columns"][key] == "1" or self.context.states["packet_columns"][key] == 1:
+            if self.context.states.get("packet_columns", key) == "1" or self.context.states.get("packet_columns", key) == 1:
                 active_columns.append(key)
 
         self.treeview["displaycolumns"] = active_columns

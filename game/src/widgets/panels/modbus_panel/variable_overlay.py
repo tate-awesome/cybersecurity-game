@@ -19,9 +19,6 @@ class VariableOverlay:
 
 
     def populate_overlay(self, overlay):
-        
-        slot_name = "modbus_variables"
-        slots = self.context.states[slot_name]
         med = self.style.get_font()
         frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
         frame.pack(side="top", padx=self.style.gap, pady=self.style.gap)
@@ -48,7 +45,7 @@ class VariableOverlay:
 
         # Variable Rows
 
-        for variable, slot in slots.items():
+        for slot in self.context.states.get_registers().values():
             # "label": "hreg_8",
             variable_name = self.context.labels["modbus_variables"][slot["label"]]
             var_label = CTkLabel(frame, text=variable_name, font=med)
