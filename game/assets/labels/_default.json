@@ -189,6 +189,8 @@
         "labels_button": "Load Labels",
         "preset_button": "Load Presets",
         "pcap_button": "Load PCAP",
+        "save_button": "Save JSON",
+        "load_button": "Load JSON",
         "theme_button": "Select Theme",
         "toggle_button": "Toggle Theme",
         "help_button": "Help",

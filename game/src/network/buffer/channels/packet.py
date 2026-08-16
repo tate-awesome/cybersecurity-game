@@ -26,7 +26,6 @@ class PacketBuffer:
 
     def get_new_packets(self, filter_func, max_return: int = 1000) -> list:
         new_packets = []
-        
         with self.lock:
             # Scan backward starting from the newest packets (right side of deque)
             for meta_packet in reversed(self.buffer):
@@ -61,9 +60,3 @@ class PacketBuffer:
         if self.first_packet_time is None:
             self.first_packet_time = pkt.time
         return self.first_packet_time
-    
-    def dump(self, file_name: str = "dump"):
-        data = ""
-
-        directory = self.context.paths.mcaptures
-        self.context.json.save_to_file()

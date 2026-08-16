@@ -229,6 +229,12 @@ class MenuBar(CTkFrame):
     def pcap_button(self):
         button = self.add_button("pcap_button", self.context.net.loader.load_pcap)
         self.add_tooltip(button, "pcap_button")
+
+    def save_button(self):
+        button = self.add_button("save_button", self.context.net.replay.save_json)
+
+    def load_button(self):
+        button = self.add_button("load_button", self.context.net.replay.load_json)
     
     def preset_button(self):
         button = self.add_button("preset_button", self.context.states.select)
@@ -263,6 +269,8 @@ class MenuBar(CTkFrame):
         self.toggle_button()
         self.theme_button()
         self.pcap_button()
+        self.save_button()
+        self.load_button()
         self.preset_button()
         self.labels_button()
         self.data_button()

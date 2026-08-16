@@ -77,7 +77,7 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         if self.net is not None:
             self.net.abort_all()
-            self.net = None 
+            self.net = None
 
     def start_build(self):
         '''

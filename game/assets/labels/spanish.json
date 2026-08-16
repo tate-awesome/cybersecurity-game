@@ -188,6 +188,8 @@
         "labels_button": "Cargar etiquetas",
         "preset_button": "Cargar ajustes predefinidos",
         "pcap_button": "Cargar PCAP",
+        "save_button": "Guardar JSON",
+        "load_button": "Cargar JSON",
         "theme_button": "Seleccionar tema",
         "toggle_button": "Cambiar tema",
         "help_button": "Ayuda",
