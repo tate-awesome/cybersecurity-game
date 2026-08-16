@@ -38,18 +38,24 @@ class ModbusBuffer:
 
     def put(self, mpkt: MetaPacket):
         # only one update/entry per useful (read response / write request) and primary (first to be put())
-        if not mpkt.is_modbus or len(mpkt.variables) < 1 or len(mpkt.variables) < 1 or not mpkt.is_useful_modbus or not mpkt.is_primary_modbus:
+        packet_time = mpkt.get("time")
+        is_primary = mpkt.get("is_primary")
+        values = mpkt.get("values")
+        variables = mpkt.get("variables")
+        direction = mpkt.get("direction")
+        useful = mpkt.get("is_useful")
+        if not is_primary or not useful or len(values) < 1 or len(variables) < 1:
             return
 
-        for i, var in enumerate(mpkt.variables):
-            key = f"{var}_{mpkt.direction}"
+        for i, var in enumerate(variables):
+            key = f"{var}_{direction}"
             with self.stripchart_locks[key]:
-                self.stripchart_buffers[key].append((mpkt.time, mpkt.values[i]))
+                self.stripchart_buffers[key].append((packet_time, values[i]))
             with self.singles_lock:
-                self.singles[key] = mpkt.values[i]
+                self.singles[key] = values[i]
                 self.single_times[key] = time()
             with self.commands_lock:
-                self.commands[var] = mpkt.command_word
+                self.commands[var] = mpkt.get("command_word")
 
         # TODO consider doing a dump so locks only engage once instead of 60 times
     def get_single(self, variable: str, direction: str) -> str:

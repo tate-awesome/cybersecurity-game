@@ -1,17 +1,35 @@
 {
     "packet_columns": {
-        "time": "#",
+        "time_word": "#",
         "number": "#",
         "length": "#",
         "observer": "#",
-        "transaction_word": "#",
-        "transaction_ip": "#",
-        "transaction_mac": "#",
-        "layers": "#",
-        "protocol": "#",
+        "hack": "#",
         "purpose": "#",
+
+        "mac_src": "#",
+        "mac_dst": "#",
+        "ip_src": "#",
+        "ip_dst": "#",
+
+        "direction": "#",
+
+        "protocol": "#",
+
+        "layers_word": "#",
         "summary": "#",
-        "modbus": "#"
+        "mac_word": "#",
+        "ip_word": "#",
+
+        "is_modbus": "#",
+        "is_useful": "#",
+        "is_primary": "#",
+        "command": "#",
+        "command_type": "#",
+        "command_word": "#",
+        "variables": "#",
+        "values": "#",
+        "modbus_word": "#"
     },
     
     "hacking_forms": {
@@ -73,8 +91,8 @@
     },
     
     "packet_filter_categories": {
-        "source": "#",
-        "protocol": "#",
+        "hack": "#",
+        "layers": "#",
         "direction": "#"
     },
     
@@ -89,9 +107,12 @@
         "ARP": "#",
         "UDP": "#",
         "DNS": "#",
-        "MODBUSADU": "#",
-        "WRITE SINGLE REGISTER": "#",
-        "READ HOLDING REGISTERS RESPONSE": "#",
+        "MODBUSADUREQUEST": "#",
+        "MODBUSADURESPONSE": "#",
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": "#",
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": "#",
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": "#",
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": "#",
         "out": "#",
         "in": "#",
         "other": "#"

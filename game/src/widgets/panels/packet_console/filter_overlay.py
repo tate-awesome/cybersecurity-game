@@ -13,30 +13,7 @@ class FilterOverlay:
         self.style = context.style
         self.refresh_function = refresh_function
 
-        self.filter_columns = {
-            "source": [
-                "nmap",
-                "arp",
-                "dos",
-                "sniff",
-                "nfq",
-                "pcap"
-            ],
-            "protocol": [
-                "TCP",
-                "ARP",
-                "UDP",
-                "DNS",
-                "MODBUSADU",
-                "WRITE SINGLE REGISTER",
-                "READ HOLDING REGISTERS RESPONSE"
-            ],
-            "direction": [
-                "out",
-                "in",
-                "other"
-            ]
-        }
+        self.filter_columns = self.context.states.get("packet_filter_categories")
         self.filter_overlay = Overlay(self.context.root, context, button, self.populate_filter_overlay)
 
 
@@ -153,7 +130,7 @@ class FilterOverlay:
                     for box_name in self.filter_columns[category]:
                         if checkbox_slots[box_name] == "1" or checkbox_slots[box_name] == 1:
                             none_checked = False
-                            category_condition = category_condition or mpkt.matches(box_name)
+                            category_condition = category_condition or mpkt.matches(category, box_name)
                     category_condition = category_condition or none_checked
 
                     # AND each category condition together :: if any miss, return false
@@ -168,10 +145,10 @@ class FilterOverlay:
                 # If any given address matches any mpkt address, return true
                 for address in addresses:
                     value = str.strip(address.lower())
-                    if (value in mpkt.ip_src.lower()
-                        or value in mpkt.ip_dst.lower()
-                        or value in mpkt.mac_src.lower()
-                        or value in mpkt.mac_dst.lower()):
+                    if (value in mpkt.get("ip_src").lower()
+                        or value in mpkt.get("ip_dst").lower()
+                        or value in mpkt.get("mac_src").lower()
+                        or value in mpkt.get("mac_dst").lower()):
                         address_condition = True
                 return address_condition and checkboxes_condition
             

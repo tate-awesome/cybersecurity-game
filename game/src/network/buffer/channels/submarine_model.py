@@ -73,13 +73,16 @@ class MapBuffer:
     def put(self, mpkt: MetaPacket):
         # Modbuffer already has the single values - bearing, rudder, speed
         # Only build paths here
-
-        if mpkt.is_useful_modbus and mpkt.is_primary_modbus and len(mpkt.variables) == 1 and len(mpkt.values) == 1:
-            if mpkt.variables[0] in ["hreg_10", "hreg_11"]:
-                variable = self.registers[mpkt.variables[0]]
-                direction = mpkt.direction
-                value = self.convert(variable, mpkt.values[0])
-                time = mpkt.pkt.time
+        is_primary = mpkt.get("is_primary")
+        is_useful = mpkt.get("is_useful")
+        variables = mpkt.get("variables")
+        values = mpkt.get("values")
+        if is_useful and is_primary and len(variables) == 1 and len(values) == 1:
+            if variables[0] in ["hreg_10", "hreg_11"]:
+                variable = self.registers[variables[0]]
+                direction = mpkt.get("direction")
+                value = self.convert(variable, values[0])
+                time = mpkt.get("time")
                 self.put_path(variable, direction, value, time)
 
     def convert(self, variable: str, raw: int):
@@ -224,24 +227,24 @@ class MapBuffer:
         buffer = self.path_buffers[path_key]
         # No coords, put the value in\
         if len(current_point) < 1:
-            print(f"1: {current_point}")
+            # print(f"1: {current_point}")
             if variable == "x":
                 current_point.append(value)
                 current_point.append(None)
             else:
                 current_point.append(None)
                 current_point.append(value)
-            print(f"2: {current_point}")
+            # print(f"2: {current_point}")
         # In progress, put the value in, then submit and reset the point
         elif len(current_point) == 2:
-            print(f"3: {current_point}")
+            # print(f"3: {current_point}")
             if variable == "x" and current_point[0] is None:
                 current_point[0] = value
             elif variable == "y" and current_point[1] is None:
                 current_point[1] = value
             if current_point[0] is not None and current_point[1] is not None:
-                print(f"4: {current_point}")
+                # print(f"4: {current_point}")
                 with self.path_locks["simple"]:
                     buffer.append(tuple(current_point))
-                print(time)
+                # print(time)
                 self.path_buffers[point_key] = list()

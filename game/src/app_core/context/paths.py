@@ -13,12 +13,12 @@ class Paths:
         self.pcaptures = self.assets / "pcaptures"
         self.mcaptures = self.assets / "mcaptures"
 
-    def select_path(self, directory: str, prompt: str, filetypes: list[str] = ["json", "*.json"]):
+    def select_path(self, directory: str, prompt: str, filetypes: list[tuple[str]] = [("json", "*.json")]):
         try:
             file_path = askopenfilename(
                 initialdir=directory,
                 title=prompt,
-                filetypes=(filetypes)
+                filetypes=filetypes
             )
             if file_path == "" or not isinstance(file_path, str):
                 return None

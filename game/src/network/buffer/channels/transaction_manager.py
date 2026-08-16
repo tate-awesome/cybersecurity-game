@@ -45,29 +45,29 @@ class Transaction:
         '''
         (For read response usually) if there is a matching request, copy mpkt.variables to the mpkt parameter
         '''
-        if mpkt.pkt.getlayer(ModbusADUResponse):
+        if mpkt.get("command_type") == "Response":
             if self.request_out is not None: # most accurate
-                mpkt.variables = self.request_out.variables.copy()
+                mpkt.set("variables", self.request_out.get("variables").copy())
             elif self.request_in is not None: #it will work
-                mpkt.variables = self.request_in.variables.copy()
-            mpkt.set_modbus_word()
+                mpkt.set("variables", self.request_in.get("variables").copy())
+            mpkt.update_modbus_word()
 
 
     def _set_packet(self, mpkt: MetaPacket):
-        if mpkt.pkt.getlayer(ModbusADURequest):
-            if mpkt.direction == "in" and self.request_in is None:
+        if mpkt.get("command_type") == "Request":
+            if mpkt.get("direction") == "in" and self.request_in is None:
                 self.request_in = mpkt
-                mpkt.is_primary_modbus = True
-            elif mpkt.direction == "out" and self.request_out is None:
+                mpkt.set("is_primary", True)
+            elif mpkt.get("direction") == "out" and self.request_out is None:
                 self.request_out = mpkt
-                mpkt.is_primary_modbus = True
-        elif mpkt.pkt.getlayer(ModbusADUResponse):
-            if mpkt.direction == "in" and self.response_in is None:
+                mpkt.set("is_primary", True)
+        elif mpkt.get("command_type") == "Response":
+            if mpkt.get("direction") == "in" and self.response_in is None:
                 self.response_in = mpkt
-                mpkt.is_primary_modbus = True
-            elif mpkt.direction == "out" and self.response_out is None:
+                mpkt.set("is_primary", True)
+            elif mpkt.get("direction") == "out" and self.response_out is None:
                 self.response_out = mpkt
-                mpkt.is_primary_modbus = True
+                mpkt.set("is_primary", True)
 
     def _set_completeness(self):
         if (self.request_out is not None and
@@ -117,13 +117,13 @@ class TransactionManager:
         Requests: client -> server
         Response: server -> client
         '''
-        if modbus_layer := mpkt.pkt.getlayer(ModbusADURequest):
-            client_ip = mpkt.ip_src
-            server_ip = mpkt.ip_dst
+        if modbus_layer := mpkt.get("pkt").getlayer(ModbusADURequest):
+            client_ip = mpkt.get("ip_src")
+            server_ip = mpkt.get("ip_dst")
             tid = modbus_layer.transId
-        elif modbus_layer := mpkt.pkt.getlayer(ModbusADUResponse):
-            client_ip = mpkt.ip_dst
-            server_ip = mpkt.ip_src
+        elif modbus_layer := mpkt.get("pkt").getlayer(ModbusADUResponse):
+            client_ip = mpkt.get("ip_dst")
+            server_ip = mpkt.get("ip_src")
             tid = modbus_layer.transId
         else:
             return None

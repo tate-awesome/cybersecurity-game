@@ -34,7 +34,7 @@ class Buffer:
         # Buffers
         self.transaction_manager = TransactionManager()
         self.status = StatusBuffer(max_size=self.max_size)
-        self.packets = PacketBuffer(max_size=self.max_size)
+        self.packets = PacketBuffer(context, max_size=self.max_size)
         self.modbus = ModbusBuffer(self.context, max_size=self.max_size)
         self.submarine = MapBuffer(self.context, self.modbus, max_size=self.max_size)
         self.hvac = HouseBuffer(self.context, self.modbus, max_size=self.max_size)
@@ -68,7 +68,7 @@ class Buffer:
         capacity = float(len(self.put_queue) / self.max_size)
         return capacity
     
-    def put(self, source: str, purpose: str, data: Packet | None=None, src: str | None=None) -> None | MetaPacket:
+    def put(self, source: str, purpose: str, data: Packet | None=None, direction: str | None=None) -> None | MetaPacket:
         '''
         Put status messages and packets into the worker queue.
         Returns an enriched MetaPacket for those who need it
@@ -77,7 +77,7 @@ class Buffer:
 
         purpose: a message about the packet, or a status message
 
-        src: "send" or "recv"
+        direction: sent or received by the network action - "send" or "recv"
         '''
         output = None
         # Return on weird data
@@ -86,14 +86,14 @@ class Buffer:
         # Create and enrich MetaPacket
         if isinstance(data, Packet) and isinstance(purpose, str) and isinstance(source, str):
             mpkt = MetaPacket(data, self.packets.get_first_packet_time(data), 0,
-                            0, source, src, purpose)
-            if mpkt.is_modbus:
+                            source, purpose, direction)
+            if mpkt.get("is_modbus"):
                 self.transaction_manager.enrich(mpkt)
             output = mpkt
 
         if self.accept_puts:
             with self.put_lock:
-                self.put_queue.append((source, purpose, output, src))
+                self.put_queue.append((source, purpose, output, direction))
 
         return output
     
@@ -141,9 +141,9 @@ class Buffer:
 
 
         self.packets.put(mpkt)
-        if mpkt.is_modbus:
+        if mpkt.get("is_modbus"):
             self.modbus.put(mpkt)
 
-        if mpkt.is_useful_modbus:
+        if mpkt.get("is_useful"):
             self.submarine.put(mpkt)
             self.hvac.put(mpkt)

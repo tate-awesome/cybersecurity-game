@@ -4,23 +4,24 @@ import time
 from ..meta_packet import MetaPacket
 from scapy.all import Packet
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ....app_core import Context
+
 class PacketBuffer:
-    def __init__(self, max_size=5000):
+    def __init__(self, context: "Context", max_size=5000):
         self.max_size = max_size
         self.buffer = deque(maxlen=self.max_size)
+        self.context = context
         self.lock = Lock()
-        self.numbers = {}
-        for key in ["absolute", "nmap", "arp", "sniff", "dos", "nfq", "pcap"]:
-            self.numbers[key] = 1
+        self.number = 1
         self.last_displayed = 0
         self.first_packet_time = None
 
     def put(self, mpkt: MetaPacket):
         with self.lock:
-            mpkt.absolute_number = self.numbers["absolute"]
-            mpkt.hack_number = self.numbers[mpkt.hack]
-            self.numbers[mpkt.hack] += 1
-            self.numbers["absolute"] += 1
+            mpkt.set("number", self.number)
+            self.number += 1
             self.buffer.append(mpkt)
 
     def get_new_packets(self, filter_func, max_return: int = 1000) -> list:
@@ -29,7 +30,7 @@ class PacketBuffer:
         with self.lock:
             # Scan backward starting from the newest packets (right side of deque)
             for meta_packet in reversed(self.buffer):
-                if meta_packet.absolute_number > self.last_displayed:
+                if meta_packet.get("number") > self.last_displayed:
                     # Apply the lambda filter function directly
                     if filter_func(meta_packet):
                         new_packets.append(meta_packet)
@@ -45,7 +46,7 @@ class PacketBuffer:
             # Restore chronological order (oldest to newest)
             new_packets.reverse()
             # Update the cursor to track the absolute highest packet ID processed
-            self.last_displayed = max(p.absolute_number for p in new_packets)
+            self.last_displayed = max(p.get("number") for p in new_packets)
 
         return new_packets
 
@@ -61,3 +62,8 @@ class PacketBuffer:
             self.first_packet_time = pkt.time
         return self.first_packet_time
     
+    def dump(self, file_name: str = "dump"):
+        data = ""
+
+        directory = self.context.paths.mcaptures
+        self.context.json.save_to_file()

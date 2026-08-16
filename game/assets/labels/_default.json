@@ -1,17 +1,35 @@
 {
     "packet_columns": {
-        "time": "Time",
+        "time_word": "Time",
         "number": "No.",
         "length": "Length",
         "observer": "Observer",
-        "transaction_word": "Sent/Received",
-        "transaction_ip": "IP Origin/Destination",
-        "transaction_mac": "MAC Origin/Destination",
-        "layers": "Layers",
-        "protocol": "Protocol",
+        "hack": "Hack",
         "purpose": "Purpose",
+
+        "mac_src": "Mac src",
+        "mac_dst": "Mac dst",
+        "ip_src": "IP src",
+        "ip_dst": "IP dst",
+
+        "direction": "Direction",
+
+        "protocol": "Protocol",
+
+        "layers_word": "Layers",
         "summary": "Summary",
-        "modbus": "MODBUS Info"
+        "mac_word": "Mac src/dst",
+        "ip_word": "IP src/dst",
+
+        "is_modbus": "ModBus?",
+        "is_useful": "Consequential?",
+        "is_primary": "First?",
+        "command": "Full Command",
+        "command_type": "Request/Response",
+        "command_word": "Command",
+        "variables": "Variables",
+        "values": "Values",
+        "modbus_word": "ModBus Info"
     },
     
     "hacking_forms": {
@@ -73,8 +91,8 @@
     },
     
     "packet_filter_categories": {
-        "source": "From Source",
-        "protocol": "Includes Protocol",
+        "hack": "From Source",
+        "layers": "Includes Protocol",
         "direction": "Direction"
     },
     
@@ -89,9 +107,12 @@
         "ARP": "ARP",
         "UDP": "UDP",
         "DNS": "DNS",
-        "MODBUSADU": "MODBUSADU",
-        "WRITE SINGLE REGISTER": "WRITE SINGLE REGISTER",
-        "READ HOLDING REGISTERS RESPONSE": "READ HOLDING REGISTERS RESPONSE",
+        "MODBUSADUREQUEST": "ModBus Request",
+        "MODBUSADURESPONSE": "ModBus Response",
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": "ModBus Read Request",
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": "ModBus Read Response",
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": "ModBus Write Request",
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": "ModBus Write Response",
         "out": "Sent",
         "in": "Received",
         "other": "Observed"

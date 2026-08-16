@@ -37,14 +37,15 @@ class NetFilterQueueBaseClass:
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:
         modified_flag = False
+        pkt = mpkt.get("pkt")
 
-        if not mpkt.is_modbus or len(mpkt.variables) < 1:
-            return mpkt.pkt, modified_flag
+        if not mpkt.get("is_modbus") or len(mpkt.get("variables")) < 1:
+            return mpkt.get("pkt"), modified_flag
 
         if not self.context.states.get("modbus_modify_enabled") == 1:
-            return mpkt.pkt, modified_flag
+            return pkt, modified_flag
 
-        for i, variable in enumerate(mpkt.variables):
+        for i, variable in enumerate(mpkt.get("variables")):
 
             factor_str = self.context.states.get_register(variable, "factor")
             mult_str = self.context.states.get_register(variable, "multiplier")
@@ -68,14 +69,14 @@ class NetFilterQueueBaseClass:
 
             offs = offs / fact
 
-            if m := mpkt.pkt.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
+            if m := pkt.getlayer(ModbusPDU03ReadHoldingRegistersResponse):
                 val = m.registerVal[i]
                 val = int(val * mult + offs)
                 val = max(0, min(65535, val))
                 m.registerVal[i] = val
                 modified_flag = True
 
-            elif m := mpkt.pkt.getlayer(ModbusPDU06WriteSingleRegisterRequest):
+            elif m := pkt.getlayer(ModbusPDU06WriteSingleRegisterRequest):
                 address = m.registerAddr
                 val = m.registerValue
                 val = int(val * mult + offs)
@@ -84,9 +85,10 @@ class NetFilterQueueBaseClass:
                 modified_flag = True
 
         if modified_flag:
-            del mpkt.pkt[IP].len
-            del mpkt.pkt[TCP].chksum
-            del mpkt.pkt[IP].chksum
-
-            mpkt.pkt = IP(bytes(mpkt.pkt))
-        return mpkt.pkt, modified_flag
+            del pkt[IP].len
+            del pkt[TCP].chksum
+            del pkt[IP].chksum
+            # Rebuild len, chksum, chksum
+            pkt = IP(bytes(pkt))
+            mpkt.set("pkt", pkt)
+        return pkt, modified_flag

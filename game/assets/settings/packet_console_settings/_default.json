@@ -3,6 +3,33 @@
         "_packages": "_default.json"
     },
 
+    "packet_filter_categories": {
+        "hack": [
+            "nmap",
+            "arp",
+            "dos",
+            "sniff",
+            "nfq",
+            "pcap"
+        ],
+        "layers": [
+            "TCP",
+            "ARP",
+            "UDP",
+            "DNS",
+            "MODBUSADUREQUEST",
+            "MODBUSADURESPONSE",
+            "MODBUSPDU03READHOLDINGREGISTERSREQUEST",
+            "MODBUSPDU03READHOLDINGREGISTERSRESPONSE",
+            "MODBUSPDU06WRITESINGLEREGISTERREQUEST",
+            "MODBUSPDU06WRITESINGLEREGISTERRESPONSE"
+        ],
+        "direction": [
+            "in",
+            "out"
+        ]
+    },
+
     "packet_filter_checkboxes": {
         "nmap": 0,
         "arp": 0,
@@ -15,9 +42,12 @@
         "UDP": 0,
         "DNS": 0,
         "misc": 0,
-        "MODBUSADU": 0,
-        "WRITE SINGLE REGISTER": 0,
-        "READ HOLDING REGISTERS RESPONSE": 0,
+        "MODBUSADUREQUEST": 0,
+        "MODBUSADURESPONSE": 0,
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": 0,
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": 0,
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": 0,
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": 0,
         "out": 0,
         "in": 0,
         "other": 0
@@ -34,17 +64,35 @@
     },
 
     "packet_columns": {
-        "time": 1,
+        "time_word": 1,
         "number": 1,
         "length": 0,
-        "observer": 0,
-        "transaction_word": 0,
-        "transaction_ip": 0,
-        "transaction_mac": 0,
-        "layers": 0,
+        "observer": 1,
+        "hack": 0,
+        "purpose": 0,
+
+        "mac_src": 0,
+        "mac_dst": 0,
+        "ip_src": 0,
+        "ip_dst": 0,
+
+        "direction": 1,
+
         "protocol": 1,
-        "purpose": 1,
-        "summary": 1,
-        "modbus": 0
+
+        "layers_word": 0,
+        "summary": 0,
+        "mac_word": 0,
+        "ip_word": 0,
+
+        "variables": 0,
+        "values": 0,
+        "command": 0,
+        "command_type": 0,
+        "is_modbus": 0,
+        "is_useful": 0,
+        "is_primary": 0,
+        "command_word": 0,
+        "modbus_word": 1
     }
 }

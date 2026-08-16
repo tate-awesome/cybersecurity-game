@@ -1,17 +1,35 @@
 {
     "packet_columns": {
-        "time": "Hora",
+        "time_word": "Hora",
         "number": "N.º",
         "length": "Longitud",
         "observer": "Observador",
-        "transaction_word": "Enviado/Recibido",
-        "transaction_ip": "IP de origen/destino",
-        "transaction_mac": "MAC de origen/destino",
-        "layers": "Capas",
-        "protocol": "Protocolo",
+        "hack": "Ataque",
         "purpose": "Propósito",
+
+        "mac_src": "MAC origen",
+        "mac_dst": "MAC destino",
+        "ip_src": "IP origen",
+        "ip_dst": "IP destino",
+
+        "direction": "Dirección",
+
+        "protocol": "Protocolo",
+
+        "layers_word": "Capas",
         "summary": "Resumen",
-        "modbus": "Información de MODBUS"
+        "mac_word": "MAC origen/destino",
+        "ip_word": "IP origen/destino",
+
+        "is_modbus": "¿ModBus?",
+        "is_useful": "¿Consecuente?",
+        "is_primary": "¿Primero?",
+        "command": "Comando completo",
+        "command_type": "Pedido/Respuesta",
+        "command_word": "Comando",
+        "variables": "Variables",
+        "values": "Valores",
+        "modbus_word": "Información de ModBus"
     },
 
     "hacking_forms": {
@@ -73,8 +91,8 @@
     },
 
     "packet_filter_categories": {
-        "source": "Desde el origen",
-        "protocol": "Incluye protocolo",
+        "hack": "Desde el origen",
+        "layers": "Incluye protocolo",
         "direction": "Dirección"
     },
 
@@ -89,9 +107,12 @@
         "ARP": "ARP",
         "UDP": "UDP",
         "DNS": "DNS",
-        "MODBUSADU": "MODBUSADU",
-        "WRITE SINGLE REGISTER": "ESCRIBIR REGISTRO ÚNICO",
-        "READ HOLDING REGISTERS RESPONSE": "RESPUESTA DE LECTURA DE REGISTROS DE RETENCIÓN",
+        "MODBUSADUREQUEST": "Solicitud de ModBus",
+        "MODBUSADURESPONSE": "Respuesta de ModBus",
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": "Solicitud de lectura de ModBus",
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": "Respuesta de lectura de ModBus",
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": "Solicitud de escritura de ModBus",
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": "Respuesta de escritura de ModBus",
         "out": "Enviado",
         "in": "Recibido",
         "other": "Observado"
