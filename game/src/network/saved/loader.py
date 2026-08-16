@@ -4,10 +4,15 @@ import os, threading, time
 
 from ..buffer import Buffer
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ...app_core import Context
+
 class Loader:
 
-    def __init__(self, buffer: Buffer):
+    def __init__(self, buffer: Buffer, context: "Context"):
         self.buffer = buffer
+        self.context = context
         self._is_loading = False
         self._lock = threading.Lock()
         
@@ -44,14 +49,10 @@ class Loader:
 
     def select_pcap_file(self):
         self.buffer.put("pcap", "Opening PCAP file dialog...")
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        presets_dir = os.path.join(BASE_DIR, "..", "..", "..", "assets", "captures")
-        file_path = askopenfilename(
-            initialdir=presets_dir,
-            title="Select a pcap file",
-            filetypes=[("PCAP files", "*.pcap *.pcapng"), ("All files", "*.*")]
-        )
-        if file_path == "":
+        directory = self.context.paths.pcaptures
+        filetypes=[("PCAP files", "*.pcap *.pcapng"), ("All files", "*.*")]
+        file_path = self.context.paths.select_path(directory, "Select a PCAP file", filetypes)
+        if file_path is None:
             self.buffer.put("pcap", "No file selected")
             return ""
         
@@ -98,6 +99,7 @@ class Loader:
         total_packets = len(self.packets)
         filename = os.path.basename(self.file_path)
         aborted_prematurely = False
+        self.buffer.reset()
 
         # Rate limiter pumping loop
         while index < total_packets:

@@ -16,8 +16,12 @@ from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, House
 from .meta_packet import MetaPacket
 from .channels.transaction_manager import TransactionManager
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ...app_core import Context
+
 class Buffer:
-    def __init__(self, context, max_size = 5000):
+    def __init__(self, context: "Context", max_size = 5000):
         self.context = context
         self.max_size = max_size
 
@@ -41,6 +45,7 @@ class Buffer:
         self.accept_puts = True
         self.put_queue.clear()
         self.packets.reset_packet_cursor()
+        self.packets.reset_time()
         self.status.reset_cursor()
         self.modbus.reset()
         self.submarine.reset()

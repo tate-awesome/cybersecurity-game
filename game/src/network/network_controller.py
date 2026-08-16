@@ -3,11 +3,15 @@ from .virtual import master, slave
 from .saved import loader
 from .buffer import Buffer
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..app_core import Context
+
 class NetworkController:
 
-    def __init__(self, context):
+    def __init__(self, context: "Context"):
         self.buffer = Buffer(context)
-        self.loader = loader.Loader(self.buffer)
+        self.loader = loader.Loader(self.buffer, context)
 
     def abort_all(self):
         self.buffer.reset()

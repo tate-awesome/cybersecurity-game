@@ -261,30 +261,13 @@ class MetaPacket:
                 
                 # -------- ModBus detection --------
                 if pkt.haslayer(modbus.ModbusADUResponse) or pkt.haslayer(modbus.ModbusADURequest):
-                    func_meanings = {
-                        1: "Read Coils",
-                        2: "Read Discrete Inputs",
-                        3: "Read Holding Registers",
-                        4: "Read Input Registers",
-                        5: "Write Single Coil",
-                        6: "Write Single Register",
-                        15: "Write Multiple Coils",
-                        16: "Write Multiple Registers"
-                    }
-                    register_meanings = {
-                        3: "Speed Feedback",    # 12-bit count Bytes = X*5/4095
-                        4: "Rudder Feedback",   # 12-bit count Bytes = X*30/4095
-                        10: "X Position",       # Bytes = meters*100
-                        11: "Y Position",       # meters*100
-                        12: "Theta (Heading)"   # milli-radians
-                    }
                     if pkt.haslayer(modbus.ModbusADUResponse):
                         mbl = pkt.getlayer(modbus.ModbusADUResponse)
                         re = "Response"
                     elif pkt.haslayer(modbus.ModbusADURequest):
                         mbl = pkt.getlayer(modbus.ModbusADURequest)
                         re = "Request"
-                    func_code = mbl.funcCode
+                    func_code = getattr(mbl, "funcCode", "Raw")
                     name = mbl.getlayer(1).name
                     action = ""
                     if pkt.haslayer("Write Single Register") or pkt.haslayer("Read Holding Registers Response"):

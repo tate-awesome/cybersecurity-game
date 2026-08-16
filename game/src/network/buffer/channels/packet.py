@@ -53,6 +53,9 @@ class PacketBuffer:
         with self.lock:
             self.last_displayed = 0
 
+    def reset_time(self):
+        self.first_packet_time = None
+
     def get_first_packet_time(self, pkt: Packet) -> float:
         if self.first_packet_time is None:
             self.first_packet_time = pkt.time

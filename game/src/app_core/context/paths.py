@@ -10,13 +10,15 @@ class Paths:
         self.settings = self.assets / "settings"
         self.packages = self.settings / "_packages"
         self.preferences = self.assets / "preferences"
+        self.pcaptures = self.assets / "pcaptures"
+        self.mcaptures = self.assets / "mcaptures"
 
-    def select_path(self, directory: str, prompt: str):
+    def select_path(self, directory: str, prompt: str, filetypes: list[str] = ["json", "*.json"]):
         try:
             file_path = askopenfilename(
                 initialdir=directory,
                 title=prompt,
-                filetypes=(("json", "*.json"),)
+                filetypes=(filetypes)
             )
             if file_path == "" or not isinstance(file_path, str):
                 return None
