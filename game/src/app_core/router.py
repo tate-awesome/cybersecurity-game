@@ -106,5 +106,7 @@ class Router:
             return
         self.context.reset_build()
         self.context.reset_page()
+        self.context.start_build()
+        self.context.start_page()
         self.navigation_stack.pop()
         self.show(self.navigation_stack[-1])
