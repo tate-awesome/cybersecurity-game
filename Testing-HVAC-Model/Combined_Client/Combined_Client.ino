@@ -668,7 +668,11 @@ void runHvacCycle() {
   float heat_loss = 0.05f * (true_room_temp - ambient_temp);
   float heat_gain = state_damper * 9.0f;
 
-  true_room_temp += (heat_gain - heat_loss) * dt;
+  if(hvac_AP_communication){
+    true_room_temp += (heat_gain - heat_loss) * dt * 0.1;
+  }else{
+    true_room_temp += (heat_gain - heat_loss) * dt;
+  }
   true_room_temp += (random(-18, 19) / 100.0f); // Random physical perturbation (-0.18 to +0.18°F)
 
   // 3. Noisy Sensor Reading (Raw measurement)

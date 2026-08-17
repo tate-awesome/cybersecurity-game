@@ -159,6 +159,8 @@ static float g_target_x = 100.0f;
 static float g_target_y = 100.0f;
 static bool g_state_anomaly_detected = false;
 static bool g_HVAC_anomaly_detected = false;
+bool g_kalman_filter_enabled = true;
+bool g_hvac_kalman_filter_enabled = true;
 
 using namespace BLA;
 
@@ -363,6 +365,10 @@ void restPost() {
                 g_kalman_expected_sensor_variance =
                     resp["kalman_expected_sensor_variance"].as<float>();
             }
+            if (resp.containsKey("kalman_filter_enabled")) {
+                g_kalman_filter_enabled =
+                    resp["kalman_filter_enabled"].as<bool>();
+            }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
     } else {
@@ -431,12 +437,17 @@ void runSubmarineCycle() {
     z_meas(2,0) = wrap_to_pi(g_state_theta);
 
     if(new_value){
-      ekfStep(u_prev_speed, u_prev_rudder, z_meas, 0.05f);
-
-      g_state_x = xhat(0,0);
-      g_state_y = xhat(1,0);
-      g_state_theta = xhat(2,0);
-
+      if(g_kalman_filter_enabled){
+        ekfStep(u_prev_speed, u_prev_rudder, z_meas, 0.05f);
+        g_state_x = xhat(0,0);
+        g_state_y = xhat(1,0);
+        g_state_theta = xhat(2,0);
+      }else{
+        g_state_x = z_meas(0,0);
+        g_state_y = z_meas(1,0);
+        g_state_theta = z_meas(2,0);
+      }
+  
       float xError = abs( z_meas(0,0) - xhat(0,0) );
       float yError = abs( z_meas(1,0) - xhat(1,0) );
       float tError = wrap_to_pi(z_meas(2,0) - xhat(2,0));
@@ -578,6 +589,10 @@ void postHvac(float current_temp) {
                 g_hvac_state_error_threshold =
                     resp["hvac_state_error_threshold"].as<float>();
             }
+            if (resp.containsKey("hvac_kalman_filter_enabled")) {
+                g_hvac_kalman_filter_enabled =
+                    resp["hvac_kalman_filter_enabled"].as<bool>();
+            }
         }
         Serial.printf("[SERVER] REST OK  encrypt_status=%d\n", encrypt_status);
     } else {
@@ -603,22 +618,22 @@ void runHvacCycle() {
     }
 
     if(last_temp != current_temp){
- 
-      est_temp = tempKF(current_temp, 0.1f);
+
+      if(g_hvac_kalman_filter_enabled){
+        est_temp = tempKF(current_temp, 0.1f);
+        current_temp = est_temp;
+      }
 
       float error_value = abs(est_temp - current_temp);
 
       g_HVAC_anomaly_detected = error_value > g_hvac_state_error_threshold;
-
-      current_temp = est_temp;
-
     }
 
     last_temp = current_temp;
 
     float lower_threshold = setpoint_temp - hysteresis_band;
     float upper_threshold = setpoint_temp + hysteresis_band;
-
+    
     if (current_temp <= lower_threshold) {
         heater_on = true;   // Too cold -> switch heat ON
     } else if (current_temp >= upper_threshold) {
