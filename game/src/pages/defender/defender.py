@@ -146,7 +146,7 @@ class DefenderV0(Page):
         )
 
         self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
-        self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAGS", self.HVAC_FLAG_DEFS, "_hvac_flag_labels",)
+        self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAG", self.HVAC_FLAG_DEFS, "_hvac_flag_labels",)
         # ── HVAC Kalman Filter block ───────────────────────────────────────
         kalman_section = CTkFrame(
             self._hvac_middle,
