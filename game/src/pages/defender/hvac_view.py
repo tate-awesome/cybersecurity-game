@@ -35,7 +35,7 @@ class HVACView:
     MAX_POINTS = 300     # rolling window cap
     MAX_AGE_S  = 300.0    # ...and a 5-minute time cap, whichever trims more
 
-    def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_hvac_anomaly=None):
+    def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_hvac_anomaly=None, on_kalman_filter_change=None):
         """
         style        - the Style object DefenderV0 already uses (self.style)
         left_parent  - container to build the readout cards into
@@ -46,6 +46,7 @@ class HVACView:
         self.style    = style
         self._get_url = get_url_fn
         self._on_hvac_anomaly = on_hvac_anomaly
+        self._on_kalman_filter_change = on_kalman_filter_change
 
         self._t0            = time.monotonic()
         self._times          = []
@@ -60,6 +61,7 @@ class HVACView:
         self.kalman_expected_sensor_variance = 0.1
         self.state_error_threshold = 5.0
         self._syncing_sliders = False
+        self._hvac_kalman_filter_enabled = True
 
         self._build_left(left_parent)
         self._build_graph(right_parent)
@@ -168,6 +170,18 @@ class HVACView:
         self._AP_communication_on = not self._AP_communication_on
         self._push_hvac_controls()
 
+    def _toggle_hvac_kalman_filter(self):
+        self._hvac_kalman_filter_enabled = (
+            not self._hvac_kalman_filter_enabled
+        )
+
+        if self._on_kalman_filter_change is not None:
+            self._on_kalman_filter_change(
+                self._hvac_kalman_filter_enabled
+            )
+
+        self._push_hvac_controls()
+
     def _refresh_encryption_ui(self):
         if self._encryption_on:
             self._enc_label.configure(text="Status: ON", text_color="green")
@@ -198,6 +212,7 @@ class HVACView:
         "sensor_noise_variance": self.sensor_noise_variance,
         "hvac_kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
         "hvac_state_error_threshold": self.state_error_threshold,
+        "hvac_kalman_filter_enabled": self._hvac_kalman_filter_enabled,
         }
 
         def _request():

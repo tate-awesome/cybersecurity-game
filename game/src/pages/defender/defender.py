@@ -64,6 +64,7 @@ class DefenderV0(Page):
         self.speed_error_threshold = 2.0
         self._syncing_sliders = False
         self._submarine_pending_revision = 0
+        self._submarine_kalman_filter_enabled = True
 
         # Flag state — all False until logic sets them
         self._submarine_flags = {key: False for key, _ in self.SUBMARINE_FLAG_DEFS}
@@ -91,24 +92,73 @@ class DefenderV0(Page):
         self._build_slider_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
-        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, context, on_hvac_anomaly=self._set_hvac_flag)
+        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, context, on_hvac_anomaly=self._set_hvac_flag, 
+                                   on_kalman_filter_change = self._set_hvac_kalman_filter_status)
 
         left_p.add_deadspace()
 
         # ── Middle pane ──────────────────────────────────────────────────────
         self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
         self._build_packet_log(self._submarine_middle)
-        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS\nMODBUS",
-        self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",
+        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS\nMODBUS", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
+        self._submarine_kalman_label = CTkLabel(
+            self._submarine_middle,
+            text="Kalman Filter Status: ON",
+            font=self.style.get_font(),
+            text_color="green",
+        )
+        self._submarine_kalman_label.pack(
+            anchor="w",
+            padx=self.style.igap,
+            pady=(self.style.igap, 0),
+        )
+
+        self._submarine_kalman_button = CTkButton(
+            self._submarine_middle,
+            text="Toggle Kalman Filter",
+            font=self.style.get_font(),
+            command=self._toggle_submarine_kalman_filter,
+        )
+        self._submarine_kalman_button.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=(4, self.style.igap),
         )
 
         self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
-        self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAGS",
-            self.HVAC_FLAG_DEFS, "_hvac_flag_labels",
+        self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAGS", self.HVAC_FLAG_DEFS, "_hvac_flag_labels",)
+        self._hvac_kalman_label = CTkLabel(
+            self._hvac_middle,
+            text="Kalman Filter Status: ON",
+            font=self.style.get_font(),
+            text_color="green",
+        )
+        self._hvac_kalman_label.pack(
+            anchor="w",
+            padx=self.style.igap,
+            pady=(self.style.igap, 0),
+        )
+
+        self._hvac_kalman_button = CTkButton(
+            self._hvac_middle,
+            text="Toggle Kalman Filter",
+            font=self.style.get_font(),
+            command=self._hvac_view._toggle_hvac_kalman_filter,
+        )
+        self._hvac_kalman_button.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=(4, self.style.igap),
         )
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
         self._refresh_mode_ui()
+
+        self._submarine_kalman_filter_enabled = True
+        self._hvac_view._hvac_kalman_filter_enabled = True
+
+        self._post_slider_settings()
+        self._hvac_view._push_hvac_controls()
 
         self._map_scale  = None
         self._map_offset = None
@@ -145,6 +195,20 @@ class DefenderV0(Page):
     def _set_hvac_flag(self, value: bool):
                 self._HVAC_flags["HVAC_filter_flag"] = bool(value)
                 self._refresh_flags()
+
+    def _set_hvac_kalman_filter_status(self, enabled: bool):
+        enabled = bool(enabled)
+
+        if enabled:
+            self._hvac_kalman_label.configure(
+                text="Kalman Filter Status: ON",
+                text_color="green",
+            )
+        else:
+            self._hvac_kalman_label.configure(
+                text="Kalman Filter Status: OFF",
+                text_color="gray",
+            )
 
     def _build_connection_block(self, parent):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
@@ -435,6 +499,7 @@ class DefenderV0(Page):
             "kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
             "rudder_error_threshold": self.rudder_error_threshold,
             "speed_error_threshold": self.speed_error_threshold,
+            "kalman_filter_enabled": self._submarine_kalman_filter_enabled,
         }
 
         def _request():
@@ -648,6 +713,24 @@ class DefenderV0(Page):
         self._log_source = value.lower()
         active = self._last_points.get(self._log_source, [])
         self._update_log(list(reversed(active[-10:])))
+
+    def _toggle_submarine_kalman_filter(self):
+        self._submarine_kalman_filter_enabled = (
+            not self._submarine_kalman_filter_enabled
+        )
+
+        if self._submarine_kalman_filter_enabled:
+            self._submarine_kalman_label.configure(
+                text="Kalman Filter Status: ON",
+                text_color="green",
+            )
+        else:
+            self._submarine_kalman_label.configure(
+                text="Kalman Filter Status: OFF",
+                text_color="gray",
+            )
+
+        self._post_slider_settings()
 
     # ════════════════════════════════════════════════════════════════════════
     #  UI update helpers
