@@ -49,6 +49,7 @@ float g_sensor_noise_variance = 8.3f;
 float g_rudder_error_threshold = 2.0f;
 float g_speed_error_threshold = 2.75f;
 uint32_t g_settings_revision = 0;
+bool g_submarine_filtering_on = true;
 
 IPAddress serverIP(192, 168, 4, 10);   // Server lives here regardless of mode
 ModbusIP mb;
@@ -411,6 +412,9 @@ void restPost() {
         if (resp.containsKey("settings_revision")) {
             g_settings_revision = resp["settings_revision"].as<uint32_t>();
         }
+        if (resp.containsKey("kalman_filter_enabled")) {
+            g_submarine_filtering_on = resp["kalman_filter_enabled"].as<bool>();
+        }
     }
   } else {
     Serial.printf("[CLIENT] REST POST failed  HTTP %d\n", code);
@@ -454,12 +458,14 @@ void runSubmarineCycle() {
       float last_speed = speed_m_s;
       float last_rudder = rudder_deg;
 
-      state_speed  = speedKF(speed_m_s, dt);
-      state_rudder  = rudderKF(rudder_deg, dt);
+      if(g_submarine_filtering_on){
+        state_speed  = speedKF(speed_m_s, dt);
+        state_rudder  = rudderKF(rudder_deg, dt);
 
-      speed_m_s = state_speed;
-      rudder_deg = state_rudder;
-
+        speed_m_s = state_speed;
+        rudder_deg = state_rudder;
+      }
+    
       float speed_error = abs(last_speed - state_speed);
       float rudder_error = fabs(wrapToPi(last_rudder - state_rudder));
 

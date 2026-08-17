@@ -1535,6 +1535,7 @@ void setupRoutes() {
     resp["settings_revision"] = g_submarine_settings_revision;
     resp["client_settings_revision"] = g_client_settings_revision;
     resp["server_settings_revision"] = g_server_settings_revision;
+    resp["kalman_filter_enabled"] = g_kalman_filter_enabled;
 
     String out;
     serializeJson(resp, out);
