@@ -89,6 +89,9 @@ uint32_t g_submarine_settings_revision = 0;
 uint32_t g_client_settings_revision = 0;
 uint32_t g_server_settings_revision = 0;
 
+bool g_kalman_filter_enabled = true;
+bool g_hvac_kalman_filter_enabled = true;
+
 // ─── Live submarine telemetry position ─────────────────────────
 //  Most recent (x, y) reported by each source via POST /data.
 //   NOTE: this assumes the incoming /data payload includes numeric
@@ -657,18 +660,6 @@ String buildConfigPage() {
                   </h1>
                 </div>
 
-                <div class="status-row">
-                  <span class="status-key">Encryption</span>
-                  <span class="status-val" id="stat-enc">—</span>
-                </div>
-                <div class="status-row">
-                  <span class="status-key">Key</span>
-                  <span class="status-val" id="stat-enc-key">—</span>
-                </div>
-                <div class="status-row">
-                  <span class="status-key">Kalman Filter</span>
-                  <span class="status-val" id="stat-filter">—</span>
-                </div>
                 <div class="status-row" style="margin-bottom:14px;">
                   <span class="status-key">Current Target X / Y</span>
                   <span class="status-val" id="stat-target">—</span>
@@ -1100,14 +1091,6 @@ String buildConfigPage() {
               d.server_point_count ?? '—';
 
             // Status rows
-            const encEl = document.getElementById('stat-enc');
-            encEl.textContent    = d.encryption ? 'ON' : 'OFF';
-            encEl.className      = 'status-val ' + (d.encryption ? 'green' : 'red');
-            const keyEl = document.getElementById('stat-enc-key');
-            keyEl.textContent    = d.encryption ? maskKey(d.encryption_key) : '—';
-            const filterEl = document.getElementById('stat-filter');           // ← add this block
-            filterEl.textContent = d.filter_correction ? 'ON' : 'OFF';
-            filterEl.className   = 'status-val ' + (d.filter_correction ? 'green' : 'red');
             const modeEl = document.getElementById('stat-mode');
             const modeBtnEl = document.getElementById('mode-toggle-btn');
             modeEl.textContent  = d.submarine_mode ? 'SUBMARINE' : 'HVAC';
@@ -1520,6 +1503,7 @@ void setupRoutes() {
       resp["speed_error_threshold"]  = g_speed_error_threshold;
       resp["kalman_expected_sensor_variance"] = g_kalman_expected_sensor_variance;
       resp["settings_revision"] = g_submarine_settings_revision;
+      resp["kalman_filter_enabled"] = g_kalman_filter_enabled;
 
       String out;
       serializeJson(resp, out);
@@ -1689,6 +1673,11 @@ void setupRoutes() {
           g_hvac_state_error_threshold;
     }
 
+    if (doc.containsKey("hvac_kalman_filter_enabled")) {
+        g_hvac_kalman_filter_enabled =
+            doc["hvac_kalman_filter_enabled"].as<bool>();
+    }
+
     StaticJsonDocument<256> resp;
 
     resp["status"] = "ok";
@@ -1704,6 +1693,8 @@ void setupRoutes() {
         g_hvac_kalman_expected_sensor_variance;
     resp["hvac_state_error_threshold"] =
         g_hvac_state_error_threshold;
+    resp["hvac_kalman_filter_enabled"] =
+        g_hvac_kalman_filter_enabled;
 
     String out;
     serializeJson(resp, out);
@@ -1795,6 +1786,7 @@ void setupRoutes() {
       resp["sensor_noise_variance"] = g_hvac_sensor_noise_variance;
       resp["hvac_kalman_expected_sensor_variance"] = g_hvac_kalman_expected_sensor_variance;
       resp["hvac_state_error_threshold"] = g_hvac_state_error_threshold;
+      resp["hvac_kalman_filter_enabled"] = g_hvac_kalman_filter_enabled;
 
       String out;
       serializeJson(resp, out);
@@ -1839,6 +1831,10 @@ void setupRoutes() {
       if (doc.containsKey("speed_error_threshold")) {
         g_speed_error_threshold =
           doc["speed_error_threshold"].as<float>();
+      }
+      if (doc.containsKey("kalman_filter_enabled")) {
+        g_kalman_filter_enabled =
+          doc["kalman_filter_enabled"].as<bool>();
       }
       
       g_submarine_settings_revision++;
