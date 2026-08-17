@@ -100,55 +100,95 @@ class DefenderV0(Page):
         # ── Middle pane ──────────────────────────────────────────────────────
         self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
         self._build_packet_log(self._submarine_middle)
-        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS\nMODBUS", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
-        self._submarine_kalman_label = CTkLabel(
+        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS [MODBUS]", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
+        # ── Kalman Filter block ─────────────────────────────────────────────
+        kalman_section = CTkFrame(
             self._submarine_middle,
-            text="Kalman Filter Status: ON",
+            fg_color=self.style.color("widget")
+        )
+        kalman_section.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=self.style.igap
+        )
+
+        CTkLabel(
+            kalman_section,
+            text="KALMAN FILTER",
+            font=self.style.get_font()
+        ).pack(
+            anchor="w",
+            padx=self.style.igap,
+            pady=(self.style.igap, 0)
+        )
+
+        self._submarine_kalman_label = CTkLabel(
+            kalman_section,
+            text="Status: ON",
             font=self.style.get_font(),
-            text_color="green",
+            text_color="green"
         )
         self._submarine_kalman_label.pack(
             anchor="w",
-            padx=self.style.igap,
-            pady=(self.style.igap, 0),
+            padx=self.style.igap
         )
 
         self._submarine_kalman_button = CTkButton(
-            self._submarine_middle,
-            text="Toggle Kalman Filter",
+            kalman_section,
+            text="Disable Kalman Filter",
             font=self.style.get_font(),
-            command=self._toggle_submarine_kalman_filter,
+            command=self._toggle_submarine_kalman_filter
         )
         self._submarine_kalman_button.pack(
             fill="x",
             padx=self.style.igap,
-            pady=(4, self.style.igap),
+            pady=self.style.gapbot
         )
 
         self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
         self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAGS", self.HVAC_FLAG_DEFS, "_hvac_flag_labels",)
-        self._hvac_kalman_label = CTkLabel(
+        # ── HVAC Kalman Filter block ───────────────────────────────────────
+        kalman_section = CTkFrame(
             self._hvac_middle,
-            text="Kalman Filter Status: ON",
+            fg_color=self.style.color("widget")
+        )
+        kalman_section.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=self.style.igap
+        )
+
+        CTkLabel(
+            kalman_section,
+            text="KALMAN FILTER",
+            font=self.style.get_font()
+        ).pack(
+            anchor="w",
+            padx=self.style.igap,
+            pady=(self.style.igap, 0)
+        )
+
+        self._hvac_kalman_label = CTkLabel(
+            kalman_section,
+            text="Status: ON",
             font=self.style.get_font(),
-            text_color="green",
+            text_color="green"
         )
         self._hvac_kalman_label.pack(
             anchor="w",
-            padx=self.style.igap,
-            pady=(self.style.igap, 0),
+            padx=self.style.igap
         )
 
         self._hvac_kalman_button = CTkButton(
-            self._hvac_middle,
-            text="Toggle Kalman Filter",
+            kalman_section,
+            text="Disable Kalman Filter",
             font=self.style.get_font(),
             command=self._hvac_view._toggle_hvac_kalman_filter,
         )
         self._hvac_kalman_button.pack(
             fill="x",
             padx=self.style.igap,
-            pady=(4, self.style.igap),
+            pady=self.style.gapbot
         )
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
