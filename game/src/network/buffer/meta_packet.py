@@ -7,32 +7,32 @@ from scapy.contrib.modbus import *
 class MetaPacket:
 
     KEYS = {
-        "pkt",
-        "time",
-        "number",
-        "hack",
-        "purpose",
-        "mac_src",
-        "mac_dst",
-        "ip_src",
-        "ip_dst",
-        "direction",
-        "layers",
-        "protocol",
-        "observer",
-        "layers_word",
-        "length",
-        "time_word",
-        "summary",
-        "direction_word",
-        "mac_word",
-        "ip_word",
-        "variables",
-        "values",
-        "command",
-        "command_type",
-        "is_modbus",
-        "is_useful",
+        "pkt",              # scapy packet
+        "time",             # pkt.time float
+        "number",           # buffer number
+        "hack",             # hack source str: arp, sniff, dos, nfq, nmap
+        "purpose",          # packet purpose str, from put()
+        "mac_src",          # pkt.mac_src
+        "mac_dst",          # pkt.mac_dst
+        "ip_src",           # pkt.ip_src
+        "ip_dst",           # pkt.ip_dst
+        "direction",        # in or out
+        "layers",           # pkt.layers list
+        "protocol",         # pkt.layers[-1] str
+        "observer",         # hack observer: any hack, prerouting nfq, postrouting nfq
+        "layers_word",      # pkt.layers joined by " / "
+        "length",           # len(pkt)
+        "time_word",        # pkt.time to 4 decimels
+        "summary",          # pkt.summary
+        "direction_word",   # "Sent" or "Received"
+        "mac_word",         # mac_src -> mac_dst
+        "ip_word",          # ip_src -> ip_dst
+        "variables",        # list of hreg str
+        "values",           # list of ints
+        "command",          # modbus layer name - "read holding registers response"
+        "command_type",     # "Request" or "Response"
+        "is_modbus",        # bool - includes modbus layer
+        "is_useful",        # bool
         "is_primary",
         "command_word",
         "modbus_word"
