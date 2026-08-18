@@ -10,11 +10,11 @@ class AnimationManager:
         self.callbacks = {}  # Stores identifier: callback_function
         self.run = True
         self.time = frame_time_ms
-        self.tag = "[Animation]"
-        self.add = "+"
-        self.replace = "-+"
-        self.remove = "-"
-        self.error = "error:"
+        self._tag = "[Animation]"
+        self._add = "+"
+        self._replace = "-+"
+        self._remove = "-"
+        self._error = "error:"
 
         self.start_loop()
 
@@ -23,9 +23,9 @@ class AnimationManager:
         Dynamically an animation callback function
         """
         if name in self.callbacks.keys():
-            print(f"{self.tag} {self.replace} {name}")
+            print(f"{self._tag} {self._replace} {name}")
         else:
-            print(f"{self.tag} {self.add} {name}")
+            print(f"{self._tag} {self._add} {name}")
         self.callbacks[name] = callback_func
 
     def remove_callback(self, name: str):
@@ -34,7 +34,7 @@ class AnimationManager:
         """
         if name in self.callbacks:
             del self.callbacks[name]
-            print(f"{self.tag} {self.remove} {name}")
+            print(f"{self._tag} {self._remove} {name}")
 
     def start_loop(self):
         self.run = True
@@ -53,7 +53,7 @@ class AnimationManager:
             try:
                 callback()
             except Exception as e:
-                print(f"{self.tag} {self.error} {e}")
+                print(f"{self._tag} {self._error} {e}")
         if self.run:
             self.root.after(self.time, self.do_loop)
 
