@@ -103,6 +103,7 @@ void setupModbusRegisters() {
   mb.addHreg(HREG_THETA_MRAD, 0);
   mb.addHreg(HREG_SPEED,      0);
   mb.addHreg(HREG_RUDDER,     0);
+  mb.addHreg(HREG_DAMPER_CMD, 0);
 }
 
 
