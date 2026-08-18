@@ -1,17 +1,18 @@
 from scapy.all import TCP, AsyncSniffer
-from .. import modbus_util as mb
-from ..data_buffer import DataBuffer
+from ..buffer import Buffer
 
 
 class Sniffer:
-    def __init__(self, buffer: DataBuffer):
-        self.sniffer = None
+    def __init__(self, buffer: Buffer):
         self.buffer = buffer
+        self.sniffer = AsyncSniffer(
+            prn=self.callback,
+            store=False
+        )
 
     
     def is_running(self):
-        return self.sniffer is not None
-    
+        return self.sniffer.running
 
     def start(self):
         '''
@@ -22,29 +23,21 @@ class Sniffer:
             self.buffer.put("sniff", "Sniffer is already running")
             return
 
-        # callback_dict = {
-        #     "show_all": self.show,
-        #     "buffer_all": self.put_all_in_buffer,
-
-        #     "show_modbus": self.show_modbus,
-        #     "print_modbus": self.print_scannable,
-        #     "buffer_modbus": self.put_modbus_in_buffer
-        # }
-
         self.buffer.put("sniff", "Starting Sniffer")
-        def callback(pkt):
-            self.buffer.put("sniff", "Sniffed Packet", pkt)
-        self.sniffer = AsyncSniffer(
-            prn=callback,
-            store=False
-        )
+        
         self.sniffer.start()
+
+    def callback(self, pkt):
+        try:
+            self.buffer.put("sniff", "Sniffed Packet", pkt)
+        except Exception as e:
+            print(e)
+            pkt.show()
 
 
     def stop(self):
-        if self.sniffer is not None:
+        if self.sniffer.running:
             self.sniffer.stop()
-            self.sniffer = None
             self.buffer.put("sniff", "Stopped Sniffer")
         else:
             self.buffer.put("sniff", "Sniffer is not running")

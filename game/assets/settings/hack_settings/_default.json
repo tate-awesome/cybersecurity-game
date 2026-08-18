@@ -1,0 +1,28 @@
+{
+    
+    "game_progress": {
+        "wifi": 0,
+        "nmap": 0,
+        "arp": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "dos": 0
+        },
+    
+    "hack_forms": {
+        "wifi": [""],
+        "arp": ["",""],
+        "sniff": ["",""],
+        "dos": ["",""]
+    },
+
+    "hacking_forms": {
+        "wifi": 1,
+        "nmap": 1,
+        "arp": 1,
+        "dos": 0,
+        "sniff": 1,
+        "nfq": 1
+    }
+    
+}

@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 from ...drawing.viewport import ViewPort
 from ...drawing import sprites
 from ...widgets.map import Map
@@ -12,7 +12,7 @@ from customtkinter import CTkCanvas
 class BoatMotion(Page):
     def __init__(self, context: Context):
         super().__init__(context)
-        menu_bar = MenuBar(self, context, "Boat Motion Demo")
+        menu_bar = MenuBar(self, context, "boat_motion_demo")
         menu_bar.quit_button()
         menu_bar.back_button()
 

@@ -2,16 +2,15 @@
 Arp spoofing module. Stateless functions that can be used whenever + Stateful class that manages persistent/async things
 '''
 import scapy.all as scapy
-from scapy.all import Packet, ARP
+from scapy.all import  ARP
 import threading, subprocess
-from ..data_buffer import DataBuffer
-from .nmap import NMapper
-import ipaddress, netifaces, platform
+from ..buffer import Buffer
+import platform
 # TODO get mac address better
 
 class ArpSpoofer:
 
-    def __init__(self, buffer: DataBuffer, interval=1.0):
+    def __init__(self, buffer: Buffer, interval=1.0):
         self.buffer = buffer
         self.interval = interval
 
@@ -97,12 +96,12 @@ class ArpSpoofer:
         arp_request = scapy.ARP(pdst=ip)
         broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
         packet = broadcast / arp_request
-        self.buffer.put("arp", "MAC address request", packet)
+        self.buffer.put("arp", "MAC address request", packet, "send")
 
         answered, _ = scapy.srp(packet, timeout=2, verbose=False)
 
         if answered:
-            self.buffer.put("arp", "MAC address response", answered[0][1])
+            self.buffer.put("arp", "MAC address response", answered[0][1], "recv")
             return answered[0][1].hwsrc
 
 
@@ -114,8 +113,8 @@ class ArpSpoofer:
         psrc=spoof_ip
         )
 
+        self.buffer.put("arp", "Spoofing packet", packet, "send")
         scapy.sendp(packet, verbose=False)
-        self.buffer.put("arp", "Spoofing packet", packet)
 
 
     def restore(self, destination_ip, source_ip):
@@ -134,10 +133,10 @@ class ArpSpoofer:
             hwsrc=source_mac
         )
 
-        self.buffer.put("arp", "Restore packet", packet)
+        self.buffer.put("arp", "Restore packet", packet, "send")
         scapy.sendp(packet, verbose=False)
 
-    
+
     def enable_ip_forwarding(self):
         if self.os_name == "Windows":
             # IP Forwarding is maybe possible

@@ -1,10 +1,10 @@
 from customtkinter import CTkCanvas, CTkFrame
-from ....app_core.context import Context
+from ....app_core import Context
 from .draw import Draw
 from .camera import Camera
 from typing import Callable
 
-class StripChart(CTkCanvas):
+class StripChartBase(CTkCanvas):
     '''
     Base class for specialized canvas widgets with stripchart-type sizing and camera rules
     Special behavior is defined here, then activated in the specialized canvas.

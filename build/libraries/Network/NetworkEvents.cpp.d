@@ -1,4 +1,4 @@
-/home/martin/Desktop/cybersecurity-game/build/libraries/Network/NetworkEvents.cpp.o: \
+/home/martin/Desktop/Research-dir/cybersecurity-game/build/libraries/Network/NetworkEvents.cpp.o: \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkEvents.cpp \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkEvents.h \
  /home/martin/.arduino15/packages/esp32/tools/esp32s3-libs/3.3.8/qio_qspi/include/sdkconfig.h \

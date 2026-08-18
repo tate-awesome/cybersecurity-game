@@ -1,5 +1,5 @@
 from customtkinter import *
-from ..app_core.context import Context
+from ..app_core import Context
 
 def message(master: CTkBaseClass, context: Context, message: str):
         style = context.style

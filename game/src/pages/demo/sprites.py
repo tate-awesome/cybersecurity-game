@@ -1,5 +1,5 @@
 from ...widgets.map import Map
-from ...app_core.context import Context
+from ...app_core import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
@@ -10,7 +10,7 @@ from ...widgets import MenuBar
 class Sprites(Page):
     def __init__(self, context: Context):
         super().__init__(context)
-        menu_bar = MenuBar(self, context, "Boat Motion Demo")
+        menu_bar = MenuBar(self, context, "sprites_demo")
         menu_bar.quit_button()
         menu_bar.back_button()
         world_map = Map(self, context, self.frame_callback, 100)

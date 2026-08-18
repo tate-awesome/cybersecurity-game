@@ -1,23 +1,22 @@
-# 1 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino"
+# 1 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino"
 // ════════════════════════════════════════════════════════════════════════
 //  Combined Client — Submarine pose-tracking client + HVAC thermostat
 //  client, in one sketch. Only one model's logic runs at a time; which one
-//  is decided by AP_ESP32.ino's submarine_mode, polled continuously below.
+//  is decided by ESP32.ino's submarine_mode, polled continuously below.
 //  This device never sets the mode itself — it only reads it.
 // ════════════════════════════════════════════════════════════════════════
 
 
 //#define DEBUG_SERIAL      // Comment out to disable debug output
 
-# 12 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 13 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 14 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 15 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 16 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 17 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 18 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 19 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
-# 34 "/home/martin/Desktop/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino"
+# 12 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 13 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 14 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 15 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 16 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 17 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 18 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino" 2
+# 33 "/home/martin/Desktop/Research-dir/cybersecurity-game/Testing-HVAC-Model/Combined_Client/Combined_Client.ino"
 // ════════════════════════════════════════════════════════════════════════
 //  SHARED — network, Modbus, mode sync. Identical regardless of which
 //  model is active; neither Submarine nor HVAC needed a different WiFi
@@ -28,6 +27,11 @@ const char* AP_SSID = "AP-Config";
 const char* AP_PASSWORD = "admin1234";
 const char* CONFIG_URL = "http://192.168.4.1/config";
 const char* REST_URL = "http://192.168.4.1/data";
+const char* CLIENT_STATE_URL = "http://192.168.4.1/client_state";
+const char* SERVER_CONTROL_URL = "http://192.168.4.1/server_control";
+
+float g_remote_velocity = 0.0f;
+float g_remote_rudder = 0.0f;
 
 IPAddress serverIP(192, 168, 4, 10); // Server lives here regardless of mode
 ModbusIP mb;
@@ -39,6 +43,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 // unchanged if the AP can't be reached yet, matching HVAC_Server.ino's
 // existing convention for the same flag.
 bool g_submarine_mode = true;
+bool AP_communication = false;
 
 // Generic Modbus holding-register write with one retry on timeout. Used by
 // both models — neither needs anything register-specific baked in here.
@@ -160,6 +165,9 @@ void syncModeFromAP() {
       if (doc.containsKey("submarine_mode")) {
         g_submarine_mode = doc["submarine_mode"].as<bool>();
       }
+      if (doc.containsKey("AP_communication")) {
+        AP_communication = doc["AP_communication"].as<bool>();
+      }
     }
   }
   http.end();
@@ -169,34 +177,15 @@ void syncModeFromAP() {
 //  SUBMARINE MODE — pose estimation, Kalman filtering, telemetry
 // ════════════════════════════════════════════════════════════════════════
 
-using namespace BLA;
-bool filtering = true;
-
-BLA::Matrix<3,1> xhat; // [x;y;heading angle]
-BLA::Matrix<3,3> P; // covariance matrix
-BLA::Matrix<3,3> R; // measurement noise matrix
-BLA::Matrix<2,2> Qu; // control input noise
-BLA::Matrix<3,3> I3; // identity matrix
-
-float sigma_x = 0.01;
-float sigma_y = 0.01;
-float sigma_theta = 0.01;
-
-float sigma_meas_x = 8.3f;
-float sigma_meas_y = 8.3f;
-float sigma_meas_theta = 0.01f;
-
-float sigma_speed = 0.01f;
-float sigma_rudder = 0.01f;
-
-bool kalman_correction = true;
-bool g_anomaly_detected = false;
-
 float state_x = 0.0f;
 float state_y = 0.0f;
 float state_theta = 0.0f;
 float state_speed = 0.0f;
 float state_rudder = 0.0f;
+
+float noise_x = 0.0f;
+float noise_y = 0.0f;
+float noise_theta = 0.0f;
 
 const float L_vehicle = 0.07f;
 const float K_theta = 0.6f;
@@ -210,13 +199,28 @@ const uint16_t HREG_RUDDER = 4;
 static int readAttempts = 0;
 static int readFailures = 0;
 
+float speed_estimate = 0.0f;
+float speed_covariance = 0.5f;
+float speed_process_variance = 0.05f;
+float speed_measurement_variance = 0.1f;
+float speed_kalman_gain = 0.0f;
+
+float rudder_estimate = 0.0f;
+float rudder_covariance = 0.5f;
+float rudder_process_variance = 0.02f;
+float rudder_measurement_variance = 0.1f;
+float rudder_kalman_gain = 0.0f;
+
+static bool speed_anomaly_detected = false;
+static bool rudder_anomaly_detected = false;
+
 static String key = (String)1234;
 
 const float SpeedMax_m_s = 50.0f;
 const float RudderMax_deg = 60.0f;
 
 
-  const uint32_t REST_INTERVAL_MS = 2000;
+  uint32_t REST_INTERVAL_MS = 2000;
   static uint32_t lastRestMs = 0;
   static bool encrypt_status = false;
 
@@ -227,41 +231,28 @@ float wrapToPi(float a) {
   return a;
 }
 
-void ekfStep(float speed_m_s, float rudder_rad, const BLA::Matrix<3,1>& z_meas, float dt)
-{
-  // Predict
-  BLA::Matrix<3,1> x_pred;
-  float th = xhat(2,0);
+float speedKF(float measurement, float dt) {
+    speed_covariance += speed_process_variance * dt;
 
-  x_pred(0,0) = xhat(0,0) + speed_m_s * cos(th + rudder_rad) * dt;
-  x_pred(1,0) = xhat(1,0) + speed_m_s * sin(th + rudder_rad) * dt;
-  x_pred(2,0) = wrapToPi(xhat(2,0) + K_theta * (tan(rudder_rad) / L_vehicle) * dt);
+    speed_kalman_gain = speed_covariance / (speed_covariance + speed_measurement_variance);
 
-  Matrix<3,3> F = {
-    1, 0, -speed_m_s * sin(th + rudder_rad) * dt,
-    0, 1, speed_m_s * cos(th + rudder_rad) * dt,
-    0, 0, 1
-  };
+    speed_estimate += speed_kalman_gain * (measurement - speed_estimate);
 
-  Matrix<3,2> G = {
-    cos(th + rudder_rad) * dt, -speed_m_s * sin(th + rudder_rad) * dt,
-    sin(th + rudder_rad) * dt, speed_m_s * cos(th + rudder_rad) * dt,
-    0, (K_theta * dt / L_vehicle) * (1.0f / (cos(rudder_rad) * cos(rudder_rad)))
-  };
+    speed_covariance *= (1.0f - speed_kalman_gain);
 
-  Matrix<3,3> P_pred = F * P * ~F + G * Qu * ~G;
+    return speed_estimate;
+}
 
-  // Update
-  Matrix<3,3> S = P_pred + R; // H = I
-  Matrix<3,3> K = P_pred * Inverse(S);
+float rudderKF(float measurement, float dt) {
+    rudder_covariance += rudder_process_variance * dt;
 
-  Matrix<3,1> y = z_meas - x_pred;
-  y(2,0) = wrapToPi(y(2,0));
+    rudder_kalman_gain = rudder_covariance / (rudder_covariance + rudder_measurement_variance);
 
-  xhat = x_pred + K * y;
-  xhat(2,0) = wrapToPi(xhat(2,0));
+    rudder_estimate += rudder_kalman_gain * (measurement - rudder_estimate);
 
-  P = (I3 - K) * P_pred;
+    rudder_covariance *= (1.0f - rudder_kalman_gain);
+
+    return rudder_estimate;
 }
 
 static inline uint16_t x_to_u16_100(float v) {
@@ -295,9 +286,9 @@ uint16_t keyToUint(const String& key){
 }
 
 void sendPose() {
-  uint16_t x_u = x_to_u16_100(state_x);
-  uint16_t y_u = x_to_u16_100(state_y);
-  uint16_t t_u = theta_to_mrad_u16(state_theta);
+  uint16_t x_u = x_to_u16_100(noise_x);
+  uint16_t y_u = x_to_u16_100(noise_y);
+  uint16_t t_u = theta_to_mrad_u16(noise_theta);
 
   if (writeH(HREG_X_PHYS, x_u) && writeH(HREG_Y_PHYS, y_u) && writeH(HREG_THETA_MRAD, t_u)) {
     // Success - values sent
@@ -307,9 +298,9 @@ void sendPose() {
 }
 
 void sendPoseEncrypted(){
-  uint16_t x_u = xorCipher(x_to_u16_100(state_x), keyToUint(key));
-  uint16_t y_u = xorCipher(x_to_u16_100(state_y), keyToUint(key));
-  uint16_t t_u = xorCipher(theta_to_mrad_u16(state_theta), keyToUint(key));
+  uint16_t x_u = xorCipher(x_to_u16_100(noise_x), keyToUint(key));
+  uint16_t y_u = xorCipher(x_to_u16_100(noise_y), keyToUint(key));
+  uint16_t t_u = xorCipher(theta_to_mrad_u16(noise_theta), keyToUint(key));
 
   bool x = writeH(HREG_X_PHYS, x_u);
   bool y = writeH(HREG_Y_PHYS, y_u);
@@ -329,35 +320,6 @@ void sendPoseAuto() {
   else sendPose();
 }
 
-void initSubmarineState() {
-  xhat.Fill(0);
-  xhat(0,0) = state_x;
-  xhat(1,0) = state_y;
-  xhat(2,0) = state_theta;
-
-  P = {
-    sigma_x, 0.0f, 0.0f,
-    0.0f, sigma_y, 0.0f,
-    0.0f, 0.0f, sigma_theta
-  };
-
-  R = {
-    sigma_meas_x, 0.0f, 0.0f,
-    0.0f, sigma_meas_y, 0.0f,
-    0.0f, 0.0f, sigma_meas_theta
-  };
-
-  Qu = {
-    sigma_speed, 0.0f,
-    0.0f, sigma_rudder
-  };
-
-  I3 = {1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
-  };
-}
-
 
 void restPost() {
   if (WiFi.status() != WL_CONNECTED) return;
@@ -374,7 +336,11 @@ void restPost() {
   doc["theta"] = state_theta;
   doc["speed"] = state_speed;
   doc["rudder"] = state_rudder;
-  doc["anomaly_detected"] = g_anomaly_detected;
+  doc["speed_anomaly_detected"] = speed_anomaly_detected;
+  doc["rudder_anomaly_detected"] = rudder_anomaly_detected;
+  doc["noise_x"] = noise_x;
+  doc["noise_y"] = noise_y;
+  doc["noise_theta"] = noise_theta;
 
   String payload;
   serializeJson(doc, payload);
@@ -390,11 +356,14 @@ void restPost() {
             encrypt_status = resp["encryption_status"].as<bool>();
             key = resp["encryption_key"].as<String>();
         }
-        if (resp.containsKey("filter_correction")) {
-            kalman_correction = resp["filter_correction"].as<bool>();
-        }
         if (resp.containsKey("submarine_mode")) {
             g_submarine_mode = resp["submarine_mode"].as<bool>();
+        }
+        if(resp.containsKey("server_speed")){
+          g_remote_velocity = resp["server_speed"].as<float>();
+        }
+        if(resp.containsKey("server_rudder")){
+          g_remote_rudder = resp["server_rudder"].as<float>();
         }
     }
   } else {
@@ -430,59 +399,63 @@ void runSubmarineCycle() {
 
       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
-      state_speed = speed_m_s;
-      state_rudder = rudder_deg;
+
+      if(AP_communication){
+        speed_m_s = g_remote_velocity;
+        rudder_deg = g_remote_rudder;
+      }
+
+      float last_speed = speed_m_s;
+      float last_rudder = rudder_deg;
+
+      state_speed = speedKF(speed_m_s, dt);
+      state_rudder = rudderKF(rudder_deg, dt);
+
+      speed_m_s = state_speed;
+      rudder_deg = state_rudder;
+
+      float speed_error = abs(last_speed - state_speed);
+      float rudder_error = fabs(wrapToPi(last_rudder - state_rudder));
+
+      speed_anomaly_detected = speed_error > 2.0f;
+      rudder_anomaly_detected = rudder_error > 2.75f;
+
+      if(AP_communication){
+        speed_m_s *= 15.0f;
+        rudder_deg *= 3.0f;
+      }
 
       if (fabs(speed_m_s) > 0.01f) {
         float v = speed_m_s;
         float rho = ((rudder_deg) * 0.017453292519943295769236907684886);
 
-        if (!filtering) {
-          float xdot = v * cos(rho + state_theta);
-          float ydot = v * sin(rho + state_theta);
-          float thetadot = 0.0f;
+        float xdot = v * cos(rho + state_theta);
+        float ydot = v * sin(rho + state_theta);
+        float thetadot = 0.0f;
 
-          if (fabs(rho) > 0.001f) {
-            thetadot = K_theta / (L_vehicle / tan(rho));
-          }
-
-          state_x += (xdot * dt) + random(-500, 500) / 100.0f;
-          state_y += (ydot * dt) + random(-500, 500) / 100.0f;
-          state_theta += (thetadot * dt) + ((random(-100, 100) / 100.0f) * 0.017453292519943295769236907684886);
-
-        } else {
-          BLA::Matrix<3,1> z_meas;
-          z_meas(0,0) = state_x + random(-500, 500) / 100.0f;
-          z_meas(1,0) = state_y + random(-500, 500) / 100.0f;
-          z_meas(2,0) = state_theta + ((random(-100, 100) / 100.0f) * 0.017453292519943295769236907684886);
-
-          ekfStep(v, rho, z_meas, dt);
-
-          bool xCheck = abs(z_meas(0,0) - xhat(0,0)) > 8;
-          bool yCheck = abs(z_meas(1,0) - xhat(1,0)) > 8;
-          float thetaError = wrapToPi(z_meas(2,0) - xhat(2,0));
-          bool thetaCheck = fabs(thetaError) > 3;
-          bool anomalyDetected = xCheck || yCheck || thetaCheck;
-          g_anomaly_detected = anomalyDetected;
-
-          if ((anomalyDetected && kalman_correction) || !anomalyDetected) {
-            state_x = xhat(0,0);
-            state_y = xhat(1,0);
-            state_theta = xhat(2,0);
-          } else if (anomalyDetected && !kalman_correction) {
-            state_x = z_meas(0,0);
-            state_y = z_meas(1,0);
-            state_theta = z_meas(2,0);
-          }
+        if (fabs(rho) > 0.001f) {
+          thetadot = K_theta / (L_vehicle / tan(rho));
         }
+
+        state_x += (xdot * dt);
+        state_y += (ydot * dt);
+        state_theta += (thetadot * dt);
+
+        noise_x = state_x + random(-500,500)/100.0f;
+        noise_y = state_y + random(-500,500)/100.0f;
+        noise_theta = state_theta + ((random(-100,100)/100.0f) * 0.017453292519943295769236907684886);
 
         while (state_theta < 0) state_theta += 2.0f * 3.1415926535897932384626433832795;
         while (state_theta >= 2.0f * 3.1415926535897932384626433832795) state_theta -= 2.0f * 3.1415926535897932384626433832795;
 
         if (state_x < 0.0f) state_x = 0.0f;
+        if (noise_x < 0.0f) noise_x = 0.0f;
         if (state_x > 200.0f) state_x = 200.0f;
+        if (noise_x > 200.0f) noise_x = 200.0f;
         if (state_y < 0.0f) state_y = 0.0f;
+        if (noise_y < 0.0f) noise_y = 0.0f;
         if (state_y > 200.0f) state_y = 200.0f;
+        if (noise_y > 200.0f) noise_y = 200.0f;
       }
 
       if (millis() - lastPoseMs >= 200) {
@@ -546,6 +519,11 @@ void runSubmarineCycle() {
   }
 
 
+    if(AP_communication){
+        REST_INTERVAL_MS = 50;
+      }else{
+        REST_INTERVAL_MS = 2000;
+      }
     if (millis() - lastRestMs >= REST_INTERVAL_MS) {
       lastRestMs = millis();
       restPost();
@@ -651,11 +629,6 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print(WiFi.localIP());
   delay(1500);
-
-  // Submarine state init runs unconditionally — the mode could flip to
-  // SUBMARINE at any point after boot, so the Kalman filter needs to be
-  // ready regardless of which model starts out active.
-  initSubmarineState();
 
   lcd.clear();
   lcd.setCursor(0, 0);

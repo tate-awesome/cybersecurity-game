@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 
 # Widgets
 from ...widgets import Panes, MenuBar, Scrollable
@@ -71,7 +71,7 @@ class DefenderV0(Page):
         self._HVAC_flags = {key: False for key, _ in self.HVAC_FLAG_DEFS}
 
         # ── Menu bar ─────────────────────────────────────────────────────────
-        menu_bar = MenuBar(self, context, "Defender V0")
+        menu_bar = MenuBar(self, context, "defender")
         menu_bar.page_buttons()
 
         # ── Three-pane layout ────────────────────────────────────────────────

@@ -1,0 +1,268 @@
+{
+    "packet_columns": {
+        "time_word": "#",
+        "number": "#",
+        "length": "#",
+        "observer": "#",
+        "hack": "#",
+        "purpose": "#",
+
+        "mac_src": "#",
+        "mac_dst": "#",
+        "ip_src": "#",
+        "ip_dst": "#",
+
+        "direction": "#",
+
+        "protocol": "#",
+
+        "layers_word": "#",
+        "summary": "#",
+        "mac_word": "#",
+        "ip_word": "#",
+
+        "is_modbus": "#",
+        "is_useful": "#",
+        "is_primary": "#",
+        "command": "#",
+        "command_type": "#",
+        "command_word": "#",
+        "variables": "#",
+        "values": "#",
+        "modbus_word": "#"
+    },
+    
+    "hacking_forms": {
+        "wifi": "#",
+        "nmap": "#",
+        "arp": "#",
+        "dos": "#",
+        "sniff": "#",
+        "nfq": "#"
+    },
+    
+    "hacking_panels": {
+        "wifi_on": "#",
+        "wifi_off": "#",
+        "wifi_start": "#",
+        "wifi_starting": "#",
+        "wifi_stop": "#",
+        "wifi_stopping": "#",
+        
+        "nmap_on": "#",
+        "nmap_off": "#",
+        "nmap_start": "#",
+        "nmap_starting": "#",
+        "nmap_stop": "#",
+        "nmap_stopping": "#",
+        
+        "arp_on": "#",
+        "arp_off": "#",
+        "arp_start": "#",
+        "arp_starting": "#",
+        "arp_stop": "#",
+        "arp_stopping": "#",
+        
+        "dos_on": "#",
+        "dos_off": "#",
+        "dos_start": "#",
+        "dos_starting": "#",
+        "dos_stop": "#",
+        "dos_stopping": "#",
+        
+        "sniff_on": "#",
+        "sniff_off": "#",
+        "sniff_start": "#",
+        "sniff_starting": "#",
+        "sniff_stop": "#",
+        "sniff_stopping": "#",
+        
+        "nfq_on": "#",
+        "nfq_off": "#",
+        "nfq_start": "#",
+        "nfq_starting": "#",
+        "nfq_stop": "#",
+        "nfq_stopping": "#"
+    },
+    
+    "modbus_forms": {
+        "table": "#",
+        "modify": "#"
+    },
+    
+    "packet_filter_categories": {
+        "hack": "#",
+        "layers": "#",
+        "direction": "#"
+    },
+    
+    "packet_filter_checkboxes": {            
+        "nmap": "#",
+        "arp": "#",
+        "dos": "#",
+        "sniff": "#",
+        "nfq": "#",
+        "pcap": "#",
+        "TCP": "#",
+        "ARP": "#",
+        "UDP": "#",
+        "DNS": "#",
+        "MODBUSADUREQUEST": "#",
+        "MODBUSADURESPONSE": "#",
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": "#",
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": "#",
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": "#",
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": "#",
+        "out": "#",
+        "in": "#",
+        "other": "#"
+    },
+    
+    "packet_filter_entries": {
+        "address_filter": "#"
+    },
+    
+    "menu_bar_tooltips": {
+        "labels_button": "#",
+        "preset_button": "#",
+        "pcap_button": "#",
+        "theme_button": "#",
+        "toggle_button": "#",
+        "help_button": "#",
+        "back_button": "#",
+        "reset_button": "#",
+        "refresh_button": "#",
+        "quit_button": "#",
+        "preferences_button": "#",
+        "fields_button": "#",
+        "page_button": "#"
+    },
+
+    "title_text": {
+        "_default": "#",
+        "main_title": "#",
+        "select_demo": "#",
+        "select_mode": "#"
+    },
+
+    "title_buttons": {
+        "_default": "#",
+
+        "play": "#",
+        "ap_page": "#",
+        "resume": "#",
+
+        "hardware_attacker": "#",
+        "hardware_defender": "#",
+        "select_demo": "#",
+
+        "boat_motion": "#",
+        "sprites": "#",
+        "triangle": "#",
+        "proof": "#",
+
+        "back": "#",
+        "quit": "#"
+    },
+    
+    "menu_bar_titles": {
+        "_default": "#",
+        "attacker": "#",
+        "defender": "#",
+        "boat_motion_demo": "#",
+        "triangle_demo": "#",
+        "sprites_demo": "#",
+        
+        "submarine_panel": "#",
+        "stripchart_panel": "#",
+        "attack_panel": "#",
+        "modbus_panel": "#",
+        "network_panel": "#",
+        
+        "packet_console": "#",
+        "status_console": "#"
+    },
+    
+    "menu_bar_buttons": {
+        "_default": "#",
+        "labels_button": "#",
+        "preset_button": "#",
+        "pcap_button": "#",
+        "save_button": "#",
+        "load_button": "#",
+        "theme_button": "#",
+        "toggle_button": "#",
+        "help_button": "#",
+        "back_button": "#", 
+        "reset_button": "#",
+        "refresh_button": "#",
+        "quit_button": "#",
+        "preferences_button": "#",
+        "fields_button": "#",
+        "page_button": "#",
+
+        "minimize": "#",
+        "maximize": "#",
+        "abort_all": "#",
+
+        "pause": "#",
+        "unpause": "#",
+
+        "free_scroll": "#",
+        "live_scroll": "#",
+        
+        "forms_overlay": "#",
+        "variables_overlay": "#",
+        "clear_modbus": "#",
+        "filters_overlay": "#",
+        "columns_overlay": "#",
+        "close_overlay": "#"
+    },
+
+    "modbus_table": {
+        "name": "#",
+        "in": "#",
+        "out": "#",
+        "source": "#",
+        "-": "#"
+    },
+
+    "modbus_modifier": {
+        "variable": "#",
+        "multiplier": "#",
+        "offset": "#"
+    },
+
+    "modbus_variables": {
+        "hreg_1": "#",
+        "hreg_2": "#",
+        "hreg_3": "#",
+        "hreg_4": "#",
+        "hreg_5": "#",
+        "hreg_6": "#",
+        "hreg_7": "#",
+        "hreg_8": "#",
+        "hreg_9": "#",
+        "hreg_10": "#",
+        "hreg_11": "#",
+        "hreg_12": "#",
+        "hreg_13": "#",
+        "hreg_14": "#",
+        "hreg_15": "#",
+
+        "x": "#",
+        "y": "#",
+        "theta": "#",
+        "speed": "#",
+        "rudder": "#"
+    },
+
+    "modbus_settings": {
+        "label": "#",
+        "show": "#",
+        "nickname": "#",
+        "factor": "#",
+        "units": "#",
+        "modify": "#"
+    }
+}

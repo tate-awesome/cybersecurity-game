@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 from customtkinter import CTkCanvas
 from threading import Lock
 from ...widgets import TriangleCanvas
@@ -11,7 +11,7 @@ class Triangle(Page):
     '''
     def __init__(self, context: Context):
         super().__init__(context)
-        menu_bar = MenuBar(self, context, "Triangle Demo")
+        menu_bar = MenuBar(self, context, "triangle_demo")
         menu_bar.quit_button()
         menu_bar.back_button()
 

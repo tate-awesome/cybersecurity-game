@@ -106,7 +106,7 @@ def affine(points: list[tuple[float, float]], in_bl: tuple[float, float],
 
     return out
 
-def right_align(points: list[tuple[float, float]], canvas: CTkCanvas) -> list[tuple[float, float]]:
+def right_align(points: list[tuple[float, float]], time_bounds: tuple[float, float], canvas: CTkCanvas) -> list[tuple[float, float]]:
     '''
     Aligns the right edge of the points to the right edge of the canvas
     '''
@@ -114,7 +114,7 @@ def right_align(points: list[tuple[float, float]], canvas: CTkCanvas) -> list[tu
         return []
 
     # Find the rightmost x-coordinate (time) in the points
-    max_x = max(x for x, _ in points)
+    max_x = time_bounds[1]
 
     # Get the width of the canvas
     canvas_width = canvas.winfo_width()
@@ -127,7 +127,7 @@ def right_align(points: list[tuple[float, float]], canvas: CTkCanvas) -> list[tu
 
     return aligned_points
 
-def padded_vertical_fit(points: list[tuple[float, float]], canvas: CTkCanvas, padding: float):
+def padded_vertical_fit(points: list[tuple[float, float]], data_bounds: tuple[float, float], canvas: CTkCanvas, padding: float):
     '''
     Converts coordinates from the incoming dataset to a padded area inside the canvas. Preserves aspect ratio and centers the figure in the canvas.
     Returns: list(tuple)
@@ -139,8 +139,8 @@ def padded_vertical_fit(points: list[tuple[float, float]], canvas: CTkCanvas, pa
     h = canvas.winfo_height()
 
     # 1. Get max and min of the incoming points    
-    min_y = min(y for _, y in points)
-    max_y = max(y for _, y in points)
+    min_y = data_bounds[0]
+    max_y = data_bounds[1]
 
     # 2. Get the padded bounds of the canvas
     padded_bl = (padding, padding)

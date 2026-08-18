@@ -4,10 +4,10 @@ Module
 import scapy.all as scapy
 from scapy.all import Packet, ARP, get_if_addr, get_working_if, get_if_hwaddr
 import ipaddress, netifaces
-from ..data_buffer import DataBuffer
+from ..buffer import Buffer
 
 class NMapper:
-    def __init__(self, buffer: DataBuffer):
+    def __init__(self, buffer: Buffer):
         self.buffer = buffer
 
     def get_active_iface(self):
@@ -51,13 +51,13 @@ class NMapper:
         self.buffer.put("nmap", f"Network ping range: {network}")
 
         ping_packet, answered, unanswered = self.ping_hosts(network)
-        self.buffer.put("nmap", "ARP Probe", ping_packet)
+        self.buffer.put("nmap", "ARP Probe", ping_packet, "send")
 
         responses = []
         
         for received in answered:
-            self.buffer.put("nmap", "Answered ARP Request", received[0])
-            self.buffer.put("nmap", "ARP Response", received[1])
+            self.buffer.put("nmap", "Answered ARP Request", received[0], "recv")
+            self.buffer.put("nmap", "ARP Response", received[1], "recv")
             responses.append(received[1])
 
         hosts = self.compute_hosts(responses)

@@ -1,4 +1,4 @@
-from ....app_core.context import Context
+from ....app_core import Context
 from ....widgets import Overlay
 from customtkinter import *
 from typing import cast
@@ -18,9 +18,7 @@ class FormOverlay:
 
 
     def populate_overlay(self, overlay):
-        
-        slot_name = "hacking_forms"
-        box_slots = self.context.states[slot_name]
+        box_slots = self.context.states.get("hacking_forms")
         med = self.style.get_font()
 
         # Create box filter widgets
@@ -32,8 +30,8 @@ class FormOverlay:
         category_label = CTkLabel(category_frame, text="Show Forms", font=med)
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
-        for key in self.context.states[slot_name]:
-            checkbox = CTkCheckBox(category_frame, text=self.context.labels[slot_name][key], font=med)
+        for key in self.context.states.get("hacking_forms"):
+            checkbox = CTkCheckBox(category_frame, text=self.context.labels.get("hacking_forms", key), font=med)
             checkbox.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input
             value = box_slots[key]

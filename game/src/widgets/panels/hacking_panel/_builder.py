@@ -1,14 +1,14 @@
 from customtkinter import CTkFrame
-from ....app_core.context import Context
+from ....app_core import Context
 from ..panel import Panel
 
 from .forms.arp import ArpForm
 from .forms.nmap import NmapForm
 from .forms.dos import DosForm
 from .forms.sniff import SniffForm
-from .forms.mitm import MitmForm
-from .forms.mitm2 import Mitm2Form
+from .forms.nfq import NFQForm
 from .form_overlay import FormOverlay
+from .forms.wifi import WifiForm
 
 from ....widgets import Scrollable, MenuBar, Overlay
 
@@ -16,38 +16,41 @@ class Builder(Panel):
 
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "Attacks")
+        super().__init__(master, context, "attack_panel")
 
-        scrollable = Scrollable(self, context)
+        self.scrollable = Scrollable(self, context)
 
         self.forms = {}
-        
-        self.forms["nmap"] = NmapForm(scrollable, context)
-        self.forms["arp"] = ArpForm(scrollable, context)
-        self.forms["dos"] = DosForm(scrollable, context)
-        self.forms["sniff"] = SniffForm(scrollable, context)
-        self.forms["mitm"] = MitmForm(scrollable, context)
-        self.forms["mitm2"] = Mitm2Form(scrollable, context)
+
+        self.forms["wifi"] = WifiForm(self.scrollable, context)
+        self.forms["nmap"] = NmapForm(self.scrollable, context)
+        self.forms["arp"] = ArpForm(self.scrollable, context)
+        self.forms["dos"] = DosForm(self.scrollable, context)
+        self.forms["sniff"] = SniffForm(self.scrollable, context)
+        self.forms["nfq"] = NFQForm(self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
         self.refresh_forms()
-        scrollable.columnconfigure(0, weight=1)
-        scrollable.add_deadspace("grid")
+        self.scrollable.columnconfigure(0, weight=1)
+        self.scrollable.add_deadspace("grid")
 
-        forms_button = self.menu_bar.add_button("Forms")
+
+        forms_button = self.menu_bar.add_button("forms_overlay")
         overlay = FormOverlay(forms_button, context, self.refresh_forms)
 
-        stop_button = self.menu_bar.add_button("Stop All", self.stop_all)
+        stop_button = self.menu_bar.add_button("abort_all", self.stop_all)
+        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
 
     def refresh_forms(self):
         self.update_idletasks()
-        for key in self.context.states["hacking_forms"]:
-            if self.context.states["hacking_forms"][key] == "1" or self.context.states["hacking_forms"][key] == 1:
+        for key in self.context.states.get("hacking_forms"):
+            if self.context.states.get("hacking_forms", key) == "1" or self.context.states.get("hacking_forms", key) == 1:
                 self.show_form(key)
             else:
                 self.hide_form(key)
+        self.scrollable.top()
 
     def hide_form(self, name: str):
         form = self.forms[name]
@@ -62,5 +65,5 @@ class Builder(Panel):
         form.grid()
 
     def stop_all(self):
-        for form in self.forms.values():
+        for form in reversed(self.forms.values()):
             form.click_stop()

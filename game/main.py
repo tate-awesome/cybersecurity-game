@@ -1,6 +1,6 @@
 import os, subprocess, sys, platform, ctypes
 
-from src.app_core.app import App
+from src import App
 
 '''
 ENTRY POINT FOR APP

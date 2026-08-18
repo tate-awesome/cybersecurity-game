@@ -1,9 +1,6 @@
-from ....network.data_buffer import DataBuffer
-from ....app_core.context import Context
+from ....app_core import Context
 from ... import Overlay
 from customtkinter import *
-from typing import cast
-
 
 class ColumnOverlay:
     '''
@@ -13,7 +10,6 @@ class ColumnOverlay:
     def __init__(self, button, context: Context, refresh_function):
         self.context = context
         self.style = context.style
-        self.buffer = cast(DataBuffer, context.net.data_buffer)
         self.refresh_function = refresh_function
         self.overlay = Overlay(self.context.root, context, button, self.populate_column_overlay)
 
@@ -21,7 +17,7 @@ class ColumnOverlay:
 
     def populate_column_overlay(self, overlay):
         
-        box_slots = self.context.states["packet_columns"]
+        box_slots = self.context.states.get("packet_columns")
         med = self.style.get_font()
 
         # Create box filter widgets
@@ -33,8 +29,8 @@ class ColumnOverlay:
         category_label = CTkLabel(category_frame, text="Show Columns", font=med)
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
-        for key in self.context.states["packet_columns"]:
-            column_box = CTkCheckBox(category_frame, text=self.context.labels["packet_columns"][key], font=med)
+        for key in self.context.states.get("packet_columns"):
+            column_box = CTkCheckBox(category_frame, text=self.context.labels.get("packet_columns", key), font=med)
             column_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input
             value = box_slots[key]

@@ -1,0 +1,268 @@
+{
+    "packet_columns": {
+        "time_word": "Hora",
+        "number": "N.º",
+        "length": "Longitud",
+        "observer": "Observador",
+        "hack": "Ataque",
+        "purpose": "Propósito",
+
+        "mac_src": "MAC origen",
+        "mac_dst": "MAC destino",
+        "ip_src": "IP origen",
+        "ip_dst": "IP destino",
+
+        "direction": "Dirección",
+
+        "protocol": "Protocolo",
+
+        "layers_word": "Capas",
+        "summary": "Resumen",
+        "mac_word": "MAC origen/destino",
+        "ip_word": "IP origen/destino",
+
+        "is_modbus": "¿ModBus?",
+        "is_useful": "¿Consecuente?",
+        "is_primary": "¿Primero?",
+        "command": "Comando completo",
+        "command_type": "Pedido/Respuesta",
+        "command_word": "Comando",
+        "variables": "Variables",
+        "values": "Valores",
+        "modbus_word": "Información de ModBus"
+    },
+
+    "hacking_forms": {
+        "wifi": "Conexiones WiFi",
+        "nmap": "Mapeo NMap",
+        "arp": "Suplantación ARP",
+        "dos": "Denegación de servicio",
+        "sniff": "Captura de paquetes",
+        "nfq": "Cola de filtrado de red"
+    },
+
+    "hacking_panels": {
+        "wifi_on": "Conectado.",
+        "wifi_off": "Desconectado.",
+        "wifi_start": "Conectarse al WiFi",
+        "wifi_starting": "Conectando...",
+        "wifi_stop": "Desconectar",
+        "wifi_stopping": "Desconectando...",
+
+        "nmap_on": "",
+        "nmap_off": "",
+        "nmap_start": "",
+        "nmap_starting": "",
+        "nmap_stop": "",
+        "nmap_stopping": "",
+
+        "arp_on": "La suplantación está activa",
+        "arp_off": "La suplantación está desactivada",
+        "arp_start": "Iniciar suplantador",
+        "arp_starting": "Iniciando...",
+        "arp_stop": "Detener suplantador",
+        "arp_stopping": "Deteniendo...",
+
+        "dos_on": "El DoS está activo",
+        "dos_off": "El DoS está desactivado",
+        "dos_start": "Iniciar ataque",
+        "dos_starting": "Iniciando...",
+        "dos_stop": "Detener ataque",
+        "dos_stopping": "Deteniendo...",
+
+        "sniff_on": "El capturador está activo",
+        "sniff_off": "El capturador está desactivado",
+        "sniff_start": "Iniciar captura",
+        "sniff_starting": "Iniciando...",
+        "sniff_stop": "Detener captura",
+        "sniff_stopping": "Deteniendo...",
+
+        "nfq_on": "NFQ está activo",
+        "nfq_off": "NFQ está desactivado",
+        "nfq_start": "Iniciar NFQ",
+        "nfq_starting": "Iniciando...",
+        "nfq_stop": "Detener NFQ",
+        "nfq_stopping": "Deteniendo..."
+    },
+
+    "modbus_forms": {
+        "table": "Lecturas MITM",
+        "modify": "Modificadores de ModBus"
+    },
+
+    "packet_filter_categories": {
+        "hack": "Desde el origen",
+        "layers": "Incluye protocolo",
+        "direction": "Dirección"
+    },
+
+    "packet_filter_checkboxes": {            
+        "nmap": "Mapeo NMap",
+        "arp": "Suplantación ARP",
+        "dos": "Denegación de servicio",
+        "sniff": "Captura de paquetes",
+        "nfq": "Cola de filtrado de red",
+        "pcap": "Archivo PCAP",
+        "TCP": "TCP",
+        "ARP": "ARP",
+        "UDP": "UDP",
+        "DNS": "DNS",
+        "MODBUSADUREQUEST": "Solicitud de ModBus",
+        "MODBUSADURESPONSE": "Respuesta de ModBus",
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": "Solicitud de lectura de ModBus",
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": "Respuesta de lectura de ModBus",
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": "Solicitud de escritura de ModBus",
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": "Respuesta de escritura de ModBus",
+        "out": "Enviado",
+        "in": "Recibido",
+        "other": "Observado"
+    },
+
+    "packet_filter_entries": {
+        "address_filter": "Direcciones IP/MAC involucradas (separadas por \"|\")"
+    },
+
+    "menu_bar_tooltips": {
+        "labels_button": "Cargar etiquetas y textos localizados desde un archivo json.",
+        "preset_button": "Cargar opciones para un escenario/lección específico.",
+        "pcap_button": "Cargar un archivo pcap guardado para visualizarlo en este programa.",
+        "theme_button": "Elegir un tema de CustomTkinter desde un archivo json.",
+        "toggle_button": "Alternar entre los modos claro/oscuro.",
+        "help_button": "Ver un mensaje de ayuda basado en tu progreso.",
+        "back_button": "Volver a la pantalla de título del juego.",
+        "reset_button": "Borrar el archivo de preferencias y actualizar la página.",
+        "refresh_button": "Reconstruir la página sin perder los datos persistentes: hilos de ataque, entradas y configuraciones.",
+        "quit_button": "Cerrar el programa.",
+        "preferences_button": "Guardar el tema, modo y localización actuales para la próxima vez.",
+        "fields_button": "Guardar las casillas de verificación y entradas actuales para la próxima vez.",
+        "page_button": "Guardar la página actual como acceso directo al iniciar."
+    },
+
+    "title_text": {
+        "_default": "Texto del título",
+        "main_title": "El juego",
+        "select_demo": "Seleccionar demostración",
+        "select_mode": "Seleccionar modo"
+    },
+
+    "title_buttons": {
+        "_default": "Botón del título",
+
+        "play": "Jugar",
+        "ap_page": "Abrir configuración del AP",
+        "resume": "Abrir favorito",
+
+        "hardware_attacker": "Atacante de dispositivo",
+        "hardware_defender": "Defensor de dispositivo",
+        "select_demo": "Ejecutar una demostración",
+
+        "boat_motion": "Demostración del movimiento del barco",
+        "sprites": "Demostración de sprites",
+        "triangle": "Demostración del triángulo",
+        "proof": "Prueba de concepto",
+
+        "back": "Atrás",
+        "quit": "Salir"
+    },
+    
+    "menu_bar_titles": {
+        "_default": "Menú",
+        "attacker": "Atacante X",
+        "defender": "Defensor X",
+        "boat_motion_demo": "Demostración del movimiento del barco",
+        "triangle_demo": "Demostración del triángulo",
+        "sprites_demo": "Demostración de sprites",
+
+        "submarine_panel": "Modelo del submarino",
+        "stripchart_panel": "Monitores de ModBus",
+        "attack_panel": "Hackeos",
+        "modbus_panel": "Datos de ModBus",
+        "network_panel": "Gráfico de red",
+
+        "packet_console": "Paquetes",
+        "status_console": "Estado"
+    },
+
+    "menu_bar_buttons": {
+        "_default": "Botón",
+        "labels_button": "Cargar etiquetas",
+        "preset_button": "Cargar ajustes predefinidos",
+        "pcap_button": "Cargar PCAP",
+        "save_button": "Guardar JSON",
+        "load_button": "Cargar JSON",
+        "theme_button": "Seleccionar tema",
+        "toggle_button": "Cambiar tema",
+        "help_button": "Ayuda",
+        "back_button": "Volver al título",
+        "reset_button": "Restablecer preferencias",
+        "refresh_button": "Actualizar",
+        "quit_button": "Salir",
+        "preferences_button": "Guardar preferencias",
+        "fields_button": "Guardar entradas",
+        "page_button": "Página favorita",
+
+        "minimize": "Minimizar",
+        "maximize": "Maximizar",
+        "abort_all": "Detener todo",
+
+        "pause": "Pausar",
+        "unpause": "Reanudar",
+
+        "free_scroll": "Desplazamiento libre",
+        "live_scroll": "Desplazamiento automático",
+        
+        "forms_overlay": "Formularios",
+        "variables_overlay": "Variables",
+        "clear_modbus": "Borrar lecturas",
+        "filters_overlay": "Filtros",
+        "columns_overlay": "Columnas",
+        "close_overlay": "Cerrar"
+    },
+
+    "modbus_table": {
+        "name": "Variable",
+        "in": "Recibido",
+        "out": "Enviado",
+        "source": "Comando",
+        "-": "-"
+    },
+
+    "modbus_modifier": {
+        "variable": "Variable",
+        "multiplier": "Mult",
+        "offset": "Desplazamiento"
+    },
+
+    "modbus_variables": {
+        "hreg_1": "HReg 1",
+        "hreg_2": "HReg 2",
+        "hreg_3": "HReg 3",
+        "hreg_4": "HReg 4",
+        "hreg_5": "HReg 5",
+        "hreg_6": "HReg 6",
+        "hreg_7": "HReg 7",
+        "hreg_8": "HReg 8",
+        "hreg_9": "HReg 9",
+        "hreg_10": "HReg 10",
+        "hreg_11": "HReg 11",
+        "hreg_12": "HReg 12",
+        "hreg_13": "HReg 13",
+        "hreg_14": "HReg 14",
+        "hreg_15": "HReg 15",
+
+        "x": "Posición X",
+        "y": "Posición Y",
+        "theta": "Orientación",
+        "speed": "Velocidad",
+        "rudder": "Ángulo del timón"
+    },
+
+    "modbus_settings": {
+        "label": "Variable de Modbus",
+        "show": "Mostrar\nen las tablas de abajo",
+        "nickname": "Apodo\npara mostrar",
+        "factor": "Factor de conversión\nunidades por valor bruto",
+        "units": "Unidades\npara mostrar",
+        "modify": "Modificar\nen la devolución de llamada NFQ"
+    }
+}

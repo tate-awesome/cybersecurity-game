@@ -1,4 +1,4 @@
-from ...app_core.context import Context
+from ...app_core import Context
 from customtkinter import CTkFrame, CTkScrollableFrame
 
 class Scrollable(CTkScrollableFrame):
@@ -25,8 +25,32 @@ class Scrollable(CTkScrollableFrame):
     def bind_scroll(self):
         canvas = self._parent_canvas
 
+        def is_scrollworthy():
+            visible_height = self._parent_canvas.winfo_height()
+            # 2. Get the true bounding box height of all internal content
+            bbox = self._parent_canvas.bbox("all")
+            if bbox:
+                content_height = bbox[3] - bbox[1]
+            else:
+                content_height = 0
+
+            # 3. Only allow scrolling if the content is strictly taller than the window
+            if content_height > visible_height:
+                return True
+            else:
+                return False
+
         def _on_mousewheel(event):
-            canvas.yview_scroll(-int(event.delta / 2), "units")
+            if is_scrollworthy():
+                canvas.yview_scroll(-int(event.delta / 2), "units")
+
+        def _on_mouseup(event):
+            if is_scrollworthy():
+                canvas.yview_scroll(-1, "units")
+
+        def _on_mousedown(event):
+            if is_scrollworthy():
+                canvas.yview_scroll(1, "units")
 
         def _on_shift_mousewheel(event):
             return "break"
@@ -36,8 +60,8 @@ class Scrollable(CTkScrollableFrame):
             canvas.bind_all("<Shift-Button-4>", _on_shift_mousewheel)
             canvas.bind_all("<Shift-Button-5>", _on_shift_mousewheel)
             canvas.bind_all("<MouseWheel>", _on_mousewheel)
-            canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-            canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+            canvas.bind_all("<Button-4>", _on_mouseup)
+            canvas.bind_all("<Button-5>", _on_mousedown)
 
         def _unbind_from_mousewheel(_):
             canvas.unbind_all("<MouseWheel>")
@@ -47,7 +71,7 @@ class Scrollable(CTkScrollableFrame):
         canvas.bind("<Enter>", _bind_to_mousewheel)
         canvas.bind("<Leave>", _unbind_from_mousewheel)
 
-    def add_deadspace(self, type: str = "pack", height: float | int = 0.8):
+    def add_deadspace(self, type: str = "pack", height: float | int = 100):
         style = self.context.style
         self.update_idletasks()
         if isinstance(height, float):
@@ -63,3 +87,6 @@ class Scrollable(CTkScrollableFrame):
         elif type == "grid":
             frame.grid(row=100, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
         return frame
+
+    def top(self):
+        self._parent_canvas.yview_moveto(0)

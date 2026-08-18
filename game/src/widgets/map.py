@@ -6,7 +6,7 @@ from customtkinter import CTkCanvas
 from customtkinter import CTkBaseClass
 from threading import Lock
 from typing import Callable
-from ..app_core.context import Context
+from ..app_core import Context
 
 class Map:
 

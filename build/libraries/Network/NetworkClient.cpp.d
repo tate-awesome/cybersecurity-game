@@ -1,4 +1,4 @@
-/home/martin/Desktop/cybersecurity-game/build/libraries/Network/NetworkClient.cpp.o: \
+/home/martin/Desktop/Research-dir/cybersecurity-game/build/libraries/Network/NetworkClient.cpp.o: \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkClient.cpp \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/libraries/Network/src/NetworkClient.h \
  /home/martin/.arduino15/packages/esp32/hardware/esp32/3.3.8/cores/esp32/Arduino.h \
