@@ -301,10 +301,12 @@ class Builder(Panel):
     # Buttons
     def pause(self):
         self.stop_printing()
+        self.context.states.set("packet_console_state", "mode", value="paused")
 
     def unpause(self):
         self.start_printing()
-    
+        self.context.states.set("packet_console_state", "mode", value="live")
+
     def unlock_scrolling(self):
         self.jump_to_bottom = False
 

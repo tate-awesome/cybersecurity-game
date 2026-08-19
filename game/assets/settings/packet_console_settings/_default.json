@@ -3,6 +3,10 @@
         "_packages": "_default.json"
     },
 
+    "packet_console_state": {
+        "mode": "live"
+    },
+
     "packet_filter_categories": {
         "hack": [
             "nmap",
