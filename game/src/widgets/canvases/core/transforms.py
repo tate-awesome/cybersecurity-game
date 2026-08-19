@@ -282,3 +282,12 @@ def get_arc_points(center: tuple[float, float], radius: float, start_angle: floa
         y = cy + radius * math.sin(angle)
         points.append((x, y))
     return points
+
+def shorten_line(points: tuple[tuple[float, float]], scale: float) -> tuple[tuple[float, float]]:
+    '''
+    Returns a line between the original points, but shifts the second point closer to the first one according to the scale
+    '''
+    p1 = points[0]
+    p2 = points[1]
+    dir = (p2[0]-p1[0], p2[1]-p1[1])
+    return ( p1, (p1[0]+scale*dir[0], p1[1]+scale*dir[1]) )

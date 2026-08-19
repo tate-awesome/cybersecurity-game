@@ -18,11 +18,37 @@ class PacketBuffer:
         self.last_displayed = 0
         self.first_packet_time = None
 
+        self.rate_history = deque(maxlen=300)
+        self.selected_number = None
+
     def put(self, mpkt: MetaPacket):
         with self.lock:
             mpkt.set("number", self.number)
             self.number += 1
             self.buffer.append(mpkt)
+
+            bucket = float(int(mpkt.get("time")))
+            if self.rate_history and self.rate_history[-1][0] == bucket:
+                t, count = self.rate_history[-1]
+                self.rate_history[-1] = (t, count + 1)
+            else:
+                self.rate_history.append((bucket, 1))
+
+    def get_rate_history(self) -> list:
+        with self.lock:
+            return list(self.rate_history)
+
+    def select(self, number: int):
+        self.selected_number = number
+
+    def get_selected(self) -> MetaPacket | None:
+        if self.selected_number is None:
+            return None
+        with self.lock:
+            for mpkt in self.buffer:
+                if mpkt.get("number") == self.selected_number:
+                    return mpkt
+        return None
 
     def get_new_packets(self, filter_func, max_return: int = 1000) -> list:
         new_packets = []

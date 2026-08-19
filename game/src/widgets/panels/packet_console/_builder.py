@@ -20,6 +20,7 @@ class Builder(Panel):
 
         self.treeview, body_container = self.create_treeview(self)
         self.refresh_columns()
+        self.treeview.bind("<<TreeviewSelect>>", self.on_select)
 
 
         filter_button = self.menu_bar.add_button("filters_overlay")
@@ -285,7 +286,7 @@ class Builder(Panel):
         # the loop finishes without breaking, insert_index stays "end" 
         # (or you could force it to 0 if it belongs at the very top).
 
-        tree.insert("", insert_index, values=values)
+        tree.insert("", insert_index, values=values, iid=str(packet.get("number")))
 
     def refresh_columns(self):
 
@@ -297,6 +298,13 @@ class Builder(Panel):
                 active_columns.append(key)
 
         self.treeview["displaycolumns"] = active_columns
+
+    # Selection
+    def on_select(self, event=None):
+        selection = self.treeview.selection()
+        if not selection:
+            return
+        self.buffer.select(int(selection[0]))
 
     # Buttons
     def pause(self):

@@ -142,6 +142,7 @@ class Buffer:
 
 
         self.packets.put(mpkt)
+        self.network.put(mpkt)
         if mpkt.get("is_modbus"):
             self.modbus.put(mpkt)
 

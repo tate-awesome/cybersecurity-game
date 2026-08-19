@@ -1,6 +1,7 @@
 from ..meta_packet import MetaPacket
 from collections import deque
 from multiprocessing import Lock
+import math
 import time
 from ..meta_packet import MetaPacket
 from .packet import PacketBuffer
@@ -13,7 +14,8 @@ if TYPE_CHECKING:
 class NetworkGraph:
     def __init__(self, context: "Context", packet_buffer: PacketBuffer, max_size: int):
         self.lock = Lock()
-        self.hosts = set()
+        self.host_order = []
+        self._host_set = set()
         self.arrows_this_tick = {}
 
     def put(self, mpkt: MetaPacket):
@@ -24,7 +26,9 @@ class NetworkGraph:
             self.add_arrow(mpkt, macs_involved)
 
     def add_host(self, mac_addr: str):
-        self.hosts.add(mac_addr)
+        if mac_addr not in self._host_set:
+            self._host_set.add(mac_addr)
+            self.host_order.append(mac_addr)
 
     def add_arrow(self, mpkt: MetaPacket, macs: list[str]):
         self.arrows_this_tick[mpkt] = macs
@@ -34,3 +38,20 @@ class NetworkGraph:
             output = self.arrows_this_tick.copy()
             self.arrows_this_tick.clear()
             return output
+
+    def get_host_positions(self) -> dict:
+        with self.lock:
+            hosts = list(self.host_order)
+
+        positions = {}
+        n = len(hosts)
+        if n == 0:
+            return positions
+        if n == 1:
+            positions[hosts[0]] = (0.0, 0.0)
+            return positions
+
+        for i, mac in enumerate(hosts):
+            angle = 2 * math.pi * i / n
+            positions[mac] = (math.cos(angle), math.sin(angle))
+        return positions

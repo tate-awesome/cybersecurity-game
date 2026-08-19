@@ -71,6 +71,24 @@ class Draw:
         points = self.camera.world_to_canvas(points)
         self.canvas.create_line(points, width=1, fill=line_color)
 
+    def arrow(self, points: list[tuple[float, float]], line_color: str, thickness=2):
+        '''
+        Draws the path of the points with an arrowhead at the middle point
+        '''
+        if len(points) < 2:
+            return
+        points = self.camera.world_to_canvas(points)
+        self.canvas.create_line(points, width=thickness, fill=line_color, arrow="last")
+
+    def visible_arrow(self, points: list[tuple[float, float]], line_color: str, thickness=2):
+        '''
+        Draws an arrow most of the way between points, leaving space for a visible arrowhead and gap
+        '''
+        if len(points) < 2:
+            return
+        short = t.shorten_line((points[0], points[1]), 0.8)
+        self.arrow(short, line_color, thickness)
+
     def arc(self, center: tuple[float, float], radius: float, start_angle: float, end_angle: float, line_color: str, thickness=2):
         '''
         Draws an arc with the given parameters. Angles are in radians, 0 is to the right, and positive is counterclockwise.
