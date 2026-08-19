@@ -5,10 +5,55 @@ import scapy.all as scapy
 from scapy.all import Packet, ARP, get_if_addr, get_working_if, get_if_hwaddr
 import ipaddress, netifaces
 from ..buffer import Buffer
+import nmap, socket
 
 class NMapper:
     def __init__(self, buffer: Buffer):
         self.buffer = buffer
+
+    def get_local_ip(self) -> str:
+        # Connect to an external IP briefly to discover the active local interface IP
+        local_ip = None
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+        finally:
+            s.close()
+        return local_ip
+
+    def get_local_subnet(self, local_ip: str) -> str:
+        local_ip = self.get_local_ip()
+        
+        # Convert local IP (e.g., 192.168.1.15) to a /24 subnet string (192.168.1.0/24)
+        ip_parts = local_ip.split('.')
+        ip_parts[-1] = '0/24'
+        return '.'.join(ip_parts)
+
+    def do_nmap(self):
+        # Initialize scanner
+        nm = nmap.PortScanner()
+        local_ip = self.get_local_ip()
+        subnet = self.get_local_subnet(local_ip)
+
+        self.buffer.put("nmap", f"Local IP Found: {local_ip}")
+        self.buffer.put("nmap", f"Target Subnet Detected: {subnet}")
+        self.buffer.put("nmap", "Scanning for active hosts (this may take a few seconds)...")
+
+        # -sn: Ping scan (no port scan, host discovery only)
+        # -PE: ICMP Echo Request
+        nm.scan(hosts=subnet, arguments='-sn -PE')
+
+        self.buffer.put("nmap", "--- Active Hosts Found ---")
+        # Iterate through all discovered up hosts
+        for host in nm.all_hosts():
+            if nm[host].state() == 'up':
+                hostname = nm[host].hostname()
+                hostname_str = f"({hostname})" if hostname else "(No Hostname)"
+                self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
+
+
+#  OLD bad manual method
 
     def get_active_iface(self):
         active_iface = ""
@@ -18,9 +63,8 @@ class NMapper:
             if iface["is_active"]:
                 active_iface = iface
         return active_iface["display_name"]
-        
 
-    def do_nmap(self):
+    def do_nmap_bad(self):
         self.interface_manager = self.InterfaceManager()
         ifm = self.interface_manager
         self.buffer.put("nmap", "Starting NMap...")

@@ -1,4 +1,4 @@
-from .hardware import arp_spoofing, sniffing, nmap, dos, wifi
+from .hardware import arp_spoofing, nmap1, sniffing, dos, wifi
 from .virtual import master, slave
 from .saved import loader, replay
 from .buffer import Buffer
@@ -21,7 +21,7 @@ class HardwareController(NetworkController):
     def __init__(self, context):
         super().__init__(context)
         self.wifi = wifi.Wifi(self.buffer)
-        self.nmap = nmap.NMapper(self.buffer)
+        self.nmap = nmap1.NMapper(self.buffer)
         self.sniffer = sniffing.Sniffer(self.buffer)
         self.replay = replay.Replay(self.buffer, context)
 
