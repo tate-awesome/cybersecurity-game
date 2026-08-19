@@ -68,6 +68,12 @@ class Style:
                 self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("treeview"))
             elif name == "title":
                 self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("title"), weight="bold")
+            elif name == "chart_title":
+                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("chart_title"), weight="bold")
+            elif name == "chart_numbers":
+                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("chart_numbers"))
+            elif name == "chart_label":
+                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("chart_label"))
             else:
                 size = int(14.0*self.ui_scale/100.0)
                 self.fonts[name] = CTkFont(size=size)
@@ -86,6 +92,12 @@ class Style:
             size = 72
         elif name == "small":
             size = 15.0
+        elif name == "chart_title":
+            size = 13.0
+        elif name == "chart_numbers":
+            size = 10.0
+        elif name == "chart_label":
+            size = 10.0
         return int(size * self.ui_scale / 100.0)
 
     def color(self, type: str) -> str:

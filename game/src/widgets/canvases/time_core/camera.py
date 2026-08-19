@@ -2,6 +2,9 @@ from customtkinter import CTkCanvas
 from ....app_core import Context
 from . import transforms as t
 
+# Pixels used to draw one second of time when time_scale is at its default (1.0)
+PIXELS_PER_SECOND = 20.0
+
 class Camera:
 
     def __init__(self, canvas: CTkCanvas, context: Context, time_scale: list[float], time_offset: list[float]):
@@ -21,6 +24,14 @@ class Camera:
         self.vertical_offset = 0.0
         self.padding = 0
         self.update_padding() #Set padding based of canvas size
+
+        # Padding reserved on each edge for axes, ticks, numbers, and labels.
+        # left/top/bottom are recomputed every frame by Draw (they depend on
+        # font metrics and, for the left edge, the widest visible number).
+        self.padding_left = self.padding
+        self.padding_right = self.padding
+        self.padding_top = self.padding
+        self.padding_bottom = self.padding
 
         # Starting position for each mouse pan event - panning moves the time offset and vertical scale
         self.pan_start = [0.0, 0.0]
@@ -45,29 +56,66 @@ class Camera:
 #                                                       TRANSFORMERS
 # --------------------------------------------------------------------------------------------------------------------------
 
-    def data_to_strip_chart(self, points_in: list[tuple[float, float]], data_bounds: tuple[float, float], time_bounds: tuple[float, float]) -> list[tuple[float, float]]:
-        right_aligned = t.right_align(points_in, time_bounds, self.canvas)
-        chart_fit = t.padded_vertical_fit(right_aligned, data_bounds, self.canvas, self.padding)
-        panned = t.zoom_and_pan(chart_fit, self.vertical_scale, self.time_scale[0], self.time_offset[0])
-        return panned
-    
-    def strip_chart_to_data(self, points_in: list[tuple[float, float]]) -> list[tuple[float, float]]:
-        # time_unscaled = t.unzoom_and_unpan_horizontal(points_in, self.scale, self.offset)
-        # data_fit = t.unpadded_fit_vertical_snap_right(time_unscaled, self.canvas, self.padding)
-        # return data_fit
-        return points_in
+    def plot_rect(self) -> tuple[float, float, float, float]:
+        '''
+        Returns (left, top, right, bottom) canvas pixel bounds of the plotting area,
+        i.e. the canvas rectangle left over after reserving room for axes/labels.
+        '''
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
+        left = self.padding_left
+        top = self.padding_top
+        right = w - self.padding_right
+        bottom = h - self.padding_bottom
+        return left, top, right, bottom
+
+    def pixels_per_second(self) -> float:
+        return PIXELS_PER_SECOND * self.time_scale[0]
+
+    def time_to_canvas_x(self, time_value: float, now: float) -> float:
+        '''
+        Maps a data time (seconds) to a canvas x pixel. `now` is right-aligned to the
+        right edge of the plot area, offset by any panning done by the user.
+        '''
+        _, _, right, _ = self.plot_rect()
+        pps = self.pixels_per_second()
+        return right + self.time_offset[0] + (time_value - now) * pps
+
+    def canvas_x_to_time(self, x: float, now: float) -> float:
+        _, _, right, _ = self.plot_rect()
+        pps = self.pixels_per_second()
+        if pps == 0:
+            return now
+        return now + (x - right - self.time_offset[0]) / pps
+
+    def value_to_canvas_y(self, value: float, min_v: float, max_v: float) -> float:
+        '''
+        Maps a (unit-scaled) data value to a canvas y pixel, min_v at the bottom of
+        the plot area and max_v at the top.
+        '''
+        _, top, _, bottom = self.plot_rect()
+        span = max_v - min_v
+        if span == 0:
+            return (top + bottom) / 2
+        fraction = (value - min_v) / span
+        return bottom - fraction * (bottom - top)
+
+    def data_to_strip_chart(self, points_in: list[tuple[float, float]], now: float, factor: float, min_unit: float, max_unit: float) -> list[tuple[float, float]]:
+        '''
+        Transforms (time, raw_value) points into canvas pixel coordinates.
+        '''
+        out = []
+        for time_value, value in points_in:
+            x = self.time_to_canvas_x(time_value, now)
+            y = self.value_to_canvas_y(value * factor, min_unit, max_unit)
+            out.append((x, y))
+        return out
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       EVENT CALLBACKS
 # --------------------------------------------------------------------------------------------------------------------------
 
     def click_callback(self, event=None):
-        print(f"Raw: {event.x}, {event.y}")
-        raw_points = [(event.x, event.y)]
-        world_points = self.strip_chart_to_data(raw_points)
-        x = world_points[0][0]
-        y = world_points[0][1]
-        print(f"World: {x}, {y}")
         self.pan_start = [event.x, event.y]
 
     def do_pan(self, event=None):

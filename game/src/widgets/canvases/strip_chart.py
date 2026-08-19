@@ -23,21 +23,34 @@ class StripChart(StripChartBase):
             self.delete("all")
             def color(key):
                 return self.context.style.color(self.context.states.get("strip_chart_colors", key))
-            self.draw.background("purple")
             self.draw.background(color("background"))
-            # self.draw.strip_chart_axes(data)
-            # self.draw.test_data()
+
+            if self.winfo_width() <= 1 or self.winfo_height() <= 1:
+                return
+
+            histories = [history() for history in history_getters]
+            # The factor is raw * factor = units, so the y-axis is scaled/labeled in units
+            factor = factor_getter()
+
+            # Time scaling/offset are resolved first (the visible time window), then
+            # the value axis autoscales to whatever data falls inside that window.
+            layout = self.draw.strip_chart_layout(histories, factor)
+
+            grid_color = color("grid_lines")
+            axes_color = color("grid_axes")
+            text_color = color("grid_numbers")
+
+            self.draw.strip_chart_ticks(layout, grid_color, gridlines=False)
+            self.draw.strip_chart_axes(layout, axes_color)
+            self.draw.strip_chart_numbers(layout, text_color)
+
+            time_text = self.context.labels.get("stripcharts", "time")
+            self.draw.strip_chart_axis_labels(layout, time_text, units_getter(), text_color)
+            self.draw.strip_chart_title(self.var_name, text_color)
 
             line_colors = context.states.get("strip_chart_colors", "paths")
-            for i, history in enumerate(history_getters):
+            for i, history in enumerate(histories):
                 line_color = line_colors[i%len(line_colors)]
-                self.draw.strip_chart_path(history(), line_color)
+                self.draw.strip_chart_path(history, layout, factor, line_color)
 
-            # Draw axes
-            axes_color = color("grid_axes")
-            # Draw labels
-            text_color = color("grid_numbers")
-            time_text = self.context.labels.get("stripcharts", "time")
-            # The factor is raw * factor = units, so align the y-axis numbers accordingly
-            
         self.set_frame_callback(frame_callback)
