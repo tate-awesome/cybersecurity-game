@@ -30,7 +30,7 @@ class NMapper:
         ip_parts[-1] = '0/24'
         return '.'.join(ip_parts)
 
-    def do_nmap(self):
+    def library_nmap(self):
         # Initialize scanner
         nm = nmap.PortScanner()
         local_ip = self.get_local_ip()
@@ -52,6 +52,10 @@ class NMapper:
                 hostname_str = f"({hostname})" if hostname else "(No Hostname)"
                 self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
 
+    def do_nmap(self):
+        # self.manual_nmap()
+        self.library_nmap()
+
 
 #  OLD bad manual method
 
@@ -64,51 +68,91 @@ class NMapper:
                 active_iface = iface
         return active_iface["display_name"]
 
-    def do_nmap_bad(self):
+    def manual_nmap(self):
         self.interface_manager = self.InterfaceManager()
         ifm = self.interface_manager
+
         self.buffer.put("nmap", "Starting NMap...")
 
+        active_iface = next(
+            (
+                iface for iface in ifm.interfaces
+                if iface["is_active"]
+                and iface["ip"]
+                and iface["ip"] != "0.0.0.0"
+            ),
+            None
+        )
 
-        # Post interfaces, find active interface
-        active_iface = None
-        self.buffer.put("nmap", "vvvv Your network interfaces vvvv")
-        for i, iface in enumerate(ifm.interfaces):
-            if iface["is_active"]:
-                active = "[ACTIVE]" 
-                active_iface = iface
-            else:
-                active = ""
-            self.buffer.put("nmap", f"Interface {i}: {iface['display_name']} {active}")
-            self.buffer.put("nmap", f"   Alt Name:   {iface['scapy_name']}")
-            self.buffer.put("nmap", f"   MAC:     {iface['mac']}")
-            self.buffer.put("nmap", f"   IP:      {iface['ip']}")
-            self.buffer.put("nmap", f"   Netmask: {iface['netmask']}")
-        active_ip = active_iface["ip"] if active_iface else "None"
-        active_netmask = active_iface["netmask"] if active_iface else "None"
-        active_mac = active_iface["mac"] if active_iface else "None"
-        self.buffer.put("nmap", f"Your MAC address: {active_mac}")
-        self.buffer.put("nmap", f"Your IP address: {active_ip}")
-        self.buffer.put("nmap", f"Your netmask: {active_netmask}")
+        if active_iface is None:
+            self.buffer.put("nmap", "Could not find an active IPv4 interface.")
+            return
+
+        iface_name = active_iface["scapy_name"]
+        active_ip = active_iface["ip"]
+        active_netmask = active_iface["netmask"]
+        active_mac = active_iface["mac"]
+
+        self.buffer.put("nmap", f"Interface: {active_iface['display_name']}")
+        self.buffer.put("nmap", f"Scapy interface: {iface_name}")
+        self.buffer.put("nmap", f"MAC: {active_mac}")
+        self.buffer.put("nmap", f"IP: {active_ip}")
+        self.buffer.put("nmap", f"Netmask: {active_netmask}")
+
+        if not active_netmask:
+            self.buffer.put("nmap", "Could not determine network mask.")
+            return
 
         network = self.compute_network(active_ip, active_netmask)
+
         self.buffer.put("nmap", f"Network ping range: {network}")
+        self.buffer.put("nmap", f"Sending ARP probes through {iface_name}...")
 
-        ping_packet, answered, unanswered = self.ping_hosts(network)
-        self.buffer.put("nmap", "ARP Probe", ping_packet, "send")
+        ping_packet, answered, unanswered = self.ping_hosts(
+            network,
+            iface_name
+        )
 
-        responses = []
-        
-        for received in answered:
-            self.buffer.put("nmap", "Answered ARP Request", received[0], "recv")
-            self.buffer.put("nmap", "ARP Response", received[1], "recv")
-            responses.append(received[1])
+        self.buffer.put(
+            "nmap",
+            "ARP Probe",
+            ping_packet,
+            "send"
+        )
 
-        hosts = self.compute_hosts(responses)
-        for host in hosts:
-            self.buffer.put("nmap", f"Found {host}")
+        hosts = []
 
-        self.buffer.put("nmap", "NMap complete.")
+        for sent, received in answered:
+            self.buffer.put(
+                "nmap",
+                "Answered ARP Request",
+                sent,
+                "recv"
+            )
+
+            self.buffer.put(
+                "nmap",
+                "ARP Response",
+                received,
+                "recv"
+            )
+
+            if scapy.ARP in received:
+                ip = received[scapy.ARP].psrc
+                mac = received[scapy.ARP].hwsrc
+
+                hosts.append((ip, mac))
+
+        for ip, mac in hosts:
+            self.buffer.put(
+                "nmap",
+                f"Found host {ip} at {mac}"
+            )
+
+        self.buffer.put(
+            "nmap",
+            f"NMap complete. {len(hosts)} host(s) found."
+        )
 
 
     def compute_network(self, ip: str, netmask: str) -> str:
@@ -118,15 +162,20 @@ class NMapper:
             network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
             return str(network)
 
-    def ping_hosts(self, network: str) -> tuple[Packet, list, list]:
-        '''
-        May block for up to 2 seconds.
-        '''
-        network = str(network)
-        ping_packet = scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(pdst=network)
-        answered, unanswered = scapy.srp(ping_packet, timeout=2.0, verbose=False)
+    def ping_hosts(self, network: str, iface: str):
+        packet = (
+            scapy.Ether(dst="ff:ff:ff:ff:ff:ff") /
+            scapy.ARP(pdst=network)
+        )
 
-        return ping_packet, answered, unanswered
+        answered, unanswered = scapy.srp(
+            packet,
+            iface=iface,
+            timeout=2,
+            verbose=False
+        )
+
+        return packet, answered, unanswered
     
     def compute_hosts(self, responses: list[Packet]):
         infos = []
