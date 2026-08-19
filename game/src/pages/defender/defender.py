@@ -135,7 +135,7 @@ class DefenderV0(Page):
 
         self._submarine_kalman_button = CTkButton(
             kalman_section,
-            text="Disable Kalman Filter",
+            text="Toggle Kalman Filter",
             font=self.style.get_font(),
             command=self._toggle_submarine_kalman_filter
         )
@@ -181,7 +181,7 @@ class DefenderV0(Page):
 
         self._hvac_kalman_button = CTkButton(
             kalman_section,
-            text="Disable Kalman Filter",
+            text="Toggle Kalman Filter",
             font=self.style.get_font(),
             command=self._hvac_view._toggle_hvac_kalman_filter,
         )
