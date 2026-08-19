@@ -20,7 +20,7 @@ class Style:
         self.gapbot = (0, 10)
         self.igap = 10
         self.cgap = 2
-        self.PANE_MIN_WIDTH = self.igap*50
+        self.PANE_MIN_WIDTH = self.igap*10
         self.PANE_MIN_HEIGHT = self.igap*10
         self.PANE_BIG = self.igap*100
         self.fonts = {}

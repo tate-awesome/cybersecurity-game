@@ -1,7 +1,8 @@
-from customtkinter import CTkFrame, CTkTextbox
+from customtkinter import CTkTextbox
 from ....app_core import Context
 from ...canvases.network_diagram import NetworkDiagramCanvas
 from ...canvases.strip_chart import StripChart
+from ... import Panes
 from ..panel import Panel
 
 class Builder(Panel):
@@ -10,17 +11,10 @@ class Builder(Panel):
 
         self.buffer = context.net.buffer.packets
 
-        body = CTkFrame(self, fg_color=self.style.color("panel"))
-        body.pack(fill="both", expand=True)
-        body.columnconfigure(0, weight=3)
-        body.columnconfigure(1, weight=2)
-        body.rowconfigure(0, weight=1)
+        panes = Panes(self, context, "horizontal", 2, [2, 2], False)
 
-        left_frame = CTkFrame(body, fg_color=self.style.color("panel"))
-        left_frame.grid(row=0, column=0, sticky="nsew")
-
-        right_frame = CTkFrame(body, fg_color=self.style.color("panel"))
-        right_frame.grid(row=0, column=1, sticky="nsew")
+        left_frame = panes.pane(0)
+        right_frame = panes.pane(1)
         right_frame.columnconfigure(0, weight=1)
         right_frame.rowconfigure(0, weight=1)
 
@@ -39,7 +33,7 @@ class Builder(Panel):
         self.selected_text.grid(row=0, column=0, sticky="nsew")
         self.selected_text.grid_remove()
 
-        self.menu_bar.minimize_button(body, master)
+        self.menu_bar.minimize_button(panes, master)
 
         self.current_mode = "live"
         self.current_selected_number = None
