@@ -90,7 +90,7 @@ class Style:
 
     def color(self, type: str) -> str:
         '''
-        Returns a theme color:
+        Returns the input string OR a theme color
         "root": root_color,
         "panel": fg_color,
         "widget": top_fg_color,
@@ -115,7 +115,7 @@ class Style:
         colors["scrollbar"] = ThemeManager.theme["CTkScrollbar"]["button_color"]
         colors["scrollbar_hover"] = ThemeManager.theme["CTkScrollbar"]["button_hover_color"]
         if not type in colors:
-            return "purple"
+            return type
         return colors[type][i]
 
     def get_column_width(self, column_name):

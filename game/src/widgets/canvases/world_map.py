@@ -15,31 +15,32 @@ class WorldMap(Canvas):
         self.buffer = context.net.buffer.submarine
 
         def frame_callback():
-
-            sprites = context.states.get("world_map_sprites")
-            colors = context.states.get("world_map_colors")
+            def color(key):
+                return self.context.style.color(self.context.states.get("world_map_colors", key))
+            def sprite(key):
+                return context.states.get("world_map_sprites", key)
             
             self.delete("all")
             
-            if int(sprites["ocean"]) == 1:
-                self.draw.background(colors["ocean"])
+            if int(sprite("ocean")) == 1:
+                self.draw.background(color("ocean"))
             
-            if int(sprites["grid_lines"]) == 1:
-                self.draw.grid_lines(colors["grid_lines"], colors["grid_axes"])
+            if int(sprite("grid_lines")) == 1:
+                self.draw.grid_lines(color("grid_lines"), color("grid_axes"))
 
-            if int(sprites["path_in"]) == 1:
+            if int(sprite("path_in")) == 1:
                 positions = self.buffer.get_simple_path("in")
-                self.draw.line(positions, colors["path_in"])
+                self.draw.line(positions, color("path_in"))
                 positions = self.buffer.get_simple_path("out")
-                self.draw.line(positions, colors["path_out"])
+                self.draw.line(positions, color("path_out"))
 
-            if int(sprites["boat_in"]) == 1:
+            if int(sprite("boat_in")) == 1:
                 bearing = self.buffer.get_bearing("in")
                 position = self.buffer.get_position("in")
-                self.draw.boat(position, bearing, colors["boat_in_fill"], colors["boat_in_outline"])
+                self.draw.boat(position, bearing, color("boat_in_fill"), color("boat_in_outline"))
                 bearing = self.buffer.get_bearing("out")
                 position = self.buffer.get_position("out")
-                self.draw.boat(position, bearing, colors["boat_out_fill"], colors["boat_out_outline"])
+                self.draw.boat(position, bearing, color("boat_out_fill"), color("boat_out_outline"))
 
         
         self.set_frame_callback(frame_callback)

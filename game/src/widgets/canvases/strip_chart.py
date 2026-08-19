@@ -11,57 +11,33 @@ class StripChart(StripChartBase):
     Its time axis is synchronized with other strip charts in the same context.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, getter: Callable[[None], list[tuple[float, float]]], name: "variable", time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
+    def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int], 
+                 title_getter, units_getter, factor_getter, 
+                 history_getters: list[Callable[[None], list[tuple[float, float]]]], 
+                 time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
 
         # Create the canvas widget
-        super().__init__(master, context, name, time_scale, time_offset)
+        super().__init__(master, context, grid_position, title_getter(), time_scale, time_offset)
 
         def frame_callback():
-            sprites = context.states.get("strip_chart_sprites")
-            colors = context.states.get("strip_chart_colors")
-            data = getter()
             self.delete("all")
+            def color(key):
+                return self.context.style.color(self.context.states.get("strip_chart_colors", key))
+            self.draw.background("purple")
+            self.draw.background(color("background"))
             # self.draw.strip_chart_axes(data)
             # self.draw.test_data()
-            self.draw.background(context.style.color("field"))
-            self.draw.strip_chart_path(data)
-            # self.draw.background(colors["background"])
 
-            # if int(sprites["grid_axes"]) == 1:
-            #     self.draw.strip_chart_axes(colors["grid_axes"], bounds)
+            line_colors = context.states.get("strip_chart_colors", "paths")
+            for i, history in enumerate(history_getters):
+                line_color = line_colors[i%len(line_colors)]
+                self.draw.strip_chart_path(history(), line_color)
 
-            # if int(sprites["grid_numbers"]) == 1:
-            #     self.draw.strip_chart_grid_numbers(colors["grid_numbers"])
-
-            # if int(sprites["grid_lines"]) == 1:
-            #     self.draw.strip_chart_grid(colors["grid_lines"])
-
-            # if int(sprites["path_in"]) == 1:
-                
-            #     data = getter()
-            #     if data:
-            #         self.draw.strip_chart_path(data, colors["path_in"])
-                
-            # "strip_chart_sprites": {
-            #     "grid_lines": 1,
-            #     "grid_axes": 1,
-            #     "grid_numbers": 1,
-            #     "head_in": 1,
-            #     "head_out": 1,
-            #     "path_in": 1,
-            #     "path_out": 1,
-            #     "head_in_label": 1,
-            #     "head_out_label": 1
-            # },
-
-            # "strip_chart_colors": {
-            #     "background": "white",
-            #     "grid_lines": "black",
-            #     "grid_axes": "red",
-            #     "grid_numbers": "black",
-            #     "path_in": "blue",
-            #     "path_out": "green",
-            #     "head_in": "blue",
-            #     "head_out": "green"
-            # }
+            # Draw axes
+            axes_color = color("grid_axes")
+            # Draw labels
+            text_color = color("grid_numbers")
+            time_text = self.context.labels.get("stripcharts", "time")
+            # The factor is raw * factor = units, so align the y-axis numbers accordingly
+            
         self.set_frame_callback(frame_callback)

@@ -43,14 +43,11 @@
     },
 
     "strip_chart_colors": {
-        "background": "white",
+        "background": "field",
         "grid_lines": "black",
         "grid_axes": "red",
         "grid_numbers": "black",
-        "path_in": "blue",
-        "path_out": "green",
-        "head_in": "blue",
-        "head_out": "green"
+        "paths": ["blue", "green"],
+        "heads": ["blue", "green"]
     }
-
 }

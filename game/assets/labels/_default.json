@@ -266,5 +266,14 @@
         "factor": "Conversion Factor\nunits per raw",
         "units": "Units\nfor display",
         "modify": "Modify\nin NFQ callback"
+    },
+
+    "network_graph": {
+        "stripchart_title": "Packets per Second",
+        "stripchart_units": "Packets"
+    },
+
+    "stripcharts": {
+        "time": "Time"
     }
 }

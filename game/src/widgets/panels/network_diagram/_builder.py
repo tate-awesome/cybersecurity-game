@@ -26,12 +26,14 @@ class Builder(Panel):
 
         self.diagram = NetworkDiagramCanvas(left_frame, context)
 
-        # Wrap the strip chart since it packs itself internally, but the right
-        # frame needs to grid/grid_remove it alongside the paused textbox.
-        self.chart_wrapper = CTkFrame(right_frame, fg_color=self.style.color("panel"))
-        self.rate_chart = StripChart(self.chart_wrapper, context, self.buffer.get_rate_history, "Packets/sec")
+        def title():
+            return self.context.labels.get("network_graph", "stripchart_title")
+        def units():
+            return self.context.labels.get("network_graph", "stripchart_units")
+        def factor():
+            return 1.0
+        self.rate_chart = StripChart(right_frame, context, (0, 0),  title, units, factor, [self.buffer.get_rate_history])
         self.rate_chart.start_animation()
-        self.chart_wrapper.grid(row=0, column=0, sticky="nsew")
 
         self.selected_text = CTkTextbox(right_frame, wrap="none", font=self.style.get_font("mono"), state="disabled")
         self.selected_text.grid(row=0, column=0, sticky="nsew")
@@ -49,11 +51,11 @@ class Builder(Panel):
         if mode != self.current_mode:
             self.current_mode = mode
             if mode == "paused":
-                self.chart_wrapper.grid_remove()
+                self.rate_chart.grid_remove()
                 self.selected_text.grid()
             else:
                 self.selected_text.grid_remove()
-                self.chart_wrapper.grid()
+                self.rate_chart.grid()
 
         if mode != "paused":
             return

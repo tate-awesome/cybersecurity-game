@@ -18,7 +18,7 @@
     },
     
     "world_map_colors": {
-        "ocean": "#003459",
+        "ocean": "field",
         "grid_lines": "white",
         "grid_axes": "red",
         "grid_numbers": "white",
@@ -43,13 +43,11 @@
     },
 
     "strip_chart_colors": {
-        "background": "white",
+        "background": "field",
         "grid_lines": "black",
-        "grid_axes": "red",
-        "grid_numbers": "black",
-        "path_in": "blue",
-        "path_out": "green",
-        "head_in": "blue",
-        "head_out": "green"
+        "grid_axes": "accent",
+        "grid_numbers": "field_text",
+        "paths": ["blue", "green"],
+        "heads": ["blue", "green"]
     }
 }

@@ -264,5 +264,14 @@
         "factor": "#",
         "units": "#",
         "modify": "#"
+    },
+
+    "network_graph": {
+        "stripchart_title": "#",
+        "stripchart_units": "#"
+    },
+
+    "stripcharts": {
+        "time": "#"
     }
 }
