@@ -16,7 +16,6 @@ class StripChartBase(CTkCanvas):
         # Create and pack the canvas to fill its frame
         super().__init__(master)
         self.context = context
-        self.row = grid_position[0]
         self.grid(row=grid_position[0], column=grid_position[1], sticky="nsew", pady=context.style.gap, padx=context.style.gap)
 
         # Make a Camera that tracks time scaling and offset. Canvas events change the values, Draw methods use the values in transform functions
@@ -48,10 +47,14 @@ class StripChartBase(CTkCanvas):
     def start_animation(self, framerate_ms: float = 100):
         self.framerate_ms = framerate_ms
         self.do_animation_loop = True
-        self.context.animation_manager.add_callback(f"{self.__class__.__name__}_{self.row}", self.frame_callback)
+        # id(self) keeps this key unique per widget instance - a grid row/position
+        # is only unique within one panel, and different panels (e.g. the variable
+        # monitor and the network diagram) both start numbering their charts at row 0,
+        # which previously made their callbacks silently overwrite each other.
+        self.context.animation_manager.add_callback(f"{self.__class__.__name__}_{id(self)}", self.frame_callback)
 
 
 
     def stop_animation(self):
         self.do_animation_loop = False
-        self.context.animation_manager.remove_callback(f"{self.__class__.__name__}_{self.row}")
+        self.context.animation_manager.remove_callback(f"{self.__class__.__name__}_{id(self)}")
