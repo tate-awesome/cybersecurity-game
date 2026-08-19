@@ -32,10 +32,10 @@ class MetaPacket:
         "command",          # modbus layer name - "read holding registers response"
         "command_type",     # "Request" or "Response"
         "is_modbus",        # bool - includes modbus layer
-        "is_useful",        # bool
-        "is_primary",
-        "command_word",
-        "modbus_word"
+        "is_useful",        # bool - changes register value
+        "is_primary",       # bool - is the first request or response of this transaction
+        "command_word",     # str - "Write Request" or "Read Response"
+        "modbus_word"       # str - "variable list = value list"
     }
 
     LOCAL_MAC = ':'.join(f'{(uuid.getnode() >> ele) & 0xff:02x}' for ele in range(40, -8, -8)).lower()

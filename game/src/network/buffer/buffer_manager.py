@@ -12,7 +12,7 @@ import threading
 from collections import deque
 from scapy.all import Packet
 
-from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, HouseBuffer
+from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, HouseBuffer, NetworkGraph
 from .meta_packet import MetaPacket
 from .channels.transaction_manager import TransactionManager
 
@@ -38,6 +38,7 @@ class Buffer:
         self.modbus = ModbusBuffer(self.context, max_size=self.max_size)
         self.submarine = MapBuffer(self.context, self.modbus, max_size=self.max_size)
         self.hvac = HouseBuffer(self.context, self.modbus, max_size=self.max_size)
+        self.network = NetworkGraph(self.context, self.packets, max_size = self.max_size)
 
         self.start_worker()
 
