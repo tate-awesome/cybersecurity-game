@@ -19,25 +19,25 @@ class Builder(Panel):
         self.strip_charts = {}
 
         for key in self.registers:
-            def get_title():
+            def get_title(k=key):
                 # Resolve nickname and configure label
-                nickname = self.context.states.get_register(key, "nickname")
+                nickname = self.context.states.get_register(k, "nickname")
                 if len(nickname) > 0:
                     variable_name = nickname
                 else:
-                    variable_name = self.context.labels.get("modbus_variables", key)
+                    variable_name = self.context.labels.get("modbus_variables", k)
                 return variable_name
 
-            def get_units():
-                return self.context.states.get_register(key, "units")
+            def get_units(k=key):
+                return self.context.states.get_register(k, "units")
 
-            def get_factor():
-                return self.context.states.get_register(key, "factor")
+            def get_factor(k=key):
+                return self.context.states.get_register(k, "factor")
 
-            def get_in():
-                return self.buffer.get_history(key, "in")
-            def get_out():
-                return self.buffer.get_history(key, "out")
+            def get_in(k=key):
+                return self.buffer.get_history(k, "in")
+            def get_out(k=key):
+                return self.buffer.get_history(k, "out")
 
             strip_chart = StripChart(scrollable, context, (current_row, 0),
                                      get_title, get_units, get_factor, 

@@ -17,7 +17,7 @@ class StripChart(StripChartBase):
                  time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
 
         # Create the canvas widget
-        super().__init__(master, context, grid_position, title_getter(), time_scale, time_offset)
+        super().__init__(master, context, grid_position, time_scale, time_offset)
 
         def frame_callback():
             self.delete("all")
@@ -46,7 +46,7 @@ class StripChart(StripChartBase):
 
             time_text = self.context.labels.get("stripcharts", "time")
             self.draw.strip_chart_axis_labels(layout, time_text, units_getter(), text_color)
-            self.draw.strip_chart_title(self.var_name, text_color)
+            self.draw.strip_chart_title(title_getter(), text_color)
 
             line_colors = context.states.get("strip_chart_colors", "paths")
             for i, history in enumerate(histories):
