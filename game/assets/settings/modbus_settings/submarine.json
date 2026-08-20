@@ -1,4 +1,6 @@
 {
+    "model_type": "submarine",
+    
     "modbus_variables": {
         "hreg_1": {
             "show": 0

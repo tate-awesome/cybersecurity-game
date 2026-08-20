@@ -1,4 +1,7 @@
 {
+    
+    "model_type": "hvac",
+    
     "modbus_variables": {
         "hreg_1": {
             "show": 0
