@@ -2,7 +2,7 @@ from customtkinter import CTkCanvas
 from....app_core import Context
 from .camera import Camera
 from . import transforms as t
-import math, time
+import math, time, bisect
 
 # Layout constants for strip chart axes
 TICK_LENGTH = 5
@@ -16,7 +16,7 @@ class StripChartLayout:
     Everything needed to draw one frame of a strip chart, computed once per frame
     so the axes, ticks, numbers, labels, and data lines all agree on where things go.
     '''
-    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pixels_per_second, time_offset):
+    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pixels_per_second, time_offset, time_decimals):
         self.now = now
         self.t_min = t_min
         self.t_max = t_max
@@ -31,6 +31,7 @@ class StripChartLayout:
         self.value_label = value_label  # most recent history value, formatted
         self.pixels_per_second = pixels_per_second  # x-axis scale actually used this frame (may be fit-mode's)
         self.time_offset = time_offset  # x-axis pixel offset actually used this frame
+        self.time_decimals = time_decimals  # decimal places used for the current time tick resolution
 
 class Draw:
     '''
@@ -165,7 +166,7 @@ class Draw:
                     latest_time, latest_value = point_time, value
         value_label = "" if latest_value is None else t.format_max_decimals(latest_value * factor, 2)
 
-        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pps, time_offset)
+        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pps, time_offset, decimals)
 
     def strip_chart_ticks(self, layout: StripChartLayout, tick_color="gray", gridlines: bool = False):
         '''
@@ -231,3 +232,74 @@ class Draw:
         canvas_points = self.camera.data_to_strip_chart(visible, layout.now, factor, layout.min_unit, layout.max_unit,
                                                           layout.pixels_per_second, layout.time_offset)
         self.canvas.create_line(canvas_points, width=2, fill=path_color)
+
+    def strip_chart_crosshairs(self, layout: StripChartLayout, history_lists: list[list[tuple[float, float]]], factor: float,
+                                cursor_pos: tuple[float, float] | None, text_color="black", background_color="white"):
+        '''
+        Draws a mouse-following crosshair: a horizontal line from the cursor to the
+        y-axis and a vertical line from the cursor to the x-axis, with the time under
+        the cursor and the most recent data value at-or-before that time labeled beside it.
+        '''
+        if cursor_pos is None:
+            return
+
+        cx, cy = cursor_pos
+        if not (layout.left <= cx <= layout.right and layout.top <= cy <= layout.bottom):
+            return
+
+        self.canvas.create_line(layout.left, cy, cx, cy, fill=text_color, width=1)
+        self.canvas.create_line(cx, layout.bottom, cx, cy, fill=text_color, width=1)
+
+        # Camera transform from canvas position back to world (time) space - this
+        # already accounts for fit mode, since pixels_per_second/time_offset/now on
+        # the layout are whatever fit mode (or normal zoom/pan) actually used to draw.
+        hover_time = self.camera.canvas_x_to_time(cx, layout.now, layout.pixels_per_second, layout.time_offset)
+        rel = hover_time - layout.now
+        time_text = t.format_tick(rel, layout.time_decimals)
+
+        number_font = self.context.style.get_font("chart_numbers")
+        self._text_with_background(cx - LABEL_GAP, cy + LABEL_GAP, time_text, "ne",
+                                    number_font, text_color, background_color)
+
+        # The value shown is the closest data point at-or-before the hovered time -
+        # never a future point - across all lines, matching the top-right "current value".
+        point = self._closest_point_before(history_lists, hover_time)
+        if point is not None:
+            value_text = t.format_max_decimals(point[1] * factor, 2)
+            self._text_with_background(cx - LABEL_GAP, cy, value_text, "se",
+                                        number_font, text_color, background_color)
+
+    def _closest_point_before(self, history_lists: list[list[tuple[float, float]]], hover_time: float):
+        '''
+        The most recent (time, value) point at-or-before hover_time, across all lines.
+        Points are assumed chronologically ordered within each line.
+        '''
+        best = None
+        for points in history_lists:
+            index = bisect.bisect_right(points, hover_time, key=lambda point: point[0]) - 1
+            if index < 0:
+                continue
+            candidate = points[index]
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+        return best
+
+    def _text_with_background(self, x: float, y: float, text: str, anchor: str, font, text_color: str, background_color: str):
+        '''
+        Draws text with a background-colored box behind it so it doesn't blend into
+        whatever else is drawn underneath (axes, gridlines, the data line, ...).
+        anchor: "se" pins the text's bottom-right corner to (x, y); "ne" pins its top-right corner.
+        '''
+        width = font.measure(text)
+        height = font.metrics("linespace")
+        pad = 2
+
+        if anchor == "se":
+            box = (x - width - pad, y - height - pad, x + pad, y + pad)
+        elif anchor == "ne":
+            box = (x - width - pad, y - pad, x + pad, y + height + pad)
+        else:
+            raise ValueError(f"Unsupported anchor for _text_with_background: {anchor}")
+
+        self.canvas.create_rectangle(*box, fill=background_color, outline="")
+        self.canvas.create_text(x, y, text=text, anchor=anchor, font=font, fill=text_color)

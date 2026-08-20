@@ -29,6 +29,21 @@ class StripChartBase(CTkCanvas):
         # Redraw the canvas when it gets resized
         self.bind("<Configure>", self.resize_handler)
 
+        # Track the cursor for the crosshairs hover effect. This only records the
+        # position - it does NOT trigger a redraw itself. <Motion> can fire many
+        # times per second, and a full canvas redraw (axes/ticks/labels/lines) on
+        # every one of those would be far more expensive than just letting the
+        # existing ~10fps animation loop pick up the latest position on its next tick.
+        self.hover_pos = None
+        self.bind("<Motion>", self.hover_handler)
+        self.bind("<Leave>", self.leave_handler)
+
+    def hover_handler(self, event=None):
+        self.hover_pos = (event.x, event.y)
+
+    def leave_handler(self, event=None):
+        self.hover_pos = None
+
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       Animation Controls

@@ -58,4 +58,7 @@ class StripChart(StripChartBase):
                 line_color = line_colors[i%len(line_colors)]
                 self.draw.strip_chart_path(history, layout, factor, line_color)
 
+            # Drawn last so the crosshairs sit on top of the axes and data lines
+            self.draw.strip_chart_crosshairs(layout, histories, factor, self.hover_pos, text_color, color("background"))
+
         self.set_frame_callback(frame_callback)
