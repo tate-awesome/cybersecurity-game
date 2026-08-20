@@ -12,6 +12,7 @@ class Camera:
         Tracks axis scaling and transforms. Uses a shared time_sync_ptr to synchronize time scaling and offset across multiple canvases.
         '''
         self.canvas = canvas
+        self.context = context
 
         self.time_scale = time_scale
         self.time_offset = time_offset
@@ -72,21 +73,29 @@ class Camera:
     def pixels_per_second(self) -> float:
         return PIXELS_PER_SECOND * self.time_scale[0]
 
-    def time_to_canvas_x(self, time_value: float, now: float) -> float:
+    def is_fit_mode(self) -> bool:
+        value = self.context.states.get("fit_stripchart_line")
+        return value == 1 or value == "1"
+
+    def time_to_canvas_x(self, time_value: float, now: float, pixels_per_second: float = None, time_offset: float = None) -> float:
         '''
         Maps a data time (seconds) to a canvas x pixel. `now` is right-aligned to the
         right edge of the plot area, offset by any panning done by the user.
+        pixels_per_second/time_offset can be overridden (e.g. by fit mode) without
+        touching the camera's own pan/zoom state.
         '''
         _, _, right, _ = self.plot_rect()
-        pps = self.pixels_per_second()
-        return right + self.time_offset[0] + (time_value - now) * pps
+        pps = self.pixels_per_second() if pixels_per_second is None else pixels_per_second
+        offset = self.time_offset[0] if time_offset is None else time_offset
+        return right + offset + (time_value - now) * pps
 
-    def canvas_x_to_time(self, x: float, now: float) -> float:
+    def canvas_x_to_time(self, x: float, now: float, pixels_per_second: float = None, time_offset: float = None) -> float:
         _, _, right, _ = self.plot_rect()
-        pps = self.pixels_per_second()
+        pps = self.pixels_per_second() if pixels_per_second is None else pixels_per_second
         if pps == 0:
             return now
-        return now + (x - right - self.time_offset[0]) / pps
+        offset = self.time_offset[0] if time_offset is None else time_offset
+        return now + (x - right - offset) / pps
 
     def value_to_canvas_y(self, value: float, min_v: float, max_v: float) -> float:
         '''
@@ -100,13 +109,13 @@ class Camera:
         fraction = (value - min_v) / span
         return bottom - fraction * (bottom - top)
 
-    def data_to_strip_chart(self, points_in: list[tuple[float, float]], now: float, factor: float, min_unit: float, max_unit: float) -> list[tuple[float, float]]:
+    def data_to_strip_chart(self, points_in: list[tuple[float, float]], now: float, factor: float, min_unit: float, max_unit: float, pixels_per_second: float = None, time_offset: float = None) -> list[tuple[float, float]]:
         '''
         Transforms (time, raw_value) points into canvas pixel coordinates.
         '''
         out = []
         for time_value, value in points_in:
-            x = self.time_to_canvas_x(time_value, now)
+            x = self.time_to_canvas_x(time_value, now, pixels_per_second, time_offset)
             y = self.value_to_canvas_y(value * factor, min_unit, max_unit)
             out.append((x, y))
         return out
@@ -116,9 +125,13 @@ class Camera:
 # --------------------------------------------------------------------------------------------------------------------------
 
     def click_callback(self, event=None):
+        if self.is_fit_mode():
+            return
         self.pan_start = [event.x, event.y]
 
     def do_pan(self, event=None):
+        if self.is_fit_mode():
+            return
         # Calculate movement
         dx = event.x - self.pan_start[0]
         dy = event.y - self.pan_start[1]
@@ -143,6 +156,8 @@ class Camera:
 
     # Zoom
     def zoom(self, event):
+        if self.is_fit_mode():
+            return
         # Determine zoom direction
         if event.delta > 0:
             factor = 1.1

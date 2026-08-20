@@ -218,7 +218,9 @@
         "clear_modbus": "Clear Readings",
         "filters_overlay": "Filters",
         "columns_overlay": "Columns",
-        "close_overlay": "Close"
+        "close_overlay": "Close",
+        "fit_stripchart": "Fit Data",
+        "unfit_stripchart": "Align Time"
 
     },
 

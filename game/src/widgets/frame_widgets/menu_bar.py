@@ -182,7 +182,7 @@ class MenuBar(CTkFrame):
         if pane is not None:
             pane.bind("<Configure>", configure_handler)
 
-    def reversible_button(self, start_func: callable, stop_func: callable, inactive_label: str, active_label: str):
+    def reversible_button(self, start_func: callable, stop_func: callable, inactive_label: str, active_label: str, start_active: bool = False):
         inactive_name = self.context.labels.get("menu_bar_buttons", inactive_label)
         active_name = self.context.labels.get("menu_bar_buttons", active_label)
         button = self.add_button(inactive_label)
@@ -197,7 +197,13 @@ class MenuBar(CTkFrame):
             if hasattr(button, "proxy"):
                 button.proxy.configure(command=stop, text=active_name)
             button.configure(command=stop, text=active_name)
-        button.configure(command=start, text=inactive_name)
+
+        # Sync the button's initial text/command to whatever state start_func/stop_func
+        # already represent, without re-invoking either (they're already in that state).
+        if start_active:
+            button.configure(command=stop, text=active_name)
+        else:
+            button.configure(command=start, text=inactive_name)
         return button
 
     # Page Buttons

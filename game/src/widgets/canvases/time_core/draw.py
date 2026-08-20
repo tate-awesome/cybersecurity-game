@@ -16,7 +16,7 @@ class StripChartLayout:
     Everything needed to draw one frame of a strip chart, computed once per frame
     so the axes, ticks, numbers, labels, and data lines all agree on where things go.
     '''
-    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label):
+    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pixels_per_second, time_offset):
         self.now = now
         self.t_min = t_min
         self.t_max = t_max
@@ -29,6 +29,8 @@ class StripChartLayout:
         self.right = right
         self.bottom = bottom
         self.value_label = value_label  # most recent history value, formatted
+        self.pixels_per_second = pixels_per_second  # x-axis scale actually used this frame (may be fit-mode's)
+        self.time_offset = time_offset  # x-axis pixel offset actually used this frame
 
 class Draw:
     '''
@@ -93,12 +95,33 @@ class Draw:
         left, top, right, bottom = camera.plot_rect()
 
         # --- Time (x) axis ---
-        pps = camera.pixels_per_second()
+        # Fit mode overrides the usual zoom/pan-driven time axis: it scales/shifts the
+        # x-axis (without touching the camera's own zoom/pan state) so the history
+        # exactly fills the plot area, capped to the most recent fitted_stripchart_max_time
+        # seconds of data. It only kicks in when there's more than one point to fit to.
+        point_count = sum(len(points) for points in history_lists)
+        fit_enabled = camera.is_fit_mode() and point_count > 1
+
+        if fit_enabled:
+            all_times = [point_time for points in history_lists for point_time, _ in points]
+            data_max = max(all_times)
+            data_min = min(all_times)
+            max_span = float(self.context.states.get("fitted_stripchart_max_time"))
+            if data_max - data_min > max_span:
+                data_min = data_max - max_span
+            span = data_max - data_min
+            now = data_max
+            pps = (right - left) / span if span > 0 else 1.0
+            time_offset = 0.0
+        else:
+            pps = camera.pixels_per_second()
+            time_offset = camera.time_offset[0]
+
         step = t.choose_time_step(pps, MIN_TIME_LABEL_SPACING_PX, TIME_STEP_CANDIDATES)
         decimals = t.decimals_for_step(step)
 
-        rel_left = camera.canvas_x_to_time(left, now) - now
-        rel_right = camera.canvas_x_to_time(right, now) - now
+        rel_left = camera.canvas_x_to_time(left, now, pps, time_offset) - now
+        rel_right = camera.canvas_x_to_time(right, now, pps, time_offset) - now
 
         x_ticks = []
         first_tick = math.ceil(rel_left / step) * step
@@ -107,7 +130,7 @@ class Draw:
             rel = first_tick + i * step
             if rel > rel_right + step * 0.5:
                 break
-            cx = camera.time_to_canvas_x(now + rel, now)
+            cx = camera.time_to_canvas_x(now + rel, now, pps, time_offset)
             x_ticks.append((cx, t.format_tick(rel, decimals)))
 
         t_min, t_max = now + rel_left, now + rel_right
@@ -142,7 +165,7 @@ class Draw:
                     latest_time, latest_value = point_time, value
         value_label = "" if latest_value is None else t.format_max_decimals(latest_value * factor, 2)
 
-        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label)
+        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pps, time_offset)
 
     def strip_chart_ticks(self, layout: StripChartLayout, tick_color="gray", gridlines: bool = False):
         '''
@@ -205,5 +228,6 @@ class Draw:
         visible = [(pt, v) for pt, v in path_points if layout.t_min <= pt <= layout.t_max]
         if len(visible) < 2:
             return
-        canvas_points = self.camera.data_to_strip_chart(visible, layout.now, factor, layout.min_unit, layout.max_unit)
+        canvas_points = self.camera.data_to_strip_chart(visible, layout.now, factor, layout.min_unit, layout.max_unit,
+                                                          layout.pixels_per_second, layout.time_offset)
         self.canvas.create_line(canvas_points, width=2, fill=path_color)

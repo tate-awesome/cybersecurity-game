@@ -49,5 +49,8 @@
         "grid_numbers": "field_text",
         "paths": ["red", "yellow"],
         "heads": ["blue", "green"]
-    }
+    },
+
+    "fit_stripchart_line": 1,
+    "fitted_stripchart_max_time": 60
 }
