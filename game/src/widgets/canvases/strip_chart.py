@@ -30,7 +30,10 @@ class StripChart(StripChartBase):
 
             histories = [history() for history in history_getters]
             # The factor is raw * factor = units, so the y-axis is scaled/labeled in units
-            factor = factor_getter()
+            if float(factor_getter()):
+                factor = float(factor_getter())
+            else:
+                factor = 1.0
 
             # Time scaling/offset are resolved first (the visible time window), then
             # the value axis autoscales to whatever data falls inside that window.

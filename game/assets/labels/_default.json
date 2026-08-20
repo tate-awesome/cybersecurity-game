@@ -201,6 +201,7 @@
         "preferences_button": "Save Preferences",
         "fields_button": "Save Inputs",
         "page_button": "Favorite Page",
+        "clear_packets_button": "Clear Packets",
 
         "minimize": "Minimize",
         "maximize": "Maximize",
