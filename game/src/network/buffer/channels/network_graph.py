@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 class NetworkGraph:
     def __init__(self, context: "Context", packet_buffer: PacketBuffer, max_size: int):
         self.lock = Lock()
+        self.reset()
+
+    def reset(self):
         self.host_order = []
         self._host_set = set()
         self.arrows_this_tick = {}
+
 
     def put(self, mpkt: MetaPacket):
         macs_involved = list((mpkt.get("mac_src"), mpkt.get("mac_dst")))

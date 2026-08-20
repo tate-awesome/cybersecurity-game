@@ -35,6 +35,12 @@ class Builder(Panel):
         pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "pause", "unpause")
         minimize_button = self.menu_bar.minimize_button(body_container, master)
 
+        def reset_capture():
+            self.context.net.buffer.reset()
+            self.clear_tree()
+
+        reset_button = self.menu_bar.add_button("clear_packets_button", reset_capture)
+
         # Printing Flags
         self.jump_to_bottom = True
         self.run = True
@@ -298,6 +304,9 @@ class Builder(Panel):
                 active_columns.append(key)
 
         self.treeview["displaycolumns"] = active_columns
+
+    def clear_tree(self):
+        self.treeview.delete(*self.treeview.get_children())
 
     # Selection
     def on_select(self, event=None):

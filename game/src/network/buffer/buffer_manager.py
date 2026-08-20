@@ -46,6 +46,7 @@ class Buffer:
         self.accept_puts = True
         self.put_queue.clear()
         self.packets.reset()
+        self.network.reset()
         self.status.reset_cursor()
         self.modbus.reset()
         self.submarine.reset()
