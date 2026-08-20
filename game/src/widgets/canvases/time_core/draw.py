@@ -245,11 +245,13 @@ class Draw:
         self.canvas.create_line(canvas_points, width=2, fill=path_color)
 
     def strip_chart_crosshairs(self, layout: StripChartLayout, history_lists: list[list[tuple[float, float]]], factor: float,
-                                cursor_pos: tuple[float, float] | None, text_color="black", background_color="white"):
+                                cursor_pos: tuple[float, float] | None, line_colors: list[str],
+                                text_color="black", background_color="white"):
         '''
         Draws a mouse-following crosshair: a horizontal line from the cursor to the
         y-axis and a vertical line from the cursor to the x-axis, with the time under
-        the cursor and the most recent data value at-or-before that time labeled beside it.
+        the cursor and, for each channel, its data value at-or-before that time labeled
+        beside a square in that channel's line color.
         '''
         if cursor_pos is None:
             return
@@ -274,28 +276,61 @@ class Draw:
         self._text_with_background(cx - LABEL_GAP, cy + LABEL_GAP, time_text, "ne",
                                     number_font, text_color, background_color)
 
-        # The value shown is the closest data point at-or-before the hovered time -
-        # never a future point - across all lines, matching the top-right "current value".
-        point = self._closest_point_before(history_lists, hover_time)
-        if point is not None:
-            value_text = t.format_max_decimals(point[1] * factor, 2)
-            self._text_with_background(cx - LABEL_GAP, cy, value_text, "se",
-                                        number_font, text_color, background_color)
+        # One value per channel: the closest data point at-or-before the hovered time
+        # on that channel's own line - never a future point - paired with that
+        # channel's line color (cycling the palette the same way the lines do).
+        channel_values = []
+        for i, points in enumerate(history_lists):
+            point = self._closest_point_before(points, hover_time)
+            if point is not None:
+                color = line_colors[i % len(line_colors)]
+                channel_values.append((color, t.format_max_decimals(point[1] * factor, 2)))
 
-    def _closest_point_before(self, history_lists: list[list[tuple[float, float]]], hover_time: float):
+        if channel_values:
+            self._draw_channel_value_labels(cx, cy, channel_values, number_font, text_color, background_color)
+
+    def _closest_point_before(self, points: list[tuple[float, float]], hover_time: float):
         '''
-        The most recent (time, value) point at-or-before hover_time, across all lines.
-        Points are assumed chronologically ordered within each line.
+        The most recent (time, value) point at-or-before hover_time in one channel's
+        history. Points are assumed chronologically ordered.
         '''
-        best = None
-        for points in history_lists:
-            index = bisect.bisect_right(points, hover_time, key=lambda point: point[0]) - 1
-            if index < 0:
-                continue
-            candidate = points[index]
-            if best is None or candidate[0] > best[0]:
-                best = candidate
-        return best
+        if not points:
+            return None
+        index = bisect.bisect_right(points, hover_time, key=lambda point: point[0]) - 1
+        if index < 0:
+            return None
+        return points[index]
+
+    def _draw_channel_value_labels(self, cx: float, cy: float, channel_values: list[tuple[str, str]],
+                                    font, text_color: str, background_color: str):
+        '''
+        Draws one value label per channel, stacked top to bottom in a left-aligned
+        block sitting above-left of the cursor - the widest label's right edge lands
+        at the cursor's x position. A square in that channel's line color, outlined in
+        text_color, sits outside (to the left of) the block on each label's row.
+        '''
+        row_height = font.metrics("linespace")
+        pad = 2
+        square_size = max(row_height - 6, 6)
+        square_gap = 4
+
+        max_width = max(font.measure(text) for _, text in channel_values)
+        box_right = cx - LABEL_GAP
+        box_bottom = cy - LABEL_GAP
+        text_left = box_right - max_width
+        box_top = box_bottom - row_height * len(channel_values)
+
+        # One shared background box behind all the stacked labels (not the squares)
+        self.canvas.create_rectangle(text_left - pad, box_top - pad, box_right + pad, box_bottom + pad,
+                                      fill=background_color, outline="")
+
+        for i, (color, text) in enumerate(channel_values):
+            row_center_y = box_top + row_height * i + row_height / 2
+            square_left = text_left - square_gap - square_size
+            square_top = row_center_y - square_size / 2
+            self.canvas.create_rectangle(square_left, square_top, square_left + square_size, square_top + square_size,
+                                          fill=color, outline=text_color)
+            self.canvas.create_text(text_left, row_center_y, text=text, anchor="w", font=font, fill=text_color)
 
     def _text_with_background(self, x: float, y: float, text: str, anchor: str, font, text_color: str, background_color: str):
         '''
