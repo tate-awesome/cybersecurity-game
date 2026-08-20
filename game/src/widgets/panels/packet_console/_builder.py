@@ -306,9 +306,17 @@ class Builder(Panel):
             return
         self.buffer.select(int(selection[0]))
 
+    def select_child(self, index=-1):
+
+        children = self.treeview.get_children("")
+        if children:
+            self.treeview.selection_set(children[-1])
+            self.treeview.see(children[-1])
+
     # Buttons
     def pause(self):
         self.stop_printing()
+        self.select_child()
         self.context.states.set("packet_console_state", "mode", value="paused")
 
     def unpause(self):
