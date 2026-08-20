@@ -1,6 +1,7 @@
 from .core.canvas import Canvas
 from customtkinter import CTkFrame
 from ...app_core import Context
+from scapy.all import conf, get_if_hwaddr
 
 NODE_RADIUS = 6
 
@@ -15,12 +16,15 @@ class NetworkDiagramCanvas(Canvas):
         super().__init__(master, context, ((-1.3, -1.3), (1.3, 1.3)))
         self.network = context.net.buffer.network
         self.packets = context.net.buffer.packets
+        # self.mac = context.net.nmap.
+        default_interface = conf.iface
+        self.mac_address = get_if_hwaddr(default_interface)
 
-        def draw_host(mac, point):
+        def draw_host(mac, point, color):
             cx, cy = self.camera.world_to_canvas([point])[0]
             self.create_oval(
                 cx - NODE_RADIUS, cy - NODE_RADIUS, cx + NODE_RADIUS, cy + NODE_RADIUS,
-                fill=context.style.color("accent"), outline=""
+                fill=context.style.color(color), outline=""
             )
             self.create_text(
                 cx, cy - NODE_RADIUS - 8, text=mac,
@@ -33,7 +37,10 @@ class NetworkDiagramCanvas(Canvas):
 
             positions = self.network.get_host_positions()
             for mac, point in positions.items():
-                draw_host(mac, point)
+                if mac == self.mac_address:
+                    draw_host(mac, point, "red")
+                else:
+                    draw_host(mac, point, "accent")
 
             mode = context.states.get("packet_console_state", "mode")
 
