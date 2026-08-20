@@ -26,7 +26,7 @@ class WorldMap(Canvas):
                 self.draw.background(color("ocean"))
             
             if int(sprite("grid_lines")) == 1:
-                self.draw.grid_lines(color("grid_lines"), color("grid_axes"))
+                self.draw.grid_lines(color("grid_lines"), color("grid_axes"), color("grid_numbers"))
 
             if int(sprite("path_in")) == 1:
                 positions = self.buffer.get_simple_path("in")

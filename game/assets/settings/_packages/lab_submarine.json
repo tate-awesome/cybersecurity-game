@@ -1,6 +1,6 @@
 {
     "_files": {
-        "color_settings": "alt.json",
+        "color_settings": "_default.json",
         "hack_settings": "lab.json",
         "modbus_settings": "submarine.json",
         "packet_console_settings": "lab.json"

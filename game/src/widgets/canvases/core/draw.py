@@ -12,6 +12,7 @@ class Draw:
     def __init__(self, canvas: CTkCanvas, context: Context, camera: Camera):
         self.canvas = canvas
         self.camera = camera
+        self.context = context
 
     def background(self, color: str):
         w = self.canvas.winfo_width()
@@ -99,7 +100,7 @@ class Draw:
         self.canvas.create_line(points, width=2, fill=line_color)
 
 
-    def grid_lines(self, lines_color="white", axes_color="red"):
+    def grid_lines(self, lines_color="white", axes_color="red", numbers_color="#3a6070"):
         for i in range(0, 210, 10):
             h_line = [(0, i), (200, i)]
             v_line = t.rotate(h_line, math.pi/2, (i, i))
@@ -120,11 +121,12 @@ class Draw:
                 y_pixel = h_line[0][1]   # y position of horizontal line = Y axis label position
 
                 # X axis label — sits above the top of each vertical line
+                font = self.context.style.get_font("chart_numbers")
                 self.canvas.create_text(x_pixel, v_line[0][1] + 10,
-                                        text=str(i), fill="#3a6070", font=("Courier", 7))
+                                        text=str(i), fill=numbers_color, font=font)
                 # Y axis label — sits to the left of each horizontal line
                 self.canvas.create_text(h_line[0][0] - 16, y_pixel,
-                                        text=str(i), fill="#3a6070", font=("Courier", 7))
+                                        text=str(i), fill=numbers_color, font=font)
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
         the_boat = [

@@ -19,15 +19,15 @@
     
     "world_map_colors": {
         "ocean": "field",
-        "grid_lines": "white",
+        "grid_lines": "field_text",
         "grid_axes": "red",
-        "grid_numbers": "white",
-        "boat_in_fill": "yellow",
-        "boat_in_outline": "yellow",
-        "boat_out_fill": "yellow",
-        "boat_out_outline": "yellow",
-        "path_in": "yellow",
-        "path_out": "yellow"
+        "grid_numbers": "field_text",
+        "path_in": "red",
+        "boat_in_fill": "red",
+        "boat_in_outline": "red",
+        "path_out": "orange",
+        "boat_out_fill": "orange",
+        "boat_out_outline": "orange"
     },
 
     "strip_chart_sprites": {
@@ -47,7 +47,7 @@
         "grid_lines": "black",
         "grid_axes": "accent",
         "grid_numbers": "field_text",
-        "paths": ["red", "yellow"],
+        "paths": ["red", "orange"],
         "heads": ["blue", "green"]
     },
 
