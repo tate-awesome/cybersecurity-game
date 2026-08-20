@@ -371,6 +371,19 @@ def format_tick(value: float, decimals: int) -> str:
         value = 0.0
     return f"{value:.{decimals}f}"
 
+def format_max_decimals(value: float, max_decimals: int) -> str:
+    '''
+    Formats value with up to max_decimals decimal places, dropping trailing
+    zeros (and the decimal point itself if nothing is left after them).
+    '''
+    value = round(value, max_decimals)
+    if value == 0:
+        value = 0.0
+    text = f"{value:.{max_decimals}f}"
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
 def choose_time_step(pixels_per_unit: float, min_label_spacing_px: float, candidates: list[float]) -> float:
     '''
     Picks the smallest candidate step whose on-screen spacing is at least

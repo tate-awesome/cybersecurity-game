@@ -16,7 +16,7 @@ class StripChartLayout:
     Everything needed to draw one frame of a strip chart, computed once per frame
     so the axes, ticks, numbers, labels, and data lines all agree on where things go.
     '''
-    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom):
+    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label):
         self.now = now
         self.t_min = t_min
         self.t_max = t_max
@@ -28,6 +28,7 @@ class StripChartLayout:
         self.top = top
         self.right = right
         self.bottom = bottom
+        self.value_label = value_label  # most recent history value, formatted
 
 class Draw:
     '''
@@ -81,7 +82,8 @@ class Draw:
         w = self.canvas.winfo_width()
 
         # Top/right/bottom padding only depend on font metrics, so they can be set directly.
-        camera.padding_top = title_height + LABEL_GAP + label_height + LABEL_GAP
+        # The header (units / title / value) is a single row, tall enough for the taller of its fonts.
+        camera.padding_top = max(title_height, label_height) + LABEL_GAP * 2
         camera.padding_bottom = TICK_LENGTH + LABEL_GAP + number_height + LABEL_GAP + label_height + LABEL_GAP
         camera.padding_right = max(w * 0.025, 10)
 
@@ -131,7 +133,16 @@ class Draw:
 
         y_ticks = [(camera.value_to_canvas_y(v, min_unit, max_unit), s) for v, s in zip(y_tick_values, y_labels)]
 
-        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom)
+        # --- Most recent value across all lines, converted by factor ---
+        latest_time, latest_value = None, None
+        for points in history_lists:
+            if points:
+                point_time, value = points[-1]
+                if latest_time is None or point_time > latest_time:
+                    latest_time, latest_value = point_time, value
+        value_label = "" if latest_value is None else t.format_max_decimals(latest_value * factor, 2)
+
+        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label)
 
     def strip_chart_ticks(self, layout: StripChartLayout, tick_color="gray", gridlines: bool = False):
         '''
@@ -164,20 +175,27 @@ class Draw:
                                      fill=number_color, font=number_font, anchor="w")
 
     def strip_chart_title(self, title: str, text_color="black"):
+        # Top-middle of the canvas, between the units label and the current value
         title_font = self.context.style.get_font("chart_title")
-        self.canvas.create_text(LABEL_GAP, LABEL_GAP, text=title, fill=text_color, font=title_font, anchor="nw")
+        w = self.canvas.winfo_width()
+        self.canvas.create_text(w / 2, LABEL_GAP, text=title, fill=text_color, font=title_font, anchor="n")
 
-    def strip_chart_axis_labels(self, layout: StripChartLayout, x_label: str, y_label: str, text_color="black"):
+    def strip_chart_units_label(self, units_label: str, text_color="black"):
+        # Top-left of the canvas, where the title used to sit
+        title_font = self.context.style.get_font("chart_title")
+        self.canvas.create_text(LABEL_GAP, LABEL_GAP, text=units_label, fill=text_color, font=title_font, anchor="nw")
+
+    def strip_chart_value_label(self, layout: StripChartLayout, text_color="black"):
+        # Top-right of the canvas: the most recent history value, in units
+        title_font = self.context.style.get_font("chart_title")
+        w = self.canvas.winfo_width()
+        self.canvas.create_text(w - LABEL_GAP, LABEL_GAP, text=layout.value_label,
+                                 fill=text_color, font=title_font, anchor="ne")
+
+    def strip_chart_x_label(self, layout: StripChartLayout, x_label: str, text_color="black"):
+        # Centered under the plot area, below the time tick numbers
         label_font = self.context.style.get_font("chart_label")
-        title_font = self.context.style.get_font("chart_title")
         number_font = self.context.style.get_font("chart_numbers")
-
-        # Y-axis label sits below the title, still clear of the axis line/numbers below it
-        title_height = title_font.metrics("linespace")
-        self.canvas.create_text(LABEL_GAP, LABEL_GAP + title_height + LABEL_GAP, text=y_label,
-                                 fill=text_color, font=label_font, anchor="nw")
-
-        # X-axis label is centered under the plot area, below the tick numbers
         number_height = number_font.metrics("linespace")
         x_label_y = layout.bottom + TICK_LENGTH + LABEL_GAP + number_height + LABEL_GAP
         cx = (layout.left + layout.right) / 2

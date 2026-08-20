@@ -48,7 +48,9 @@ class StripChart(StripChartBase):
             self.draw.strip_chart_numbers(layout, text_color)
 
             time_text = self.context.labels.get("stripcharts", "time")
-            self.draw.strip_chart_axis_labels(layout, time_text, units_getter(), text_color)
+            self.draw.strip_chart_x_label(layout, time_text, text_color)
+            self.draw.strip_chart_units_label(units_getter(), text_color)
+            self.draw.strip_chart_value_label(layout, text_color)
             self.draw.strip_chart_title(title_getter(), text_color)
 
             line_colors = context.states.get("strip_chart_colors", "paths")
