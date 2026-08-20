@@ -45,8 +45,7 @@ class Buffer:
     def reset(self):
         self.accept_puts = True
         self.put_queue.clear()
-        self.packets.reset_packet_cursor()
-        self.packets.reset_time()
+        self.packets.reset()
         self.status.reset_cursor()
         self.modbus.reset()
         self.submarine.reset()

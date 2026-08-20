@@ -14,13 +14,20 @@ class PacketBuffer:
         self.buffer = deque(maxlen=self.max_size)
         self.context = context
         self.lock = Lock()
-        self.number = 1
         self.last_displayed = 0
-        self.first_packet_time = None
         self.window_type_pps = deque(maxlen=self.max_size)
 
         self.rate_history = deque(maxlen=300)
         self.selected_number = None
+        self.reset()
+
+    def reset(self):
+        with self.lock:
+            self.first_packet_time = None
+            self.window_type_pps.clear()
+            self.buffer.clear()
+            self.number = 1
+            self.last_displayed = 0
 
     def put(self, mpkt: MetaPacket):
         with self.lock:
@@ -97,10 +104,6 @@ class PacketBuffer:
     def reset_packet_cursor(self):
         with self.lock:
             self.last_displayed = 0
-
-    def reset_time(self):
-        self.first_packet_time = None
-        self.window_type_pps.clear()
 
     def get_first_packet_time(self, pkt: Packet) -> float:
         if self.first_packet_time is None:
