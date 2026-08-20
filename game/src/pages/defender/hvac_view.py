@@ -143,8 +143,6 @@ class HVACView:
             self._encryption_on = True
         else:
             self._enc_key_entry.configure(state="normal")
-            self._enc_key_entry.delete(0, "end")
-            self._enc_key_entry.insert(0, "1234")
             self._enc_button.configure(text="Enable Encryption")
             self._encryption_on = False
 
@@ -207,7 +205,7 @@ class HVACView:
     def _push_hvac_controls(self):
         payload = {
         "encryption_status": self._encryption_on,
-        "encryption_key": self._enc_key_entry.get().strip() if self._encryption_on else "1234",
+        "encryption_key": self._enc_key_entry.get().strip(),
         "AP_communication": self._AP_communication_on,
         "sensor_noise_variance": self.sensor_noise_variance,
         "hvac_kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,

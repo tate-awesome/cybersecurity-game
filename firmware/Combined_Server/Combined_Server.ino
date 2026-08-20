@@ -103,6 +103,7 @@ void setupModbusRegisters() {
   mb.addHreg(HREG_THETA_MRAD, 0);
   mb.addHreg(HREG_SPEED,      0);
   mb.addHreg(HREG_RUDDER,     0);
+  mb.addHreg(HREG_DAMPER_CMD, 0);
 }
 
 
@@ -621,10 +622,10 @@ void runHvacCycle() {
 
       if(g_hvac_kalman_filter_enabled){
         est_temp = tempKF(current_temp, 0.1f);
-        current_temp = est_temp;
       }
 
       float error_value = abs(est_temp - current_temp);
+      current_temp = est_temp;
 
       g_HVAC_anomaly_detected = error_value > g_hvac_state_error_threshold;
     }
@@ -633,6 +634,10 @@ void runHvacCycle() {
 
     float lower_threshold = setpoint_temp - hysteresis_band;
     float upper_threshold = setpoint_temp + hysteresis_band;
+
+    if(hvac_AP_communication && current_temp > upper_threshold){
+      current_temp *= 0.35;
+    }
     
     if (current_temp <= lower_threshold) {
         heater_on = true;   // Too cold -> switch heat ON

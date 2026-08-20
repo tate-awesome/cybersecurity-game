@@ -164,7 +164,7 @@ void loop() {
 
 void loadPreferences() {
   prefs.begin(NVS_NAMESPACE, true);   // read-only
-  g_ssid     = prefs.getString(NVS_KEY_SSID,  "");
+  g_ssid     = prefs.getString(NVS_KEY_SSID,  "AP-Config");
   g_password = prefs.getString(NVS_KEY_PASS,  "");
   g_flask_ip = prefs.getString(NVS_KEY_FLASK, "192.168.8.167");
   prefs.end();
