@@ -17,6 +17,7 @@ class PacketBuffer:
         self.number = 1
         self.last_displayed = 0
         self.first_packet_time = None
+        self.window_type_pps = deque(maxlen=self.max_size)
 
         self.rate_history = deque(maxlen=300)
         self.selected_number = None
@@ -37,6 +38,24 @@ class PacketBuffer:
     def get_rate_history(self) -> list:
         with self.lock:
             return list(self.rate_history)
+
+    def get_window_type_pps(self):
+        # 1. Update
+        with self.lock:
+            reverse = reversed(self.buffer)
+        now = self.get_relative_time()
+        if now is None:
+            return
+        cutoff = now - 1.0
+        count = 0
+        for mpkt in reverse:
+            if mpkt.get("time") > cutoff:
+                count += 1
+            else:
+                break
+        # 2. Put and return
+        self.window_type_pps.append((now, count))
+        return self.window_type_pps
 
     def select(self, number: int):
         self.selected_number = number
@@ -86,3 +105,7 @@ class PacketBuffer:
         if self.first_packet_time is None:
             self.first_packet_time = pkt.time
         return self.first_packet_time
+
+    def get_relative_time(self):
+        if self.first_packet_time:
+            return time.time() - self.first_packet_time
