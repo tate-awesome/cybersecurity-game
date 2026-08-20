@@ -16,8 +16,9 @@ class StripChartLayout:
     Everything needed to draw one frame of a strip chart, computed once per frame
     so the axes, ticks, numbers, labels, and data lines all agree on where things go.
     '''
-    def __init__(self, now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pixels_per_second, time_offset, time_decimals):
+    def __init__(self, now, wall_now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pixels_per_second, time_offset, time_decimals):
         self.now = now
+        self.wall_now = wall_now  # real elapsed time, for labels - may differ from `now` (the geometry reference) in fit mode
         self.t_min = t_min
         self.t_max = t_max
         self.min_unit = min_unit
@@ -72,7 +73,13 @@ class Draw:
         # MetaPacket), not wall-clock epoch time - convert "now" into that same
         # coordinate space so it lines up with the data.
         first_packet_time = self.context.net.buffer.packets.first_packet_time
-        now = 0.0 if first_packet_time is None else time.time() - first_packet_time
+        wall_now = 0.0 if first_packet_time is None else time.time() - first_packet_time
+        # `now` is the geometry reference (where pixels come from) - normally the
+        # same as wall_now, but fit mode freezes it to the latest sample's time so
+        # the picture stops moving once data stops arriving. `wall_now` keeps
+        # advancing regardless, so labels can still reflect real elapsed time even
+        # while the picture is frozen (see the tick loop below).
+        now = wall_now
 
         number_font = self.context.style.get_font("chart_numbers")
         label_font = self.context.style.get_font("chart_label")
@@ -124,6 +131,9 @@ class Draw:
         rel_left = camera.canvas_x_to_time(left, now, pps, time_offset) - now
         rel_right = camera.canvas_x_to_time(right, now, pps, time_offset) - now
 
+        # Tick positions come from `rel` (an offset from the frozen geometry reference)
+        # so the picture doesn't move, but the label shown is that same instant's
+        # offset from wall_now, so labels keep sliding while data isn't arriving.
         x_ticks = []
         first_tick = math.ceil(rel_left / step) * step
         tick_count = int((rel_right - first_tick) / step) + 2
@@ -131,8 +141,9 @@ class Draw:
             rel = first_tick + i * step
             if rel > rel_right + step * 0.5:
                 break
-            cx = camera.time_to_canvas_x(now + rel, now, pps, time_offset)
-            x_ticks.append((cx, t.format_tick(rel, decimals)))
+            t_abs = now + rel
+            cx = camera.time_to_canvas_x(t_abs, now, pps, time_offset)
+            x_ticks.append((cx, t.format_tick(t_abs - wall_now, decimals)))
 
         t_min, t_max = now + rel_left, now + rel_right
 
@@ -166,7 +177,7 @@ class Draw:
                     latest_time, latest_value = point_time, value
         value_label = "" if latest_value is None else t.format_max_decimals(latest_value * factor, 2)
 
-        return StripChartLayout(now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pps, time_offset, decimals)
+        return StripChartLayout(now, wall_now, t_min, t_max, min_unit, max_unit, x_ticks, y_ticks, left, top, right, bottom, value_label, pps, time_offset, decimals)
 
     def strip_chart_ticks(self, layout: StripChartLayout, tick_color="gray", gridlines: bool = False):
         '''
@@ -253,9 +264,11 @@ class Draw:
         # Camera transform from canvas position back to world (time) space - this
         # already accounts for fit mode, since pixels_per_second/time_offset/now on
         # the layout are whatever fit mode (or normal zoom/pan) actually used to draw.
+        # The label is relative to wall_now (real elapsed time), not the geometry
+        # reference, so it keeps sliding along with the x-axis ticks even once fit
+        # mode has frozen the picture in place.
         hover_time = self.camera.canvas_x_to_time(cx, layout.now, layout.pixels_per_second, layout.time_offset)
-        rel = hover_time - layout.now
-        time_text = t.format_tick(rel, layout.time_decimals)
+        time_text = t.format_tick(hover_time - layout.wall_now, layout.time_decimals)
 
         number_font = self.context.style.get_font("chart_numbers")
         self._text_with_background(cx - LABEL_GAP, cy + LABEL_GAP, time_text, "ne",
