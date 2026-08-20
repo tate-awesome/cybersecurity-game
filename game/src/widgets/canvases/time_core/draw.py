@@ -117,7 +117,7 @@ class Draw:
             max_span = float(self.context.states.get("fitted_stripchart_max_time"))
             if data_max - data_min > max_span:
                 data_min = data_max - max_span
-            span = data_max - data_min
+            span = float(data_max - data_min)
             now = data_max
             pps = (right - left) / span if span > 0 else 1.0
             time_offset = 0.0

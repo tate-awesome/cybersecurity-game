@@ -45,7 +45,7 @@ class PacketBuffer:
             reverse = reversed(self.buffer)
         now = self.get_relative_time()
         if now is None:
-            return
+            return self.window_type_pps
         cutoff = now - 1.0
         count = 0
         for mpkt in reverse:
@@ -100,6 +100,7 @@ class PacketBuffer:
 
     def reset_time(self):
         self.first_packet_time = None
+        self.window_type_pps.clear()
 
     def get_first_packet_time(self, pkt: Packet) -> float:
         if self.first_packet_time is None:

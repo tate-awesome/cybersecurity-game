@@ -50,6 +50,10 @@ class ModbusBuffer:
         for i, var in enumerate(variables):
             key = f"{var}_{direction}"
             with self.stripchart_locks[key]:
+                if len(self.stripchart_buffers[key]) > 0:
+                # duplicate value to make a staircase shape
+                    previous_value = self.stripchart_buffers[key][-1][1]
+                    self.stripchart_buffers[key].append((packet_time - 0.0000001, previous_value))
                 self.stripchart_buffers[key].append((packet_time, values[i]))
             with self.singles_lock:
                 self.singles[key] = values[i]
