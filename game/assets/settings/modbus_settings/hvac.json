@@ -7,14 +7,7 @@
             "show": 0
         },
         "hreg_3": {
-            "label": "hreg_3",
-            "show": 1.0,
-            "nickname": "Heater",
-            "factor": 0.01,
-            "units": "State",
-            "multiplier": 1.0,
-            "offset": 0.0,
-            "modify": 1
+            "show": 0
         },
         "hreg_4": {
             "show": 0
@@ -23,7 +16,14 @@
             "show": 0
         },
         "hreg_6": {
-            "show": 0
+            "label": "hreg_3",
+            "show": 1.0,
+            "nickname": "Heater",
+            "factor": 0.01,
+            "units": "State",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 1
         },
         "hreg_7": {
             "show": 0
