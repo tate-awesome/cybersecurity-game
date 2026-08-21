@@ -58,3 +58,11 @@ class LocalizationManager:
             current = current[key]
 
         current[keys[-1]] = value
+
+    def variable_name(self, key):
+        nickname = self.context.states.get_register(key, "nickname")
+        if len(nickname) > 0:
+            variable_name = nickname
+        else:
+            variable_name = self.get("modbus_variables", key)
+        return variable_name

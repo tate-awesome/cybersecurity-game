@@ -14,6 +14,7 @@ class StripChart(StripChartBase):
     def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int], 
                  title_getter, units_getter, factor_getter, 
                  history_getters: list[Callable[[None], list[tuple[float, float]]]], 
+                 legend_getters: list[Callable[[None], str]] = [],
                  time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
 
         # Create the canvas widget

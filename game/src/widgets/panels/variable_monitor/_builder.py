@@ -20,12 +20,7 @@ class Builder(Panel):
 
         for key in self.registers:
             def get_title(k=key):
-                # Resolve nickname and configure label
-                nickname = self.context.states.get_register(k, "nickname")
-                if len(nickname) > 0:
-                    variable_name = nickname
-                else:
-                    variable_name = self.context.labels.get("modbus_variables", k)
+                variable_name = self.context.labels.variable_name(k)
                 return variable_name
 
             def get_units(k=key):
@@ -38,10 +33,14 @@ class Builder(Panel):
                 return self.buffer.get_history(k, "in")
             def get_out(k=key):
                 return self.buffer.get_history(k, "out")
+            def get_legend_in():
+                return self.context.labels.get("stripcharts", "in")
+            def get_legend_out():
+                return self.context.labels.get("stripcharts", "out")
 
             strip_chart = StripChart(scrollable, context, (current_row, 0),
                                      get_title, get_units, get_factor, 
-                                     [get_in, get_out], time_offset)
+                                     [get_in, get_out], [get_legend_in, get_legend_out], time_offset)
             strip_chart.start_animation()
             self.strip_charts[key] = strip_chart
             current_row += 1

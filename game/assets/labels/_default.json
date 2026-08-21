@@ -238,7 +238,7 @@
         "offset": "Offset"
     },
 
-    "modbus_variables": {
+    "modbus_variables": {        
         "hreg_1": "HReg 1",
         "hreg_2": "HReg 2",
         "hreg_3": "HReg 3",
@@ -277,6 +277,8 @@
     },
 
     "stripcharts": {
-        "time": "Time"
+        "time": "Time",
+        "in": "In",
+        "out": "Out"
     }
 }

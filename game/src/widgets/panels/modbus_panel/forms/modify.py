@@ -64,12 +64,7 @@ class Modify(BaseForm):
 
     def refresh_nicknames(self):
         for key, row in self.rows.items():
-            # Resolve nickname and configure label
-            nickname = self.context.states.get_register(key, "nickname")
-            if len(nickname) > 0:
-                variable_name = nickname
-            else:
-                variable_name = self.context.labels.get("modbus_variables", key)
+            variable_name = self.context.labels.variable_name(key)
             row["name"].configure(text=variable_name)
 
     def refresh_rows(self):
