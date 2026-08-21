@@ -36,14 +36,18 @@ class AttackerV0(Page):
 
 
     # Displays
-        display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
         model = self.context.states.get("model_type")
         if model == "submarine":
+            display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
             BoatModel(display.pane(0), context)
+            VariableMonitor(display.pane(1), context)
         elif model == "hvac":
             HVACModel(display.pane(0), context)
+            display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
+            VariableMonitor(display.pane(1), context)
         else:
-            AgnosticModel(display.pane(0), context)
+            VariableMonitor(trifold.pane(2), context)
+
+            # AgnosticModel(display.pane(0), context)
         # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)
-        VariableMonitor(display.pane(1), context)
