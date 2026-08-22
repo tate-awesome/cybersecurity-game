@@ -1,12 +1,12 @@
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
 from .....app_core import Context
-from .base_form import BaseForm
+from ...base_form import BaseForm
 
 
 class DosForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "dos")
+        super().__init__(master, context, key="dos")
 
         self.add_header()
 

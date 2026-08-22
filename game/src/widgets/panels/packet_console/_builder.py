@@ -1,10 +1,7 @@
-from customtkinter import *
-
 from .filter_overlay import FilterOverlay
-from .column_overlay import ColumnOverlay
 from .treeview import PacketTreeview
 from ....app_core import Context
-from ... import MenuBar
+from ... import MenuBar, CheckboxOverlay
 from ..panel import Panel
 from customtkinter import CTkFrame
 from ....network.buffer.meta_packet import MetaPacket
@@ -26,7 +23,7 @@ class Builder(Panel):
         self.filter_overlay.compile_filter()
 
         columns_button = self.menu_bar.add_button("columns_overlay")
-        columns_overlay = ColumnOverlay(columns_button, context, self.refresh_columns)
+        columns_overlay = CheckboxOverlay(columns_button, context, self.refresh_columns, "packet_columns", "Show Columns")
 
         # jump_button = self.menu_bar.reversible_button(
         #     self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")

@@ -4,10 +4,9 @@ from ..panel import Panel
 
 from .forms.table import MitmTable
 from .forms.modify import Modify
-from .form_overlay import FormOverlay
 from .variable_overlay import VariableOverlay
 
-from ....widgets import Scrollable, MenuBar, Overlay
+from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
 class Builder(Panel):
 
@@ -32,7 +31,7 @@ class Builder(Panel):
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        forms_overlay = FormOverlay(forms_button, context, self.refresh_forms)
+        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_forms", "Show Forms")
 
         clear_button = self.menu_bar.add_button("clear_modbus", self.context.net.buffer.reset_modbus)
 

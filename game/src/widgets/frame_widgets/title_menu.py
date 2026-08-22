@@ -1,5 +1,6 @@
-from customtkinter import *
+from customtkinter import CTkFrame, CTkLabel, CTkButton
 from ...app_core import Context
+from typing import Callable
 
 class TitleMenu(CTkFrame):
     '''
@@ -30,7 +31,7 @@ class TitleMenu(CTkFrame):
         self.rowconfigure(2, weight=1)
 
     
-    def button(self, label: str = "_default", function = None):
+    def button(self, label: str = "_default", function: Callable | None = None):
         button = CTkButton(self, text=self.context.labels.get("title_buttons", label), command=function, font=self.style.get_font("title_btn"))
         button.grid(row = self.current_row, column=1, pady=self.style.gap, ipady=self.style.igap)
         self.rowconfigure(self.current_row, weight=0)

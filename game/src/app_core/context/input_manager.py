@@ -3,68 +3,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
-class InputManager:
+from .json_backed_store import JsonBackedStore
+
+
+class InputManager(JsonBackedStore):
     def __init__(self, context: "Context"):
-        self.context = context
-        self.states = self.get_preferred()
-
-    def get_preferred(self):
-        '''
-        Loads settings from the preferences json file
-        '''
-        default = self.get_default()
-        if self.context.preferences.has("settings"):
-            self.context.json.deep_merge(default, self.context.preferences.get("settings"))
-        return default
-
-    def get_default(self):
-        '''
-        Loads settings from the default json file
-        '''
-        file_path = self.context.paths.packages / "_default.json"
-        default = {}
-        self.context.json.merge_from_file(default, file_path)
-        return default
-
-    def reset(self):
-        self.states = self.get_default()
-
-    def select(self):
-        '''
-        Opens a dialog for the user to select a context preset.
-        Context presets populate fields and checkboxes.
-        '''
-        directory = self.context.paths.settings
-        file_path = self.context.paths.select_path(directory, "Select Settings")
-        self.context.json.merge_from_file(self.states, file_path)
-        self.context.router.refresh()
-
-    def get(self, *keys):
-        '''
-        Returns the value at the given key sequence in the states dict.
-        Raises a KeyError naming the full path if the path doesn't have a value.
-        '''
-        output = self.states
-        for i, key in enumerate(keys):
-            if not isinstance(output, dict) or key not in output:
-                raise KeyError(f"states{''.join(f'[{k!r}]' for k in keys[:i + 1])} not found (full path requested: {keys})")
-            output = output[key]
-        return output
-
-    def set(self, *keys, value):
-        '''
-        Sets the given dict path to the given value.
-        Raises a KeyError naming the full path if an intermediate key doesn't have a value.
-        '''
-        current = self.states
-
-        for i, key in enumerate(keys[:-1]):
-            if not isinstance(current, dict) or key not in current:
-                raise KeyError(f"states{''.join(f'[{k!r}]' for k in keys[:i + 1])} not found (full path requested: {keys})")
-            current = current[key]
-
-        current[keys[-1]] = value
-    
+        super().__init__(
+            context,
+            preference_key="settings",
+            default_dir=context.paths.packages,
+            select_dir=context.paths.settings,
+            dialog_title="Select Settings",
+            error_label="states",
+        )
 
     def get_registers(self):
         return self.get("modbus_variables")
@@ -74,6 +25,3 @@ class InputManager:
 
     def set_register(self, key: str, field: str, value):
         self.get_registers()[key][field] = value
-        
-
-    

@@ -1,4 +1,5 @@
 import json
+import os
 from .paths import Paths
 
 class Json:
@@ -7,11 +8,11 @@ class Json:
         self.paths = paths
         self.encountered_files = set()
 
-    def merge_from_file(self, current_dict: dict, path: str):
+    def merge_from_file(self, current_dict: dict, path: str | os.PathLike[str]):
         self.encountered_files.clear()
         self._merge_from_file(current_dict, path)
 
-    def _merge_from_file(self, current_dict: dict, path: str):
+    def _merge_from_file(self, current_dict: dict, path: str | os.PathLike[str]):
         '''
         Loads the given path as a json file, then deeply overwrites the old dict
         using the new dict.
@@ -31,7 +32,7 @@ class Json:
         except Exception as e:
             print(f"Error during json merge from file: {e}")
 
-    def deeper_merge(self, base_dict: dict, better_dict: dict):
+    def deeper_merge(self, base_dict: dict, better_dict: dict | None):
         # better_dict ultimately comes from disk (a settings/preset file, or a
         # preference value round-tripped through JSON) - it may not actually be
         # a dict if the file was hand-edited or corrupted. Skip rather than crash.
@@ -53,7 +54,7 @@ class Json:
             else:
                 base_dict[key] = value
 
-    def deep_merge(self, base_dict: dict, better_dict: dict):
+    def deep_merge(self, base_dict: dict, better_dict: dict | None):
         # See deeper_merge - better_dict may not be a dict if it came from a
         # corrupted or hand-edited preferences value.
         if not isinstance(better_dict, dict):
@@ -67,7 +68,7 @@ class Json:
             else:
                 base_dict[key] = value
 
-    def save_to_file(self, data: dict, file_path: str):
+    def save_to_file(self, data: dict, file_path: str | os.PathLike[str]):
         try:
             with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file)

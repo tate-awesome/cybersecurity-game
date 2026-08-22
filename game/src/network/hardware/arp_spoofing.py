@@ -10,14 +10,21 @@ import platform
 
 class ArpSpoofer:
 
-    def __init__(self, buffer: Buffer, interval=1.0):
+    def __init__(self, buffer: Buffer, interval: float = 1.0):
         self.buffer = buffer
         self.interval = interval
 
         self.running = False
         self.forwarding_enabled = False
-        self.timer = None
+        self.timer: threading.Timer | None = None
         self.os_name = platform.system()
+
+        # Only meaningfully set once start() is called with real target/host
+        # IPs, but declared here so their type is known throughout the class.
+        self.target_ip: str | None = None
+        self.host_ip: str | None = None
+        self.target_mac: str | None = None
+        self.host_mac: str | None = None
 
 
 

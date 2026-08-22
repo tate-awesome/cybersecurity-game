@@ -1,12 +1,12 @@
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
 from .....app_core import Context
-from .base_form import BaseForm
+from ...base_form import BaseForm
 
 
 class ArpForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "arp")
+        super().__init__(master, context, key="arp")
         
         self.add_header()
 

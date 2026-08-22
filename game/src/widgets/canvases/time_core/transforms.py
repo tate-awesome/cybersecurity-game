@@ -1,110 +1,11 @@
 import math
 
 from customtkinter import CTkCanvas
-import math
+from ....geometry import rotate, scale, affine, flatten, translate, get_bearing, get_arc_points
 
 '''
 Helper functions for camera, sprites, and drawings. Very useful math with highly granular control
 '''
-
-def rotate(points: list[tuple[float, float]], angle: float, origin: tuple | None=None):
-    '''
-    Rotates sprite in worldspace
-    Angle: radians from 0
-    '''
-    # Mod angle
-    angle = angle % (math.pi * 2)
-
-    # Find origin from average point
-    if origin is None:
-        origin = [0, 0]
-        for x, y in points:
-            origin[0] += x
-            origin[1] += y
-        origin[0] = origin[0] / (len(points))
-        origin[1] = origin[1] / (len(points))
-
-    # Create new vertices
-    vertices = []
-    for sx, sy in points:
-        # Center object for rotation
-        sprite_x = sx - origin[0]
-        sprite_y = sy - origin[1]
-
-        # Trig rotations
-        rx = sprite_x * math.cos(angle) - sprite_y * math.sin(angle)
-        ry = sprite_x * math.sin(angle) + sprite_y * math.cos(angle)
-
-        # Move sprite back to its origin
-        sprite_x = rx + origin[0]
-        sprite_y = ry + origin[1]
-
-        vertices.append((sprite_x, sprite_y))
-
-    return vertices
-
-def scale(points: list[tuple[float, float]], mult: float, origin: tuple | None=None):
-    '''
-    Scales sprite in worldspace
-    Mult: multiplier for sprite coordinates
-    '''
-
-    # Find origin from average point
-    if origin is None:
-        origin = [0, 0]
-        for x, y in points:
-            origin[0] += x
-            origin[1] += y
-        origin[0] = origin[0] / (len(points))
-        origin[1] = origin[1] / (len(points))
-
-    # Create new vertices
-    vertices = []
-    for sx, sy in points:
-        # Center object for scaling
-        sprite_x = sx - origin[0]
-        sprite_y = sy - origin[1]
-
-        # Scale
-        mx = sprite_x * mult
-        my = sprite_y * mult
-
-        # Move sprite back to its origin
-        sprite_x = mx + origin[0]
-        sprite_y = my + origin[1]
-
-        vertices.append((sprite_x, sprite_y))
-
-    return vertices
-
-def affine(points: list[tuple[float, float]], in_bl: tuple[float, float],
-                                                in_tr: tuple[float, float],
-                                                out_bl: tuple[float, float],
-                                                out_tr: tuple[float, float]) -> list[tuple[float, float]]:
-    '''
-    Converts coordinates from one range to another, matching top right and bottom left of the ranges.
-    '''
-    
-    in_xmin, in_ymin = in_bl
-    in_xmax, in_ymax = in_tr
-    out_xmin, out_ymin = out_bl
-    out_xmax, out_ymax = out_tr
-
-    in_w = in_xmax - in_xmin
-    in_h = in_ymax - in_ymin
-    out_w = out_xmax - out_xmin
-    out_h = out_ymax - out_ymin
-
-    sx = out_w / in_w if in_w != 0 else 1.0
-    sy = out_h / in_h if in_h != 0 else 1.0
-
-    out = []
-    for x, y in points:
-        nx = (x - in_xmin) * sx + out_xmin
-        ny = (y - in_ymin) * sy + out_ymin
-        out.append((nx, ny))
-
-    return out
 
 def right_align(points: list[tuple[float, float]], time_bounds: tuple[float, float], canvas: CTkCanvas) -> list[tuple[float, float]]:
     '''
@@ -127,7 +28,7 @@ def right_align(points: list[tuple[float, float]], time_bounds: tuple[float, flo
 
     return aligned_points
 
-def padded_vertical_fit(points: list[tuple[float, float]], data_bounds: tuple[float, float], canvas: CTkCanvas, padding: float):
+def padded_vertical_fit(points: list[tuple[float, float]], data_bounds: tuple[float, float], canvas: CTkCanvas, padding: float) -> list[tuple[float, float]]:
     '''
     Converts coordinates from the incoming dataset to a padded area inside the canvas. Preserves aspect ratio and centers the figure in the canvas.
     Returns: list(tuple)
@@ -148,7 +49,7 @@ def padded_vertical_fit(points: list[tuple[float, float]], data_bounds: tuple[fl
 
     return affine(points, (0, min_y), (w, max_y), padded_bl, padded_tr)
 
-def zoom_and_pan(points: list[tuple[float, float]], vertical_scale: float, time_scale: float, time_offset: float):
+def zoom_and_pan(points: list[tuple[float, float]], vertical_scale: float, time_scale: float, time_offset: float) -> list[tuple[float, float]]:
     '''
     Transforms a figure using the scale and offset
     '''
@@ -165,7 +66,7 @@ def zoom_and_pan(points: list[tuple[float, float]], vertical_scale: float, time_
 
     return out
 
-def zoom_and_pan_reverse(points: list[tuple[float, float]], vertical_scale: float, time_scale: float, time_offset: float):
+def zoom_and_pan_reverse(points: list[tuple[float, float]], vertical_scale: float, time_scale: float, time_offset: float) -> list[tuple[float, float]]:
     ox, oy = time_offset, 0.0
     sx, sy = time_scale, vertical_scale
 
@@ -178,52 +79,9 @@ def zoom_and_pan_reverse(points: list[tuple[float, float]], vertical_scale: floa
 
     return out
 
-def flatten(points: list[tuple[float, float]]):
-    out = []
-    for x, y in points:
-        out.extend((x, y))
-    return out
-
-def translate(points: list[tuple[float, float]], offset: tuple[float, float]):
-    '''
-    Translates a figure by an offset
-    '''
-    tx, ty = offset
-
-    out = []
-    for x, y in points:
-        x_new = x + tx
-        y_new = y + ty
-        
-        out.append((x_new, y_new))
-
-    return out
-
-def get_bearing(origin: tuple[float, float], target: tuple[float, float]):
-    '''
-    Gets an angle from two points
-    '''
-    x = target[0] - origin[0]
-    y = target[1] - origin[1]
-    return math.atan2(y, x)
-
-def get_arc_points(center: tuple[float, float], radius: float, start_angle: float, end_angle: float, num_points: int=20):
-    '''
-    Gets points along an arc defined by the parameters
-    '''
-    cx, cy = center
-    points = []
-    for i in range(num_points + 1):
-        t = i / num_points
-        angle = start_angle + t * (end_angle - start_angle)
-        x = cx + radius * math.cos(angle)
-        y = cy + radius * math.sin(angle)
-        points.append((x, y))
-    return points
-
 def padded_fit_vertical_snap_right(points: list[tuple[float, float]],
                                    canvas: CTkCanvas,
-                                   padding: float):
+                                   padding: float) -> list[tuple[float, float]]:
     '''
     Converts coordinates from the incoming plane to a plane padded vertically
     inside the canvas. Horizontal scaling is ignored, but the right edge of
@@ -270,7 +128,7 @@ def padded_fit_vertical_snap_right(points: list[tuple[float, float]],
 
     return transformed
 
-def zoom_and_pan_horizontal(points: list[tuple[float, float]], scale: float, offset: tuple[float, float]):
+def zoom_and_pan_horizontal(points: list[tuple[float, float]], scale: float, offset: tuple[float, float]) -> list[tuple[float, float]]:
     '''
     Transforms a figure using the scale and offset - horizontal only
     '''
@@ -324,7 +182,7 @@ def nice_number(value: float, round_: bool) -> float:
 
     return nice_fraction * (10 ** exponent)
 
-def nice_ticks(min_v: float, max_v: float, target_count: int = 5):
+def nice_ticks(min_v: float, max_v: float, target_count: int = 5) -> tuple[list[float], float]:
     '''
     Picks whole-number/nice-fraction tick values (step size 1, 2, or 5 x10^n) that
     cover [min_v, max_v]. Returns (ticks, step).

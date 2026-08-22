@@ -16,6 +16,10 @@ from math import hypot
 from ..meta_packet import MetaPacket
 from .modbus import ModbusBuffer
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ....app_core import Context
+
 class MapBuffer:
     '''
     Buffer specific to the submarine model widget.
@@ -26,7 +30,7 @@ class MapBuffer:
                 built by putting two new coordinates in each tuple
     "segments" - deque[list[tuple[x: float, y: float]]] - collection of lists of tuples, to represent discontinuities
     '''
-    def __init__(self, context, modbuffer: ModbusBuffer, max_size: int = 5000):
+    def __init__(self, context: "Context", modbuffer: ModbusBuffer, max_size: int = 5000):
         self.max_size = max_size
         self.context = context
         self.modbuffer = modbuffer

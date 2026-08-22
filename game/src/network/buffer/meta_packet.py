@@ -3,6 +3,7 @@ from scapy.arch import get_if_addr, get_if_hwaddr
 from scapy.contrib import modbus
 import json, socket, uuid
 from scapy.contrib.modbus import *
+from typing import Any
 
 class MetaPacket:
 
@@ -104,7 +105,7 @@ class MetaPacket:
             return
         self.data[key] = value
 
-    def get(self, key: str):
+    def get(self, key: str) -> Any:
         if key not in self.KEYS:
             return None
         else:
@@ -122,7 +123,7 @@ class MetaPacket:
         '''
         return requirement in self.get(category)
     
-    def set_modbus_information(self) -> tuple[list[str], list[float], str]:
+    def set_modbus_information(self) -> None:
         # return variables, values, command string
         # Return command
         # 2 of 18 instructions implemented lol

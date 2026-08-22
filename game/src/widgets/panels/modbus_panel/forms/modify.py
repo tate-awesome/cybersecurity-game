@@ -1,10 +1,10 @@
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
 from .....app_core import Context
-from .base_form import BaseForm
+from ...base_form import BaseForm
 
 class Modify(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, "Modifying")
+        super().__init__(master, context, attack_noun="Modifying")
         # Assign local references
         self.buffer = context.net.buffer.modbus
         # Create form

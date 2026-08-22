@@ -1,4 +1,4 @@
-from customtkinter import *
+from customtkinter import CTkBaseClass, CTkToplevel, CTkFrame, CTkLabel, CTkButton
 from ..app_core import Context
 
 def message(master: CTkBaseClass, context: Context, message: str):

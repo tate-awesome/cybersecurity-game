@@ -1,7 +1,10 @@
 from ...app_core import Context
 
 # Better Widgets
-from ...widgets import *
+from ...widgets import (
+    MenuBar, Panes, HackingPanel, ModbusPanel, PacketConsole,
+    NetworkDiagram, StatusConsole, BoatModel, VariableMonitor, HVACModel,
+)
 # Widgets
 from ...widgets import popup
 from ...pages.page import Page
@@ -42,8 +45,8 @@ class AttackerV0(Page):
             BoatModel(display.pane(0), context)
             VariableMonitor(display.pane(1), context)
         elif model == "hvac":
-            HVACModel(display.pane(0), context)
             display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
+            HVACModel(display.pane(0), context)
             VariableMonitor(display.pane(1), context)
         else:
             VariableMonitor(trifold.pane(2), context)

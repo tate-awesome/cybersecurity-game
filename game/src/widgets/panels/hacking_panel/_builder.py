@@ -7,10 +7,9 @@ from .forms.nmap import NmapForm
 from .forms.dos import DosForm
 from .forms.sniff import SniffForm
 from .forms.nfq import NFQForm
-from .form_overlay import FormOverlay
 from .forms.wifi import WifiForm
 
-from ....widgets import Scrollable, MenuBar, Overlay
+from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
 class Builder(Panel):
 
@@ -37,7 +36,7 @@ class Builder(Panel):
 
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        overlay = FormOverlay(forms_button, context, self.refresh_forms)
+        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "hacking_forms", "Show Forms")
 
         stop_button = self.menu_bar.add_button("abort_all", self.stop_all)
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)

@@ -1,6 +1,20 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
     from .. import Context
+
+class PreferencesData(TypedDict, total=False):
+    '''
+    Documents the shape preferences.json is expected to have after a fresh
+    clear() (see below) - loaded from user-editable JSON on disk, so this
+    doesn't guarantee the shape at runtime (see Preferences.has()'s guard).
+    '''
+    mode: str
+    theme: str
+    labels: dict
+    page: str
+    panes: dict
+    settings: dict
+    fullscreen: str
 
 class Preferences:
     def __init__(self, context: "Context"):
@@ -9,8 +23,12 @@ class Preferences:
         Created before the root in App().
         Other classes use it to populate their fields.
         '''
-        self.context = context
-        self.data = dict()
+        self.context: "Context" = context
+        # PreferencesData documents the expected shape, but self.data itself
+        # stays a plain dict - it needs generic dict operations (.clear(), being
+        # passed to Json.save_to_file()) a TypedDict doesn't support, and it's
+        # loaded from user-editable JSON so the shape isn't actually guaranteed.
+        self.data: dict = {}
         self.load()
 
     def load(self):

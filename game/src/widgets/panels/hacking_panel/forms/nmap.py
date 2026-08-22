@@ -1,11 +1,11 @@
 from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkEntry
 from .....app_core import Context
-from .base_form import BaseForm
+from ...base_form import BaseForm
 
 class NmapForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-        
-        super().__init__(master, context, "nmap", "Network Map")
+
+        super().__init__(master, context, key="nmap", attack_noun="Network Map")
 
         self.header = self.add_header()
 

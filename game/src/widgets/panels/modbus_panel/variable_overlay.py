@@ -1,7 +1,7 @@
 from ....app_core import Context
 from ....widgets import Overlay
 from customtkinter import CTkEntry, CTkCheckBox, CTkLabel, CTkFrame, CTkButton
-from typing import cast
+from typing import Callable
 
 
 class VariableOverlay:
@@ -9,7 +9,7 @@ class VariableOverlay:
     Binds a button to open and close an overlay with checkboxes for each form, which are saved in the context states for persistence.
     The refresh function is called when any checkbox is clicked
     '''
-    def __init__(self, button, context: Context, refresh_rows, refresh_nicknames):
+    def __init__(self, button: CTkButton, context: Context, refresh_rows: Callable, refresh_nicknames: Callable):
         self.context = context
         self.style = context.style
         self.refresh_rows = refresh_rows
@@ -18,7 +18,7 @@ class VariableOverlay:
 
 
 
-    def populate_overlay(self, overlay):
+    def populate_overlay(self, overlay: Overlay):
         med = self.style.get_font()
         frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
         frame.pack(side="top", padx=self.style.gap, pady=self.style.gap)

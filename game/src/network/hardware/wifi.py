@@ -23,7 +23,7 @@ class Wifi:
             
             if not files:
                 print("No saved Wi-Fi networks found.")
-                return
+                return output
 
             for file in files:
                 # NetworkManager profiles usually end with .nmconnection or have no extension
@@ -73,17 +73,20 @@ class Wifi:
             if lines:
                 lines.pop(0)
                 
-            # Filter out empty or hidden SSIDs (often displayed as '--')
-            networks = set(line for line in lines if line and line != '--')
-            for network in networks:
-                network = f"{network.replace("Auto ", "")}"
-            
+            # Filter out empty or hidden SSIDs (often displayed as '--'), strip
+            # the "Auto " prefix nmcli sometimes prepends to profile names, and
+            # de-duplicate (the same SSID can be broadcast by multiple APs).
+            networks = list({line.replace("Auto ", "") for line in lines if line and line != '--'})
+
             return networks
-                
+
+
         except FileNotFoundError:
             print("Error: 'nmcli' command not found. Ensure NetworkManager is installed.")
+            return []
         except subprocess.CalledProcessError:
             print("Error: Failed to scan for Wi-Fi networks.")
+            return []
 
     def connect_to_saved_wifi(self, ssid):
         try:
@@ -127,7 +130,7 @@ class Wifi:
             target_history = None
             for network in history:
                 self.buffer.put("wifi", f"      {network}")
-                if target_available in network:
+                if target_available is not None and target_available in network:
                     target_history = network
             self.buffer.put("wifi", f"Found matching historical connection: {target_history}")
 

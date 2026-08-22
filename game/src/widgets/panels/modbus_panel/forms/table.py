@@ -1,10 +1,10 @@
 from customtkinter import CTkFrame, CTkLabel
 from .....app_core import Context
-from .base_form import BaseForm
+from ...base_form import BaseForm
 
 class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, "NFQ")
+        super().__init__(master, context, attack_noun="NFQ")
         # Assign local references
         self.buffer = context.net.buffer.modbus
         # Create form

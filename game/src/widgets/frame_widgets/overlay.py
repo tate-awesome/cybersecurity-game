@@ -7,7 +7,7 @@ class Overlay(CTkFrame):
     CTkFrame that is .place()'d below its trigger button on click. Is also .place_forget()'d when clicking outside the Overlay (this is expected behavior)
     '''
 
-    def __init__(self, master, context: Context, button: CTkButton, populate_func: Callable[[CTkFrame], None], anchor="south"):
+    def __init__(self, master, context: Context, button: CTkButton, populate_func: "Callable[[Overlay], None]", anchor="south"):
         self.anchor = anchor
         self.master = master
         self.context = context

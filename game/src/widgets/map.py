@@ -7,6 +7,7 @@ from customtkinter import CTkBaseClass
 from threading import Lock
 from typing import Callable
 from ..app_core import Context
+from ..geometry import apply_scale_about
 import time
 
 class Map:
@@ -84,14 +85,9 @@ class Map:
 
     def apply_scale_about(self, C: tuple[float, float], k: float):
         # Changes scale and offset based on zoom event and direction
-        cx, cy = C
-        tx, ty = self.offset
-
-        self.scale = k * self.scale
-        self.offset = [
-        cx + k * (tx - cx),
-        cy + k * (ty - cy),
-        ]
+        new_scale, new_offset = apply_scale_about(self.scale, (self.offset[0], self.offset[1]), C, k)
+        self.scale = new_scale
+        self.offset = list(new_offset)
 
     # Zoom
     def zoom(self, event):

@@ -9,7 +9,7 @@ class Panel(CTkFrame):
     This structure parallelizes all the gui elements that fill a pane and have a menu bar.
     '''
 
-    def __init__(self, master, context: Context, menu_bar_label: str = None):
+    def __init__(self, master, context: Context, menu_bar_label: str | None = None):
         self.context = context
         self.style = context.style
 

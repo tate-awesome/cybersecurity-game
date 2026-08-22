@@ -1,14 +1,11 @@
 from ....app_core import Context
 from ... import Overlay
 
-from typing import cast
-import customtkinter as ctk
-from customtkinter import *
-from tkinter import ttk
-import tkinter as tk
+from customtkinter import CTkFrame, CTkLabel, CTkCheckBox, CTkEntry, CTkButton
+from typing import Callable
 
 class FilterOverlay:
-    def __init__(self, button, context: Context, refresh_function):
+    def __init__(self, button: CTkButton, context: Context, refresh_function: Callable):
         self.context = context
         self.style = context.style
         self.refresh_function = refresh_function
@@ -28,7 +25,7 @@ class FilterOverlay:
         return slots[key]
 
 
-    def populate_filter_overlay(self, overlay):
+    def populate_filter_overlay(self, overlay: Overlay):
         '''
         Creates a filter overlay just below the button, with checkboxes for each filter in settings["packet_filter_checkboxes"]
         Creates text entries for each filter in self.context.inputs["packet_filter_entries"].

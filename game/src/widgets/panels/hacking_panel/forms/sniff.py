@@ -1,11 +1,11 @@
 from customtkinter import CTkFrame, CTkLabel, CTkButton
 from .....app_core import Context
-from .base_form import BaseForm
+from ...base_form import BaseForm
 
 class SniffForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "sniff")
+        super().__init__(master, context, key="sniff")
 
         self.header = self.add_header()
 

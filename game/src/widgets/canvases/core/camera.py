@@ -1,6 +1,7 @@
 from customtkinter import CTkCanvas
 from ....app_core import Context
 from . import transforms as t
+from ....geometry import apply_scale_about
 
 class Camera:
 
@@ -44,11 +45,11 @@ class Camera:
 
     def world_to_canvas(self, points_in: list[tuple[float, float]]) -> list[tuple[float, float]]:
         canvas_fit = t.padded_fit_uniform(points_in, self.world_bounds[0], self.world_bounds[1], self.canvas, self.padding)
-        camera_transformed = t.zoom_and_pan(canvas_fit, self.scale, self.offset)
+        camera_transformed = t.zoom_and_pan(canvas_fit, self.scale, (self.offset[0], self.offset[1]))
         return camera_transformed
 
     def canvas_to_world(self, points_in: list[tuple[float, float]]) -> list[tuple[float, float]]:
-        camera_undone = t.zoom_and_pan_reverse(points_in, self.scale, self.offset)
+        camera_undone = t.zoom_and_pan_reverse(points_in, self.scale, (self.offset[0], self.offset[1]))
         canvas_undone = t.padded_fit_uniform_reverse(camera_undone, self.world_bounds[0], self.world_bounds[1], self.canvas, self.padding)
         return canvas_undone
 
@@ -86,14 +87,9 @@ class Camera:
 
     def apply_scale_about(self, C: tuple[float, float], k: float):
         # Changes scale and offset based on zoom event and direction
-        cx, cy = C
-        tx, ty = self.offset
-
-        self.scale = k * self.scale
-        self.offset = [
-        cx + k * (tx - cx),
-        cy + k * (ty - cy),
-        ]
+        new_scale, new_offset = apply_scale_about(self.scale, (self.offset[0], self.offset[1]), C, k)
+        self.scale = new_scale
+        self.offset = list(new_offset)
 
     # Zoom
     def zoom(self, event):

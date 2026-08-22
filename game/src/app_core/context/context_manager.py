@@ -11,7 +11,7 @@ from .paths import Paths
 from .json import Json
 
 # imports to move later
-from customtkinter import set_appearance_mode, get_appearance_mode, ThemeManager
+from customtkinter import set_appearance_mode, get_appearance_mode, ThemeManager, CTk
 import subprocess, webbrowser
 
 from typing import TYPE_CHECKING
@@ -29,15 +29,15 @@ Shared data for a page. Passed to next pages on navigation.
     Every page builder function should take a Context object as an argument and build the page on the root CTk object.
     '''
 
-    def __init__(self, root, router: "Router"):
+    def __init__(self, root: CTk, router: "Router"):
         # All immutable members for the session
-        self.router = router
-        self.root = root
-        self.paths = Paths()
-        self.json = Json(self.paths)
-        self.style = Style(self)
-    
-        self.os_name = platform.system()
+        self.router: "Router" = router
+        self.root: CTk = root
+        self.paths: Paths = Paths()
+        self.json: Json = Json(self.paths)
+        self.style: Style = Style(self)
+
+        self.os_name: str = platform.system()
         self.start_session()
         self.start_page()
         self.start_build()
@@ -47,10 +47,10 @@ Shared data for a page. Passed to next pages on navigation.
         Creates mutable and resettable members for a session with the app
         Often saved by the user for the next session.
         '''
-        self.preferences = Preferences(self)
+        self.preferences: Preferences = Preferences(self)
         KeyBinds(self)
-        self.states = InputManager(self)
-        self.labels = LocalizationManager(self)
+        self.states: InputManager = InputManager(self)
+        self.labels: LocalizationManager = LocalizationManager(self)
         self.style.load_preferred_theme()
         self.style.load_preferred_mode()
 
@@ -69,7 +69,7 @@ Shared data for a page. Passed to next pages on navigation.
         Keep on refresh.
         Reset on page exit.
         '''
-        self.net =  NetworkController(self) # base class with things lots of inits need
+        self.net: NetworkController | None = NetworkController(self) # base class with things lots of inits need
 
     def reset_page(self):
         '''
@@ -84,8 +84,8 @@ Shared data for a page. Passed to next pages on navigation.
         Creates members for a single page build.
         Reset on refresh and page exit.
         '''
-        self.click_manager = ClickManager(self.root)
-        self.animation_manager = AnimationManager(self.root)
+        self.click_manager: ClickManager = ClickManager(self.root)
+        self.animation_manager: AnimationManager = AnimationManager(self.root)
 
     def reset_build(self):
         '''
@@ -105,7 +105,7 @@ Shared data for a page. Passed to next pages on navigation.
         # TODO get help from progress and current page and source widget
         return "You need to do something"
 
-    def refresh_net(self, constructor):
+    def refresh_net(self, constructor: type[NetworkController]):
         '''
         Gets the correct network controller for the current page.
         If the net is a different type, it will create a new net with the constructor.

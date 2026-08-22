@@ -6,6 +6,7 @@ from scapy.all import IP, TCP, Packet, Ether, IPv6
 from scapy.contrib.modbus import *
 from ..buffer import Buffer
 from ..buffer.meta_packet import MetaPacket
+import threading
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -18,8 +19,10 @@ class NetFilterQueueBaseClass:
         self.context = context
 
         self.running = False
-        self.stop_event = None
-        self.thread = None
+        # Only meaningfully set once start() is called - declared here so
+        # their type is known throughout the class (see stop()).
+        self.stop_event: threading.Event | None = None
+        self.thread: threading.Thread | None = None
 
     def is_running(self):
         return self.running
@@ -29,8 +32,10 @@ class NetFilterQueueBaseClass:
             self.buffer.put("nfq", "NFQ is not running")
             return
         else:
-            self.stop_event.set()
-            self.thread.join(timeout=2)
+            if self.stop_event is not None:
+                self.stop_event.set()
+            if self.thread is not None:
+                self.thread.join(timeout=2)
             self.stop_event = None
             self.thread = None
             self.running = False

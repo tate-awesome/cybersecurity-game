@@ -1,8 +1,9 @@
 from ...app_core import Context
-from customtkinter import *
+from customtkinter import CTkFrame, CTkLabel, CTkButton
 from ..popup import message
 from .overlay import Overlay
 from CTkToolTip import CTkToolTip
+from typing import Callable
 
 class MenuBar(CTkFrame):
     '''
@@ -30,7 +31,7 @@ class MenuBar(CTkFrame):
     def add_tooltip(self, widget, key: str):
         self.context.style.add_tooltip(widget, "menu_bar_tooltips", key)
 
-    def add_button(self, label: str="_default", function=None):
+    def add_button(self, label: str = "_default", function: Callable | None = None):
         button = CTkButton(self, text=self.context.labels.get("menu_bar_buttons", label), command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
         return button
@@ -193,7 +194,7 @@ class MenuBar(CTkFrame):
         if pane is not None:
             pane.bind("<Configure>", configure_handler)
 
-    def reversible_button(self, start_func: callable, stop_func: callable, inactive_label: str, active_label: str, start_active: bool = False):
+    def reversible_button(self, start_func: Callable, stop_func: Callable, inactive_label: str, active_label: str, start_active: bool = False):
         inactive_name = self.context.labels.get("menu_bar_buttons", inactive_label)
         active_name = self.context.labels.get("menu_bar_buttons", active_label)
         button = self.add_button(inactive_label)
