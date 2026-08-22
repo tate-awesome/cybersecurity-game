@@ -11,7 +11,16 @@ class StripChartBase(CTkCanvas):
     It can grow to fit the variable.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int], time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
+    def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int], time_scale: list[float] | None = None, time_offset: list[float] | None = None):
+        # Each caller that doesn't explicitly want to share a time reference
+        # with other strip charts needs its own fresh list here - a mutable
+        # default argument would instead be the one list object shared by
+        # every StripChartBase built without an explicit time_scale/time_offset,
+        # silently coupling their pan/zoom state together.
+        if time_scale is None:
+            time_scale = [0.0]
+        if time_offset is None:
+            time_offset = [0.0]
 
         # Create and pack the canvas to fill its frame
         super().__init__(master)

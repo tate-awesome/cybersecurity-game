@@ -24,8 +24,11 @@ class Sniffer:
             return
 
         self.buffer.put("sniff", "Starting Sniffer")
-        
-        self.sniffer.start()
+
+        try:
+            self.sniffer.start()
+        except Exception as e:
+            self.buffer.put("sniff", f"Failed to start sniffer: {e}")
 
     def callback(self, pkt):
         try:

@@ -46,12 +46,16 @@ class MitmTable(BaseForm):
                 self.hide_row(key)
 
     def show_row(self, key: str):
+        if key not in self.rows:
+            raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_variables' in settings)")
         row = self.rows[key]
         for _, widget in row.items():
             if not widget.winfo_ismapped():
                 widget.grid()
 
     def hide_row(self, key: str):
+        if key not in self.rows:
+            raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_variables' in settings)")
         row = self.rows[key]
         for _, widget in row.items():
             if widget.winfo_ismapped():

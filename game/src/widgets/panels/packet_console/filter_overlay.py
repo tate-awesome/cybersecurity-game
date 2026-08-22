@@ -16,6 +16,17 @@ class FilterOverlay:
         self.filter_columns = self.context.states.get("packet_filter_categories")
         self.filter_overlay = Overlay(self.context.root, context, button, self.populate_filter_overlay)
 
+    def _checkbox_value(self, slots: dict, key: str):
+        '''
+        Looks up one checkbox's saved value in the "packet_filter_checkboxes"
+        settings category. slots' keys come from a separate settings category
+        (self.filter_columns) that isn't guaranteed to stay in sync with it, so
+        this raises a clear error instead of a bare KeyError if they drift apart.
+        '''
+        if key not in slots:
+            raise KeyError(f"packet_filter_checkboxes[{key!r}] not found - filter_columns and settings are out of sync")
+        return slots[key]
+
 
     def populate_filter_overlay(self, overlay):
         '''
@@ -46,7 +57,7 @@ class FilterOverlay:
                 filter_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
                 
                 # Load previous input
-                value = box_slots[filter_key]
+                value = self._checkbox_value(box_slots, filter_key)
                 if value == "1" or value == 1: filter_box.select()
                 else: filter_box.deselect()
                 
@@ -128,7 +139,8 @@ class FilterOverlay:
                     category_condition = False
                     none_checked = True
                     for box_name in self.filter_columns[category]:
-                        if checkbox_slots[box_name] == "1" or checkbox_slots[box_name] == 1:
+                        checkbox_value = self._checkbox_value(checkbox_slots, box_name)
+                        if checkbox_value == "1" or checkbox_value == 1:
                             none_checked = False
                             category_condition = category_condition or mpkt.matches(category, box_name)
                     category_condition = category_condition or none_checked
@@ -165,7 +177,8 @@ class FilterOverlay:
                 category_summary = f"{category}s including"
 
                 for checkbox_key in self.filter_columns[category]:
-                    if box_slots[checkbox_key] == "1" or box_slots[checkbox_key] == 1:
+                    checkbox_value = self._checkbox_value(box_slots, checkbox_key)
+                    if checkbox_value == "1" or checkbox_value == 1:
                         category_conditions.append(self.context.labels.get("packet_filter_checkboxes", checkbox_key))
 
                 if len(category_conditions) > 0:

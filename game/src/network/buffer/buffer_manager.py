@@ -30,6 +30,7 @@ class Buffer:
         self.put_lock = threading.Lock()
         self.put_queue = deque(maxlen=self.max_size)
         self.worker_thread = threading.Thread(target=self.worker, daemon=True)
+        self.stop_event = threading.Event()
 
         # Buffers
         self.transaction_manager = TransactionManager()
@@ -63,6 +64,7 @@ class Buffer:
         self.worker_thread.start()
 
     def stop_worker(self):
+        self.stop_event.set()
         self.worker_thread.join(timeout=1)
 
     def capacity(self) -> float:
@@ -99,14 +101,20 @@ class Buffer:
         return output
     
     def worker(self):
-        while True:
+        while not self.stop_event.is_set():
             items_to_put = []
             with self.put_lock:
                 while self.put_queue:
                     items_to_put.append(self.put_queue.popleft())
 
             for p in items_to_put:
-                self.worker_put(*p)
+                # A single bad packet/status item must not be able to kill this thread -
+                # every channel buffer's put() feeds through here, so an unhandled
+                # exception would silently stop the whole live view from updating.
+                try:
+                    self.worker_put(*p)
+                except Exception as e:
+                    print(f"Error processing buffer item {p!r}: {e}")
 
             time.sleep(0.01)
 

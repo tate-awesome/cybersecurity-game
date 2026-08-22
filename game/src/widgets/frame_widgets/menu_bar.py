@@ -72,15 +72,21 @@ class MenuBar(CTkFrame):
         def configure_handler(event=None):
             # If the requested width is calculated too early, for example, before a button is done rendering,
             # it will be about 1 button's width too small. So when it's updated in self.add_button, it does update_idletasks()
-            self.update_squashing()
-            for squashed in self.squashed_buttons:
-                squashed.pack_forget()
-            for fine in self.fine_buttons:
-                fine.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-            if len(self.squashed_buttons) > 0:
-                button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
-            else:
-                button.pack_forget()
+            try:
+                self.update_squashing()
+                for squashed in self.squashed_buttons:
+                    squashed.pack_forget()
+                for fine in self.fine_buttons:
+                    fine.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+                if len(self.squashed_buttons) > 0:
+                    button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
+                else:
+                    button.pack_forget()
+            except Exception:
+                # A destroyed widget mid-navigation with this <Configure> callback
+                # still queued raises TclError from winfo_*/pack/pack_forget -
+                # safe to just skip this stale redraw.
+                pass
 
         self.bind("<Configure>", configure_handler)
     
@@ -174,11 +180,16 @@ class MenuBar(CTkFrame):
         button.configure(command=click_minimize)
 
         def configure_handler(event=None):
-            if pane is not None:
-                if pane.winfo_height() < self.style.PANE_MIN_HEIGHT + self.style.igap:
-                    click_minimize()
-                else:
-                    manual_growth()
+            try:
+                if pane is not None:
+                    if pane.winfo_height() < self.style.PANE_MIN_HEIGHT + self.style.igap:
+                        click_minimize()
+                    else:
+                        manual_growth()
+            except Exception:
+                # See overflow_button's configure_handler - a destroyed pane
+                # mid-navigation with this callback still queued raises TclError.
+                pass
         if pane is not None:
             pane.bind("<Configure>", configure_handler)
 

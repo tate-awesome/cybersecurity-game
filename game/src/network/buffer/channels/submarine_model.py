@@ -122,6 +122,15 @@ class MapBuffer:
         Returns the latest speed value for the given direction, or 0 if there is no data.
         '''
         return self.get_single("speed", direction)
+
+    def get_all_histories_and_legends(self, variable: str) -> dict[str, list[tuple[float, float]]]:
+        '''
+        Returns every exchange-type bucket's history for one model variable
+        (e.g. "speed"), translated to the underlying register and delegated to
+        ModbusBuffer - same translation get_single() already does.
+        '''
+        register = self.variables[variable]
+        return self.modbuffer.get_all_histories_and_legends(register)
     
     def get_position(self, direction: str) -> tuple[float,float]:
         '''

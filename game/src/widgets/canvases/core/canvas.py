@@ -49,15 +49,7 @@ class Canvas(CTkCanvas):
     def start_animation(self, framerate_ms: float = 50):
         self.framerate_ms = framerate_ms
         self.do_animation_loop = True
-        # self.animation_loop()
         self.context.animation_manager.add_callback(self.__class__.__name__, self.frame_callback)
-
-    
-    def animation_loop(self):
-        if self.frame_callback is not None:
-            self.frame_callback()
-            if self.do_animation_loop:
-                self.after_id = self.after(self.framerate_ms, self.animation_loop)
 
 
     def stop_animation(self):

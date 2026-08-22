@@ -25,10 +25,14 @@ class Preferences:
         path = self.context.paths.preferences / "preferences.json"
         self.context.json.save_to_file(self.data, path)
 
-    def has(self, key: str):
-        if key in self.data.keys() and len(self.data[key]) > 0:
-            # print(f"{key}: {self.data[key]}")
-            return True
+    def has(self, key: str) -> bool:
+        value = self.data.get(key)
+        # Sized types (dict/list/str/...) count as "present" only if non-empty; a
+        # hand-edited preferences.json could put any JSON type here, so anything
+        # else (bool/int/float) just needs to not be missing entirely.
+        if isinstance(value, (str, dict, list, tuple, set)):
+            return len(value) > 0
+        return value is not None
 
     def get(self, key: str):
         return self.data.get(key)

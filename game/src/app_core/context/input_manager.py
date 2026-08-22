@@ -42,20 +42,25 @@ class InputManager:
     def get(self, *keys):
         '''
         Returns the value at the given key sequence in the states dict.
-        If the path doesn't have a value, throws an error.
+        Raises a KeyError naming the full path if the path doesn't have a value.
         '''
-        output = self.states        
-        for key in keys:
+        output = self.states
+        for i, key in enumerate(keys):
+            if not isinstance(output, dict) or key not in output:
+                raise KeyError(f"states{''.join(f'[{k!r}]' for k in keys[:i + 1])} not found (full path requested: {keys})")
             output = output[key]
         return output
 
     def set(self, *keys, value):
         '''
-        Sets the given dict path to the given value
+        Sets the given dict path to the given value.
+        Raises a KeyError naming the full path if an intermediate key doesn't have a value.
         '''
         current = self.states
 
-        for key in keys[:-1]:
+        for i, key in enumerate(keys[:-1]):
+            if not isinstance(current, dict) or key not in current:
+                raise KeyError(f"states{''.join(f'[{k!r}]' for k in keys[:i + 1])} not found (full path requested: {keys})")
             current = current[key]
 
         current[keys[-1]] = value

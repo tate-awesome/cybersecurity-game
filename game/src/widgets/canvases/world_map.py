@@ -19,22 +19,29 @@ class WorldMap(Canvas):
                 return self.context.style.color(self.context.states.get("world_map_colors", key))
             def sprite(key):
                 return context.states.get("world_map_sprites", key)
-            
+            def sprite_enabled(key):
+                # A malformed/non-numeric sprite config value would otherwise
+                # raise on every frame, permanently freezing this canvas.
+                try:
+                    return int(sprite(key)) == 1
+                except (TypeError, ValueError):
+                    return False
+
             self.delete("all")
-            
-            if int(sprite("ocean")) == 1:
+
+            if sprite_enabled("ocean"):
                 self.draw.background(color("ocean"))
-            
-            if int(sprite("grid_lines")) == 1:
+
+            if sprite_enabled("grid_lines"):
                 self.draw.grid_lines(color("grid_lines"), color("grid_axes"), color("grid_numbers"))
 
-            if int(sprite("path_in")) == 1:
+            if sprite_enabled("path_in"):
                 positions = self.buffer.get_simple_path("in")
                 self.draw.line(positions, color("path_in"))
                 positions = self.buffer.get_simple_path("out")
                 self.draw.line(positions, color("path_out"))
 
-            if int(sprite("boat_in")) == 1:
+            if sprite_enabled("boat_in"):
                 bearing = self.buffer.get_bearing("in")
                 position = self.buffer.get_position("in")
                 self.draw.boat(position, bearing, color("boat_in_fill"), color("boat_in_outline"))

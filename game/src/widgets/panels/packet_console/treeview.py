@@ -13,7 +13,12 @@ class PacketTreeview:
     def __init__(self, parent, context: Context):
         self.context = context
         self.style = context.style
-        self.columns = list(context.labels.get("packet_columns").keys())
+        packet_columns = context.labels.get("packet_columns")
+        if not isinstance(packet_columns, dict):
+            # A malformed labels file shouldn't take the whole packet console
+            # down at construction - fall back to no columns instead.
+            packet_columns = {}
+        self.columns = list(packet_columns.keys())
 
         self.frame, self._tree = self._build(parent)
 

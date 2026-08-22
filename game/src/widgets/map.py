@@ -7,6 +7,7 @@ from customtkinter import CTkBaseClass
 from threading import Lock
 from typing import Callable
 from ..app_core import Context
+import time
 
 class Map:
 
@@ -22,6 +23,7 @@ class Map:
         self.margin = margin
 
         # Assign variables
+        self.context = context
         self.parent = parent
         self.draw_callback = draw_callback
         self.framerate_ms = framerate_ms
@@ -44,11 +46,22 @@ class Map:
         self.canvas.bind("<Button-2>", self.reset_view)      # Windows/Linux
         self.canvas.bind("<Button-3>", self.reset_view)      # Mac sometimes uses Button-3
 
-        # Start animation loop
-        def animation_loop():
-            draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
-            self.canvas.after(framerate_ms, lambda: animation_loop())
-        animation_loop()
+        # Start animation loop - registered with the shared animation_manager
+        # (instead of a raw self-rescheduling canvas.after() loop) so a
+        # destroyed frame or a raising draw_callback can't leave an unguarded,
+        # un-stoppable loop running, and so it's cleaned up automatically on
+        # page exit/refresh like every other canvas's animation. The manager
+        # ticks every callback at its own fixed rate, so this throttles itself
+        # internally to still only actually redraw every framerate_ms.
+        self._last_draw_time = 0.0
+        def frame_callback():
+            now = time.monotonic()
+            if now - self._last_draw_time < self.framerate_ms / 1000.0:
+                return
+            self._last_draw_time = now
+            self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+        self.frame_callback = frame_callback
+        self.context.animation_manager.add_callback(f"Map_{id(self)}", frame_callback)
 
     def resize(self, event):
         self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)

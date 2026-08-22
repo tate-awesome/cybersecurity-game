@@ -1,0 +1,8 @@
+[tool.pyright]
+include = ["src", "main.py"]
+exclude = ["**/__pycache__", "**/pages/demo/v0"]
+typeCheckingMode = "basic"
+pythonVersion = "3.13"
+pythonPlatform = "Windows"
+venvPath = ".."
+venv = "venv"

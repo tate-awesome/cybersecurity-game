@@ -91,10 +91,16 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
                 for fd, _ in events:
                     if fd == qfd_in:
-                        nfq_in.run(False)
+                        try:
+                            nfq_in.run(False)
+                        except Exception as e:
+                            self.buffer.put("nfq", f"Error processing PREROUTING queue: {e}")
 
                     elif fd == qfd_out:
-                        nfq_out.run(False)
+                        try:
+                            nfq_out.run(False)
+                        except Exception as e:
+                            self.buffer.put("nfq", f"Error processing POSTROUTING queue: {e}")
 
                     elif fd == stop_r:
                         self.stop_event.set()
@@ -129,23 +135,18 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             self.buffer.put("nfq", "Stopped net filter queue")
 
     def accept_only(self, pkt: Packet):
-            pkt.accept()        
-
-    def old_callback(self, pkt):
-        spkt = IP(pkt.get_payload())
-        self.buffer.put("nfq", "incoming mitm packet", spkt)
-        
-        spkt, modified = self.modify_spkt(spkt)
-
-        self.buffer.put("nfq", "outgoing mitm packet", spkt)
-
-        pkt.set_payload(bytes(spkt))
-        pkt.accept()
+            pkt.accept()
 
     def prerouting_callback(self, pkt):
         spkt = self.get_spkt(pkt)
+        if spkt is None:
+            pkt.accept()
+            return
 
         enriched_mpkt = self.buffer.put("nfq", "PREROUTING NFQ", spkt, "recv")
+        if enriched_mpkt is None:
+            pkt.accept()
+            return
         # TODO add logic and timeline flags if it really does get modded
         spkt, modified = self.modify_mpkt(enriched_mpkt)
         if modified:
@@ -156,6 +157,9 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
     def postrouting_callback(self, pkt):
         spkt = self.get_spkt(pkt)
+        if spkt is None:
+            pkt.accept()
+            return
 
         self.buffer.put("nfq", "POSTROUTING NFQ", spkt, "send")
 
@@ -164,6 +168,9 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     def get_spkt(self, pkt):
         spkt = None
         raw = pkt.get_payload()
+
+        if len(raw) < 1:
+            return spkt
 
         # IPv4
         if raw[0] >> 4 == 4:

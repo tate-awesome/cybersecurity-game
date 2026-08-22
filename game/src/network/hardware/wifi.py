@@ -1,4 +1,4 @@
-import os, subprocess
+import os, subprocess, platform
 from ..buffer import Buffer
 
 class Wifi:
@@ -6,15 +6,16 @@ class Wifi:
         self.buffer = buffer
         self.is_connected = False
         self.previous_network = None
+        self.os_name = platform.system()
 
-    def get_network_history(self):
+    def get_network_history(self) -> list[str]:
         path = "/etc/NetworkManager/system-connections/"
         output = []
-        
+
         # Check if the directory exists
         if not os.path.exists(path):
             print("NetworkManager directory not found. Are you using a different network manager?")
-            return
+            return output
 
         try:
             # List all configuration files in the directory
@@ -55,6 +56,8 @@ class Wifi:
             return "Not connected to Wi-Fi"
         except subprocess.CalledProcessError:
             return "Error: NetworkManager is not running or accessible"
+        except FileNotFoundError:
+            return "Error: 'nmcli' command not found. Ensure NetworkManager is installed."
 
     def get_available_networks(self) -> list[str]:
         try:
@@ -98,6 +101,9 @@ class Wifi:
             return False
 
     def start(self, match_name: str):
+        if self.os_name != "Linux":
+            self.buffer.put("wifi", f"WiFi switching is only supported on Linux (NetworkManager/nmcli), not {self.os_name}.")
+            return
         if self.is_running():
             self.buffer.put("wifi", "WiFi is already connected")
         else:

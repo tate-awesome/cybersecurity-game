@@ -244,14 +244,15 @@ class Draw:
                                                           layout.pixels_per_second, layout.time_offset)
         self.canvas.create_line(canvas_points, width=2, fill=path_color)
 
-    def strip_chart_crosshairs(self, layout: StripChartLayout, history_lists: list[list[tuple[float, float]]], factor: float,
-                                cursor_pos: tuple[float, float] | None, line_colors: list[str], legends: list[str] = None,
+    def strip_chart_crosshairs(self, layout: StripChartLayout, histories: dict[str, list[tuple[float, float]]], factor: float,
+                                cursor_pos: tuple[float, float] | None, line_colors: list[str],
                                 text_color="black", background_color="white"):
         '''
         Draws a mouse-following crosshair: a horizontal line from the cursor to the
         y-axis and a vertical line from the cursor to the x-axis, with the time under
         the cursor and, for each channel, its data value at-or-before that time labeled
-        beside a square in that channel's line color and (if given) a legend name.
+        beside a square in that channel's line color and (if its key is non-empty) a
+        legend name.
         '''
         if cursor_pos is None:
             return
@@ -278,19 +279,31 @@ class Draw:
 
         # One row per channel: the closest data point at-or-before the hovered time on
         # that channel's own line - never a future point - paired with that channel's
-        # line color (cycling the palette the same way the lines do) and legend name
-        # (matched to the channel by order; missing legends are just left blank).
-        legends = legends or []
+        # line color (cycling the palette the same way the lines do) and legend name.
+        # A channel with an empty key (e.g. a single-series chart like packets/sec)
+        # draws its value without a color square or legend name, since there's
+        # nothing to disambiguate - independently per row, so a mix of labeled and
+        # unlabeled channels in the same chart is handled correctly too.
         rows = []
-        for i, points in enumerate(history_lists):
+        for i, (key, points) in enumerate(histories.items()):
             point = self._closest_point_before(points, hover_time)
             if point is None:
                 continue
             color = line_colors[i % len(line_colors)]
-            legend_text = legends[i] if i < len(legends) else ""
+            if key:
+                # Known exchange-type keys ("in"/"out"/"A->B"/...) are translated;
+                # a caller-defined key with no matching label (e.g. a composite
+                # "register_direction" key) just displays as-is rather than
+                # raising, since it's already legible text, not a category lookup.
+                try:
+                    legend_text = self.context.labels.get("stripcharts", key)
+                except KeyError:
+                    legend_text = key
+            else:
+                legend_text = ""
             value_text = t.format_max_decimals(point[1] * factor, 2)
             canvas_y = self.camera.value_to_canvas_y(point[1] * factor, layout.min_unit, layout.max_unit)
-            rows.append((canvas_y, color, legend_text, value_text))
+            rows.append((canvas_y, color, legend_text, value_text, key != ""))
 
         if not rows:
             return
@@ -299,9 +312,7 @@ class Draw:
         # themselves appear on screen (top to bottom) at the hovered x position.
         rows.sort(key=lambda row: row[0])
 
-        # A single channel is unambiguous - no need for a color key or legend name.
-        show_legend_and_square = len(history_lists) > 1
-        self._draw_channel_value_labels(cx, cy, rows, show_legend_and_square, number_font, text_color, background_color)
+        self._draw_channel_value_labels(cx, cy, rows, number_font, text_color, background_color)
 
     def _closest_point_before(self, points: list[tuple[float, float]], hover_time: float):
         '''
@@ -315,31 +326,35 @@ class Draw:
             return None
         return points[index]
 
-    def _draw_channel_value_labels(self, cx: float, cy: float, rows: list[tuple[float, str, str, str]], show_legend_and_square: bool,
+    def _draw_channel_value_labels(self, cx: float, cy: float, rows: list[tuple[float, str, str, str, bool]],
                                     font, text_color: str, background_color: str):
         '''
         Draws one row per channel, stacked top to bottom (already sorted to match the
         on-screen line order), reading left to right as legend name, color square,
         value - value labels share a left edge whose right side (the widest) lands at
         the cursor's x; legend names share their own left edge further left still.
-        rows: (canvas_y, color, legend_text, value_text) - canvas_y is unused here,
-        only its sort order (done by the caller) matters.
+        rows: (canvas_y, color, legend_text, value_text, show_legend_and_square) -
+        canvas_y is unused here, only its sort order (done by the caller) matters.
+        Each row's own show_legend_and_square controls whether ITS square/legend
+        draws, so a channel with no legend name (e.g. a lone packets/sec line) can
+        skip it even alongside channels in the same chart that do show one.
         '''
         row_height = font.metrics("linespace")
         pad = 2
         box_bottom = cy - LABEL_GAP
         box_top = box_bottom - row_height * len(rows)
 
-        value_col_width = max(font.measure(value_text) for _, _, _, value_text in rows)
+        value_col_width = max(font.measure(value_text) for _, _, _, value_text, _ in rows)
         value_col_right = cx - LABEL_GAP
         value_col_left = value_col_right - value_col_width
 
-        if not show_legend_and_square:
-            # Single channel: unambiguous, so just the value - no legend/square.
+        if not any(show for _, _, _, _, show in rows):
+            # No channel wants a legend/square - just the value(s), stacked.
             self.canvas.create_rectangle(value_col_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad,
                                           fill=background_color, outline="")
-            row_center_y = box_top + row_height / 2
-            self.canvas.create_text(value_col_left, row_center_y, text=rows[0][3], anchor="w", font=font, fill=text_color)
+            for i, (_, _, _, value_text, _) in enumerate(rows):
+                row_center_y = box_top + row_height * i + row_height / 2
+                self.canvas.create_text(value_col_left, row_center_y, text=value_text, anchor="w", font=font, fill=text_color)
             return
 
         square_size = max(row_height - 6, 6)
@@ -347,7 +362,7 @@ class Draw:
         square_right = value_col_left - square_gap
         square_left = square_right - square_size
 
-        legend_col_width = max(font.measure(legend_text) for _, _, legend_text, _ in rows)
+        legend_col_width = max((font.measure(legend_text) for _, _, legend_text, _, show in rows if show), default=0)
         if legend_col_width > 0:
             legend_gap = 4
             legend_col_left = square_left - legend_gap - legend_col_width
@@ -359,13 +374,14 @@ class Draw:
         self.canvas.create_rectangle(box_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad,
                                       fill=background_color, outline="")
 
-        for i, (_, color, legend_text, value_text) in enumerate(rows):
+        for i, (_, color, legend_text, value_text, show) in enumerate(rows):
             row_center_y = box_top + row_height * i + row_height / 2
-            if legend_text:
-                self.canvas.create_text(legend_col_left, row_center_y, text=legend_text, anchor="w", font=font, fill=text_color)
-            square_top = row_center_y - square_size / 2
-            self.canvas.create_rectangle(square_left, square_top, square_left + square_size, square_top + square_size,
-                                          fill=color, outline=text_color)
+            if show:
+                if legend_text:
+                    self.canvas.create_text(legend_col_left, row_center_y, text=legend_text, anchor="w", font=font, fill=text_color)
+                square_top = row_center_y - square_size / 2
+                self.canvas.create_rectangle(square_left, square_top, square_left + square_size, square_top + square_size,
+                                              fill=color, outline=text_color)
             self.canvas.create_text(value_col_left, row_center_y, text=value_text, anchor="w", font=font, fill=text_color)
 
     def _text_with_background(self, x: float, y: float, text: str, anchor: str, font, text_color: str, background_color: str):

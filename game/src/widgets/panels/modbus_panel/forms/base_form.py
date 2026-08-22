@@ -83,7 +83,7 @@ class BaseForm(ABC, CTkFrame):
         self.attack_status.configure(text=f"{self.attack_noun} is on")
 
     def click_stop(self):
-        if not self.has_attack_button:
+        if not getattr(self, "has_attack_button", False):
             return
         self.attack_button.configure(text=f"Stopping {self.attack_noun}...")
         self.stop_attack()

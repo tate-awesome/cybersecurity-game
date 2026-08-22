@@ -25,20 +25,26 @@ class Json:
         self.encountered_files.add(path)
 
         try:
-            with open(path) as json_file:
+            with open(path, encoding="utf-8") as json_file:
                 data = json.load(json_file)
             self.deeper_merge(current_dict, data)
         except Exception as e:
             print(f"Error during json merge from file: {e}")
 
     def deeper_merge(self, base_dict: dict, better_dict: dict):
+        # better_dict ultimately comes from disk (a settings/preset file, or a
+        # preference value round-tripped through JSON) - it may not actually be
+        # a dict if the file was hand-edited or corrupted. Skip rather than crash.
+        if not isinstance(better_dict, dict):
+            return
         for key, value in better_dict.items():
             if key == self._package_word:
                 files = better_dict.get(self._package_word)
-                for folder, file in files.items():
-                    file_path = self.paths.settings / folder / file
-                    # If we already merged this file or package, skip it
-                    self._merge_from_file(base_dict, file_path)
+                if isinstance(files, dict):
+                    for folder, file in files.items():
+                        file_path = self.paths.settings / folder / file
+                        # If we already merged this file or package, skip it
+                        self._merge_from_file(base_dict, file_path)
             elif (
                 isinstance(value, dict)
                 and isinstance(base_dict.get(key), dict)
@@ -48,6 +54,10 @@ class Json:
                 base_dict[key] = value
 
     def deep_merge(self, base_dict: dict, better_dict: dict):
+        # See deeper_merge - better_dict may not be a dict if it came from a
+        # corrupted or hand-edited preferences value.
+        if not isinstance(better_dict, dict):
+            return
         for key, value in better_dict.items():
             if (
                 isinstance(value, dict)
@@ -59,7 +69,7 @@ class Json:
 
     def save_to_file(self, data: dict, file_path: str):
         try:
-            with open(file_path, "w") as file:
+            with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file)
         except Exception as e:
             print(e)

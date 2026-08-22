@@ -27,19 +27,25 @@ class ArpSpoofer:
         if not self.running:
             return
 
-        # Tell the target we are host
-        if self.target_mac is None:
-            self.buffer.put("arp", f"Could not find MAC address for target IP {self.target_ip}. Searching again...")
-            self.target_mac = self.get_mac(self.target_ip)
-        else:
-            self.spoof(self.target_ip, self.target_mac, self.host_ip)
-        
-        # Tell the host we are target
-        if self.host_mac is None:
-            self.buffer.put("arp", f"Could not find MAC address for host IP {self.host_ip}. Searching again...")
-            self.host_mac = self.get_mac(self.host_ip)
-        else:
-            self.spoof(self.host_ip, self.host_mac, self.target_ip)
+        # A failure here (e.g. scapy send/receive erroring) must not stop the
+        # timer chain below from rescheduling - otherwise self.running stays
+        # True forever while the spoofing has actually silently stopped.
+        try:
+            # Tell the target we are host
+            if self.target_mac is None:
+                self.buffer.put("arp", f"Could not find MAC address for target IP {self.target_ip}. Searching again...")
+                self.target_mac = self.get_mac(self.target_ip)
+            else:
+                self.spoof(self.target_ip, self.target_mac, self.host_ip)
+
+            # Tell the host we are target
+            if self.host_mac is None:
+                self.buffer.put("arp", f"Could not find MAC address for host IP {self.host_ip}. Searching again...")
+                self.host_mac = self.get_mac(self.host_ip)
+            else:
+                self.spoof(self.host_ip, self.host_mac, self.target_ip)
+        except Exception as e:
+            self.buffer.put("arp", f"Error during ARP spoof tick: {e}")
 
         self.timer = threading.Timer(self.interval, self.tick)
         self.timer.start()
@@ -157,10 +163,13 @@ class ArpSpoofer:
             self.forwarding_enabled = True
 
         elif self.os_name == "Darwin":
-            # IP Forwarding is possible
-            # enable forwarding
-            with open('/proc/sys/net/ipv4/ip_forward', 'w') as f:
-                f.write('1\n')
+            # IP Forwarding is possible - macOS uses sysctl, not Linux's procfs path
+            try:
+                subprocess.run(["sysctl", "-w", "net.inet.ip.forwarding=1"], check=True)
+                self.buffer.put("arp", "IP forwarding enabled.")
+                self.forwarding_enabled = True
+            except subprocess.CalledProcessError as e:
+                self.buffer.put("arp", f"Failed to enable IP forwarding: {e}")
 
         else:
             self.buffer.put("arp", f"Running on an unidentified system: {self.os_name}. ARP spoofing may not work properly.")    
@@ -178,3 +187,10 @@ class ArpSpoofer:
                 print("IP forwarding disabled successfully via PowerShell.")
             except subprocess.CalledProcessError as e:
                 print(f"Failed to reset interfaces: {e}")
+        elif self.os_name == "Darwin":
+            try:
+                subprocess.run(["sysctl", "-w", "net.inet.ip.forwarding=0"], check=True)
+                self.buffer.put("arp", "IP forwarding disabled.")
+                self.forwarding_enabled = False
+            except subprocess.CalledProcessError as e:
+                self.buffer.put("arp", f"Failed to disable IP forwarding: {e}")

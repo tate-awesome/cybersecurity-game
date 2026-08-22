@@ -11,11 +11,10 @@ class StripChart(StripChartBase):
     Its time axis is synchronized with other strip charts in the same context.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int], 
-                 title_getter, units_getter, factor_getter, 
-                 history_getters: list[Callable[[None], list[tuple[float, float]]]], 
-                 legend_getters: list[Callable[[None], str]] = [],
-                 time_scale: list[float] = [0.0], time_offset: list[float] = [0.0]):
+    def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int],
+                 title_getter, units_getter, factor_getter,
+                 histories_getter: Callable[[], dict[str, list[tuple[float, float]]]],
+                 time_scale: list[float] | None = None, time_offset: list[float] | None = None):
 
         # Create the canvas widget
         super().__init__(master, context, grid_position, time_scale, time_offset)
@@ -29,7 +28,10 @@ class StripChart(StripChartBase):
             if self.winfo_width() <= 1 or self.winfo_height() <= 1:
                 return
 
-            histories = [history() for history in history_getters]
+            # Keyed by exchange type ("in"/"out"/"A->B"/"B->A"/"other", or "" for
+            # a single unlabeled series like packets/sec) - the key doubles as
+            # the crosshair legend name for that line.
+            histories = histories_getter()
             # The factor is raw * factor = units, so the y-axis is scaled/labeled in units
             if float(factor_getter()):
                 factor = float(factor_getter())
@@ -38,7 +40,7 @@ class StripChart(StripChartBase):
 
             # Time scaling/offset are resolved first (the visible time window), then
             # the value axis autoscales to whatever data falls inside that window.
-            layout = self.draw.strip_chart_layout(histories, factor)
+            layout = self.draw.strip_chart_layout(list(histories.values()), factor)
 
             grid_color = color("grid_lines")
             axes_color = color("grid_axes")
@@ -55,13 +57,12 @@ class StripChart(StripChartBase):
             self.draw.strip_chart_title(title_getter(), text_color)
 
             line_colors = context.states.get("strip_chart_colors", "paths")
-            for i, history in enumerate(histories):
+            for i, history in enumerate(histories.values()):
                 line_color = line_colors[i%len(line_colors)]
                 self.draw.strip_chart_path(history, layout, factor, line_color)
 
             # Drawn last so the crosshairs sit on top of the axes and data lines
-            legends = [legend() for legend in legend_getters]
-            self.draw.strip_chart_crosshairs(layout, histories, factor, self.hover_pos, line_colors, legends,
+            self.draw.strip_chart_crosshairs(layout, histories, factor, self.hover_pos, line_colors,
                                               text_color, color("background"))
 
         self.set_frame_callback(frame_callback)

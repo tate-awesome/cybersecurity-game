@@ -53,12 +53,16 @@ class Builder(Panel):
         self.scrollable.top()
 
     def hide_form(self, name: str):
+        if name not in self.forms:
+            raise KeyError(f"No hacking-panel form named {name!r} (check 'hacking_forms' in settings)")
         form = self.forms[name]
         if not form.winfo_ismapped():
             return
-        form.grid_remove()  
+        form.grid_remove()
 
     def show_form(self, name: str):
+        if name not in self.forms:
+            raise KeyError(f"No hacking-panel form named {name!r} (check 'hacking_forms' in settings)")
         form = self.forms[name]
         if form.winfo_ismapped():
             return
@@ -66,4 +70,7 @@ class Builder(Panel):
 
     def stop_all(self):
         for form in reversed(self.forms.values()):
-            form.click_stop()
+            try:
+                form.click_stop()
+            except Exception as e:
+                print(f"Error stopping {form}: {e}")

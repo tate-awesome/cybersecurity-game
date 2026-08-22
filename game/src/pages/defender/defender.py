@@ -23,6 +23,7 @@ from customtkinter import (
 import threading
 import requests
 import math
+import time
 
 
 class DefenderV0(Page):
@@ -734,6 +735,18 @@ class DefenderV0(Page):
             print("refresh_AP_communication_ui:", e)
 
     def _poll(self):
+        '''
+        Registers the AP polling tick with the shared animation_manager instead
+        of a raw self-rescheduling self.after() chain, so a destroyed frame or a
+        raising callback can't leave an un-stoppable loop running, and so it's
+        cleaned up automatically on page exit/refresh. animation_manager ticks
+        every callback at its own fixed (much faster) rate, so poll_tick
+        throttles itself internally to still only actually poll every
+        POLL_INTERVAL_MS - without this it would fire an HTTP request/thread on
+        every animation tick instead of every 2 seconds.
+        '''
+        last_poll_time = 0.0
+
         def _request():
             try:
                 resp = requests.get(f"{self._get_url()}/api/data", timeout=3)
@@ -746,8 +759,15 @@ class DefenderV0(Page):
             except Exception:
                 self.after(0, self._set_disconnected)
 
-        threading.Thread(target=_request, daemon=True).start()
-        self.after(self.POLL_INTERVAL_MS, self._poll)
+        def poll_tick():
+            nonlocal last_poll_time
+            now = time.monotonic()
+            if now - last_poll_time < self.POLL_INTERVAL_MS / 1000.0:
+                return
+            last_poll_time = now
+            threading.Thread(target=_request, daemon=True).start()
+
+        self.context.animation_manager.add_callback(f"DefenderPoll_{id(self)}", poll_tick)
 
     def _on_log_source_change(self, value: str):
         self._log_source = value.lower()

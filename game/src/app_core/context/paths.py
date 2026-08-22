@@ -24,5 +24,5 @@ class Paths:
                 return None
             else:
                 return file_path
-        except:
+        except Exception:
             return None

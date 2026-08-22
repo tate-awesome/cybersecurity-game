@@ -80,5 +80,5 @@ class KeyBinds:
         self.refresh()
 
     
-    def print_key(e):
+    def print_key(self, e):
         print(e.keysym, e.state)

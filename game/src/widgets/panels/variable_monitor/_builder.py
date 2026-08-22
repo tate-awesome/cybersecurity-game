@@ -29,18 +29,12 @@ class Builder(Panel):
             def get_factor(k=key):
                 return self.context.states.get_register(k, "factor")
 
-            def get_in(k=key):
-                return self.buffer.get_history(k, "in")
-            def get_out(k=key):
-                return self.buffer.get_history(k, "out")
-            def get_legend_in():
-                return self.context.labels.get("stripcharts", "in")
-            def get_legend_out():
-                return self.context.labels.get("stripcharts", "out")
+            def get_histories(k=key):
+                return self.buffer.get_all_histories_and_legends(k)
 
             strip_chart = StripChart(scrollable, context, (current_row, 0),
-                                     get_title, get_units, get_factor, 
-                                     [get_in, get_out], [get_legend_in, get_legend_out], time_offset)
+                                     get_title, get_units, get_factor,
+                                     get_histories, time_offset=time_offset)
             strip_chart.start_animation()
             self.strip_charts[key] = strip_chart
             current_row += 1

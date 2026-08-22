@@ -26,7 +26,8 @@ class Builder(Panel):
             return self.context.labels.get("network_graph", "stripchart_units")
         def factor():
             return 1.0
-        self.rate_chart = StripChart(right_frame, context, (0, 0),  title, units, factor, [self.buffer.get_window_type_pps])
+        self.rate_chart = StripChart(right_frame, context, (0, 0), title, units, factor,
+                                      lambda: {"": list(self.buffer.get_window_type_pps())})
         self.rate_chart.start_animation()
 
         self.selected_text = CTkTextbox(right_frame, wrap="none", font=self.style.get_font("mono"), state="disabled")

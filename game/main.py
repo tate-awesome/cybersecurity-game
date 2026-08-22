@@ -32,7 +32,9 @@ if os_name == "Windows":
     if not is_admin_windows():
         print("Requesting administrator privileges...")
 
-        ctypes.windll.shell32.ShellExecuteW(
+        # Return value is an HINSTANCE-equivalent: >32 means success, <=32 means
+        # the elevation failed or the UAC prompt was declined (see ShellExecuteW docs).
+        result = ctypes.windll.shell32.ShellExecuteW(
             None,
             "runas",                  # UAC elevation
             sys.executable,
@@ -40,12 +42,21 @@ if os_name == "Windows":
             None,
             1
         )
-        sys.exit()
+        if result <= 32:
+            print(f"Elevation request failed or was declined (error code {result}). Continuing without administrator privileges - some network features may not work.")
+        else:
+            sys.exit()
 elif os_name == "Linux" or os_name == "Darwin":
-    if os.geteuid() != 0:
+    if os.geteuid() != 0:  # type: ignore[attr-defined]  # os.geteuid only exists on Linux/Darwin, guarded by os_name above
         print("Requesting root privileges for permissions...\a")
-        subprocess.check_call(["sudo", sys.executable] + sys.argv)
-        sys.exit()
+        try:
+            subprocess.check_call(["sudo", sys.executable] + sys.argv)
+        except FileNotFoundError:
+            print("'sudo' was not found. Continuing without root privileges - some network features may not work.")
+        except subprocess.CalledProcessError:
+            print("Failed to obtain root privileges. Continuing without them - some network features may not work.")
+        else:
+            sys.exit()
 else:
     print(f"Running on an unidentified system: {os_name}")
 

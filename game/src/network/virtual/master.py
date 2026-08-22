@@ -1,246 +1,163 @@
-from math import pi as PI
+import threading
+import random
+import time
+import math
 
 class Master:
+    def __init__(self, control_rate_s, control_character, boat_character, send_func):
+        self.tick_rate = control_rate_s    # Downtime between instructions
+        self.sub_target = [300, 300]        # Default target
+        self.speed = 0                      # Default command
+        self.rudder = 0                     # Default command
+        self.request_packet = bytes([0x01, 0x04, 0x00, 0x00, 0x00, 0x03, 0xB0, 0x0B])
+        self.send_func = send_func
 
-    def __init__(self):
-# // Version 15 MASTER (Corrected Kinematics to Match MATLAB)
-# // - Set dt to be fixed at value
-# // - Removed the deadband logic
+        self.settings(control_character, boat_character)
+        self.running = True                 # Run on init
+        self.start()                        # Start
 
-#include <Arduino.h>
-#include <WiFi.h>
-#include <ModbusIP_ESP8266.h>
+    def speed_packet(self, int_in):
+        # Master send throttle command:
+        # 01 06 00 01 02 58 D9 CB
+        # -----------------------------
+        # 01	Slave 1
+        # 06	Write Single Register
+        # 00 01	Register 1 (throttle)
+        # 00 0F	Value 15
+        # 89 CA	CRC
+        return bytes([0x01, 0x06, 0x00, 0x01]) + int(int_in).to_bytes(2, "big") + bytes([0x89, 0xCA])
 
-#ifndef PI
-#define PI 3.14159265358979323846f
-#endif
+    def rudder_packet(self, int_in):
+        # 01 06 00 00 00 0F 89 CA
+        # -----------------------------
+        # 01	Slave 1
+        # 06	Write Single Register
+        # 00 00	Register 0 (rudder)
+        # 00 0F	Value 15
+        # 89 CA	CRC
+        return bytes([0x01, 0x06, 0x00, 0x00]) + int(int_in).to_bytes(2, "big") + bytes([0x89, 0xCA])
 
-# //// ---------- WiFi ----------
-# const char* ssid = "GL-SFT1200-ab1";
-# const char* password = "goodlife";
-# IPAddress serverIP(192, 168, 8, 137);  // <-- Slave IP
+    def settings(self, control_character, boat_character):
+        # Smart controller settings
 
-# ModbusIP mb;
+        # control_character = {
+        #     "heading_correction": 1.1,  # Turning rate (rad/s) per rad of heading error
+        #     "allowable_error": 1e-6,    # Margin of error on target/heading
+        #     "speed_correction": 0.5,    # Speed (m/s) per meter of distance error
+        # }
 
-# // Local pose state (Master-side)
-# float state_x = 0.0f;     // meters, initial position (match MATLAB: starts at origin)
-# float state_y = 0.0f;     // meters
-# float state_theta = 0.0f; // radians (start facing East, matching MATLAB initial condition)
-        self.state_x = 0.0
-        self.state_y = 0.0
-        self.state_theta = 0.0
-# // dynamics params (MUST match MATLAB)
-# const float L_vehicle = 0.07f;  // FIXED: L = 0.07 from MATLAB (not 20.0!)
-# const float K_theta = 0.6f;     // FIXED: coefficient from MATLAB thetadot formula
-# unsigned long lastUpdateMs = 0;
-        self.L_vehicle = 0.07
-        self.K_theta = 0.6
-        self.last_update_ms = 0
+        # boat_character = {
+        #     "max_turning_rate": math.pi/5,  # Max angular speed (rad/s)
+        #     "max_speed": 5,                 # Max speed (m/s)
+        #     "max_stationary_turning_rate": 2.0 # Fallback turning rate when speed low
+        # }
 
-# // Modbus register IDs on Slave (from your spec)
-# const uint16_t HREG_X_PHYS = 10;
-# const uint16_t HREG_Y_PHYS = 11;
-# const uint16_t HREG_THETA_MRAD = 12;
-        self.HREG_X_PHYS = 10
-        self.HREG_Y_PHYS = 11
-        self.HREG_THETA_MRAD = 12
+        self.Kp_heading = control_character["heading_correction"]
+        self.eps = control_character["allowable_error"]
+        self.Kp_dist    = control_character["speed_correction"]
 
-# const uint16_t HREG_SPEED = 3;
-# const uint16_t HREG_RUDDER = 4;
-        self.HTREG_SPEED = 3
-        self.HREG_RUDDER = 4
+        self.omega_max  = boat_character["max_turning_rate"]
+        self.speed_max  = boat_character["max_speed"]
+        self.rudder_max = boat_character["max_stationary_turning_rate"]
 
-# //// ---------- Physical scaling constants ----------
-# const float SpeedMax_m_s = 50.0f;    // max physical speed (m/s) - matches Slave & MATLAB
-# const float RudderMax_deg = 60.0f;   // max rudder deflection (±60°) - matches Slave & MATLAB
-        self.SpeedMax_m_s = 50.0
-        self.RudderMax_deg = 60.0
-# const float SPEED_DEADBAND_M_S = 0.5f;  // Reduced deadband
-# const float RUDDER_DEADBAND_DEG = 1.0f; // Reduced deadband
-        self.SPEED_DEADBAND_M_S = 0.5
-        self.RUDDER_DEADBAND_DEG = 1.0
-# //// ---------- Conversion Helpers ----------
-# static inline uint16_t x_to_u16_100(float v) {
-#   if (v < 0) v = 0;
-#   if (v > 200) v = 200;
-#   return (uint16_t)lroundf(v * 100.0f);
-# }
-        def x_to_int(x):
-            if x < 0:
-                x = 0
-            if x > 200:
-                x = 200
-            return round(x * 100.0)
+    def stop(self):                         #me when
+        self.running = False
 
-# static inline uint16_t theta_to_mrad_u16(float t) {
-#   // Keep theta in 0 to 2*PI range (matching PLC/Slave expectation)
-#   while (t < 0) t += 2.0f * PI;
-#   while (t >= 2.0f * PI) t -= 2.0f * PI;
-#   return (uint16_t)lroundf(t * 1000.0f);
-# }
-        def theta_to_mrad_int(t):
-            while t < 0:
-                t += 2.0 * PI
-            while t >= 2.0 * PI:
-                t -= 2.0 * PI
-            return round(t * 1000.0)
+    def start(self):
+        c = threading.Thread(target=self.control, daemon=True)
+        c.start()
 
-# bool writeH(uint16_t addr, uint16_t val) {
-#   if (!mb.isConnected(serverIP)) return false;
-#   uint16_t tx = mb.writeHreg(serverIP, addr, val);
-#   if (!tx) return false;
-#   for (int i = 0; i < 12; i++) {
-#     mb.task();
-#     delay(3);
-#   }
-#   return true;
-# }
-        def writeH(self, addr, val):
+    def control(self):
+        # Controller thread. Requests position on a loop
+        while self.running:
+            try:
+                self.send_func(self.request_packet)
+            except Exception as e:
+                print(e)
                 pass
-# bool readH(uint16_t addr, uint16_t* buf, uint16_t n) {
-#   if (!mb.isConnected(serverIP)) return false;
-#   uint16_t tx = mb.readHreg(serverIP, addr, buf, n);
-#   if (!tx) return false;
-#   for (int i = 0; i < 16; i++) {
-#     mb.task();
-#     delay(3);
-#   }
-#   return true;
-# }
+            time.sleep(self.tick_rate)
 
-# //// ---------- Send X/Y/Theta to Slave ----------
-# void sendPose() {
-#   uint16_t x_u = x_to_u16_100(state_x);
-#   uint16_t y_u = x_to_u16_100(state_y);
-#   uint16_t t_u = theta_to_mrad_u16(state_theta);
+    def receive_func(self, packet):
+        # Triggered externally when boat sends packet
+        packet_x = -1
+        packet_y = -1
+        packet_dir = -1
+        try:
+            #     Slave respond with data:
+            # 01 04 06 00 5A 04 B0 03 20 49 7C
+            # ---------------------------------------------------
+            # 01	Slave 1
+            # 04	Affirm Function 4 read registers
+            # 06	6 bytes of data
+            # 00 5A	Direction = 90° converted to 2 bytes in hex
+            # 04 B0	X = 1200        converted to 2 bytes in hex
+            # 03 20	Y = 800         converted to 2 bytes in hex
+            # 49 7C	CRC
+            if packet[1] == 0x04:
+                packet_dir = int.from_bytes(packet[3:5], "big")
+                packet_x = int.from_bytes(packet[5:7], "big")
+                packet_y = int.from_bytes(packet[7:9], "big")
+            else:
+                print("Unimportant "+packet[1]+" packet received")
+                return
 
-#   if (writeH(HREG_X_PHYS, x_u) && writeH(HREG_Y_PHYS, y_u) && writeH(HREG_THETA_MRAD, t_u)) {
-#     // Success - values sent
-#   } else {
-#     Serial.println("[MASTER] ERR: Failed to send pose to Slave");
-#   }
-# }
+            def wrap_pi(a):
+                return (a + math.pi) % (2 * math.pi) - math.pi
 
-# //// ---------- Setup ----------
-# void setup() {
-#   Serial.begin(115200);
-#   delay(50);
-#   Serial.println("\n[MASTER] Booting…");
 
-#   WiFi.mode(WIFI_STA);
-#   WiFi.begin(ssid, password);
-#   Serial.print("[MASTER] Connecting to WiFi");
-#   while (WiFi.status() != WL_CONNECTED) {
-#     delay(300);
-#     Serial.print(".");
-#   }
-#   Serial.printf("\n[MASTER] IP: %s\n", WiFi.localIP().toString().c_str());
+            # Received position
+            x_pos = packet_x
+            y_pos = packet_y
+            dir = wrap_pi((packet_dir-360)*math.pi/180) # use as radians
 
-#   WiFi.setSleep(false);
-#   Serial.println("[MASTER] WiFi sleep disabled");
+            # Move target if we've landed
+            if (abs(x_pos - self.sub_target[0]) < 5) and (abs(y_pos - self.sub_target[1]) < 5):
+                self.sub_target[0] = random.randint(100, 900)
+                self.sub_target[1] = random.randint(100, 900)
 
-#   mb.connect(serverIP);
-#   delay(500);
+            # Target
+            x_target = self.sub_target[0]
+            y_target = self.sub_target[1]
 
-#   if (mb.isConnected(serverIP)) {
-#     Serial.println("[MASTER] Connected to Slave Modbus server.");
-#     // Send initial pose
-#     sendPose();
-#     Serial.println("[MASTER] Initial pose sent to Slave.");
-#   } else {
-#     Serial.println("[MASTER] WARNING: Could not connect to Slave initially.");
-#   }
-# }
+            # Geometry
+            dx = x_target - x_pos
+            dy = y_target - y_pos
+            distance = math.hypot(dx, dy)
 
-# //// ---------- Loop ----------
-# void loop() {
-#   mb.task();
-#   yield();
+            # Bearing
+            bearing = math.atan2(dy, dx)
+            heading_err = wrap_pi(bearing - dir)
 
-#   // Reconnect if disconnected
-#   if (!mb.isConnected(serverIP)) {
-#     static uint32_t lastTry = 0;
-#     if (millis() - lastTry > 2000) {
-#       lastTry = millis();
-#       Serial.println("[MASTER] Reconnecting Modbus…");
-#       mb.connect(serverIP);
-#       if (mb.isConnected(serverIP)) {
-#         Serial.println("[MASTER] Reconnected successfully!");
-#         sendPose();
-#       }
-#     }
-#     delay(10);
-#     return;
-#   }
+            # Set rudder, clamped to max
+            omega_des = self.Kp_heading * heading_err / self.tick_rate
+            if omega_des > self.omega_max:
+                omega_des = self.omega_max
+            elif omega_des < -self.omega_max:
+                omega_des = -self.omega_max
 
-#   // Read feedback and update pose
-#   static uint32_t lastRead = 0;
-#   if (millis() - lastRead > 50) {  // Update at ~20Hz
-#     lastRead = millis();
+            # Set speed, clamped to max
+            speed_des = self.Kp_dist * distance
+            heading_factor = max(2.0, math.cos(heading_err))
+            speed_des *= heading_factor
+            # clamp speed
+            speed_des = max(0.0, min(speed_des, self.speed_max))
 
-#     uint16_t rb[2];
-#     if (readH(HREG_SPEED, rb, 2)) {
-#       uint16_t speed_counts = rb[0];
-#       uint16_t rudder_counts = rb[1];
+            if speed_des > self.eps:
+                rudder_cmd = omega_des / speed_des
+                # clamp rudder to some reasonable magnitude
+                if rudder_cmd > self.rudder_max:
+                    rudder_cmd = self.rudder_max
+                elif rudder_cmd < -self.rudder_max:
+                    rudder_cmd = -self.rudder_max
+            else:
+                # if standing still, set rudder to a value that will make it turn once you move
+                rudder_cmd = math.copysign(self.rudder_max, omega_des) if abs(omega_des) > 1e-6 else 0.0
 
-#       // Convert counts to physical units
-#       float speed_m_s = (speed_counts / 4095.0f) * SpeedMax_m_s;
-#       float rudder_deg = ((rudder_counts / 4095.0f) - 0.5f) * 2.0f * RudderMax_deg;
+            rudder_des = wrap_pi(rudder_cmd)*180/math.pi + 360 #send as degrees + 360
+            # Set command
+            self.send_func(self.rudder_packet(rudder_des))
+            self.send_func(self.speed_packet(speed_des))
 
-#       // --- Update local pose using MATLAB dynamics ---
-#       unsigned long now = millis();
-#       float dt = 0.05f;
-
-#       // Only integrate if there's meaningful motion
-#       if (speed_counts > 0) {
-#         float v = speed_m_s;
-#         float rho = radians(rudder_deg);
-        
-#         float xdot = v * cos(rho + state_theta);
-#         float ydot = v * sin(rho + state_theta);
-#         float thetadot = 0.0f;
-        
-#         if (fabs(rho) > 0.001f) {  // Only turn if rudder is not centered
-#           thetadot = K_theta / (L_vehicle / tan(rho));
-#         }
-
-#         state_x += xdot * dt;
-#         state_y += ydot * dt;
-#         state_theta += thetadot * dt;
-
-#         // Serial.printf("[MASTER] DYNAMICS  xdot=%.4f  ydot=%.4f  thetadot=%.4f\n",
-#         //       xdot, ydot, thetadot);
-
-#         // Normalize theta to [0, 2*PI]
-#         while (state_theta < 0) state_theta += 2.0f * PI;
-#         while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
-
-#         // Clamp X, Y to valid range
-#         if (state_x < 0.0f) state_x = 0.0f;
-#         if (state_x > 200.0f) state_x = 200.0f;
-#         if (state_y < 0.0f) state_y = 0.0f;
-#         if (state_y > 200.0f) state_y = 200.0f;
-#       }
-
-#       // Send updated pose back to Slave
-#       sendPose();
-
-#       // Print diagnostics every second
-#       static uint32_t lastPrint = 0;
-#       if (millis() - lastPrint > 1000) {
-#         lastPrint = millis();
-
-#         Serial.printf("[MASTER] RECV  Speed = %.3f m/s  |  Rudder = %.2f deg  (raw: %u, %u)\n",
-#                       speed_m_s, rudder_deg, speed_counts, rudder_counts);
-#         Serial.printf("[MASTER] POS   x=%.3f m  y=%.3f m  theta=%.4f rad (deg=%.2f)\n",
-#                       state_x, state_y, state_theta, degrees(state_theta));
-        
-#       }
-
-#     } else {
-#       Serial.println("[MASTER] ERR  read feedback failed");
-#     }
-#   }
-
-#   delay(5);
-# }
+        except Exception as e:
+            print("Exception: "+str(e))
+            pass

@@ -78,7 +78,13 @@ class Router:
 
         # Call the page builder
         self.current_page = next_page
-        self.current_frame = pages[next_page](self.context)
+        try:
+            self.current_frame = pages[next_page](self.context)
+        except Exception as e:
+            print(f"Error building page '{next_page}': {e}. Redirecting to title page.")
+            self.navigation_stack = []
+            self.current_page = "title"
+            self.current_frame = pages["title"](self.context)
 
     def refresh(self):
         '''

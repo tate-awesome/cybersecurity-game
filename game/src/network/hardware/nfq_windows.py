@@ -34,7 +34,8 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             self.w = w
 
             while not self.stop_event.is_set():
-
+                packet = None
+                spkt = None
                 try:
                     packet = w.recv()
 
@@ -44,11 +45,15 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                         w.send(packet)
                         continue
 
-                    self.buffer.put("nfq", "Incoming mitm packet", spkt, "recv")
-                    newspkt = self.modify_spkt(spkt)
-                    self.buffer.put("nfq", "Outgoing mitm Packet", spkt, "recv")
+                    enriched_mpkt = self.buffer.put("nfq", "Incoming mitm packet", spkt, "recv")
+                    if enriched_mpkt is None:
+                        w.send(packet)
+                        continue
 
-                    if newspkt is not None:
+                    newspkt, modified = self.modify_mpkt(enriched_mpkt)
+
+                    if modified:
+                        self.buffer.put("nfq", "Outgoing mitm Packet", newspkt, "recv")
                         packet.payload = bytes(newspkt)
 
                     w.send(packet)
@@ -58,7 +63,14 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                         "nfq",
                         f"WinDivert error: {e}"
                     )
-                    self.buffer.put("nfq", "Problematic Packet", spkt)
-                    pass
+                    if spkt is not None:
+                        self.buffer.put("nfq", "Problematic Packet", spkt)
+                    # A modify/logging failure must still forward the original packet -
+                    # dropping it here would silently black-hole the victim's traffic.
+                    if packet is not None:
+                        try:
+                            w.send(packet)
+                        except Exception:
+                            pass
 
         self.buffer.put("nfq", "Stopped WinDivert")

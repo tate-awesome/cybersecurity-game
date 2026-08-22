@@ -68,27 +68,36 @@ class Overlay(CTkFrame):
 
         # 2. First Pass: Find who was clicked and mark their entire ancestry safe
         for overlay in list(self.context.overlay_list):
-            if overlay.winfo_exists() and overlay.winfo_ismapped():
-                visible_overlays += 1
-                if overlay.click_checker(event):
-                    # If this overlay was clicked, climb up its lineage and save all parents
-                    widget = overlay
-                    while widget is not None and isinstance(widget, Overlay):
-                        safe_overlays.add(widget)
-                        # Move to the button that spawned this overlay, then get its parent overlay
-                        trigger_button = widget.get_button()
-                        if trigger_button:
-                            # Look up the tree to find the overlay containing the trigger button
-                            widget = self._find_parent_overlay(trigger_button)
-                        else:
-                            widget = None
+            try:
+                if overlay.winfo_exists() and overlay.winfo_ismapped():
+                    visible_overlays += 1
+                    if overlay.click_checker(event):
+                        # If this overlay was clicked, climb up its lineage and save all parents
+                        widget = overlay
+                        while widget is not None and isinstance(widget, Overlay):
+                            safe_overlays.add(widget)
+                            # Move to the button that spawned this overlay, then get its parent overlay
+                            trigger_button = widget.get_button()
+                            if trigger_button:
+                                # Look up the tree to find the overlay containing the trigger button
+                                widget = self._find_parent_overlay(trigger_button)
+                            else:
+                                widget = None
+            except Exception:
+                # A page navigation destroying this overlay's widgets while
+                # this click pass is mid-iteration raises TclError from
+                # winfo_*/event.x_root - skip just this overlay, not the whole pass.
+                continue
         if visible_overlays < 1:
             ...
         self.context.root.update_idletasks()
         # 3. Second Pass: Safely close anything NOT in the safe set
         for overlay in list(self.context.overlay_list):
             if overlay not in safe_overlays:
-                overlay.click_close()
+                try:
+                    overlay.click_close()
+                except Exception:
+                    continue
 
     def _find_parent_overlay(self, widget):
         """Helper to climb the Tkinter hierarchy to find the containing Overlay class"""

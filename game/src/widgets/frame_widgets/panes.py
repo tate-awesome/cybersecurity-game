@@ -12,7 +12,10 @@ class Panes(PanedWindow):
             and the last pane takes the remaining space.
         '''
         if not direction in ["horizontal", "vertical"] or child_count < 2:
-            return
+            raise ValueError(
+                f"Invalid Panes args: direction={direction!r} (must be 'horizontal' or 'vertical'), "
+                f"child_count={child_count!r} (must be >= 2)"
+            )
 
         self.panels = []
         self.context = context

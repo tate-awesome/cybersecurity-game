@@ -53,12 +53,16 @@ class Builder(Panel):
         self.scrollable.top()
 
     def hide_forms(self, name: str):
+        if name not in self.forms:
+            raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_forms' in settings)")
         form = self.forms[name]
         if not form.winfo_ismapped():
             return
-        form.grid_remove()  
+        form.grid_remove()
 
     def show_forms(self, name: str):
+        if name not in self.forms:
+            raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_forms' in settings)")
         form = self.forms[name]
         if form.winfo_ismapped():
             return

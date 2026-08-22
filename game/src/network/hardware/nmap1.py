@@ -2,8 +2,8 @@
 Module
 '''
 import scapy.all as scapy
-from scapy.all import Packet, ARP, get_if_addr, get_working_if, get_if_hwaddr
-import ipaddress, netifaces
+from scapy.all import get_if_addr, get_working_if, get_if_hwaddr
+import netifaces
 from ..buffer import Buffer
 import nmap, socket
 
@@ -11,20 +11,20 @@ class NMapper:
     def __init__(self, buffer: Buffer):
         self.buffer = buffer
 
-    def get_local_ip(self) -> str:
+    def get_local_ip(self) -> str | None:
         # Connect to an external IP briefly to discover the active local interface IP
         local_ip = None
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(("8.8.8.8", 80))
             local_ip = s.getsockname()[0]
+        except OSError:
+            pass
         finally:
             s.close()
         return local_ip
 
     def get_local_subnet(self, local_ip: str) -> str:
-        local_ip = self.get_local_ip()
-        
         # Convert local IP (e.g., 192.168.1.15) to a /24 subnet string (192.168.1.0/24)
         ip_parts = local_ip.split('.')
         ip_parts[-1] = '0/24'
@@ -34,15 +34,22 @@ class NMapper:
         # Initialize scanner
         nm = nmap.PortScanner()
         local_ip = self.get_local_ip()
+        if local_ip is None:
+            self.buffer.put("nmap", "Could not determine local IP address (no network connection?). Aborting scan.")
+            return
         subnet = self.get_local_subnet(local_ip)
 
         self.buffer.put("nmap", f"Local IP Found: {local_ip}")
         self.buffer.put("nmap", f"Target Subnet Detected: {subnet}")
         self.buffer.put("nmap", "Scanning for active hosts (this may take a few seconds)...")
 
-        # -sn: Ping scan (no port scan, host discovery only)
-        # -PE: ICMP Echo Request
-        nm.scan(hosts=subnet, arguments='-sn -PE')
+        try:
+            # -sn: Ping scan (no port scan, host discovery only)
+            # -PE: ICMP Echo Request
+            nm.scan(hosts=subnet, arguments='-sn -PE')
+        except Exception as e:
+            self.buffer.put("nmap", f"NMap scan failed: {e}")
+            return
 
         self.buffer.put("nmap", "--- Active Hosts Found ---")
         # Iterate through all discovered up hosts
@@ -53,11 +60,7 @@ class NMapper:
                 self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
 
     def do_nmap(self):
-        # self.manual_nmap()
         self.library_nmap()
-
-
-#  OLD bad manual method
 
     def get_active_iface(self):
         active_iface = ""
@@ -67,121 +70,6 @@ class NMapper:
             if iface["is_active"]:
                 active_iface = iface
         return active_iface["display_name"]
-
-    def manual_nmap(self):
-        self.interface_manager = self.InterfaceManager()
-        ifm = self.interface_manager
-
-        self.buffer.put("nmap", "Starting NMap...")
-
-        active_iface = next(
-            (
-                iface for iface in ifm.interfaces
-                if iface["is_active"]
-                and iface["ip"]
-                and iface["ip"] != "0.0.0.0"
-            ),
-            None
-        )
-
-        if active_iface is None:
-            self.buffer.put("nmap", "Could not find an active IPv4 interface.")
-            return
-
-        iface_name = active_iface["scapy_name"]
-        active_ip = active_iface["ip"]
-        active_netmask = active_iface["netmask"]
-        active_mac = active_iface["mac"]
-
-        self.buffer.put("nmap", f"Interface: {active_iface['display_name']}")
-        self.buffer.put("nmap", f"Scapy interface: {iface_name}")
-        self.buffer.put("nmap", f"MAC: {active_mac}")
-        self.buffer.put("nmap", f"IP: {active_ip}")
-        self.buffer.put("nmap", f"Netmask: {active_netmask}")
-
-        if not active_netmask:
-            self.buffer.put("nmap", "Could not determine network mask.")
-            return
-
-        network = self.compute_network(active_ip, active_netmask)
-
-        self.buffer.put("nmap", f"Network ping range: {network}")
-        self.buffer.put("nmap", f"Sending ARP probes through {iface_name}...")
-
-        ping_packet, answered, unanswered = self.ping_hosts(
-            network,
-            iface_name
-        )
-
-        self.buffer.put(
-            "nmap",
-            "ARP Probe",
-            ping_packet,
-            "send"
-        )
-
-        hosts = []
-
-        for sent, received in answered:
-            self.buffer.put(
-                "nmap",
-                "Answered ARP Request",
-                sent,
-                "recv"
-            )
-
-            self.buffer.put(
-                "nmap",
-                "ARP Response",
-                received,
-                "recv"
-            )
-
-            if scapy.ARP in received:
-                ip = received[scapy.ARP].psrc
-                mac = received[scapy.ARP].hwsrc
-
-                hosts.append((ip, mac))
-
-        for ip, mac in hosts:
-            self.buffer.put(
-                "nmap",
-                f"Found host {ip} at {mac}"
-            )
-
-        self.buffer.put(
-            "nmap",
-            f"NMap complete. {len(hosts)} host(s) found."
-        )
-
-
-    def compute_network(self, ip: str, netmask: str) -> str:
-        if not netmask:
-            return "Invalid netmask"
-        else:
-            network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
-            return str(network)
-
-    def ping_hosts(self, network: str, iface: str):
-        packet = (
-            scapy.Ether(dst="ff:ff:ff:ff:ff:ff") /
-            scapy.ARP(pdst=network)
-        )
-
-        answered, unanswered = scapy.srp(
-            packet,
-            iface=iface,
-            timeout=2,
-            verbose=False
-        )
-
-        return packet, answered, unanswered
-    
-    def compute_hosts(self, responses: list[Packet]):
-        infos = []
-        for pkt in responses:
-            infos.append(f"Host IP {pkt[ARP].psrc} at MAC address {pkt[ARP].hwsrc}")
-        return infos
 
     class InterfaceManager:
         def __init__(self):

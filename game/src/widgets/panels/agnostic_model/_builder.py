@@ -14,23 +14,30 @@ class Builder(Panel):
         wrapper.columnconfigure(0, weight=1)
         wrapper.rowconfigure(0, weight=1)
 
-        getters = []
         def get_title():
-            variable_name = self.context.labels.get("agnostic_model", "stripchart_title")
-            return variable_name
+            return self.context.labels.get("agnostic_model", "stripchart_title")
         def get_units():
             return self.context.labels.get("agnostic_model", "stripchart_units")
         def get_factor():
-                return 1.0
-        for key in self.context.states.get_registers():
-            getters.append(lambda k=key: self.context.net.buffer.modbus.get_history(k, "in"))
-            getters.append(lambda k=key: self.context.net.buffer.modbus.get_history(k, "out"))
-            def legend_in(k=key):
-                return f"{self.context.labels.get("")}{self.context.labels.get("stripcharts", "in")}"
-            def legend_out(k=key):
-                return
+            return 1.0
+
+        def get_histories():
+            # Every register's history, across every exchange type, overlaid on
+            # one combined chart - keys are "<variable name> <direction>" so
+            # each line's legend identifies both. Registers with no data yet
+            # (e.g. no sniffed third-party traffic) are skipped rather than
+            # burning a color-cycle slot on an invisible line.
+            histories = {}
+            for key in self.context.states.get_registers():
+                variable_name = self.context.labels.variable_name(key)
+                for direction, points in self.context.net.buffer.modbus.get_all_histories_and_legends(key).items():
+                    if not points:
+                        continue
+                    histories[f"{variable_name} {direction}"] = points
+            return histories
+
         strip_chart = StripChart(wrapper, context, (0, 0),
-                                    get_title, get_units, get_factor, 
-                                    getters)
+                                    get_title, get_units, get_factor,
+                                    get_histories)
         strip_chart.start_animation()
         self.menu_bar.minimize_button(strip_chart, master)

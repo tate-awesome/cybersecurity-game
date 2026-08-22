@@ -195,7 +195,6 @@ class Replay:
         """Request that the current replay be stopped."""
 
         with self._lock:
-            self.reset_parameters()
             if not self._is_loading:
                 self.buffer.put(
                     "json",
@@ -203,6 +202,10 @@ class Replay:
                 )
                 return
 
+            # worker() clears self.ptuples itself once it notices the abort and
+            # stops reading from it. Clearing it here too would race with
+            # worker_burst()/worker_timed() indexing self.ptuples[index] on
+            # another thread and could IndexError it mid-replay.
             self.abort_event.set()
 
             self.buffer.put(
@@ -219,34 +222,39 @@ class Replay:
 
         filename = os.path.basename(self.file_path)
 
-        # Start with an empty buffer state.
-        self.buffer.reset()
+        try:
+            # Start with an empty buffer state.
+            self.buffer.reset()
 
-        if self.timed_playback:
-            index, aborted_prematurely = self.worker_timed()
-        else:
-            index, aborted_prematurely = self.worker_burst()
+            if self.timed_playback:
+                index, aborted_prematurely = self.worker_timed()
+            else:
+                index, aborted_prematurely = self.worker_burst()
 
-        total_packets = len(self.ptuples)
+            total_packets = len(self.ptuples)
 
-        if aborted_prematurely:
-            self.buffer.put(
-                "json",
-                f"JSON replay aborted. "
-                f"Processed {index}/{total_packets} packets."
-            )
+            if aborted_prematurely:
+                self.buffer.put(
+                    "json",
+                    f"JSON replay aborted. "
+                    f"Processed {index}/{total_packets} packets."
+                )
 
-        else:
-            self.buffer.put(
-                "json",
-                f"Finished replaying {total_packets} packets "
-                f"from {filename}"
-            )
+            else:
+                self.buffer.put(
+                    "json",
+                    f"Finished replaying {total_packets} packets "
+                    f"from {filename}"
+                )
+        except Exception as e:
+            # Without this, an uncaught exception here would leave _is_loading
+            # stuck True forever, permanently blocking future loads.
+            self.buffer.put("json", f"Error during JSON replay: {e}")
+        finally:
+            self.reset_parameters()
 
-        self.reset_parameters()
-
-        with self._lock:
-            self._is_loading = False
+            with self._lock:
+                self._is_loading = False
 
     def worker_burst(self) -> tuple[int, bool]:
         """

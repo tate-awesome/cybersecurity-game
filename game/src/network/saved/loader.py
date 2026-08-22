@@ -99,41 +99,46 @@ class Loader:
         total_packets = len(self.packets)
         filename = os.path.basename(self.file_path)
         aborted_prematurely = False
-        self.buffer.reset()
 
-        # Rate limiter pumping loop
-        while index < total_packets:
-            # FIX: Check if abort was requested outside the inner processing loop
-            if self.abort_event.is_set():
-                aborted_prematurely = True
-                break
+        try:
+            self.buffer.reset()
 
-            time.sleep(0.01)
-            if self.buffer.capacity() < 0.1:
-                while self.buffer.capacity() < 0.9 and index < total_packets:
-                    # FIX: Check if abort was requested INSIDE the processing loop
-                    if self.abort_event.is_set():
-                        aborted_prematurely = True
-                        break
-
-                    spkt = self.packets[index]
-                    self.buffer.put("pcap", "Loaded packet", spkt)
-                    index += 1
-                
-                if aborted_prematurely:
+            # Rate limiter pumping loop
+            while index < total_packets:
+                # FIX: Check if abort was requested outside the inner processing loop
+                if self.abort_event.is_set():
+                    aborted_prematurely = True
                     break
 
+                time.sleep(0.01)
+                if self.buffer.capacity() < 0.1:
+                    while self.buffer.capacity() < 0.9 and index < total_packets:
+                        # FIX: Check if abort was requested INSIDE the processing loop
+                        if self.abort_event.is_set():
+                            aborted_prematurely = True
+                            break
 
-        # Final message handling depending on exit conditions
-        if aborted_prematurely:
-            self.buffer.put("pcap", f"PCAP loading aborted. Processed {index}/{total_packets} packets.")
-        else:
-            self.buffer.put("pcap", f"Finished loading {total_packets} packets from {filename}")
-        
-        # Cleanup and release locks
-        self.reset_parameters()
-        with self._lock:
-            self._is_loading = False
+                        spkt = self.packets[index]
+                        self.buffer.put("pcap", "Loaded packet", spkt)
+                        index += 1
+
+                    if aborted_prematurely:
+                        break
+
+            # Final message handling depending on exit conditions
+            if aborted_prematurely:
+                self.buffer.put("pcap", f"PCAP loading aborted. Processed {index}/{total_packets} packets.")
+            else:
+                self.buffer.put("pcap", f"Finished loading {total_packets} packets from {filename}")
+        except Exception as e:
+            # Without this, an uncaught exception here would leave _is_loading
+            # stuck True forever, permanently blocking future loads.
+            self.buffer.put("pcap", f"Error during PCAP loading: {e}")
+        finally:
+            # Cleanup and release locks
+            self.reset_parameters()
+            with self._lock:
+                self._is_loading = False
 
     def reset_parameters(self):
         self.file_path = ""

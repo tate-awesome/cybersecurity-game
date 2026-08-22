@@ -13,9 +13,20 @@ class NetworkController:
         self.buffer = Buffer(context)
         self.loader = loader.Loader(self.buffer, context)
 
+    def _safe_stop(self, stop_func):
+        '''
+        Calls a single abort_all() step in isolation, so one failing step
+        (e.g. a hardware module that's already in a bad state) can't prevent
+        the rest of cleanup from running.
+        '''
+        try:
+            stop_func()
+        except Exception as e:
+            print(f"Error during {stop_func.__qualname__}: {e}")
+
     def abort_all(self):
-        self.buffer.reset()
-        self.loader.abort()
+        self._safe_stop(self.buffer.reset)
+        self._safe_stop(self.loader.abort)
 
 class HardwareController(NetworkController):
     def __init__(self, context):
@@ -48,8 +59,8 @@ class HardwareController(NetworkController):
     
     def abort_all(self):
         super().abort_all()
-        self.stop_sniff()
-        self.replay.abort()
+        self._safe_stop(self.stop_sniff)
+        self._safe_stop(self.replay.abort)
     
 class HardwareAttacker(HardwareController):
     def __init__(self, context):
@@ -65,10 +76,10 @@ class HardwareAttacker(HardwareController):
     
     def abort_all(self):
         super().abort_all()
-        self.stop_arp()
-        self.stop_nfq()
-        self.stop_dos()
-        self.stop_wifi()
+        self._safe_stop(self.stop_arp)
+        self._safe_stop(self.stop_nfq)
+        self._safe_stop(self.stop_dos)
+        self._safe_stop(self.stop_wifi)
 
     def start_arp(self, target_ip, host_ip):
         # target_ip='192.168.8.137', host_ip='192.168.8.243'
@@ -103,5 +114,5 @@ class HardwareDefender(HardwareController):
         super().__init__(context)
 
     def abort_all(self):
-        self.stop_wifi()
+        self._safe_stop(self.stop_wifi)
         super().abort_all()

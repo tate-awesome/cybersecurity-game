@@ -279,6 +279,9 @@
     "stripcharts": {
         "time": "Time",
         "in": "In",
-        "out": "Out"
+        "out": "Out",
+        "A->B": "A -> B",
+        "B->A": "B -> A",
+        "other": "Other"
     }
 }
