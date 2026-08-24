@@ -199,7 +199,7 @@ const float HEAD_OFFSET_M  = 2.0f;
 const float Kps            = 0.1f;
 const float Kp_rudder      = 0.1f;
 const float SpeedMax       = 50.0f;
-const float StopTol        = 0.3f;
+const float StopTol        = 5.0f;
 const float X_RANGE_M      = 200.0f;
 const float Y_RANGE_M      = 200.0f;
 const float RudderMax_deg  = 60.0f;
@@ -259,6 +259,16 @@ void ekfStep(float speed_m_s, float rudder_rad, const BLA::Matrix<3,1>& z_meas, 
 
   Matrix<3,1> y = z_meas - x_pred;
   y(2,0) = wrap_to_pi(y(2,0));
+
+  float xLimit = 3.0f * sqrtf(S(0,0));
+  float yLimit = 3.0f * sqrtf(S(1,1));
+  float thetaLimit = 3.0f * sqrtf(S(2,2));
+
+  bool xCheck = fabsf(y(0,0)) > xLimit;
+  bool yCheck = fabsf(y(1,0)) > yLimit;
+  bool thetaCheck = fabsf(y(2,0)) > thetaLimit;
+
+  g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
 
   xhat = x_pred + K * y;
 
@@ -448,16 +458,6 @@ void runSubmarineCycle() {
         g_state_y = z_meas(1,0);
         g_state_theta = z_meas(2,0);
       }
-  
-      float xError = abs( z_meas(0,0) - xhat(0,0) );
-      float yError = abs( z_meas(1,0) - xhat(1,0) );
-      float tError = wrap_to_pi(z_meas(2,0) - xhat(2,0));
-
-      bool xCheck = xError > 9.0f;
-      bool yCheck = yError > 9.0f;
-      bool thetaCheck = fabs(tError) > 3.0f;
-
-      g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
     }
 
     // Drive PWM outputs
@@ -525,7 +525,7 @@ float hysteresis_band = 0.5f;
 bool heater_on = false;
 float last_temp = 71.6f;
 float est_temp = 71.6f;
-float temp_estimate = 0.0f;
+float temp_estimate = 71.6f;
 float temp_covariance = 0.1f;
 float temp_process_variance = 0.05f;
 float temp_kalman_gain = 0.0f;

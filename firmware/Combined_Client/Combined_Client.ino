@@ -493,8 +493,11 @@ void runSubmarineCycle() {
         state_y += (ydot * dt);
         state_theta += (thetadot * dt);
 
-        noise_x = state_x + randomNoiseWithVariance(g_sensor_noise_variance);
-        noise_y = state_y + randomNoiseWithVariance(g_sensor_noise_variance);
+        float added_x_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+        float added_y_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+
+        noise_x = state_x + added_x_noise;
+        noise_y = state_y + added_y_noise;
         noise_theta = state_theta + radians(random(-100,100)/100.0f);
       
         while (state_theta < 0) state_theta += 2.0f * PI;
@@ -676,7 +679,7 @@ void runHvacCycle() {
 
   true_room_temp += (heat_gain - heat_loss) * dt;
 
-  true_room_temp += (random(-18, 19) / 100.0f); // Random physical perturbation (-0.18 to +0.18°F)
+  true_room_temp += (random(-18, 18) / 100.0f); // Random physical perturbation (-0.18 to +0.18°F)
 
   // 3. Noisy Sensor Reading (Raw measurement)
   noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
