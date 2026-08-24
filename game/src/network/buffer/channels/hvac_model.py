@@ -1,3 +1,16 @@
+'''
+The house buffer builds structures that can be easily displayed on the canvas.
+It receives data from ModbusBuffer.
+in temp
+out temp
+in heater
+out heater
+
+'''
+
+from threading import Lock
+from collections import deque
+from math import hypot
 from ..meta_packet import MetaPacket
 from .modbus import ModbusBuffer
 
@@ -7,21 +20,15 @@ if TYPE_CHECKING:
 
 class HouseBuffer:
     '''
-    Buffer specific to the HVAC model widget.
-
-    Unlike MapBuffer (which derives submarine x/y path data the physics
-    simulation needs beyond raw register values), HVAC's registers - things
-    like temperature and heater state, configured generically in
-    modbus_settings/hvac.json - don't need any model-specific derived
-    computation. ModbusBuffer already tracks each register's history directly
-    by key, so this class exists mainly as HVAC's counterpart to MapBuffer:
-    something the pipeline and HVAC panels can depend on consistently, and the
-    place that exposes the direction-generalized history lookup HVAC's strip
-    charts use.
+    Buffer specific to the hvac model widget.
+    Uses ModBusBuffer to get single values
     '''
     def __init__(self, context: "Context", modbuffer: ModbusBuffer, max_size: int = 5000):
+        self.max_size = max_size
         self.context = context
         self.modbuffer = modbuffer
+        self.reset()
+
 
     def put(self, mpkt: MetaPacket):
         # No HVAC-specific derived data to build - ModbusBuffer (which receives
@@ -32,9 +39,48 @@ class HouseBuffer:
     def reset(self):
         pass
 
-    def get_all_histories_and_legends(self, variable: str) -> dict[str, list[tuple[float, float]]]:
+        self.variables = {
+            "heater": "hreg_6",
+            "temperature": "hreg_10"
+        }
+
+        self.registers = {value: key for key, value in self.variables.items()}
+
+        self.factors = {
+            "heater": 0.01,
+            "temperature": 0.01
+        }
+
+    def convert(self, variable: str, raw: int):
+        output = raw
+        if variable in self.factors and raw is not None:
+            output = float(raw * self.factors[variable])
+        return output
+
+    # Displays getters
+
+    def get_single(self, variable: str, direction: str) -> float:
         '''
-        Returns every exchange-type bucket's history for one register
-        (e.g. "hreg_10"), delegated directly to ModbusBuffer.
+        Returns the latest value for the given variable and direction, or None if there is no data.
         '''
-        return self.modbuffer.get_all_histories_and_legends(variable)
+        output = None
+        if variable in self.variables:
+            register = self.variables[variable]
+            output = self.modbuffer.get_single(register, direction)
+            output = self.convert(variable, output)
+        return output
+
+    # House getters
+    def get_heater(self, direction: str) -> float:
+        '''
+        Returns the latest heater value for the given direction, or None if there is no data.
+        Units will be 1 or 0
+        '''
+        return self.get_single("heater", direction)
+    
+    def get_temperature(self, direction: str) -> float:
+        '''
+        Returns the latest temperature value for the given direction, or None if there is no data.
+        Units will be degrees (F)
+        '''
+        return self.get_single("temperature", direction)

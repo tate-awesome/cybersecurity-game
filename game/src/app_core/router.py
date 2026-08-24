@@ -78,6 +78,9 @@ class Router:
             self.current_frame = PAGES[next_page](self.context)
         except Exception as e:
             print(f"Error building page '{next_page}': {e}. Redirecting to title page.")
+            if self.current_frame is not None:
+                self.current_frame.destroy()
+
             self.navigation_stack = []
             self.current_page = "title"
             self.current_frame = PAGES["title"](self.context)

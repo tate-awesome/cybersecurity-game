@@ -61,4 +61,5 @@ class Canvas(CTkCanvas):
         # if self.frame_callback is not None and self.do_animation_loop:
         self.camera.reset_scale()
         self.camera.update_padding()
-        self.frame_callback()
+        if self.frame_callback is not None:
+            self.frame_callback()

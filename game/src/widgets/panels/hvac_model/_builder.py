@@ -1,12 +1,12 @@
 from ....app_core import Context
-from ...canvases.world_map import WorldMap
+from ...canvases.house import House
 from ..panel import Panel
 from typing import cast
 
 class Builder(Panel):
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "submarine_panel")
+        super().__init__(master, context, "hvac_panel")
 
-        map = WorldMap(self, context)
+        model = House(self, context)
 
-        self.menu_bar.minimize_button(map, master)
+        self.menu_bar.minimize_button(model, master)

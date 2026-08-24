@@ -19,7 +19,7 @@
             "show": 0
         },
         "hreg_6": {
-            "label": "hreg_3",
+            "label": "hreg_6",
             "show": 1.0,
             "nickname": "Heater",
             "factor": 0.01,
