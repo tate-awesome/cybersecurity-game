@@ -213,7 +213,6 @@ class DefenderV0(Page):
             with draw_lock:
                 self._map_scale  = scale
                 self._map_offset = offset
-                canvas.delete("all")
                 draw.grid_lines()
                 if len(self._positions) < 1:
                     return

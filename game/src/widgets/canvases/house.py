@@ -20,8 +20,6 @@ class House(Canvas):
                 except (TypeError, ValueError):
                     return False
 
-            self.delete("all")
-
             if sprite_enabled("background"):
                 self.draw.background(color("background"))
 

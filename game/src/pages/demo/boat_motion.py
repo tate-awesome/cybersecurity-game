@@ -43,7 +43,6 @@ class BoatMotion(Page):
         bearing = t.get_bearing(self.positions[path_index], self.positions[path_index+1])
         draw = ViewPort(canvas, scale, offset)
         with draw_lock:
-            canvas.delete("all")
             draw.grid_lines()
             draw.line(self.positions, self.color)
             last_position = self.positions[path_index]

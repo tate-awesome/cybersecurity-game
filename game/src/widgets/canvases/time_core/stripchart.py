@@ -2,9 +2,10 @@ from customtkinter import CTkCanvas, CTkFrame
 from ....app_core import Context
 from .draw import Draw
 from .camera import Camera
+from ..pooled_canvas import PooledCanvasMixin
 from typing import Callable
 
-class StripChartBase(CTkCanvas):
+class StripChartBase(PooledCanvasMixin, CTkCanvas):
     '''
     Base class for specialized canvas widgets with stripchart-type sizing and camera rules
     Special behavior is defined here, then activated in the specialized canvas.
@@ -25,6 +26,7 @@ class StripChartBase(CTkCanvas):
         # Create and pack the canvas to fill its frame
         super().__init__(master)
         self.context = context
+        self._pool_setup()
         self.grid(row=grid_position[0], column=grid_position[1], sticky="nsew", pady=context.style.gap, padx=context.style.gap)
 
         # Make a Camera that tracks time scaling and offset. Canvas events change the values, Draw methods use the values in transform functions
@@ -62,12 +64,30 @@ class StripChartBase(CTkCanvas):
         self.frame_callback = frame_callback
 
 
+    def run_frame(self):
+        '''
+        Runs one frame_callback invocation, reusing this canvas's existing
+        items across the call (see PooledCanvasMixin) instead of the old
+        delete("all")-then-recreate-everything pattern. Centralized here
+        (rather than in each frame_callback) so every path that can trigger
+        a redraw - the animation loop and a manual resize - reconciles the
+        item pool the same way.
+        '''
+        if self.frame_callback is None:
+            return
+        self.begin_frame()
+        try:
+            self.frame_callback()
+        finally:
+            self.end_frame()
+
+
     def resize_handler(self, event=None):
         if self.frame_callback is not None and self.do_animation_loop:
             self.camera.reset_camera()
             self.camera.update_padding()
-            self.frame_callback()
-            
+            self.run_frame()
+
     def start_animation(self, framerate_ms: float = 100):
         self.framerate_ms = framerate_ms
         self.do_animation_loop = True
@@ -75,7 +95,7 @@ class StripChartBase(CTkCanvas):
         # is only unique within one panel, and different panels (e.g. the variable
         # monitor and the network diagram) both start numbering their charts at row 0,
         # which previously made their callbacks silently overwrite each other.
-        self.context.animation_manager.add_callback(f"{self.__class__.__name__}_{id(self)}", self.frame_callback)
+        self.context.animation_manager.add_callback(f"{self.__class__.__name__}_{id(self)}", self.run_frame)
 
 
 

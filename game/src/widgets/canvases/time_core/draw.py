@@ -47,7 +47,7 @@ class Draw:
     def background(self, color: str):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
-        self.canvas.create_rectangle(0, 0, w, h, fill=color)
+        self.canvas.pooled_item("rectangle", (0, 0, w, h), fill=color)
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -55,7 +55,7 @@ class Draw:
         '''
         if len(points) < 2:
             return
-        self.canvas.create_line(points, width=1, fill=line_color)
+        self.canvas.pooled_item("line", points, width=1, fill=line_color)
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       STRIP CHART AXES
@@ -186,45 +186,45 @@ class Draw:
         '''
         for cx, _ in layout.x_ticks:
             y_far = layout.top if gridlines else layout.bottom + TICK_LENGTH
-            self.canvas.create_line(cx, layout.bottom, cx, y_far, fill=tick_color, width=1)
+            self.canvas.pooled_item("line", (cx, layout.bottom, cx, y_far), fill=tick_color, width=1)
 
         for cy, _ in layout.y_ticks:
             x_far = layout.right if gridlines else layout.left - TICK_LENGTH
-            self.canvas.create_line(layout.left, cy, x_far, cy, fill=tick_color, width=1)
+            self.canvas.pooled_item("line", (layout.left, cy, x_far, cy), fill=tick_color, width=1)
 
     def strip_chart_axes(self, layout: StripChartLayout, axes_color="red"):
         # X-axis sits along the bottom of the plot area, Y-axis along the left
-        self.canvas.create_line(layout.left, layout.bottom, layout.right, layout.bottom, fill=axes_color, width=2)
-        self.canvas.create_line(layout.left, layout.top, layout.left, layout.bottom, fill=axes_color, width=2)
+        self.canvas.pooled_item("line", (layout.left, layout.bottom, layout.right, layout.bottom), fill=axes_color, width=2)
+        self.canvas.pooled_item("line", (layout.left, layout.top, layout.left, layout.bottom), fill=axes_color, width=2)
 
     def strip_chart_numbers(self, layout: StripChartLayout, number_color="black"):
         number_font = self.context.style.get_font("chart_numbers")
 
         for cx, label in layout.x_ticks:
-            self.canvas.create_text(cx, layout.bottom + TICK_LENGTH + LABEL_GAP, text=label,
+            self.canvas.pooled_item("text", (cx, layout.bottom + TICK_LENGTH + LABEL_GAP), text=label,
                                      fill=number_color, font=number_font, anchor="n")
 
         for cy, label in layout.y_ticks:
             # Left-aligned on the canvas edge, regardless of individual label width
-            self.canvas.create_text(LABEL_GAP, cy, text=label,
+            self.canvas.pooled_item("text", (LABEL_GAP, cy), text=label,
                                      fill=number_color, font=number_font, anchor="w")
 
     def strip_chart_title(self, title: str, text_color="black"):
         # Top-middle of the canvas, between the units label and the current value
         title_font = self.context.style.get_font("chart_title")
         w = self.canvas.winfo_width()
-        self.canvas.create_text(w / 2, LABEL_GAP, text=title, fill=text_color, font=title_font, anchor="n")
+        self.canvas.pooled_item("text", (w / 2, LABEL_GAP), text=title, fill=text_color, font=title_font, anchor="n")
 
     def strip_chart_units_label(self, units_label: str, text_color="black"):
         # Top-left of the canvas, where the title used to sit
         title_font = self.context.style.get_font("chart_title")
-        self.canvas.create_text(LABEL_GAP, LABEL_GAP, text=units_label, fill=text_color, font=title_font, anchor="nw")
+        self.canvas.pooled_item("text", (LABEL_GAP, LABEL_GAP), text=units_label, fill=text_color, font=title_font, anchor="nw")
 
     def strip_chart_value_label(self, layout: StripChartLayout, text_color="black"):
         # Top-right of the canvas: the most recent history value, in units
         title_font = self.context.style.get_font("chart_title")
         w = self.canvas.winfo_width()
-        self.canvas.create_text(w - LABEL_GAP, LABEL_GAP, text=layout.value_label,
+        self.canvas.pooled_item("text", (w - LABEL_GAP, LABEL_GAP), text=layout.value_label,
                                  fill=text_color, font=title_font, anchor="ne")
 
     def strip_chart_x_label(self, layout: StripChartLayout, x_label: str, text_color="black"):
@@ -234,7 +234,7 @@ class Draw:
         number_height = number_font.metrics("linespace")
         x_label_y = layout.bottom + TICK_LENGTH + LABEL_GAP + number_height + LABEL_GAP
         cx = (layout.left + layout.right) / 2
-        self.canvas.create_text(cx, x_label_y, text=x_label, fill=text_color, font=label_font, anchor="n")
+        self.canvas.pooled_item("text", (cx, x_label_y), text=x_label, fill=text_color, font=label_font, anchor="n")
 
     def strip_chart_path(self, path_points: list[tuple[float, float]], layout: StripChartLayout, factor: float, path_color="red"):
         visible = [(pt, v) for pt, v in path_points if layout.t_min <= pt <= layout.t_max]
@@ -242,7 +242,7 @@ class Draw:
             return
         canvas_points = self.camera.data_to_strip_chart(visible, layout.now, factor, layout.min_unit, layout.max_unit,
                                                           layout.pixels_per_second, layout.time_offset)
-        self.canvas.create_line(canvas_points, width=2, fill=path_color)
+        self.canvas.pooled_item("line", canvas_points, width=2, fill=path_color)
 
     def strip_chart_crosshairs(self, layout: StripChartLayout, histories: dict[str, list[tuple[float, float]]], factor: float,
                                 cursor_pos: tuple[float, float] | None, line_colors: list[str],
@@ -261,8 +261,8 @@ class Draw:
         if not (layout.left <= cx <= layout.right and layout.top <= cy <= layout.bottom):
             return
 
-        self.canvas.create_line(layout.left, cy, cx, cy, fill=text_color, width=1)
-        self.canvas.create_line(cx, layout.bottom, cx, cy, fill=text_color, width=1)
+        self.canvas.pooled_item("line", (layout.left, cy, cx, cy), fill=text_color, width=1)
+        self.canvas.pooled_item("line", (cx, layout.bottom, cx, cy), fill=text_color, width=1)
 
         # Camera transform from canvas position back to world (time) space - this
         # already accounts for fit mode, since pixels_per_second/time_offset/now on
@@ -350,11 +350,11 @@ class Draw:
 
         if not any(show for _, _, _, _, show in rows):
             # No channel wants a legend/square - just the value(s), stacked.
-            self.canvas.create_rectangle(value_col_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad,
+            self.canvas.pooled_item("rectangle", (value_col_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad),
                                           fill=background_color, outline="")
             for i, (_, _, _, value_text, _) in enumerate(rows):
                 row_center_y = box_top + row_height * i + row_height / 2
-                self.canvas.create_text(value_col_left, row_center_y, text=value_text, anchor="w", font=font, fill=text_color)
+                self.canvas.pooled_item("text", (value_col_left, row_center_y), text=value_text, anchor="w", font=font, fill=text_color)
             return
 
         square_size = max(row_height - 6, 6)
@@ -371,18 +371,18 @@ class Draw:
             legend_col_left = square_left
             box_left = square_left
 
-        self.canvas.create_rectangle(box_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad,
+        self.canvas.pooled_item("rectangle", (box_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad),
                                       fill=background_color, outline="")
 
         for i, (_, color, legend_text, value_text, show) in enumerate(rows):
             row_center_y = box_top + row_height * i + row_height / 2
             if show:
                 if legend_text:
-                    self.canvas.create_text(legend_col_left, row_center_y, text=legend_text, anchor="w", font=font, fill=text_color)
+                    self.canvas.pooled_item("text", (legend_col_left, row_center_y), text=legend_text, anchor="w", font=font, fill=text_color)
                 square_top = row_center_y - square_size / 2
-                self.canvas.create_rectangle(square_left, square_top, square_left + square_size, square_top + square_size,
+                self.canvas.pooled_item("rectangle", (square_left, square_top, square_left + square_size, square_top + square_size),
                                               fill=color, outline=text_color)
-            self.canvas.create_text(value_col_left, row_center_y, text=value_text, anchor="w", font=font, fill=text_color)
+            self.canvas.pooled_item("text", (value_col_left, row_center_y), text=value_text, anchor="w", font=font, fill=text_color)
 
     def _text_with_background(self, x: float, y: float, text: str, anchor: str, font, text_color: str, background_color: str):
         '''
@@ -401,5 +401,5 @@ class Draw:
         else:
             raise ValueError(f"Unsupported anchor for _text_with_background: {anchor}")
 
-        self.canvas.create_rectangle(*box, fill=background_color, outline="")
-        self.canvas.create_text(x, y, text=text, anchor=anchor, font=font, fill=text_color)
+        self.canvas.pooled_item("rectangle", box, fill=background_color, outline="")
+        self.canvas.pooled_item("text", (x, y), text=text, anchor=anchor, font=font, fill=text_color)

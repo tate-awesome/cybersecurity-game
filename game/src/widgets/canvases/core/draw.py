@@ -17,16 +17,16 @@ class Draw:
     def background(self, color: str):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
-        self.canvas.create_rectangle(0, 0, w, h, fill=color)
+        self.canvas.pooled_item("rectangle", (0, 0, w, h), fill=color)
 
     def ocean(self):
         self.background("#003459")
-    
+
     def bbox(self):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
         o = 3
-        self.canvas.create_rectangle(0,0,w-o/2,h-o/2,fill="",outline="black", width=o)
+        self.canvas.pooled_item("rectangle", (0, 0, w-o/2, h-o/2), fill="", outline="black", width=o)
 
     def test_triangle(self):
         '''
@@ -45,32 +45,32 @@ class Draw:
             if i == 0:
                 color = "red"
 
-            self.canvas.create_line(t.flatten(h_line), width=2, fill=color)
-            self.canvas.create_line(t.flatten(v_line), width=2, fill=color)
+            self.canvas.pooled_item("line", t.flatten(h_line), width=2, fill=color)
+            self.canvas.pooled_item("line", t.flatten(v_line), width=2, fill=color)
 
         # Triangle
         triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
         triangle = t.scale(triangle, 2.0, (0,0))
         angle = (time.time() % 20.0) * math.pi / 10.0
-        triangle = t.rotate(triangle, angle, (0,0))  #   <.   
+        triangle = t.rotate(triangle, angle, (0,0))  #   <.
         triangle = self.camera.world_to_canvas(triangle)
-        self.canvas.create_polygon(triangle, fill="green", width="5", outline="blue")
+        self.canvas.pooled_item("polygon", triangle, fill="green", width="5", outline="blue")
 
         # Inscribed circle
         circle_box = [ (-2,-2), (2,2) ]
-        circle_box = t.scale(circle_box, 2.0, (0,0)) 
+        circle_box = t.scale(circle_box, 2.0, (0,0))
         circle_box = self.camera.world_to_canvas(circle_box)
-        self.canvas.create_oval(circle_box, fill="", outline="blue", width="3")
+        self.canvas.pooled_item("oval", circle_box, fill="", outline="blue", width="3")
 
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
-        Draws the path of the points 
+        Draws the path of the points
         '''
         if len(points) < 2:
             return
         points = self.camera.world_to_canvas(points)
-        self.canvas.create_line(points, width=1, fill=line_color)
+        self.canvas.pooled_item("line", points, width=1, fill=line_color)
 
     def arrow(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -79,7 +79,7 @@ class Draw:
         if len(points) < 2:
             return
         points = self.camera.world_to_canvas(points)
-        self.canvas.create_line(points, width=thickness, fill=line_color, arrow="last")
+        self.canvas.pooled_item("line", points, width=thickness, fill=line_color, arrow="last")
 
     def visible_arrow(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -97,7 +97,7 @@ class Draw:
         num_points = int(radius * abs(end_angle - start_angle) + 5)
         points = t.get_arc_points(center, radius, start_angle, end_angle, num_points)
         points = self.camera.world_to_canvas(points)
-        self.canvas.create_line(points, width=2, fill=line_color)
+        self.canvas.pooled_item("line", points, width=2, fill=line_color)
 
 
     def grid_lines(self, lines_color="white", axes_color="red", numbers_color="#3a6070"):
@@ -110,8 +110,8 @@ class Draw:
             color = lines_color
             if i == 0:
                 color = axes_color
-            self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
-            self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
+            self.canvas.pooled_item("line", t.flatten(h_line), width=0.5, fill=color)
+            self.canvas.pooled_item("line", t.flatten(v_line), width=0.5, fill=color)
 
             # Draw labels every 20 units using already-transformed coordinates
             if i % 20 == 0:
@@ -122,10 +122,10 @@ class Draw:
 
                 # X axis label — sits above the top of each vertical line
                 font = self.context.style.get_font("chart_numbers")
-                self.canvas.create_text(x_pixel, v_line[0][1] + 10,
+                self.canvas.pooled_item("text", (x_pixel, v_line[0][1] + 10),
                                         text=str(i), fill=numbers_color, font=font)
                 # Y axis label — sits to the left of each horizontal line
-                self.canvas.create_text(h_line[0][0] - 16, y_pixel,
+                self.canvas.pooled_item("text", (h_line[0][0] - 16, y_pixel),
                                         text=str(i), fill=numbers_color, font=font)
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
@@ -147,7 +147,7 @@ class Draw:
         h = self.canvas.winfo_height()
     
         the_boat = self.camera.world_to_canvas(the_boat)
-        self.canvas.create_polygon(the_boat, fill=fill_color, outline=line_color)
+        self.canvas.pooled_item("polygon", the_boat, fill=fill_color, outline=line_color)
 
     def random_spline_path(target_points, samples_per_segment):
         import random
@@ -208,7 +208,7 @@ class Draw:
         if len(path_points) < 2:
             return
         path_points = self.camera.data_to_strip_chart(path_points)
-        self.canvas.create_line(path_points, width=2, fill=path_color)
+        self.canvas.pooled_item("line", path_points, width=2, fill=path_color)
 
     # --------------------------------------------------------------------------------------------------------------------------
     #                                                       HVAC House
@@ -220,7 +220,7 @@ class Draw:
         '''
         points = self.camera.world_to_canvas([bl, tr])
         (x0, y0), (x1, y1) = points
-        self.canvas.create_rectangle(x0, y0, x1, y1, fill=fill_color, outline=outline_color, width=thickness)
+        self.canvas.pooled_item("rectangle", (x0, y0, x1, y1), fill=fill_color, outline=outline_color, width=thickness)
 
     def circle(self, center: tuple[float, float], radius: float, fill_color="", outline_color="", thickness=2):
         '''
@@ -230,7 +230,7 @@ class Draw:
         tr = (center[0] + radius, center[1] + radius)
         points = self.camera.world_to_canvas([bl, tr])
         (x0, y0), (x1, y1) = points
-        self.canvas.create_oval(x0, y0, x1, y1, fill=fill_color, outline=outline_color, width=thickness)
+        self.canvas.pooled_item("oval", (x0, y0, x1, y1), fill=fill_color, outline=outline_color, width=thickness)
 
     def label(self, position: tuple[float, float], text: str, text_color="black", font_name="chart_label"):
         '''
@@ -238,7 +238,7 @@ class Draw:
         '''
         point = self.camera.world_to_canvas([position])[0]
         font = self.context.style.get_font(font_name)
-        self.canvas.create_text(point[0], point[1], text=text, fill=text_color, font=font)
+        self.canvas.pooled_item("text", (point[0], point[1]), text=text, fill=text_color, font=font)
 
     def wall_point(self, bl: tuple[float, float], tr: tuple[float, float], wall: str, t=0.5) -> tuple[float, float]:
         '''
@@ -366,7 +366,7 @@ class Draw:
                     start[1] + ny * along + ay * wobble,
                 ))
             canvas_points = self.camera.world_to_canvas(points)
-            self.canvas.create_line(canvas_points, width=thickness, fill=color, smooth=True)
+            self.canvas.pooled_item("line", canvas_points, width=thickness, fill=color, smooth=True)
             self._hvac_arrowhead(points[-1], (nx, ny), color)
 
     def _hvac_arrowhead(self, tip: tuple[float, float], direction: tuple[float, float], color: str, size=2.5):
@@ -379,4 +379,4 @@ class Draw:
         left = (back[0] + px * size * 0.5, back[1] + py * size * 0.5)
         right = (back[0] - px * size * 0.5, back[1] - py * size * 0.5)
         points = self.camera.world_to_canvas([tip, left, right])
-        self.canvas.create_polygon(points, fill=color, outline=color)
+        self.canvas.pooled_item("polygon", points, fill=color, outline=color)

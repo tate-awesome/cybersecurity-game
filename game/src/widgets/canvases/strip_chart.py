@@ -20,7 +20,6 @@ class StripChart(StripChartBase):
         super().__init__(master, context, grid_position, time_scale, time_offset)
 
         def frame_callback():
-            self.delete("all")
             def color(key):
                 return self.context.style.color(self.context.states.get("strip_chart_colors", key))
             self.draw.background(color("background"))

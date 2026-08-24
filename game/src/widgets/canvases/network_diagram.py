@@ -22,17 +22,16 @@ class NetworkDiagramCanvas(Canvas):
 
         def draw_host(mac, point, color):
             cx, cy = self.camera.world_to_canvas([point])[0]
-            self.create_oval(
-                cx - NODE_RADIUS, cy - NODE_RADIUS, cx + NODE_RADIUS, cy + NODE_RADIUS,
+            self.pooled_item(
+                "oval", (cx - NODE_RADIUS, cy - NODE_RADIUS, cx + NODE_RADIUS, cy + NODE_RADIUS),
                 fill=context.style.color(color), outline=""
             )
-            self.create_text(
-                cx, cy - NODE_RADIUS - 8, text=mac,
+            self.pooled_item(
+                "text", (cx, cy - NODE_RADIUS - 8), text=mac,
                 fill=context.style.color("field_text"), font=("Consolas", 9)
             )
 
         def frame_callback():
-            self.delete("all")
             self.draw.background(context.style.color("field"))
 
             positions = self.network.get_host_positions()

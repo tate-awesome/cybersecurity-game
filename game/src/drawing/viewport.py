@@ -18,16 +18,16 @@ class ViewPort:
     def background(self, color: str):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
-        self.canvas.create_rectangle(0, 0, w, h, fill=color)
+        self.canvas.pooled_item("rectangle", (0, 0, w, h), fill=color)
 
     def ocean(self):
         self.background("#003459")
-    
+
     def bbox(self):
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
         o = 3
-        self.canvas.create_rectangle(0,0,w-o/2,h-o/2,fill="",outline="black", width=o)
+        self.canvas.pooled_item("rectangle", (0, 0, w-o/2, h-o/2), fill="", outline="black", width=o)
 
     def test_triangle(self):
         '''
@@ -50,35 +50,35 @@ class ViewPort:
             if i == 0:
                 color = "red"
 
-            self.canvas.create_line(t.flatten(h_line), width=2, fill=color)
-            self.canvas.create_line(t.flatten(v_line), width=2, fill=color)
+            self.canvas.pooled_item("line", t.flatten(h_line), width=2, fill=color)
+            self.canvas.pooled_item("line", t.flatten(v_line), width=2, fill=color)
 
         # Triangle
         triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
         triangle = t.scale(triangle, 2.0, (0,0))
         angle = (time.time() % 20.0) * PI / 10.0
-        triangle = t.rotate(triangle, angle, (0,0))  #   <.   
+        triangle = t.rotate(triangle, angle, (0,0))  #   <.
         triangle = t.padded_fit_uniform(triangle, (-5, -5), (5, 5), self.canvas, self.padding)
         triangle = t.zoom_and_pan(triangle, self.scale, self.offset)
-        self.canvas.create_polygon(triangle, fill="green", width="5", outline="blue")
+        self.canvas.pooled_item("polygon", triangle, fill="green", width="5", outline="blue")
 
         # Inscribed circle
         circle_box = [ (-2,-2), (2,2) ]
-        circle_box = t.scale(circle_box, 2.0, (0,0)) 
+        circle_box = t.scale(circle_box, 2.0, (0,0))
         circle_box = t.padded_fit_uniform(circle_box, (-5, -5), (5, 5), self.canvas, self.padding)
         circle_box = t.zoom_and_pan(circle_box, self.scale, self.offset)
-        self.canvas.create_oval(circle_box, fill="", outline="blue", width="3")
+        self.canvas.pooled_item("oval", circle_box, fill="", outline="blue", width="3")
 
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
-        Draws the path of the points 
+        Draws the path of the points
         '''
         if len(points) < 2:
             return
         points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
         points = t.zoom_and_pan(points, self.scale, self.offset)
-        self.canvas.create_line(points, width=1, fill=line_color)
+        self.canvas.pooled_item("line", points, width=1, fill=line_color)
 
     def arc(self, center: tuple[float, float], radius: float, start_angle: float, end_angle: float, line_color: str, thickness=2):
         '''
@@ -88,7 +88,7 @@ class ViewPort:
         points = t.get_arc_points(center, radius, start_angle, end_angle, num_points)
         points = t.padded_fit_uniform(points, self.input_range[0], self.input_range[1], self.canvas, self.padding)
         points = t.zoom_and_pan(points, self.scale, self.offset)
-        self.canvas.create_line(points, width=2, fill=line_color)
+        self.canvas.pooled_item("line", points, width=2, fill=line_color)
 
 
     # def grid_lines(self):
@@ -120,8 +120,8 @@ class ViewPort:
             color = "white"
             if i == 0:
                 color = "red"
-            self.canvas.create_line(t.flatten(h_line), width=0.5, fill=color)
-            self.canvas.create_line(t.flatten(v_line), width=0.5, fill=color)
+            self.canvas.pooled_item("line", t.flatten(h_line), width=0.5, fill=color)
+            self.canvas.pooled_item("line", t.flatten(v_line), width=0.5, fill=color)
 
             # Draw labels every 20 units using already-transformed coordinates
             if i % 20 == 0:
@@ -131,10 +131,10 @@ class ViewPort:
                 y_pixel = h_line[0][1]   # y position of horizontal line = Y axis label position
 
                 # X axis label — sits above the top of each vertical line
-                self.canvas.create_text(x_pixel, v_line[0][1] + 10,
+                self.canvas.pooled_item("text", (x_pixel, v_line[0][1] + 10),
                                         text=str(i), fill="#3a6070", font=("Courier", 7))
                 # Y axis label — sits to the left of each horizontal line
-                self.canvas.create_text(h_line[0][0] - 16, y_pixel,
+                self.canvas.pooled_item("text", (h_line[0][0] - 16, y_pixel),
                                         text=str(i), fill="#3a6070", font=("Courier", 7))
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
@@ -155,4 +155,4 @@ class ViewPort:
     
         the_boat = t.padded_fit_uniform(the_boat, self.input_range[0], self.input_range[1], self.canvas, 20)
         the_boat = t.zoom_and_pan(the_boat, self.scale, self.offset)
-        self.canvas.create_polygon(the_boat, fill=fill_color, outline=line_color)
+        self.canvas.pooled_item("polygon", the_boat, fill=fill_color, outline=line_color)
