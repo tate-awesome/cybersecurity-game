@@ -30,6 +30,26 @@
         "boat_out_outline": "orange"
     },
 
+    "hvac_house_colors": {
+        "background": "field",
+        "line_art": "field_text",
+        "fill": "widget",
+        "text": "field_text",
+        "coldness": "blue",
+        "hotness": "red"
+    },
+
+    "hvac_house_sprites": {
+        "background": 1,
+        "room": 1,
+        "room_thermostat": 1,
+        "window": 1,
+        "vent": 1,
+        "controller_box": 1,
+        "controller_thermostat": 1,
+        "indicator": 1
+    },
+
     "strip_chart_sprites": {
         "grid_lines": 1,
         "grid_axes": 1,

@@ -209,3 +209,174 @@ class Draw:
             return
         path_points = self.camera.data_to_strip_chart(path_points)
         self.canvas.create_line(path_points, width=2, fill=path_color)
+
+    # --------------------------------------------------------------------------------------------------------------------------
+    #                                                       HVAC House
+    # --------------------------------------------------------------------------------------------------------------------------
+
+    def rect(self, bl: tuple[float, float], tr: tuple[float, float], fill_color="", outline_color="", thickness=2):
+        '''
+        Draws an axis-aligned rectangle from world-space corners bl (bottom-left) to tr (top-right)
+        '''
+        points = self.camera.world_to_canvas([bl, tr])
+        (x0, y0), (x1, y1) = points
+        self.canvas.create_rectangle(x0, y0, x1, y1, fill=fill_color, outline=outline_color, width=thickness)
+
+    def circle(self, center: tuple[float, float], radius: float, fill_color="", outline_color="", thickness=2):
+        '''
+        Draws a circle in world space, centered at `center` with the given world-space radius
+        '''
+        bl = (center[0] - radius, center[1] - radius)
+        tr = (center[0] + radius, center[1] + radius)
+        points = self.camera.world_to_canvas([bl, tr])
+        (x0, y0), (x1, y1) = points
+        self.canvas.create_oval(x0, y0, x1, y1, fill=fill_color, outline=outline_color, width=thickness)
+
+    def label(self, position: tuple[float, float], text: str, text_color="black", font_name="chart_label"):
+        '''
+        Draws centered text at a world-space position
+        '''
+        point = self.camera.world_to_canvas([position])[0]
+        font = self.context.style.get_font(font_name)
+        self.canvas.create_text(point[0], point[1], text=text, fill=text_color, font=font)
+
+    def wall_point(self, bl: tuple[float, float], tr: tuple[float, float], wall: str, t=0.5) -> tuple[float, float]:
+        '''
+        Returns a point on the given wall ("top", "bottom", "left", or "right") of a bl/tr box,
+        t in [0,1] parameterizes position along the wall
+        '''
+        x0, y0 = bl
+        x1, y1 = tr
+        if wall == "top":
+            return (x0 + t * (x1 - x0), y1)
+        if wall == "bottom":
+            return (x0 + t * (x1 - x0), y0)
+        if wall == "left":
+            return (x0, y0 + t * (y1 - y0))
+        return (x1, y0 + t * (y1 - y0))
+
+    def inward_normal(self, wall: str) -> tuple[float, float]:
+        '''
+        Returns the unit vector pointing from the given wall into the room's interior
+        '''
+        return {"top": (0, -1), "bottom": (0, 1), "left": (1, 0), "right": (-1, 0)}[wall]
+
+    def hvac_room(self, bl: tuple[float, float], tr: tuple[float, float], fill_color: str, outline_color: str):
+        '''
+        Draws the room's outer wall as a filled rectangle
+        '''
+        self.rect(bl, tr, fill_color, outline_color, thickness=3)
+
+    def hvac_controller_box(self, bl: tuple[float, float], tr: tuple[float, float], fill_color: str, outline_color: str):
+        '''
+        Draws the hvac controller as a filled rectangle
+        '''
+        self.rect(bl, tr, fill_color, outline_color, thickness=3)
+
+    def hvac_thermostat(self, position: tuple[float, float], temperature: float | None,
+                         fill_color: str, outline_color: str, text_color: str, radius=4,
+                         status: str | None = None, status_color: str | None = None):
+        '''
+        Draws a round thermostat readout at a world-space position, showing the given temperature
+        (or "--" if None). If status is given (e.g. "too cold!"/"too hot!"), the dial is filled with
+        status_color and the status text is drawn above the dial in that color, splitting label
+        space above and below the dial instead of stacking both on one side.
+        '''
+        self.circle(position, radius, status_color if status else fill_color, outline_color, thickness=2)
+        reading = "--" if temperature is None else f"{temperature:.0f}°F"
+        self.label((position[0], position[1] - radius - 4), reading, text_color, "chart_numbers")
+        if status:
+            self.label((position[0], position[1] + radius + 4), status, text_color, "chart_label")
+
+    def hvac_indicator(self, position: tuple[float, float], is_open: bool,
+                        open_color: str, closed_color: str, text_color: str, radius=4):
+        '''
+        Draws the controller's commanded-state light: open_color/"OPEN" when commanding the vent
+        open, closed_color/"CLOSED" otherwise
+        '''
+        color = open_color if is_open else closed_color
+        state = "OPEN" if is_open else "CLOSED"
+        self.circle(position, radius, color, text_color, thickness=2)
+        self.label((position[0], position[1] - radius - 4), state, text_color, "chart_label")
+
+    def hvac_window(self, bl: tuple[float, float], tr: tuple[float, float], wall: str, t: float,
+                     frame_color: str, glass_color: str, size=16, depth=3):
+        '''
+        Draws an open window embedded in the given wall ("top", "bottom", "left", or "right") of a room,
+        set just inside the wall so it doesn't get covered by whatever sits against the outside of it
+        '''
+        wx, wy = self.wall_point(bl, tr, wall, t)
+        nx, ny = self.inward_normal(wall)
+        cx, cy = wx + nx * depth / 2, wy + ny * depth / 2
+        if wall in ("top", "bottom"):
+            w_bl, w_tr = (cx - size / 2, cy - depth / 2), (cx + size / 2, cy + depth / 2)
+        else:
+            w_bl, w_tr = (cx - depth / 2, cy - size / 2), (cx + depth / 2, cy + size / 2)
+        self.rect(w_bl, w_tr, glass_color, frame_color, thickness=2)
+
+    def hvac_vent(self, bl: tuple[float, float], tr: tuple[float, float], wall: str, t: float,
+                  frame_color: str, fill_color="", size=16, depth=3, louvers=4):
+        '''
+        Draws a vent grate embedded in the given wall of a room, set just inside the wall so it
+        doesn't get covered by whatever sits against the outside of it. Pass fill_color (e.g. the
+        hotness color) to show the vent as actively blowing.
+        '''
+        wx, wy = self.wall_point(bl, tr, wall, t)
+        nx, ny = self.inward_normal(wall)
+        cx, cy = wx + nx * depth / 2, wy + ny * depth / 2
+        if wall in ("top", "bottom"):
+            v_bl, v_tr = (cx - size / 2, cy - depth / 2), (cx + size / 2, cy + depth / 2)
+        else:
+            v_bl, v_tr = (cx - depth / 2, cy - size / 2), (cx + depth / 2, cy + size / 2)
+        self.rect(v_bl, v_tr, fill_color, frame_color, thickness=2)
+        for i in range(1, louvers):
+            f = i / louvers
+            if wall in ("top", "bottom"):
+                x = v_bl[0] + f * size
+                self.line([(x, v_bl[1]), (x, v_tr[1])], frame_color, thickness=1)
+            else:
+                y = v_bl[1] + f * size
+                self.line([(v_bl[0], y), (v_tr[0], y)], frame_color, thickness=1)
+
+    def hvac_flow_arrows(self, bl: tuple[float, float], tr: tuple[float, float], wall: str, t: float,
+                          color: str, count=3, length=20, spread=10, amplitude=1.6, wavelength=9,
+                          cycles_per_sec=1.0, thickness=2, samples=18):
+        '''
+        Draws animated sine-wave streaks flowing inward through the given wall of a room, e.g. cold
+        air from a window or hot air from a vent. The wave crests travel along the flow direction
+        (using the current wall clock time) so the motion reads as flowing rather than static, and
+        each streak ends in an arrowhead pointing straight along the flow direction regardless of
+        the wave's local wiggle.
+        '''
+        cx, cy = self.wall_point(bl, tr, wall, t)
+        nx, ny = self.inward_normal(wall)
+        ax, ay = {"top": (1, 0), "bottom": (1, 0), "left": (0, 1), "right": (0, 1)}[wall]
+        now = time.time()
+        k = 2 * math.pi / wavelength
+        w = 2 * math.pi * cycles_per_sec
+        for i in range(count):
+            offset = (i - (count - 1) / 2) * (spread / max(count - 1, 1)) if count > 1 else 0
+            start = (cx + ax * offset, cy + ay * offset)
+            points = []
+            for s in range(samples + 1):
+                along = length * s / samples
+                wobble = amplitude * math.sin(k * along - w * now)
+                points.append((
+                    start[0] + nx * along + ax * wobble,
+                    start[1] + ny * along + ay * wobble,
+                ))
+            canvas_points = self.camera.world_to_canvas(points)
+            self.canvas.create_line(canvas_points, width=thickness, fill=color, smooth=True)
+            self._hvac_arrowhead(points[-1], (nx, ny), color)
+
+    def _hvac_arrowhead(self, tip: tuple[float, float], direction: tuple[float, float], color: str, size=2.5):
+        '''
+        Draws a filled triangular arrowhead in world space at `tip`, pointing along `direction`
+        '''
+        dx, dy = direction
+        px, py = -dy, dx
+        back = (tip[0] - dx * size, tip[1] - dy * size)
+        left = (back[0] + px * size * 0.5, back[1] + py * size * 0.5)
+        right = (back[0] - px * size * 0.5, back[1] - py * size * 0.5)
+        points = self.camera.world_to_canvas([tip, left, right])
+        self.canvas.create_polygon(points, fill=color, outline=color)
