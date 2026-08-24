@@ -46,10 +46,10 @@ class CallbackRegistry:
         active_callbacks = list(self.callbacks.values())
 
         for callback in active_callbacks:
-            try:
-                callback(*args)
-            except Exception as e:
-                print(f"{self._tag} {self._error} {e}")
+            # try:
+            callback(*args)
+            # except Exception as e:
+            #     print(f"{self._tag} {self._error} {e}")
 
     def delete(self):
         self.callbacks.clear()

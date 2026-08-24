@@ -58,7 +58,7 @@
             "show": 1.0,
             "nickname": "Y Position",
             "factor": 0.01,
-            "units": "",
+            "units": "Meters",
             "multiplier": 1.0,
             "offset": 0.0,
             "modify": 1

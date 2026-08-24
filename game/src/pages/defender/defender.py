@@ -14,28 +14,16 @@ from ...network.network_controller import HardwareDefender
 # reports submarine_mode == False
 from .hvac_view import HVACView
 
-# UI blocks shared between this page (submarine mode) and HVACView (HVAC mode)
-from ._shared_blocks import (
-    SliderDef, build_encryption_block, build_ap_communication_block,
-    build_slider_block, sync_sliders, reset_slider_defaults,
-)
-
 # customtkinter widgets
 from customtkinter import (
     CTkLabel, CTkEntry, CTkButton, CTkFrame,
-    CTkSegmentedButton
+    CTkScrollableFrame, CTkSegmentedButton, CTkSlider
 )
 
 import threading
 import requests
 import math
 import time
-from typing import NamedTuple
-
-
-class FlagDef(NamedTuple):
-    key: str
-    label: str
 
 
 class DefenderV0(Page):
@@ -43,33 +31,17 @@ class DefenderV0(Page):
     Page constructor for defender/defenderv0. Inherits CTkFrame
     '''
 
-    # Set by _shared_blocks.build_encryption_block()/build_ap_communication_block()
-    # via setattr(target, ...) - declared here so pyright can see them.
-    _enc_label: CTkLabel
-    _enc_button: CTkButton
-    _enc_key_entry: CTkEntry
-    _filter_label: CTkLabel
-    _filter_button: CTkButton
-
     POLL_INTERVAL_MS = 2000
 
-    # Flag definitions.
-    HVAC_FLAG_DEFS: list[FlagDef] = [
-            FlagDef("HVAC_filter_flag", "State Filtering Threshold Surpassed")
+    # Flag definitions — (key, display label).
+    HVAC_FLAG_DEFS = [
+            ("HVAC_filter_flag", "State Filtering Threshold Surpassed")
         ]
-
-    SUBMARINE_FLAG_DEFS: list[FlagDef] = [
-        FlagDef("state_filter_flag", "State Filtering Threshold Surpassed"),
-        FlagDef("speed_filter_flag", "Speed Filtering Treshold Surpassed"),
-        FlagDef("rudder_filter_flag", "Rudder Filtering Treshold Surpassed")
-    ]
-
-    # Slider definitions: (title, min, max, default, attr_name, decimals, data_key)
-    SUBMARINE_SLIDER_DEFS: list[SliderDef] = [
-        SliderDef("Sensor Noise Variance", 0.0, 20, 8.3, "sensor_noise_variance", 2, "sensor_noise_variance"),
-        SliderDef("Kalman Expected Sensor Variance", 0.0, 20, 8.3, "kalman_expected_sensor_variance", 2, "kalman_expected_sensor_variance"),
-        SliderDef("Rudder Error Threshold", 0.0, 10, 2.75, "rudder_error_threshold", 1, "rudder_error_threshold"),
-        SliderDef("Speed Error Threshold", 0.0, 10, 2.0, "speed_error_threshold", 1, "speed_error_threshold"),
+    
+    SUBMARINE_FLAG_DEFS = [
+        ("state_filter_flag", "State Filtering Threshold Surpassed"),
+        ("speed_filter_flag", "Speed Filtering Treshold Surpassed"),
+        ("rudder_filter_flag", "Rudder Filtering Treshold Surpassed")
     ]
 
     def __init__(self, context: Context):
@@ -299,10 +271,65 @@ class DefenderV0(Page):
         self._conn_status.pack(anchor="w", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_encryption_block(self, parent):
-        build_encryption_block(self.style, parent, self, self.context, self)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="ENCRYPTION", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        self._enc_label = CTkLabel(section, text="Status: OFF",
+                                   font=self.style.get_font(), text_color="gray")
+        self._enc_label.pack(anchor="w", padx=self.style.igap)
+
+        # Key entry
+        CTkLabel(section, text="Encryption Key", font=self.style.get_font("small"),
+                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
+        self._enc_key_entry = CTkEntry(section, font=self.style.get_font(),
+                                       placeholder_text="Enter key…")
+        self._enc_key_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
+
+        self._enc_button = CTkButton(section, text="Enable Encryption",
+                                     font=self.style.get_font())
+        def enc_button():
+            if not self._encryption_on:
+                # Encryption is off - try to turn it on
+                if self._enc_key_entry.get().strip() == "":
+                    # Empty key — show error
+                    popup.message(self, self.context, "Please enter an encryption key before enabling encryption.")
+                elif not str.isascii(self._enc_key_entry.get().strip()):
+                    # Non-ASCII key — show error
+                    popup.message(self, self.context, "Encryption key must be ASCII.")
+                else:
+                    # Key looks good — toggle encryption on behavior
+                    self._enc_key_entry.configure(state="disabled")
+                    self._enc_button.configure(text="Disable Encryption")
+                    self._toggle_encryption()
+            else:
+                # Encryption is on - turn it off
+                self._enc_key_entry.configure(state="normal")
+                self._enc_key_entry.delete(0, "end")
+                self._enc_button.configure(text="Enable Encryption")
+                self._toggle_encryption()
+
+        self._enc_button.configure(command=enc_button)
+
+        self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_AP_communication_block(self, parent):
-        build_ap_communication_block(self.style, parent, self, self._toggle_AP_communication)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="COMMUNICATE VIA ACCESS POINT", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        self._filter_label = CTkLabel(section, text="Status: OFF",
+                                    font=self.style.get_font(), text_color="gray")
+        self._filter_label.pack(anchor="w", padx=self.style.igap)
+
+        self._filter_button = CTkButton(section, text="Enable Communication Through AP",
+                                        font=self.style.get_font(),
+                                        command=self._toggle_AP_communication)
+        self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _build_mode_block(self, parent):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
@@ -436,9 +463,75 @@ class DefenderV0(Page):
         CTkFrame(section, fg_color="transparent", height=self.style.igap).pack()
 
     def _build_slider_block(self, parent):
-        self._sliders, self._slider_value_labels = build_slider_block(
-            self.style, parent, "SUBMARINE SETTINGS", self.SUBMARINE_SLIDER_DEFS,
-            self, self._post_slider_settings, self._reset_slider_defaults,
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(
+            section,
+            text="SUBMARINE SETTINGS",
+            font=self.style.get_font()
+        ).pack(anchor="w", padx=self.style.igap, pady=(self.style.igap, 8))
+
+        slider_defs = [
+            ("Sensor Noise Variance", 0.0, 20, 8.3, "sensor_noise_variance", 2),
+            ("Kalman Expected Sensor Variance", 0.0, 20, 8.3, "kalman_expected_sensor_variance", 2),
+            ("Rudder Error Threshold", 0.0, 10, 2.75, "rudder_error_threshold", 1),
+            ("Speed Error Threshold", 0.0, 10, 2.0, "speed_error_threshold", 1),
+        ]
+
+        self._sliders = {}
+        self._slider_value_labels = {}
+
+        for title, min_val, max_val, default, attr_name, decimals in slider_defs:
+            header = CTkFrame(section, fg_color="transparent")
+            header.pack(fill="x", padx=self.style.igap)
+
+            CTkLabel(
+                header,
+                text=title,
+                font=self.style.get_font("small")
+            ).pack(side="left")
+
+            value_label = CTkLabel(
+                header,
+                text=f"{default:.{decimals}f}",
+                font=self.style.get_font("small"),
+                text_color="gray"
+            )
+            value_label.pack(side="right")
+
+            def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
+                value = float(value)
+
+                setattr(self, attr, value)
+                lbl.configure(text=f"{value:.{d}f}")
+
+                # Only POST when the USER moved the slider.
+                if not self._syncing_sliders:
+                    self._post_slider_settings()
+                
+            slider = CTkSlider(
+                section,
+                from_=min_val,
+                to=max_val,
+                command=slider_callback
+            )
+            slider.set(default)
+            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+
+            self._sliders[title] = slider
+            self._slider_value_labels[title] = value_label
+
+        reset_button = CTkButton(
+            section,
+            text="Reset to Defaults",
+            font=self.style.get_font(),
+            command=self._reset_slider_defaults
+        )
+        reset_button.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=self.style.igap
         )
 
     def _post_slider_settings(self):
@@ -489,11 +582,102 @@ class DefenderV0(Page):
                 return
 
             self._submarine_pending_revision = 0
+            
+        values = {
+            "Sensor Noise Variance":
+                data.get("sensor_noise_variance"),
 
-        sync_sliders(self, data, self.SUBMARINE_SLIDER_DEFS, self._sliders, self._slider_value_labels)
+            "Kalman Expected Sensor Variance":
+                data.get("kalman_expected_sensor_variance"),
+
+            "Rudder Error Threshold":
+                data.get("rudder_error_threshold"),
+
+            "Speed Error Threshold":
+                data.get("speed_error_threshold"),
+        }
+
+        self._syncing_sliders = True
+
+        try:
+            for title, value in values.items():
+                if value is None:
+                    continue
+
+                slider = self._sliders.get(title)
+                label = self._slider_value_labels.get(title)
+
+                if slider is None:
+                    continue
+
+                value = float(value)
+
+                # Move the UI slider to the MCU's current value.
+                slider.set(value)
+
+                # Keep the Python-side variable synchronized too.
+                attr_map = {
+                    "Sensor Noise Variance": "sensor_noise_variance",
+                    "Kalman Expected Sensor Variance":
+                        "kalman_expected_sensor_variance",
+                    "Rudder Error Threshold":
+                        "rudder_error_threshold",
+                    "Speed Error Threshold":
+                        "speed_error_threshold",
+                }
+
+                setattr(self, attr_map[title], value)
+
+                if label is not None:
+                    decimals = 1 if title in (
+                        "Rudder Error Threshold",
+                        "Speed Error Threshold"
+                    ) else 2
+
+                    label.configure(
+                        text=f"{value:.{decimals}f}"
+                    )
+
+        finally:
+            self._syncing_sliders = False
 
     def _reset_slider_defaults(self):
-        reset_slider_defaults(self, self.SUBMARINE_SLIDER_DEFS, self._sliders, self._slider_value_labels, self._post_slider_settings)
+        defaults = {
+            "Sensor Noise Variance": (
+                8.3, "sensor_noise_variance", 2
+            ),
+            "Kalman Expected Sensor Variance": (
+                8.3, "kalman_expected_sensor_variance", 2
+            ),
+            "Rudder Error Threshold": (
+                2.75, "rudder_error_threshold", 1
+            ),
+            "Speed Error Threshold": (
+                2.0, "speed_error_threshold", 1
+            ),
+        }
+
+        # Prevent each slider.set() from generating its own POST
+        self._syncing_sliders = True
+
+        try:
+            for title, (value, attr, decimals) in defaults.items():
+
+                # Update Python variable
+                setattr(self, attr, value)
+
+                # Move slider
+                self._sliders[title].set(value)
+
+                # Update displayed number
+                self._slider_value_labels[title].configure(
+                    text=f"{value:.{decimals}f}"
+                )
+
+        finally:
+            self._syncing_sliders = False
+
+        self._post_slider_settings()
 
     # ════════════════════════════════════════════════════════════════════════
     #  Network actions

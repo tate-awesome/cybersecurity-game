@@ -11,18 +11,13 @@ import threading
 import time
 
 import requests
-from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkEntry
+from customtkinter import CTkButton, CTkEntry, CTkFrame, CTkLabel, CTkSlider
 
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-
-# UI blocks shared with DefenderV0 (submarine mode)
-from ._shared_blocks import (
-    SliderDef, build_encryption_block, build_ap_communication_block,
-    build_slider_block, sync_sliders, reset_slider_defaults,
-)
+from ...widgets import popup
 
 # Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette.
 # Not pulled from the app's Style object on purpose — CTk colors can be
@@ -37,23 +32,8 @@ _TARGET_LINE = "#e94560"   # accent pink/red, matches the AP's accent color
 
 class HVACView:
 
-    # Set by _shared_blocks.build_encryption_block()/build_ap_communication_block()
-    # via setattr(target, ...) - declared here so pyright can see them.
-    _enc_label: CTkLabel
-    _enc_button: CTkButton
-    _enc_key_entry: CTkEntry
-    _filter_label: CTkLabel
-    _filter_button: CTkButton
-
     MAX_POINTS = 300     # rolling window cap
     MAX_AGE_S  = 300.0    # ...and a 5-minute time cap, whichever trims more
-
-    # Slider definitions: (title, min, max, default, attr_name, decimals, data_key)
-    HVAC_SLIDER_DEFS: list[SliderDef] = [
-        SliderDef("Sensor Noise Variance", 0.0, 1.0, 0.1, "sensor_noise_variance", 2, "hvac_sensor_noise_variance"),
-        SliderDef("Kalman Expected Sensor Variance", 0.0, 1.0, 0.1, "kalman_expected_sensor_variance", 2, "hvac_kalman_expected_sensor_variance"),
-        SliderDef("State Error Threshold", 0.0, 10.0, 5.0, "state_error_threshold", 1, "hvac_state_error_threshold"),
-    ]
 
     def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_hvac_anomaly=None, on_kalman_filter_change=None):
         """
@@ -112,7 +92,49 @@ class HVACView:
         self._build_slider_block(self._left_root)
 
     def _build_encryption_block(self, parent):
-        build_encryption_block(self.style, parent, parent, self._context, self)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="ENCRYPTION", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        self._enc_label = CTkLabel(section, text="Status: OFF",
+                                    font=self.style.get_font(), text_color="gray")
+        self._enc_label.pack(anchor="w", padx=self.style.igap)
+
+        # Key entry
+        CTkLabel(section, text="Encryption Key", font=self.style.get_font("small"),
+                    text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
+        self._enc_key_entry = CTkEntry(section, font=self.style.get_font(),
+                                        placeholder_text="Enter key…")
+        self._enc_key_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
+
+        self._enc_button = CTkButton(section, text="Enable Encryption",
+                                        font=self.style.get_font())
+        def enc_button():
+            if not self._encryption_on:
+                # Encryption is off - try to turn it on
+                if self._enc_key_entry.get().strip() == "":
+                    # Empty key — show error
+                    popup.message(parent, self._context, "Please enter an encryption key before enabling encryption.")
+                elif not str.isascii(self._enc_key_entry.get().strip()):
+                    # Non-ASCII key — show error
+                    popup.message(parent, self._context, "Encryption key must be ASCII.")
+                else:
+                    # Key looks good — toggle encryption on behavior
+                    self._enc_key_entry.configure(state="disabled")
+                    self._enc_button.configure(text="Disable Encryption")
+                    self._toggle_encryption()
+            else:
+                # Encryption is on - turn it off
+                self._enc_key_entry.configure(state="normal")
+                self._enc_key_entry.delete(0, "end")
+                self._enc_button.configure(text="Enable Encryption")
+                self._toggle_encryption()
+
+        self._enc_button.configure(command=enc_button)
+
+        self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _toggle_encryption(self):
         if not self._encryption_on:
@@ -127,7 +149,20 @@ class HVACView:
         self._push_hvac_controls()
 
     def _build_AP_communication_block(self, parent):
-        build_ap_communication_block(self.style, parent, self, self._toggle_AP_communication)
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="COMMUNICATE VIA ACCESS POINT", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+        self._filter_label = CTkLabel(section, text="Status: OFF",
+                                    font=self.style.get_font(), text_color="gray")
+        self._filter_label.pack(anchor="w", padx=self.style.igap)
+
+        self._filter_button = CTkButton(section, text="Enable Communication Through AP",
+                                        font=self.style.get_font(),
+                                        command=self._toggle_AP_communication)
+        self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _toggle_AP_communication(self):
         self._AP_communication_on = not self._AP_communication_on
@@ -193,9 +228,73 @@ class HVACView:
         threading.Thread(target=_request, daemon=True).start()
 
     def _build_slider_block(self, parent):
-        self._sliders, self._slider_value_labels = build_slider_block(
-            self.style, parent, "HVAC SETTINGS", self.HVAC_SLIDER_DEFS,
-            self, self._push_hvac_controls, self._reset_slider_defaults,
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(
+            section,
+            text="HVAC SETTINGS",
+            font=self.style.get_font()
+        ).pack(anchor="w", padx=self.style.igap, pady=(self.style.igap, 8))
+
+        slider_defs = [
+            ("Sensor Noise Variance", 0.0, 1.0, 0.1, "sensor_noise_variance", 2),
+            ("Kalman Expected Sensor Variance", 0.0, 1.0, 0.1, "kalman_expected_sensor_variance", 2),
+            ("State Error Threshold", 0.0, 10.0, 5.0, "state_error_threshold", 1),
+        ]
+
+        self._sliders = {}
+        self._slider_value_labels = {}
+
+        for title, min_val, max_val, default, attr_name, decimals in slider_defs:
+            header = CTkFrame(section, fg_color="transparent")
+            header.pack(fill="x", padx=self.style.igap)
+
+            CTkLabel(
+                header,
+                text=title,
+                font=self.style.get_font("small")
+            ).pack(side="left")
+
+            value_label = CTkLabel(
+                header,
+                text=f"{default:.{decimals}f}",
+                font=self.style.get_font("small"),
+                text_color="gray"
+            )
+            value_label.pack(side="right")
+
+            def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
+                value = float(value)
+
+                setattr(self, attr, value)
+                lbl.configure(text=f"{value:.{d}f}")
+
+                if not self._syncing_sliders:
+                    self._push_hvac_controls()
+
+            slider = CTkSlider(
+                section,
+                from_=min_val,
+                to=max_val,
+                command=slider_callback
+            )
+            slider.set(default)
+            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+
+            self._sliders[title] = slider
+            self._slider_value_labels[title] = value_label
+
+        reset_button = CTkButton(
+            section,
+            text="Reset to Defaults",
+            font=self.style.get_font(),
+            command=self._reset_slider_defaults
+        )
+        reset_button.pack(
+            fill="x",
+            padx=self.style.igap,
+            pady=self.style.igap
         )
     
     def _readout_row(self, parent, label_text):
@@ -239,10 +338,86 @@ class HVACView:
         self._canvas.draw()
 
     def _sync_hvac_sliders(self, data: dict):
-        sync_sliders(self, data, self.HVAC_SLIDER_DEFS, self._sliders, self._slider_value_labels)
+        values = {
+            "Sensor Noise Variance":
+                data.get("hvac_sensor_noise_variance"),
+
+            "Kalman Expected Sensor Variance":
+                data.get("hvac_kalman_expected_sensor_variance"),
+
+            "State Error Threshold":
+                data.get("hvac_state_error_threshold"),
+        }
+
+        self._syncing_sliders = True
+
+        try:
+            for title, value in values.items():
+                if value is None:
+                    continue
+
+                slider = self._sliders.get(title)
+                label = self._slider_value_labels.get(title)
+
+                if slider is None:
+                    continue
+
+                value = float(value)
+
+                slider.set(value)
+
+                attr_map = {
+                    "Sensor Noise Variance":
+                        "sensor_noise_variance",
+
+                    "Kalman Expected Sensor Variance":
+                        "kalman_expected_sensor_variance",
+
+                    "State Error Threshold":
+                        "state_error_threshold",
+                }
+
+                setattr(self, attr_map[title], value)
+
+                if label is not None:
+                    decimals = 1 if title == "State Error Threshold" else 2
+                    label.configure(
+                        text=f"{value:.{decimals}f}"
+                    )
+
+        finally:
+            self._syncing_sliders = False
 
     def _reset_slider_defaults(self):
-        reset_slider_defaults(self, self.HVAC_SLIDER_DEFS, self._sliders, self._slider_value_labels, self._push_hvac_controls)
+        defaults = {
+            "Sensor Noise Variance": (
+                0.1, "sensor_noise_variance", 2
+            ),
+            "Kalman Expected Sensor Variance": (
+                0.1, "kalman_expected_sensor_variance", 2
+            ),
+            "State Error Threshold": (
+                5.0, "state_error_threshold", 1
+            ),
+        }
+
+        self._syncing_sliders = True
+
+        try:
+            for title, (value, attr, decimals) in defaults.items():
+
+                setattr(self, attr, value)
+
+                self._sliders[title].set(value)
+
+                self._slider_value_labels[title].configure(
+                    text=f"{value:.{decimals}f}"
+                )
+
+        finally:
+            self._syncing_sliders = False
+
+        self._push_hvac_controls()
 
     # ════════════════════════════════════════════════════════════════════
     #  Visibility — DefenderV0 calls these on mode change

@@ -35,10 +35,18 @@ class NetFilterQueueBaseClass:
             if self.stop_event is not None:
                 self.stop_event.set()
             if self.thread is not None:
-                self.thread.join(timeout=2)
+                self.thread.join(timeout=5)
+                if self.thread.is_alive():
+                    # Worker didn't exit in time - its iptables rules and NFQ
+                    # bind may still be live. Leave state as running so
+                    # is_running() stays truthful and a retry is possible,
+                    # instead of silently reporting a clean stop.
+                    self.buffer.put("nfq", "NFQ worker did not stop in time; iptables rules may still be active")
+                    return
             self.stop_event = None
             self.thread = None
             self.running = False
+            self.buffer.put("nfq", "Stopped NFQ")
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:
         modified_flag = False

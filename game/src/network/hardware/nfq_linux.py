@@ -26,6 +26,10 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         self.thread.start()
 
     def start_thread(self):
+        # Captured locally so stop() clearing self.stop_event once the
+        # worker has exited can't race with the loop's own check of it.
+        stop_event = self.stop_event
+
         # Calculate iface
         nmapper = NMapper(self.buffer)
         active_iface = nmapper.get_active_iface()
@@ -86,7 +90,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         poller.register(stop_r, select.POLLIN)
         self.buffer.put("nfq", "Starting NFQ")
         try:
-            while not self.stop_event.is_set():
+            while not stop_event.is_set():
                 events = poller.poll(500)
 
                 for fd, _ in events:
@@ -103,7 +107,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                             self.buffer.put("nfq", f"Error processing POSTROUTING queue: {e}")
 
                     elif fd == stop_r:
-                        self.stop_event.set()
+                        stop_event.set()
                     # Stop on error or stop event
         finally:
             nfq_in.unbind()
