@@ -45,7 +45,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                         w.send(packet)
                         continue
 
-                    enriched_mpkt = self.buffer.put("nfq", "Incoming mitm packet", spkt, "recv")
+                    enriched_mpkt = self.buffer.put("nfq", "Incoming mitm packet", spkt, "in")
                     if enriched_mpkt is None:
                         w.send(packet)
                         continue
@@ -53,7 +53,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                     newspkt, modified = self.modify_mpkt(enriched_mpkt)
 
                     if modified:
-                        self.buffer.put("nfq", "Outgoing mitm Packet", newspkt, "recv")
+                        self.buffer.put("nfq", "Outgoing mitm Packet", newspkt, "in")
                         packet.payload = bytes(newspkt)
 
                     w.send(packet)

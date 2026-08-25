@@ -147,14 +147,14 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             pkt.accept()
             return
 
-        enriched_mpkt = self.buffer.put("nfq", "PREROUTING NFQ", spkt, "recv")
+        enriched_mpkt = self.buffer.put("nfq", "PREROUTING NFQ", spkt, "in")
         if enriched_mpkt is None:
             pkt.accept()
             return
         # TODO add logic and timeline flags if it really does get modded
         spkt, modified = self.modify_mpkt(enriched_mpkt)
         if modified:
-            self.buffer.put("nfq", "MODIFIED NFQ", spkt, "recv")
+            self.buffer.put("nfq", "MODIFIED NFQ", spkt, "in")
             pkt.set_payload(bytes(spkt))
 
         pkt.accept()
@@ -165,7 +165,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             pkt.accept()
             return
 
-        self.buffer.put("nfq", "POSTROUTING NFQ", spkt, "send")
+        self.buffer.put("nfq", "POSTROUTING NFQ", spkt, "out")
 
         pkt.accept()
 

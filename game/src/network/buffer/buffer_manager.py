@@ -80,7 +80,7 @@ class Buffer:
 
         purpose: a message about the packet, or a status message
 
-        direction: sent or received by the network action - "send" or "recv"
+        direction: sent or received by the network action - "in" or "out"
         '''
         output = None
         # Return on weird data
@@ -124,7 +124,7 @@ class Buffer:
 
         purpose: a message about the packet, or a status message
 
-        src: "send" or "recv"
+        src: "out" or "in"
         '''
 
         # Put status message in "status" buffer
@@ -143,7 +143,7 @@ class Buffer:
 
         purpose: a message about the packet
 
-        src: "send" or "recv"
+        src: "out" or "in"
         '''
         # Put all packets in the "packets" buffer for use by the packet console
         # self.packets.put(source, purpose, data, current_time)

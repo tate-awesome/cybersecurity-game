@@ -110,7 +110,9 @@ class Replay:
             {
                 "packet": "<base64>",
                 "purpose": "...",
-                "producer": "..."
+                "producer": "...",
+                "time": <float, optional>,
+                "direction": "in" | "out" | "other" | null, optional
             }
         """
 
@@ -138,6 +140,7 @@ class Replay:
                         )
                         source = data["producer"]
                         purpose = data["purpose"]
+                        direction = data.get("direction")
 
 
                         if source == "nfq":
@@ -152,7 +155,11 @@ class Replay:
                         if "time" in data:
                             pkt.time = data["time"]
 
-                        ptuple = (source, purpose, pkt)
+                        # Pass the originally resolved direction back
+                        # in as an explicit override so replay doesn't
+                        # depend on MAC-based inference, which breaks
+                        # on a different device's local MAC address.
+                        ptuple = (source, purpose, pkt, direction)
 
                         self.ptuples.append(ptuple)
 
@@ -291,7 +298,7 @@ class Replay:
                     ptuple = self.ptuples[index]
 
                     # Feed the MetaPacket into the normal buffer.
-                    self.buffer.put(ptuple[0], ptuple[1], ptuple[2])
+                    self.buffer.put(ptuple[0], ptuple[1], ptuple[2], ptuple[3])
                     index += 1
                     # minimum gap
                     time.sleep(0.001)
@@ -333,7 +340,7 @@ class Replay:
                     aborted_prematurely = True
                     break
 
-            self.buffer.put(ptuple[0], ptuple[1], pkt)
+            self.buffer.put(ptuple[0], ptuple[1], pkt, ptuple[3])
 
             previous_time = pkt.time
             index += 1
@@ -405,6 +412,8 @@ class Replay:
             - raw Scapy packet
             - purpose
             - producer
+            - capture time
+            - direction (in/out/other, as resolved when captured)
 
         Derived/enriched information is intentionally not saved.
         """
@@ -437,6 +446,8 @@ class Replay:
                         "producer": mpkt.get("hack"),
 
                         "time": pkt.time,
+
+                        "direction": mpkt.get("direction"),
                     }
 
                     file.write(

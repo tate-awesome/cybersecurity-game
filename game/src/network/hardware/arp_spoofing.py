@@ -109,12 +109,12 @@ class ArpSpoofer:
         arp_request = scapy.ARP(pdst=ip)
         broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
         packet = broadcast / arp_request
-        self.buffer.put("arp", "MAC address request", packet, "send")
+        self.buffer.put("arp", "MAC address request", packet, "out")
 
         answered, _ = scapy.srp(packet, timeout=2, verbose=False)
 
         if answered:
-            self.buffer.put("arp", "MAC address response", answered[0][1], "recv")
+            self.buffer.put("arp", "MAC address response", answered[0][1], "in")
             return answered[0][1].hwsrc
 
 
@@ -126,7 +126,7 @@ class ArpSpoofer:
         psrc=spoof_ip
         )
 
-        self.buffer.put("arp", "Spoofing packet", packet, "send")
+        self.buffer.put("arp", "Spoofing packet", packet, "out")
         scapy.sendp(packet, verbose=False)
 
 
@@ -146,7 +146,7 @@ class ArpSpoofer:
             hwsrc=source_mac
         )
 
-        self.buffer.put("arp", "Restore packet", packet, "send")
+        self.buffer.put("arp", "Restore packet", packet, "out")
         scapy.sendp(packet, verbose=False)
 
 
