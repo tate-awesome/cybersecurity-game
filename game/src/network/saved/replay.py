@@ -2,7 +2,6 @@ import base64
 import json
 import os
 import threading
-import time
 
 from scapy.all import Ether, IP
 
@@ -28,24 +27,20 @@ class Replay:
         self.abort_event = threading.Event()
 
         self.file_path = ""
-        self.ptuples = []
-        self.timed_playback = False
 
 
     # ------------------------------------------------------------------
     # Loading
     # ------------------------------------------------------------------
 
-    def load_json(self, timed_playback: bool = False):
+    def load_json(self):
         """
         Button entry point for loading a replay file.
 
-        timed_playback: if True, replay packets with the exact time
-        spacing recorded in each packet's .time field instead of
-        bursting them into the buffer as fast as capacity allows.
+        Packets are streamed off disk one line at a time and replayed
+        with the exact time spacing recorded in each packet's .time
+        field - the whole file is never held in memory at once.
         """
-
-        self.timed_playback = timed_playback
 
         with self._lock:
             if self._is_loading:
@@ -67,7 +62,7 @@ class Replay:
                     self._is_loading = False
                 return
 
-            self.read_json_file(file_path)
+            self.stream_json_file(file_path)
 
         except Exception as e:
             with self._lock:
@@ -102,9 +97,27 @@ class Replay:
 
         return file_path
 
-    def read_json_file(self, file_path):
+    def stream_json_file(self, file_path):
+        """Start streaming a replay file off disk on a worker thread."""
+
+        self.file_path = file_path
+
+        self.buffer.put(
+            "json",
+            f"Streaming replay packets from {file_path}..."
+        )
+
+        worker_thread = threading.Thread(
+            target=self.worker,
+            daemon=True
+        )
+
+        worker_thread.start()
+
+    def parse_line(self, line: str):
         """
-        Read replay records from disk.
+        Parse one replay record line into a (source, purpose, pkt,
+        direction) tuple.
 
         Each line contains:
             {
@@ -116,83 +129,28 @@ class Replay:
             }
         """
 
-        self.file_path = file_path
-        self.ptuples = []
+        data = json.loads(line)
 
-        self.buffer.put(
-            "json",
-            f"Reading replay packets from {file_path}..."
-        )
+        raw_packet = base64.b64decode(data["packet"])
+        source = data["producer"]
+        purpose = data["purpose"]
+        direction = data.get("direction")
 
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                for line_number, line in enumerate(file, start=1):
+        if source == "nfq":
+            pkt = IP(raw_packet)
+        else:
+            pkt = Ether(raw_packet)
 
-                    # Allow blank lines
-                    if not line.strip():
-                        continue
+        # Parsing a packet from raw bytes resets .time to "now".
+        # Restore the originally recorded timestamp, if one was saved,
+        # so playback can reproduce the real spacing.
+        if "time" in data:
+            pkt.time = data["time"]
 
-                    try:
-                        data = json.loads(line)
-
-                        raw_packet = base64.b64decode(
-                            data["packet"]
-                        )
-                        source = data["producer"]
-                        purpose = data["purpose"]
-                        direction = data.get("direction")
-
-
-                        if source == "nfq":
-                            pkt = IP(raw_packet)
-                        else:
-                            pkt = Ether(raw_packet)
-
-                        # Parsing a packet from raw bytes resets .time
-                        # to "now". Restore the originally recorded
-                        # timestamp, if one was saved, so timed
-                        # playback can reproduce the real spacing.
-                        if "time" in data:
-                            pkt.time = data["time"]
-
-                        # Pass the originally resolved direction back
-                        # in as an explicit override so replay doesn't
-                        # depend on MAC-based inference, which breaks
-                        # on a different device's local MAC address.
-                        ptuple = (source, purpose, pkt, direction)
-
-                        self.ptuples.append(ptuple)
-
-                    except Exception as e:
-                        self.buffer.put(
-                            "json",
-                            f"Skipping invalid packet on line "
-                            f"{line_number}: {e}"
-                        )
-
-        except Exception as e:
-            self.buffer.put(
-                "json",
-                f"Failed to read JSON replay: {str(e)}"
-            )
-
-            with self._lock:
-                self._is_loading = False
-
-            return
-
-        self.buffer.put(
-            "json",
-            f"Loaded {len(self.ptuples)} packets into memory. "
-            f"Starting rate-limiter..."
-        )
-
-        worker_thread = threading.Thread(
-            target=self.worker,
-            daemon=True
-        )
-
-        worker_thread.start()
+        # Pass the originally resolved direction back in as an explicit
+        # override so replay doesn't depend on MAC-based inference,
+        # which breaks on a different device's local MAC address.
+        return (source, purpose, pkt, direction)
 
     # ------------------------------------------------------------------
     # Playback
@@ -209,10 +167,6 @@ class Replay:
                 )
                 return
 
-            # worker() clears self.ptuples itself once it notices the abort and
-            # stops reading from it. Clearing it here too would race with
-            # worker_burst()/worker_timed() indexing self.ptuples[index] on
-            # another thread and could IndexError it mid-replay.
             self.abort_event.set()
 
             self.buffer.put(
@@ -221,37 +175,78 @@ class Replay:
             )
 
     def worker(self):
-        """Feed replay packets into the normal packet buffer."""
-        if not self.ptuples or not self.file_path:
+        """
+        Stream replay packets off disk one line at a time and feed
+        them into the normal packet buffer, waiting between each one
+        for the exact gap between the recorded .time values of
+        consecutive packets.
+
+        Packets are always posted in file order, never sorted or
+        reordered by .time - NFQ pre/post-modification pairs routinely
+        share the exact same recorded timestamp, and the file's own
+        line order is the only thing that disambiguates which one
+        happened first.
+        """
+
+        if not self.file_path:
             with self._lock:
                 self._is_loading = False
             return
 
         filename = os.path.basename(self.file_path)
 
+        index = 0
+        aborted_prematurely = False
+        previous_time = None
+
         try:
             # Start with an empty buffer state.
             self.buffer.reset()
 
-            if self.timed_playback:
-                index, aborted_prematurely = self.worker_timed()
-            else:
-                index, aborted_prematurely = self.worker_burst()
+            with open(self.file_path, "r", encoding="utf-8") as file:
+                for line_number, line in enumerate(file, start=1):
 
-            total_packets = len(self.ptuples)
+                    if self.abort_event.is_set():
+                        aborted_prematurely = True
+                        break
+
+                    # Allow blank lines
+                    if not line.strip():
+                        continue
+
+                    try:
+                        source, purpose, pkt, direction = self.parse_line(line)
+                    except Exception as e:
+                        self.buffer.put(
+                            "json",
+                            f"Skipping invalid packet on line "
+                            f"{line_number}: {e}"
+                        )
+                        continue
+
+                    if previous_time is not None:
+                        delay = max(0.001, pkt.time - previous_time)
+
+                        # Wake up early if an abort is requested mid-wait.
+                        if self.abort_event.wait(delay):
+                            aborted_prematurely = True
+                            break
+
+                    self.buffer.put(source, purpose, pkt, direction)
+
+                    previous_time = pkt.time
+                    index += 1
 
             if aborted_prematurely:
                 self.buffer.put(
                     "json",
-                    f"JSON replay aborted. "
-                    f"Processed {index}/{total_packets} packets."
+                    f"JSON replay aborted. Processed {index} packets."
                 )
 
             else:
                 self.buffer.put(
                     "json",
-                    f"Finished replaying {total_packets} packets "
-                    f"from {filename}"
+                    f"Finished replaying {index} packets from {filename}"
                 )
         except Exception as e:
             # Without this, an uncaught exception here would leave _is_loading
@@ -262,90 +257,6 @@ class Replay:
 
             with self._lock:
                 self._is_loading = False
-
-    def worker_burst(self) -> tuple[int, bool]:
-        """
-        Feed packets into the buffer as fast as its capacity allows,
-        ignoring their recorded time spacing.
-
-        Returns (packets_processed, aborted_prematurely).
-        """
-
-        index = 0
-        total_packets = len(self.ptuples)
-
-        aborted_prematurely = False
-
-        while index < total_packets:
-
-            if self.abort_event.is_set():
-                aborted_prematurely = True
-                break
-
-            time.sleep(0.01)
-
-            if self.buffer.capacity() < 0.1:
-
-                while (
-                    self.buffer.capacity() < 0.9
-                    and index < total_packets
-                ):
-
-                    if self.abort_event.is_set():
-                        aborted_prematurely = True
-                        break
-
-                    ptuple = self.ptuples[index]
-
-                    # Feed the MetaPacket into the normal buffer.
-                    self.buffer.put(ptuple[0], ptuple[1], ptuple[2], ptuple[3])
-                    index += 1
-                    # minimum gap
-                    time.sleep(0.001)
-
-                if aborted_prematurely:
-                    break
-
-        return index, aborted_prematurely
-
-    def worker_timed(self) -> tuple[int, bool]:
-        """
-        Feed packets into the buffer one at a time, waiting between
-        each one for the exact gap between the recorded .time values
-        of consecutive packets.
-
-        Returns (packets_processed, aborted_prematurely).
-        """
-
-        index = 0
-        total_packets = len(self.ptuples)
-
-        aborted_prematurely = False
-        previous_time = None
-
-        while index < total_packets:
-
-            if self.abort_event.is_set():
-                aborted_prematurely = True
-                break
-
-            ptuple = self.ptuples[index]
-            pkt = ptuple[2]
-
-            if previous_time is not None:
-                delay = max(0.0, pkt.time - previous_time)
-
-                # Wake up early if an abort is requested mid-wait.
-                if self.abort_event.wait(delay):
-                    aborted_prematurely = True
-                    break
-
-            self.buffer.put(ptuple[0], ptuple[1], pkt, ptuple[3])
-
-            previous_time = pkt.time
-            index += 1
-
-        return index, aborted_prematurely
 
     # ------------------------------------------------------------------
     # Saving
@@ -477,4 +388,3 @@ class Replay:
 
     def reset_parameters(self):
         self.file_path = ""
-        self.ptuples = []

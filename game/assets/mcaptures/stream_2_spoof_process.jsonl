@@ -1,0 +1,60 @@
+{"packet":"////////FBMzrr6xCAYAAQgABgQAARQTM66+sQoS9PEAAAAAAADAqAQC","purpose":"MAC address request","producer":"arp","time":1787618198.829118,"direction":"out"}
+{"packet":"FBMzrr6xNM2wM4W0CAYAAQgABgQAAjTNsDOFtMCoBAIUEzOuvrEKEvTx","purpose":"MAC address response","producer":"arp","time":1787618198.8719425,"direction":"in"}
+{"packet":"////////FBMzrr6xCAYAAQgABgQAARQTM66+sQoS9PEAAAAAAADAqAQK","purpose":"MAC address request","producer":"arp","time":1787618198.9263287,"direction":"out"}
+{"packet":"FBMzrr6xNIUYkgJsCAYAAQgABgQAAjSFGJICbMCoBAoUEzOuvrEKEvTx","purpose":"MAC address response","producer":"arp","time":1787618198.953802,"direction":"in"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618198.9897087,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618199.0331335,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618200.0854456,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618200.149089,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618201.2094467,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618201.2652087,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618202.317518,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618202.376896,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618203.4373984,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618203.508978,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618204.629655,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618204.6969104,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618205.7624834,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618205.83305,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618206.8817248,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618206.9491081,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618208.0173686,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618208.0848854,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618209.1583343,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618209.2090018,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618210.28639,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618210.3608742,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618211.4214854,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618211.4853833,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618212.533341,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618212.6090434,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618213.669774,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618213.7449224,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618214.813466,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618214.8809552,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618215.9253783,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618215.9981422,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618217.0614579,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618217.1169448,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618218.1534312,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618218.2048843,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618219.2494304,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618219.2888749,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618220.357347,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618220.4328988,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618221.4974394,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618221.5528688,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618222.6180153,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618222.6808944,"direction":"out"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAo0zbAzhbTAqAQC","purpose":"Spoofing packet","producer":"arp","time":1787618223.741961,"direction":"out"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAhQTM66+scCoBAI0hRiSAmzAqAQK","purpose":"Spoofing packet","producer":"arp","time":1787618223.8174088,"direction":"out"}
+{"packet":"////////FBMzrr6xCAYAAQgABgQAARQTM66+sQoS9PEAAAAAAADAqAQC","purpose":"MAC address request","producer":"arp","time":1787618224.0310442,"direction":"out"}
+{"packet":"FBMzrr6xNM2wM4W0CAYAAQgABgQAAjTNsDOFtMCoBAIUEzOuvrEKEvTx","purpose":"MAC address response","producer":"arp","time":1787618224.070078,"direction":"in"}
+{"packet":"////////FBMzrr6xCAYAAQgABgQAARQTM66+sQoS9PEAAAAAAADAqAQK","purpose":"MAC address request","producer":"arp","time":1787618224.0982285,"direction":"out"}
+{"packet":"FBMzrr6xNIUYkgJsCAYAAQgABgQAAjSFGJICbMCoBAoUEzOuvrEKEvTx","purpose":"MAC address response","producer":"arp","time":1787618224.1465063,"direction":"in"}
+{"packet":"NM2wM4W0FBMzrr6xCAYAAQgABgQAAjSFGJICbMCoBAo0zbAzhbTAqAQC","purpose":"Restore packet","producer":"arp","time":1787618224.1776655,"direction":"out"}
+{"packet":"////////FBMzrr6xCAYAAQgABgQAARQTM66+sQoS9PEAAAAAAADAqAQK","purpose":"MAC address request","producer":"arp","time":1787618224.2332957,"direction":"out"}
+{"packet":"FBMzrr6xNIUYkgJsCAYAAQgABgQAAjSFGJICbMCoBAoUEzOuvrEKEvTx","purpose":"MAC address response","producer":"arp","time":1787618224.2746654,"direction":"in"}
+{"packet":"////////FBMzrr6xCAYAAQgABgQAARQTM66+sQoS9PEAAAAAAADAqAQC","purpose":"MAC address request","producer":"arp","time":1787618224.3175724,"direction":"out"}
+{"packet":"FBMzrr6xNM2wM4W0CAYAAQgABgQAAjTNsDOFtMCoBAIUEzOuvrEKEvTx","purpose":"MAC address response","producer":"arp","time":1787618224.3504972,"direction":"in"}
+{"packet":"NIUYkgJsFBMzrr6xCAYAAQgABgQAAjTNsDOFtMCoBAI0hRiSAmzAqAQK","purpose":"Restore packet","producer":"arp","time":1787618224.377583,"direction":"out"}

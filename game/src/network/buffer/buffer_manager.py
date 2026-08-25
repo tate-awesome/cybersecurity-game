@@ -15,6 +15,7 @@ from scapy.all import Packet
 from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, HouseBuffer, NetworkGraph
 from .meta_packet import MetaPacket
 from .channels.transaction_manager import TransactionManager
+from ..saved.file_stream import FileStream
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -40,6 +41,7 @@ class Buffer:
         self.submarine = MapBuffer(self.context, self.modbus, max_size=self.max_size)
         self.hvac = HouseBuffer(self.context, self.modbus, max_size=self.max_size)
         self.network = NetworkGraph(self.context, self.packets, max_size = self.max_size)
+        self.file_stream = FileStream(self, context)
 
         self.start_worker()
 
@@ -157,3 +159,5 @@ class Buffer:
         if mpkt.get("is_useful"):
             self.submarine.put(mpkt)
             self.hvac.put(mpkt)
+
+        self.file_stream.put(mpkt)

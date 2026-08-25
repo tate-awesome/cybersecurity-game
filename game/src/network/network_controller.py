@@ -27,6 +27,7 @@ class NetworkController:
     def abort_all(self):
         self._safe_stop(self.buffer.reset)
         self._safe_stop(self.loader.abort)
+        self._safe_stop(self.buffer.file_stream.stop)
 
 class HardwareController(NetworkController):
     def __init__(self, context):

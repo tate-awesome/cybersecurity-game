@@ -50,13 +50,20 @@ class NetFilterQueueBaseClass:
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:
         modified_flag = False
-        pkt = mpkt.get("pkt")
+        original_pkt = mpkt.get("pkt")
 
         if not mpkt.get("is_modbus") or len(mpkt.get("variables")) < 1:
-            return mpkt.get("pkt"), modified_flag
+            return original_pkt, modified_flag
 
         if not self.context.states.get("modbus_modify_enabled") == 1:
-            return pkt, modified_flag
+            return original_pkt, modified_flag
+
+        # Work on an independent copy. mpkt is the caller's already-recorded
+        # (e.g. PREROUTING) MetaPacket - mutating its "pkt" object in place,
+        # as opposed to this copy, would silently rewrite that historical
+        # record's bytes to the modified value once this function edits a
+        # layer below.
+        pkt = original_pkt.copy()
 
         for i, variable in enumerate(mpkt.get("variables")):
 
@@ -103,5 +110,4 @@ class NetFilterQueueBaseClass:
             del pkt[IP].chksum
             # Rebuild len, chksum, chksum
             pkt = IP(bytes(pkt))
-            mpkt.set("pkt", pkt)
         return pkt, modified_flag
