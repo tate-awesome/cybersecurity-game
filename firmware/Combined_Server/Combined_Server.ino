@@ -199,12 +199,12 @@ const float HEAD_OFFSET_M  = 2.0f;
 const float Kps            = 0.1f;
 const float Kp_rudder      = 0.1f;
 const float SpeedMax       = 50.0f;
-const float StopTol        = 5.0f;
 const float X_RANGE_M      = 200.0f;
 const float Y_RANGE_M      = 200.0f;
 const float RudderMax_deg  = 60.0f;
-const float K_theta = 0.6f;
-const float L_vehicle = 0.07f;
+const float K_theta        = 0.6f;
+const float L_vehicle      = 0.07f;
+const float StopTol        = 5.0f;
 
 const int LEDC_RES_BITS = 12;
 const int LEDC_FREQ_HZ  = 500;
@@ -288,6 +288,7 @@ void computeControlCommands(float target_x, float target_y, float state_x, float
     rho_rad = clampf_local(rho_rad, -PI / 3.0f, PI / 3.0f);
 
     float center_dist = sqrtf(powf(Xerr, 2) + powf(Yerr, 2));
+
     float SpeedCmd    = (center_dist < StopTol) ? 0.0f
                         : clampf_local(Kps * center_dist, 0.0f, SpeedMax);
 

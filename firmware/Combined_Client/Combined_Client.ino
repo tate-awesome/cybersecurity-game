@@ -492,26 +492,26 @@ void runSubmarineCycle() {
         state_x += (xdot * dt);
         state_y += (ydot * dt);
         state_theta += (thetadot * dt);
-
-        float added_x_noise = randomNoiseWithVariance(g_sensor_noise_variance);
-        float added_y_noise = randomNoiseWithVariance(g_sensor_noise_variance);
-
-        noise_x = state_x + added_x_noise;
-        noise_y = state_y + added_y_noise;
-        noise_theta = state_theta + radians(random(-100,100)/100.0f);
-      
-        while (state_theta < 0) state_theta += 2.0f * PI;
-        while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
-        
-        if (state_x < 0.0f) state_x = 0.0f;
-        if (noise_x < 0.0f) noise_x = 0.0f;
-        if (state_x > 200.0f) state_x = 200.0f;
-        if (noise_x > 200.0f) noise_x = 200.0f;
-        if (state_y < 0.0f) state_y = 0.0f;
-        if (noise_y < 0.0f) noise_y = 0.0f;
-        if (state_y > 200.0f) state_y = 200.0f;
-        if (noise_y > 200.0f) noise_y = 200.0f;
       }
+
+      float added_x_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+      float added_y_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+
+      noise_x = state_x + added_x_noise;
+      noise_y = state_y + added_y_noise;
+      noise_theta = state_theta + radians(random(-100,100)/100.0f);
+    
+      while (state_theta < 0) state_theta += 2.0f * PI;
+      while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
+      
+      if (state_x < 0.0f) state_x = 0.0f;
+      if (noise_x < 0.0f) noise_x = 0.0f;
+      if (state_x > 200.0f) state_x = 200.0f;
+      if (noise_x > 200.0f) noise_x = 200.0f;
+      if (state_y < 0.0f) state_y = 0.0f;
+      if (noise_y < 0.0f) noise_y = 0.0f;
+      if (state_y > 200.0f) state_y = 200.0f;
+      if (noise_y > 200.0f) noise_y = 200.0f;
 
       if (millis() - lastPoseMs >= 200) {
         lastPoseMs = millis();
