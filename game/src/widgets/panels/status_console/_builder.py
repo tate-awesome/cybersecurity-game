@@ -5,8 +5,9 @@ from ... import MenuBar
 from ..panel import Panel
 
 class Builder(Panel):
+    KEY = "status_panel"
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "status_console")
+        super().__init__(master, context, self.KEY)
 
         self.buffer = context.net.buffer.status
 
@@ -31,11 +32,11 @@ class Builder(Panel):
 
     def start_printing(self):
         self.run = True
-        self.context.animation_manager.add_callback("status_console", self.print_tick)
+        self.context.animation_manager.add_callback("status_panel", self.print_tick)
     
     def stop_printing(self):
         self.run = False
-        self.context.animation_manager.remove_callback("status_console")
+        self.context.animation_manager.remove_callback("status_panel")
 
     def print_tick(self):
         '''

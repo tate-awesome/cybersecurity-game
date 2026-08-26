@@ -51,6 +51,5 @@ class AttackerV0(Page):
         else:
             VariableMonitor(trifold.pane(2), context)
 
-            # AgnosticModel(display.pane(0), context)
         # display.bottom.configure(fg_color=context.style.color("panel"))
         # values = ValuesTable(style, top, context)

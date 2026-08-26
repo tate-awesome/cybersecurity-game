@@ -174,13 +174,13 @@
         "sprites_demo": "Demostración de sprites",
 
         "submarine_panel": "Modelo del submarino",
-        "stripchart_panel": "Monitores de ModBus",
-        "attack_panel": "Hackeos",
-        "modbus_panel": "Datos de ModBus",
-        "network_panel": "Gráfico de red",
+        "modbus_chart_panel": "Monitores de ModBus",
+        "network_action_panel": "Hackeos",
+        "modbus_table_panel": "Datos de ModBus",
+        "network_graph_panel": "Gráfico de red",
 
-        "packet_console": "Paquetes",
-        "status_console": "Estado"
+        "packet_panel": "Paquetes",
+        "status_panel": "Estado"
     },
 
     "menu_bar_buttons": {

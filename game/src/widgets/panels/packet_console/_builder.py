@@ -7,8 +7,9 @@ from customtkinter import CTkFrame
 from ....network.buffer.meta_packet import MetaPacket
 
 class Builder(Panel):
+    KEY = "packet_panel"
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "packet_console")
+        super().__init__(master, context, self.KEY)
 
         self.buffer = context.net.buffer.packets
         #  self.create_filter_boxes(menu_frame)
@@ -49,11 +50,11 @@ class Builder(Panel):
 
     def start_printing(self):
         self.run = True
-        self.context.animation_manager.add_callback("packet_console", self.print_tick)
+        self.context.animation_manager.add_callback("packet_panel", self.print_tick)
     
     def stop_printing(self):
         self.run = False
-        self.context.animation_manager.remove_callback("packet_console")
+        self.context.animation_manager.remove_callback("packet_panel")
 
     def print_tick(self):
 
