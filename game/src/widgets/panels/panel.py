@@ -8,7 +8,7 @@ class Panel(CTkFrame):
     A panel fills its master with no padding, and has a menu bar.
     This structure parallelizes all the gui elements that fill a pane and have a menu bar.
     '''
-
+    KEY = "base_panel"
     def __init__(self, master, context: Context, menu_bar_label: str | None = None):
         self.context = context
         self.style = context.style

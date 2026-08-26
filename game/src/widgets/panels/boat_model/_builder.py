@@ -4,8 +4,9 @@ from ..panel import Panel
 from typing import cast
 
 class Builder(Panel):
+    KEY = "submarine_panel"
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "submarine_panel")
+        super().__init__(master, context, self.KEY)
 
         map = WorldMap(self, context)
 

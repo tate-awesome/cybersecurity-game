@@ -174,13 +174,13 @@
         "sprites_demo": "#",
         
         "submarine_panel": "#",
-        "stripchart_panel": "#",
-        "attack_panel": "#",
-        "modbus_panel": "#",
-        "network_panel": "#",
+        "modbus_chart_panel": "#",
+        "network_action_panel": "#",
+        "modbus_table_panel": "#",
+        "network_graph_panel": "#",
         
-        "packet_console": "#",
-        "status_console": "#"
+        "packet_panel": "#",
+        "status_panel": "#"
     },
     
     "menu_bar_buttons": {

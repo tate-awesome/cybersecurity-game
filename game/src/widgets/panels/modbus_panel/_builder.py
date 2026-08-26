@@ -9,10 +9,11 @@ from .variable_overlay import VariableOverlay
 from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
 class Builder(Panel):
+    KEY = "modbus_table_panel"
 
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "modbus_panel")
+        super().__init__(master, context, self.KEY)
 
         self.scrollable = Scrollable(self, context)
 

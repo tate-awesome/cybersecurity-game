@@ -6,8 +6,9 @@ from ... import Panes
 from ..panel import Panel
 
 class Builder(Panel):
+    KEY = "network_graph_panel"
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "network_panel")
+        super().__init__(master, context, self.KEY)
 
         self.buffer = context.net.buffer.packets
 

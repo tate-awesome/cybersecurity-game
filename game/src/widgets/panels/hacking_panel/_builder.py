@@ -12,10 +12,10 @@ from .forms.wifi import WifiForm
 from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
 class Builder(Panel):
-
+    KEY = "network_action_panel"
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, "attack_panel")
+        super().__init__(master, context, self.KEY)
 
         self.scrollable = Scrollable(self, context)
 

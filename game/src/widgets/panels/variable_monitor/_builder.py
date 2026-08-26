@@ -5,8 +5,9 @@ from ..panel import Panel
 from typing import Callable
 
 class Builder(Panel):
+    KEY = "modbus_chart_panel"
     def __init__(self, master, context: Context):
-        super().__init__(master, context, "stripchart_panel")
+        super().__init__(master, context, self.KEY)
         self.registers = self.context.states.get_registers()
         self.buffer = self.context.net.buffer.modbus
 
