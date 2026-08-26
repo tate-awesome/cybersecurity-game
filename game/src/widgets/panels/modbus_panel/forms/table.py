@@ -61,7 +61,13 @@ class MitmTable(BaseForm):
             if widget.winfo_ismapped():
                 widget.grid_remove()
 
-    def update(self):
+    def format_number(self, value: float, decimals: int = 2) -> str:
+        value = round(value, decimals)
+        if value == 0:
+            value = 0.00
+        return f"{value:.{decimals}f}".rstrip("0").rstrip(".")
+
+    def update(self):   
         for key in self.rows:
             this_row = self.rows[key]
             in_str = "-"
@@ -79,19 +85,18 @@ class MitmTable(BaseForm):
                 this_row["source"].configure(text=message)
                 continue
 
-
             # TODO switch to a get dump type of thing where it dumps all the changed values
 
             in_value = self.buffer.get_single(key, "in")
             if not in_value is None:
-                in_str = f"{in_value*factor:.2f}"
+                in_str = self.format_number(in_value*factor)
 
             out_value = self.buffer.get_single(key, "out")
             if not out_value is None:
-                out_str = f"{out_value*factor:.2f}"
+                out_str = self.format_number(out_value*factor)
 
-            command = self.buffer.get_command(key)
-
+            if com := self.buffer.get_command(key):
+                command = com
 
             this_row["incoming"].configure(text=in_str)
             this_row["outgoing"].configure(text=out_str)
