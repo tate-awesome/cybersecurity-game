@@ -1,7 +1,7 @@
 {
-    "_files": {
-        "color_settings": "_default.json",
-        "hack_settings": "lab.json",
-        "packet_console_settings": "lab.json"
-    }
+    "_ref": [
+        "../color_settings/_default.json",
+        "../hack_settings/lab.json",
+        "../packet_console_settings/lab.json"
+    ]
 }

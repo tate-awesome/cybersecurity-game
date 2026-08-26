@@ -1,7 +1,5 @@
 {
-    "_files": {
-        "_packages": "_default.json"
-    },
+    "_ref": "../_packages/_default.json",
 
     "packet_console_state": {
         "mode": "live"
