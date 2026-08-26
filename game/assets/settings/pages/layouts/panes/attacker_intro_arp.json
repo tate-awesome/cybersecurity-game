@@ -1,0 +1,41 @@
+{
+    "_note": "Trimmed pane tree for an intro ARP-spoofing lesson. No ModbusPanel, no NetworkDiagram, no display column - those widgets are simply absent, not hidden. HackingPanel gets more relative weight than in the full trifold because this lesson is about it.",
+
+    "key": "main_body",
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 5,
+            "widget": {
+                "key": "hacking_panel",
+                "type": "hacking_panel",
+                "menu_bar_label": "attack_panel",
+                "options": {
+                    "available_forms": ["arp", "sniff"]
+                }
+            }
+        },
+        {
+            "weight": 4,
+            "widget": {
+                "key": "packet_console",
+                "type": "packet_console",
+                "menu_bar_label": "packet_console",
+                "options": {
+                    "locked_filters": {
+                        "categories": { "hack": ["arp", "sniff"] },
+                        "hide_from_ui": ["hack"]
+                    }
+                }
+            }
+        },
+        {
+            "weight": 3,
+            "widget": {
+                "key": "status_console",
+                "type": "status_console",
+                "menu_bar_label": "status_console"
+            }
+        }
+    ]
+}

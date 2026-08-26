@@ -1,0 +1,22 @@
+{
+    "_note": "Full instructor/admin button set. Equivalent to MenuBar.page_buttons() today. Spliced into a page's menu_bar.buttons via {'_ref': 'layouts/menu_bar/admin.json'} - this file's top-level array is spliced element-by-element into the surrounding array, not nested as one item.",
+
+    "buttons": [
+        {"builtin": "quit_button"},
+        {"builtin": "refresh_button"},
+        {"builtin": "reset_button"},
+        {"builtin": "back_button"},
+        {"builtin": "help_button"},
+        {"builtin": "toggle_button"},
+        {"builtin": "theme_button"},
+        {"builtin": "pcap_button"},
+        {"builtin": "save_button"},
+        {"builtin": "load_button"},
+        {"builtin": "stream_button"},
+        {"builtin": "preset_button"},
+        {"builtin": "labels_button"},
+        {"builtin": "data_button"},
+        {"builtin": "preferences_button"},
+        {"builtin": "page_button"}
+    ]
+}

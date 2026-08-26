@@ -1,0 +1,10 @@
+{
+    "_note": "Student-safe button set for intro lessons. No theme/preset/labels/save/load/stream/preferences buttons - a student on this page can't swap presets, dump raw settings, or capture streams to disk.",
+
+    "buttons": [
+        {"builtin": "back_button"},
+        {"builtin": "help_button"},
+        {"builtin": "refresh_button"},
+        {"builtin": "quit_button"}
+    ]
+}
