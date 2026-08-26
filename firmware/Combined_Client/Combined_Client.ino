@@ -496,10 +496,15 @@ void runSubmarineCycle() {
 
       float added_x_noise = randomNoiseWithVariance(g_sensor_noise_variance);
       float added_y_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+      float added_theta_noise = randomNoiseWithVariance(0.01f);
+
+      if(!g_submarine_filtering_on){
+        added_theta_noise = randomNoiseWithVariance(4.0f);
+      }
 
       noise_x = state_x + added_x_noise;
       noise_y = state_y + added_y_noise;
-      noise_theta = state_theta + radians(random(-100,100)/100.0f);
+      noise_theta = state_theta + added_theta_noise;
     
       while (state_theta < 0) state_theta += 2.0f * PI;
       while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
