@@ -1,3 +1,6 @@
+from customtkinter import CTkFrame
+from ..app_core import Context
+
 from .frame_widgets.menu_bar import MenuBar
 from .frame_widgets.title_menu import TitleMenu
 from .frame_widgets.panes import Panes
@@ -5,6 +8,7 @@ from .frame_widgets.scrollable import Scrollable
 from .frame_widgets.overlay import Overlay
 from .frame_widgets.checkbox_overlay import CheckboxOverlay
 
+from .panels.panel import Panel as GenericPanel
 from .panels.hacking_panel._builder import Builder as HackingPanel
 from .panels.status_console._builder import Builder as StatusConsole
 from .panels.packet_console._builder import Builder as PacketConsole
@@ -15,3 +19,23 @@ from .panels.variable_monitor._builder import Builder as VariableMonitor
 from .panels.modbus_panel._builder import Builder as ModbusPanel
 
 from .canvases.test_triangle import TriangleCanvas
+
+PANELS = {
+    HackingPanel.KEY: HackingPanel,
+    ModbusPanel.KEY: ModbusPanel,
+    PacketConsole.KEY: PacketConsole,
+    NetworkDiagram.KEY: NetworkDiagram,
+    StatusConsole.KEY: StatusConsole,
+    BoatModel.KEY: BoatModel,
+    HVACModel.KEY: HVACModel,
+    VariableMonitor.KEY: VariableMonitor,
+}
+
+def panel(key: str, master: CTkFrame, context: Context):
+    '''
+    Generic panel builder. Make panels by key instead of class name.
+    '''
+    if key in PANELS:
+        PANELS[key](master, context)
+    else:
+        GenericPanel(master, context, f"err: no panel for this key: {key}")

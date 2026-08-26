@@ -17,6 +17,9 @@ from ..pages.title.title import Title
 from ..pages.title.select_mode import SelectMode
 from ..pages.title.select_demo import SelectDemo
 
+# /generic
+from ..pages.generic import GenericPage
+
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
 # All page builder functions should take a Context object as an argument and build the page on the root CTk object.
@@ -26,6 +29,7 @@ PAGES: dict[str, type] = {
     "title/select_mode": SelectMode,
         "attacker/v0": AttackerV0,
         "defender/v0": DefenderV0,
+        "generic": GenericPage,
     "title/select_demo": SelectDemo,
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
@@ -78,8 +82,8 @@ class Router:
             self.current_frame = PAGES[next_page](self.context)
         except Exception as e:
             print(f"Error building page '{next_page}': {e}. Redirecting to title page.")
-            if self.current_frame is not None:
-                self.current_frame.destroy()
+            while len(self.context.root.winfo_children()) > 0:
+                self.context.root.winfo_children()[0].destroy()
 
             self.navigation_stack = []
             self.current_page = "title"
