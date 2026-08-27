@@ -604,6 +604,8 @@ bool hvac_encryption_status = false;
 String hvac_key = "1234";
 bool hvac_AP_communication = false;
 float g_hvac_sensor_noise_variance = 0.1f;
+float last_temp = 71.6f;
+float last_sent_temp = 71.6f;
 
 // Scale factor to preserve decimals across Modbus integer registers
 // (e.g., 71.64°F -> 7164)
@@ -682,12 +684,40 @@ void runHvacCycle() {
   float heat_loss = 0.05f * (true_room_temp - ambient_temp);
   float heat_gain = state_damper * 9.0f;
 
+  if(hvac_AP_communication){
+    heat_gain = state_damper;
+    heat_loss = 0.02f * (true_room_temp - ambient_temp);
+  }
+
   true_room_temp += (heat_gain - heat_loss) * dt;
 
   true_room_temp += (random(-18, 18) / 100.0f); // Random physical perturbation (-0.18 to +0.18°F)
 
-  // 3. Noisy Sensor Reading (Raw measurement)
-  noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
+  float temp_change = true_room_temp - last_temp;
+
+  if (temp_change > 0.8f) {
+    true_room_temp = last_temp + 0.8f;
+  }
+  else if (temp_change < -0.8f) {
+    true_room_temp = last_temp - 0.8f;
+  }
+
+  float raw_noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
+
+  float measurement_change = raw_noisy_measurement - last_sent_temp;
+
+  if (measurement_change > 0.8f) {
+      noisy_measurement = last_sent_temp + 0.8f;
+  }
+  else if (measurement_change < -0.8f) {
+      noisy_measurement = last_sent_temp - 0.8f;
+  }
+  else {
+      noisy_measurement = raw_noisy_measurement;
+  }
+
+  last_temp = true_room_temp;
+  last_sent_temp = noisy_measurement;
 
   // 4. Send RAW Noisy Measurement Directly to Server
   uint16_t tx_val = (uint16_t)lroundf(noisy_measurement * SCALE);
