@@ -9,6 +9,11 @@ class Json:
         self.paths = paths
         self.encountered_files = set()
 
+    def load(self, path: Path):
+        output = {}
+        self.merge_from_file(output, path)
+        return output
+
     def merge_from_file(self, current_dict: dict, path: Path):
         '''
         Loads a dict from the given path, and deeply overwrites current_dict.
@@ -36,6 +41,7 @@ class Json:
         '''
         path = Path(path).resolve()
         if path in self.encountered_files:
+            print(f"Stopped circular json import from {path}")
             return
         self.encountered_files.add(path)
 
@@ -66,10 +72,13 @@ class Json:
                         continue
                     # If we already merged this file, skip it (see _merge_from_file)
                     self._merge_from_file(base_dict, base_path / ref)
-            elif (
-                isinstance(value, dict)
-                and isinstance(base_dict.get(key), dict)
-            ):
+            elif isinstance(value, dict):
+                # Always recurse into a nested dict, even if base_dict has
+                # nothing there yet - a plain overwrite would skip this
+                # dict's own contents, silently missing any "_ref" nested
+                # inside it instead of resolving it.
+                if not isinstance(base_dict.get(key), dict):
+                    base_dict[key] = {}
                 self.deeper_merge(base_dict[key], value, base_path)
             else:
                 base_dict[key] = value

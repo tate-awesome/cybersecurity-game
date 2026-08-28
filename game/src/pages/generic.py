@@ -16,6 +16,9 @@ class GenericPage(Page):
 
     def __init__(self, context: Context):
         super().__init__(context)
+
+        self.load_page("attacker_lab.json")
+
         net = context.refresh_net(HardwareNetwork)
 
         menu_bar = widgets.MenuBar(self, context, "attacker")

@@ -2,12 +2,14 @@
     "_note": "Full instructor build of attacker/v0, submarine lesson. Draft page.json format - see settings/pages/ discussion. Filename stem ('attacker_lab') is this page's default save-slot key for saved input values, since save_slots.inputs is omitted below.",
 
     "title": "attacker",
-    "package": "lab_submarine",
-
-    "save_slots": {
-        "inputs": null,
-        "panes": null
+    "settings": {
+        "_ref": [
+            "../_packages/_default.json",
+            "../hack_settings/lab.json"
+        ]
     },
+
+    "inputs": {},
 
     "buffers": ["status", "packets", "modbus", "submarine", "network"],
 

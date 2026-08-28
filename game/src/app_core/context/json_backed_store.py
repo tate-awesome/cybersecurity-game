@@ -37,10 +37,8 @@ class JsonBackedStore:
         '''
         Loads the default JSON file.
         '''
-        default = {}
         file_path = self.default_dir / "_default.json"
-        self.context.json.merge_from_file(default, file_path)
-        return default
+        return self.context.json.load(file_path)
 
     def reset(self):
         self.data = self.get_default()
