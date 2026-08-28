@@ -1,0 +1,49 @@
+{
+    "_note": "Trimmed student build of attacker/v0, ARP-spoofing intro lesson. Shares nothing structurally with attacker_lab.json except the widget/button vocabulary - a different lesson, a different page.json, a different save slot ('attacker_intro_arp'), so a student's saved inputs here never collide with the instructor lab build's saved inputs.",
+
+    "title": "attacker",
+    "package": "lab",
+
+    "menu_bar": {
+        "title": "attacker",
+        "buttons": [
+            { "_ref": "layouts/menu_bar/intro.json" }
+        ]
+    },
+
+    "panes": { "_ref": "layouts/panes/attacker_intro_arp.json" }
+}
+
+/assets/
+    user_preferences.json                   # keeps theme and localization references, and actual display and behavior settings
+    /pages/lesson_x/
+        default_config.json:
+            {
+                "_note": "Modbus-focused lesson with observation enabled only.",
+                "key": "lesson_x",              # used by page builder & context to find the page's unique data, such as title label
+                "settings": {
+                    "_ref": "color_settings/alt.json"              # the path is figured out by context.Paths. We only need to write the settings that get merged with default package
+                },
+                "layout": {
+                    "panes": {
+                        "_ref": "builders/observe_modbus.json",                   # the path is figured out by context.Paths. The layout file has all the widget options at the top level
+                    },
+                    "options": {                                                # by default, menu bars have themes and navigation only
+                        "_ref": [
+                            "menu_bar/pcap_streaming.json",                # we overwrite the top level to enable these buttons/overlays
+                            "menu_bar/json_streaming.json",
+                            "modbus_table_panel/read_only.json",
+
+                        ]
+                    }
+                },
+
+            }
+        user_configs/                                   # only saves mutable information relevant to this page: inputs and pane sizes. config is merged with default on startup
+            config_1.json:
+                {
+                    "settings": {},
+                    "layout": {"panes": {}}
+                }
+        default_captures/                           # has json and pcap files for viewing during the lesson
+        user_captures/                              # has json and pcap files that the user saved during the lesson. Maybe they submit these files?
