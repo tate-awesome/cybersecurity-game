@@ -6,7 +6,7 @@ class AnimationManager(CallbackRegistry):
     '''
     Global manager for animation loops. A single interruptor is more performant than an interruptor for every canvas.
     '''
-    def __init__(self, root: CTk, frame_time_ms: int = 50):
+    def __init__(self, root: CTk, frame_time_ms: int = 100):
         super().__init__(root, tag="[Animation]")
         self.run = True
         self.time = frame_time_ms

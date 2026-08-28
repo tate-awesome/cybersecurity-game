@@ -3,6 +3,7 @@ from....app_core import Context
 from .camera import Camera
 from . import transforms as t
 import math, time, bisect
+import tkinter.font as tkfont
 
 # Layout constants for strip chart axes
 TICK_LENGTH = 5
@@ -43,6 +44,23 @@ class Draw:
         self.canvas = canvas
         self.camera = camera
         self.context = context
+        self._scaled_fonts = {}
+
+    def _get_font(self, name):
+        '''
+        Fonts drawn directly on the canvas (as opposed to CTk widget labels) don't get
+        the automatic DPI/UI scaling CTk widgets apply on render, so chart text would
+        stay a fixed pixel size regardless of style.get_scale_correction(). This scales
+        the named font's pixel size to match, caching per name/scale so it isn't rebuilt
+        every frame - only when the scale correction actually changes.
+        '''
+        scale = self.context.style.get_scale_correction()
+        cached = self._scaled_fonts.get(name)
+        if cached is None or cached[0] != scale:
+            base = self.context.style.get_font(name)
+            font = tkfont.Font(font=base.create_scaled_tuple(scale))
+            self._scaled_fonts[name] = (scale, font)
+        return self._scaled_fonts[name][1]
 
     def background(self, color: str):
         w = self.canvas.winfo_width()
@@ -81,9 +99,9 @@ class Draw:
         # while the picture is frozen (see the tick loop below).
         now = wall_now
 
-        number_font = self.context.style.get_font("chart_numbers")
-        label_font = self.context.style.get_font("chart_label")
-        title_font = self.context.style.get_font("chart_title")
+        number_font = self._get_font("chart_numbers")
+        label_font = self._get_font("chart_label")
+        title_font = self._get_font("chart_title")
 
         number_height = number_font.metrics("linespace")
         label_height = label_font.metrics("linespace")
@@ -198,7 +216,7 @@ class Draw:
         self.canvas.pooled_item("line", (layout.left, layout.top, layout.left, layout.bottom), fill=axes_color, width=2)
 
     def strip_chart_numbers(self, layout: StripChartLayout, number_color="black"):
-        number_font = self.context.style.get_font("chart_numbers")
+        number_font = self._get_font("chart_numbers")
 
         for cx, label in layout.x_ticks:
             self.canvas.pooled_item("text", (cx, layout.bottom + TICK_LENGTH + LABEL_GAP), text=label,
@@ -211,26 +229,26 @@ class Draw:
 
     def strip_chart_title(self, title: str, text_color="black"):
         # Top-middle of the canvas, between the units label and the current value
-        title_font = self.context.style.get_font("chart_title")
+        title_font = self._get_font("chart_title")
         w = self.canvas.winfo_width()
         self.canvas.pooled_item("text", (w / 2, LABEL_GAP), text=title, fill=text_color, font=title_font, anchor="n")
 
     def strip_chart_units_label(self, units_label: str, text_color="black"):
         # Top-left of the canvas, where the title used to sit
-        title_font = self.context.style.get_font("chart_title")
+        title_font = self._get_font("chart_title")
         self.canvas.pooled_item("text", (LABEL_GAP, LABEL_GAP), text=units_label, fill=text_color, font=title_font, anchor="nw")
 
     def strip_chart_value_label(self, layout: StripChartLayout, text_color="black"):
         # Top-right of the canvas: the most recent history value, in units
-        title_font = self.context.style.get_font("chart_title")
+        title_font = self._get_font("chart_title")
         w = self.canvas.winfo_width()
         self.canvas.pooled_item("text", (w - LABEL_GAP, LABEL_GAP), text=layout.value_label,
                                  fill=text_color, font=title_font, anchor="ne")
 
     def strip_chart_x_label(self, layout: StripChartLayout, x_label: str, text_color="black"):
         # Centered under the plot area, below the time tick numbers
-        label_font = self.context.style.get_font("chart_label")
-        number_font = self.context.style.get_font("chart_numbers")
+        label_font = self._get_font("chart_label")
+        number_font = self._get_font("chart_numbers")
         number_height = number_font.metrics("linespace")
         x_label_y = layout.bottom + TICK_LENGTH + LABEL_GAP + number_height + LABEL_GAP
         cx = (layout.left + layout.right) / 2
@@ -273,7 +291,7 @@ class Draw:
         hover_time = self.camera.canvas_x_to_time(cx, layout.now, layout.pixels_per_second, layout.time_offset)
         time_text = t.format_tick(hover_time - layout.wall_now, layout.time_decimals)
 
-        number_font = self.context.style.get_font("chart_numbers")
+        number_font = self._get_font("chart_numbers")
         self._text_with_background(cx - LABEL_GAP, cy + LABEL_GAP, time_text, "ne",
                                     number_font, text_color, background_color)
 
