@@ -2,9 +2,10 @@ from customtkinter import CTkCanvas, CTkFrame
 from ....app_core import Context
 from .draw import Draw
 from .camera import Camera
+from ..pooled_canvas import PooledCanvasMixin
 from typing import Callable
 
-class Canvas(CTkCanvas):
+class Canvas(PooledCanvasMixin, CTkCanvas):
     '''
     Base class for specialized canvas widgets with worldspace, animations, and cameras.
     Special behavior is defined here, then activated in the specialized canvas.
@@ -25,6 +26,7 @@ class Canvas(CTkCanvas):
         super().__init__(master)
         self.pack(side="top", fill="both", expand=True, pady=context.style.gap, padx=context.style.gap)
         self.context = context
+        self._pool_setup()
 
         # Make a Camera that tracks panning and zooming and maps. Canvas events change the values, Draw methods use the values
         self.camera = Camera(self, context, world_bounds)
@@ -46,10 +48,28 @@ class Canvas(CTkCanvas):
         self.frame_callback = frame_callback
 
 
+    def run_frame(self):
+        '''
+        Runs one frame_callback invocation, reusing this canvas's existing
+        items across the call (see PooledCanvasMixin) instead of the old
+        delete("all")-then-recreate-everything pattern. Centralized here
+        (rather than in each frame_callback) so every path that can trigger
+        a redraw - the animation loop and a manual resize - reconciles the
+        item pool the same way.
+        '''
+        if self.frame_callback is None:
+            return
+        self.begin_frame()
+        try:
+            self.frame_callback()
+        finally:
+            self.end_frame()
+
+
     def start_animation(self, framerate_ms: float = 50):
         self.framerate_ms = framerate_ms
         self.do_animation_loop = True
-        self.context.animation_manager.add_callback(self.__class__.__name__, self.frame_callback)
+        self.context.animation_manager.add_callback(self.__class__.__name__, self.run_frame)
 
 
     def stop_animation(self):
@@ -61,5 +81,4 @@ class Canvas(CTkCanvas):
         # if self.frame_callback is not None and self.do_animation_loop:
         self.camera.reset_scale()
         self.camera.update_padding()
-        if self.frame_callback is not None:
-            self.frame_callback()
+        self.run_frame()

@@ -22,12 +22,13 @@ class ModbusBuffer:
 
         self.stripchart_buffers = {}
         self.stripchart_locks = {}
-        self.singles = {}
         self.single_times = {}
-        self.commands = {}
         self.reset()
 
     def reset(self):
+        with self.singles_lock:
+            self.singles = {}
+            self.commands = {}
         for var_name in self.context.states.get_registers():
             for dir in ["in", "out"]:
                 key = f"{var_name}_{dir}"

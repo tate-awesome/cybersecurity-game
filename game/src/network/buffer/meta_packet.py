@@ -62,10 +62,16 @@ class MetaPacket:
         self.set("ip_dst", pkt[IP].dst if pkt.haslayer(IP) else "-")
 
         # Direction information
-        if self.get("mac_dst").lower() == self.LOCAL_MAC or self.get("mac_dst").lower() == self.BROADCAST_MAC or dir == "recv":
+        if dir == "in":
             direction = "in"
             direction_verbose = "Received"
-        elif self.get("mac_src").lower() == self.LOCAL_MAC or dir == "send":
+        elif dir == "out":
+            direction = "out"
+            direction_verbose = "Sent"
+        elif self.get("mac_dst").lower() == self.LOCAL_MAC or self.get("mac_dst").lower() == self.BROADCAST_MAC:
+            direction = "in"
+            direction_verbose = "Received"
+        elif self.get("mac_src").lower() == self.LOCAL_MAC:
             direction = "out"
             direction_verbose = "Sent"
         else:

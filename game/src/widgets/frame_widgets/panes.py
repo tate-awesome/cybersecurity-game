@@ -23,7 +23,7 @@ class Panes(PanedWindow):
 
         color = style.color("root")
 
-        super().__init__(master, orient=direction, background=color, sashwidth=style.igap, opaqueresize=0)
+        super().__init__(master, orient=direction, background=color, sashwidth=style.igap, opaqueresize=1)
 
         if pad_around:
             self.pack(style.packing())

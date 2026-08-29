@@ -135,7 +135,8 @@
         "quit_button": "Close the program.",
         "preferences_button": "Saves the current theme, mode, and localization for next time.",
         "fields_button": "Saves the current checkboxes and entries for next time.",
-        "page_button": "Save the current page for a shortcut on startup."
+        "page_button": "Save the current page for a shortcut on startup.",
+        "stream_button": "Continuously streams captured packets to a JSON Lines file as they arrive."
     },
 
     "title_text": {
@@ -203,6 +204,8 @@
         "fields_button": "Save Inputs",
         "page_button": "Favorite Page",
         "clear_packets_button": "Clear Data",
+        "stream_button": "Start Stream",
+        "stream_button_active": "Stop Stream",
 
         "minimize": "Minimize",
         "maximize": "Maximize",

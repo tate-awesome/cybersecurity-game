@@ -14,7 +14,6 @@ class TriangleCanvas(Canvas):
         super().__init__(master, context, ((-5,-5),(5,5)))
 
         def frame_callback():
-            self.delete("all")
             self.draw.test_triangle()
         self.set_frame_callback(frame_callback)
         self.start_animation()

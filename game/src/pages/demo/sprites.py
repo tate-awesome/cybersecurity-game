@@ -19,7 +19,6 @@ class Sprites(Page):
     def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         draw = ViewPort(canvas, scale, offset)
         with draw_lock:
-            canvas.delete("all")
             draw.ocean()
             draw.line([(0, 0), (200, 200)], "white")
             draw.boat((100,100), 0)

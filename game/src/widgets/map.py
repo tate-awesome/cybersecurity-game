@@ -8,7 +8,13 @@ from threading import Lock
 from typing import Callable
 from ..app_core import Context
 from ..geometry import apply_scale_about
+from .canvases.pooled_canvas import PooledCanvasMixin
 import time
+
+
+class _PooledCanvas(PooledCanvasMixin, CTkCanvas):
+    pass
+
 
 class Map:
 
@@ -30,8 +36,11 @@ class Map:
         self.framerate_ms = framerate_ms
         self.draw_lock = Lock()
 
-        # Create canvas
-        self.canvas = CTkCanvas(parent)
+        # Create canvas - a pooled canvas so draw_callback can reuse items
+        # across frames (see PooledCanvasMixin) instead of deleting and
+        # recreating everything on every redraw.
+        self.canvas = _PooledCanvas(parent)
+        self.canvas._pool_setup()
         self.canvas.pack(side="top", fill="both", expand=True, pady=context.style.gap, padx=context.style.gap)
 
         # Bind events
@@ -60,12 +69,26 @@ class Map:
             if now - self._last_draw_time < self.framerate_ms / 1000.0:
                 return
             self._last_draw_time = now
-            self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+            self.run_frame()
         self.frame_callback = frame_callback
         self.context.animation_manager.add_callback(f"Map_{id(self)}", frame_callback)
 
+    def run_frame(self):
+        '''
+        Runs draw_callback once, reusing the canvas's existing items across
+        the call (see PooledCanvasMixin) instead of the old delete("all")-
+        then-recreate-everything pattern. Every path that can trigger a
+        redraw - the animation loop, resize, pan, zoom, reset - goes through
+        this so the item pool is always reconciled the same way.
+        '''
+        self.canvas.begin_frame()
+        try:
+            self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+        finally:
+            self.canvas.end_frame()
+
     def resize(self, event):
-        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+        self.run_frame()
 
     def start_pan(self, event):
         self.x_pan_start = event.x
@@ -81,7 +104,7 @@ class Map:
         self.x_pan_start = event.x
         self.y_pan_start = event.y
 
-        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+        self.run_frame()
 
     def apply_scale_about(self, C: tuple[float, float], k: float):
         # Changes scale and offset based on zoom event and direction
@@ -109,7 +132,7 @@ class Map:
         x_focus = self.canvas.canvasx(event.x)
         y_focus = self.canvas.canvasy(event.y)
         self.apply_scale_about((x_focus,y_focus), factor)
-        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
+        self.run_frame()
 
     def reset_scale(self):
         self.scale = 1.0
@@ -117,4 +140,4 @@ class Map:
 
     def reset_view(self, event=None):
         self.reset_scale()
-        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)  
+        self.run_frame()

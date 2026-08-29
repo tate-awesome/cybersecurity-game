@@ -27,8 +27,6 @@ class WorldMap(Canvas):
                 except (TypeError, ValueError):
                     return False
 
-            self.delete("all")
-
             if sprite_enabled("ocean"):
                 self.draw.background(color("ocean"))
 

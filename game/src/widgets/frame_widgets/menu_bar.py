@@ -253,7 +253,16 @@ class MenuBar(CTkFrame):
 
     def load_button(self):
         button = self.add_button("load_button", self.context.net.replay.load_json)
-    
+
+    def stream_button(self):
+        button = self.reversible_button(
+            self.context.net.buffer.file_stream.start,
+            self.context.net.buffer.file_stream.stop,
+            "stream_button",
+            "stream_button_active",
+        )
+        self.add_tooltip(button, "stream_button")
+
     def preset_button(self):
         button = self.add_button("preset_button", self.context.states.select)
         self.add_tooltip(button, "preset_button")
@@ -289,6 +298,7 @@ class MenuBar(CTkFrame):
         self.pcap_button()
         self.save_button()
         self.load_button()
+        self.stream_button()
         self.preset_button()
         self.labels_button()
         self.data_button()
