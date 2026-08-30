@@ -99,11 +99,7 @@ class Json:
 
     def save_to_file(self, data: dict, file_path: Path):
         try:
-            with open(file_path, "w", encoding="utf-8") as file:
-                json.dump(data, file)
-        except FileNotFoundError as e:
-            print(f"Err: [{e}]. Creating parent directory")
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            self.paths.generate_path(file_path.parent)
             with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file)
         except Exception as e:

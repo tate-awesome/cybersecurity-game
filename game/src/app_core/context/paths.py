@@ -4,6 +4,7 @@ import os
 
 class Paths:
     def __init__(self):
+        # Readonly
         self.root: Path = Path(__file__).resolve().parents[3]
         self.assets: Path = self.root / "assets"
         self.themes: Path = self.assets / "themes"
@@ -14,10 +15,18 @@ class Paths:
         self.mcaptures: Path = self.assets / "mcaptures"
         self.pages: Path = self.settings / "pages"
 
-        self.user_data: Path = self.root / "user_data"
-        self.user_mcaptures: Path = self.user_data / "mcaptures"
-        self.user_pcaptures: Path = self.user_data / "pcaptures"
-        self.user_pages: Path = self.user_data / "page_data"
+        # Dynamically generated, read & write
+        self.user_data: Path = self.generate_path(self.root / "user_data")
+        self.user_mcaptures: Path = self.generate_path(self.user_data / "mcaptures")
+        self.user_pcaptures: Path = self.generate_path(self.user_data / "pcaptures")
+        self.user_pages: Path = self.generate_path(self.user_data / "page_data")
+
+    #     self.page_folder_names: list[str] = [f.name for f in self.pages.iterdir() if f.is_dir()]
+    #     self.page_folders: list[Path] = [self.pages / folder_name for folder_name in self.page_folder_names]
+    #     self.user_page_folders: list[Path] = [self.user_pages / folder_name for folder_name in self.page_folder_names]
+
+    # def get_page_
+
 
     def select_path(self, directory: str | os.PathLike[str], prompt: str, filetypes: list[tuple[str, str]] = [("json", "*.json")]) -> str | None:
         try:
@@ -32,3 +41,11 @@ class Paths:
                 return file_path
         except Exception:
             return None
+
+    def generate_path(self, file_path: Path):
+        try:
+            file_path.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"Err: [{e}] while generating a directory.")
+        finally:
+            return file_path
