@@ -279,10 +279,6 @@ class MenuBar(CTkFrame):
         button = self.add_button("fields_button", self.context.states.save_inputs)
         self.add_tooltip(button, "fields_button")
 
-    def preferences_button(self):
-        button = self.add_button("preferences_button", self.context.preferences.save_preferences)
-        self.add_tooltip(button, "preferences_button")
-
     def page_button(self):
         button = self.add_button("page_button", self.context.preferences.save_page)
         self.add_tooltip(button, "page_button")
@@ -302,6 +298,5 @@ class MenuBar(CTkFrame):
         self.preset_button()
         self.labels_button()
         self.data_button()
-        self.preferences_button()
         self.page_button()
         

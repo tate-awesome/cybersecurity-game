@@ -172,9 +172,6 @@ class Style:
                    x_offset=self.igap, y_offset=self.igap, border_width=2,
                    border_color=self.color("accent"))
 
-    def mode(self):
-        return get_appearance_mode()
-
     def load_preferred_theme(self):
         if self.context.preferences.has("theme"):
             file_path = self.context.preferences.data["theme"]
@@ -209,6 +206,8 @@ class Style:
             mode = "Dark"
         set_appearance_mode(mode)
         # set_appearance_mode refreshes all CTk elements automatically, but we have some TK elements and custom colors.
+        
+        self.context.preferences.set("mode", mode)
         self.context.router.refresh()
 
     def select_theme(self):
@@ -219,4 +218,5 @@ class Style:
         file_path = self.context.paths.select_path(themes_dir, "Select a Theme File")
         ThemeManager.load_theme(file_path)
         self.current_theme = file_path
+        self.context.preferences.set("theme", self.current_theme)
         self.context.router.refresh()

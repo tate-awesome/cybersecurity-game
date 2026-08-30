@@ -10,10 +10,8 @@ class PreferencesData(TypedDict, total=False):
     '''
     mode: str
     theme: str
-    labels: dict
+    labels_file: str
     page: str
-    panes: dict
-    settings: dict
     fullscreen: str
 
 class Preferences:
@@ -24,10 +22,6 @@ class Preferences:
         Created before the root in App().
         '''
         self.context: "Context" = context
-        # PreferencesData documents the expected shape, but self.data itself
-        # stays a plain dict - it needs generic dict operations (.clear(), being
-        # passed to Json.save_to_file()) a TypedDict doesn't support, and it's
-        # loaded from user-editable JSON so the shape isn't actually guaranteed.
         self.data: dict = {}
         self.load()
 
@@ -62,21 +56,13 @@ class Preferences:
     def clear(self):
         self.data.clear()
         self.data = {
-            "mode": "",
-            "theme": "",
-            "labels": {},
-            "page": "",
-            "fullscreen": ""
+            "mode": "",             # autosaved in Style
+            "theme": "",            # autosaved in Style
+            "labels_file": "",      # autosaved in LocalizationManager
+            "page": "",             # manual saved in menu bar/router
+            "fullscreen": ""        # autosaved in KeyBinds
         }
         self.save()
-
-    def save_settings(self):
-        self.set("settings", self.context.states.get())
-
-    def save_preferences(self):
-        self.set("labels", self.context.labels.get())
-        self.set("mode", self.context.style.mode())
-        self.set("theme", self.context.style.current_theme)
 
     def save_page(self):
         self.set("page", self.context.router.current_page)
