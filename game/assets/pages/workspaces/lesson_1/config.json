@@ -1,0 +1,15 @@
+{
+    "_note": "Trimmed student build of attacker/v0, ARP-spoofing intro lesson. Shares nothing structurally with attacker_lab.json except the widget/button vocabulary - a different lesson, a different page.json, a different save slot ('attacker_intro_arp'), so a student's saved inputs here never collide with the instructor lab build's saved inputs.",
+
+    "title": "attacker",
+    "package": "lab",
+
+    "menu_bar": {
+        "title": "attacker",
+        "buttons": [
+            { "_ref": "layouts/menu_bar/intro.json" }
+        ]
+    },
+
+    "panes": { "_ref": "layouts/panes/attacker_intro_arp.json" }
+}
