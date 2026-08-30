@@ -276,7 +276,7 @@ class MenuBar(CTkFrame):
         self.add_tooltip(button, "help_button")
 
     def data_button(self):
-        button = self.add_button("fields_button", self.context.preferences.save_settings)
+        button = self.add_button("fields_button", self.context.states.save_inputs)
         self.add_tooltip(button, "fields_button")
 
     def preferences_button(self):

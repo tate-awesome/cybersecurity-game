@@ -101,5 +101,11 @@ class Json:
         try:
             with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file)
+        except FileNotFoundError as e:
+            print(f"Err: [{e}]. Creating parent directory")
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(file_path, "w", encoding="utf-8") as file:
+                json.dump(data, file)
         except Exception as e:
-            print(e)
+            print(f"Err: [{e}]. Other error occurred while saving json.")
+

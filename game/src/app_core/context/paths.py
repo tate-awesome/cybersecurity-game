@@ -10,10 +10,14 @@ class Paths:
         self.labels: Path = self.assets / "labels"
         self.settings: Path = self.assets / "settings"
         self.packages: Path = self.settings / "_packages"
-        self.preferences: Path = self.assets / "preferences"
         self.pcaptures: Path = self.assets / "pcaptures"
         self.mcaptures: Path = self.assets / "mcaptures"
         self.pages: Path = self.settings / "pages"
+
+        self.user_data: Path = self.root / "user_data"
+        self.user_mcaptures: Path = self.user_data / "mcaptures"
+        self.user_pcaptures: Path = self.user_data / "pcaptures"
+        self.user_pages: Path = self.user_data / "page_data"
 
     def select_path(self, directory: str | os.PathLike[str], prompt: str, filetypes: list[tuple[str, str]] = [("json", "*.json")]) -> str | None:
         try:

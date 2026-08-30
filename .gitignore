@@ -5,4 +5,4 @@ __pycache__/
 **/__pycache__/
 *.py[cod]
 *$py.class
-preferences.json
+game/user_data
