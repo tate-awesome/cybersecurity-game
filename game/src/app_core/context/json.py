@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Any
 from .paths import Paths
 
 class Json:
@@ -20,9 +21,36 @@ class Json:
         If the loaded dict (or anything it in turn references) has a "_ref" key,
         its value - a single relative path, or a list of them - is resolved
         relative to the directory of the file it appears in, then merged in too.
+
+        A "_ref" can also appear as an item inside a list (e.g.
+        "buttons": [{"_ref": "layouts/menu_bar/admin.json"}]) - there, the
+        referenced file must itself be a JSON array, and its elements are
+        spliced into the surrounding list in place of the {"_ref": ...} item,
+        rather than merged as a single nested item.
         '''
         self.encountered_files.clear()
         self._merge_from_file(current_dict, path)
+
+    def _load_file(self, path: Path) -> Any:
+        '''
+        Loads and returns the raw JSON at path, tracking it in encountered_files
+        so the same file reached via two different relative chains (or a
+        genuine reference cycle, e.g. packet_console_settings/_default.json
+        <-> _packages/_default.json) is only ever loaded once per top-level
+        load()/merge_from_file() call. Returns None if already seen or on error.
+        '''
+        path = Path(path).resolve()
+        if path in self.encountered_files:
+            print(f"Stopped circular json import from {path}")
+            return None
+        self.encountered_files.add(path)
+
+        try:
+            with open(path, encoding="utf-8") as json_file:
+                return json.load(json_file)
+        except Exception as e:
+            print(f"Error during json merge from file ({path}): {e}")
+            return None
 
     def _merge_from_file(self, current_dict: dict, path: Path):
         '''
@@ -32,25 +60,13 @@ class Json:
 
         "_ref" paths found inside resolve against path's own parent directory
         (see deeper_merge), not a fixed root - so a folder of files can
-        reference its siblings without knowing where it's been placed. Paths
-        are resolved to absolute before the encountered_files check so the same
-        file reached via two different relative chains is only merged once,
-        and a genuine reference cycle (a file that transitively refers back to
-        itself, e.g. packet_console_settings/_default.json <-> _packages/_default.json)
-        terminates instead of recursing forever.
+        reference its siblings without knowing where it's been placed.
         '''
-        path = Path(path).resolve()
-        if path in self.encountered_files:
-            print(f"Stopped circular json import from {path}")
+        path = Path(path)
+        data = self._load_file(path)
+        if data is None:
             return
-        self.encountered_files.add(path)
-
-        try:
-            with open(path, encoding="utf-8") as json_file:
-                data = json.load(json_file)
-            self.deeper_merge(current_dict, data, path.parent)
-        except Exception as e:
-            print(f"Error during json merge from file ({path}): {e}")
+        self.deeper_merge(current_dict, data, Path(path).resolve().parent)
 
     def deeper_merge(self, base_dict: dict, better_dict: dict | None, base_path: Path):
         '''
@@ -80,8 +96,44 @@ class Json:
                 if not isinstance(base_dict.get(key), dict):
                     base_dict[key] = {}
                 self.deeper_merge(base_dict[key], value, base_path)
+            elif isinstance(value, list):
+                base_dict[key] = self.resolve_list(value, base_path)
             else:
                 base_dict[key] = value
+
+    def resolve_list(self, items: list, base_path: Path) -> list:
+        '''
+        Processes a JSON array for "_ref" splicing (see merge_from_file) and
+        recurses into any dict/list elements it contains so refs nested
+        further down (e.g. a pane-tree list of {"weight": ..., "panes": {"_ref": ...}})
+        are resolved too.
+        '''
+        resolved = []
+        for item in items:
+            if isinstance(item, dict) and self._ref_word in item:
+                refs = item[self._ref_word]
+                refs = refs if isinstance(refs, list) else [refs]
+                for ref in refs:
+                    if not isinstance(ref, str):
+                        print(f"Error resolving _ref in {base_path}: {ref!r} is not a relative path string")
+                        continue
+                    ref_path = base_path / ref
+                    data = self._load_file(ref_path)
+                    if data is None:
+                        continue
+                    if isinstance(data, list):
+                        resolved.extend(self.resolve_list(data, Path(ref_path).resolve().parent))
+                    else:
+                        print(f"Error resolving list _ref in {base_path}: {ref_path} must contain a JSON array, got {type(data).__name__}")
+            elif isinstance(item, dict):
+                merged = {}
+                self.deeper_merge(merged, item, base_path)
+                resolved.append(merged)
+            elif isinstance(item, list):
+                resolved.append(self.resolve_list(item, base_path))
+            else:
+                resolved.append(item)
+        return resolved
 
     def deep_merge(self, base_dict: dict, better_dict: dict | None):
         # See deeper_merge - better_dict may not be a dict if it came from a

@@ -8,7 +8,7 @@
             "weight": 5,
             "widget": {
                 "key": "hacking_panel",
-                "type": "hacking_panel",
+                "type": "network_action_panel",
                 "menu_bar_label": "attack_panel",
                 "options": {
                     "available_forms": ["arp", "sniff"]
@@ -19,7 +19,7 @@
             "weight": 4,
             "widget": {
                 "key": "packet_console",
-                "type": "packet_console",
+                "type": "packet_panel",
                 "menu_bar_label": "packet_console",
                 "options": {
                     "locked_filters": {
@@ -33,7 +33,7 @@
             "weight": 3,
             "widget": {
                 "key": "status_console",
-                "type": "status_console",
+                "type": "status_panel",
                 "menu_bar_label": "status_console"
             }
         }

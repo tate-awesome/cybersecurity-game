@@ -15,6 +15,6 @@ class SelectMode(Page):
         panel.button("hardware_attacker", lambda:self.router.show("attacker/v0"))
         panel.button("hardware_defender", lambda:self.router.show("defender/v0"))
         panel.button("select_demo", lambda:self.router.show("title/select_demo"))
-        panel.button("generic_page", lambda:self.router.show("generic"))
+        panel.button("generic_page", lambda:self.router.show("attacker_lab"))
         panel.button("back", self.router.go_back)
         panel.button("quit", self.router.quit)

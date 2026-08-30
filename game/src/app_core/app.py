@@ -10,7 +10,11 @@ class App():
     Creates the Router and starts the CTk main loop
     '''
 
-    def __init__(self, start_page="main_menu", title="Game", start_fullscreen = False):
+    def __init__(self, start_page: str | None = None, title="Game", start_fullscreen = False):
+        '''
+        start_page: page key to open first. If None, the Router reads it
+        from the manifest's "startup_page" instead.
+        '''
 
         # Start a CTk app
         self.root = ctk.CTk()

@@ -6,6 +6,7 @@ from .preferences import Preferences
 from .keybinds import KeyBinds
 from .input_manager import InputManager
 from .localization_manager import LocalizationManager
+from .page_manager import PageManager
 import os, json, platform
 from .paths import Paths
 from .json import Json
@@ -49,6 +50,7 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         self.preferences: Preferences = Preferences(self)
         KeyBinds(self)
+        self.pages: PageManager = PageManager(self)
         self.states: InputManager = InputManager(self)
         self.labels: LocalizationManager = LocalizationManager(self)
         self.style.load_preferred_theme()
@@ -58,6 +60,7 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         Resets members in a session
         '''
+        self.pages.reload()
         self.states.reset()
         self.labels.reset()
         self.style.load_default_theme()

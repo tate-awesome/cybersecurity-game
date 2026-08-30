@@ -13,7 +13,7 @@ class Paths:
         self.packages: Path = self.settings / "_packages"
         self.pcaptures: Path = self.assets / "pcaptures"
         self.mcaptures: Path = self.assets / "mcaptures"
-        self.pages: Path = self.settings / "pages"
+        self.pages: Path = self.assets / "pages"
 
         # Dynamically generated, read & write
         self.user_data: Path = self.generate_path(self.root / "user_data")

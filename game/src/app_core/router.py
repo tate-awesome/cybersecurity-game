@@ -17,8 +17,8 @@ from ..pages.title.title import Title
 from ..pages.title.select_mode import SelectMode
 from ..pages.title.select_demo import SelectDemo
 
-# /generic
-from ..pages.generic import GenericPage
+# /generic (data-driven pages, dispatched by each page's own config.json "build_type")
+from ..pages.generic import WorkspacePage
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
@@ -29,11 +29,19 @@ PAGES: dict[str, type] = {
     "title/select_mode": SelectMode,
         "attacker/v0": AttackerV0,
         "defender/v0": DefenderV0,
-        "generic": GenericPage,
     "title/select_demo": SelectDemo,
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,
+}
+
+# Page builder classes for data-driven pages, keyed by the "build_type" a
+# page's own config.json declares. PageManager discovers every config.json
+# under assets/pages at startup; any key it finds with a build_type listed
+# here gets merged into PAGES below so it navigates like any other page,
+# without needing a hand-written entry above.
+GENERIC_BUILD_TYPES: dict[str, type] = {
+    "workspace": WorkspacePage,
 }
 
 
@@ -43,15 +51,26 @@ class Router:
     Builds the first page on startup
     '''
     
-    def __init__(self, root: CTk, start_page: str):
+    def __init__(self, root: CTk, start_page: str | None = None):
         '''
         Creates the app's Context object and shows the first page.
+        If start_page isn't given, it's read from the manifest's
+        "startup_page" instead.
         '''
         self.context: Context = Context(root, self)
         self.style = self.context.style
         self.navigation_stack: list[str] = []
         self.current_frame: CTkFrame | None = None
         self.current_page: str | None = None
+
+        # Register any data-driven page PageManager discovered whose
+        # build_type is known, without overriding a hand-written entry above.
+        for key, build_type in self.context.pages.build_types.items():
+            if key not in PAGES and build_type in GENERIC_BUILD_TYPES:
+                PAGES[key] = GENERIC_BUILD_TYPES[build_type]
+
+        if start_page is None:
+            start_page = self.context.pages.startup_page()
         self.show(start_page)
 
     def show(self, next_page: str):

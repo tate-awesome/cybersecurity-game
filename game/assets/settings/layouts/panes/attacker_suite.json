@@ -14,7 +14,7 @@
                         "weight": 2.3,
                         "widget": {
                             "key": "hacking_panel",
-                            "type": "hacking_panel",
+                            "type": "network_action_panel",
                             "menu_bar_label": "attack_panel",
                             "options": {
                                 "available_forms": ["wifi", "nmap", "arp", "dos", "sniff", "nfq"]
@@ -25,7 +25,7 @@
                         "weight": 2,
                         "widget": {
                             "key": "modbus_panel",
-                            "type": "modbus_panel",
+                            "type": "modbus_table_panel",
                             "menu_bar_label": "modbus_panel",
                             "options": {
                                 "available_forms": ["table", "modify"]
@@ -45,7 +45,7 @@
                         "weight": 3,
                         "widget": {
                             "key": "packet_console",
-                            "type": "packet_console",
+                            "type": "packet_panel",
                             "menu_bar_label": "packet_console"
                         }
                     },
@@ -53,7 +53,7 @@
                         "weight": 3,
                         "widget": {
                             "key": "network_diagram",
-                            "type": "network_diagram",
+                            "type": "network_graph_panel",
                             "menu_bar_label": "network_diagram"
                         }
                     },
@@ -61,7 +61,7 @@
                         "weight": 3,
                         "widget": {
                             "key": "status_console",
-                            "type": "status_console",
+                            "type": "status_panel",
                             "menu_bar_label": "status_console"
                         }
                     }
@@ -78,7 +78,7 @@
                         "weight": 2,
                         "widget": {
                             "key": "boat_model",
-                            "type": "boat_model",
+                            "type": "submarine_panel",
                             "menu_bar_label": "boat_model"
                         }
                     },
@@ -86,7 +86,7 @@
                         "weight": 2,
                         "widget": {
                             "key": "variable_monitor",
-                            "type": "variable_monitor",
+                            "type": "modbus_chart_panel",
                             "menu_bar_label": "variable_monitor"
                         }
                     }

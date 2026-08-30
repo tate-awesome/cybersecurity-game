@@ -2,54 +2,77 @@ from ..app_core import Context
 
 # Better Widgets
 from .. import widgets
-# Widgets
-from ..widgets import popup
 from ..pages.page import Page
 
 # Network
 from ..network.network_controller import HardwareAttacker as HardwareNetwork
 
-class GenericPage(Page):
+class WorkspacePage(Page):
     '''
-    Page constructor for attacker/attackerv0. Inherits CTkFrame
+    Page constructor for build_type "workspace". Reads its own config.json
+    (resolved by PageManager from the key it was navigated to) and builds a
+    MenuBar plus a tree of Panes/panels from the "menu_bar" and "panes"
+    sections, instead of hardcoding a specific page's layout.
     '''
 
     def __init__(self, context: Context):
         super().__init__(context)
 
-        self.load_page("attacker_lab.json")
+        key = context.router.current_page
+        config = context.pages.load_page_config(key)
 
-        net = context.refresh_net(HardwareNetwork)
+        context.refresh_net(HardwareNetwork)
 
-        menu_bar = widgets.MenuBar(self, context, "attacker")
-        menu_bar.page_buttons()
+        self.build_menu_bar(config.get("menu_bar", {}))
 
-        trifold = widgets.Panes(self, context, "horizontal", 3, [4, 3, 2], True)
+        panes_config = config.get("panes")
+        if panes_config:
+            self.build_panes(panes_config, self)
 
-    # Forms
-        hacking_side = widgets.Panes(trifold.pane(0), context, "vertical", 2, [2.3, 2], False)
-        widgets.panel("network_action_panel", hacking_side.pane(0), context)
-        widgets.panel("modbus_table_panel", hacking_side.pane(1), context)
+    def build_menu_bar(self, menu_bar_config: dict):
+        '''
+        Builds the page's MenuBar and calls one MenuBar method per
+        {"builtin": "<method_name>"} entry in menu_bar_config["buttons"]
+        (already expanded from any {"_ref": ...} splices by Json).
+        '''
+        title = menu_bar_config.get("title", "_default")
+        menu_bar = widgets.MenuBar(self, self.context, title)
 
-    # Console
-        console = widgets.Panes(trifold.pane(1), context, "vertical", 3, [3, 3, 3], False)
-        widgets.panel("packet_panel", console.pane(0), context)
-        widgets.panel("network_graph_panel", console.pane(1), context)
-        widgets.panel("status_panel", console.pane(2), context)
+        for button in menu_bar_config.get("buttons", []):
+            name = button.get("builtin")
+            if name is None:
+                print(f"Menu bar button config {button!r} has no 'builtin' key, skipping")
+                continue
+            method = getattr(menu_bar, name, None)
+            if not callable(method):
+                print(f"MenuBar has no builtin button named {name!r}, skipping")
+                continue
+            method()
 
+    def build_panes(self, node: dict, master):
+        '''
+        Recursively builds a widgets.Panes tree from a pane-tree node:
+        {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": {...}}]}
+        Each child's "weight" is its proportional share of its parent -
+        bigger weight, bigger pane - converted here into the divisors
+        widgets.Panes actually expects (pane size = total size / divisor).
+        '''
+        children = node.get("children", [])
+        if not children:
+            return
 
-    # Displays
-        model = self.context.states.get("model_type")
-        if model == "submarine":
-            display = widgets.Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
-            widgets.panel("submarine_panel", display.pane(0), context)
-            widgets.panel("modbus_chart_panel", display.pane(1), context)
-        elif model == "hvac":
-            display = widgets.Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
-            widgets.panel("hvac_panel", display.pane(0), context)
-            widgets.panel("modbus_chart_panel", display.pane(1), context)
-        else:
-            widgets.panel("modbus_chart_panel", trifold.pane(2), context)
+        weights = [child.get("weight", 1) for child in children]
+        total_weight = sum(weights)
+        divisors = [total_weight / weight for weight in weights]
 
-        # display.bottom.configure(fg_color=context.style.color("panel"))
-        # values = ValuesTable(style, top, context)
+        panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, True)
+
+        for i, child in enumerate(children):
+            pane = panes.pane(i)
+            if "panes" in child:
+                self.build_panes(child["panes"], pane)
+            elif "widget" in child:
+                widget_type = child["widget"].get("type")
+                widgets.panel(widget_type, pane, self.context)
+            else:
+                print(f"Pane-tree child {child!r} has neither 'panes' nor 'widget', skipping")
