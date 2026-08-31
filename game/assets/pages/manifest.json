@@ -4,11 +4,9 @@
     "schema_version": 1,
     "startup_page": "title/start",
 
-    "game_modes": {
-        "hardware_attacker": "attacker/v0",
-        "hardware_defender": "defender/v0",
-        "arp_intro": "arp_workspace",
-        "attacker_lab": "attacker_lab"
+    "old_game_modes": {
+        "hardware_attacker": "attacker",
+        "hardware_defender": "defender"
     },
 
     "lessons": {

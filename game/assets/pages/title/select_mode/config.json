@@ -3,7 +3,7 @@
     "title": "select_mode",
 
     "buttons": [
-        { "_from_manifest": "game_modes" },
+        { "_from_manifest": "old_game_modes" },
         { "label": "lessons", "action": "navigate", "target": "title/select_lesson" },
         { "label": "select_demo", "action": "navigate", "target": "title/select_demo" },
         { "label": "back", "action": "back" },

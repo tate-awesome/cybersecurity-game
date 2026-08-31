@@ -22,8 +22,8 @@ from ..pages.generic import WorkspacePage, TitlePage
 # Add new pages here to make them accessible by the router.
 # All page builder functions should take a Context object as an argument and build the page on the root CTk object.
 PAGES: dict[str, type] = {
-        "attacker/v0": AttackerV0,
-        "defender/v0": DefenderV0,
+        "attacker": AttackerV0,
+        "defender": DefenderV0,
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,

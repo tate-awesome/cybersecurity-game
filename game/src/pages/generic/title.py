@@ -37,9 +37,9 @@ class TitlePage(Page):
 
     def expand_from_manifest(self, table_name: str) -> list[dict]:
         '''
-        Expands a manifest table (e.g. "game_modes", "lessons") into one
+        Expands a manifest table (e.g. "old_game_modes", "lessons") into one
         {"label": ..., "action": "navigate", "target": ...} button per entry.
-        A plain string entry (game_modes) is the target page key directly;
+        A plain string entry (old_game_modes) is the target page key directly;
         a dict entry (lessons) carries its target under "path" and an
         optional display label under "title_label".
         '''
