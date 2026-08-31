@@ -1,0 +1,6 @@
+[
+    {"builtin": "toggle_button"},
+    {"builtin": "theme_button"},
+    {"builtin": "page_button"},
+    {"builtin": "labels_button"}
+]

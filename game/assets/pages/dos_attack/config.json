@@ -10,7 +10,7 @@
     "menu_bar": {
         "title": "attacker",
         "buttons": [
-            { "_ref": "../../settings/layouts/menu_bar/intro.json" }
+            { "_ref": "../../settings/layouts/menu_bar/basic.json" }
         ]
     },
 
