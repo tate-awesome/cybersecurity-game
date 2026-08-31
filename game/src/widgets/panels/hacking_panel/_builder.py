@@ -11,22 +11,32 @@ from .forms.wifi import WifiForm
 
 from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
+FORM_CLASSES = {
+    "wifi": WifiForm,
+    "nmap": NmapForm,
+    "arp": ArpForm,
+    "dos": DosForm,
+    "sniff": SniffForm,
+    "nfq": NFQForm,
+}
+
 class Builder(Panel):
     KEY = "network_action_panel"
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: CTkFrame, context: Context, available_forms: list[str] | None = None):
 
         super().__init__(master, context, self.KEY)
 
         self.scrollable = Scrollable(self, context)
 
-        self.forms = {}
+        if available_forms is None:
+            available_forms = list(FORM_CLASSES.keys())
 
-        self.forms["wifi"] = WifiForm(self.scrollable, context)
-        self.forms["nmap"] = NmapForm(self.scrollable, context)
-        self.forms["arp"] = ArpForm(self.scrollable, context)
-        self.forms["dos"] = DosForm(self.scrollable, context)
-        self.forms["sniff"] = SniffForm(self.scrollable, context)
-        self.forms["nfq"] = NFQForm(self.scrollable, context)
+        self.forms = {}
+        for key in available_forms:
+            if key not in FORM_CLASSES:
+                print(f"Unknown hacking form {key!r} in available_forms, skipping")
+                continue
+            self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
@@ -45,6 +55,11 @@ class Builder(Panel):
     def refresh_forms(self):
         self.update_idletasks()
         for key in self.context.states.get("hacking_forms"):
+            if key not in self.forms:
+                # This lesson's available_forms doesn't include this form -
+                # nothing to show/hide, and the "Show Forms" overlay still
+                # lists every form regardless of what a given lesson offers.
+                continue
             if self.context.states.get("hacking_forms", key) == "1" or self.context.states.get("hacking_forms", key) == 1:
                 self.show_form(key)
             else:

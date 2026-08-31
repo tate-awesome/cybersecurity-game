@@ -1,0 +1,30 @@
+{
+    "_note": "Denial-of-service lesson layout: hacking panel restricted to dos/nfq forms, the status console for watching device health drop, and the packet console for the flood itself.",
+
+    "key": "main_body",
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 4,
+            "widget": {
+                "key": "hacking_panel",
+                "type": "network_action_panel",
+                "options": { "available_forms": ["dos", "nfq"] }
+            }
+        },
+        {
+            "weight": 3,
+            "widget": {
+                "key": "status_console",
+                "type": "status_panel"
+            }
+        },
+        {
+            "weight": 3,
+            "widget": {
+                "key": "packet_console",
+                "type": "packet_panel"
+            }
+        }
+    ]
+}

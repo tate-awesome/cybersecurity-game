@@ -1,3 +1,11 @@
 {
-    
+    "build_type": "title",
+    "title": "main_title",
+
+    "buttons": [
+        { "label": "resume", "action": "resume" },
+        { "label": "play", "action": "navigate", "target": "title/select_mode" },
+        { "label": "ap_page", "action": "open_ap_config" },
+        { "label": "quit", "action": "quit" }
+    ]
 }

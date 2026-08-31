@@ -1,0 +1,10 @@
+{
+    "build_type": "title",
+    "title": "select_lesson",
+
+    "buttons": [
+        { "_from_manifest": "lessons" },
+        { "label": "back", "action": "back" },
+        { "label": "quit", "action": "quit" }
+    ]
+}

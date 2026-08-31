@@ -12,24 +12,18 @@ from ..pages.demo.triangle import Triangle
 from ..pages.attacker.attacker import AttackerV0
 from ..pages.defender.defender import DefenderV0
 
-# /title
-from ..pages.title.title import Title
-from ..pages.title.select_mode import SelectMode
-from ..pages.title.select_demo import SelectDemo
-
-# /generic (data-driven pages, dispatched by each page's own config.json "build_type")
-from ..pages.generic import WorkspacePage
+# /generic (data-driven pages, dispatched by each page's own config.json "build_type").
+# title/start, title/select_mode, title/select_demo and title/select_lesson
+# are all build_type "title" pages, discovered below - no hand-written
+# entries needed for them.
+from ..pages.generic import WorkspacePage, TitlePage
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
 # All page builder functions should take a Context object as an argument and build the page on the root CTk object.
 PAGES: dict[str, type] = {
-    "title": Title,
-    "title/title": Title,
-    "title/select_mode": SelectMode,
         "attacker/v0": AttackerV0,
         "defender/v0": DefenderV0,
-    "title/select_demo": SelectDemo,
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,
@@ -42,6 +36,7 @@ PAGES: dict[str, type] = {
 # without needing a hand-written entry above.
 GENERIC_BUILD_TYPES: dict[str, type] = {
     "workspace": WorkspacePage,
+    "title": TitlePage,
 }
 
 
@@ -81,7 +76,7 @@ class Router:
         if next_page not in PAGES:
             print(f"Page '{next_page}' not found. Redirecting to title page.")
             self.navigation_stack = []
-            next_page = "title"
+            next_page = "title/start"
 
         # Handle first page ever (usually title or 404 reset)
         if len(self.navigation_stack) == 0:
@@ -105,8 +100,8 @@ class Router:
                 self.context.root.winfo_children()[0].destroy()
 
             self.navigation_stack = []
-            self.current_page = "title"
-            self.current_frame = PAGES["title"](self.context)
+            self.current_page = "title/start"
+            self.current_frame = PAGES["title/start"](self.context)
 
     def refresh(self):
         '''

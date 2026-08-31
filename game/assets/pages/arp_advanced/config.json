@@ -1,0 +1,18 @@
+{
+    "_note": "Second lesson on the same ARP-spoofing layout as arp_workspace - same pane tree and menu bar, distinguished only by its manifest lesson entry (see manifest.json's 'lessons' table) so the select-lesson page shows it as a separate, later lesson.",
+
+    "build_type": "workspace",
+
+    "settings": {
+        "_ref": ["../../settings/_packages/lab.json"]
+    },
+
+    "menu_bar": {
+        "title": "attacker",
+        "buttons": [
+            { "_ref": "../../settings/layouts/menu_bar/intro.json" }
+        ]
+    },
+
+    "panes": { "_ref": "../../settings/layouts/panes/attacker_intro_arp.json" }
+}

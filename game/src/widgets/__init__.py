@@ -31,11 +31,24 @@ PANELS = {
     VariableMonitor.KEY: VariableMonitor,
 }
 
-def panel(key: str, master: CTkFrame, context: Context):
+def panel(key: str, master: CTkFrame, context: Context, options: dict | None = None):
     '''
     Generic panel builder. Make panels by key instead of class name.
+    options, if given, is forwarded as keyword arguments to the panel's
+    builder (e.g. HackingPanel's available_forms) - a builder that doesn't
+    accept them falls back to building without them rather than failing the
+    whole page, since a pane-tree config may carry options meant for a
+    builder that hasn't been wired up to use them yet.
     '''
-    if key in PANELS:
-        PANELS[key](master, context)
-    else:
+    if key not in PANELS:
         GenericPanel(master, context, f"err: no panel for this key: {key}")
+        return
+    builder = PANELS[key]
+    if not options:
+        builder(master, context)
+        return
+    try:
+        builder(master, context, **options)
+    except TypeError as e:
+        print(f"Panel {key!r} does not accept options {options!r} ({e}); building without them")
+        builder(master, context)

@@ -1,11 +1,11 @@
-from ..app_core import Context
+from ...app_core import Context
 
 # Better Widgets
-from .. import widgets
-from ..pages.page import Page
+from ... import widgets
+from ..page import Page
 
 # Network
-from ..network.network_controller import HardwareAttacker as HardwareNetwork
+from ...network.network_controller import HardwareAttacker as HardwareNetwork
 
 class WorkspacePage(Page):
     '''
@@ -72,7 +72,7 @@ class WorkspacePage(Page):
             if "panes" in child:
                 self.build_panes(child["panes"], pane)
             elif "widget" in child:
-                widget_type = child["widget"].get("type")
-                widgets.panel(widget_type, pane, self.context)
+                widget = child["widget"]
+                widgets.panel(widget.get("type"), pane, self.context, widget.get("options"))
             else:
                 print(f"Pane-tree child {child!r} has neither 'panes' nor 'widget', skipping")

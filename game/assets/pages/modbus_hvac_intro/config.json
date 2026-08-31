@@ -1,0 +1,18 @@
+{
+    "_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
+
+    "build_type": "workspace",
+
+    "settings": {
+        "_ref": ["../../settings/_packages/lab_hvac.json"]
+    },
+
+    "menu_bar": {
+        "title": "modbus_lab",
+        "buttons": [
+            { "_ref": "../../settings/layouts/menu_bar/intro.json" }
+        ]
+    },
+
+    "panes": { "_ref": "../../settings/layouts/panes/modbus_hvac.json" }
+}

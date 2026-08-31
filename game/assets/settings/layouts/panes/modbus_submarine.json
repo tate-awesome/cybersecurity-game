@@ -1,0 +1,29 @@
+{
+    "_note": "Submarine model layout for ModBus lessons: the submarine world-map model, the raw ModBus register table, and the strip-chart monitors - no hacking panel, no packet console. Pair with the lab_submarine settings package so modbus_settings match the submarine's registers.",
+
+    "key": "main_body",
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 3,
+            "widget": {
+                "key": "submarine_panel",
+                "type": "submarine_panel"
+            }
+        },
+        {
+            "weight": 3,
+            "widget": {
+                "key": "modbus_table",
+                "type": "modbus_table_panel"
+            }
+        },
+        {
+            "weight": 3,
+            "widget": {
+                "key": "modbus_chart",
+                "type": "modbus_chart_panel"
+            }
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "_note": "Second lesson on the same modbus_hvac layout as modbus_hvac_intro - distinguished only by its manifest lesson entry.",
+
+    "build_type": "workspace",
+
+    "settings": {
+        "_ref": ["../../settings/_packages/lab_hvac.json"]
+    },
+
+    "menu_bar": {
+        "title": "modbus_lab",
+        "buttons": [
+            { "_ref": "../../settings/layouts/menu_bar/intro.json" }
+        ]
+    },
+
+    "panes": { "_ref": "../../settings/layouts/panes/modbus_hvac.json" }
+}

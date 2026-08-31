@@ -2,7 +2,7 @@
     "_note": "Single source of truth linking stable keys to page paths. A page's key is its own config.json's location relative to assets/pages (e.g. 'attacker_lab' resolves to assets/pages/attacker_lab/config.json) and doubles as its Router navigation key - most pages need no entry here at all. This file only needs an entry when something else has to address a page by a friendlier or more stable name than its folder path: the startup page, a game mode's target workspace, or a lesson's target page plus its curriculum metadata.",
 
     "schema_version": 1,
-    "startup_page": "title",
+    "startup_page": "title/start",
 
     "game_modes": {
         "hardware_attacker": "attacker/v0",
@@ -11,5 +11,69 @@
         "attacker_lab": "attacker_lab"
     },
 
-    "lessons": {}
+    "lessons": {
+        "lesson_arp_basics": {
+            "path": "arp_workspace",
+            "title_label": "lesson_arp_basics",
+            "prerequisites": [],
+            "estimated_minutes": 20,
+            "gradable": true
+        },
+        "lesson_arp_advanced": {
+            "path": "arp_advanced",
+            "title_label": "lesson_arp_advanced",
+            "prerequisites": ["lesson_arp_basics"],
+            "estimated_minutes": 25,
+            "gradable": true
+        },
+        "lesson_recon_basics": {
+            "path": "network_recon_basics",
+            "title_label": "lesson_recon_basics",
+            "prerequisites": [],
+            "estimated_minutes": 15,
+            "gradable": false
+        },
+        "lesson_recon_advanced": {
+            "path": "network_recon_advanced",
+            "title_label": "lesson_recon_advanced",
+            "prerequisites": ["lesson_recon_basics"],
+            "estimated_minutes": 20,
+            "gradable": false
+        },
+        "lesson_dos_intro": {
+            "path": "dos_attack",
+            "title_label": "lesson_dos_intro",
+            "prerequisites": ["lesson_recon_basics"],
+            "estimated_minutes": 15,
+            "gradable": true
+        },
+        "lesson_submarine_intro": {
+            "path": "modbus_submarine_intro",
+            "title_label": "lesson_submarine_intro",
+            "prerequisites": [],
+            "estimated_minutes": 20,
+            "gradable": true
+        },
+        "lesson_submarine_advanced": {
+            "path": "modbus_submarine_advanced",
+            "title_label": "lesson_submarine_advanced",
+            "prerequisites": ["lesson_submarine_intro"],
+            "estimated_minutes": 25,
+            "gradable": true
+        },
+        "lesson_hvac_intro": {
+            "path": "modbus_hvac_intro",
+            "title_label": "lesson_hvac_intro",
+            "prerequisites": [],
+            "estimated_minutes": 20,
+            "gradable": true
+        },
+        "lesson_hvac_advanced": {
+            "path": "modbus_hvac_advanced",
+            "title_label": "lesson_hvac_advanced",
+            "prerequisites": ["lesson_hvac_intro"],
+            "estimated_minutes": 25,
+            "gradable": true
+        }
+    }
 }

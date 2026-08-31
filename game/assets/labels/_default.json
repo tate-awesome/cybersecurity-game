@@ -143,7 +143,8 @@
         "_default": "Title Text",
         "main_title": "The Game",
         "select_demo": "Select Demo",
-        "select_mode": "Select Mode"
+        "select_mode": "Select Mode",
+        "select_lesson": "Select Lesson"
     },
 
     "title_buttons": {
@@ -155,7 +156,10 @@
 
         "hardware_attacker": "Device Attacker",
         "hardware_defender": "Device Defender",
+        "arp_intro": "ARP Intro Workspace",
+        "attacker_lab": "Attacker Lab",
         "select_demo": "Run a Demo",
+        "lessons": "Lessons",
 
         "boat_motion": "Boat Motion Demo",
         "sprites": "Sprites Demo",
@@ -165,24 +169,35 @@
         "generic_page": "Generic Builder",
 
         "back": "Back",
-        "quit": "Quit"
+        "quit": "Quit",
+
+        "lesson_arp_basics": "ARP Spoofing - Basics",
+        "lesson_arp_advanced": "ARP Spoofing - Advanced",
+        "lesson_recon_basics": "Network Recon - Basics",
+        "lesson_recon_advanced": "Network Recon - Advanced",
+        "lesson_dos_intro": "Denial of Service - Intro",
+        "lesson_submarine_intro": "Submarine ModBus - Intro",
+        "lesson_submarine_advanced": "Submarine ModBus - Advanced",
+        "lesson_hvac_intro": "HVAC ModBus - Intro",
+        "lesson_hvac_advanced": "HVAC ModBus - Advanced"
     },
-    
+
     "menu_bar_titles": {
         "_default": "Menu",
         "attacker": "Attacker X",
         "defender": "Defender X",
+        "modbus_lab": "ModBus Lab",
         "boat_motion_demo": "Boat Motion Demo",
         "triangle_demo": "Triangle Demo",
         "sprites_demo": "Sprites Demo",
-        
+
         "submarine_panel": "Submarine Model",
         "hvac_panel": "HVAC Model",
         "modbus_chart_panel": "ModBus Monitors",
         "network_action_panel": "Hacks",
         "modbus_table_panel": "ModBus Data",
         "network_graph_panel": "Network Graph",
-        
+
         "packet_panel": "Packets",
         "status_panel": "Status"
     },
