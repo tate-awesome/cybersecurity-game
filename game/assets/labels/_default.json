@@ -153,6 +153,7 @@
         "play": "Play",
         "ap_page": "Open AP Config",
         "resume": "Open Favorite",
+        "delete_user_data": "Delete User Data",
 
         "hardware_attacker": "Device Attacker",
         "hardware_defender": "Device Defender",

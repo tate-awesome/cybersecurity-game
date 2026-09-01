@@ -6,6 +6,7 @@
         { "label": "resume", "action": "resume" },
         { "label": "play", "action": "navigate", "target": "title/select_mode" },
         { "label": "ap_page", "action": "open_ap_config" },
+        { "label": "delete_user_data", "action": "delete_user_data" },
         { "label": "quit", "action": "quit" }
     ]
 }

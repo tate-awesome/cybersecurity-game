@@ -7,7 +7,7 @@ from .keybinds import KeyBinds
 from .input_manager import InputManager
 from .localization_manager import LocalizationManager
 from .page_manager import PageManager
-import os, json, platform
+import os, json, platform, shutil
 from .paths import Paths
 from .json import Json
 
@@ -113,6 +113,24 @@ Shared data for a page. Passed to next pages on navigation.
             self.pages.delete_saved_page(self.router.current_page)
         self.reset_session()
         # self.preferences.clear()
+        self.router.refresh(save=False)
+
+    def delete_user_data(self):
+        '''
+        Wipes the entire user_data folder - every page's autosaved
+        settings/panes, saved captures, and preferences.json - then
+        recreates the empty directory structure the app expects to
+        find there. A full factory reset, unlike reset_data (which
+        only clears the current page's save and leaves preferences
+        alone). Refreshes without re-autosaving first (save=False) so
+        nothing gets written back into the folder that was just wiped.
+        '''
+        shutil.rmtree(self.paths.user_data, ignore_errors=True)
+        self.paths.generate_path(self.paths.user_data)
+        self.paths.generate_path(self.paths.user_mcaptures)
+        self.paths.generate_path(self.paths.user_pcaptures)
+        self.paths.generate_path(self.paths.user_pages)
+        self.preferences.clear()
         self.router.refresh(save=False)
 
     def help_message(self, widget="root"):
