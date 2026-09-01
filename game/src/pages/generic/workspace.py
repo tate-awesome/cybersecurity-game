@@ -19,15 +19,14 @@ class WorkspacePage(Page):
         super().__init__(context)
 
         key = context.router.current_page
-        config = context.pages.load_page_config(key)
+        config = context.pages.prepare_page_config(key)
 
         context.refresh_net(HardwareNetwork)
 
         self.build_menu_bar(config.get("menu_bar", {}))
 
         panes_config = config.get("panes")
-        if panes_config:
-            self.build_panes(panes_config, self)
+        self.panes_root = self.build_panes(panes_config, self) if panes_config else None
 
     def build_menu_bar(self, menu_bar_config: dict):
         '''
@@ -56,10 +55,13 @@ class WorkspacePage(Page):
         Each child's "weight" is its proportional share of its parent -
         bigger weight, bigger pane - converted here into the divisors
         widgets.Panes actually expects (pane size = total size / divisor).
+        Returns the Panes built at this node, so the caller can hang onto
+        the outermost one (see self.panes_root) - PageManager reads its
+        current sizes back out through Panes.get_weights() to autosave.
         '''
         children = node.get("children", [])
         if not children:
-            return
+            return None
 
         weights = [child.get("weight", 1) for child in children]
         total_weight = sum(weights)
@@ -76,3 +78,5 @@ class WorkspacePage(Page):
                 widgets.panel(widget.get("type"), pane, self.context, widget.get("options"))
             else:
                 print(f"Pane-tree child {child!r} has neither 'panes' nor 'widget', skipping")
+
+        return panes

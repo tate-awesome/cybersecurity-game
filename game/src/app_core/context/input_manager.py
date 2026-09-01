@@ -29,6 +29,15 @@ class InputManager:
     def reset(self):
         self.data = self.get_default()
 
+    def load(self, settings: dict):
+        '''
+        Replaces the current input data outright. Used by PageManager to
+        hand off a page's own settings (its defaults, already merged with
+        anything autosaved for it) right before that page builds, since
+        different pages' registers/forms don't share one global default.
+        '''
+        self.data = settings if isinstance(settings, dict) else {}
+
     # Select
     def select(self):
         '''

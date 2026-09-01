@@ -103,11 +103,19 @@ class Router:
             self.current_page = "title/start"
             self.current_frame = PAGES["title/start"](self.context)
 
-    def refresh(self):
+    def refresh(self, save: bool = True):
         '''
         Refreshes the current page by clearing the root CTk object and rebuilding the current page.
         Useful for updating the UI after changing themes or making changes to the context.
+
+        save=False skips autosaving the current page first - used when
+        the caller has already reset or deleted this page's saved data
+        (see ContextManager.reset_data) and wants the rebuild to pick up
+        fresh config.json defaults instead of immediately re-saving
+        whatever was still on screen.
         '''
+        if save:
+            self.context.pages.save_current_page()
         self.context.reset_build()
         self.context.start_build()
         self.show(self.navigation_stack[-1])
@@ -117,16 +125,18 @@ class Router:
         Deletes all ongoing processes and destroys the CTk root.
         Called on Close event or by the Quit button.
         '''
+        self.context.pages.save_current_page()
         self.context.reset_build()
         self.context.reset_page()
         self.context.root.destroy()
-    
+
     def go_back(self):
         '''
         Navigates backwards in the page history.
         '''
         if len(self.navigation_stack) < 1:
             return
+        self.context.pages.save_current_page()
         self.context.reset_build()
         self.context.reset_page()
         self.context.start_build()

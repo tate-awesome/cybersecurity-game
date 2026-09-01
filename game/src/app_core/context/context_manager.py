@@ -100,9 +100,20 @@ Shared data for a page. Passed to next pages on navigation.
             self.animation_manager.delete()
 
     def reset_data(self):
+        '''
+        Wipes this session back to defaults: the current page's
+        autosaved settings/panes (see PageManager.save_current_page),
+        session-level state, and stored preferences. Refreshes without
+        re-autosaving first (save=False), so the current page's now-
+        deleted data isn't immediately recreated from whatever was on
+        screen - the rebuilt page picks up its own config.json defaults
+        instead (see PageManager.prepare_page_config).
+        '''
+        if self.router.current_page is not None:
+            self.pages.delete_saved_page(self.router.current_page)
         self.reset_session()
         self.preferences.clear()
-        self.router.refresh()
+        self.router.refresh(save=False)
 
     def help_message(self, widget="root"):
         # TODO get help from progress and current page and source widget

@@ -1,13 +1,11 @@
 {
     "_note": "Full instructor build of the attacker page's pane tree - a direct data-driven translation of AttackerV0 (game/src/pages/attacker/attacker.py), submarine branch. 'weight' is proportional within its parent's orientation, not a divisor - a loader converts weights to whatever Panes.child_sizes expects.",
 
-    "key": "main_body",
     "orientation": "horizontal",
     "children": [
         {
             "weight": 2,
             "panes": {
-                "key": "hacking_side",
                 "orientation": "vertical",
                 "children": [
                     {
@@ -24,7 +22,6 @@
         {
             "weight": 3,
             "panes": {
-                "key": "console",
                 "orientation": "vertical",
                 "children": [
                     {
@@ -45,7 +42,6 @@
         {
             "weight": 3,
             "panes": {
-                "key": "display",
                 "orientation": "vertical",
                 "children": [
                     {

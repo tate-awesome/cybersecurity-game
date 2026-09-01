@@ -19,6 +19,7 @@ class Panes(PanedWindow):
 
         self.panels = []
         self.context = context
+        self.direction = direction
         style = context.style
 
         color = style.color("root")
@@ -53,3 +54,24 @@ class Panes(PanedWindow):
     def pane(self, index: int):
         if hasattr(self, "panels"):
             return self.panels[index]
+
+    def get_weights(self) -> dict:
+        '''
+        Reads this Panes' current sash-adjusted sizes back out as a
+        {"orientation", "children": [{"weight": ..., "panes": {...}}]}
+        tree in the same shape as a page's own pane-tree config, so it
+        can be saved and later merged back on top of that page's
+        defaults (matched by position, not by any "key" - see
+        PageManager.merge_pane_weights). Recurses into any pane whose
+        sole child is itself a nested Panes, found from the live widget
+        hierarchy rather than any separately tracked structure.
+        '''
+        children = []
+        for pane in self.panels:
+            size = pane.winfo_width() if self.direction == "horizontal" else pane.winfo_height()
+            child = {"weight": size}
+            nested = next((widget for widget in pane.winfo_children() if isinstance(widget, Panes)), None)
+            if nested is not None:
+                child["panes"] = nested.get_weights()
+            children.append(child)
+        return {"orientation": self.direction, "children": children}

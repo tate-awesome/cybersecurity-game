@@ -1,6 +1,6 @@
 {
     "_ref": [
-        "../color_settings/_default.json",
+        "_default.json",
         "../hack_settings/lab.json",
         "../packet_console_settings/lab.json"
     ]
