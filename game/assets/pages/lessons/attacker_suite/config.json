@@ -11,7 +11,7 @@
     },
 
     "menu_bar": {
-        "title": "attacker",
+        "title": "attacker_suite_lesson",
         "buttons": [
             { "_ref": "admin.json" }
         ]

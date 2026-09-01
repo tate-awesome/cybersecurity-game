@@ -8,7 +8,7 @@
     },
 
     "menu_bar": {
-        "title": "modbus_lab",
+        "title": "modbus_submarine_lesson",
         "buttons": [
             { "_ref": "basic.json" }
         ]

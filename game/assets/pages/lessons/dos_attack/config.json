@@ -8,7 +8,7 @@
     },
 
     "menu_bar": {
-        "title": "attacker",
+        "title": "dos_attack_lesson",
         "buttons": [
             { "_ref": "basic.json" }
         ]

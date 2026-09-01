@@ -183,10 +183,17 @@
         "_default": "Menu",
         "attacker": "Attacker X",
         "defender": "Defender X",
-        "modbus_lab": "ModBus Lab",
         "boat_motion_demo": "Boat Motion Demo",
         "triangle_demo": "Triangle Demo",
         "sprites_demo": "Sprites Demo",
+
+        "arp_ip_lesson": "ARP & IP Basics",
+        "network_recon_lesson": "Network Recon Exercise",
+        "attacker_suite_lesson": "Full Attacker Exercise",
+        "dos_attack_lesson": "Denial-of-Service Exercise",
+        "modbus_intro_lesson": "ModBus Basics",
+        "modbus_hvac_lesson": "ModBus HVAC Exercise",
+        "modbus_submarine_lesson": "ModBus Submarine Exercise",
 
         "submarine_panel": "Submarine Model",
         "hvac_panel": "HVAC Model",
@@ -194,7 +201,6 @@
         "network_action_panel": "Hacks",
         "modbus_table_panel": "ModBus Data",
         "network_graph_panel": "Network Graph",
-
         "packet_panel": "Packets",
         "status_panel": "Status"
     },

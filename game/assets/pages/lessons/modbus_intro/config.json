@@ -4,15 +4,15 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": ["_packages/lab_hvac.json"]
+        "_ref": ["_packages/_default.json"]
     },
 
     "menu_bar": {
-        "title": "modbus_lab",
+        "title": "modbus_intro_lesson",
         "buttons": [
             { "_ref": "basic.json" }
         ]
     },
 
-    "panes": { "_ref": "attacker_suite.json" }
+    "panes": { "_ref": "agnostic_attacker.json" }
 }

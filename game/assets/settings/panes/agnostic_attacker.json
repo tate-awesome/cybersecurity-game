@@ -1,0 +1,47 @@
+{
+    "_note": "Attacker suite with only the variable monitor",
+
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 2,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 2.3,
+                        "widget": {"_ref": "panels/_network_action.json"}
+                    },
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_modbus_table.json"}
+                    }
+                ]
+            }
+        },
+        {
+            "weight": 3,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_packet_console.json"}
+                    },
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_network_graph.json"}
+                    },
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_status_console.json"}
+                    }
+                ]
+            }
+        },
+        {
+            "weight": 3,
+            "widget": {"_ref": "panels/_modbus_chart.json"}
+        }
+    ]
+}

@@ -3,7 +3,7 @@
     "build_type": "workspace",
     "settings": { "_ref": "_packages/_default.json" },
     "menu_bar": {
-        "title": "attacker",
+        "title": "arp_ip_lesson",
         "buttons": [
             { "_ref": "basic.json" }
         ]
