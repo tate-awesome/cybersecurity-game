@@ -371,6 +371,11 @@ class Replay:
 
                     saved += 1
 
+            # The app typically runs under sudo for raw-socket access,
+            # so the file above would otherwise come out root-owned and
+            # off-limits to the user who actually ran it.
+            self.context.paths.lower_permissions(file_path)
+
             self.buffer.put(
                 "json",
                 f"Saved {saved} packets to {file_path}"

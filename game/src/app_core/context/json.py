@@ -47,7 +47,7 @@ class Json:
         '''
         path = Path(path).resolve()
         if path in self.encountered_files:
-            print(f"Stopped circular json import from {path}")
+            # print(f"Stopped circular json import from {path}")
             return None
         self.encountered_files.add(path)
 
@@ -171,6 +171,7 @@ class Json:
             self.paths.generate_path(file_path.parent)
             with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file)
+            self.paths.lower_permissions(file_path)
         except Exception as e:
             print(f"Err: [{e}]. Other error occurred while saving json.")
 

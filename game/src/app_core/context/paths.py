@@ -45,7 +45,28 @@ class Paths:
     def generate_path(self, file_path: Path):
         try:
             file_path.mkdir(parents=True, exist_ok=True)
+            self.lower_permissions(file_path)
         except Exception as e:
             print(f"Err: [{e}] while generating a directory.")
         finally:
             return file_path
+
+    def lower_permissions(self, path: Path):
+        '''
+        The app is typically launched with sudo for raw-socket network
+        access, so any file or directory it creates comes out owned by
+        root - off-limits to the user who actually ran it once the app
+        closes. sudo hands the original user's ids down as the
+        SUDO_UID/SUDO_GID env vars, so chown the given path back to
+        them whenever they're set. A no-op when not running under sudo
+        (nothing to hand back) or if the chown fails for any other
+        reason (e.g. path doesn't exist).
+        '''
+        sudo_uid = os.environ.get("SUDO_UID")
+        sudo_gid = os.environ.get("SUDO_GID")
+        if sudo_uid is None or sudo_gid is None:
+            return
+        try:
+            os.chown(path, int(sudo_uid), int(sudo_gid))
+        except Exception as e:
+            print(f"Err: [{e}] while lowering permissions on {path}.")
