@@ -479,7 +479,7 @@ class HVACView:
 
         y_min, y_max = self._ax.get_ylim()
         center = (y_min + y_max) / 2
-        min_range = 50.0
+        min_range = 150.0
         if (y_max - y_min) < min_range:
             half_range = min_range / 2
             self._ax.set_ylim(center - half_range, center + half_range)
