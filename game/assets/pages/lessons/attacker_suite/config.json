@@ -6,7 +6,8 @@
     "settings": {
         "_ref": [
             "_packages/_default.json",
-            "hack_settings/lab.json"
+            "hack_settings/lab.json",
+            "visibility/_admin.json"
         ]
     },
 

@@ -197,6 +197,7 @@
 
         "submarine_panel": "Submarine Model",
         "hvac_panel": "HVAC Model",
+        "modbus_model_panel": "ModBus Model",
         "modbus_chart_panel": "ModBus Monitors",
         "network_action_panel": "Hacks",
         "modbus_table_panel": "ModBus Data",
@@ -286,6 +287,11 @@
 
         "temperature": "Temperature",
         "heater": "Heater"
+    },
+
+    "modbus_model_options": {
+        "hvac": "HVAC",
+        "submarine": "Submarine"
     },
 
     "modbus_settings": {

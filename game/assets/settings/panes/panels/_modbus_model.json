@@ -1,4 +1,4 @@
 {
-    "type": "submarine_panel",
-    "menu_bar_label": "boat_model"
+    "type": "modbus_model_panel",
+    "menu_bar_label": "modbus_model_panel"
 }

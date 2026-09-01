@@ -4,7 +4,11 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": ["_packages/_default.json", "modbus_settings/hvac.json"]
+        "_ref": ["_packages/_default.json", "modbus_settings/hvac.json"],
+        "modbus_model_visibility": {
+            "hvac": 1,
+            "submarine": 0
+        }
     },
 
     "menu_bar": {

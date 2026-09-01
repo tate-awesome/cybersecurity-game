@@ -1,5 +1,5 @@
 from ...app_core import Context
-from customtkinter import CTkFrame, CTkLabel, CTkButton
+from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkOptionMenu
 from ..popup import message
 from .overlay import Overlay
 from CTkToolTip import CTkToolTip
@@ -35,6 +35,21 @@ class MenuBar(CTkFrame):
         button = CTkButton(self, text=self.context.labels.get("menu_bar_buttons", label), command=function, font=self.style.get_font())
         button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
         return button
+
+    def add_dropdown(self, values: list[str], command: Callable[[str], None] | None = None, default: str | None = None) -> CTkOptionMenu:
+        '''
+        A button-row dropdown (e.g. ModbusModel's hvac/submarine picker) -
+        values/default are already-localized display text, command is
+        called with whichever one the user picks. Doesn't participate in
+        the overflow overlay (see update_squashing/clone_button) - those
+        clone plain CTkButtons by their ._text/._command, which doesn't
+        carry an option menu's current selection.
+        '''
+        dropdown = CTkOptionMenu(self, values=values, command=command, font=self.style.get_font())
+        if default is not None:
+            dropdown.set(default)
+        dropdown.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+        return dropdown
 
     # Button overflow overlay
 
