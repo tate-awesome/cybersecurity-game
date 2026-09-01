@@ -5,32 +5,18 @@
     "orientation": "horizontal",
     "children": [
         {
-            "weight": 4,
+            "weight": 2,
             "panes": {
                 "key": "hacking_side",
                 "orientation": "vertical",
                 "children": [
                     {
                         "weight": 2.3,
-                        "widget": {
-                            "key": "hacking_panel",
-                            "type": "network_action_panel",
-                            "menu_bar_label": "attack_panel",
-                            "options": {
-                                "available_forms": ["wifi", "nmap", "arp", "dos", "sniff", "nfq"]
-                            }
-                        }
+                        "widget": {"_ref": "panels/_network_action.json"}
                     },
                     {
                         "weight": 2,
-                        "widget": {
-                            "key": "modbus_panel",
-                            "type": "modbus_table_panel",
-                            "menu_bar_label": "modbus_panel",
-                            "options": {
-                                "available_forms": ["table", "modify"]
-                            }
-                        }
+                        "widget": {"_ref": "panels/_modbus_table.json"}
                     }
                 ]
             }
@@ -43,52 +29,32 @@
                 "children": [
                     {
                         "weight": 3,
-                        "widget": {
-                            "key": "packet_console",
-                            "type": "packet_panel",
-                            "menu_bar_label": "packet_console"
-                        }
+                        "widget": {"_ref": "panels/_packet_console.json"}
                     },
                     {
                         "weight": 3,
-                        "widget": {
-                            "key": "network_diagram",
-                            "type": "network_graph_panel",
-                            "menu_bar_label": "network_diagram"
-                        }
+                        "widget": {"_ref": "panels/_network_graph.json"}
                     },
                     {
                         "weight": 3,
-                        "widget": {
-                            "key": "status_console",
-                            "type": "status_panel",
-                            "menu_bar_label": "status_console"
-                        }
+                        "widget": {"_ref": "panels/_status_console.json"}
                     }
                 ]
             }
         },
         {
-            "weight": 2,
+            "weight": 3,
             "panes": {
                 "key": "display",
                 "orientation": "vertical",
                 "children": [
                     {
                         "weight": 2,
-                        "widget": {
-                            "key": "boat_model",
-                            "type": "submarine_panel",
-                            "menu_bar_label": "boat_model"
-                        }
+                        "widget": {"_ref": "panels/_modbus_model.json"}
                     },
                     {
                         "weight": 2,
-                        "widget": {
-                            "key": "variable_monitor",
-                            "type": "modbus_chart_panel",
-                            "menu_bar_label": "variable_monitor"
-                        }
+                        "widget": {"_ref": "panels/_modbus_chart.json"}
                     }
                 ]
             }

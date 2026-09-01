@@ -1,0 +1,5 @@
+{
+    "key": "variable_monitor",
+    "type": "modbus_chart_panel",
+    "menu_bar_label": "variable_monitor"
+}
