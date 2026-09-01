@@ -179,7 +179,8 @@
         "lesson_submarine_intro": "Submarine ModBus - Intro",
         "lesson_submarine_advanced": "Submarine ModBus - Advanced",
         "lesson_hvac_intro": "HVAC ModBus - Intro",
-        "lesson_hvac_advanced": "HVAC ModBus - Advanced"
+        "lesson_hvac_advanced": "HVAC ModBus - Advanced",
+        "lesson_attacker_suite": "Full Attacker Suite"
     },
 
     "menu_bar_titles": {

@@ -72,6 +72,13 @@
             "prerequisites": ["lesson_hvac_intro"],
             "estimated_minutes": 25,
             "gradable": true
+        },
+        "full_attacker_suite": {
+            "path": "lessons/attacker_suite",
+            "title_label": "lesson_attacker_suite",
+            "prerequisites": [],
+            "estimated_minutes": 1,
+            "gradable": true
         }
     }
 }
