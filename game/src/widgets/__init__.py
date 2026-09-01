@@ -31,7 +31,7 @@ PANELS = {
     VariableMonitor.KEY: VariableMonitor,
 }
 
-def panel(key: str, master: CTkFrame, context: Context, options: dict | None = None):
+def panel(key: str, master: CTkFrame, context: Context):
     '''
     Generic panel builder. Make panels by key instead of class name.
     options, if given, is forwarded as keyword arguments to the panel's
@@ -44,11 +44,4 @@ def panel(key: str, master: CTkFrame, context: Context, options: dict | None = N
         GenericPanel(master, context, f"err: no panel for this key: {key}")
         return
     builder = PANELS[key]
-    if not options:
-        builder(master, context)
-        return
-    try:
-        builder(master, context, **options)
-    except TypeError as e:
-        print(f"Panel {key!r} does not accept options {options!r} ({e}); building without them")
-        builder(master, context)
+    builder(master, context)

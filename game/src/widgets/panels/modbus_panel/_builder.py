@@ -8,6 +8,11 @@ from .variable_overlay import VariableOverlay
 
 from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
+FORM_CLASSES = {
+    "table": MitmTable,
+    "modify": Modify
+}
+
 class Builder(Panel):
     KEY = "modbus_table_panel"
 
@@ -17,10 +22,16 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
+        available_forms: dict[str, int] = self.context.states.get("modbus_table_visibility")
+        if available_forms is None:
+            available_forms = list(FORM_CLASSES.keys())
+
         self.forms = {}
-        
-        self.forms["table"] = MitmTable(self.scrollable, context)
-        self.forms["modify"] = Modify(self.scrollable, context)
+        for key in FORM_CLASSES:
+            if key not in available_forms or available_forms[key] == 0 or available_forms[key] == "0":
+                print(f"Form is invisible: {key!r}")
+                continue
+            self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
             form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
@@ -32,7 +43,7 @@ class Builder(Panel):
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_forms", "Show Forms")
+        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_forms", "Show Forms", "modbus_table_visibility")
 
         clear_button = self.menu_bar.add_button("clear_modbus", self.context.net.buffer.reset_modbus)
 

@@ -28,13 +28,15 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
+        available_forms: dict[str, int] = self.context.states.get("network_action_visibility")
         if available_forms is None:
             available_forms = list(FORM_CLASSES.keys())
 
+
         self.forms = {}
-        for key in available_forms:
-            if key not in FORM_CLASSES:
-                print(f"Unknown hacking form {key!r} in available_forms, skipping")
+        for key in FORM_CLASSES:
+            if key not in available_forms or available_forms[key] == 0 or available_forms[key] == "0":
+                print(f"Form is invisible: {key!r}")
                 continue
             self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
@@ -46,7 +48,7 @@ class Builder(Panel):
 
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "hacking_forms", "Show Forms")
+        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "hacking_forms", "Show Forms", "network_action_visibility")
 
         stop_button = self.menu_bar.add_button("abort_all", self.stop_all)
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)

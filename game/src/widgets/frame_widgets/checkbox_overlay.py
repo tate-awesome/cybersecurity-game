@@ -17,12 +17,13 @@ class CheckboxOverlay:
     (category_label).
     '''
     def __init__(self, button: CTkButton, context: Context, refresh_function: Callable,
-                 state_key: str, category_label: str):
+                 state_key: str, category_label: str, visibility_key: str | None = None):
         self.context = context
         self.style = context.style
         self.refresh_function = refresh_function
         self.state_key = state_key
         self.category_label = category_label
+        self.visibility_key = visibility_key
         self.overlay = Overlay(self.context.root, context, button, self.populate_overlay)
 
     def populate_overlay(self, overlay: Overlay):
@@ -38,7 +39,13 @@ class CheckboxOverlay:
         category_label = CTkLabel(category_frame, text=self.category_label, font=med)
         category_label.pack(side="top", pady=self.style.gap, anchor="n")
 
+
+        available_forms: dict[str, int] = self.context.states.get(self.visibility_key) if self.visibility_key else None
         for key in self.context.states.get(self.state_key):
+            if available_forms and (key not in available_forms or available_forms[key] == 0 or available_forms[key] == "0"):
+                print(f"Form is invisible: {key!r}")
+                continue
+
             checkbox = CTkCheckBox(category_frame, text=self.context.labels.get(self.state_key, key), font=med)
             checkbox.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
             # Load previous input

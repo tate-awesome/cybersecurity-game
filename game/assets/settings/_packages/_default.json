@@ -3,6 +3,7 @@
         "../color_settings/_default.json",
         "../hack_settings/_default.json",
         "../modbus_settings/_default.json",
-        "../packet_console_settings/_default.json"
+        "../packet_console_settings/_default.json",
+        "../visibility/_default.json"
     ]
 }

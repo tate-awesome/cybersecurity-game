@@ -1,7 +1,4 @@
 {
     "type": "modbus_table_panel",
-    "menu_bar_label": "modbus_panel",
-    "options": {
-        "available_forms": ["table", "modify"]
-    }
+    "menu_bar_label": "modbus_panel"
 }

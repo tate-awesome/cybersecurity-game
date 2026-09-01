@@ -4,7 +4,10 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": ["_packages/_default.json"]
+        "_ref": [
+            "_packages/_default.json",
+            "visibility/recon.json"
+        ]
     },
 
     "menu_bar": {

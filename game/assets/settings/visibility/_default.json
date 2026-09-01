@@ -1,0 +1,14 @@
+{
+    "modbus_table_visibility": {
+        "table": 1,
+        "modify": 1
+    },
+    "network_action_visibility": {
+        "wifi": 1,
+        "nmap": 1,
+        "arp": 1,
+        "dos": 0,
+        "sniff": 1,
+        "nfq": 1
+    }
+}

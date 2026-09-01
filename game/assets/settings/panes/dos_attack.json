@@ -6,8 +6,7 @@
         {
             "weight": 4,
             "widget": {
-                "type": "network_action_panel",
-                "options": { "available_forms": ["dos", "nfq"] }
+                "type": "network_action_panel"
             }
         },
         {

@@ -75,7 +75,7 @@ class WorkspacePage(Page):
                 self.build_panes(child["panes"], pane)
             elif "widget" in child:
                 widget = child["widget"]
-                widgets.panel(widget.get("type"), pane, self.context, widget.get("options"))
+                widgets.panel(widget.get("type"), pane, self.context)
             else:
                 print(f"Pane-tree child {child!r} has neither 'panes' nor 'widget', skipping")
 
