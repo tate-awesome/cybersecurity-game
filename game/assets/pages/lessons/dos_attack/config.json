@@ -14,5 +14,5 @@
         ]
     },
 
-    "panes": { "_ref": "dos_attack.json" }
+    "panes": { "_ref": "attacker_suite.json" }
 }

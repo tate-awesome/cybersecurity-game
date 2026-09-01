@@ -1,5 +1,5 @@
 {
-    "_note": "Second lesson on the same modbus_hvac layout as modbus_hvac_intro - distinguished only by its manifest lesson entry.",
+    "_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
 
     "build_type": "workspace",
 
@@ -14,5 +14,5 @@
         ]
     },
 
-    "panes": { "_ref": "modbus_hvac.json" }
+    "panes": { "_ref": "attacker_suite.json" }
 }

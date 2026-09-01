@@ -4,7 +4,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": ["_packages/lab.json"]
+        "_ref": ["_packages/_default.json"]
     },
 
     "menu_bar": {
@@ -14,5 +14,5 @@
         ]
     },
 
-    "panes": { "_ref": "network_recon.json" }
+    "panes": { "_ref": "attacker_recon.json" }
 }

@@ -171,15 +171,11 @@
         "back": "Back",
         "quit": "Quit",
 
-        "lesson_arp_basics": "ARP Spoofing - Basics",
-        "lesson_arp_advanced": "ARP Spoofing - Advanced",
-        "lesson_recon_basics": "Network Recon - Basics",
-        "lesson_recon_advanced": "Network Recon - Advanced",
-        "lesson_dos_intro": "Denial of Service - Intro",
-        "lesson_submarine_intro": "Submarine ModBus - Intro",
-        "lesson_submarine_advanced": "Submarine ModBus - Advanced",
-        "lesson_hvac_intro": "HVAC ModBus - Intro",
-        "lesson_hvac_advanced": "HVAC ModBus - Advanced",
+        "lesson_arp_ip": "IP & ARP Basics",
+        "lesson_recon": "Network Recon",
+        "lesson_modbus": "ModBus Intro",
+        "lesson_hvac": "HVAC System",
+        "lesson_submarine": "Submarine System",
         "lesson_attacker_suite": "Full Attacker Suite"
     },
 

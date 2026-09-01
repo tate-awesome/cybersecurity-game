@@ -10,66 +10,38 @@
     },
 
     "lessons": {
-        "lesson_arp_basics": {
-            "path": "lessons/arp_workspace",
-            "title_label": "lesson_arp_basics",
+        "lesson_arp_ip": {
+            "path": "lessons/arp_ip",
+            "title_label": "lesson_arp_ip",
             "prerequisites": [],
             "estimated_minutes": 20,
             "gradable": true
         },
-        "lesson_arp_advanced": {
-            "path": "lessons/arp_advanced",
-            "title_label": "lesson_arp_advanced",
-            "prerequisites": ["lesson_arp_basics"],
-            "estimated_minutes": 25,
-            "gradable": true
-        },
-        "lesson_recon_basics": {
-            "path": "lessons/network_recon_basics",
-            "title_label": "lesson_recon_basics",
+        "lesson_recon": {
+            "path": "lessons/network_recon",
+            "title_label": "lesson_recon",
             "prerequisites": [],
             "estimated_minutes": 15,
             "gradable": false
         },
-        "lesson_recon_advanced": {
-            "path": "lessons/network_recon_advanced",
-            "title_label": "lesson_recon_advanced",
-            "prerequisites": ["lesson_recon_basics"],
-            "estimated_minutes": 20,
-            "gradable": false
-        },
-        "lesson_dos_intro": {
-            "path": "lessons/dos_attack",
-            "title_label": "lesson_dos_intro",
-            "prerequisites": ["lesson_recon_basics"],
-            "estimated_minutes": 15,
-            "gradable": true
-        },
-        "lesson_submarine_intro": {
-            "path": "lessons/modbus_submarine_intro",
-            "title_label": "lesson_submarine_intro",
+        "lesson_modbus": {
+            "path": "lessons/modbus_intro",
+            "title_label": "lesson_modbus",
             "prerequisites": [],
             "estimated_minutes": 20,
             "gradable": true
         },
-        "lesson_submarine_advanced": {
-            "path": "lessons/modbus_submarine_advanced",
-            "title_label": "lesson_submarine_advanced",
-            "prerequisites": ["lesson_submarine_intro"],
-            "estimated_minutes": 25,
-            "gradable": true
-        },
-        "lesson_hvac_intro": {
-            "path": "lessons/modbus_hvac_intro",
-            "title_label": "lesson_hvac_intro",
+        "lesson_hvac": {
+            "path": "lessons/modbus_hvac",
+            "title_label": "lesson_hvac",
             "prerequisites": [],
             "estimated_minutes": 20,
             "gradable": true
         },
-        "lesson_hvac_advanced": {
-            "path": "lessons/modbus_hvac_advanced",
-            "title_label": "lesson_hvac_advanced",
-            "prerequisites": ["lesson_hvac_intro"],
+        "lesson_submarine": {
+            "path": "lessons/modbus_submarine",
+            "title_label": "lesson_submarine",
+            "prerequisites": [],
             "estimated_minutes": 25,
             "gradable": true
         },

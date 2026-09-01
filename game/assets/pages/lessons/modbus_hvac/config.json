@@ -4,7 +4,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": ["_packages/lab_hvac.json"]
+        "_ref": ["_packages/_default.json", "modbus_settings/hvac.json"]
     },
 
     "menu_bar": {
@@ -14,5 +14,5 @@
         ]
     },
 
-    "panes": { "_ref": "modbus_hvac.json" }
+    "panes": { "_ref": "attacker_suite.json" }
 }
