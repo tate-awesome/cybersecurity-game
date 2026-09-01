@@ -4,15 +4,15 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": ["../../settings/_packages/lab_hvac.json"]
+        "_ref": ["_packages/lab_hvac.json"]
     },
 
     "menu_bar": {
         "title": "modbus_lab",
         "buttons": [
-            { "_ref": "../../settings/layouts/menu_bar/basic.json" }
+            { "_ref": "basic.json" }
         ]
     },
 
-    "panes": { "_ref": "../../settings/layouts/panes/modbus_hvac.json" }
+    "panes": { "_ref": "modbus_hvac.json" }
 }

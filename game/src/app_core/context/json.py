@@ -10,12 +10,12 @@ class Json:
         self.paths = paths
         self.encountered_files = set()
 
-    def load(self, path: Path):
+    def load(self, path: Path, key_roots: dict[str, Path] | None = None):
         output = {}
-        self.merge_from_file(output, path)
+        self.merge_from_file(output, path, key_roots)
         return output
 
-    def merge_from_file(self, current_dict: dict, path: Path):
+    def merge_from_file(self, current_dict: dict, path: Path, key_roots: dict[str, Path] | None = None):
         '''
         Loads a dict from the given path, and deeply overwrites current_dict.
         If the loaded dict (or anything it in turn references) has a "_ref" key,
@@ -23,13 +23,19 @@ class Json:
         relative to the directory of the file it appears in, then merged in too.
 
         A "_ref" can also appear as an item inside a list (e.g.
-        "buttons": [{"_ref": "layouts/menu_bar/admin.json"}]) - there, the
+        "buttons": [{"_ref": "menu_bar/admin.json"}]) - there, the
         referenced file must itself be a JSON array, and its elements are
         spliced into the surrounding list in place of the {"_ref": ...} item,
         rather than merged as a single nested item.
+
+        key_roots optionally maps top-level keys of the loaded file (e.g.
+        "settings", "menu_bar") to a fixed directory their own "_ref"s
+        should resolve against, instead of the directory of the file they
+        appear in - see deeper_merge. It only applies to the file's own
+        top-level keys, not anything nested further down.
         '''
         self.encountered_files.clear()
-        self._merge_from_file(current_dict, path)
+        self._merge_from_file(current_dict, path, key_roots)
 
     def _load_file(self, path: Path) -> Any:
         '''
@@ -52,7 +58,7 @@ class Json:
             print(f"Error during json merge from file ({path}): {e}")
             return None
 
-    def _merge_from_file(self, current_dict: dict, path: Path):
+    def _merge_from_file(self, current_dict: dict, path: Path, key_roots: dict[str, Path] | None = None):
         '''
         Loads the given path as a json file, then deeply overwrites the old dict
         using the new dict.
@@ -66,9 +72,9 @@ class Json:
         data = self._load_file(path)
         if data is None:
             return
-        self.deeper_merge(current_dict, data, Path(path).resolve().parent)
+        self.deeper_merge(current_dict, data, Path(path).resolve().parent, key_roots)
 
-    def deeper_merge(self, base_dict: dict, better_dict: dict | None, base_path: Path):
+    def deeper_merge(self, base_dict: dict, better_dict: dict | None, base_path: Path, key_roots: dict[str, Path] | None = None):
         '''
         better_dict ultimately comes from disk (a settings/preset file, or a
         preference value round-tripped through JSON) - it may not actually be
@@ -76,10 +82,21 @@ class Json:
 
         base_path is the directory any "_ref" entries in better_dict resolve
         against - the directory of the file better_dict was itself loaded from.
+
+        key_roots optionally redirects specific top-level keys of better_dict
+        (e.g. a page config's "settings"/"menu_bar"/"panes") to resolve their
+        own "_ref"s against a fixed directory instead of base_path, so a page
+        can reference shared settings/layout data by a stable key without
+        knowing how deep its own folder sits under assets/pages. It's only
+        consulted for better_dict's own keys - once recursed into, nested
+        dicts resolve normally against wherever they were loaded from.
         '''
         if not isinstance(better_dict, dict):
             return
         for key, value in better_dict.items():
+            key_base_path = base_path
+            if key_roots and key in key_roots:
+                key_base_path = key_roots[key]
             if key == self._ref_word:
                 refs = value if isinstance(value, list) else [value]
                 for ref in refs:
@@ -95,9 +112,9 @@ class Json:
                 # inside it instead of resolving it.
                 if not isinstance(base_dict.get(key), dict):
                     base_dict[key] = {}
-                self.deeper_merge(base_dict[key], value, base_path)
+                self.deeper_merge(base_dict[key], value, key_base_path)
             elif isinstance(value, list):
-                base_dict[key] = self.resolve_list(value, base_path)
+                base_dict[key] = self.resolve_list(value, key_base_path)
             else:
                 base_dict[key] = value
 

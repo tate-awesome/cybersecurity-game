@@ -1,4 +1,5 @@
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .. import Context
@@ -46,7 +47,7 @@ class PageManager:
             return build_types
         for config_path in pages_root.rglob("config.json"):
             key = config_path.parent.relative_to(pages_root).as_posix()
-            config = self.context.json.load(config_path)
+            config = self.context.json.load(config_path, self.settings_roots())
             build_type = config.get("build_type")
             if isinstance(build_type, str):
                 build_types[key] = build_type
@@ -78,9 +79,25 @@ class PageManager:
         '''
         Loads and _ref-resolves the config.json for the page at the given
         key (its path relative to assets/pages, e.g. "attacker_lab").
+
+        The "settings", "menu_bar" and "panes" keys are smart-unpacked: any
+        "_ref" inside them resolves against their own known folder under
+        assets/settings (see settings_roots), not the page's own folder.
+        That lets a page config reference shared settings/layout data with a
+        short, stable path regardless of how deeply its own folder is
+        nested under assets/pages, and lets pages be moved or organized
+        into subfolders freely without breaking those references.
         '''
         path = self.context.paths.pages / key / "config.json"
-        return self.context.json.load(path)
+        return self.context.json.load(path, self.settings_roots())
+
+    def settings_roots(self) -> dict[str, Path]:
+        settings = self.context.paths.settings
+        return {
+            "settings": settings,
+            "menu_bar": settings / "menu_bar",
+            "panes": settings / "panes",
+        }
 
     def get_build_type(self, key: str) -> str | None:
         return self.build_types.get(key)
