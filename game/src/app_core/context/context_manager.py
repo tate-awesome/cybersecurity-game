@@ -63,8 +63,8 @@ Shared data for a page. Passed to next pages on navigation.
         self.pages.reload()
         self.states.reset()
         self.labels.reset()
-        self.style.load_default_theme()
-        self.style.load_default_mode()
+        # self.style.load_default_theme()
+        # self.style.load_default_mode()
 
     def start_page(self):
         '''
@@ -112,7 +112,7 @@ Shared data for a page. Passed to next pages on navigation.
         if self.router.current_page is not None:
             self.pages.delete_saved_page(self.router.current_page)
         self.reset_session()
-        self.preferences.clear()
+        # self.preferences.clear()
         self.router.refresh(save=False)
 
     def help_message(self, widget="root"):
