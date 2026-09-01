@@ -22,15 +22,12 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
-        available_forms: dict[str, int] = self.context.states.get("modbus_table_visibility")
-        if available_forms is None:
-            available_forms = list(FORM_CLASSES.keys())
+        self.available_forms: dict[str, int] = self.context.states.get("modbus_table_visibility")
+        if self.available_forms is None:
+            self.available_forms = list(FORM_CLASSES.keys())
 
         self.forms = {}
         for key in FORM_CLASSES:
-            if key not in available_forms or available_forms[key] == 0 or available_forms[key] == "0":
-                print(f"Form is invisible: {key!r}")
-                continue
             self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
@@ -57,7 +54,10 @@ class Builder(Panel):
         self.update_idletasks()
         for key in self.context.states.get("modbus_forms"):
             state = self.context.states.get("modbus_forms", key)
-            if state == "1" or state == 1:
+
+            invisible = key not in self.available_forms or self.available_forms[key] == 0 or self.available_forms[key] == "0"
+            selected = state == "1" or state == 1
+            if not invisible and selected:
                 self.show_forms(key)
             else:
                 self.hide_forms(key)

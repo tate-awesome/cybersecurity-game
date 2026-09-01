@@ -175,6 +175,7 @@
         "lesson_arp_ip": "IP & ARP Basics",
         "lesson_recon": "Network Recon",
         "lesson_modbus": "ModBus Intro",
+        "lesson_modbus_mitm": "ModBus MITM",
         "lesson_hvac": "HVAC System",
         "lesson_submarine": "Submarine System",
         "lesson_attacker_suite": "Full Attacker Suite"
@@ -193,6 +194,7 @@
         "attacker_suite_lesson": "Full Attacker Exercise",
         "dos_attack_lesson": "Denial-of-Service Exercise",
         "modbus_intro_lesson": "ModBus Basics",
+        "modbus_mitm_lesson": "ModBus MITM Exercise",
         "modbus_hvac_lesson": "ModBus HVAC Exercise",
         "modbus_submarine_lesson": "ModBus Submarine Exercise",
 

@@ -31,6 +31,13 @@
             "estimated_minutes": 20,
             "gradable": true
         },
+        "lesson_modbus_mitm": {
+            "path": "lessons/modbus_mitm",
+            "title_label": "lesson_modbus_mitm",
+            "prerequisites": ["lesson_modbus"],
+            "estimated_minutes": 20,
+            "gradable": true
+        },
         "lesson_hvac": {
             "path": "lessons/modbus_hvac",
             "title_label": "lesson_hvac",
