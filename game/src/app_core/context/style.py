@@ -1,5 +1,6 @@
 from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker, set_appearance_mode
 from CTkToolTip import CTkToolTip
+import darkdetect
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -24,7 +25,10 @@ class Style:
         self.PANE_MIN_HEIGHT = self.igap*10
         self.PANE_BIG = self.igap*100
         self.fonts = {}
-
+        if darkdetect.isDark():
+            set_appearance_mode("Dark")
+        else:
+            set_appearance_mode("Light")
         self.current_theme = "blue"
         self.context = context        
 
@@ -189,8 +193,6 @@ class Style:
         if self.context.preferences.has("mode"):
             mode = self.context.preferences.data["mode"]
             set_appearance_mode(mode)
-        else:
-            set_appearance_mode("Light")
 
     def load_default_mode(self):
         set_appearance_mode("Light")

@@ -126,6 +126,7 @@ Shared data for a page. Passed to next pages on navigation.
         nothing gets written back into the folder that was just wiped.
         '''
         shutil.rmtree(self.paths.user_data, ignore_errors=True)
+        self.style = Style(self)  # reset style to default
         self.paths.generate_path(self.paths.user_data)
         self.paths.generate_path(self.paths.user_mcaptures)
         self.paths.generate_path(self.paths.user_pcaptures)
