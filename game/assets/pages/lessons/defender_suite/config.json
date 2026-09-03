@@ -1,0 +1,22 @@
+{
+    "_note": "Full instructor build of defender/v0.",
+
+    "build_type": "workspace",
+
+    "settings": {
+        "_ref": [
+            "_packages/_default.json",
+            "hack_settings/lab.json",
+            "visibility/_admin.json"
+        ]
+    },
+
+    "menu_bar": {
+        "title": "defender_suite_lesson",
+        "buttons": [
+            { "_ref": "admin.json" }
+        ]
+    },
+
+    "panes": { "_ref": "defender_suite.json" }
+}

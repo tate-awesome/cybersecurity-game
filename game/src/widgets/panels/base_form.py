@@ -5,10 +5,10 @@ from ...app_core import Context
 
 class BaseForm(ABC, CTkFrame):
     '''
-    Shared by hacking_panel's and modbus_panel's attack/action forms. The two
+    Shared by network_action_panel's and modbus_panel's attack/action forms. The two
     differ only in how they source display text and lay out the attack
     button row:
-      - hacking_panel forms pass a `key` and look their text up via
+      - network_action_panel forms pass a `key` and look their text up via
         context.labels (i18n), and track game_progress on start.
       - modbus_panel forms pass no `key` (defaults to None) and build their
         text directly from `attack_noun` (not translated).
@@ -20,7 +20,7 @@ class BaseForm(ABC, CTkFrame):
     def __init__(self, master: CTkFrame, context: Context, attack_noun: str = "Attack", key: str | None = None):
         '''
         attack_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
-        key, if given, selects the "hacking_forms"/"hacking_panels" i18n text
+        key, if given, selects the "network_action_forms"/"network_action_panels" i18n text
         for this form instead of building plain text from attack_noun.
         '''
 
@@ -37,12 +37,12 @@ class BaseForm(ABC, CTkFrame):
         self.columnconfigure(2, weight=0)
 
         if self.key is not None:
-            self.status_on_text = self.context.labels.get("hacking_panels", f"{self.key}_on")
-            self.status_off_text = self.context.labels.get("hacking_panels", f"{self.key}_off")
-            self.start_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_start")
-            self.starting_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_starting")
-            self.stop_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_stop")
-            self.stopping_attack_text = self.context.labels.get("hacking_panels", f"{self.key}_stopping")
+            self.status_on_text = self.context.labels.get("network_action_forms", f"{self.key}_on")
+            self.status_off_text = self.context.labels.get("network_action_forms", f"{self.key}_off")
+            self.start_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_start")
+            self.starting_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_starting")
+            self.stop_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_stop")
+            self.stopping_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_stopping")
         else:
             self.status_on_text = f"{self.attack_noun} is on"
             self.status_off_text = f"{self.attack_noun} is off"
@@ -61,7 +61,7 @@ class BaseForm(ABC, CTkFrame):
     def add_header(self, text: str | None = None):
         '''
         text: explicit header text (modbus_panel forms). If omitted,
-        hacking_panel forms look their header up via context.labels using
+        network_action_panel forms look their header up via context.labels using
         `key` (must be set).
         '''
         if text is None:
@@ -87,7 +87,7 @@ class BaseForm(ABC, CTkFrame):
         '''
         Adds a labeled entry for the curent row in the form.
         This entry has autosave and auto-loading for its text input.
-        Requires `key` to have been set (hacking_panel forms only).
+        Requires `key` to have been set (network_action_forms forms only).
         '''
 
         assert self.key is not None, "add_labeled_entry() requires key to be set"

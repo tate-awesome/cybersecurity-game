@@ -41,7 +41,7 @@
         "nfq": "Cola de filtrado de red"
     },
 
-    "hacking_panels": {
+    "network_action_forms": {
         "wifi_on": "Conectado.",
         "wifi_off": "Desconectado.",
         "wifi_start": "Conectarse al WiFi",

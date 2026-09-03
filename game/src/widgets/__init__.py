@@ -9,7 +9,7 @@ from .frame_widgets.overlay import Overlay
 from .frame_widgets.checkbox_overlay import CheckboxOverlay
 
 from .panels.panel import Panel as GenericPanel
-from .panels.hacking_panel._builder import Builder as HackingPanel
+from .panels.network_action_panel._builder import Builder as HackingPanel
 from .panels.status_console._builder import Builder as StatusConsole
 from .panels.packet_console._builder import Builder as PacketConsole
 from .panels.boat_model._builder import Builder as BoatModel

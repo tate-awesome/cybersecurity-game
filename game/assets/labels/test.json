@@ -41,7 +41,7 @@
         "nfq": "#"
     },
     
-    "hacking_panels": {
+    "network_action_forms": {
         "wifi_on": "#",
         "wifi_off": "#",
         "wifi_start": "#",

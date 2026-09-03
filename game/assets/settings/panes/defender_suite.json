@@ -1,0 +1,59 @@
+{
+    "_note": "Full instructor build of the defender page's pane tree - a direct data-driven translation of DefenderV0 (game/src/pages/defender/defender.py), submarine branch. 'weight' is proportional within its parent's orientation, not a divisor - a loader converts weights to whatever Panes.child_sizes expects.",
+
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 2,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 2.3,
+                        "widget": {"_ref": "panels/_network_action.json"}
+                    },
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_modbus_table.json"}
+                    }
+                ]
+            }
+        },
+        {
+            "weight": 3,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_packet_console.json"}
+                    },
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_network_graph.json"}
+                    },
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_status_console.json"}
+                    }
+                ]
+            }
+        },
+        {
+            "weight": 3,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_modbus_model.json"}
+                    },
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_modbus_chart.json"}
+                    }
+                ]
+            }
+        }
+    ]
+}

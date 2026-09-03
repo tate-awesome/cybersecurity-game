@@ -41,7 +41,7 @@
         "nfq": "Net Filter Queue"
     },
     
-    "hacking_panels": {
+    "network_action_forms": {
         "wifi_on": "Connected.",
         "wifi_off": "Disconnected.",
         "wifi_start": "Connect to WiFi",
@@ -178,7 +178,8 @@
         "lesson_modbus_mitm": "ModBus MITM",
         "lesson_hvac": "HVAC System",
         "lesson_submarine": "Submarine System",
-        "lesson_attacker_suite": "Full Attacker Suite"
+        "lesson_attacker_suite": "Full Attacker Suite",
+        "lesson_defender_suite": "Full Defender Suite"
     },
 
     "menu_bar_titles": {
@@ -197,12 +198,14 @@
         "modbus_mitm_lesson": "ModBus MITM Exercise",
         "modbus_hvac_lesson": "ModBus HVAC Exercise",
         "modbus_submarine_lesson": "ModBus Submarine Exercise",
+        "defender_suite_lesson": "Full Defender Exercise",
+        "generic_page": "Generic Page Builder",
 
         "submarine_panel": "Submarine Model",
         "hvac_panel": "HVAC Model",
         "modbus_model_panel": "ModBus Model",
         "modbus_chart_panel": "ModBus Monitors",
-        "network_action_panel": "Hacks",
+        "network_action_panel": "Network Actions",
         "modbus_table_panel": "ModBus Data",
         "network_graph_panel": "Network Graph",
         "packet_panel": "Packets",

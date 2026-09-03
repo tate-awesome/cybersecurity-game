@@ -58,6 +58,13 @@
             "prerequisites": [],
             "estimated_minutes": 1,
             "gradable": true
+        },
+        "full_defender_suite": {
+            "path": "lessons/defender_suite",
+            "title_label": "lesson_defender_suite",
+            "prerequisites": [],
+            "estimated_minutes": 1,
+            "gradable": true
         }
     }
 }
