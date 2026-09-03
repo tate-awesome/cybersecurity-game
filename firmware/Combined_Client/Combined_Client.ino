@@ -702,6 +702,8 @@ void runHvacCycle() {
     true_room_temp = last_temp - 0.8f;
   }
 
+  true_room_temp = constrain(true_room_temp, 0.0f, 140.0f);
+
   float raw_noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
 
   float measurement_change = raw_noisy_measurement - last_sent_temp;
@@ -715,6 +717,8 @@ void runHvacCycle() {
   else {
       noisy_measurement = raw_noisy_measurement;
   }
+
+  noisy_measurement = constrain(noisy_measurement, 0.0f, 140.0f);
 
   last_temp = true_room_temp;
   last_sent_temp = noisy_measurement;

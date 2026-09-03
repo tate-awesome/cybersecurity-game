@@ -619,6 +619,8 @@ void runHvacCycle() {
       current_temp = g_client_temp;
     }
 
+    current_temp = constrain(current_temp, 0.0f, 140.0f);
+
     if (last_temp != current_temp) {
         if (g_hvac_kalman_filter_enabled) {
             est_temp = tempKF(current_temp, 0.1f);
