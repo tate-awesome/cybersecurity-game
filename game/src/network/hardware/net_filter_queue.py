@@ -4,19 +4,14 @@ NFQ module. Callbacks and persistent object
 
 from scapy.all import IP, TCP, Packet, Ether, IPv6
 from scapy.contrib.modbus import *
-from ..buffer import Buffer
+from ..process import Process
 from ..buffer.meta_packet import MetaPacket
 import threading
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ...app_core import Context
+class NetFilterQueueBaseClass(Process):
 
-class NetFilterQueueBaseClass:
-
-    def __init__(self, buffer: Buffer, context: "Context"):
-        self.buffer = buffer
-        self.context = context
+    def __init__(self, buffer, context):
+        super().__init__(buffer, context)
 
         self.running = False
         # Only meaningfully set once start() is called - declared here so

@@ -90,7 +90,7 @@ class Draw:
         # History timestamps are seconds since the first captured packet (see
         # MetaPacket), not wall-clock epoch time - convert "now" into that same
         # coordinate space so it lines up with the data.
-        first_packet_time = self.context.net.buffer.packets.first_packet_time
+        first_packet_time = self.context.buffer.packets.first_packet_time
         wall_now = 0.0 if first_packet_time is None else time.time() - first_packet_time
         # `now` is the geometry reference (where pixels come from) - normally the
         # same as wall_now, but fit mode freezes it to the latest sample's time so

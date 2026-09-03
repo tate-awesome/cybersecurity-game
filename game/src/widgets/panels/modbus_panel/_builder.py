@@ -42,7 +42,7 @@ class Builder(Panel):
         forms_button = self.menu_bar.add_button("forms_overlay")
         forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_forms", "Show Forms", "modbus_table_visibility")
 
-        clear_button = self.menu_bar.add_button("clear_modbus", self.context.net.buffer.reset_modbus)
+        clear_button = self.menu_bar.add_button("clear_modbus", self.context.buffer.reset_modbus)
 
         self.update_idletasks()
         self.refresh_nicknames()

@@ -9,7 +9,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 
-        self.buffer = context.net.buffer.status
+        self.buffer = context.buffer.status
 
         self.text_box = self.create_text_box(self)
 

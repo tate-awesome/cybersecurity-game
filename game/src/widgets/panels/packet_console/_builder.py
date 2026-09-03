@@ -11,7 +11,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 
-        self.buffer = context.net.buffer.packets
+        self.buffer = context.buffer.packets
         #  self.create_filter_boxes(menu_frame)
 
         self.treeview = PacketTreeview(self, context)
@@ -32,7 +32,7 @@ class Builder(Panel):
         minimize_button = self.menu_bar.minimize_button(self.treeview.frame, master)
 
         def reset_capture():
-            self.context.net.buffer.reset()
+            self.context.buffer.reset()
             self.clear_tree()
 
         reset_button = self.menu_bar.add_button("clear_packets_button", reset_capture)

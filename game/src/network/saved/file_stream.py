@@ -7,6 +7,7 @@ import threading
 from tkinter.filedialog import asksaveasfilename
 
 from ..buffer.meta_packet import MetaPacket
+from ..process import Process
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from ..buffer import Buffer
 
 
-class FileStream:
+class FileStream(Process):
     '''
     Streams MetaPackets to a JSON Lines file as they're produced, instead
     of snapshotting the packet buffer at save time. Records use the same
@@ -23,8 +24,7 @@ class FileStream:
     '''
 
     def __init__(self, buffer: "Buffer", context: "Context"):
-        self.buffer = buffer
-        self.context = context
+        super().__init__(buffer, context)
 
         self._lock = threading.Lock()
         self._queue: queue.Queue = queue.Queue()

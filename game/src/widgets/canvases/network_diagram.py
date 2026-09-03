@@ -14,9 +14,8 @@ class NetworkDiagramCanvas(Canvas):
 
     def __init__(self, master: CTkFrame, context: Context):
         super().__init__(master, context, ((-1.3, -1.3), (1.3, 1.3)))
-        self.network = context.net.buffer.network
-        self.packets = context.net.buffer.packets
-        # self.mac = context.net.nmap.
+        self.network = context.buffer.network
+        self.packets = context.buffer.packets
         default_interface = conf.iface
         self.mac_address = get_if_hwaddr(default_interface)
 

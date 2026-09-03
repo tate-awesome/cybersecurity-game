@@ -10,7 +10,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 
-        self.buffer = context.net.buffer.packets
+        self.buffer = context.buffer.packets
 
         panes = Panes(self, context, "horizontal", 2, [2, 2], False)
 

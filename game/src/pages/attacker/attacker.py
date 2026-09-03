@@ -9,9 +9,6 @@ from ...widgets import (
 from ...widgets import popup
 from ...pages.page import Page
 
-# Network
-from ...network.network_controller import HardwareAttacker as HardwareNetwork
-
 class AttackerV0(Page):
     '''
     Page constructor for attacker/attackerv0. Inherits CTkFrame
@@ -19,7 +16,6 @@ class AttackerV0(Page):
 
     def __init__(self, context: Context):
         super().__init__(context)
-        net = context.refresh_net(HardwareNetwork)
 
         menu_bar = MenuBar(self, context, "attacker")
         menu_bar.page_buttons()

@@ -2,6 +2,7 @@ from customtkinter import CTkFrame, CTkEntry, CTkLabel, CTkButton
 from abc import ABC, abstractmethod
 from typing import Callable
 from ...app_core import Context
+from ...network.process import Process
 
 class BaseForm(ABC, CTkFrame):
     '''
@@ -57,6 +58,23 @@ class BaseForm(ABC, CTkFrame):
         self.start_attack = lambda: None
         self.stop_attack = lambda: None
 
+    def get_process(self, process_class: type[Process], *args, tags: list[str] | None = None, **kwargs) -> Process:
+        '''
+        Retrieves this form's process from context.process_manager, creating
+        and registering it under `key` on first visit. Since forms are
+        recreated on every refresh, this is how a form regains control of a
+        still-running process instead of losing track of it.
+        Requires `key` to have been set - it doubles as the process's name.
+        tags is passed through to ProcessManager.add_process on first visit
+        (e.g. "stop_last") - ignored on later visits, since the process is
+        already registered by then.
+        '''
+        assert self.key is not None, "get_process() requires key to be set"
+        process = self.context.process_manager.get_process(self.key)
+        if process is None:
+            process = process_class(self.context.buffer, self.context, *args, **kwargs)
+            self.context.process_manager.add_process(self.key, process, tags)
+        return process
 
     def add_header(self, text: str | None = None):
         '''

@@ -1,11 +1,13 @@
-from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkEntry
+from customtkinter import CTkFrame, CTkLabel, CTkButton
 from .....app_core import Context
+from .....network.hardware import NMapper
 from ...base_form import BaseForm
 
 class NmapForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
         super().__init__(master, context, key="nmap", attack_noun="Network Map")
+        self.process = self.get_process(NMapper)
 
         self.header = self.add_header()
 
@@ -18,7 +20,7 @@ class NmapForm(BaseForm):
             status.configure(text="Pinging...")
             context.root.update_idletasks()
 
-            context.net.do_nmap()
+            self.process.do_nmap()
 
             status.configure(text="NMap Complete")
 

@@ -1,4 +1,3 @@
-from ..buffer import Buffer
 from .net_filter_queue import NetFilterQueueBaseClass
 from netfilterqueue import NetfilterQueue as NFQ
 
@@ -10,7 +9,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     '''
     Linux Version
     '''
-    def __init__(self, buffer: Buffer, context):
+    def __init__(self, buffer, context):
         super().__init__(buffer, context)
 
     def start(self): 
@@ -31,7 +30,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         stop_event = self.stop_event
 
         # Calculate iface
-        nmapper = NMapper(self.buffer)
+        nmapper = NMapper(self.buffer, self.context)
         active_iface = nmapper.get_active_iface()
 
         # IPTables rule

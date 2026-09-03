@@ -4,9 +4,6 @@ from ...app_core import Context
 from ... import widgets
 from ..page import Page
 
-# Network
-from ...network.network_controller import HardwareAttacker as HardwareNetwork
-
 class WorkspacePage(Page):
     '''
     Page constructor for build_type "workspace". Reads its own config.json
@@ -20,8 +17,6 @@ class WorkspacePage(Page):
 
         key = context.router.current_page
         config = context.pages.prepare_page_config(key)
-
-        context.refresh_net(HardwareNetwork)
 
         self.build_menu_bar(config.get("menu_bar", {}))
 

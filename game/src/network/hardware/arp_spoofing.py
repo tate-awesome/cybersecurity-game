@@ -4,14 +4,14 @@ Arp spoofing module. Stateless functions that can be used whenever + Stateful cl
 import scapy.all as scapy
 from scapy.all import  ARP
 import threading, subprocess
-from ..buffer import Buffer
+from ..process import Process
 import platform
 # TODO get mac address better
 
-class ArpSpoofer:
+class ArpSpoofer(Process):
 
-    def __init__(self, buffer: Buffer, interval: float = 1.0):
-        self.buffer = buffer
+    def __init__(self, buffer, context, interval: float = 1.0):
+        super().__init__(buffer, context)
         self.interval = interval
 
         self.running = False
@@ -81,6 +81,9 @@ class ArpSpoofer:
 
         self.tick()
 
+
+    def is_running(self):
+        return self.running
 
     def stop(self):
         # disable forwarding

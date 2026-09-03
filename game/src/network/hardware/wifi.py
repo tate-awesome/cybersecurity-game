@@ -1,9 +1,9 @@
 import os, subprocess, platform
-from ..buffer import Buffer
+from ..process import Process
 
-class Wifi:
-    def __init__(self, buffer: Buffer):
-        self.buffer = buffer
+class Wifi(Process):
+    def __init__(self, buffer, context):
+        super().__init__(buffer, context)
         self.is_connected = False
         self.previous_network = None
         self.os_name = platform.system()

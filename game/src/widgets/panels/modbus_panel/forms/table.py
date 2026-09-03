@@ -6,7 +6,7 @@ class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
         super().__init__(master, context, attack_noun="NFQ")
         # Assign local references
-        self.buffer = context.net.buffer.modbus
+        self.buffer = context.buffer.modbus
         # Create form
         
         self.columnconfigure(0, weight=1)

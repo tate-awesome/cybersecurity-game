@@ -12,7 +12,7 @@ class WorldMap(Canvas):
 
         # Create the canvas widget
         super().__init__(master, context, ((0,0),(200,200)))
-        self.buffer = context.net.buffer.submarine
+        self.buffer = context.buffer.submarine
 
         def frame_callback():
             def color(key):

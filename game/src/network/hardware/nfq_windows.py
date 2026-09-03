@@ -1,4 +1,3 @@
-from ..buffer import Buffer
 from .net_filter_queue import NetFilterQueueBaseClass
 import pydivert
 
@@ -9,7 +8,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
     '''
     Windows Version
     '''
-    def __init__(self, buffer: Buffer, context): 
+    def __init__(self, buffer, context):
         super().__init__(buffer, context)
 
     def start(self): 

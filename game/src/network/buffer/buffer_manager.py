@@ -15,7 +15,7 @@ from scapy.all import Packet
 from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, HouseBuffer, NetworkGraph
 from .meta_packet import MetaPacket
 from .channels.transaction_manager import TransactionManager
-from ..saved.file_stream import FileStream
+from ..saved import Loader, Replay, FileStream
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -42,6 +42,8 @@ class Buffer:
         self.hvac = HouseBuffer(self.context, self.modbus, max_size=self.max_size)
         self.network = NetworkGraph(self.context, self.packets, max_size = self.max_size)
         self.file_stream = FileStream(self, context)
+        self.loader = Loader(self, context)
+        self.replay = Replay(self, context)
 
         self.start_worker()
 

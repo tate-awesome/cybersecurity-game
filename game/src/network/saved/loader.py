@@ -2,17 +2,17 @@ from scapy.all import rdpcap
 from tkinter.filedialog import askopenfilename
 import os, threading, time
 
-from ..buffer import Buffer
+from ..process import Process
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...app_core import Context
+    from ..buffer import Buffer
 
-class Loader:
+class Loader(Process):
 
-    def __init__(self, buffer: Buffer, context: "Context"):
-        self.buffer = buffer
-        self.context = context
+    def __init__(self, buffer: "Buffer", context: "Context"):
+        super().__init__(buffer, context)
         self._is_loading = False
         self._lock = threading.Lock()
         
@@ -76,7 +76,7 @@ class Loader:
         worker_thread = threading.Thread(target=self.worker, daemon=True)
         worker_thread.start()
 
-    def abort(self):
+    def stop(self):
         '''
         Call this method from your GUI button or controller to stop the process.
         '''

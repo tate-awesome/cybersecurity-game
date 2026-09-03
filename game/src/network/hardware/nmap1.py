@@ -4,12 +4,12 @@ Module
 import scapy.all as scapy
 from scapy.all import get_if_addr, get_working_if, get_if_hwaddr
 import netifaces
-from ..buffer import Buffer
+from ..process import Process
 import nmap, socket
 
-class NMapper:
-    def __init__(self, buffer: Buffer):
-        self.buffer = buffer
+class NMapper(Process):
+    def __init__(self, buffer, context):
+        super().__init__(buffer, context)
 
     def get_local_ip(self) -> str | None:
         # Connect to an external IP briefly to discover the active local interface IP

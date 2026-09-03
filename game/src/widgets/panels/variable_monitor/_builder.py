@@ -9,7 +9,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
         self.registers = self.context.states.get_registers()
-        self.buffer = self.context.net.buffer.modbus
+        self.buffer = self.context.buffer.modbus
 
         scrollable = Scrollable(self, context)
         scrollable.configure(fg_color=self.style.color("panel"))

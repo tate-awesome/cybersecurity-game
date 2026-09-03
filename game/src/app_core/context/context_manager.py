@@ -1,5 +1,6 @@
 from .style import Style
-from ...network.network_controller import NetworkController
+from ...network.process_manager import ProcessManager
+from ...network.buffer import Buffer
 from .click_manager import ClickManager
 from .animation_manager import AnimationManager
 from .preferences import Preferences
@@ -26,7 +27,7 @@ class ContextManager:
 Shared data for a page. Passed to next pages on navigation.
 '''
     '''
-    Important data that needs to be shared across pages, such as the network controller and the router.
+    Important data that needs to be shared across pages, such as the process manager and the router.
     Every page builder function should take a Context object as an argument and build the page on the root CTk object.
     '''
 
@@ -53,6 +54,7 @@ Shared data for a page. Passed to next pages on navigation.
         self.pages: PageManager = PageManager(self)
         self.states: InputManager = InputManager(self)
         self.labels: LocalizationManager = LocalizationManager(self)
+        self.buffer: Buffer = Buffer(self)
         self.style.load_preferred_theme()
         self.style.load_preferred_mode()
 
@@ -72,15 +74,13 @@ Shared data for a page. Passed to next pages on navigation.
         Keep on refresh.
         Reset on page exit.
         '''
-        self.net: NetworkController | None = NetworkController(self) # base class with things lots of inits need
+        self.process_manager: ProcessManager = ProcessManager(self)
 
     def reset_page(self):
         '''
         Resets page members on page exit
         '''
-        if self.net is not None:
-            self.net.abort_all()
-            self.net = None
+        self.process_manager.abort_all()
 
     def start_build(self):
         '''
@@ -137,20 +137,6 @@ Shared data for a page. Passed to next pages on navigation.
     def help_message(self, widget="root"):
         # TODO get help from progress and current page and source widget
         return "You need to do something"
-
-    def refresh_net(self, constructor: type[NetworkController]):
-        '''
-        Gets the correct network controller for the current page.
-        If the net is a different type, it will create a new net with the constructor.
-        If it already exists, it will be returned as is to preserve the state.
-        Helps the net controller persist across refreshes without having to pass it as an argument to every page builder function.
-        '''
-        # Check type
-        if type(self.net) is constructor:
-            return self.net
-        else:
-            self.net = constructor(self)
-            return self.net
 
     def open_ap_config_page(self):
         url = "http://192.168.4.1"

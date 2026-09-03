@@ -7,9 +7,6 @@ from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
 from ..page import Page
 
-# Network
-from ...network.network_controller import HardwareDefender
-
 # HVAC test dashboard, shown in place of the Submarine widgets when AP_ESP32
 # reports submarine_mode == False
 from .hvac_view import HVACView
@@ -46,8 +43,6 @@ class DefenderV0(Page):
 
     def __init__(self, context: Context):
         super().__init__(context)
-        context.refresh_net(HardwareDefender)
-        # TODO use net for lifetime management   = context.refresh_net(HardwareDefender)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
         self._server_url    = "http://192.168.4.1"

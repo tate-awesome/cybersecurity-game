@@ -1,10 +1,10 @@
 from scapy.all import TCP, AsyncSniffer
-from ..buffer import Buffer
+from ..process import Process
 
 
-class Sniffer:
-    def __init__(self, buffer: Buffer):
-        self.buffer = buffer
+class Sniffer(Process):
+    def __init__(self, buffer, context):
+        super().__init__(buffer, context)
         self.sniffer = AsyncSniffer(
             prn=self.callback,
             store=False

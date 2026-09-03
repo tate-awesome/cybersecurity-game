@@ -2,7 +2,9 @@ import socket
 import threading
 import random
 
-class Denier:
+from ..process import Process
+
+class Denier(Process):
 	'''
 	UI:
 
@@ -16,7 +18,8 @@ class Denier:
 	therefore a target is only in the dict if it's being started or currently active
 	'''
 	
-	def __init__(self, buffer):
+	def __init__(self, buffer, context):
+		super().__init__(buffer, context)
 		self.targets = {}
 		'''
 		"ip_address": {
@@ -24,7 +27,6 @@ class Denier:
 			"threads": [threading.thread, ...]
 		}
 		'''
-		self.buffer = buffer
 
 
 	def is_running(self, target: str|None=None):

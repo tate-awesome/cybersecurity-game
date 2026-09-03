@@ -5,7 +5,7 @@ from customtkinter import CTkFrame
 class House(Canvas):
     def __init__(self, master: CTkFrame, context: Context):
         super().__init__(master, context, ((0, 0), (100, 100)))
-        self.buffer = context.net.buffer.hvac
+        self.buffer = context.buffer.hvac
 
         def frame_callback():
             def color(key):

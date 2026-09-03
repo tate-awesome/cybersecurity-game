@@ -7,19 +7,19 @@ from scapy.all import Ether, IP
 
 from tkinter.filedialog import asksaveasfilename
 
-from ..buffer import Buffer
+from ..process import Process
 from ..buffer.meta_packet import MetaPacket
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...app_core import Context
+    from ..buffer import Buffer
 
 
-class Replay:
+class Replay(Process):
 
-    def __init__(self, buffer: Buffer, context: "Context"):
-        self.buffer = buffer
-        self.context = context
+    def __init__(self, buffer: "Buffer", context: "Context"):
+        super().__init__(buffer, context)
 
         self._is_loading = False
         self._lock = threading.Lock()
@@ -156,7 +156,7 @@ class Replay:
     # Playback
     # ------------------------------------------------------------------
 
-    def abort(self):
+    def stop(self):
         """Request that the current replay be stopped."""
 
         with self._lock:
