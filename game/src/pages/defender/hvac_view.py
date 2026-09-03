@@ -318,6 +318,7 @@ class HVACView:
         ax.set_ylabel("Temperature (°F)", color=_TEXT)
         ax.tick_params(colors=_TEXT)
         ax.grid(True, color=_GRID, linewidth=0.6)
+        ax.margins(0,0.2)
         for spine in ax.spines.values():
             spine.set_color(_GRID)
 
@@ -475,6 +476,14 @@ class HVACView:
         self._target_line.set_data(self._times, self._target_temps)
         self._ax.relim()
         self._ax.autoscale_view()
+
+        y_min, y_max = self._ax.get_ylim()
+        center = (y_min + y_max) / 2
+        min_range = 150.0
+        if (y_max - y_min) < min_range:
+            half_range = min_range / 2
+            self._ax.set_ylim(center - half_range, center + half_range)
+    
         self._canvas.draw_idle()
 
     def get_hvac_anomaly(self):

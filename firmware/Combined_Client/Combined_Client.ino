@@ -492,26 +492,31 @@ void runSubmarineCycle() {
         state_x += (xdot * dt);
         state_y += (ydot * dt);
         state_theta += (thetadot * dt);
-
-        float added_x_noise = randomNoiseWithVariance(g_sensor_noise_variance);
-        float added_y_noise = randomNoiseWithVariance(g_sensor_noise_variance);
-
-        noise_x = state_x + added_x_noise;
-        noise_y = state_y + added_y_noise;
-        noise_theta = state_theta + radians(random(-100,100)/100.0f);
-      
-        while (state_theta < 0) state_theta += 2.0f * PI;
-        while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
-        
-        if (state_x < 0.0f) state_x = 0.0f;
-        if (noise_x < 0.0f) noise_x = 0.0f;
-        if (state_x > 200.0f) state_x = 200.0f;
-        if (noise_x > 200.0f) noise_x = 200.0f;
-        if (state_y < 0.0f) state_y = 0.0f;
-        if (noise_y < 0.0f) noise_y = 0.0f;
-        if (state_y > 200.0f) state_y = 200.0f;
-        if (noise_y > 200.0f) noise_y = 200.0f;
       }
+
+      float added_x_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+      float added_y_noise = randomNoiseWithVariance(g_sensor_noise_variance);
+      float added_theta_noise = randomNoiseWithVariance(0.01f);
+
+      if(!g_submarine_filtering_on){
+        added_theta_noise = randomNoiseWithVariance(4.0f);
+      }
+
+      noise_x = state_x + added_x_noise;
+      noise_y = state_y + added_y_noise;
+      noise_theta = state_theta + added_theta_noise;
+    
+      while (state_theta < 0) state_theta += 2.0f * PI;
+      while (state_theta >= 2.0f * PI) state_theta -= 2.0f * PI;
+      
+      if (state_x < 0.0f) state_x = 0.0f;
+      if (noise_x < 0.0f) noise_x = 0.0f;
+      if (state_x > 200.0f) state_x = 200.0f;
+      if (noise_x > 200.0f) noise_x = 200.0f;
+      if (state_y < 0.0f) state_y = 0.0f;
+      if (noise_y < 0.0f) noise_y = 0.0f;
+      if (state_y > 200.0f) state_y = 200.0f;
+      if (noise_y > 200.0f) noise_y = 200.0f;
 
       if (millis() - lastPoseMs >= 200) {
         lastPoseMs = millis();
@@ -599,6 +604,8 @@ bool hvac_encryption_status = false;
 String hvac_key = "1234";
 bool hvac_AP_communication = false;
 float g_hvac_sensor_noise_variance = 0.1f;
+float last_temp = 71.6f;
+float last_sent_temp = 71.6f;
 
 // Scale factor to preserve decimals across Modbus integer registers
 // (e.g., 71.64°F -> 7164)
@@ -677,12 +684,40 @@ void runHvacCycle() {
   float heat_loss = 0.05f * (true_room_temp - ambient_temp);
   float heat_gain = state_damper * 9.0f;
 
+  if(hvac_AP_communication){
+    heat_gain = state_damper;
+    heat_loss = 0.02f * (true_room_temp - ambient_temp);
+  }
+
   true_room_temp += (heat_gain - heat_loss) * dt;
 
   true_room_temp += (random(-18, 18) / 100.0f); // Random physical perturbation (-0.18 to +0.18°F)
 
-  // 3. Noisy Sensor Reading (Raw measurement)
-  noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
+  float temp_change = true_room_temp - last_temp;
+
+  if (temp_change > 0.8f) {
+    true_room_temp = last_temp + 0.8f;
+  }
+  else if (temp_change < -0.8f) {
+    true_room_temp = last_temp - 0.8f;
+  }
+
+  float raw_noisy_measurement = true_room_temp + randomNoiseWithVariance(g_hvac_sensor_noise_variance);
+
+  float measurement_change = raw_noisy_measurement - last_sent_temp;
+
+  if (measurement_change > 0.8f) {
+      noisy_measurement = last_sent_temp + 0.8f;
+  }
+  else if (measurement_change < -0.8f) {
+      noisy_measurement = last_sent_temp - 0.8f;
+  }
+  else {
+      noisy_measurement = raw_noisy_measurement;
+  }
+
+  last_temp = true_room_temp;
+  last_sent_temp = noisy_measurement;
 
   // 4. Send RAW Noisy Measurement Directly to Server
   uint16_t tx_val = (uint16_t)lroundf(noisy_measurement * SCALE);
