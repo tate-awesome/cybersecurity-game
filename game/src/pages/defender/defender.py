@@ -11,6 +11,9 @@ from ..page import Page
 # reports submarine_mode == False
 from .hvac_view import HVACView
 
+# Network
+from ...network.hardware import APPoller
+
 # customtkinter widgets
 from customtkinter import (
     CTkLabel, CTkEntry, CTkButton, CTkFrame,
@@ -44,17 +47,12 @@ class DefenderV0(Page):
         super().__init__(context)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
-        # Everything the AP actually reports (positions, flags, settings,
-        # temperatures...) lives in context.buffer.defender_modbus/
-        # defender_map/defender_status once _poll() hands a poll blob to
-        # context.buffer.put_poll() - what's left here is UI-only state
-        # (the mode/encryption highlight caches _refresh_all() diffs
-        # against, the log toggle, in-progress slider drags) plus
-        # AP_communication, which the AP's /api/data poll never echoes back
-        # so there's nothing in the buffer to read it from.
-        self._server_url    = "http://192.168.4.1"
-        self._encryption_on = False
-        self._AP_communication_on = False
+        # Everything the AP actually reports, and everything this page pushes
+        # back to it (encryption/AP-tunnel/kalman-enabled status, positions,
+        # flags, settings, temperatures...) lives in context.buffer.
+        # defender_modbus/defender_map/defender_status - see _refresh_*
+        # below. What's left here is genuinely local, single-widget UI state:
+        # the log toggle and in-progress slider drags.
         self._log_source    = "client"   # "client" or "server"
         self._submarine_mode = True
         self.sensor_noise_variance = 8.3
@@ -63,7 +61,15 @@ class DefenderV0(Page):
         self.speed_error_threshold = 2.0
         self._syncing_sliders = False
         self._submarine_pending_revision = 0
-        self._submarine_kalman_filter_enabled = True
+
+        # ── AP poller process — a background thread that has to survive a
+        # page refresh, so it's owned by context.process_manager the same
+        # way a network_action_panel form owns its attack process, and
+        # regained here rather than recreated whenever this page rebuilds.
+        self._ap_poller = self.context.process_manager.get_process("ap_poll")
+        if self._ap_poller is None:
+            self._ap_poller = APPoller(self.context.buffer, self.context)
+            self.context.process_manager.add_process("ap_poll", self._ap_poller)
 
         # ── Menu bar ─────────────────────────────────────────────────────────
         menu_bar = MenuBar(self, context, "defender")
@@ -87,8 +93,7 @@ class DefenderV0(Page):
         self._build_slider_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
-        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, context,
-                                   on_kalman_filter_change = self._set_hvac_kalman_filter_status)
+        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, context)
 
         left_p.add_deadspace()
 
@@ -142,58 +147,15 @@ class DefenderV0(Page):
 
         self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
         self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAG", self.HVAC_FLAG_DEFS, "_hvac_flag_labels",)
-        # ── HVAC Kalman Filter block ───────────────────────────────────────
-        kalman_section = CTkFrame(
-            self._hvac_middle,
-            fg_color=self.style.color("widget")
-        )
-        kalman_section.pack(
-            fill="x",
-            padx=self.style.igap,
-            pady=self.style.igap
-        )
-
-        CTkLabel(
-            kalman_section,
-            text="KALMAN FILTER",
-            font=self.style.get_font()
-        ).pack(
-            anchor="w",
-            padx=self.style.igap,
-            pady=(self.style.igap, 0)
-        )
-
-        self._hvac_kalman_label = CTkLabel(
-            kalman_section,
-            text="Status: ON",
-            font=self.style.get_font(),
-            text_color="green"
-        )
-        self._hvac_kalman_label.pack(
-            anchor="w",
-            padx=self.style.igap
-        )
-
-        self._hvac_kalman_button = CTkButton(
-            kalman_section,
-            text="Toggle Kalman Filter",
-            font=self.style.get_font(),
-            command=self._hvac_view._toggle_hvac_kalman_filter,
-        )
-        self._hvac_kalman_button.pack(
-            fill="x",
-            padx=self.style.igap,
-            pady=self.style.gapbot
-        )
+        # HVAC's own Kalman Filter block lives entirely inside HVACView now
+        # (see hvac_view.py's _build_kalman_block) - it owns the button, the
+        # label, and the toggle state, so there's no callback threaded back
+        # into this page just to update a label this class doesn't build.
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
         self._refresh_mode_ui()
 
-        self._submarine_kalman_filter_enabled = True
-        self._hvac_view._hvac_kalman_filter_enabled = True
-
         self._post_slider_settings()
-        self._hvac_view._push_hvac_controls()
 
         self._map_container = CTkFrame(right_p, fg_color="transparent")
         self._map_container.pack(fill="both", expand=True)
@@ -215,26 +177,21 @@ class DefenderV0(Page):
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
         #self._map.canvas.bind("<Button-1>", self._on_map_click)
 
+        # ── Page updaters — each repaints itself from context.buffer on the
+        # shared animation_manager tick, the same way MitmTable/canvases do,
+        # instead of one central method reaching into every other widget's
+        # update method. That's what makes it possible to lift each of these
+        # into its own panel later without carrying the others along.
+        self.context.animation_manager.add_callback(f"DefenderConnection_{id(self)}", self._refresh_connection)
+        self.context.animation_manager.add_callback(f"DefenderSubmarineValues_{id(self)}", self._refresh_submarine_values)
+        self.context.animation_manager.add_callback(f"DefenderFlags_{id(self)}", self._refresh_flags)
+
         # ── Start polling ────────────────────────────────────────────────────
         self._poll()
 
     # ════════════════════════════════════════════════════════════════════════
     #  UI builder helpers
     # ════════════════════════════════════════════════════════════════════════
-
-    def _set_hvac_kalman_filter_status(self, enabled: bool):
-        enabled = bool(enabled)
-
-        if enabled:
-            self._hvac_kalman_label.configure(
-                text="Kalman Filter Status: ON",
-                text_color="green",
-            )
-        else:
-            self._hvac_kalman_label.configure(
-                text="Kalman Filter Status: OFF",
-                text_color="gray",
-            )
 
     def _build_connection_block(self, parent):
         section = CTkFrame(parent, fg_color=self.style.color("widget"))
@@ -276,7 +233,7 @@ class DefenderV0(Page):
         self._enc_button = CTkButton(section, text="Enable Encryption",
                                      font=self.style.get_font())
         def enc_button():
-            if not self._encryption_on:
+            if not self.context.buffer.defender_status.get("encryption_status", False):
                 # Encryption is off - try to turn it on
                 if self._enc_key_entry.get().strip() == "":
                     # Empty key — show error
@@ -336,7 +293,6 @@ class DefenderV0(Page):
         try:
             if self._submarine_mode:
                 self._mode_label.configure(text="Mode: SUBMARINE", text_color="green")
-                self._hvac_view.hide()
                 self._hvac_middle.pack_forget()
 
                 self._submarine_left.pack(fill="x")
@@ -348,7 +304,6 @@ class DefenderV0(Page):
                 self._submarine_middle.pack_forget()
                 self._map_container.pack_forget()
 
-                self._hvac_view.show()
                 self._hvac_middle.pack(fill="both", expand=True)
         except Exception as e:
             print("refresh_mode_ui:", e)
@@ -525,13 +480,13 @@ class DefenderV0(Page):
             "kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
             "rudder_error_threshold": self.rudder_error_threshold,
             "speed_error_threshold": self.speed_error_threshold,
-            "kalman_filter_enabled": self._submarine_kalman_filter_enabled,
+            "kalman_filter_enabled": self.context.buffer.defender_status.get("kalman_filter_enabled", True),
         }
 
         def _request():
             try:
                 resp = requests.post(
-                    f"{self._get_url()}/set_settings",
+                    f"{self._ap_poller.url}/set_settings",
                     json=payload,
                     timeout=3,
                 )
@@ -671,40 +626,49 @@ class DefenderV0(Page):
     # ════════════════════════════════════════════════════════════════════════
 
     def _get_url(self) -> str:
-        return self._url_entry.get().strip().rstrip("/") or self._server_url
+        # Falls back to the poller's own last-known URL (which defaults to
+        # 192.168.4.1 itself) rather than a second hardcoded default here.
+        return self._url_entry.get().strip().rstrip("/") or self._ap_poller.url
 
     def _toggle_encryption(self):
-        new_state = not self._encryption_on
+        new_state = not self.context.buffer.defender_status.get("encryption_status", False)
         enc_key   = self._enc_key_entry.get().strip()
 
-        def _request():      
+        def _request():
             try:
                 resp = requests.post(
-                    f"{self._get_url()}/set_encryption",
+                    f"{self._ap_poller.url}/set_encryption",
                     json={"encryption_status": new_state, "encryption_key": enc_key},
                     timeout=3,
                 )
                 if resp.ok:
-                    self._encryption_on = new_state
-                    self.after(0, self._refresh_encryption_ui)
+                    # Written straight to the shared status channel instead of
+                    # an instance attribute, so every widget reading
+                    # encryption_status (this page's own block and HVACView's)
+                    # sees the same confirmed value instead of two copies that
+                    # can drift apart.
+                    self.context.buffer.defender_status.put("encryption_status", new_state)
             except Exception:
                 pass
 
         threading.Thread(target=_request, daemon=True).start()
 
     def _toggle_AP_communication(self):
-        new_state = not self._AP_communication_on
+        new_state = not self.context.buffer.defender_status.get("ap_communication", False)
 
         def _request():
             try:
                 resp = requests.post(
-                    f"{self._get_url()}/set_AP_communication",
+                    f"{self._ap_poller.url}/set_AP_communication",
                     json={"AP_communication": new_state},
                     timeout=3,
                 )
                 if resp.ok:
-                    self._AP_communication_on = new_state
-                    self.after(0, self._refresh_AP_communication_ui)
+                    # The AP never echoes AP_communication back on /api/data,
+                    # so ap_communication in defender_status is this page's own
+                    # confirmed-by-POST record, not something the poll unpacker
+                    # ever writes - the last successful set is authoritative.
+                    self.context.buffer.defender_status.put("ap_communication", new_state)
             except Exception:
                 pass
 
@@ -712,7 +676,7 @@ class DefenderV0(Page):
 
     def _refresh_AP_communication_ui(self):
         try:
-            if self._AP_communication_on:
+            if self.context.buffer.defender_status.get("ap_communication", False):
                 self._filter_label.configure(text="Status: ON", text_color="green")
                 self._filter_button.configure(text="Disable Communication Through AP")
             else:
@@ -723,54 +687,26 @@ class DefenderV0(Page):
 
     def _poll(self):
         '''
-        Registers the AP polling tick with the shared animation_manager instead
-        of a raw self-rescheduling self.after() chain, so a destroyed frame or a
-        raising callback can't leave an un-stoppable loop running, and so it's
-        cleaned up automatically on page exit/refresh. animation_manager ticks
-        every callback at its own fixed (much faster) rate, so poll_tick
-        throttles itself internally to still only actually poll every
-        POLL_INTERVAL_MS - without this it would fire an HTTP request/thread on
-        every animation tick instead of every 2 seconds.
+        Connect button handler, and the initial poll kickoff at the end of
+        __init__. The AP poller process owns its own interval loop (it has
+        to - it must keep running across a page refresh) - this just points
+        it at whatever URL is currently entered and starts it if it isn't
+        already running, so re-clicking Connect with a new URL redirects the
+        existing poller instead of spawning a second one.
         '''
-        last_poll_time = 0.0
-
-        def _request():
-            try:
-                resp = requests.get(f"{self._get_url()}/api/data", timeout=3)
-                if resp.ok:
-                    data = resp.json()
-                    # Unpacking is cheap dict work protected by each channel's
-                    # own lock, so it happens right here on the poll thread -
-                    # only the resulting UI repaint needs to hop to the main
-                    # thread via after().
-                    self.context.buffer.put_poll(data)
-                    self.after(0, self._refresh_all)
-                    self.after(0, self._set_connected)
-                else:
-                    self.after(0, self._set_disconnected)
-            except Exception:
-                self.after(0, self._set_disconnected)
-
-        def poll_tick():
-            nonlocal last_poll_time
-            now = time.monotonic()
-            if now - last_poll_time < self.POLL_INTERVAL_MS / 1000.0:
-                return
-            last_poll_time = now
-            threading.Thread(target=_request, daemon=True).start()
-
-        self.context.animation_manager.add_callback(f"DefenderPoll_{id(self)}", poll_tick)
+        self._ap_poller.url = self._get_url()
+        if not self._ap_poller.is_running():
+            self._ap_poller.start()
 
     def _on_log_source_change(self, value: str):
         self._log_source = value.lower()
         self._update_log()
 
     def _toggle_submarine_kalman_filter(self):
-        self._submarine_kalman_filter_enabled = (
-            not self._submarine_kalman_filter_enabled
-        )
+        new_state = not self.context.buffer.defender_status.get("kalman_filter_enabled", True)
+        self.context.buffer.defender_status.put("kalman_filter_enabled", new_state)
 
-        if self._submarine_kalman_filter_enabled:
+        if new_state:
             self._submarine_kalman_label.configure(
                 text="Kalman Filter Status: ON",
                 text_color="green",
@@ -787,29 +723,36 @@ class DefenderV0(Page):
     #  UI update helpers
     # ════════════════════════════════════════════════════════════════════════
 
-    def _refresh_all(self):
+    def _refresh_connection(self):
         '''
-        Repaints every buffer-backed widget from whatever _poll() most
-        recently handed to context.buffer.put_poll() - this page never reads
-        poll data directly, only context.buffer.defender_modbus/
-        defender_map/defender_status.
+        Connection/mode-level repaint: the connected dot, encryption and
+        AP-tunnel status, and which top-level widget group (submarine vs
+        HVAC) is visible. Registered with animation_manager in __init__ -
+        HVACView repaints and shows/hides itself independently, it doesn't
+        wait to be called from here.
         '''
         status = self.context.buffer.defender_status
 
-        self._encryption_on = bool(status.get("encryption_status", False))
+        if self._ap_poller.connected:
+            self._conn_status.configure(text="⬤  Connected", text_color="green")
+        else:
+            self._conn_status.configure(text="⬤  Disconnected", text_color="red")
+
         self._refresh_encryption_ui()
+        self._refresh_AP_communication_ui()
 
         incoming_mode = bool(status.get("submarine_mode", True))
         if incoming_mode != self._submarine_mode:
             self._submarine_mode = incoming_mode
             self._refresh_mode_ui()
 
+    def _refresh_submarine_values(self):
+        '''
+        Submarine-only repaint: value cards, packet log, slider sync. A
+        no-op while the AP is in HVAC mode - registered with
+        animation_manager in __init__, not gated by _refresh_connection.
+        '''
         if not self._submarine_mode:
-            # HVAC mode — Submarine widgets are hidden, only the HVAC view
-            # needs repainting (it reads current_temp/target_temp/heater_on
-            # straight out of the buffer itself).
-            self._hvac_view.refresh()
-            self._refresh_flags()
             return
 
         self._sync_submarine_sliders()
@@ -819,8 +762,6 @@ class DefenderV0(Page):
 
         # Packet log — whichever source the toggle is set to
         self._update_log()
-
-        self._refresh_flags()
 
     def _update_value_card(self, source: str, attribute: str):
         modbus = self.context.buffer.defender_modbus
@@ -884,7 +825,7 @@ class DefenderV0(Page):
 
     def _refresh_encryption_ui(self):
         try:
-            if self._encryption_on:
+            if self.context.buffer.defender_status.get("encryption_status", False):
                 self._enc_label.configure(
                     text="Status: ON",
                     text_color="green"
@@ -917,21 +858,3 @@ class DefenderV0(Page):
         ):
             for key, dot in labels.items():
                 dot.configure(text_color="red" if flags.get(key, False) else "gray")
-
-    def _set_connected(self):
-        try:
-            self._conn_status.configure(
-                text="⬤  Connected",
-                text_color="green"
-            )
-        except Exception as e:
-            print("set_connected:", e)
-
-    def _set_disconnected(self):
-        try:
-            self._conn_status.configure(
-                text="⬤  Disconnected",
-                text_color="red"
-            )
-        except Exception as e:
-            print("set_disconnected:", e)

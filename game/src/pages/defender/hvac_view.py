@@ -1,10 +1,11 @@
 """
 Read-only HVAC test dashboard for DefenderV0.
 
-DefenderV0 owns the connection, polling, and mode detection (reading
-submarine_mode from AP_ESP32.ino). This module only knows how to render
-whatever HVAC fields context.buffer currently holds via refresh(). It has
-no opinion about Submarine mode and doesn't touch any Submarine-only state.
+Fully self-contained: owns its own AP poller lookup, animation_manager
+registration, and submarine/HVAC visibility, all read straight from
+context.buffer.defender_status/defender_modbus - the AP poller process
+(context.process_manager) is the only thing outside this class it depends
+on, and DefenderV0 never has to call into it at all once constructed.
 """
 
 import threading
@@ -33,30 +34,38 @@ class HVACView:
 
     MAX_POINTS = 300     # how many trailing buffer samples the graph plots
 
-    def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_kalman_filter_change=None):
+    def __init__(self, style, left_parent, right_parent, context):
         """
         style        - the Style object DefenderV0 already uses (self.style)
         left_parent  - container to build the readout cards into
         right_parent - container to build the trajectory graph into
-        get_url_fn   - callable returning the current base server URL,
-                       shared with DefenderV0 so both hit the same AP
+
+        Fully self-contained: owns its own kalman-filter toggle (nothing
+        outside this class needs to know about it) and reaches the AP poller
+        process through context.process_manager instead of being handed a
+        URL closure, so nothing has to construct or wire this up beyond
+        passing context - the same context every widget already gets.
         """
         self.style    = style
-        self._get_url = get_url_fn
-        self._on_kalman_filter_change = on_kalman_filter_change
-
-        self._encryption_on = False
         self._context = context
-        self._AP_communication_on = False
+
         self._ui_master = left_parent
         self.sensor_noise_variance = 0.1
         self.kalman_expected_sensor_variance = 0.1
         self.state_error_threshold = 5.0
         self._syncing_sliders = False
         self._hvac_kalman_filter_enabled = True
+        self._submarine_mode = True
 
         self._build_left(left_parent)
         self._build_graph(right_parent)
+
+        self._push_hvac_controls()
+        self._context.animation_manager.add_callback(f"HVACView_{id(self)}", self.refresh)
+        self.refresh()
+
+    def _get_url(self) -> str:
+        return self._context.process_manager.get_process("ap_poll").url
 
     # ════════════════════════════════════════════════════════════════════
     #  Construction
@@ -81,6 +90,7 @@ class HVACView:
 
         self._build_encryption_block(self._left_root)
         self._build_AP_communication_block(self._left_root)
+        self._build_kalman_block(self._left_root)
         self._build_slider_block(self._left_root)
 
     def _build_encryption_block(self, parent):
@@ -104,7 +114,7 @@ class HVACView:
         self._enc_button = CTkButton(section, text="Enable Encryption",
                                         font=self.style.get_font())
         def enc_button():
-            if not self._encryption_on:
+            if not self._context.buffer.defender_status.get("encryption_status", False):
                 # Encryption is off - try to turn it on
                 if self._enc_key_entry.get().strip() == "":
                     # Empty key — show error
@@ -129,15 +139,21 @@ class HVACView:
         self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
     def _toggle_encryption(self):
-        if not self._encryption_on:
+        # Shared with DefenderV0's own encryption block through
+        # defender_status.encryption_status - it's the same AP-level
+        # feature (same endpoint, same field names) shown twice, not two
+        # independent toggles, so both read/write the one confirmed value.
+        status = self._context.buffer.defender_status
+        new_state = not status.get("encryption_status", False)
+
+        if new_state:
             self._enc_key_entry.configure(state="disabled")
             self._enc_button.configure(text="Disable Encryption")
-            self._encryption_on = True
         else:
             self._enc_key_entry.configure(state="normal")
             self._enc_button.configure(text="Enable Encryption")
-            self._encryption_on = False
 
+        status.put("encryption_status", new_state)
         self._push_hvac_controls()
 
     def _build_AP_communication_block(self, parent):
@@ -156,24 +172,53 @@ class HVACView:
                                         command=self._toggle_AP_communication)
         self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
 
+    def _build_kalman_block(self, parent):
+        '''
+        HVAC's own Kalman Filter button+label - previously built by
+        DefenderV0 and wired back here through an on_kalman_filter_change
+        callback just to keep a label DefenderV0 owned in sync. Owning both
+        outright removes that callback entirely.
+        '''
+        section = CTkFrame(parent, fg_color=self.style.color("widget"))
+        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+
+        CTkLabel(section, text="KALMAN FILTER", font=self.style.get_font()).pack(
+            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
+        )
+
+        self._hvac_kalman_label = CTkLabel(section, text="Status: ON",
+                                           font=self.style.get_font(), text_color="green")
+        self._hvac_kalman_label.pack(anchor="w", padx=self.style.igap)
+
+        self._hvac_kalman_button = CTkButton(section, text="Toggle Kalman Filter",
+                                             font=self.style.get_font(),
+                                             command=self._toggle_hvac_kalman_filter)
+        self._hvac_kalman_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+
     def _toggle_AP_communication(self):
-        self._AP_communication_on = not self._AP_communication_on
+        # Shared with DefenderV0's own AP-tunnel block through
+        # defender_status.ap_communication - see _toggle_encryption.
+        status = self._context.buffer.defender_status
+        status.put("ap_communication", not status.get("ap_communication", False))
         self._push_hvac_controls()
 
     def _toggle_hvac_kalman_filter(self):
-        self._hvac_kalman_filter_enabled = (
-            not self._hvac_kalman_filter_enabled
-        )
+        # Unlike encryption/AP-tunnel, HVAC's kalman toggle posts a
+        # different field (hvac_kalman_filter_enabled) than the submarine
+        # one (kalman_filter_enabled) and the AP's poll response only ever
+        # echoes the latter - so there's no confirmed HVAC value to read
+        # back, and this stays local to the one button/label that owns it.
+        self._hvac_kalman_filter_enabled = not self._hvac_kalman_filter_enabled
 
-        if self._on_kalman_filter_change is not None:
-            self._on_kalman_filter_change(
-                self._hvac_kalman_filter_enabled
-            )
+        if self._hvac_kalman_filter_enabled:
+            self._hvac_kalman_label.configure(text="Kalman Filter Status: ON", text_color="green")
+        else:
+            self._hvac_kalman_label.configure(text="Kalman Filter Status: OFF", text_color="gray")
 
         self._push_hvac_controls()
 
     def _refresh_encryption_ui(self):
-        if self._encryption_on:
+        if self._context.buffer.defender_status.get("encryption_status", False):
             self._enc_label.configure(text="Status: ON", text_color="green")
             self._enc_button.configure(text="Disable Encryption")
             self._enc_key_entry.configure(state="disabled")
@@ -183,7 +228,7 @@ class HVACView:
             self._enc_key_entry.configure(state="normal")
 
     def _refresh_AP_communication_ui(self):
-        if self._AP_communication_on:
+        if self._context.buffer.defender_status.get("ap_communication", False):
             self._filter_label.configure(text="Status: ON", text_color="green")
             self._filter_button.configure(text="Disable Communication Through AP")
         else:
@@ -195,10 +240,11 @@ class HVACView:
         self._refresh_AP_communication_ui()
 
     def _push_hvac_controls(self):
+        status = self._context.buffer.defender_status
         payload = {
-        "encryption_status": self._encryption_on,
+        "encryption_status": status.get("encryption_status", False),
         "encryption_key": self._enc_key_entry.get().strip(),
-        "AP_communication": self._AP_communication_on,
+        "AP_communication": status.get("ap_communication", False),
         "sensor_noise_variance": self.sensor_noise_variance,
         "hvac_kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
         "hvac_state_error_threshold": self.state_error_threshold,
@@ -414,7 +460,9 @@ class HVACView:
         self._push_hvac_controls()
 
     # ════════════════════════════════════════════════════════════════════
-    #  Visibility — DefenderV0 calls these on mode change
+    #  Visibility — self-managed from defender_status.submarine_mode, not
+    #  driven by DefenderV0, so this class doesn't need anything outside
+    #  itself to know when to show or hide.
     # ════════════════════════════════════════════════════════════════════
 
     def show(self):
@@ -425,12 +473,20 @@ class HVACView:
         self._left_root.pack_forget()
         self._graph_root.pack_forget()
 
+    def _refresh_visibility(self):
+        submarine_mode = bool(self._context.buffer.defender_status.get("submarine_mode", True))
+        if submarine_mode == self._submarine_mode:
+            return
+        self._submarine_mode = submarine_mode
+        self.hide() if submarine_mode else self.show()
+
     # ════════════════════════════════════════════════════════════════════
-    #  Data — reads straight from context.buffer; DefenderV0 only tells us
-    #  when to repaint, it never hands us the poll data itself.
+    #  Data — reads straight from context.buffer; DefenderV0 only tells the
+    #  shared animation_manager when to tick, it never hands us poll data.
     # ════════════════════════════════════════════════════════════════════
 
     def refresh(self):
+        self._refresh_visibility()
         self._sync_hvac_sliders()
 
         modbus = self._context.buffer.defender_modbus
