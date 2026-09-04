@@ -38,7 +38,11 @@
         "arp": "ARP Spoofing",
         "dos": "Denial of Service",
         "sniff": "Packet Sniffing",
-        "nfq": "Net Filter Queue"
+        "nfq": "Net Filter Queue",
+        "ap_connect": "AP Connection",
+        "encryption": "Encryption",
+        "ap_tunnel": "AP Tunnel",
+        "kalman": "Kalman Filter"
     },
     
     "network_action_forms": {
@@ -82,7 +86,35 @@
         "nfq_start": "Start NFQ",
         "nfq_starting": "Starting...",
         "nfq_stop": "Stop NFQ",
-        "nfq_stopping": "Stopping..."
+        "nfq_stopping": "Stopping...",
+
+        "ap_connect_on": "Connected.",
+        "ap_connect_off": "Disconnected.",
+        "ap_connect_start": "Connect",
+        "ap_connect_starting": "Connecting...",
+        "ap_connect_stop": "Disconnect",
+        "ap_connect_stopping": "Disconnecting...",
+
+        "encryption_on": "Encryption is on",
+        "encryption_off": "Encryption is off",
+        "encryption_start": "Enable Encryption",
+        "encryption_starting": "Enabling...",
+        "encryption_stop": "Disable Encryption",
+        "encryption_stopping": "Disabling...",
+
+        "ap_tunnel_on": "AP Tunnel is on",
+        "ap_tunnel_off": "AP Tunnel is off",
+        "ap_tunnel_start": "Enable AP Tunnel",
+        "ap_tunnel_starting": "Enabling...",
+        "ap_tunnel_stop": "Disable AP Tunnel",
+        "ap_tunnel_stopping": "Disabling...",
+
+        "kalman_on": "Kalman Filter is on",
+        "kalman_off": "Kalman Filter is off",
+        "kalman_start": "Enable Kalman Filter",
+        "kalman_starting": "Enabling...",
+        "kalman_stop": "Disable Kalman Filter",
+        "kalman_stopping": "Disabling..."
     },
     
     "modbus_forms": {
@@ -157,6 +189,7 @@
 
         "hardware_attacker": "Device Attacker",
         "hardware_defender": "Device Defender",
+        "defender_panels": "Defender Panels (Testing)",
         "arp_intro": "ARP Intro Workspace",
         "attacker_lab": "Attacker Lab",
         "select_demo": "Run a Demo",
@@ -186,6 +219,7 @@
         "_default": "Menu",
         "attacker": "Attacker X",
         "defender": "Defender X",
+        "defender_panels": "Defender Panels (Testing)",
         "boat_motion_demo": "Boat Motion Demo",
         "triangle_demo": "Triangle Demo",
         "sprites_demo": "Sprites Demo",
@@ -209,7 +243,9 @@
         "modbus_table_panel": "ModBus Data",
         "network_graph_panel": "Network Graph",
         "packet_panel": "Packets",
-        "status_panel": "Status"
+        "status_panel": "Status",
+        "defender_modbus_panel": "Defender Data",
+        "defender_stripchart_panel": "Defender Monitors"
     },
     
     "menu_bar_buttons": {
@@ -262,6 +298,22 @@
         "-": "-"
     },
 
+    "defender_modbus_forms": {
+        "mode": "Operation Mode",
+        "readout": "Live Readout",
+        "sliders": "Filter Settings"
+    },
+
+    "defender_modbus_readout": {
+        "name": "Variable",
+        "client_clean": "Client",
+        "client_noisy": "Client (Noisy)",
+        "server_clean": "Server",
+        "server_noisy": "Server (Noisy)",
+        "target": "Target",
+        "-": "-"
+    },
+
     "modbus_modifier": {
         "variable": "Variable",
         "multiplier": "Mult",
@@ -297,7 +349,9 @@
 
     "modbus_model_options": {
         "hvac": "HVAC",
-        "submarine": "Submarine"
+        "submarine": "Submarine",
+        "defender_hvac": "Defender HVAC Chart",
+        "defender_submarine": "Defender Map"
     },
 
     "modbus_settings": {

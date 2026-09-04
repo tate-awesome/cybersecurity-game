@@ -8,6 +8,10 @@ from .forms.dos import DosForm
 from .forms.sniff import SniffForm
 from .forms.nfq import NFQForm
 from .forms.wifi import WifiForm
+from .forms.ap_connect import APConnectForm
+from .forms.encryption import EncryptionForm
+from .forms.ap_tunnel import APTunnelForm
+from .forms.kalman import KalmanForm
 
 from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
 
@@ -18,6 +22,14 @@ FORM_CLASSES = {
     "dos": DosForm,
     "sniff": SniffForm,
     "nfq": NFQForm,
+    # Defender-only forms - invisible everywhere except a page whose
+    # network_action_visibility explicitly enables them (DefenderVPanels).
+    # ap_connect is listed first since encryption/ap_tunnel/kalman look up
+    # its process by name rather than creating their own if it's missing.
+    "ap_connect": APConnectForm,
+    "encryption": EncryptionForm,
+    "ap_tunnel": APTunnelForm,
+    "kalman": KalmanForm,
 }
 
 class Builder(Panel):

@@ -3,6 +3,8 @@ from customtkinter import CTkFrame
 from ....app_core import Context
 from ...canvases.house import House
 from ...canvases.world_map import WorldMap
+from ...canvases.defender_world_map import DefenderWorldMap
+from ...canvases.defender_hvac_chart import DefenderHVACChart
 from ..panel import Panel
 
 MODELS = {
@@ -11,7 +13,15 @@ MODELS = {
     # whichever of these comes first.
     "submarine": WorldMap,
     "hvac": House,
+    "defender_submarine": DefenderWorldMap,
+    "defender_hvac": DefenderHVACChart,
 }
+
+# Defender-flavored models are driven by the AP's own reported mode
+# (context.buffer.defender_status.submarine_mode) instead of a manual
+# dropdown pick - see _auto_switch. Only a page whose modbus_model_visibility
+# actually enables one of these (DefenderVPanels) ever exercises this.
+DEFENDER_MODELS = {"defender_submarine", "defender_hvac"}
 
 class Builder(Panel):
     '''
@@ -60,6 +70,19 @@ class Builder(Panel):
             print("No models are visible for this page")
 
         self.menu_bar.minimize_button(self.body, master)
+
+        # If a defender-flavored model is visible, it takes over model
+        # selection entirely from here on - the dropdown stays (so both
+        # remain individually inspectable) but whichever one matches the
+        # AP's current mode wins on every tick, overriding a manual pick.
+        if DEFENDER_MODELS & set(self.labels_by_key):
+            self.context.animation_manager.add_callback(f"ModbusModelAutoSwitch_{id(self)}", self._auto_switch)
+
+    def _auto_switch(self):
+        submarine_mode = bool(self.context.buffer.defender_status.get("submarine_mode", True))
+        key = "defender_submarine" if submarine_mode else "defender_hvac"
+        if key in self.labels_by_key:
+            self.select_model(key)
 
     def select_model_by_label(self, label: str):
         key = self.key_by_label.get(label)

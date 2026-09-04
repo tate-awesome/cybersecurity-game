@@ -29,14 +29,17 @@ class APPoller(Process):
 
     def start(self):
         if self.running:
+            self.buffer.put("ap_connect", "AP polling is already running")
             return
         self.running = True
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
+        self.buffer.put("ap_connect", f"Starting AP polling at {self.url}")
 
     def stop(self):
         if not self.running:
+            self.buffer.put("ap_connect", "AP polling is not running")
             return
         self.running = False
         if self._stop_event is not None:
@@ -46,6 +49,7 @@ class APPoller(Process):
         self._stop_event = None
         self._thread = None
         self.connected = False
+        self.buffer.put("ap_connect", "Stopped AP polling")
 
     def _loop(self):
         stop_event = self._stop_event
@@ -54,6 +58,7 @@ class APPoller(Process):
             stop_event.wait(self.interval_ms / 1000.0)
 
     def _poll_once(self):
+        was_connected = self.connected
         try:
             resp = requests.get(f"{self.url}/api/data", timeout=3)
             if resp.ok:
@@ -63,3 +68,10 @@ class APPoller(Process):
                 self.connected = False
         except Exception:
             self.connected = False
+
+        # Only log on a change of state - every poll succeeding/failing the
+        # same way every 2s would otherwise spam the status console.
+        if self.connected and not was_connected:
+            self.buffer.put("ap_connect", f"Connected to {self.url}")
+        elif was_connected and not self.connected:
+            self.buffer.put("ap_connect", f"Lost connection to {self.url}")

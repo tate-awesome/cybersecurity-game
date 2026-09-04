@@ -18,6 +18,8 @@ from .panels.modbus_model._builder import Builder as ModbusModel
 from .panels.network_diagram._builder import Builder as NetworkDiagram
 from .panels.variable_monitor._builder import Builder as VariableMonitor
 from .panels.modbus_panel._builder import Builder as ModbusPanel
+from .panels.defender_modbus_panel._builder import Builder as DefenderModbusPanel
+from .panels.defender_stripchart_panel._builder import Builder as DefenderStripchartPanel
 
 from .canvases.test_triangle import TriangleCanvas
 
@@ -31,6 +33,8 @@ PANELS = {
     HVACModel.KEY: HVACModel,
     ModbusModel.KEY: ModbusModel,
     VariableMonitor.KEY: VariableMonitor,
+    DefenderModbusPanel.KEY: DefenderModbusPanel,
+    DefenderStripchartPanel.KEY: DefenderStripchartPanel,
 }
 
 def panel(key: str, master: CTkFrame, context: Context):

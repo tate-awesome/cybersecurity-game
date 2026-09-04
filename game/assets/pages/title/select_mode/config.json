@@ -4,6 +4,7 @@
 
     "buttons": [
         { "_from_manifest": "old_game_modes" },
+        { "label": "defender_panels", "action": "navigate", "target": "defender_panels" },
         { "label": "lessons", "action": "navigate", "target": "title/select_lesson" },
         { "label": "select_demo", "action": "navigate", "target": "title/select_demo" },
         { "label": "back", "action": "back" },

@@ -1,0 +1,15 @@
+{
+    "_note": "Student-level 'Show Forms' toggle and saved entry defaults for the four new network_action_panel forms (ap_connect, encryption, ap_tunnel, kalman).",
+
+    "hacking_forms": {
+        "ap_connect": 1,
+        "encryption": 1,
+        "ap_tunnel": 1,
+        "kalman": 1
+    },
+
+    "hack_forms": {
+        "ap_connect": ["http://192.168.4.1"],
+        "encryption": [""]
+    }
+}

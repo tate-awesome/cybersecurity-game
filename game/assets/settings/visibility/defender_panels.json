@@ -1,0 +1,23 @@
+{
+    "_note": "Admin-level visibility for the DefenderVPanels test page. Deep-merges on top of _admin.json - adds the new defender-only form/model keys without needing to touch the shared admin file, which attacker_suite/defender_suite also load.",
+
+    "network_action_visibility": {
+        "ap_connect": 1,
+        "encryption": 1,
+        "ap_tunnel": 1,
+        "kalman": 1
+    },
+
+    "modbus_model_visibility": {
+        "hvac": 0,
+        "submarine": 0,
+        "defender_hvac": 1,
+        "defender_submarine": 1
+    },
+
+    "defender_modbus_visibility": {
+        "mode": 1,
+        "readout": 1,
+        "sliders": 1
+    }
+}

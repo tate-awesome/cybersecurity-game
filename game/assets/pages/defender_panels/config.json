@@ -1,0 +1,14 @@
+{
+    "_note": "Settings source for the hardcoded DefenderVPanels test page (game/src/pages/defender_panels/defender_v_panels.py). Not a workspace page - registered directly in router.PAGES - this config.json exists purely so DefenderVPanels can call context.pages.prepare_page_config() the same way WorkspacePage does, to load _admin.json (shows every form/option) plus the new defender-only settings additions into context.states before it builds.",
+
+    "settings": {
+        "_ref": [
+            "_packages/_default.json",
+            "hack_settings/lab.json",
+            "visibility/_admin.json",
+            "hack_settings/defender_panels.json",
+            "modbus_settings/defender_panels.json",
+            "visibility/defender_panels.json"
+        ]
+    }
+}

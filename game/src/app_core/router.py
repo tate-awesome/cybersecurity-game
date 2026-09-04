@@ -12,6 +12,10 @@ from ..pages.demo.triangle import Triangle
 from ..pages.attacker.attacker import AttackerV0
 from ..pages.defender.defender import DefenderV0
 
+# /defender_panels - hardcoded testing page for the panels-based defender
+# rebuild (see game/src/pages/defender_panels/defender_v_panels.py).
+from ..pages.defender_panels.defender_v_panels import DefenderVPanels
+
 # /generic (data-driven pages, dispatched by each page's own config.json "build_type").
 # title/start, title/select_mode, title/select_demo and title/select_lesson
 # are all build_type "title" pages, discovered below - no hand-written
@@ -24,6 +28,7 @@ from ..pages.generic import WorkspacePage, TitlePage
 PAGES: dict[str, type] = {
         "attacker": AttackerV0,
         "defender": DefenderV0,
+        "defender_panels": DefenderVPanels,
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,
