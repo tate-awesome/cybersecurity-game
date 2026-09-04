@@ -4,6 +4,9 @@ from .modbus import ModbusBuffer
 from .submarine_model import MapBuffer
 from .hvac_model import HouseBuffer
 from .network_graph import NetworkGraph
+from .defender_modbus import DefenderModbusBuffer
+from .defender_map import DefenderMapBuffer
+from .defender_status import DefenderStatusBuffer
 
 from typing import Protocol
 from ..meta_packet import MetaPacket

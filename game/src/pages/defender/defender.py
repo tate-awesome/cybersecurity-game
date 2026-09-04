@@ -19,7 +19,6 @@ from customtkinter import (
 
 import threading
 import requests
-import math
 import time
 
 
@@ -45,14 +44,18 @@ class DefenderV0(Page):
         super().__init__(context)
 
         # ── Internal state FIRST (map callback fires immediately) ────────────
+        # Everything the AP actually reports (positions, flags, settings,
+        # temperatures...) lives in context.buffer.defender_modbus/
+        # defender_map/defender_status once _poll() hands a poll blob to
+        # context.buffer.put_poll() - what's left here is UI-only state
+        # (the mode/encryption highlight caches _refresh_all() diffs
+        # against, the log toggle, in-progress slider drags) plus
+        # AP_communication, which the AP's /api/data poll never echoes back
+        # so there's nothing in the buffer to read it from.
         self._server_url    = "http://192.168.4.1"
-        self._positions     = []
-        self._last_bearing  = None
         self._encryption_on = False
         self._AP_communication_on = False
-        self._last_seq      = -1
         self._log_source    = "client"   # "client" or "server"
-        self._last_points   = {"client": [], "server": []}
         self._submarine_mode = True
         self.sensor_noise_variance = 8.3
         self.kalman_expected_sensor_variance = 8.3
@@ -61,10 +64,6 @@ class DefenderV0(Page):
         self._syncing_sliders = False
         self._submarine_pending_revision = 0
         self._submarine_kalman_filter_enabled = True
-
-        # Flag state — all False until logic sets them
-        self._submarine_flags = {key: False for key, _ in self.SUBMARINE_FLAG_DEFS}
-        self._HVAC_flags = {key: False for key, _ in self.HVAC_FLAG_DEFS}
 
         # ── Menu bar ─────────────────────────────────────────────────────────
         menu_bar = MenuBar(self, context, "defender")
@@ -88,7 +87,7 @@ class DefenderV0(Page):
         self._build_slider_block(self._submarine_left)
         self._build_values_block(self._submarine_left)
 
-        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, context, on_hvac_anomaly=self._set_hvac_flag, 
+        self._hvac_view = HVACView(self.style, self._mode_content_left, right_p, self._get_url, context,
                                    on_kalman_filter_change = self._set_hvac_kalman_filter_status)
 
         left_p.add_deadspace()
@@ -196,25 +195,21 @@ class DefenderV0(Page):
         self._post_slider_settings()
         self._hvac_view._push_hvac_controls()
 
-        self._map_scale  = None
-        self._map_offset = None
-        self._map_click_xy = None
-
         self._map_container = CTkFrame(right_p, fg_color="transparent")
         self._map_container.pack(fill="both", expand=True)
 
         def draw_defender_map(canvas, draw_lock, scale, offset):
             draw = ViewPort(canvas, scale, offset)
             with draw_lock:
-                self._map_scale  = scale
-                self._map_offset = offset
                 draw.grid_lines()
-                if len(self._positions) < 1:
+                positions = self.context.buffer.defender_map.get_path("client_clean")
+                if len(positions) < 1:
                     return
-                draw.line(self._positions, "red")
-                if self._last_bearing is None:
+                draw.line(positions, "red")
+                bearing = self.context.buffer.defender_modbus.get_single("theta", "client_clean")
+                if bearing is None:
                     return
-                draw.boat(self._positions[-1], self._last_bearing, "white", "black")
+                draw.boat(positions[-1], bearing, "white", "black")
 
         self._map = Map(self._map_container, context, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
@@ -226,10 +221,6 @@ class DefenderV0(Page):
     # ════════════════════════════════════════════════════════════════════════
     #  UI builder helpers
     # ════════════════════════════════════════════════════════════════════════
-
-    def _set_hvac_flag(self, value: bool):
-                self._HVAC_flags["HVAC_filter_flag"] = bool(value)
-                self._refresh_flags()
 
     def _set_hvac_kalman_filter_status(self, enabled: bool):
         enabled = bool(enabled)
@@ -416,7 +407,7 @@ class DefenderV0(Page):
         self._log_toggle.set("CLIENT")
         self._log_toggle.pack(side="right")
 
-        cols = ["Time", "X (m)", "Y (m)", "Theta", "Speed", "Rudder", "Uptime (s)"]
+        cols = ["Time", "X (m)", "Y (m)", "Theta", "Speed", "Rudder"]
         col_frame = CTkFrame(parent, fg_color=self.style.color("panel"))
         col_frame.pack(fill="x", padx=self.style.igap)
         for i, col in enumerate(cols):
@@ -558,13 +549,15 @@ class DefenderV0(Page):
 
         threading.Thread(target=_request, daemon=True).start()
 
-    def _sync_submarine_sliders(self, data: dict):
+    def _sync_submarine_sliders(self):
+        status = self.context.buffer.defender_status
+
         client_revision = int(
-            data.get("client_settings_revision", 0)
+            status.get("client_settings_revision", 0) or 0
         )
 
         server_revision = int(
-            data.get("server_settings_revision", 0)
+            status.get("server_settings_revision", 0) or 0
         )
 
         if self._submarine_pending_revision > 0:
@@ -576,19 +569,19 @@ class DefenderV0(Page):
                 return
 
             self._submarine_pending_revision = 0
-            
+
         values = {
             "Sensor Noise Variance":
-                data.get("sensor_noise_variance"),
+                status.get("sensor_noise_variance"),
 
             "Kalman Expected Sensor Variance":
-                data.get("kalman_expected_sensor_variance"),
+                status.get("kalman_expected_sensor_variance"),
 
             "Rudder Error Threshold":
-                data.get("rudder_error_threshold"),
+                status.get("rudder_error_threshold"),
 
             "Speed Error Threshold":
-                data.get("speed_error_threshold"),
+                status.get("speed_error_threshold"),
         }
 
         self._syncing_sliders = True
@@ -746,7 +739,12 @@ class DefenderV0(Page):
                 resp = requests.get(f"{self._get_url()}/api/data", timeout=3)
                 if resp.ok:
                     data = resp.json()
-                    self.after(0, lambda: self._on_data(data))
+                    # Unpacking is cheap dict work protected by each channel's
+                    # own lock, so it happens right here on the poll thread -
+                    # only the resulting UI repaint needs to hop to the main
+                    # thread via after().
+                    self.context.buffer.put_poll(data)
+                    self.after(0, self._refresh_all)
                     self.after(0, self._set_connected)
                 else:
                     self.after(0, self._set_disconnected)
@@ -765,8 +763,7 @@ class DefenderV0(Page):
 
     def _on_log_source_change(self, value: str):
         self._log_source = value.lower()
-        active = self._last_points.get(self._log_source, [])
-        self._update_log(list(reversed(active[-10:])))
+        self._update_log()
 
     def _toggle_submarine_kalman_filter(self):
         self._submarine_kalman_filter_enabled = (
@@ -790,76 +787,73 @@ class DefenderV0(Page):
     #  UI update helpers
     # ════════════════════════════════════════════════════════════════════════
 
-    def _on_data(self, data: dict):
-        self._encryption_on = data.get("encryption_status", False)
+    def _refresh_all(self):
+        '''
+        Repaints every buffer-backed widget from whatever _poll() most
+        recently handed to context.buffer.put_poll() - this page never reads
+        poll data directly, only context.buffer.defender_modbus/
+        defender_map/defender_status.
+        '''
+        status = self.context.buffer.defender_status
+
+        self._encryption_on = bool(status.get("encryption_status", False))
         self._refresh_encryption_ui()
 
-        incoming_mode = data.get("submarine_mode", True)
-        
+        incoming_mode = bool(status.get("submarine_mode", True))
         if incoming_mode != self._submarine_mode:
             self._submarine_mode = incoming_mode
             self._refresh_mode_ui()
 
-        if self._submarine_mode:
-            self._sync_submarine_sliders(data)
-
         if not self._submarine_mode:
             # HVAC mode — Submarine widgets are hidden, only the HVAC view
-            # needs this poll's data (current_temp / target_temp / heater_on)
-            self._hvac_view.update(data)
-            self._HVAC_flags["HVAC_filter_flag"] = self._hvac_view.get_hvac_anomaly()
+            # needs repainting (it reads current_temp/target_temp/heater_on
+            # straight out of the buffer itself).
+            self._hvac_view.refresh()
             self._refresh_flags()
             return
 
-        # Flask returns separate lists; fall back to combined "points" if the
-        # server hasn't been updated yet (backwards compatible)
-        client_points = data.get("client_points", data.get("points", []))
-        server_points = data.get("server_points", [])
-        self._last_points = {"client": client_points, "server": server_points}
+        self._sync_submarine_sliders()
 
-        # Value cards
-        self._update_value_card("client", client_points)
-        self._update_value_card("server", server_points)
+        self._update_value_card("client", "client_clean")
+        self._update_value_card("server", "server_clean")
 
         # Packet log — whichever source the toggle is set to
-        active = client_points if self._log_source == "client" else server_points
-        self._update_log(list(reversed(active[-10:])))
-
-        # Map — always driven by client positions
-        if client_points:
-            self._positions = [(float(p["x"]), float(p.get("y", 0.0))) for p in client_points]
-            if len(self._positions) >= 2:
-                dx = self._positions[-1][0] - self._positions[-2][0]
-                dy = self._positions[-1][1] - self._positions[-2][1]
-                self._last_bearing = math.atan2(dy, dx)
-            else:
-                self._last_bearing = None
-
-        if server_points:
-            latest_server = server_points[-1]
-            self._submarine_flags["state_filter_flag"] = bool(latest_server.get("state_anomaly_detected", False))
-
-        if client_points:
-            latest_client = client_points[-1]
-            self._submarine_flags["speed_filter_flag"] = bool(latest_client.get("speed_anomaly_detected", False))
-            self._submarine_flags["rudder_filter_flag"] = bool(latest_client.get("rudder_anomaly_detected", False))
+        self._update_log()
 
         self._refresh_flags()
 
-    def _update_value_card(self, source: str, points: list):
-        if not points:
-            return
-        latest = points[-1]
+    def _update_value_card(self, source: str, attribute: str):
+        modbus = self.context.buffer.defender_modbus
         for field in ["x", "y", "theta", "speed", "rudder"]:
-            raw = latest.get(field, "—")
-            try:
-                text = f"{float(raw):.3f}"
-            except (ValueError, TypeError):
-                text = str(raw)
+            raw = modbus.get_single(field, attribute)
+            text = "—" if raw is None else f"{float(raw):.3f}"
             self._val_labels[source][field].configure(text=text)
 
-    def _update_log(self, rows: list):
-        cols  = ["received_at", "x", "y", "theta", "speed", "rudder", "timestamp"]
+    def _update_log(self):
+        '''
+        Rebuilds the last-10-rows table for whichever source the CLIENT/
+        SERVER toggle is set to, by zipping together that source's x/y/
+        theta/speed/rudder histories from context.buffer.defender_modbus -
+        the poll unpacker always writes all five together per point, so the
+        five histories stay the same length and share the same time axis.
+        '''
+        attribute = "client_clean" if self._log_source == "client" else "server_clean"
+        modbus = self.context.buffer.defender_modbus
+        fields = ["x", "y", "theta", "speed", "rudder"]
+        histories = {field: modbus.get_history(field, attribute) for field in fields}
+        length = min((len(history) for history in histories.values()), default=0)
+
+        rows = []
+        for i in range(max(0, length - 10), length):
+            row = {"received_at": histories["x"][i][0]}
+            for field in fields:
+                row[field] = histories[field][i][1]
+            rows.append(row)
+
+        self._render_log(list(reversed(rows)))
+
+    def _render_log(self, rows: list):
+        cols = ["received_at", "x", "y", "theta", "speed", "rudder"]
 
         for widget in self._log_frame.winfo_children():
             widget.destroy()
@@ -871,17 +865,9 @@ class DefenderV0(Page):
             for c_idx, key in enumerate(cols):
                 raw = packet.get(key, "—")
                 if key == "received_at":
-                    raw_str = str(raw)
-                    # Handle both Flask datetime strings ("2024-01-01 12:34:56")
-                    # and AP ESP32 uptime strings ("100", "3661")
-                    if len(raw_str) > 10:
-                        text = raw_str[11:19]   # Flask datetime format
-                    else:
-                        # Convert raw seconds to HH:MM:SS
-                        secs = int(raw_str)
-                        text = f"{secs//3600:02d}:{(secs%3600)//60:02d}:{secs%60:02d}"
-                elif key == "timestamp":
-                    text = str(raw)
+                    # received_at is the AP's own uptime clock, in seconds
+                    secs = int(float(raw))
+                    text = f"{secs//3600:02d}:{(secs%3600)//60:02d}:{secs%60:02d}"
                 else:
                     try:
                         text = f"{float(raw):.4f}"
@@ -918,9 +904,16 @@ class DefenderV0(Page):
             print("refresh_encryption_ui:", e)
 
     def _refresh_flags(self):
+        status = self.context.buffer.defender_status
+        submarine_flags = {
+            "state_filter_flag": bool(status.get("state_anomaly", False)),
+            "speed_filter_flag": bool(status.get("speed_anomaly", False)),
+            "rudder_filter_flag": bool(status.get("rudder_anomaly", False)),
+        }
+        hvac_flags = {"HVAC_filter_flag": bool(status.get("hvac_anomaly", False))}
         for labels, flags in (
-            (getattr(self, "_submarine_flag_labels", {}), self._submarine_flags),
-            (getattr(self, "_hvac_flag_labels", {}), self._HVAC_flags),
+            (getattr(self, "_submarine_flag_labels", {}), submarine_flags),
+            (getattr(self, "_hvac_flag_labels", {}), hvac_flags),
         ):
             for key, dot in labels.items():
                 dot.configure(text_color="red" if flags.get(key, False) else "gray")

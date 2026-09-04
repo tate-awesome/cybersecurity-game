@@ -12,9 +12,13 @@ import threading
 from collections import deque
 from scapy.all import Packet
 
-from .channels import StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, HouseBuffer, NetworkGraph
+from .channels import (
+    StatusBuffer, PacketBuffer, ModbusBuffer, MapBuffer, HouseBuffer, NetworkGraph,
+    DefenderModbusBuffer, DefenderMapBuffer, DefenderStatusBuffer,
+)
 from .meta_packet import MetaPacket
 from .channels.transaction_manager import TransactionManager
+from .poll_unpacker import _PollUnpacker
 from ..saved import Loader, Replay, FileStream
 
 from typing import TYPE_CHECKING
@@ -45,6 +49,15 @@ class Buffer:
         self.loader = Loader(self, context)
         self.replay = Replay(self, context)
 
+        # Defender-page channels: fed by the AP's polled /api/data JSON via
+        # _PollUnpacker (see put_poll), not by MetaPacket like the channels
+        # above - the AP reports already-decoded values over HTTP, there's no
+        # wire packet to sniff.
+        self.defender_modbus = DefenderModbusBuffer(max_size=self.max_size)
+        self.defender_map = DefenderMapBuffer(max_size=self.max_size)
+        self.defender_status = DefenderStatusBuffer()
+        self._poll_unpacker = _PollUnpacker(self.defender_modbus, self.defender_map, self.defender_status)
+
         self.start_worker()
 
     def reset(self):
@@ -56,6 +69,18 @@ class Buffer:
         self.modbus.reset()
         self.submarine.reset()
         self.hvac.reset()
+        self.defender_modbus.reset()
+        self.defender_map.reset()
+        self.defender_status.reset()
+        self._poll_unpacker.reset()
+
+    def put_poll(self, data: dict) -> None:
+        '''
+        Unpacks one /api/data poll blob from the defender page's AP into
+        defender_modbus/defender_map/defender_status. The only way in - the
+        unpacker itself is private to this class.
+        '''
+        self._poll_unpacker.unpack(data)
 
     def reset_modbus(self):
         self.modbus.reset()

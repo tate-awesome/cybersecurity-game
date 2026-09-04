@@ -3,12 +3,11 @@ Read-only HVAC test dashboard for DefenderV0.
 
 DefenderV0 owns the connection, polling, and mode detection (reading
 submarine_mode from AP_ESP32.ino). This module only knows how to render
-whatever HVAC fields it's handed via update(). It has no opinion
-about Submarine mode and doesn't touch any Submarine-only state.
+whatever HVAC fields context.buffer currently holds via refresh(). It has
+no opinion about Submarine mode and doesn't touch any Submarine-only state.
 """
 
 import threading
-import time
 
 import requests
 from customtkinter import CTkButton, CTkEntry, CTkFrame, CTkLabel, CTkSlider
@@ -32,10 +31,9 @@ _TARGET_LINE = "#e94560"   # accent pink/red, matches the AP's accent color
 
 class HVACView:
 
-    MAX_POINTS = 300     # rolling window cap
-    MAX_AGE_S  = 300.0    # ...and a 5-minute time cap, whichever trims more
+    MAX_POINTS = 300     # how many trailing buffer samples the graph plots
 
-    def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_hvac_anomaly=None, on_kalman_filter_change=None):
+    def __init__(self, style, left_parent, right_parent, get_url_fn, context, on_kalman_filter_change=None):
         """
         style        - the Style object DefenderV0 already uses (self.style)
         left_parent  - container to build the readout cards into
@@ -45,14 +43,8 @@ class HVACView:
         """
         self.style    = style
         self._get_url = get_url_fn
-        self._on_hvac_anomaly = on_hvac_anomaly
         self._on_kalman_filter_change = on_kalman_filter_change
 
-        self._t0            = time.monotonic()
-        self._times          = []
-        self._room_temps     = []
-        self._target_temps   = []
-        self._HVAC_anomaly = False
         self._encryption_on = False
         self._context = context
         self._AP_communication_on = False
@@ -338,16 +330,17 @@ class HVACView:
         self._canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
         self._canvas.draw()
 
-    def _sync_hvac_sliders(self, data: dict):
+    def _sync_hvac_sliders(self):
+        status = self._context.buffer.defender_status
         values = {
             "Sensor Noise Variance":
-                data.get("hvac_sensor_noise_variance"),
+                status.get("hvac_sensor_noise_variance"),
 
             "Kalman Expected Sensor Variance":
-                data.get("hvac_kalman_expected_sensor_variance"),
+                status.get("hvac_kalman_expected_sensor_variance"),
 
             "State Error Threshold":
-                data.get("hvac_state_error_threshold"),
+                status.get("hvac_state_error_threshold"),
         }
 
         self._syncing_sliders = True
@@ -433,16 +426,19 @@ class HVACView:
         self._graph_root.pack_forget()
 
     # ════════════════════════════════════════════════════════════════════
-    #  Data — DefenderV0 feeds the polled /api/data JSON straight through
+    #  Data — reads straight from context.buffer; DefenderV0 only tells us
+    #  when to repaint, it never hands us the poll data itself.
     # ════════════════════════════════════════════════════════════════════
 
-    def update(self, data: dict):
-        self._sync_hvac_sliders(data)
+    def refresh(self):
+        self._sync_hvac_sliders()
 
-        current_temp = data.get("current_temp")
-        target_temp  = data.get("target_temp")
-        heater_on    = data.get("heater_on")
-        HVAC_anomaly = data.get("HVAC_anomaly_detected")
+        modbus = self._context.buffer.defender_modbus
+        status = self._context.buffer.defender_status
+
+        current_temp = modbus.get_single("temperature", "client_clean")
+        target_temp  = modbus.get_single("temperature", "target")
+        heater_on    = status.get("heater_on")
 
         if current_temp is not None:
             self._current_label.configure(text=f"{float(current_temp):.1f}°F")
@@ -452,28 +448,26 @@ class HVACView:
             on = bool(heater_on)
             self._heater_label.configure(text="ON" if on else "OFF",
                                          text_color="green" if on else "gray")
-        if HVAC_anomaly is not None:
-            self._HVAC_anomaly = bool(HVAC_anomaly)
-            if self._on_hvac_anomaly is not None:
-                self._on_hvac_anomaly(self._HVAC_anomaly)
 
         if current_temp is None and target_temp is None:
             return  # nothing worth plotting yet
 
-        t = time.monotonic() - self._t0
-        self._times.append(t)
-        self._room_temps.append(float(current_temp) if current_temp is not None else float("nan"))
-        self._target_temps.append(float(target_temp) if target_temp is not None else float("nan"))
+        self._redraw_graph()
 
-        # Trim to a rolling window so the graph doesn't grow unbounded
-        cutoff = t - self.MAX_AGE_S
-        while self._times and (self._times[0] < cutoff or len(self._times) > self.MAX_POINTS):
-            self._times.pop(0)
-            self._room_temps.pop(0)
-            self._target_temps.pop(0)
+    def _redraw_graph(self):
+        modbus = self._context.buffer.defender_modbus
+        room_history = modbus.get_history("temperature", "client_clean")[-self.MAX_POINTS:]
+        target_history = modbus.get_history("temperature", "target")[-self.MAX_POINTS:]
 
-        self._room_line.set_data(self._times, self._room_temps)
-        self._target_line.set_data(self._times, self._target_temps)
+        if not room_history and not target_history:
+            return
+        t0 = (room_history or target_history)[0][0]
+
+        room_times, room_values = zip(*room_history) if room_history else ((), ())
+        target_times, target_values = zip(*target_history) if target_history else ((), ())
+
+        self._room_line.set_data([t - t0 for t in room_times], room_values)
+        self._target_line.set_data([t - t0 for t in target_times], target_values)
         self._ax.relim()
         self._ax.autoscale_view()
 
@@ -483,8 +477,5 @@ class HVACView:
         if (y_max - y_min) < min_range:
             half_range = min_range / 2
             self._ax.set_ylim(center - half_range, center + half_range)
-    
-        self._canvas.draw_idle()
 
-    def get_hvac_anomaly(self):
-        return self._HVAC_anomaly
+        self._canvas.draw_idle()
