@@ -101,6 +101,7 @@ class Router:
             self.context.root.setCentralWidget(self.current_frame)
         except Exception as e:
             print(f"Error building page '{next_page}': {e}. Redirecting to title page.")
+            self.context.reset_build()
             self._clear_central_widget()
 
             self.navigation_stack = []

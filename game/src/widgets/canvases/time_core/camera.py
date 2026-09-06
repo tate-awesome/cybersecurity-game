@@ -1,4 +1,3 @@
-from customtkinter import CTkCanvas
 from ....app_core import Context
 from . import transforms as t
 
@@ -7,7 +6,7 @@ PIXELS_PER_SECOND = 20.0
 
 class Camera:
 
-    def __init__(self, canvas: CTkCanvas, context: Context, time_scale: list[float], time_offset: list[float]):
+    def __init__(self, canvas, context: Context, time_scale: list[float], time_offset: list[float]):
         '''
         Tracks axis scaling and transforms. Uses a shared time_sync_ptr to synchronize time scaling and offset across multiple canvases.
         '''
@@ -34,23 +33,11 @@ class Camera:
         self.padding_top = self.padding
         self.padding_bottom = self.padding
 
-        # Starting position for each mouse pan event - panning moves the time offset and vertical scale
+        # Starting position for each mouse pan event - panning moves the time offset
         self.pan_start = [0.0, 0.0]
 
-        # Bind events
-        self.canvas.bind("<ButtonPress-1>", self.click_callback)
-        self.canvas.bind("<B1-Motion>", self.do_pan)
-            # Windows / Mac
-        self.canvas.bind("<Shift-MouseWheel>", self.zoom)
-            # Linux
-        self.canvas.bind("<Shift-Button-4>", self.zoom)
-        self.canvas.bind("<Shift-Button-5>", self.zoom)
-        # canvas.scale("all", x_zoom, y_zoom, factor, factor)  # <--- only useful for already drawn canvases
-        self.canvas.bind("<Button-2>", self.reset_camera)      # Windows/Linux
-        self.canvas.bind("<Button-3>", self.reset_camera)      # Mac sometimes uses Button-3
-
     def update_padding(self):
-        base = min(self.canvas.winfo_width(), self.canvas.winfo_height())
+        base = min(self.canvas.width(), self.canvas.height())
         self.padding = max(base * 0.025, 10)
 
 # --------------------------------------------------------------------------------------------------------------------------
@@ -62,8 +49,8 @@ class Camera:
         Returns (left, top, right, bottom) canvas pixel bounds of the plotting area,
         i.e. the canvas rectangle left over after reserving room for axes/labels.
         '''
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
+        w = self.canvas.width()
+        h = self.canvas.height()
         left = self.padding_left
         top = self.padding_top
         right = w - self.padding_right
@@ -123,68 +110,37 @@ class Camera:
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       EVENT CALLBACKS
 # --------------------------------------------------------------------------------------------------------------------------
+# Called by the owning widget's mouse/wheel event handlers (see
+# StripChartBase), which translate Qt's event objects into the plain
+# x/delta values these need - unlike the old Tk version, this class no
+# longer binds to widget events itself, since Qt widgets own their event
+# handling as overridden methods rather than externally bound callbacks.
 
-    def click_callback(self, event=None):
+    def click_callback(self, x: float, y: float):
         if self.is_fit_mode():
             return
-        self.pan_start = [event.x, event.y]
+        self.pan_start = [x, y]
 
-    def do_pan(self, event=None):
+    def do_pan(self, x: float, y: float):
         if self.is_fit_mode():
             return
-        # Calculate movement
-        dx = event.x - self.pan_start[0]
-        dy = event.y - self.pan_start[1]
-
+        dx = x - self.pan_start[0]
         self.time_offset[0] += dx
-        # self.vertical_scale += dy
+        self.pan_start = [x, y]
 
-        self.pan_start = [event.x, event.y]
-
-        # Redraw for each mouse position
-        # if self.canvas.frame_callback is not None:
-        #     self.canvas.frame_callback()
-
-    def apply_scale_about(self, C: tuple[float, float], k: float):
+    def apply_scale_about(self, cx: float, k: float):
         # Changes scale and offset based on zoom event and direction
-        cx, cy = C
-        tx, ty = self.time_offset[0], 0.0
-
+        tx = self.time_offset[0]
         self.time_scale[0] = k * self.time_scale[0]
-        # self.vertical_scale = k * self.vertical_scale
         self.time_offset[0] = cx + k * (tx - cx)
 
-    # Zoom
-    def zoom(self, event):
+    def zoom(self, x: float, delta: float):
         if self.is_fit_mode():
             return
-        # Determine zoom direction
-        if event.delta > 0:
-            factor = 1.1
-        else:
-            factor = 0.9
-        if hasattr(event, "num"):
-            if event.num == 4:
-                factor = 1.1
-            elif event.num == 5:
-                factor = 0.9
+        factor = 1.1 if delta > 0 else 0.9
+        self.apply_scale_about(x, factor)
 
-        # Clamp scale?
-        # if not (0.2 <= new_scale <= 5.0):
-        #     return
-
-        x_focus = self.canvas.canvasx(event.x)
-        y_focus = self.canvas.canvasy(event.y)
-        self.apply_scale_about((x_focus,y_focus), factor)
-
-        # Redraw for each zoom scroll
-        # if self.canvas.frame_callback is not None:
-        #     self.canvas.frame_callback()
-
-    def reset_camera(self, event=None):
+    def reset_camera(self):
         self.time_scale[0] = 1.0
         self.time_offset[0] = 0.0
         self.vertical_scale = 1.0
-        # Redraw on reset scale
-        # if self.canvas.frame_callback:
-        #     self.canvas.frame_callback()  

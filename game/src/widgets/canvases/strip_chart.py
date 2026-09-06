@@ -1,5 +1,5 @@
 from .time_core.stripchart import StripChartBase
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ...app_core import Context
 from typing import Callable
 
@@ -11,7 +11,7 @@ class StripChart(StripChartBase):
     Its time axis is synchronized with other strip charts in the same context.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, grid_position: tuple[int, int],
+    def __init__(self, master: QWidget, context: Context, grid_position: tuple[int, int],
                  title_getter, units_getter, factor_getter,
                  histories_getter: Callable[[], dict[str, list[tuple[float, float]]]],
                  time_scale: list[float] | None = None, time_offset: list[float] | None = None):
@@ -24,7 +24,7 @@ class StripChart(StripChartBase):
                 return self.context.style.color(self.context.states.get("strip_chart_colors", key))
             self.draw.background(color("background"))
 
-            if self.winfo_width() <= 1 or self.winfo_height() <= 1:
+            if self.width() <= 1 or self.height() <= 1:
                 return
 
             # Keyed by exchange type ("in"/"out"/"A->B"/"B->A"/"other", or "" for

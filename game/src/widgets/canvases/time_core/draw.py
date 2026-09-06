@@ -1,9 +1,10 @@
-from customtkinter import CTkCanvas
-from....app_core import Context
+from ....app_core import Context
 from .camera import Camera
 from . import transforms as t
 import math, time, bisect
-import tkinter.font as tkfont
+
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QFontMetricsF, QPen, QPolygonF
 
 # Layout constants for strip chart axes
 TICK_LENGTH = 5
@@ -38,34 +39,21 @@ class StripChartLayout:
 class Draw:
     '''
     Contains helper functions for drawing objects in world space.
-    Has access to the canvas and camera
+    Has access to the canvas and camera. canvas.painter is a live QPainter,
+    set by the canvas's paintEvent for the duration of one frame - unlike
+    the old pooled-item Tk version, there's no benefit to reusing drawn
+    items across frames here (QPainter has none of Tcl's per-item overhead),
+    so this just draws everything fresh every frame.
     '''
-    def __init__(self, canvas: CTkCanvas, context: Context, camera: Camera):
+    def __init__(self, canvas, context: Context, camera: Camera):
         self.canvas = canvas
         self.camera = camera
         self.context = context
-        self._scaled_fonts = {}
-
-    def _get_font(self, name):
-        '''
-        Fonts drawn directly on the canvas (as opposed to CTk widget labels) don't get
-        the automatic DPI/UI scaling CTk widgets apply on render, so chart text would
-        stay a fixed pixel size regardless of style.get_scale_correction(). This scales
-        the named font's pixel size to match, caching per name/scale so it isn't rebuilt
-        every frame - only when the scale correction actually changes.
-        '''
-        scale = self.context.style.get_scale_correction()
-        cached = self._scaled_fonts.get(name)
-        if cached is None or cached[0] != scale:
-            base = self.context.style.get_font(name)
-            font = tkfont.Font(font=base.create_scaled_tuple(scale))
-            self._scaled_fonts[name] = (scale, font)
-        return self._scaled_fonts[name][1]
 
     def background(self, color: str):
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
-        self.canvas.pooled_item("rectangle", (0, 0, w, h), fill=color)
+        w = self.canvas.width()
+        h = self.canvas.height()
+        self.canvas.painter.fillRect(QRectF(0, 0, w, h), QColor(color))
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -73,7 +61,58 @@ class Draw:
         '''
         if len(points) < 2:
             return
-        self.canvas.pooled_item("line", points, width=1, fill=line_color)
+        self._draw_line(points, line_color, thickness)
+
+    # ------------------------------------------------------------------
+    # QPainter primitives - the direct replacements for pooled_item()
+    # ------------------------------------------------------------------
+
+    def _draw_line(self, coords, color: str, width: float = 1):
+        painter = self.canvas.painter
+        painter.setPen(QPen(QColor(color), width))
+        if isinstance(coords[0], (tuple, list)):
+            painter.drawPolyline(QPolygonF([QPointF(x, y) for x, y in coords]))
+        else:
+            x1, y1, x2, y2 = coords
+            painter.drawLine(QPointF(x1, y1), QPointF(x2, y2))
+
+    def _draw_rect(self, coords, fill: str | None = None, outline: str | None = None):
+        painter = self.canvas.painter
+        x1, y1, x2, y2 = coords
+        rect = QRectF(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+        painter.setPen(QPen(QColor(outline)) if outline else Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill) if fill else Qt.BrushStyle.NoBrush)
+        painter.drawRect(rect)
+
+    def _draw_text(self, x: float, y: float, text: str, anchor: str, font, color: str):
+        '''
+        anchor follows Tk's create_text convention this was ported from:
+        "n" pins the top-center to (x, y); "w" pins the left-center; "nw"/"ne"
+        pin the top-left/top-right corner; "sw"/"se" pin the bottom-left/right.
+        '''
+        metrics = QFontMetricsF(font)
+        width = metrics.horizontalAdvance(text)
+        height = metrics.height()
+
+        if anchor == "n":
+            rect = QRectF(x - width / 2, y, width, height)
+        elif anchor == "w":
+            rect = QRectF(x, y - height / 2, width, height)
+        elif anchor == "nw":
+            rect = QRectF(x, y, width, height)
+        elif anchor == "ne":
+            rect = QRectF(x - width, y, width, height)
+        elif anchor == "sw":
+            rect = QRectF(x, y - height, width, height)
+        elif anchor == "se":
+            rect = QRectF(x - width, y - height, width, height)
+        else:
+            raise ValueError(f"Unsupported text anchor: {anchor}")
+
+        painter = self.canvas.painter
+        painter.setFont(font)
+        painter.setPen(QColor(color))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, text)
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       STRIP CHART AXES
@@ -99,15 +138,19 @@ class Draw:
         # while the picture is frozen (see the tick loop below).
         now = wall_now
 
-        number_font = self._get_font("chart_numbers")
-        label_font = self._get_font("chart_label")
-        title_font = self._get_font("chart_title")
+        number_font = self.context.style.get_font("chart_numbers")
+        label_font = self.context.style.get_font("chart_label")
+        title_font = self.context.style.get_font("chart_title")
 
-        number_height = number_font.metrics("linespace")
-        label_height = label_font.metrics("linespace")
-        title_height = title_font.metrics("linespace")
+        number_metrics = QFontMetricsF(number_font)
+        label_metrics = QFontMetricsF(label_font)
+        title_metrics = QFontMetricsF(title_font)
 
-        w = self.canvas.winfo_width()
+        number_height = number_metrics.height()
+        label_height = label_metrics.height()
+        title_height = title_metrics.height()
+
+        w = self.canvas.width()
 
         # Top/right/bottom padding only depend on font metrics, so they can be set directly.
         # The header (units / title / value) is a single row, tall enough for the taller of its fonts.
@@ -181,7 +224,7 @@ class Draw:
         min_unit, max_unit = y_tick_values[0], y_tick_values[-1]
 
         y_labels = [t.format_tick(v, y_decimals) for v in y_tick_values]
-        max_label_width = max((number_font.measure(s) for s in y_labels), default=0)
+        max_label_width = max((number_metrics.horizontalAdvance(s) for s in y_labels), default=0)
         camera.padding_left = LABEL_GAP + max_label_width + LABEL_GAP + TICK_LENGTH
 
         y_ticks = [(camera.value_to_canvas_y(v, min_unit, max_unit), s) for v, s in zip(y_tick_values, y_labels)]
@@ -204,55 +247,52 @@ class Draw:
         '''
         for cx, _ in layout.x_ticks:
             y_far = layout.top if gridlines else layout.bottom + TICK_LENGTH
-            self.canvas.pooled_item("line", (cx, layout.bottom, cx, y_far), fill=tick_color, width=1)
+            self._draw_line((cx, layout.bottom, cx, y_far), tick_color, 1)
 
         for cy, _ in layout.y_ticks:
             x_far = layout.right if gridlines else layout.left - TICK_LENGTH
-            self.canvas.pooled_item("line", (layout.left, cy, x_far, cy), fill=tick_color, width=1)
+            self._draw_line((layout.left, cy, x_far, cy), tick_color, 1)
 
     def strip_chart_axes(self, layout: StripChartLayout, axes_color="red"):
         # X-axis sits along the bottom of the plot area, Y-axis along the left
-        self.canvas.pooled_item("line", (layout.left, layout.bottom, layout.right, layout.bottom), fill=axes_color, width=2)
-        self.canvas.pooled_item("line", (layout.left, layout.top, layout.left, layout.bottom), fill=axes_color, width=2)
+        self._draw_line((layout.left, layout.bottom, layout.right, layout.bottom), axes_color, 2)
+        self._draw_line((layout.left, layout.top, layout.left, layout.bottom), axes_color, 2)
 
     def strip_chart_numbers(self, layout: StripChartLayout, number_color="black"):
-        number_font = self._get_font("chart_numbers")
+        number_font = self.context.style.get_font("chart_numbers")
 
         for cx, label in layout.x_ticks:
-            self.canvas.pooled_item("text", (cx, layout.bottom + TICK_LENGTH + LABEL_GAP), text=label,
-                                     fill=number_color, font=number_font, anchor="n")
+            self._draw_text(cx, layout.bottom + TICK_LENGTH + LABEL_GAP, label, "n", number_font, number_color)
 
         for cy, label in layout.y_ticks:
             # Left-aligned on the canvas edge, regardless of individual label width
-            self.canvas.pooled_item("text", (LABEL_GAP, cy), text=label,
-                                     fill=number_color, font=number_font, anchor="w")
+            self._draw_text(LABEL_GAP, cy, label, "w", number_font, number_color)
 
     def strip_chart_title(self, title: str, text_color="black"):
         # Top-middle of the canvas, between the units label and the current value
-        title_font = self._get_font("chart_title")
-        w = self.canvas.winfo_width()
-        self.canvas.pooled_item("text", (w / 2, LABEL_GAP), text=title, fill=text_color, font=title_font, anchor="n")
+        title_font = self.context.style.get_font("chart_title")
+        w = self.canvas.width()
+        self._draw_text(w / 2, LABEL_GAP, title, "n", title_font, text_color)
 
     def strip_chart_units_label(self, units_label: str, text_color="black"):
         # Top-left of the canvas, where the title used to sit
-        title_font = self._get_font("chart_title")
-        self.canvas.pooled_item("text", (LABEL_GAP, LABEL_GAP), text=units_label, fill=text_color, font=title_font, anchor="nw")
+        title_font = self.context.style.get_font("chart_title")
+        self._draw_text(LABEL_GAP, LABEL_GAP, units_label, "nw", title_font, text_color)
 
     def strip_chart_value_label(self, layout: StripChartLayout, text_color="black"):
         # Top-right of the canvas: the most recent history value, in units
-        title_font = self._get_font("chart_title")
-        w = self.canvas.winfo_width()
-        self.canvas.pooled_item("text", (w - LABEL_GAP, LABEL_GAP), text=layout.value_label,
-                                 fill=text_color, font=title_font, anchor="ne")
+        title_font = self.context.style.get_font("chart_title")
+        w = self.canvas.width()
+        self._draw_text(w - LABEL_GAP, LABEL_GAP, layout.value_label, "ne", title_font, text_color)
 
     def strip_chart_x_label(self, layout: StripChartLayout, x_label: str, text_color="black"):
         # Centered under the plot area, below the time tick numbers
-        label_font = self._get_font("chart_label")
-        number_font = self._get_font("chart_numbers")
-        number_height = number_font.metrics("linespace")
+        label_font = self.context.style.get_font("chart_label")
+        number_font = self.context.style.get_font("chart_numbers")
+        number_height = QFontMetricsF(number_font).height()
         x_label_y = layout.bottom + TICK_LENGTH + LABEL_GAP + number_height + LABEL_GAP
         cx = (layout.left + layout.right) / 2
-        self.canvas.pooled_item("text", (cx, x_label_y), text=x_label, fill=text_color, font=label_font, anchor="n")
+        self._draw_text(cx, x_label_y, x_label, "n", label_font, text_color)
 
     def strip_chart_path(self, path_points: list[tuple[float, float]], layout: StripChartLayout, factor: float, path_color="red"):
         visible = [(pt, v) for pt, v in path_points if layout.t_min <= pt <= layout.t_max]
@@ -260,7 +300,7 @@ class Draw:
             return
         canvas_points = self.camera.data_to_strip_chart(visible, layout.now, factor, layout.min_unit, layout.max_unit,
                                                           layout.pixels_per_second, layout.time_offset)
-        self.canvas.pooled_item("line", canvas_points, width=2, fill=path_color)
+        self._draw_line(canvas_points, path_color, 2)
 
     def strip_chart_crosshairs(self, layout: StripChartLayout, histories: dict[str, list[tuple[float, float]]], factor: float,
                                 cursor_pos: tuple[float, float] | None, line_colors: list[str],
@@ -279,8 +319,8 @@ class Draw:
         if not (layout.left <= cx <= layout.right and layout.top <= cy <= layout.bottom):
             return
 
-        self.canvas.pooled_item("line", (layout.left, cy, cx, cy), fill=text_color, width=1)
-        self.canvas.pooled_item("line", (cx, layout.bottom, cx, cy), fill=text_color, width=1)
+        self._draw_line((layout.left, cy, cx, cy), text_color, 1)
+        self._draw_line((cx, layout.bottom, cx, cy), text_color, 1)
 
         # Camera transform from canvas position back to world (time) space - this
         # already accounts for fit mode, since pixels_per_second/time_offset/now on
@@ -291,7 +331,7 @@ class Draw:
         hover_time = self.camera.canvas_x_to_time(cx, layout.now, layout.pixels_per_second, layout.time_offset)
         time_text = t.format_tick(hover_time - layout.wall_now, layout.time_decimals)
 
-        number_font = self._get_font("chart_numbers")
+        number_font = self.context.style.get_font("chart_numbers")
         self._text_with_background(cx - LABEL_GAP, cy + LABEL_GAP, time_text, "ne",
                                     number_font, text_color, background_color)
 
@@ -357,22 +397,23 @@ class Draw:
         draws, so a channel with no legend name (e.g. a lone packets/sec line) can
         skip it even alongside channels in the same chart that do show one.
         '''
-        row_height = font.metrics("linespace")
+        metrics = QFontMetricsF(font)
+        row_height = metrics.height()
         pad = 2
         box_bottom = cy - LABEL_GAP
         box_top = box_bottom - row_height * len(rows)
 
-        value_col_width = max(font.measure(value_text) for _, _, _, value_text, _ in rows)
+        value_col_width = max(metrics.horizontalAdvance(value_text) for _, _, _, value_text, _ in rows)
         value_col_right = cx - LABEL_GAP
         value_col_left = value_col_right - value_col_width
 
         if not any(show for _, _, _, _, show in rows):
             # No channel wants a legend/square - just the value(s), stacked.
-            self.canvas.pooled_item("rectangle", (value_col_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad),
-                                          fill=background_color, outline="")
+            self._draw_rect((value_col_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad),
+                             fill=background_color)
             for i, (_, _, _, value_text, _) in enumerate(rows):
                 row_center_y = box_top + row_height * i + row_height / 2
-                self.canvas.pooled_item("text", (value_col_left, row_center_y), text=value_text, anchor="w", font=font, fill=text_color)
+                self._draw_text(value_col_left, row_center_y, value_text, "w", font, text_color)
             return
 
         square_size = max(row_height - 6, 6)
@@ -380,7 +421,7 @@ class Draw:
         square_right = value_col_left - square_gap
         square_left = square_right - square_size
 
-        legend_col_width = max((font.measure(legend_text) for _, _, legend_text, _, show in rows if show), default=0)
+        legend_col_width = max((metrics.horizontalAdvance(legend_text) for _, _, legend_text, _, show in rows if show), default=0)
         if legend_col_width > 0:
             legend_gap = 4
             legend_col_left = square_left - legend_gap - legend_col_width
@@ -389,18 +430,18 @@ class Draw:
             legend_col_left = square_left
             box_left = square_left
 
-        self.canvas.pooled_item("rectangle", (box_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad),
-                                      fill=background_color, outline="")
+        self._draw_rect((box_left - pad, box_top - pad, value_col_right + pad, box_bottom + pad),
+                         fill=background_color)
 
         for i, (_, color, legend_text, value_text, show) in enumerate(rows):
             row_center_y = box_top + row_height * i + row_height / 2
             if show:
                 if legend_text:
-                    self.canvas.pooled_item("text", (legend_col_left, row_center_y), text=legend_text, anchor="w", font=font, fill=text_color)
+                    self._draw_text(legend_col_left, row_center_y, legend_text, "w", font, text_color)
                 square_top = row_center_y - square_size / 2
-                self.canvas.pooled_item("rectangle", (square_left, square_top, square_left + square_size, square_top + square_size),
-                                              fill=color, outline=text_color)
-            self.canvas.pooled_item("text", (value_col_left, row_center_y), text=value_text, anchor="w", font=font, fill=text_color)
+                self._draw_rect((square_left, square_top, square_left + square_size, square_top + square_size),
+                                 fill=color, outline=text_color)
+            self._draw_text(value_col_left, row_center_y, value_text, "w", font, text_color)
 
     def _text_with_background(self, x: float, y: float, text: str, anchor: str, font, text_color: str, background_color: str):
         '''
@@ -408,8 +449,9 @@ class Draw:
         whatever else is drawn underneath (axes, gridlines, the data line, ...).
         anchor: "se" pins the text's bottom-right corner to (x, y); "ne" pins its top-right corner.
         '''
-        width = font.measure(text)
-        height = font.metrics("linespace")
+        metrics = QFontMetricsF(font)
+        width = metrics.horizontalAdvance(text)
+        height = metrics.height()
         pad = 2
 
         if anchor == "se":
@@ -419,5 +461,5 @@ class Draw:
         else:
             raise ValueError(f"Unsupported anchor for _text_with_background: {anchor}")
 
-        self.canvas.pooled_item("rectangle", box, fill=background_color, outline="")
-        self.canvas.pooled_item("text", (x, y), text=text, anchor=anchor, font=font, fill=text_color)
+        self._draw_rect(box, fill=background_color)
+        self._draw_text(x, y, text, anchor, font, text_color)

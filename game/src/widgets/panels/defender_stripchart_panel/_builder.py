@@ -29,7 +29,6 @@ class Builder(Panel):
         self.modbus = self.context.buffer.defender_modbus
 
         scrollable = Scrollable(self, context)
-        scrollable.configure(fg_color=self.style.color("panel"))
         scrollable.columnconfigure(0, weight=1)
         time_offset = [0.0, 0.0]
         current_row = 0
@@ -71,9 +70,7 @@ class Builder(Panel):
 
         for key, widget in self.strip_charts.items():
             visible = key in active_variables
-            if visible and not widget.winfo_ismapped():
-                self.update_idletasks()
-                widget.grid()
-            elif not visible and widget.winfo_ismapped():
-                self.update_idletasks()
-                widget.grid_remove()
+            if visible and widget.isHidden():
+                widget.show()
+            elif not visible and not widget.isHidden():
+                widget.hide()
