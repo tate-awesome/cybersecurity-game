@@ -44,11 +44,28 @@ class Overlay(QWidget):
             self.click_open()
 
     def click_open(self):
+        self._close_other_overlays()
         self.populate_func(self)
         self.button.setText(self.close_text)
         self.adjustSize()
         self.move(self.calculate_placement(self.anchor))
         self.show()
+
+    def _close_other_overlays(self):
+        '''
+        Qt's popup-grab dismissal (see the class docstring) only reacts to
+        real mouse events - it doesn't know about, or coordinate with,
+        other independent Overlay instances. Clicking a different trigger
+        button while another overlay is already open is a real click on a
+        real widget, not an "outside click" as far as that overlay's own
+        grab is concerned, so without this it would stay open alongside
+        the new one. Every overlay is parented to context.root (see
+        CheckboxOverlay/VariableOverlay/FilterOverlay), so that's searched
+        rather than keeping a separate registry.
+        '''
+        for overlay in self.context.root.findChildren(Overlay):
+            if overlay is not self and overlay.isVisible():
+                overlay.hide()
 
     def click_close(self):
         self.hide()  # triggers hideEvent below, which does the actual cleanup

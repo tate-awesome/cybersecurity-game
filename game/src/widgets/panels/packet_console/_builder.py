@@ -3,12 +3,12 @@ from .treeview import PacketTreeview
 from ....app_core import Context
 from ... import MenuBar, CheckboxOverlay
 from ..panel import Panel
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ....network.buffer.meta_packet import MetaPacket
 
 class Builder(Panel):
     KEY = "packet_panel"
-    def __init__(self, master, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, self.KEY)
 
         self.buffer = context.buffer.packets

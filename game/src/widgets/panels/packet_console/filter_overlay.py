@@ -1,11 +1,11 @@
 from ....app_core import Context
 from ... import Overlay
 
-from customtkinter import CTkFrame, CTkLabel, CTkCheckBox, CTkEntry, CTkButton
+from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 from typing import Callable
 
 class FilterOverlay:
-    def __init__(self, button: CTkButton, context: Context, refresh_function: Callable):
+    def __init__(self, button: QPushButton, context: Context, refresh_function: Callable):
         self.context = context
         self.style = context.style
         self.refresh_function = refresh_function
@@ -32,88 +32,88 @@ class FilterOverlay:
         '''
         apply_filters = lambda: ...
 
-        # Save reference for later destruction
-
-        # Create filter checkbox frame
+        # Create filter checkbox row - one frame per category, side by side
         box_slots = self.context.states.get("packet_filter_checkboxes")
-        checkbox_frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
-        checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
+        checkbox_row = QHBoxLayout()
+        overlay.layout().addLayout(checkbox_row)
 
         # Create each column of checkboxes based on the hard-coded category
         for category in self.filter_columns:
 
-            category_frame = CTkFrame(checkbox_frame, fg_color=self.style.color("widget"))
-            category_frame.pack(side="left", padx=self.style.gap, pady=self.style.gap, anchor="n")
-            category_label = CTkLabel(category_frame, text=self.context.labels.get("packet_filter_categories", category), font=self.style.get_font())
-            category_label.pack(side="top", pady=self.style.gap, anchor="n")
+            category_frame = QFrame()
+            category_frame.setStyleSheet(f"background-color: {self.style.color('widget')};")
+            category_layout = QVBoxLayout(category_frame)
+            checkbox_row.addWidget(category_frame)
+
+            category_label = QLabel(self.context.labels.get("packet_filter_categories", category))
+            category_label.setFont(self.style.get_font())
+            category_layout.addWidget(category_label)
 
             # Create each checkbox in the category
             for filter_key in self.filter_columns[category]:
 
-                filter_box = CTkCheckBox(category_frame, text=self.context.labels.get("packet_filter_checkboxes", filter_key), font=self.style.get_font())
-                filter_box.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
-                
-                # Load previous input
+                filter_box = QCheckBox(self.context.labels.get("packet_filter_checkboxes", filter_key))
+                filter_box.setFont(self.style.get_font())
+                category_layout.addWidget(filter_box)
+
+                # Load previous input before connecting, so restoring it doesn't itself trigger autosave
                 value = self._checkbox_value(box_slots, filter_key)
-                if value == "1" or value == 1: filter_box.select()
-                else: filter_box.deselect()
-                
-                # Configure for autosave
-                def autosave(slots=box_slots, key=filter_key, b=filter_box):
-                    slots[key] = str(b.get())
+                filter_box.setChecked(value == "1" or value == 1)
+
+                # Configure for autosave. Stored as "1"/"0" - the convention
+                # this settings data already uses everywhere else.
+                def autosave(checked: bool, slots=box_slots, key=filter_key):
+                    slots[key] = "1" if checked else "0"
                     apply_filters()
-                filter_box.configure(command=autosave)
-        
+                filter_box.toggled.connect(autosave)
+
         # Create text filter widgets
         text_slots = self.context.states.get("packet_filter_entries")
-        entry_frame = CTkFrame(overlay)
-        entry_frame.pack(side="top", fill="x", padx=self.style.gap2, pady=self.style.gap2)
+        entry_frame = QFrame()
+        entry_layout = QVBoxLayout(entry_frame)
+        overlay.layout().addWidget(entry_frame)
 
         # Create each text filter label and entry
         for text_slot in text_slots:
 
-            filter_label = CTkLabel(entry_frame, text=self.context.labels.get("packet_filter_entries", text_slot), font=self.style.get_font())
-            filter_label.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
-            filter_entry = CTkEntry(entry_frame, font=self.style.get_font())
-            filter_entry.pack(fill="x", side="top", padx=self.style.gap, pady=self.style.gap)
-            
+            filter_label = QLabel(self.context.labels.get("packet_filter_entries", text_slot))
+            filter_label.setFont(self.style.get_font())
+            entry_layout.addWidget(filter_label)
+
+            filter_entry = QLineEdit()
+            filter_entry.setFont(self.style.get_font())
+            entry_layout.addWidget(filter_entry)
+
             # Load previous input
             previous_text = text_slots[text_slot]
-            filter_entry.delete(0, "end")
-            filter_entry.insert(0, previous_text)
+            filter_entry.setText(str(previous_text))
 
             # Configure for autosave
-            def autosave(event=None, slots=text_slots, key=text_slot, e=filter_entry):
-                slots[key] = str(e.get())
+            def autosave(text, slots=text_slots, key=text_slot):
+                slots[key] = text
                 apply_filters()
-            filter_entry.bind("<KeyRelease>", autosave)
+            filter_entry.textEdited.connect(autosave)
 
-        # Add filter activator button and summary
-        activator_frame = CTkFrame(overlay)
-        activator_frame.pack(side="top", padx=self.style.gap2, pady=self.style.gap2, fill="x")
-
-        # activator_button = CTkButton(activator_frame, text="Apply Filters", font=self.style.get_font())
-        # activator_button.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap)
+        # Add filter summary - QLabel word-wraps to its own width automatically,
+        # so unlike the tkinter version this doesn't need to track the
+        # container's width itself and recompute a wraplength by hand.
+        activator_frame = QFrame()
+        activator_layout = QHBoxLayout(activator_frame)
+        overlay.layout().addWidget(activator_frame)
 
         summary = self.context.states.get("packet_filter_function", "summary")
-        width = activator_frame.winfo_width() - 50
-
-        filter_label = CTkLabel(activator_frame, text=summary, font=self.style.get_font(), justify="left", wraplength=width/self.style.get_scale_correction())
-        filter_label.pack(side="left", anchor="w", padx=self.style.gap, pady=self.style.gap, fill="x")
+        filter_label = QLabel(summary)
+        filter_label.setFont(self.style.get_font())
+        filter_label.setWordWrap(True)
+        activator_layout.addWidget(filter_label)
 
         def activate():
             self.compile_filter()
             new_summary = self.context.states.get("packet_filter_function", "summary")
-
-            width = activator_frame.winfo_width() - 50
-
-            filter_label.configure(text=new_summary, wraplength=width/self.style.get_scale_correction())
-
+            filter_label.setText(new_summary)
             self.refresh_function()
-        
-        apply_filters = activate
 
-        # activator_button.configure(command=activate)
+        apply_filters = activate
 
     def compile_filter(self):
             '''
@@ -124,9 +124,9 @@ class FilterOverlay:
             '''
             # Grab the filter states only when pressing the button
             import copy
-            checkbox_slots = copy.deepcopy(self.context.states.get("packet_filter_checkboxes")) 
+            checkbox_slots = copy.deepcopy(self.context.states.get("packet_filter_checkboxes"))
             address_filter = copy.deepcopy(self.context.states.get("packet_filter_entries", "address_filter"))
-            
+
             def packet_filter(mpkt):
 
                 # Fulfill checkbox conditions
@@ -160,7 +160,7 @@ class FilterOverlay:
                         or value in mpkt.get("mac_dst").lower()):
                         address_condition = True
                 return address_condition and checkboxes_condition
-            
+
             # Save the function
             self.function = lambda mpkt: packet_filter(mpkt)
 
@@ -186,7 +186,7 @@ class FilterOverlay:
             entry_str = self.context.states.get("packet_filter_entries", "address_filter")
             print(entry_str)
             addresses = entry_str.split("|")
-            
+
             if len(addresses) < 1 or len(entry_str) < 1:
                 if len(category_summaries) < 1:
                     full_summary = f"{full_summary} any packets."

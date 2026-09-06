@@ -1,16 +1,19 @@
-from tkinter import ttk
-from tkinter import font as tkfont
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTreeWidget, QTreeWidgetItem, QWidget
 
 from ....app_core import Context
 
 
 class PacketTreeview:
     """
-    Wraps a styled ttk.Treeview (plus its scrollbars) into a small row-oriented
-    API, so callers never need to import or touch ttk.Treeview directly.
+    Wraps a QTreeWidget into a small row-oriented API, so callers never need
+    to import or touch QTreeWidget directly. QTreeWidget already provides
+    its own scrollbars and (via the app-wide qt-material stylesheet) its own
+    theming, so this needs none of the manual ttk.Style/scrollbar wiring the
+    tkinter version did.
     """
 
-    def __init__(self, parent, context: Context):
+    def __init__(self, parent: QWidget, context: Context):
         self.context = context
         self.style = context.style
         packet_columns = context.labels.get("packet_columns")
@@ -20,157 +23,48 @@ class PacketTreeview:
             packet_columns = {}
         self.columns = list(packet_columns.keys())
 
-        self.frame, self._tree = self._build(parent)
+        self._items: dict[str, QTreeWidgetItem] = {}
+        self.frame = self._tree = self._build(parent)
 
     # ------------------------------------------------------------------
     # Construction / styling
     # ------------------------------------------------------------------
-    def _build(self, parent):
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.layout("Treeview", [
-            ('Treeview.treearea', {'sticky': 'nswe', 'border': '0'})
-        ])
-        style.configure("TFrame", borderwidth=0, relief="flat")
-        tree_font = tkfont.Font(
-            family="Consolas",
-            size=self.style.get_font_size("treeview")
-        )
-        row_height = tree_font.metrics("linespace") * 2 + 6
+    def _build(self, parent: QWidget) -> QTreeWidget:
+        tree = QTreeWidget()
+        tree.setFont(self.style.get_font("treeview"))
+        tree.setStyleSheet("QTreeWidget::item { padding: 4px; }")
 
-        # 1. Treeview Body & Empty Rows Area
-        style.configure(
-            "Treeview",
-            font=("Consolas", self.style.get_font_size("treeview"), "normal"),
-            rowheight=row_height,
-            background=self.style.color("field"),
-            fieldbackground=self.style.color("field"),
-            foreground=self.style.color("field_text"),
-            borderwidth=0,
-            relief="flat"
-        )
-        # Highlight colors when a cell/row is selected
-        style.map(
-            "Treeview",
-            background=[("selected", self.style.color("accent"))],
-            foreground=[("selected", self.style.color("field_text"))]
-        )
+        tree.setColumnCount(len(self.columns))
+        tree.setHeaderLabels([self.context.labels.get("packet_columns", col) for col in self.columns])
+        tree.setRootIsDecorated(False)  # flat table, no expand arrows - matches show="headings"
+        tree.setUniformRowHeights(True)
+        tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
-        # 2. Table Headers Style
-        style.configure(
-            "Treeview.Heading",
-            font=("Consolas", self.style.get_font_size("treeview"), "bold"),
-            background=self.style.color("widget"),      # Contrasted panel color for headers
-            foreground=self.style.color("field_text"),
-            borderwidth=1,
-            relief="flat"
-        )
-        style.map(
-            "Treeview.Heading",
-            background=[("active", self.style.color("accent"))],    # Accent color on hover
-            foreground=[("active", self.style.color("field_text"))] # Text stays readable
-        )
+        header = tree.header()
+        header.setMinimumSectionSize(50)
+        for i, col in enumerate(self.columns):
+            tree.setColumnWidth(i, int(self.style.get_column_width(col)))
+            if col == "Info":
+                header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
 
-        # 3. Layout Container Frame Style
-        style.configure(
-            "TFrame",
-            background=self.style.color("panel")  # Blends frame container with parent view
-        )
-
-        # 4. Scrollbar Track and Slider Elements
-        style.configure(
-            "TScrollbar",
-            gripcount=0,
-            background=self.style.color("scrollbar"),      # The slider handle color
-            troughcolor=self.style.color("panel"),      # The tracking channel backdrop
-            bordercolor=self.style.color("panel"),      # Outer slider thin border line
-            arrowcolor=self.style.color("field_text"),  # Tiny arrow icons on cap ends
-            lightcolor=self.style.color("panel"),       # Eliminates default 3D highlights
-            darkcolor=self.style.color("panel"),
-            borderwidth=0,
-            thickness=self.style.get_scrollbar_size(),
-            arrowsize=self.style.get_scrollbar_size()
-        )
-        style.map(
-            "TScrollbar",
-            background=[("active", self.style.color("scrollbar_hover"))] # Hover slider color shifts to accent
-        )
-
-        # Container for tree and scrollbars (Now safely targeted by TFrame styles)
-        container = ttk.Frame(parent)
-        container.pack(
-            padx=self.style.pad_corrected(),  # Matches CustomTkinter's standard frame padding layout
-            pady=self.style.pad_corrected(),
-            fill="both",
-            expand=True
-        )
-
-        # Treeview
-        tree = ttk.Treeview(
-            container,
-            columns=self.columns,
-            show="headings"
-        )
-
-        # Configure columns
-        for col in self.columns:
-            stretch = (col == "Info")
-
-            tree.heading(col, text=self.context.labels.get("packet_columns", col))
-
-            tree.column(
-                col,
-                width=self.style.get_column_width(col),
-                minwidth=50,
-                stretch=stretch,
-                anchor="w"
-            )
-
-        # Vertical scrollbar
-        y_scrollbar = ttk.Scrollbar(
-            container,
-            orient="vertical",
-            command=tree.yview
-        )
-
-        # Horizontal scrollbar
-        x_scrollbar = ttk.Scrollbar(
-            container,
-            orient="horizontal",
-            command=tree.xview
-        )
-
-        # Connect scrollbars
-        tree.configure(
-            yscrollcommand=y_scrollbar.set,
-            xscrollcommand=x_scrollbar.set
-        )
-
-        # Layout
-        tree.grid(row=0, column=0, sticky="nsew")
-
-        y_scrollbar.grid(row=0, column=1, sticky="ns")
-
-        x_scrollbar.grid(row=1, column=0, sticky="ew")
-
-        # Make tree expand
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
-
-        return container, tree
+        parent.layout().addWidget(tree)
+        return tree
 
     # ------------------------------------------------------------------
     # Selection
     # ------------------------------------------------------------------
     def bind_select(self, callback):
-        self._tree.bind("<<TreeviewSelect>>", callback)
+        self._tree.itemSelectionChanged.connect(callback)
 
     def selection(self):
-        return self._tree.selection()
+        return [item.data(0, Qt.ItemDataRole.UserRole) for item in self._tree.selectedItems()]
 
     def select(self, row_id):
-        self._tree.selection_set(row_id)
-        self._tree.see(row_id)
+        item = self._items.get(row_id)
+        if item is not None:
+            self._tree.setCurrentItem(item)
+            self._tree.scrollToItem(item)
 
     def select_last(self):
         row_ids = self.get_ids()
@@ -181,27 +75,34 @@ class PacketTreeview:
     # Columns
     # ------------------------------------------------------------------
     def set_visible_columns(self, columns):
-        self._tree["displaycolumns"] = columns
+        visible = set(columns)
+        for i, col in enumerate(self.columns):
+            self._tree.setColumnHidden(i, col not in visible)
 
     # ------------------------------------------------------------------
     # Row CRUD
     # ------------------------------------------------------------------
     def get_ids(self):
-        return self._tree.get_children("")
+        return [self._tree.topLevelItem(i).data(0, Qt.ItemDataRole.UserRole) for i in range(self._tree.topLevelItemCount())]
 
     def get(self, row_id):
-        return self._tree.item(row_id, "values")
+        item = self._items[row_id]
+        return [item.text(i) for i in range(len(self.columns))]
 
     def create(self, row_id, values, index="end"):
-        self._tree.insert("", index, iid=row_id, values=values)
+        item = QTreeWidgetItem([str(v) for v in values])
+        item.setData(0, Qt.ItemDataRole.UserRole, row_id)
+        if index == "end":
+            self._tree.addTopLevelItem(item)
+        else:
+            self._tree.insertTopLevelItem(index, item)
+        self._items[row_id] = item
 
     def submit(self, row_id, values, sort_column_index=0):
         """
         Insert a row, keeping rows sorted (descending) by the given column,
         assuming rows are usually appended in order already.
         """
-        sort_key = self.columns[sort_column_index]
-
         try:
             new_val = float(values[sort_column_index])
         except (ValueError, TypeError):
@@ -210,8 +111,9 @@ class PacketTreeview:
         insert_index = "end"
 
         # Search from the bottom up (since packets usually arrive sequentially)
-        for child in reversed(self.get_ids()):
-            current_val_str = self._tree.set(child, sort_key)
+        ids = self.get_ids()
+        for position in range(len(ids) - 1, -1, -1):
+            current_val_str = self._items[ids[position]].text(sort_column_index)
 
             try:
                 current_val = float(current_val_str)
@@ -221,22 +123,28 @@ class PacketTreeview:
             # If the existing row is smaller than or equal to our new row,
             # it means our row belongs right AFTER this row.
             if current_val <= new_val:
-                insert_index = self._tree.index(child) + 1
+                insert_index = position + 1
                 break
 
         self.create(row_id, values, index=insert_index)
 
     def edit(self, row_id, values):
-        self._tree.item(row_id, values=values)
+        item = self._items[row_id]
+        for i, value in enumerate(values):
+            item.setText(i, str(value))
 
     def delete(self, row_id):
-        self._tree.delete(row_id)
+        item = self._items.pop(row_id, None)
+        if item is not None:
+            index = self._tree.indexOfTopLevelItem(item)
+            self._tree.takeTopLevelItem(index)
 
     def clear(self):
-        self._tree.delete(*self.get_ids())
+        self._tree.clear()
+        self._items.clear()
 
     def count(self):
-        return len(self.get_ids())
+        return self._tree.topLevelItemCount()
 
     def trim_oldest(self, overflow_count):
         row_ids = self.get_ids()
@@ -247,4 +155,4 @@ class PacketTreeview:
     # Scrolling
     # ------------------------------------------------------------------
     def scroll_to_bottom(self):
-        self._tree.yview_moveto(1)
+        self._tree.scrollToBottom()

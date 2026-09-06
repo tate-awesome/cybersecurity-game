@@ -1,7 +1,6 @@
-from customtkinter import CTkTextbox
+from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QPlainTextEdit
 from ....app_core import Context
-from typing import cast
-from ... import MenuBar
 from ..panel import Panel
 
 class Builder(Panel):
@@ -28,12 +27,12 @@ class Builder(Panel):
 
         # Start printing loop
         self.start_printing()
-        
+
 
     def start_printing(self):
         self.run = True
         self.context.animation_manager.add_callback("status_panel", self.print_tick)
-    
+
     def stop_printing(self):
         self.run = False
         self.context.animation_manager.remove_callback("status_panel")
@@ -45,19 +44,22 @@ class Builder(Panel):
         Empty lines go after every cluster of statuses
         '''
         text_block = self.buffer.get_new_lines()
-        
+
         # Add to text box
-        self.text_box.configure(state="normal")
-        self.text_box.insert("end", text_block)
-        self.text_box.configure(state="disabled")
 
         if self.jump_to_bottom and len(text_block) > 0:
-            self.text_box.see("end")
+            self.text_box.moveCursor(QTextCursor.MoveOperation.End)
+            self.text_box.insertPlainText(text_block)
+            self.text_box.moveCursor(QTextCursor.MoveOperation.End)
+            self.text_box.ensureCursorVisible()
 
     # Text box
     def create_text_box(self, parent):
-        textbox = CTkTextbox(parent, wrap="none", font=self.style.get_font("mono"), state="disabled")
-        textbox.pack(side="top", fill="both", expand=True, padx=self.style.gap, pady=self.style.gap)
+        textbox = QPlainTextEdit()
+        textbox.setFont(self.style.get_font("mono"))
+        textbox.setReadOnly(True)
+        textbox.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        parent.layout().addWidget(textbox)
         return textbox
 
     # Buttons
@@ -66,7 +68,7 @@ class Builder(Panel):
 
     def unpause(self):
         self.start_printing()
-    
+
     def unlock_scrolling(self):
         self.jump_to_bottom = False
 
