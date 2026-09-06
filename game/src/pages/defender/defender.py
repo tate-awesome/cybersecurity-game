@@ -14,20 +14,25 @@ from .hvac_view import HVACView
 # Network
 from ...network.hardware import APPoller
 
-# customtkinter widgets
-from customtkinter import (
-    CTkLabel, CTkEntry, CTkButton, CTkFrame,
-    CTkScrollableFrame, CTkSegmentedButton, CTkSlider
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QButtonGroup, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QSlider, QVBoxLayout, QWidget,
 )
 
 import threading
 import requests
 import time
 
+# QSlider only steps through integers - each slider's own float min/max is
+# mapped onto this many integer positions (see _to_slider_pos/_from_slider_pos).
+SLIDER_RESOLUTION = 1000
+
 
 class DefenderV0(Page):
     '''
-    Page constructor for defender/defenderv0. Inherits CTkFrame
+    Page constructor for defender/defenderv0.
     '''
 
     POLL_INTERVAL_MS = 2000
@@ -36,7 +41,7 @@ class DefenderV0(Page):
     HVAC_FLAG_DEFS = [
             ("HVAC_filter_flag", "State Filtering Threshold Surpassed")
         ]
-    
+
     SUBMARINE_FLAG_DEFS = [
         ("state_filter_flag", "State Filtering Threshold Surpassed"),
         ("speed_filter_flag", "Speed Filtering Treshold Surpassed"),
@@ -81,13 +86,26 @@ class DefenderV0(Page):
         middle_p = trifold.pane(1)
         right_p = trifold.pane(2)
 
-        # ── Left pane ────────────────────────────────────────────────────────
-        self._build_connection_block(left_p)   # mode-agnostic — always visible
-        self._mode_content_left = CTkFrame(left_p, fg_color="transparent")
-        self._mode_content_left.pack(fill="x")
+        # left_p is a Scrollable (QScrollArea) - its own grid_layout is where
+        # content goes (see widgets/frame_widgets/scrollable.py), one widget
+        # at (0, 0), so everything below can just use ordinary
+        # parent.layout().addWidget(...) self-placement from there on.
+        left_content = QWidget()
+        left_content.setLayout(QVBoxLayout())
+        left_content.layout().setContentsMargins(0, 0, 0, 0)
+        left_p.grid_layout.addWidget(left_content, 0, 0)
 
-        self._submarine_left = CTkFrame(self._mode_content_left, fg_color="transparent")
-        self._submarine_left.pack(fill="x")
+        # ── Left pane ────────────────────────────────────────────────────────
+        self._build_connection_block(left_content)   # mode-agnostic — always visible
+        self._mode_content_left = QWidget()
+        self._mode_content_left.setLayout(QVBoxLayout())
+        self._mode_content_left.layout().setContentsMargins(0, 0, 0, 0)
+        left_content.layout().addWidget(self._mode_content_left)
+
+        self._submarine_left = QWidget()
+        self._submarine_left.setLayout(QVBoxLayout())
+        self._submarine_left.layout().setContentsMargins(0, 0, 0, 0)
+        self._mode_content_left.layout().addWidget(self._submarine_left)
         self._build_encryption_block(self._submarine_left)
         self._build_AP_communication_block(self._submarine_left)
         self._build_slider_block(self._submarine_left)
@@ -98,54 +116,30 @@ class DefenderV0(Page):
         left_p.add_deadspace()
 
         # ── Middle pane ──────────────────────────────────────────────────────
-        self._submarine_middle = CTkFrame(middle_p, fg_color="transparent")
+        self._submarine_middle = QWidget()
+        self._submarine_middle.setLayout(QVBoxLayout())
+        self._submarine_middle.layout().setContentsMargins(0, 0, 0, 0)
+        middle_p.layout().addWidget(self._submarine_middle)
+
         self._build_packet_log(self._submarine_middle)
         self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS [MODBUS]", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
         # ── Kalman Filter block ─────────────────────────────────────────────
-        kalman_section = CTkFrame(
-            self._submarine_middle,
-            fg_color=self.style.color("widget")
-        )
-        kalman_section.pack(
-            fill="x",
-            padx=self.style.igap,
-            pady=self.style.igap
-        )
+        kalman_section = self._section(self._submarine_middle, "KALMAN FILTER")
 
-        CTkLabel(
-            kalman_section,
-            text="KALMAN FILTER",
-            font=self.style.get_font()
-        ).pack(
-            anchor="w",
-            padx=self.style.igap,
-            pady=(self.style.igap, 0)
-        )
+        self._submarine_kalman_label = QLabel("Status: ON")
+        self._submarine_kalman_label.setFont(self.style.get_font())
+        self._submarine_kalman_label.setStyleSheet("color: green;")
+        kalman_section.layout().addWidget(self._submarine_kalman_label)
 
-        self._submarine_kalman_label = CTkLabel(
-            kalman_section,
-            text="Status: ON",
-            font=self.style.get_font(),
-            text_color="green"
-        )
-        self._submarine_kalman_label.pack(
-            anchor="w",
-            padx=self.style.igap
-        )
+        self._submarine_kalman_button = QPushButton("Toggle Kalman Filter")
+        self._submarine_kalman_button.setFont(self.style.get_font())
+        self._wire_button(self._submarine_kalman_button, self._toggle_submarine_kalman_filter)
+        kalman_section.layout().addWidget(self._submarine_kalman_button)
 
-        self._submarine_kalman_button = CTkButton(
-            kalman_section,
-            text="Toggle Kalman Filter",
-            font=self.style.get_font(),
-            command=self._toggle_submarine_kalman_filter
-        )
-        self._submarine_kalman_button.pack(
-            fill="x",
-            padx=self.style.igap,
-            pady=self.style.gapbot
-        )
-
-        self._hvac_middle = CTkFrame(middle_p, fg_color="transparent")
+        self._hvac_middle = QWidget()
+        self._hvac_middle.setLayout(QVBoxLayout())
+        self._hvac_middle.layout().setContentsMargins(0, 0, 0, 0)
+        middle_p.layout().addWidget(self._hvac_middle)
         self._build_flags_block(self._hvac_middle, "HVAC ERROR DETECTION FLAG", self.HVAC_FLAG_DEFS, "_hvac_flag_labels",)
         # HVAC's own Kalman Filter block lives entirely inside HVACView now
         # (see hvac_view.py's _build_kalman_block) - it owns the button, the
@@ -153,12 +147,22 @@ class DefenderV0(Page):
         # into this page just to update a label this class doesn't build.
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
+
+        # middle_p is a plain Panes pane (no Scrollable/add_deadspace of its
+        # own) - without this, leftover vertical space has nowhere dedicated
+        # to go and distributes into the actual section widgets instead,
+        # stretching them past their natural size (the same root cause as
+        # the MenuBar sizing bug found earlier in this migration).
+        middle_p.layout().addStretch()
+
         self._refresh_mode_ui()
 
         self._post_slider_settings()
 
-        self._map_container = CTkFrame(right_p, fg_color="transparent")
-        self._map_container.pack(fill="both", expand=True)
+        self._map_container = QWidget()
+        self._map_container.setLayout(QVBoxLayout())
+        self._map_container.layout().setContentsMargins(0, 0, 0, 0)
+        right_p.layout().addWidget(self._map_container)
 
         def draw_defender_map(canvas, draw_lock, scale, offset):
             draw = ViewPort(canvas, scale, offset)
@@ -175,7 +179,6 @@ class DefenderV0(Page):
 
         self._map = Map(self._map_container, context, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
-        #self._map.canvas.bind("<Button-1>", self._on_map_click)
 
         # ── Page updaters — each repaints itself from context.buffer on the
         # shared animation_manager tick, the same way MitmTable/canvases do,
@@ -193,224 +196,253 @@ class DefenderV0(Page):
     #  UI builder helpers
     # ════════════════════════════════════════════════════════════════════════
 
-    def _build_connection_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+    def _section(self, parent: QWidget, title: str | None = None) -> QWidget:
+        '''
+        A titled card: a widget-colored panel with an optional bold title
+        label at the top, added into parent's layout. Mirrors the repeated
+        CTkFrame(fg_color="widget")+CTkLabel(title) pattern this file used
+        throughout.
+        '''
+        section = QWidget()
+        section.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        layout.setSpacing(4)
+        parent.layout().addWidget(section)
 
-        CTkLabel(section, text="SERVER URL", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=self.style.gaptop
-        )
-        self._url_entry = CTkEntry(section, font=self.style.get_font(),
-                                   placeholder_text="http://192.168.8.141")
-        self._url_entry.pack(fill="x", padx=self.style.igap, pady=(self.style.igap, 4))
-        self._url_entry.insert(0, "http://192.168.4.1")
+        if title is not None:
+            label = QLabel(title)
+            label.setFont(self.style.get_font())
+            layout.addWidget(label)
 
-        CTkButton(section, text="Connect", font=self.style.get_font(),
-                  command=self._poll).pack(fill="x", padx=self.style.igap, pady=(0, 4))
+        return section
 
-        self._conn_status = CTkLabel(section, text="⬤  Not connected",
-                                     font=self.style.get_font(), text_color="gray")
-        self._conn_status.pack(anchor="w", padx=self.style.igap, pady=self.style.gapbot)
+    def _wire_button(self, button: QPushButton, function):
+        # clicked emits a "checked" bool that none of these callbacks expect.
+        button.clicked.connect(lambda checked=False, function=function: function())
 
-    def _build_encryption_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+    def _to_slider_pos(self, value: float, lo: float, hi: float) -> int:
+        if hi == lo:
+            return 0
+        return int(round((value - lo) / (hi - lo) * SLIDER_RESOLUTION))
 
-        CTkLabel(section, text="ENCRYPTION", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
-        self._enc_label = CTkLabel(section, text="Status: OFF",
-                                   font=self.style.get_font(), text_color="gray")
-        self._enc_label.pack(anchor="w", padx=self.style.igap)
+    def _from_slider_pos(self, pos: int, lo: float, hi: float) -> float:
+        return lo + (pos / SLIDER_RESOLUTION) * (hi - lo)
 
-        # Key entry
-        CTkLabel(section, text="Encryption Key", font=self.style.get_font("small"),
-                 text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
-        self._enc_key_entry = CTkEntry(section, font=self.style.get_font(),
-                                       placeholder_text="Enter key…")
-        self._enc_key_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
+    def _build_connection_block(self, parent: QWidget):
+        section = self._section(parent, "SERVER URL")
 
-        self._enc_button = CTkButton(section, text="Enable Encryption",
-                                     font=self.style.get_font())
+        self._url_entry = QLineEdit()
+        self._url_entry.setFont(self.style.get_font())
+        self._url_entry.setPlaceholderText("http://192.168.8.141")
+        self._url_entry.setText("http://192.168.4.1")
+        section.layout().addWidget(self._url_entry)
+
+        connect_button = QPushButton("Connect")
+        connect_button.setFont(self.style.get_font())
+        self._wire_button(connect_button, self._poll)
+        section.layout().addWidget(connect_button)
+
+        self._conn_status = QLabel("⬤  Not connected")
+        self._conn_status.setFont(self.style.get_font())
+        self._conn_status.setStyleSheet("color: gray;")
+        section.layout().addWidget(self._conn_status)
+
+    def _build_encryption_block(self, parent: QWidget):
+        section = self._section(parent, "ENCRYPTION")
+
+        self._enc_label = QLabel("Status: OFF")
+        self._enc_label.setFont(self.style.get_font())
+        self._enc_label.setStyleSheet("color: gray;")
+        section.layout().addWidget(self._enc_label)
+
+        key_label = QLabel("Encryption Key")
+        key_label.setFont(self.style.get_font("small"))
+        key_label.setStyleSheet("color: gray;")
+        section.layout().addWidget(key_label)
+
+        self._enc_key_entry = QLineEdit()
+        self._enc_key_entry.setFont(self.style.get_font())
+        self._enc_key_entry.setPlaceholderText("Enter key…")
+        section.layout().addWidget(self._enc_key_entry)
+
+        self._enc_button = QPushButton("Enable Encryption")
+        self._enc_button.setFont(self.style.get_font())
+
         def enc_button():
             if not self.context.buffer.defender_status.get("encryption_status", False):
                 # Encryption is off - try to turn it on
-                if self._enc_key_entry.get().strip() == "":
+                if self._enc_key_entry.text().strip() == "":
                     # Empty key — show error
                     popup.message(self, self.context, "Please enter an encryption key before enabling encryption.")
-                elif not str.isascii(self._enc_key_entry.get().strip()):
+                elif not str.isascii(self._enc_key_entry.text().strip()):
                     # Non-ASCII key — show error
                     popup.message(self, self.context, "Encryption key must be ASCII.")
                 else:
                     # Key looks good — toggle encryption on behavior
-                    self._enc_key_entry.configure(state="disabled")
-                    self._enc_button.configure(text="Disable Encryption")
+                    self._enc_key_entry.setEnabled(False)
+                    self._enc_button.setText("Disable Encryption")
                     self._toggle_encryption()
             else:
                 # Encryption is on - turn it off
-                self._enc_key_entry.configure(state="normal")
-                self._enc_key_entry.delete(0, "end")
-                self._enc_button.configure(text="Enable Encryption")
+                self._enc_key_entry.setEnabled(True)
+                self._enc_key_entry.clear()
+                self._enc_button.setText("Enable Encryption")
                 self._toggle_encryption()
 
-        self._enc_button.configure(command=enc_button)
+        self._wire_button(self._enc_button, enc_button)
+        section.layout().addWidget(self._enc_button)
 
-        self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+    def _build_AP_communication_block(self, parent: QWidget):
+        section = self._section(parent, "COMMUNICATE VIA ACCESS POINT")
 
-    def _build_AP_communication_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+        self._filter_label = QLabel("Status: OFF")
+        self._filter_label.setFont(self.style.get_font())
+        self._filter_label.setStyleSheet("color: gray;")
+        section.layout().addWidget(self._filter_label)
 
-        CTkLabel(section, text="COMMUNICATE VIA ACCESS POINT", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
-        self._filter_label = CTkLabel(section, text="Status: OFF",
-                                    font=self.style.get_font(), text_color="gray")
-        self._filter_label.pack(anchor="w", padx=self.style.igap)
+        self._filter_button = QPushButton("Enable Communication Through AP")
+        self._filter_button.setFont(self.style.get_font())
+        self._wire_button(self._filter_button, self._toggle_AP_communication)
+        section.layout().addWidget(self._filter_button)
 
-        self._filter_button = CTkButton(section, text="Enable Communication Through AP",
-                                        font=self.style.get_font(),
-                                        command=self._toggle_AP_communication)
-        self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
-
-    def _build_mode_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
-
-        CTkLabel(section, text="OPERATION MODE", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
+    def _build_mode_block(self, parent: QWidget):
+        section = self._section(parent, "OPERATION MODE")
 
         # Read-only — this just reflects whatever submarine_mode AP_ESP32.ino
         # is currently reporting. Mode is changed on the AP itself, not here.
-        self._mode_label = CTkLabel(section, text="Mode: SUBMARINE",
-                                    font=self.style.get_font(), text_color="green")
-        self._mode_label.pack(anchor="w", padx=self.style.igap, pady=self.style.gapbot)
+        self._mode_label = QLabel("Mode: SUBMARINE")
+        self._mode_label.setFont(self.style.get_font())
+        self._mode_label.setStyleSheet("color: green;")
+        section.layout().addWidget(self._mode_label)
 
     def _refresh_mode_ui(self):
         if not hasattr(self, '_mode_label'):
             return
         try:
             if self._submarine_mode:
-                self._mode_label.configure(text="Mode: SUBMARINE", text_color="green")
-                self._hvac_middle.pack_forget()
+                self._mode_label.setText("Mode: SUBMARINE")
+                self._mode_label.setStyleSheet("color: green;")
+                self._hvac_middle.hide()
 
-                self._submarine_left.pack(fill="x")
-                self._submarine_middle.pack(fill="both", expand=True)
-                self._map_container.pack(fill="both", expand=True)
+                self._submarine_left.show()
+                self._submarine_middle.show()
+                self._map_container.show()
             else:
-                self._mode_label.configure(text="Mode: HVAC", text_color="orange")
-                self._submarine_left.pack_forget()
-                self._submarine_middle.pack_forget()
-                self._map_container.pack_forget()
+                self._mode_label.setText("Mode: HVAC")
+                self._mode_label.setStyleSheet("color: orange;")
+                self._submarine_left.hide()
+                self._submarine_middle.hide()
+                self._map_container.hide()
 
-                self._hvac_middle.pack(fill="both", expand=True)
+                self._hvac_middle.show()
         except Exception as e:
             print("refresh_mode_ui:", e)
 
-    def _build_values_block(self, parent):
+    def _build_values_block(self, parent: QWidget):
         """Client values card and Server values card, side by side."""
-        outer = CTkFrame(parent, fg_color="transparent")
-        outer.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
-        outer.grid_columnconfigure(0, weight=1)
-        outer.grid_columnconfigure(1, weight=1)
+        outer = QWidget()
+        outer_layout = QHBoxLayout(outer)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        parent.layout().addWidget(outer)
 
         fields = ["x", "y", "theta", "speed", "rudder"]
         self._val_labels = {"client": {}, "server": {}}
 
-        for col, source in enumerate(["client", "server"]):
-            card = CTkFrame(outer, fg_color=self.style.color("widget"))
-            card.grid(row=0, column=col, padx=4, sticky="nsew")
+        for source in ["client", "server"]:
+            card = QWidget()
+            card.setStyleSheet(f"background-color: {self.style.color('widget')};")
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+            outer_layout.addWidget(card, 1)
 
-            CTkLabel(card, text=f"{source.capitalize()} Values",
-                     font=self.style.get_font()).pack(
-                anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
-            )
+            title_label = QLabel(f"{source.capitalize()} Values")
+            title_label.setFont(self.style.get_font())
+            card_layout.addWidget(title_label)
 
             for field in fields:
-                row_frame = CTkFrame(card, fg_color="transparent")
-                row_frame.pack(fill="x", padx=self.style.igap, pady=1)
+                row_frame = QWidget()
+                row_layout = QHBoxLayout(row_frame)
+                row_layout.setContentsMargins(0, 0, 0, 0)
+                card_layout.addWidget(row_frame)
 
-                CTkLabel(row_frame, text=f"{field} =",
-                         font=self.style.get_font("small"), text_color="gray",
-                         width=60, anchor="w").pack(side="left")
+                field_label = QLabel(f"{field} =")
+                field_label.setFont(self.style.get_font("small"))
+                field_label.setStyleSheet("color: gray;")
+                row_layout.addWidget(field_label)
 
-                lbl = CTkLabel(row_frame, text="—",
-                               font=self.style.get_font("small"), anchor="w")
-                lbl.pack(side="left", fill="x", expand=True)
+                lbl = QLabel("—")
+                lbl.setFont(self.style.get_font("small"))
+                row_layout.addWidget(lbl, 1)
                 self._val_labels[source][field] = lbl
 
-            CTkFrame(card, fg_color="transparent", height=self.style.igap).pack()
-
-    def _build_packet_log(self, parent):
+    def _build_packet_log(self, parent: QWidget):
         """Header with CLIENT | SERVER segmented toggle, then scrollable rows."""
-        header_frame = CTkFrame(parent, fg_color=self.style.color("widget"))
-        header_frame.pack(fill="x", padx=self.style.igap, pady=(self.style.igap, 0))
+        header_frame = self._section(parent)
 
-        title_row = CTkFrame(header_frame, fg_color="transparent")
-        title_row.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+        title_row = QWidget()
+        title_row_layout = QHBoxLayout(title_row)
+        title_row_layout.setContentsMargins(0, 0, 0, 0)
+        header_frame.layout().addWidget(title_row)
 
-        CTkLabel(title_row, text="PACKET LOG  (last 10)",
-                 font=self.style.get_font()).pack(side="left")
+        title_label = QLabel("PACKET LOG  (last 10)")
+        title_label.setFont(self.style.get_font())
+        title_row_layout.addWidget(title_label)
+        title_row_layout.addStretch()
 
-        self._log_toggle = CTkSegmentedButton(
-            title_row,
-            values=["CLIENT", "SERVER"],
-            command=self._on_log_source_change,
-            font=self.style.get_font("small"),
-        )
-        self._log_toggle.set("CLIENT")
-        self._log_toggle.pack(side="right")
+        toggle_group = QButtonGroup(title_row)
+        toggle_group.setExclusive(True)
+        for value in ["CLIENT", "SERVER"]:
+            btn = QPushButton(value)
+            btn.setFont(self.style.get_font("small"))
+            btn.setCheckable(True)
+            title_row_layout.addWidget(btn)
+            toggle_group.addButton(btn)
+        toggle_group.buttons()[0].setChecked(True)
+        toggle_group.buttonClicked.connect(lambda btn: self._on_log_source_change(btn.text()))
 
         cols = ["Time", "X (m)", "Y (m)", "Theta", "Speed", "Rudder"]
-        col_frame = CTkFrame(parent, fg_color=self.style.color("panel"))
-        col_frame.pack(fill="x", padx=self.style.igap)
+        col_frame = QWidget()
+        col_frame.setStyleSheet(f"background-color: {self.style.color('panel')};")
+        col_layout = QGridLayout(col_frame)
+        parent.layout().addWidget(col_frame)
         for i, col in enumerate(cols):
-            CTkLabel(col_frame, text=col, font=self.style.get_font("small"),
-                     text_color="gray").grid(row=0, column=i, padx=6, pady=4, sticky="w")
-            col_frame.grid_columnconfigure(i, weight=1)
+            col_label = QLabel(col)
+            col_label.setFont(self.style.get_font("small"))
+            col_label.setStyleSheet("color: gray;")
+            col_layout.addWidget(col_label, 0, i)
+            col_layout.setColumnStretch(i, 1)
 
         self._log_frame = Scrollable(parent, self.context, 240, "x", False)
         for i in range(len(cols)):
-            self._log_frame.grid_columnconfigure(i, weight=1)
+            self._log_frame.columnconfigure(i, weight=1)
 
         self._log_rows = []
 
-    def _build_flags_block(self, parent, title, defs, label_attr):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=(0, self.style.igap))
-
-        CTkLabel(section, text=title,font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
-        )
+    def _build_flags_block(self, parent: QWidget, title: str, defs, label_attr: str):
+        section = self._section(parent, title)
 
         labels = {}
         for key, label_text in defs:
-            row = CTkFrame(section, fg_color="transparent")
-            row.pack(fill="x", padx=self.style.igap, pady=2)
+            row = QWidget()
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            section.layout().addWidget(row)
 
-            dot = CTkLabel(row, text="●", font=self.style.get_font("small"),
-                        text_color="gray", width=20)
-            dot.pack(side="left")
+            dot = QLabel("●")
+            dot.setFont(self.style.get_font("small"))
+            dot.setStyleSheet("color: gray;")
+            row_layout.addWidget(dot)
 
-            CTkLabel(row, text=label_text,
-                    font=self.style.get_font("small"), anchor="w").pack(
-                side="left", fill="x", expand=True
-            )
+            text_label = QLabel(label_text)
+            text_label.setFont(self.style.get_font("small"))
+            row_layout.addWidget(text_label, 1)
             labels[key] = dot
 
         setattr(self, label_attr, labels)
-        CTkFrame(section, fg_color="transparent", height=self.style.igap).pack()
 
-    def _build_slider_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
-
-        CTkLabel(
-            section,
-            text="SUBMARINE SETTINGS",
-            font=self.style.get_font()
-        ).pack(anchor="w", padx=self.style.igap, pady=(self.style.igap, 8))
+    def _build_slider_block(self, parent: QWidget):
+        section = self._section(parent, "SUBMARINE SETTINGS")
 
         slider_defs = [
             ("Sensor Noise Variance", 0.0, 20, 8.3, "sensor_noise_variance", 2),
@@ -421,58 +453,49 @@ class DefenderV0(Page):
 
         self._sliders = {}
         self._slider_value_labels = {}
+        self._slider_ranges = {}
 
         for title, min_val, max_val, default, attr_name, decimals in slider_defs:
-            header = CTkFrame(section, fg_color="transparent")
-            header.pack(fill="x", padx=self.style.igap)
+            header = QWidget()
+            header_layout = QHBoxLayout(header)
+            header_layout.setContentsMargins(0, 0, 0, 0)
+            section.layout().addWidget(header)
 
-            CTkLabel(
-                header,
-                text=title,
-                font=self.style.get_font("small")
-            ).pack(side="left")
+            title_label = QLabel(title)
+            title_label.setFont(self.style.get_font("small"))
+            header_layout.addWidget(title_label)
+            header_layout.addStretch()
 
-            value_label = CTkLabel(
-                header,
-                text=f"{default:.{decimals}f}",
-                font=self.style.get_font("small"),
-                text_color="gray"
-            )
-            value_label.pack(side="right")
+            value_label = QLabel(f"{default:.{decimals}f}")
+            value_label.setFont(self.style.get_font("small"))
+            value_label.setStyleSheet("color: gray;")
+            header_layout.addWidget(value_label)
 
-            def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
-                value = float(value)
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setRange(0, SLIDER_RESOLUTION)
+            slider.setValue(self._to_slider_pos(default, min_val, max_val))
+
+            def slider_callback(pos, lbl=value_label, attr=attr_name, d=decimals, lo=min_val, hi=max_val):
+                value = self._from_slider_pos(pos, lo, hi)
 
                 setattr(self, attr, value)
-                lbl.configure(text=f"{value:.{d}f}")
+                lbl.setText(f"{value:.{d}f}")
 
                 # Only POST when the USER moved the slider.
                 if not self._syncing_sliders:
                     self._post_slider_settings()
-                
-            slider = CTkSlider(
-                section,
-                from_=min_val,
-                to=max_val,
-                command=slider_callback
-            )
-            slider.set(default)
-            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+
+            slider.valueChanged.connect(slider_callback)
+            section.layout().addWidget(slider)
 
             self._sliders[title] = slider
             self._slider_value_labels[title] = value_label
+            self._slider_ranges[title] = (min_val, max_val)
 
-        reset_button = CTkButton(
-            section,
-            text="Reset to Defaults",
-            font=self.style.get_font(),
-            command=self._reset_slider_defaults
-        )
-        reset_button.pack(
-            fill="x",
-            padx=self.style.igap,
-            pady=self.style.igap
-        )
+        reset_button = QPushButton("Reset to Defaults")
+        reset_button.setFont(self.style.get_font())
+        self._wire_button(reset_button, self._reset_slider_defaults)
+        section.layout().addWidget(reset_button)
 
     def _post_slider_settings(self):
         payload = {
@@ -555,7 +578,8 @@ class DefenderV0(Page):
                 value = float(value)
 
                 # Move the UI slider to the MCU's current value.
-                slider.set(value)
+                lo, hi = self._slider_ranges[title]
+                slider.setValue(self._to_slider_pos(value, lo, hi))
 
                 # Keep the Python-side variable synchronized too.
                 attr_map = {
@@ -576,9 +600,7 @@ class DefenderV0(Page):
                         "Speed Error Threshold"
                     ) else 2
 
-                    label.configure(
-                        text=f"{value:.{decimals}f}"
-                    )
+                    label.setText(f"{value:.{decimals}f}")
 
         finally:
             self._syncing_sliders = False
@@ -599,7 +621,7 @@ class DefenderV0(Page):
             ),
         }
 
-        # Prevent each slider.set() from generating its own POST
+        # Prevent each slider's setValue() from generating its own POST
         self._syncing_sliders = True
 
         try:
@@ -609,12 +631,11 @@ class DefenderV0(Page):
                 setattr(self, attr, value)
 
                 # Move slider
-                self._sliders[title].set(value)
+                lo, hi = self._slider_ranges[title]
+                self._sliders[title].setValue(self._to_slider_pos(value, lo, hi))
 
                 # Update displayed number
-                self._slider_value_labels[title].configure(
-                    text=f"{value:.{decimals}f}"
-                )
+                self._slider_value_labels[title].setText(f"{value:.{decimals}f}")
 
         finally:
             self._syncing_sliders = False
@@ -628,11 +649,11 @@ class DefenderV0(Page):
     def _get_url(self) -> str:
         # Falls back to the poller's own last-known URL (which defaults to
         # 192.168.4.1 itself) rather than a second hardcoded default here.
-        return self._url_entry.get().strip().rstrip("/") or self._ap_poller.url
+        return self._url_entry.text().strip().rstrip("/") or self._ap_poller.url
 
     def _toggle_encryption(self):
         new_state = not self.context.buffer.defender_status.get("encryption_status", False)
-        enc_key   = self._enc_key_entry.get().strip()
+        enc_key   = self._enc_key_entry.text().strip()
 
         def _request():
             try:
@@ -677,11 +698,13 @@ class DefenderV0(Page):
     def _refresh_AP_communication_ui(self):
         try:
             if self.context.buffer.defender_status.get("ap_communication", False):
-                self._filter_label.configure(text="Status: ON", text_color="green")
-                self._filter_button.configure(text="Disable Communication Through AP")
+                self._filter_label.setText("Status: ON")
+                self._filter_label.setStyleSheet("color: green;")
+                self._filter_button.setText("Disable Communication Through AP")
             else:
-                self._filter_label.configure(text="Status: OFF", text_color="gray")
-                self._filter_button.configure(text="Enable Communication Through AP")
+                self._filter_label.setText("Status: OFF")
+                self._filter_label.setStyleSheet("color: gray;")
+                self._filter_button.setText("Enable Communication Through AP")
         except Exception as e:
             print("refresh_AP_communication_ui:", e)
 
@@ -707,15 +730,11 @@ class DefenderV0(Page):
         self.context.buffer.defender_status.put("kalman_filter_enabled", new_state)
 
         if new_state:
-            self._submarine_kalman_label.configure(
-                text="Kalman Filter Status: ON",
-                text_color="green",
-            )
+            self._submarine_kalman_label.setText("Kalman Filter Status: ON")
+            self._submarine_kalman_label.setStyleSheet("color: green;")
         else:
-            self._submarine_kalman_label.configure(
-                text="Kalman Filter Status: OFF",
-                text_color="gray",
-            )
+            self._submarine_kalman_label.setText("Kalman Filter Status: OFF")
+            self._submarine_kalman_label.setStyleSheet("color: gray;")
 
         self._post_slider_settings()
 
@@ -734,9 +753,11 @@ class DefenderV0(Page):
         status = self.context.buffer.defender_status
 
         if self._ap_poller.connected:
-            self._conn_status.configure(text="⬤  Connected", text_color="green")
+            self._conn_status.setText("⬤  Connected")
+            self._conn_status.setStyleSheet("color: green;")
         else:
-            self._conn_status.configure(text="⬤  Disconnected", text_color="red")
+            self._conn_status.setText("⬤  Disconnected")
+            self._conn_status.setStyleSheet("color: red;")
 
         self._refresh_encryption_ui()
         self._refresh_AP_communication_ui()
@@ -768,7 +789,7 @@ class DefenderV0(Page):
         for field in ["x", "y", "theta", "speed", "rudder"]:
             raw = modbus.get_single(field, attribute)
             text = "—" if raw is None else f"{float(raw):.3f}"
-            self._val_labels[source][field].configure(text=text)
+            self._val_labels[source][field].setText(text)
 
     def _update_log(self):
         '''
@@ -796,8 +817,12 @@ class DefenderV0(Page):
     def _render_log(self, rows: list):
         cols = ["received_at", "x", "y", "theta", "speed", "rudder"]
 
-        for widget in self._log_frame.winfo_children():
-            widget.destroy()
+        log_layout = self._log_frame.grid_layout
+        while log_layout.count():
+            item = log_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
         self._log_rows = []
 
         for r_idx, packet in enumerate(rows):
@@ -815,10 +840,10 @@ class DefenderV0(Page):
                     except (ValueError, TypeError):
                         text = str(raw)
 
-                lbl = CTkLabel(self._log_frame, text=text,
-                               font=self.style.get_font("small"),
-                               fg_color=bg, anchor="w")
-                lbl.grid(row=r_idx, column=c_idx, padx=4, pady=1, sticky="ew")
+                lbl = QLabel(text)
+                lbl.setFont(self.style.get_font("small"))
+                lbl.setStyleSheet(f"background-color: {bg};")
+                log_layout.addWidget(lbl, r_idx, c_idx)
                 row_labels.append(lbl)
             self._log_rows.append(row_labels)
 
@@ -826,21 +851,13 @@ class DefenderV0(Page):
     def _refresh_encryption_ui(self):
         try:
             if self.context.buffer.defender_status.get("encryption_status", False):
-                self._enc_label.configure(
-                    text="Status: ON",
-                    text_color="green"
-                )
-                self._enc_button.configure(
-                    text="Disable Encryption"
-                )
+                self._enc_label.setText("Status: ON")
+                self._enc_label.setStyleSheet("color: green;")
+                self._enc_button.setText("Disable Encryption")
             else:
-                self._enc_label.configure(
-                    text="Status: OFF",
-                    text_color="gray"
-                )
-                self._enc_button.configure(
-                    text="Enable Encryption"
-                )
+                self._enc_label.setText("Status: OFF")
+                self._enc_label.setStyleSheet("color: gray;")
+                self._enc_button.setText("Enable Encryption")
         except Exception as e:
             print("refresh_encryption_ui:", e)
 
@@ -857,4 +874,4 @@ class DefenderV0(Page):
             (getattr(self, "_hvac_flag_labels", {}), hvac_flags),
         ):
             for key, dot in labels.items():
-                dot.configure(text_color="red" if flags.get(key, False) else "gray")
+                dot.setStyleSheet(f"color: {'red' if flags.get(key, False) else 'gray'};")

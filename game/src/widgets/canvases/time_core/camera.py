@@ -1,5 +1,4 @@
 from ....app_core import Context
-from . import transforms as t
 
 # Pixels used to draw one second of time when time_scale is at its default (1.0)
 PIXELS_PER_SECOND = 20.0

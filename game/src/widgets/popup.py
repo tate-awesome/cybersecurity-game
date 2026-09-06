@@ -1,39 +1,30 @@
-from customtkinter import CTkBaseClass, CTkToplevel, CTkFrame, CTkLabel, CTkButton
+from customtkinter import CTkBaseClass, CTkToplevel, CTkFrame, CTkLabel, CTkButton  # quit_dialog only - still unmigrated, dead code (unused anywhere)
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
 
-def message(master: CTkBaseClass, context: Context, message: str):
+def message(master: QWidget, context: Context, message: str):
         style = context.style
-        window = CTkToplevel(master)
-        window.title("Help")
-        window.config(padx=style.igap, pady=style.igap)
 
-        # Center to app
-        width = 500
-        height = 300
-        root_x = master.winfo_rootx()
-        root_y = master.winfo_rooty()
-        win_x = root_x + master.winfo_width()/2 - width/2
-        win_y = root_y + master.winfo_height()/2 - height/2
+        window = QDialog(master)
+        window.setWindowTitle("Help")
+        window.resize(500, 300)
+        window.setModal(True)  # block interactions with main window
 
-        window.geometry(f"{width}x{height}+{int(win_x)}+{int(win_y)}")
+        layout = QVBoxLayout(window)
 
-        # Geometry
+        label = QLabel(message)
+        label.setFont(style.get_font())
+        label.setWordWrap(True)
+        layout.addWidget(label)
 
-        # Add widgets to the window
-        frame = CTkFrame(window)
-        frame.pack(fill="both", side="top", expand=True, padx=style.gap, pady=style.gap)
+        layout.addStretch()
 
-        label = CTkLabel(frame, text=message, font=style.get_font(), wraplength=width - 4*style.igap) 
-        label.pack(pady=style.gap, padx=style.gap)
+        close_button = QPushButton("Dismiss")
+        close_button.setFont(style.get_font())
+        close_button.clicked.connect(window.accept)
+        layout.addWidget(close_button)
 
-        close_button = CTkButton(frame, text="Dismiss", command=window.destroy, font=style.get_font())
-        close_button.pack(pady=style.gap, side="bottom")
-
-        window.transient(master)
-        window.update_idletasks()
-        window.grab_set()      # block interactions with main window
-        window.focus_force()   # force focus to the window
+        window.show()
         return window
 
 def delete_user_data_dialog(master: QWidget, context: Context, delete_func):

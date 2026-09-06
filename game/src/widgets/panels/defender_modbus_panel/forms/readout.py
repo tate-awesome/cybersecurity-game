@@ -1,4 +1,4 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from .....app_core import Context
 from ...base_form import BaseForm
 
@@ -17,11 +17,11 @@ class ReadoutForm(BaseForm):
     submarine_mode), not a static settings toggle.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="Readout")
 
         for i in range(len(ATTRIBUTES) + 1):
-            self.columnconfigure(i, weight=1)
+            self.grid_layout.setColumnStretch(i, 1)
 
         self.add_header("Live Modbus Readout")
 
@@ -33,7 +33,7 @@ class ReadoutForm(BaseForm):
             row = {"name": labels[0]}
             for i, attribute in enumerate(ATTRIBUTES):
                 row[attribute] = labels[i + 1]
-            row["name"].configure(text=self.context.labels.get("modbus_variables", key))
+            row["name"].setText(self.context.labels.get("modbus_variables", key))
             self.rows[key] = row
 
         self.context.animation_manager.add_callback(f"DefenderReadoutForm_{id(self)}", self.refresh)
@@ -53,13 +53,13 @@ class ReadoutForm(BaseForm):
         for key, row in self.rows.items():
             visible = key in active_variables
             for widget in row.values():
-                if visible and not widget.winfo_ismapped():
-                    widget.grid()
-                elif not visible and widget.winfo_ismapped():
-                    widget.grid_remove()
+                if visible and widget.isHidden():
+                    widget.show()
+                elif not visible and not widget.isHidden():
+                    widget.hide()
 
             if not visible:
                 continue
 
             for attribute in ATTRIBUTES:
-                row[attribute].configure(text=self.format_number(modbus.get_single(key, attribute)))
+                row[attribute].setText(self.format_number(modbus.get_single(key, attribute)))

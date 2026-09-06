@@ -1,4 +1,4 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ..app_core import Context
 
 from .frame_widgets.menu_bar import MenuBar
@@ -37,7 +37,7 @@ PANELS = {
     DefenderStripchartPanel.KEY: DefenderStripchartPanel,
 }
 
-def panel(key: str, master: CTkFrame, context: Context):
+def panel(key: str, master: QWidget, context: Context):
     '''
     Generic panel builder. Make panels by key instead of class name.
     options, if given, is forwarded as keyword arguments to the panel's

@@ -11,7 +11,7 @@ from ...pages.page import Page
 
 class AttackerV0(Page):
     '''
-    Page constructor for attacker/attackerv0. Inherits CTkFrame
+    Page constructor for attacker/attackerv0.
     '''
 
     def __init__(self, context: Context):
