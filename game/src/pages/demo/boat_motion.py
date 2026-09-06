@@ -6,7 +6,6 @@ from ...pages.page import Page
 from ...widgets import MenuBar
 
 from threading import Lock
-from customtkinter import CTkCanvas
 
 
 class BoatMotion(Page):
@@ -34,7 +33,7 @@ class BoatMotion(Page):
         self.color = random_visible_color()
         map = Map(self, self.context, self.frame_callback, 100, 20)
 
-    def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
+    def frame_callback(self, canvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         import time
         from ...drawing import transformations as t
 

@@ -2,32 +2,31 @@
 Module for coordinate transforms used in drawing
 '''
 
-from customtkinter import CTkCanvas
 from ..geometry import rotate, scale, affine, flatten, translate, get_bearing, get_arc_points
 
 def canvas_fit(points: list[tuple[float, float]], in_bl: tuple[float, float],
                                                     in_tr: tuple[float, float],
-                                                    canvas: CTkCanvas):
+                                                    canvas):
     '''
     Converts coordinates from the incoming plane to the canvas plane.
     Returns: list(tuple)
     '''
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
+    w = canvas.width()
+    h = canvas.height()
     canvas_bl = (0, h)
     canvas_tr = (w, 0)
     return affine(points, in_bl, in_tr, canvas_bl, canvas_tr)
 
 def padded_fit(points: list[tuple[float, float]], in_bl: tuple[float, float],
                                                     in_tr: tuple[float, float],
-                                                    canvas: CTkCanvas,
+                                                    canvas,
                                                     padding: float):
     '''
     Converts coordinates from the incoming plane to a plane padded inside the canvas.
     Returns: list(tuple)
     '''
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
+    w = canvas.width()
+    h = canvas.height()
     p = padding
     canvas_bl = (p, h-p)
     canvas_tr = (w-p, p)
@@ -35,14 +34,14 @@ def padded_fit(points: list[tuple[float, float]], in_bl: tuple[float, float],
 
 def padded_fit_uniform(points: list[tuple[float, float]], in_bl: tuple[float, float],
                                                     in_tr: tuple[float, float],
-                                                    canvas: CTkCanvas,
+                                                    canvas,
                                                     padding: float):
     '''
     Converts coordinates from the incoming plane to a plane padded inside the canvas.
     Returns: list(tuple)
     '''
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
+    w = canvas.width()
+    h = canvas.height()
 
      # 1. Available canvas area (the padded "box" you want to fit inside)
     p = padding

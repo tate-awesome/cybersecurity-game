@@ -1,6 +1,4 @@
 from ...app_core import Context
-from customtkinter import CTkCanvas
-from threading import Lock
 from ...widgets import TriangleCanvas
 from ...pages.page import Page
 from ...widgets import MenuBar

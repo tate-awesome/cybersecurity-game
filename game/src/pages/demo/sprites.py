@@ -1,6 +1,5 @@
 from ...widgets.map import Map
 from ...app_core import Context
-from customtkinter import CTkCanvas
 from threading import Lock
 from ...drawing.viewport import ViewPort
 from ...pages.page import Page
@@ -15,8 +14,8 @@ class Sprites(Page):
         menu_bar.back_button()
         world_map = Map(self, context, self.frame_callback, 100)
 
-    
-    def frame_callback(self, canvas: CTkCanvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
+
+    def frame_callback(self, canvas, draw_lock: Lock, scale: float, offset: tuple[float, float]):
         draw = ViewPort(canvas, scale, offset)
         with draw_lock:
             draw.ocean()

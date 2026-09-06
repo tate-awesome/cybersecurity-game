@@ -1,24 +1,61 @@
 '''
-Handles drawing to the map. 
+Handles drawing to the map.
 '''
 
-from customtkinter import CTkCanvas
-from customtkinter import CTkBaseClass
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPainter
+from PySide6.QtWidgets import QWidget
 from threading import Lock
 from typing import Callable
 from ..app_core import Context
 from ..geometry import apply_scale_about
-from .canvases.pooled_canvas import PooledCanvasMixin
 import time
 
 
-class _PooledCanvas(PooledCanvasMixin, CTkCanvas):
-    pass
+class _MapCanvas(QWidget):
+    '''
+    Draws fresh every frame via paintEvent - see core/draw.py's docstring
+    for why the old CTkCanvas/PooledCanvasMixin item-pooling optimization
+    isn't needed under Qt.
+    '''
+
+    def __init__(self, owner: "Map"):
+        super().__init__()
+        self._owner = owner
+        self.painter: QPainter | None = None
+        self.setMouseTracking(True)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        self.painter = painter
+        try:
+            self._owner.run_frame()
+        finally:
+            painter.end()
+            self.painter = None
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = event.position()
+            self._owner.start_pan(pos.x(), pos.y())
+        elif event.button() in (Qt.MouseButton.MiddleButton, Qt.MouseButton.RightButton):
+            self._owner.reset_view()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() & Qt.MouseButton.LeftButton:
+            pos = event.position()
+            self._owner.do_pan(pos.x(), pos.y())
+
+    def wheelEvent(self, event):
+        pos = event.position()
+        self._owner.zoom(pos.x(), pos.y(), event.angleDelta().y())
 
 
 class Map:
 
-    def __init__(self, parent: CTkBaseClass, context: Context, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
+    def __init__(self, parent: QWidget, context: Context, draw_callback: Callable, framerate_ms: float, padding: float=20, margin: float=40):
         # zoom/pan persistent values
         self.scale = 1.0
         self.offset = [0.0, 0.0]
@@ -36,25 +73,9 @@ class Map:
         self.framerate_ms = framerate_ms
         self.draw_lock = Lock()
 
-        # Create canvas - a pooled canvas so draw_callback can reuse items
-        # across frames (see PooledCanvasMixin) instead of deleting and
-        # recreating everything on every redraw.
-        self.canvas = _PooledCanvas(parent)
-        self.canvas._pool_setup()
-        self.canvas.pack(side="top", fill="both", expand=True, pady=context.style.gap, padx=context.style.gap)
-
-        # Bind events
-        self.parent.bind("<Configure>", self.resize)
-        self.canvas.bind("<ButtonPress-1>", self.start_pan)
-        self.canvas.bind("<B1-Motion>", self.do_pan)
-            # Windows / Mac
-        self.canvas.bind("<MouseWheel>", self.zoom)
-            # Linux
-        self.canvas.bind("<Button-4>", self.zoom)
-        self.canvas.bind("<Button-5>", self.zoom)
-        # canvas.scale("all", x_zoom, y_zoom, factor, factor)  # <--- only useful for already drawn canvases
-        self.canvas.bind("<Button-2>", self.reset_view)      # Windows/Linux
-        self.canvas.bind("<Button-3>", self.reset_view)      # Mac sometimes uses Button-3
+        # Create canvas
+        self.canvas = _MapCanvas(self)
+        parent.layout().addWidget(self.canvas)
 
         # Start animation loop - registered with the shared animation_manager
         # (instead of a raw self-rescheduling canvas.after() loop) so a
@@ -69,42 +90,32 @@ class Map:
             if now - self._last_draw_time < self.framerate_ms / 1000.0:
                 return
             self._last_draw_time = now
-            self.run_frame()
+            self.canvas.update()
         self.frame_callback = frame_callback
         self.context.animation_manager.add_callback(f"Map_{id(self)}", frame_callback)
 
     def run_frame(self):
         '''
-        Runs draw_callback once, reusing the canvas's existing items across
-        the call (see PooledCanvasMixin) instead of the old delete("all")-
-        then-recreate-everything pattern. Every path that can trigger a
-        redraw - the animation loop, resize, pan, zoom, reset - goes through
-        this so the item pool is always reconciled the same way.
+        Runs draw_callback once. Called from the canvas's paintEvent, which
+        gives it a live QPainter (canvas.painter) to draw through.
         '''
-        self.canvas.begin_frame()
-        try:
-            self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
-        finally:
-            self.canvas.end_frame()
+        self.draw_callback(self.canvas, self.draw_lock, self.scale, self.offset)
 
-    def resize(self, event):
-        self.run_frame()
+    def start_pan(self, x: float, y: float):
+        self.x_pan_start = x
+        self.y_pan_start = y
 
-    def start_pan(self, event):
-        self.x_pan_start = event.x
-        self.y_pan_start = event.y
-
-    def do_pan(self, event):
-        dx = event.x - self.x_pan_start
-        dy = event.y - self.y_pan_start
+    def do_pan(self, x: float, y: float):
+        dx = x - self.x_pan_start
+        dy = y - self.y_pan_start
 
         self.offset[0] += dx
         self.offset[1] += dy
 
-        self.x_pan_start = event.x
-        self.y_pan_start = event.y
+        self.x_pan_start = x
+        self.y_pan_start = y
 
-        self.run_frame()
+        self.canvas.update()
 
     def apply_scale_about(self, C: tuple[float, float], k: float):
         # Changes scale and offset based on zoom event and direction
@@ -113,31 +124,15 @@ class Map:
         self.offset = list(new_offset)
 
     # Zoom
-    def zoom(self, event):
-        # Determine zoom direction
-        if event.delta > 0:
-            factor = 1.1
-        else:
-            factor = 0.9
-        if hasattr(event, "num"):
-            if event.num == 4:
-                factor = 1.1
-            elif event.num == 5:
-                factor = 0.9
-
-        # Clamp scale?
-        # if not (0.2 <= new_scale <= 5.0):
-        #     return
-
-        x_focus = self.canvas.canvasx(event.x)
-        y_focus = self.canvas.canvasy(event.y)
-        self.apply_scale_about((x_focus,y_focus), factor)
-        self.run_frame()
+    def zoom(self, x: float, y: float, delta: float):
+        factor = 1.1 if delta > 0 else 0.9
+        self.apply_scale_about((x, y), factor)
+        self.canvas.update()
 
     def reset_scale(self):
         self.scale = 1.0
         self.offset = [0, 0]
 
-    def reset_view(self, event=None):
+    def reset_view(self):
         self.reset_scale()
-        self.run_frame()
+        self.canvas.update()
