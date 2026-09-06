@@ -1,6 +1,7 @@
 '''
 Module
 '''
+import threading
 import scapy.all as scapy
 from scapy.all import get_if_addr, get_working_if, get_if_hwaddr
 import netifaces
@@ -10,6 +11,33 @@ import nmap, socket
 class NMapper(Process):
     def __init__(self, buffer, context):
         super().__init__(buffer, context)
+        self._running = False
+
+    def is_running(self) -> bool:
+        return self._running
+
+    def start(self):
+        '''
+        Runs the scan on a background thread so it can complete (or fail) on
+        its own without blocking the UI - is_running() flips back to False
+        when the thread finishes either way, which is what lets the process
+        button's poll notice completion and reset itself.
+        '''
+        if self._running:
+            self.buffer.put("nmap", "NMap scan is already running")
+            return
+
+        self._running = True
+
+        def job():
+            try:
+                self.library_nmap()
+            except Exception as e:
+                self.buffer.put("nmap", f"NMap scan failed: {e}")
+            finally:
+                self._running = False
+
+        threading.Thread(target=job, daemon=True).start()
 
     def get_local_ip(self) -> str | None:
         # Connect to an external IP briefly to discover the active local interface IP
@@ -58,9 +86,6 @@ class NMapper(Process):
                 hostname = nm[host].hostname()
                 hostname_str = f"({hostname})" if hostname else "(No Hostname)"
                 self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
-
-    def do_nmap(self):
-        self.library_nmap()
 
     def get_active_iface(self):
         active_iface = ""

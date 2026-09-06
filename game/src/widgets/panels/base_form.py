@@ -196,6 +196,11 @@ class BaseForm(ABC, CTkFrame):
         if self.key is not None:
             self.context.states.set("game_progress", self.key, value=1)
         self.process_button.configure(text=self.stop_process_text, command=None)
+        # Unset the confirmed state so the next poll always reconciles the
+        # button, even if start_process() fails and status_func() reports
+        # the same value it did before this click (e.g. still False) -
+        # otherwise refresh_process_button sees "no change" and never fires.
+        self.process_confirmed_state = None
         self.context.root.update_idletasks()
         self.start_process()
 
@@ -207,6 +212,7 @@ class BaseForm(ABC, CTkFrame):
         if not self.has_process_button:
             return
         self.process_button.configure(text=self.start_process_text, command=None)
+        self.process_confirmed_state = None
         self.context.root.update_idletasks()
         self.stop_process()
 

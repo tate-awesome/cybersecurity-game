@@ -51,10 +51,10 @@
         "wifi_start": "Connect to WiFi",
         "wifi_stop": "Disconnect",
 
-        "nmap_on": "",
+        "nmap_on": "Scanning...",
         "nmap_off": "",
-        "nmap_start": "",
-        "nmap_stop": "",
+        "nmap_start": "Map Network",
+        "nmap_stop": "Scanning...",
 
         "arp_on": "Spoofing is on",
         "arp_off": "Spoofing is off",

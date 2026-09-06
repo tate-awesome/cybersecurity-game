@@ -47,10 +47,10 @@
         "wifi_start": "Conectarse al WiFi",
         "wifi_stop": "Desconectar",
 
-        "nmap_on": "",
+        "nmap_on": "Escaneando...",
         "nmap_off": "",
-        "nmap_start": "",
-        "nmap_stop": "",
+        "nmap_start": "Mapear Red",
+        "nmap_stop": "Escaneando...",
 
         "arp_on": "La suplantación está activa",
         "arp_off": "La suplantación está desactivada",
