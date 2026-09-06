@@ -3,7 +3,7 @@ from netfilterqueue import NetfilterQueue as NFQ
 
 from scapy.all import IP, TCP, Packet, Ether, IPv6
 import threading, os, select, subprocess
-from .nmap1 import NMapper
+from .nmap import NMapper
 
 class NetFilterQueue(NetFilterQueueBaseClass):
     '''

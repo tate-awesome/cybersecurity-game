@@ -2,7 +2,7 @@ import platform
 
 from .arp_spoofing import ArpSpoofer
 from .dos import Denier
-from .nmap1 import NMapper
+from .nmap import NMapper
 from .sniffing import Sniffer
 from .wifi import Wifi
 from .ap_poller import APPoller
