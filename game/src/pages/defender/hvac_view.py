@@ -11,11 +11,12 @@ on, and DefenderV0 never has to call into it at all once constructed.
 import threading
 
 import requests
-from customtkinter import CTkButton, CTkEntry, CTkFrame, CTkLabel, CTkSlider
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget
 
 import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+matplotlib.use("QtAgg")
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from ...widgets import popup
 
@@ -28,6 +29,10 @@ _GRID        = "#0f3460"
 _TEXT        = "#e0e0e0"
 _ROOM_LINE   = "#4caf50"   # green
 _TARGET_LINE = "#e94560"   # accent pink/red, matches the AP's accent color
+
+# QSlider only steps through integers - each slider's own float min/max is
+# mapped onto this many integer positions (see _to_slider_pos/_from_slider_pos).
+SLIDER_RESOLUTION = 1000
 
 
 class HVACView:
@@ -60,6 +65,15 @@ class HVACView:
         self._build_left(left_parent)
         self._build_graph(right_parent)
 
+        # Starts hidden - submarine mode (the assumed initial state, matching
+        # _submarine_mode above) shows DefenderV0's own submarine widgets
+        # instead. Unlike Tk, where a constructed-but-never-packed widget is
+        # already invisible, Qt shows a widget as soon as it's added to a
+        # layout - so this needs to be explicit, or HVAC content would flash
+        # visible for one frame before _refresh_visibility ever runs.
+        self._left_root.hide()
+        self._graph_root.hide()
+
         self._push_hvac_controls()
         self._context.animation_manager.add_callback(f"HVACView_{id(self)}", self.refresh)
         self.refresh()
@@ -71,72 +85,95 @@ class HVACView:
     #  Construction
     # ════════════════════════════════════════════════════════════════════
 
-    def _build_left(self, parent):
-        self._left_root = CTkFrame(parent, fg_color="transparent")
+    def _section(self, parent: QWidget, title: str | None = None) -> QWidget:
+        '''
+        A titled card: a widget-colored panel with an optional bold title
+        label at the top, added into parent's layout. Mirrors the repeated
+        CTkFrame(fg_color="widget")+CTkLabel(title) pattern this file used
+        throughout.
+        '''
+        section = QWidget()
+        section.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        layout.setSpacing(4)
+        parent.layout().addWidget(section)
+
+        if title is not None:
+            label = QLabel(title)
+            label.setFont(self.style.get_font())
+            layout.addWidget(label)
+
+        return section
+
+    def _wire_button(self, button: QPushButton, function):
+        # clicked emits a "checked" bool that none of these callbacks expect.
+        button.clicked.connect(lambda checked=False, function=function: function())
+
+    def _build_left(self, parent: QWidget):
+        self._left_root = QWidget()
+        self._left_root.setLayout(QVBoxLayout())
+        self._left_root.layout().setContentsMargins(0, 0, 0, 0)
+        self._left_root.layout().setSpacing(self.style.igap)
+        parent.layout().addWidget(self._left_root)
 
         # ── Live readout card ──────────────────────────────────────────
-        readout_card = CTkFrame(self._left_root, fg_color=self.style.color("widget"))
-        readout_card.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
-
-        CTkLabel(readout_card, text="LIVE STATUS", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 4)
-        )
+        readout_card = self._section(self._left_root, "LIVE STATUS")
 
         self._current_label = self._readout_row(readout_card, "Current Temp")
         self._target_label  = self._readout_row(readout_card, "Target Temp")
         self._heater_label  = self._readout_row(readout_card, "Heater")
-
-        CTkFrame(readout_card, fg_color="transparent", height=self.style.igap).pack()
 
         self._build_encryption_block(self._left_root)
         self._build_AP_communication_block(self._left_root)
         self._build_kalman_block(self._left_root)
         self._build_slider_block(self._left_root)
 
-    def _build_encryption_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+    def _build_encryption_block(self, parent: QWidget):
+        section = self._section(parent, "ENCRYPTION")
 
-        CTkLabel(section, text="ENCRYPTION", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
-        self._enc_label = CTkLabel(section, text="Status: OFF",
-                                    font=self.style.get_font(), text_color="gray")
-        self._enc_label.pack(anchor="w", padx=self.style.igap)
+        self._enc_label = QLabel("Status: OFF")
+        self._enc_label.setFont(self.style.get_font())
+        self._enc_label.setStyleSheet("color: gray;")
+        section.layout().addWidget(self._enc_label)
 
         # Key entry
-        CTkLabel(section, text="Encryption Key", font=self.style.get_font("small"),
-                    text_color="gray").pack(anchor="w", padx=self.style.igap, pady=self.style.gaptop)
-        self._enc_key_entry = CTkEntry(section, font=self.style.get_font(),
-                                        placeholder_text="Enter key…")
-        self._enc_key_entry.pack(fill="x", padx=self.style.igap, pady=(2, 4))
+        key_label = QLabel("Encryption Key")
+        key_label.setFont(self.style.get_font("small"))
+        key_label.setStyleSheet("color: gray;")
+        section.layout().addWidget(key_label)
 
-        self._enc_button = CTkButton(section, text="Enable Encryption",
-                                        font=self.style.get_font())
+        self._enc_key_entry = QLineEdit()
+        self._enc_key_entry.setFont(self.style.get_font())
+        self._enc_key_entry.setPlaceholderText("Enter key…")
+        section.layout().addWidget(self._enc_key_entry)
+
+        self._enc_button = QPushButton("Enable Encryption")
+        self._enc_button.setFont(self.style.get_font())
+
         def enc_button():
             if not self._context.buffer.defender_status.get("encryption_status", False):
                 # Encryption is off - try to turn it on
-                if self._enc_key_entry.get().strip() == "":
+                if self._enc_key_entry.text().strip() == "":
                     # Empty key — show error
                     popup.message(parent, self._context, "Please enter an encryption key before enabling encryption.")
-                elif not str.isascii(self._enc_key_entry.get().strip()):
+                elif not str.isascii(self._enc_key_entry.text().strip()):
                     # Non-ASCII key — show error
                     popup.message(parent, self._context, "Encryption key must be ASCII.")
                 else:
                     # Key looks good — toggle encryption on behavior
-                    self._enc_key_entry.configure(state="disabled")
-                    self._enc_button.configure(text="Disable Encryption")
+                    self._enc_key_entry.setEnabled(False)
+                    self._enc_button.setText("Disable Encryption")
                     self._toggle_encryption()
             else:
                 # Encryption is on - turn it off
-                self._enc_key_entry.configure(state="normal")
-                self._enc_key_entry.delete(0, "end")
-                self._enc_button.configure(text="Enable Encryption")
+                self._enc_key_entry.setEnabled(True)
+                self._enc_key_entry.clear()
+                self._enc_button.setText("Enable Encryption")
                 self._toggle_encryption()
 
-        self._enc_button.configure(command=enc_button)
-
-        self._enc_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+        self._wire_button(self._enc_button, enc_button)
+        section.layout().addWidget(self._enc_button)
 
     def _toggle_encryption(self):
         # Shared with DefenderV0's own encryption block through
@@ -147,53 +184,46 @@ class HVACView:
         new_state = not status.get("encryption_status", False)
 
         if new_state:
-            self._enc_key_entry.configure(state="disabled")
-            self._enc_button.configure(text="Disable Encryption")
+            self._enc_key_entry.setEnabled(False)
+            self._enc_button.setText("Disable Encryption")
         else:
-            self._enc_key_entry.configure(state="normal")
-            self._enc_button.configure(text="Enable Encryption")
+            self._enc_key_entry.setEnabled(True)
+            self._enc_button.setText("Enable Encryption")
 
         status.put("encryption_status", new_state)
         self._push_hvac_controls()
 
-    def _build_AP_communication_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+    def _build_AP_communication_block(self, parent: QWidget):
+        section = self._section(parent, "COMMUNICATE VIA ACCESS POINT")
 
-        CTkLabel(section, text="COMMUNICATE VIA ACCESS POINT", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
-        self._filter_label = CTkLabel(section, text="Status: OFF",
-                                    font=self.style.get_font(), text_color="gray")
-        self._filter_label.pack(anchor="w", padx=self.style.igap)
+        self._filter_label = QLabel("Status: OFF")
+        self._filter_label.setFont(self.style.get_font())
+        self._filter_label.setStyleSheet("color: gray;")
+        section.layout().addWidget(self._filter_label)
 
-        self._filter_button = CTkButton(section, text="Enable Communication Through AP",
-                                        font=self.style.get_font(),
-                                        command=self._toggle_AP_communication)
-        self._filter_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+        self._filter_button = QPushButton("Enable Communication Through AP")
+        self._filter_button.setFont(self.style.get_font())
+        self._wire_button(self._filter_button, self._toggle_AP_communication)
+        section.layout().addWidget(self._filter_button)
 
-    def _build_kalman_block(self, parent):
+    def _build_kalman_block(self, parent: QWidget):
         '''
         HVAC's own Kalman Filter button+label - previously built by
         DefenderV0 and wired back here through an on_kalman_filter_change
         callback just to keep a label DefenderV0 owned in sync. Owning both
         outright removes that callback entirely.
         '''
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+        section = self._section(parent, "KALMAN FILTER")
 
-        CTkLabel(section, text="KALMAN FILTER", font=self.style.get_font()).pack(
-            anchor="w", padx=self.style.igap, pady=(self.style.igap, 0)
-        )
+        self._hvac_kalman_label = QLabel("Status: ON")
+        self._hvac_kalman_label.setFont(self.style.get_font())
+        self._hvac_kalman_label.setStyleSheet("color: green;")
+        section.layout().addWidget(self._hvac_kalman_label)
 
-        self._hvac_kalman_label = CTkLabel(section, text="Status: ON",
-                                           font=self.style.get_font(), text_color="green")
-        self._hvac_kalman_label.pack(anchor="w", padx=self.style.igap)
-
-        self._hvac_kalman_button = CTkButton(section, text="Toggle Kalman Filter",
-                                             font=self.style.get_font(),
-                                             command=self._toggle_hvac_kalman_filter)
-        self._hvac_kalman_button.pack(fill="x", padx=self.style.igap, pady=self.style.gapbot)
+        self._hvac_kalman_button = QPushButton("Toggle Kalman Filter")
+        self._hvac_kalman_button.setFont(self.style.get_font())
+        self._wire_button(self._hvac_kalman_button, self._toggle_hvac_kalman_filter)
+        section.layout().addWidget(self._hvac_kalman_button)
 
     def _toggle_AP_communication(self):
         # Shared with DefenderV0's own AP-tunnel block through
@@ -211,29 +241,35 @@ class HVACView:
         self._hvac_kalman_filter_enabled = not self._hvac_kalman_filter_enabled
 
         if self._hvac_kalman_filter_enabled:
-            self._hvac_kalman_label.configure(text="Kalman Filter Status: ON", text_color="green")
+            self._hvac_kalman_label.setText("Kalman Filter Status: ON")
+            self._hvac_kalman_label.setStyleSheet("color: green;")
         else:
-            self._hvac_kalman_label.configure(text="Kalman Filter Status: OFF", text_color="gray")
+            self._hvac_kalman_label.setText("Kalman Filter Status: OFF")
+            self._hvac_kalman_label.setStyleSheet("color: gray;")
 
         self._push_hvac_controls()
 
     def _refresh_encryption_ui(self):
         if self._context.buffer.defender_status.get("encryption_status", False):
-            self._enc_label.configure(text="Status: ON", text_color="green")
-            self._enc_button.configure(text="Disable Encryption")
-            self._enc_key_entry.configure(state="disabled")
+            self._enc_label.setText("Status: ON")
+            self._enc_label.setStyleSheet("color: green;")
+            self._enc_button.setText("Disable Encryption")
+            self._enc_key_entry.setEnabled(False)
         else:
-            self._enc_label.configure(text="Status: OFF", text_color="gray")
-            self._enc_button.configure(text="Enable Encryption")
-            self._enc_key_entry.configure(state="normal")
+            self._enc_label.setText("Status: OFF")
+            self._enc_label.setStyleSheet("color: gray;")
+            self._enc_button.setText("Enable Encryption")
+            self._enc_key_entry.setEnabled(True)
 
     def _refresh_AP_communication_ui(self):
         if self._context.buffer.defender_status.get("ap_communication", False):
-            self._filter_label.configure(text="Status: ON", text_color="green")
-            self._filter_button.configure(text="Disable Communication Through AP")
+            self._filter_label.setText("Status: ON")
+            self._filter_label.setStyleSheet("color: green;")
+            self._filter_button.setText("Disable Communication Through AP")
         else:
-            self._filter_label.configure(text="Status: OFF", text_color="gray")
-            self._filter_button.configure(text="Enable Communication Through AP")
+            self._filter_label.setText("Status: OFF")
+            self._filter_label.setStyleSheet("color: gray;")
+            self._filter_button.setText("Enable Communication Through AP")
 
     def _refresh_hvac_controls_ui(self):
         self._refresh_encryption_ui()
@@ -243,7 +279,7 @@ class HVACView:
         status = self._context.buffer.defender_status
         payload = {
         "encryption_status": status.get("encryption_status", False),
-        "encryption_key": self._enc_key_entry.get().strip(),
+        "encryption_key": self._enc_key_entry.text().strip(),
         "AP_communication": status.get("ap_communication", False),
         "sensor_noise_variance": self.sensor_noise_variance,
         "hvac_kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
@@ -253,27 +289,33 @@ class HVACView:
 
         def _request():
             try:
-                resp = requests.post(
+                requests.post(
                     f"{self._get_url()}/set_hvac_settings",
                     json=payload,
                     timeout=3,
                 )
-                if resp.ok:
-                    self._ui_master.after(0, self._refresh_hvac_controls_ui)
             except Exception:
                 pass
 
+        # No UI update on the response here - unlike Tk's after(0, ...),
+        # which safely marshals a callback onto the main thread, touching
+        # widgets directly from this background thread would be unsafe
+        # under Qt. refresh() already reconciles this UI every animation
+        # tick on the main thread (see below), which is the same ~100ms
+        # latency this app already uses everywhere else for background
+        # work reaching the GUI.
         threading.Thread(target=_request, daemon=True).start()
 
-    def _build_slider_block(self, parent):
-        section = CTkFrame(parent, fg_color=self.style.color("widget"))
-        section.pack(fill="x", padx=self.style.igap, pady=self.style.igap)
+    def _to_slider_pos(self, value: float, lo: float, hi: float) -> int:
+        if hi == lo:
+            return 0
+        return int(round((value - lo) / (hi - lo) * SLIDER_RESOLUTION))
 
-        CTkLabel(
-            section,
-            text="HVAC SETTINGS",
-            font=self.style.get_font()
-        ).pack(anchor="w", padx=self.style.igap, pady=(self.style.igap, 8))
+    def _from_slider_pos(self, pos: int, lo: float, hi: float) -> float:
+        return lo + (pos / SLIDER_RESOLUTION) * (hi - lo)
+
+    def _build_slider_block(self, parent: QWidget):
+        section = self._section(parent, "HVAC SETTINGS")
 
         slider_defs = [
             ("Sensor Noise Variance", 0.0, 1.0, 0.1, "sensor_noise_variance", 2),
@@ -283,69 +325,71 @@ class HVACView:
 
         self._sliders = {}
         self._slider_value_labels = {}
+        self._slider_ranges = {}
 
         for title, min_val, max_val, default, attr_name, decimals in slider_defs:
-            header = CTkFrame(section, fg_color="transparent")
-            header.pack(fill="x", padx=self.style.igap)
+            header = QWidget()
+            header_layout = QHBoxLayout(header)
+            header_layout.setContentsMargins(0, 0, 0, 0)
+            section.layout().addWidget(header)
 
-            CTkLabel(
-                header,
-                text=title,
-                font=self.style.get_font("small")
-            ).pack(side="left")
+            title_label = QLabel(title)
+            title_label.setFont(self.style.get_font("small"))
+            header_layout.addWidget(title_label)
+            header_layout.addStretch()
 
-            value_label = CTkLabel(
-                header,
-                text=f"{default:.{decimals}f}",
-                font=self.style.get_font("small"),
-                text_color="gray"
-            )
-            value_label.pack(side="right")
+            value_label = QLabel(f"{default:.{decimals}f}")
+            value_label.setFont(self.style.get_font("small"))
+            value_label.setStyleSheet("color: gray;")
+            header_layout.addWidget(value_label)
 
-            def slider_callback(value, lbl=value_label, attr=attr_name, d=decimals):
-                value = float(value)
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setRange(0, SLIDER_RESOLUTION)
+            slider.setValue(self._to_slider_pos(default, min_val, max_val))
 
+            def slider_callback(pos, lbl=value_label, attr=attr_name, d=decimals, lo=min_val, hi=max_val):
+                value = self._from_slider_pos(pos, lo, hi)
                 setattr(self, attr, value)
-                lbl.configure(text=f"{value:.{d}f}")
+                lbl.setText(f"{value:.{d}f}")
 
                 if not self._syncing_sliders:
                     self._push_hvac_controls()
 
-            slider = CTkSlider(
-                section,
-                from_=min_val,
-                to=max_val,
-                command=slider_callback
-            )
-            slider.set(default)
-            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+            slider.valueChanged.connect(slider_callback)
+            section.layout().addWidget(slider)
 
             self._sliders[title] = slider
             self._slider_value_labels[title] = value_label
+            self._slider_ranges[title] = (min_val, max_val)
 
-        reset_button = CTkButton(
-            section,
-            text="Reset to Defaults",
-            font=self.style.get_font(),
-            command=self._reset_slider_defaults
-        )
-        reset_button.pack(
-            fill="x",
-            padx=self.style.igap,
-            pady=self.style.igap
-        )
-    
-    def _readout_row(self, parent, label_text):
-        row = CTkFrame(parent, fg_color="transparent")
-        row.pack(fill="x", padx=self.style.igap, pady=2)
-        CTkLabel(row, text=f"{label_text}:", font=self.style.get_font("small"),
-                 text_color="gray", anchor="w").pack(side="left")
-        value = CTkLabel(row, text="—", font=self.style.get_font("small"), anchor="e")
-        value.pack(side="right")
+        reset_button = QPushButton("Reset to Defaults")
+        reset_button.setFont(self.style.get_font())
+        self._wire_button(reset_button, self._reset_slider_defaults)
+        section.layout().addWidget(reset_button)
+
+    def _readout_row(self, parent: QWidget, label_text: str) -> QLabel:
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        parent.layout().addWidget(row)
+
+        label = QLabel(f"{label_text}:")
+        label.setFont(self.style.get_font("small"))
+        label.setStyleSheet("color: gray;")
+        row_layout.addWidget(label)
+        row_layout.addStretch()
+
+        value = QLabel("—")
+        value.setFont(self.style.get_font("small"))
+        row_layout.addWidget(value)
         return value
 
-    def _build_graph(self, parent):
-        self._graph_root = CTkFrame(parent, fg_color=self.style.color("widget"))
+    def _build_graph(self, parent: QWidget):
+        self._graph_root = QWidget()
+        self._graph_root.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        self._graph_root.setLayout(QVBoxLayout())
+        self._graph_root.layout().setContentsMargins(8, 8, 8, 8)
+        parent.layout().addWidget(self._graph_root)
 
         fig = Figure(figsize=(5, 4), dpi=100)
         fig.patch.set_facecolor(_FIG_BG)
@@ -372,8 +416,8 @@ class HVACView:
 
         self._fig = fig
         self._ax  = ax
-        self._canvas = FigureCanvasTkAgg(fig, master=self._graph_root)
-        self._canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
+        self._canvas = FigureCanvasQTAgg(fig)
+        self._graph_root.layout().addWidget(self._canvas)
         self._canvas.draw()
 
     def _sync_hvac_sliders(self):
@@ -404,7 +448,8 @@ class HVACView:
 
                 value = float(value)
 
-                slider.set(value)
+                lo, hi = self._slider_ranges[title]
+                slider.setValue(self._to_slider_pos(value, lo, hi))
 
                 attr_map = {
                     "Sensor Noise Variance":
@@ -421,9 +466,7 @@ class HVACView:
 
                 if label is not None:
                     decimals = 1 if title == "State Error Threshold" else 2
-                    label.configure(
-                        text=f"{value:.{decimals}f}"
-                    )
+                    label.setText(f"{value:.{decimals}f}")
 
         finally:
             self._syncing_sliders = False
@@ -448,11 +491,10 @@ class HVACView:
 
                 setattr(self, attr, value)
 
-                self._sliders[title].set(value)
+                lo, hi = self._slider_ranges[title]
+                self._sliders[title].setValue(self._to_slider_pos(value, lo, hi))
 
-                self._slider_value_labels[title].configure(
-                    text=f"{value:.{decimals}f}"
-                )
+                self._slider_value_labels[title].setText(f"{value:.{decimals}f}")
 
         finally:
             self._syncing_sliders = False
@@ -466,12 +508,12 @@ class HVACView:
     # ════════════════════════════════════════════════════════════════════
 
     def show(self):
-        self._left_root.pack(fill="x")
-        self._graph_root.pack(fill="both", expand=True, padx=20, pady=20)
+        self._left_root.show()
+        self._graph_root.show()
 
     def hide(self):
-        self._left_root.pack_forget()
-        self._graph_root.pack_forget()
+        self._left_root.hide()
+        self._graph_root.hide()
 
     def _refresh_visibility(self):
         submarine_mode = bool(self._context.buffer.defender_status.get("submarine_mode", True))
@@ -488,6 +530,7 @@ class HVACView:
     def refresh(self):
         self._refresh_visibility()
         self._sync_hvac_sliders()
+        self._refresh_hvac_controls_ui()
 
         modbus = self._context.buffer.defender_modbus
         status = self._context.buffer.defender_status
@@ -497,13 +540,13 @@ class HVACView:
         heater_on    = status.get("heater_on")
 
         if current_temp is not None:
-            self._current_label.configure(text=f"{float(current_temp):.1f}°F")
+            self._current_label.setText(f"{float(current_temp):.1f}°F")
         if target_temp is not None:
-            self._target_label.configure(text=f"{float(target_temp):.1f}°F")
+            self._target_label.setText(f"{float(target_temp):.1f}°F")
         if heater_on is not None:
             on = bool(heater_on)
-            self._heater_label.configure(text="ON" if on else "OFF",
-                                         text_color="green" if on else "gray")
+            self._heater_label.setText("ON" if on else "OFF")
+            self._heater_label.setStyleSheet(f"color: {'green' if on else 'gray'};")
 
         if current_temp is None and target_temp is None:
             return  # nothing worth plotting yet

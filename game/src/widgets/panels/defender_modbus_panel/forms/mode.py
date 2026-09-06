@@ -1,4 +1,5 @@
-from customtkinter import CTkFrame, CTkLabel
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QWidget
 from .....app_core import Context
 from ...base_form import BaseForm
 
@@ -10,14 +11,15 @@ class ModeForm(BaseForm):
     inline in DefenderV0._build_mode_block/_refresh_mode_ui.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="Mode")
 
         self.add_header("Operation Mode")
 
-        self.mode_label = CTkLabel(self, text="Mode: —", font=self.style.get_font(), anchor="w")
-        self.mode_label.grid(row=self.current_row, column=0, columnspan=3, sticky="ew",
-                              pady=self.style.gapbot, padx=self.style.gap)
+        self.mode_label = QLabel("Mode: —")
+        self.mode_label.setFont(self.style.get_font())
+        self.mode_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.grid_layout.addWidget(self.mode_label, self.current_row, 0, 1, 3)
         self.current_row += 1
 
         self.context.animation_manager.add_callback(f"DefenderModeForm_{id(self)}", self.refresh)
@@ -26,8 +28,11 @@ class ModeForm(BaseForm):
     def refresh(self):
         submarine_mode = self.context.buffer.defender_status.get("submarine_mode")
         if submarine_mode is None:
-            self.mode_label.configure(text="Mode: —", text_color="gray")
+            self.mode_label.setText("Mode: —")
+            self.mode_label.setStyleSheet("color: gray;")
         elif submarine_mode:
-            self.mode_label.configure(text="Mode: SUBMARINE", text_color="green")
+            self.mode_label.setText("Mode: SUBMARINE")
+            self.mode_label.setStyleSheet("color: green;")
         else:
-            self.mode_label.configure(text="Mode: HVAC", text_color="orange")
+            self.mode_label.setText("Mode: HVAC")
+            self.mode_label.setStyleSheet("color: orange;")

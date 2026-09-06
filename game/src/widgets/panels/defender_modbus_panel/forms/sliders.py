@@ -1,6 +1,7 @@
 import threading
 import requests
-from customtkinter import CTkFrame, CTkLabel, CTkSlider
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QSlider, QVBoxLayout, QWidget
 from .....app_core import Context
 from .....network.hardware import APPoller
 from ...base_form import BaseForm
@@ -26,6 +27,10 @@ HVAC_STATUS_KEYS = {
     "state_error_threshold": "hvac_state_error_threshold",
 }
 
+# QSlider only steps through integers - each slider's own float min/max is
+# mapped onto this many integer positions (see _to_slider_pos/_from_slider_pos).
+SLIDER_RESOLUTION = 1000
+
 
 class SlidersForm(BaseForm):
     '''
@@ -36,7 +41,7 @@ class SlidersForm(BaseForm):
     checked every animation tick, not a static settings toggle.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="Sliders")
 
         # Shares the AP Connect form's poller process rather than starting
@@ -54,8 +59,10 @@ class SlidersForm(BaseForm):
         self.submarine_values = {attr: default for _, _, _, default, attr, _ in SUBMARINE_SLIDER_DEFS}
         self.hvac_values = {attr: default for _, _, _, default, attr, _ in HVAC_SLIDER_DEFS}
 
-        body = CTkFrame(self, fg_color="transparent")
-        body.grid(row=self.current_row, column=0, columnspan=3, sticky="ew")
+        body = QWidget()
+        body.setLayout(QVBoxLayout())
+        body.layout().setContentsMargins(0, 0, 0, 0)
+        self.grid_layout.addWidget(body, self.current_row, 0, 1, 3)
         self.current_row += 1
 
         self.submarine_frame, self.submarine_sliders, self.submarine_labels = self._build_group(
@@ -64,36 +71,58 @@ class SlidersForm(BaseForm):
             body, HVAC_SLIDER_DEFS, self.hvac_values, lambda: self._push_hvac())
 
         self._submarine_mode = True
-        self.submarine_frame.pack(fill="x")
+        self.hvac_frame.hide()
 
         self._push_submarine()
         self._push_hvac()
 
         self.context.animation_manager.add_callback(f"DefenderSlidersForm_{id(self)}", self.refresh)
 
-    def _build_group(self, parent, defs, values: dict, push_func):
-        frame = CTkFrame(parent, fg_color="transparent")
+    def _to_slider_pos(self, value: float, lo: float, hi: float) -> int:
+        if hi == lo:
+            return 0
+        return int(round((value - lo) / (hi - lo) * SLIDER_RESOLUTION))
+
+    def _from_slider_pos(self, pos: int, lo: float, hi: float) -> float:
+        return lo + (pos / SLIDER_RESOLUTION) * (hi - lo)
+
+    def _build_group(self, parent: QWidget, defs, values: dict, push_func):
+        frame = QWidget()
+        frame.setLayout(QVBoxLayout())
+        frame.layout().setContentsMargins(0, 0, 0, 0)
+        parent.layout().addWidget(frame)
         sliders = {}
         value_labels = {}
 
         for title, min_val, max_val, default, attr, decimals in defs:
-            header = CTkFrame(frame, fg_color="transparent")
-            header.pack(fill="x", padx=self.style.igap)
-            CTkLabel(header, text=title, font=self.style.get_font("small")).pack(side="left")
-            value_label = CTkLabel(header, text=f"{default:.{decimals}f}",
-                                    font=self.style.get_font("small"), text_color="gray")
-            value_label.pack(side="right")
+            header = QWidget()
+            header_layout = QHBoxLayout(header)
+            header_layout.setContentsMargins(self.style.igap, 0, self.style.igap, 0)
+            frame.layout().addWidget(header)
 
-            def slider_callback(value, lbl=value_label, attr=attr, d=decimals):
-                value = float(value)
+            title_label = QLabel(title)
+            title_label.setFont(self.style.get_font("small"))
+            header_layout.addWidget(title_label)
+            header_layout.addStretch()
+
+            value_label = QLabel(f"{default:.{decimals}f}")
+            value_label.setFont(self.style.get_font("small"))
+            value_label.setStyleSheet("color: gray;")
+            header_layout.addWidget(value_label)
+
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setRange(0, SLIDER_RESOLUTION)
+            slider.setValue(self._to_slider_pos(default, min_val, max_val))
+
+            def slider_callback(pos, lbl=value_label, attr=attr, d=decimals, lo=min_val, hi=max_val):
+                value = self._from_slider_pos(pos, lo, hi)
                 values[attr] = value
-                lbl.configure(text=f"{value:.{d}f}")
+                lbl.setText(f"{value:.{d}f}")
                 if not self._syncing:
                     push_func()
 
-            slider = CTkSlider(frame, from_=min_val, to=max_val, command=slider_callback)
-            slider.set(default)
-            slider.pack(fill="x", padx=self.style.igap, pady=(0, 8))
+            slider.valueChanged.connect(slider_callback)
+            frame.layout().addWidget(slider)
 
             sliders[attr] = slider
             value_labels[attr] = value_label
@@ -145,11 +174,11 @@ class SlidersForm(BaseForm):
         if submarine_mode != self._submarine_mode:
             self._submarine_mode = submarine_mode
             if submarine_mode:
-                self.hvac_frame.pack_forget()
-                self.submarine_frame.pack(fill="x")
+                self.hvac_frame.hide()
+                self.submarine_frame.show()
             else:
-                self.submarine_frame.pack_forget()
-                self.hvac_frame.pack(fill="x")
+                self.submarine_frame.hide()
+                self.hvac_frame.show()
 
         if submarine_mode:
             self._sync_submarine(status)
@@ -167,27 +196,27 @@ class SlidersForm(BaseForm):
 
         self._syncing = True
         try:
-            for _, _, _, _, attr, decimals in SUBMARINE_SLIDER_DEFS:
+            for _, lo, hi, _, attr, decimals in SUBMARINE_SLIDER_DEFS:
                 value = status.get(attr)
                 if value is None:
                     continue
                 value = float(value)
                 self.submarine_values[attr] = value
-                self.submarine_sliders[attr].set(value)
-                self.submarine_labels[attr].configure(text=f"{value:.{decimals}f}")
+                self.submarine_sliders[attr].setValue(self._to_slider_pos(value, lo, hi))
+                self.submarine_labels[attr].setText(f"{value:.{decimals}f}")
         finally:
             self._syncing = False
 
     def _sync_hvac(self, status):
         self._syncing = True
         try:
-            for _, _, _, _, attr, decimals in HVAC_SLIDER_DEFS:
+            for _, lo, hi, _, attr, decimals in HVAC_SLIDER_DEFS:
                 value = status.get(HVAC_STATUS_KEYS[attr])
                 if value is None:
                     continue
                 value = float(value)
                 self.hvac_values[attr] = value
-                self.hvac_sliders[attr].set(value)
-                self.hvac_labels[attr].configure(text=f"{value:.{decimals}f}")
+                self.hvac_sliders[attr].setValue(self._to_slider_pos(value, lo, hi))
+                self.hvac_labels[attr].setText(f"{value:.{decimals}f}")
         finally:
             self._syncing = False
