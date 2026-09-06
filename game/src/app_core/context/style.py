@@ -1,10 +1,24 @@
-from customtkinter import CTkFont, get_appearance_mode, ThemeManager, ScalingTracker, set_appearance_mode
-from CTkToolTip import CTkToolTip
+from PySide6.QtGui import QFont
 import darkdetect
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
+
+# Approximate stand-in for customtkinter's "blue" theme, keyed the same way
+# Style.color() was already called everywhere - light mode value first, dark
+# mode value second - so callers didn't need to change. Not wired up to any
+# theme-file loading yet (see load_preferred_theme/select_theme below).
+PALETTE = {
+    "root":            ("#F2F2F2", "#242424"),
+    "panel":           ("#EBEBEB", "#2B2B2B"),
+    "widget":          ("#FFFFFF", "#333333"),
+    "accent":          ("#3B8ED0", "#1F6AA5"),
+    "field":           ("#F9F9FA", "#343638"),
+    "field_text":      ("#000000", "#FFFFFF"),
+    "scrollbar":       ("#C0C0C0", "#4A4A4A"),
+    "scrollbar_hover": ("#A0A0A0", "#5A5A5A"),
+}
 
 class Style:
 
@@ -25,16 +39,9 @@ class Style:
         self.PANE_MIN_HEIGHT = self.igap*10
         self.PANE_BIG = self.igap*100
         self.fonts = {}
-        if darkdetect.isDark():
-            set_appearance_mode("Dark")
-        else:
-            set_appearance_mode("Light")
+        self.mode = "Dark" if darkdetect.isDark() else "Light"
         self.current_theme = "blue"
-        self.context = context        
-
-        # DATA_FONT = CTkFont(family="Courier", size=16)
-# HEADER_FONT = CTkFont(family="Arial", size=24)
-# TITLE_FONT = CTkFont(family="Arial", size=max(32, root.winfo_height()//5), weight="bold")
+        self.context = context
 
     def packing(self, type = "default"):
         options = {}
@@ -58,39 +65,42 @@ class Style:
         return options
 
     def get_scale_correction(self):
-        return ScalingTracker.get_widget_scaling(self.root)
+        # Qt applies its own DPI scaling to the widgets/fonts it lays out,
+        # so no manual correction is needed here the way CTk's
+        # ScalingTracker required. Revisit if a canvas-drawn panel (which
+        # positions pixels by hand) needs its own correction once migrated.
+        return 1.0
 
     def get_font(self, name="default"):
         if name not in self.fonts:
             if name == "default":
-                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("default"))
+                font = QFont("Arial", self.get_font_size("default"))
             elif name == "title_btn":
-                self.fonts[name] = CTkFont(size=self.get_font_size("title_btn"))
+                font = QFont()
+                font.setPointSize(self.get_font_size("title_btn"))
             elif name == "mono":
-                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("small"))
+                font = QFont("Consolas", self.get_font_size("small"))
             elif name == "treeview":
-                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("treeview"))
+                font = QFont("Consolas", self.get_font_size("treeview"))
             elif name == "title":
-                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("title"), weight="bold")
+                font = QFont("Arial", self.get_font_size("title"))
+                font.setBold(True)
             elif name == "chart_title":
-                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("chart_title"), weight="bold")
+                font = QFont("Arial", self.get_font_size("chart_title"))
+                font.setBold(True)
             elif name == "chart_numbers":
-                self.fonts[name] = CTkFont(family="Consolas", size=self.get_font_size("chart_numbers"))
+                font = QFont("Consolas", self.get_font_size("chart_numbers"))
             elif name == "chart_label":
-                self.fonts[name] = CTkFont(family="Arial", size=self.get_font_size("chart_label"))
+                font = QFont("Arial", self.get_font_size("chart_label"))
             else:
-                size = int(14.0*self.ui_scale/100.0)
-                self.fonts[name] = CTkFont(size=size)
+                font = QFont()
+                font.setPointSize(int(14.0*self.ui_scale/100.0))
+            self.fonts[name] = font
         return self.fonts[name]
 
     def get_font_size(self, name="default"):
         size = 16.0
-        if name == "treeview":
-            tk_scale = float(self.root.tk.call("tk", "scaling"))
-            # print(tk_scale)
-            size = size * self.get_scale_correction() / tk_scale
-            # TODO TK vs CTK font scaling on different platforms
-        elif name == "title_btn":
+        if name == "title_btn":
             size = 20.0
         elif name == "title":
             size = 72
@@ -106,33 +116,20 @@ class Style:
 
     def color(self, type: str) -> str:
         '''
-        Returns the input string OR a theme color
-        "root": root_color,
-        "panel": fg_color,
-        "widget": top_fg_color,
-        "accent": button fg_color,
-        "field": CTkTextBox fg_color
-        "field_text": CTkTextBox text_color
-        "scrollbar": CTkScrollbar button_color
-        "scrollbar_hover": CTkScrollbar button_hover_color
+        Returns the input string OR a theme color:
+        "root": window background
+        "panel": panel background
+        "widget": nested/inner widget background
+        "accent": button/highlight color
+        "field": text field background
+        "field_text": text field text color
+        "scrollbar": scrollbar handle color
+        "scrollbar_hover": scrollbar handle hover color
         '''
-        mode = get_appearance_mode()
-        colors = {}
-        if mode == "Light":
-            i = 0
-        else:
-            i = 1
-        colors["root"] = self.root.cget("fg_color")
-        colors["panel"] = ThemeManager.theme["CTkFrame"]["fg_color"]
-        colors["widget"] = ThemeManager.theme["CTkFrame"]["top_fg_color"]
-        colors["accent"] = ThemeManager.theme["CTkButton"]["fg_color"]
-        colors["field"] = ThemeManager.theme["CTkTextbox"]["fg_color"]
-        colors["field_text"] = ThemeManager.theme["CTkTextbox"]["text_color"]
-        colors["scrollbar"] = ThemeManager.theme["CTkScrollbar"]["button_color"]
-        colors["scrollbar_hover"] = ThemeManager.theme["CTkScrollbar"]["button_hover_color"]
-        if not type in colors:
+        i = 0 if self.mode == "Light" else 1
+        if type not in PALETTE:
             return type
-        return colors[type][i]
+        return PALETTE[type][i]
 
     def get_column_width(self, column_name):
         match column_name:
@@ -169,56 +166,46 @@ class Style:
         return int(self.igap * self.get_scale_correction())
 
     def add_tooltip(self, widget, class_key: str, widget_key: str):
-        CTkToolTip(widget,
-                   self.context.labels.get(class_key, widget_key),
-                   follow=False,
-                   font=self.get_font(),
-                   x_offset=self.igap, y_offset=self.igap, border_width=2,
-                   border_color=self.color("accent"))
+        # Native Qt tooltip - simpler than CTkToolTip (no custom border/
+        # offset styling), which is an acceptable loss for now.
+        widget.setToolTip(self.context.labels.get(class_key, widget_key))
 
     def load_preferred_theme(self):
+        # TODO: customtkinter's JSON theme-file loading (ThemeManager) has
+        # no Qt equivalent yet; only the preference itself carries over.
         if self.context.preferences.has("theme"):
-            file_path = self.context.preferences.data["theme"]
-            try:
-                ThemeManager.load_theme(file_path)
-            except:
-                pass
+            self.current_theme = self.context.preferences.data["theme"]
         else:
-            ThemeManager.load_theme("blue")
+            self.current_theme = "blue"
 
     def load_default_theme(self):
-        ThemeManager.load_theme("blue")
+        self.current_theme = "blue"
 
     def load_preferred_mode(self):
         if self.context.preferences.has("mode"):
-            mode = self.context.preferences.data["mode"]
-            set_appearance_mode(mode)
+            self.mode = self.context.preferences.data["mode"]
 
     def load_default_mode(self):
-        set_appearance_mode("Light")
+        self.mode = "Light"
 
     def toggle_mode(self):
         '''
         Toggles the appearance mode (light/dark mode)
         '''
-        mode = get_appearance_mode()
-        if mode  == "Dark":
-            mode = "Light"
-        else:
-            mode = "Dark"
-        set_appearance_mode(mode)
-        # set_appearance_mode refreshes all CTk elements automatically, but we have some TK elements and custom colors.
-        
-        self.context.preferences.set("mode", mode)
+        self.mode = "Light" if self.mode == "Dark" else "Dark"
+        self.context.preferences.set("mode", self.mode)
         self.context.router.refresh()
 
     def select_theme(self):
         '''
-        Opens a dialog for the user to select a CTk theme.
+        Opens a dialog for the user to select a theme file.
+        TODO: no theme file format is loaded yet - only the selected path
+        is recorded, pending a Qt-native theme/palette system.
         '''
         themes_dir = self.context.paths.themes
         file_path = self.context.paths.select_path(themes_dir, "Select a Theme File")
-        ThemeManager.load_theme(file_path)
+        if file_path is None:
+            return
         self.current_theme = file_path
         self.context.preferences.set("theme", self.current_theme)
         self.context.router.refresh()

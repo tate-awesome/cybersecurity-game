@@ -3,11 +3,26 @@ import sys
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-# TODO: Router (and everything it builds - Context, Style, ClickManager,
-# AnimationManager, every Page/Panel) is still written against
-# customtkinter. Re-enable this import and the Router(...) call below once
-# that chain has been migrated to PySide6.
-# from .router import Router
+from .router import Router
+
+
+class MainWindow(QMainWindow):
+    '''
+    QMainWindow can't have its closeEvent overridden by simply assigning an
+    instance attribute (Qt dispatches virtual methods like closeEvent
+    through the class, not the instance), so this thin subclass exists
+    purely to forward the close event to whatever callable is set as
+    on_close - KeyBinds wires this up to Router.quit.
+    '''
+
+    def __init__(self):
+        super().__init__()
+        self.on_close = None
+
+    def closeEvent(self, event):
+        if self.on_close is not None:
+            self.on_close()
+        event.accept()
 
 
 class App():
@@ -24,13 +39,13 @@ class App():
         # Start a Qt app
         self.app = QApplication.instance() or QApplication(sys.argv)
 
-        self.root = QMainWindow()
+        self.root = MainWindow()
         self.root.setWindowTitle(title)
         self.set_geometry(start_fullscreen)
         self.root.show()
 
         # Create the router, which will handle page navigation
-        # Router(self.root, start_page)
+        Router(self.root, start_page)
 
         # Start the main loop
         sys.exit(self.app.exec())

@@ -12,8 +12,7 @@ import os, json, platform, shutil
 from .paths import Paths
 from .json import Json
 
-# imports to move later
-from customtkinter import set_appearance_mode, get_appearance_mode, ThemeManager, CTk
+from PySide6.QtWidgets import QMainWindow
 import subprocess, webbrowser
 
 from typing import TYPE_CHECKING
@@ -28,13 +27,13 @@ Shared data for a page. Passed to next pages on navigation.
 '''
     '''
     Important data that needs to be shared across pages, such as the process manager and the router.
-    Every page builder function should take a Context object as an argument and build the page on the root CTk object.
+    Every page builder function should take a Context object as an argument and build the page as the root window's central widget.
     '''
 
-    def __init__(self, root: CTk, router: "Router"):
+    def __init__(self, root: QMainWindow, router: "Router"):
         # All immutable members for the session
         self.router: "Router" = router
-        self.root: CTk = root
+        self.root: QMainWindow = root
         self.paths: Paths = Paths()
         self.json: Json = Json(self.paths)
         self.style: Style = Style(self)

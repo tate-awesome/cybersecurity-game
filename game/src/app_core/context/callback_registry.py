@@ -1,4 +1,3 @@
-from customtkinter import CTk
 from typing import Callable
 
 
@@ -9,8 +8,8 @@ class CallbackRegistry:
     and dispatch every registered callback in one pass, isolating each one in
     its own try/except so a single bad callback can't break the rest.
     '''
-    def __init__(self, root: CTk, tag: str):
-        self.root: CTk = root
+    def __init__(self, root, tag: str):
+        self.root = root
         self.callbacks: dict[str, Callable] = {}
         self._tag = tag
         self._add = "+"

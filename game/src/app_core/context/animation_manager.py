@@ -1,33 +1,31 @@
-from customtkinter import CTk
+from PySide6.QtCore import QTimer
 from .callback_registry import CallbackRegistry
 
 
 class AnimationManager(CallbackRegistry):
     '''
-    Global manager for animation loops. A single interruptor is more performant than an interruptor for every canvas.
+    Global manager for animation loops. A single QTimer is more performant than a timer for every canvas.
     '''
-    def __init__(self, root: CTk, frame_time_ms: int = 100):
+    def __init__(self, root, frame_time_ms: int = 100):
         super().__init__(root, tag="[Animation]")
-        self.run = True
         self.time = frame_time_ms
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.do_loop)
 
         self.start_loop()
 
     def start_loop(self):
-        self.run = True
-        self.do_loop()
+        self.timer.start(self.time)
 
-    def do_loop(self, event=None):
+    def do_loop(self):
         """
         The single source of truth. Loops through and safely runs all registered
         functions in a single pass.
         """
         self.dispatch()
-        if self.run:
-            self.root.after(self.time, self.do_loop)
 
     def stop_loop(self):
-        self.run = False
+        self.timer.stop()
 
     def delete(self):
         self.stop_loop()

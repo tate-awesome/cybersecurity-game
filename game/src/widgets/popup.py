@@ -1,4 +1,5 @@
 from customtkinter import CTkBaseClass, CTkToplevel, CTkFrame, CTkLabel, CTkButton
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
 
 def message(master: CTkBaseClass, context: Context, message: str):
@@ -35,47 +36,41 @@ def message(master: CTkBaseClass, context: Context, message: str):
         window.focus_force()   # force focus to the window
         return window
 
-def delete_user_data_dialog(master: CTkBaseClass, context: Context, delete_func):
+def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
         style = context.style
-        window = CTkToplevel(master)
-        window.title("Confirm")
-        window.config(padx=style.igap, pady=style.igap)
         message = "Are you sure you want to delete all user data?\nSaved page progress, captures, and preferences will be permanently lost."
 
-        # Center to app
-        width = 500
-        height = 300
-        root_x = master.winfo_rootx()
-        root_y = master.winfo_rooty()
-        win_x = root_x + master.winfo_width()/2 - width/2
-        win_y = root_y + master.winfo_height()/2 - height/2
+        window = QDialog(master)
+        window.setWindowTitle("Confirm")
+        window.resize(500, 300)
+        window.setModal(True)  # block interactions with main window
 
-        window.geometry(f"{width}x{height}+{int(win_x)}+{int(win_y)}")
+        layout = QVBoxLayout(window)
 
-        # Add widgets to the window
-        frame = CTkFrame(window)
-        frame.pack(fill="both", side="top", expand=True, padx=style.gap, pady=style.gap)
+        label = QLabel(message)
+        label.setFont(style.get_font())
+        label.setWordWrap(True)
+        layout.addWidget(label)
 
-        label = CTkLabel(frame, text=message, font=style.get_font(), wraplength=width - 2*style.igap)
-        label.pack(pady=style.gap, padx=style.gap)
-
-        buttons_frame = CTkFrame(frame)
-        buttons_frame.pack(side="bottom")
+        buttons_row = QHBoxLayout()
+        layout.addStretch()
+        layout.addLayout(buttons_row)
 
         def confirm():
             delete_func()
-            window.destroy()
+            window.accept()
 
-        delete_button = CTkButton(buttons_frame, text="Yes, delete", command=confirm, font=style.get_font())
-        delete_button.grid(pady=style.gap, column=0, sticky="ew")
+        delete_button = QPushButton("Yes, delete")
+        delete_button.setFont(style.get_font())
+        delete_button.clicked.connect(confirm)
+        buttons_row.addWidget(delete_button)
 
-        cancel_button = CTkButton(buttons_frame, text="No, cancel", command=window.destroy, font=style.get_font())
-        cancel_button.grid(pady=style.gap, column=0, sticky="ew")
+        cancel_button = QPushButton("No, cancel")
+        cancel_button.setFont(style.get_font())
+        cancel_button.clicked.connect(window.reject)
+        buttons_row.addWidget(cancel_button)
 
-        window.transient(master)
-        window.update_idletasks()
-        window.grab_set()      # block interactions with main window
-        window.focus_force()   # force focus to the window
+        window.show()
         return window
 
 def quit_dialog(master: CTkBaseClass, context: Context, quit_func):

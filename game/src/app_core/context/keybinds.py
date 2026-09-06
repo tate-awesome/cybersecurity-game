@@ -1,4 +1,5 @@
-from customtkinter import CTk
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QKeySequence, QShortcut
 
 from .style import Style
 
@@ -24,39 +25,40 @@ class KeyBinds:
         self.quit = context.router.quit
 
         # Page zoom control
-        self.root.bind("<Control-plus>", self.zoom_in)            # Ctrl +
-        self.root.bind("<Control-minus>", self.zoom_out)          # Ctrl -
-        self.root.bind("<Control-0>", self.zoom_default)          # Ctrl 0
-        self.root.bind("<Control-equal>", self.zoom_in)   # (linux) Ctrl = also works as Ctrl +
-
-        # Key events
-        # self.style.root.bind("<Key>", self.print_key)
+        self._shortcut("Ctrl++", self.zoom_in)
+        self._shortcut("Ctrl+=", self.zoom_in)  # (linux) Ctrl = also works as Ctrl +
+        self._shortcut("Ctrl+-", self.zoom_out)
+        self._shortcut("Ctrl+0", self.zoom_default)
 
         # Fullscreen control
-        self.root.bind("<F11>", self.toggle_fullscreen)
-        self.root.bind("<Escape>", self.exit_fullscreen)
+        self._shortcut("F11", self.toggle_fullscreen)
+        self._shortcut("Esc", self.exit_fullscreen)
 
-        # On close event
-        self.root.protocol("WM_DELETE_WINDOW", self.quit)
-        # self.root.bind("<FocusOut>", self.minimize_on_tab_if_fullscreen)
+        # On close event - MainWindow (see app.py) calls root.on_close
+        # instead of exposing a Qt virtual method to override here.
+        self.root.on_close = self.quit
 
-        if start_fullscreen := self.context.preferences.get("fullscreen"):
-            self.root.after(50,lambda:self.root.attributes("-fullscreen", start_fullscreen))
+        # Stored as a string ("True"/"False") like the rest of preferences.json.
+        if self.context.preferences.get("fullscreen") == "True":
+            QTimer.singleShot(50, lambda: self.set_fullscreen(True))
 
-    def toggle_fullscreen(self, event=None):
-        switch_fullscreen = not bool(self.root.attributes("-fullscreen"))
+    def _shortcut(self, sequence: str, handler):
+        shortcut = QShortcut(QKeySequence(sequence), self.root)
+        shortcut.activated.connect(handler)
+
+    def set_fullscreen(self, enabled: bool):
+        if enabled:
+            self.root.showFullScreen()
+        else:
+            self.root.showNormal()
+
+    def toggle_fullscreen(self):
+        switch_fullscreen = not self.root.isFullScreen()
         self.context.preferences.set("fullscreen", str(switch_fullscreen))
-        self.root.attributes("-fullscreen", switch_fullscreen)
+        self.set_fullscreen(switch_fullscreen)
 
-    def minimize_on_tab_if_fullscreen(self, event=None):
-        # Ensure the event is for the root window and not an internal widget
-        is_fullscreen = bool(self.root.attributes("-fullscreen"))
-        if event.widget == self.root and is_fullscreen:
-            self.root.iconify()
-
-
-    def exit_fullscreen(self, event=None):
-        self.root.attributes("-fullscreen", False)
+    def exit_fullscreen(self):
+        self.set_fullscreen(False)
 
 
     def zoom_in(self, event=None):

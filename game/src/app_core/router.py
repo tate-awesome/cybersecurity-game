@@ -1,4 +1,4 @@
-from customtkinter import CTk, CTkFrame
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
 from . import Context
 
@@ -24,7 +24,7 @@ from ..pages.generic import WorkspacePage, TitlePage
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
-# All page builder functions should take a Context object as an argument and build the page on the root CTk object.
+# All page builder functions should take a Context object as an argument and build the page as the root window's central widget.
 PAGES: dict[str, type] = {
         "attacker": AttackerV0,
         "defender": DefenderV0,
@@ -51,7 +51,7 @@ class Router:
     Builds the first page on startup
     '''
     
-    def __init__(self, root: CTk, start_page: str | None = None):
+    def __init__(self, root: QMainWindow, start_page: str | None = None):
         '''
         Creates the app's Context object and shows the first page.
         If start_page isn't given, it's read from the manifest's
@@ -60,7 +60,7 @@ class Router:
         self.context: Context = Context(root, self)
         self.style = self.context.style
         self.navigation_stack: list[str] = []
-        self.current_frame: CTkFrame | None = None
+        self.current_frame: QWidget | None = None
         self.current_page: str | None = None
 
         # Register any data-driven page PageManager discovered whose
@@ -92,25 +92,34 @@ class Router:
             self.navigation_stack.append(next_page)
 
         # Clear the window
-        if self.current_frame is not None:
-            self.current_frame.destroy()
+        self._clear_central_widget()
 
         # Call the page builder
         self.current_page = next_page
         try:
             self.current_frame = PAGES[next_page](self.context)
+            self.context.root.setCentralWidget(self.current_frame)
         except Exception as e:
             print(f"Error building page '{next_page}': {e}. Redirecting to title page.")
-            while len(self.context.root.winfo_children()) > 0:
-                self.context.root.winfo_children()[0].destroy()
+            self._clear_central_widget()
 
             self.navigation_stack = []
             self.current_page = "title/start"
             self.current_frame = PAGES["title/start"](self.context)
+            self.context.root.setCentralWidget(self.current_frame)
+
+    def _clear_central_widget(self):
+        '''
+        Detaches and schedules deletion of whatever the root window is
+        currently showing, mirroring the old current_frame.destroy() call.
+        '''
+        old_frame = self.context.root.takeCentralWidget()
+        if old_frame is not None:
+            old_frame.deleteLater()
 
     def refresh(self, save: bool = True):
         '''
-        Refreshes the current page by clearing the root CTk object and rebuilding the current page.
+        Refreshes the current page by clearing the root window's central widget and rebuilding the current page.
         Useful for updating the UI after changing themes or making changes to the context.
 
         save=False skips autosaving the current page first - used when
@@ -127,13 +136,14 @@ class Router:
 
     def quit(self):
         '''
-        Deletes all ongoing processes and destroys the CTk root.
-        Called on Close event or by the Quit button.
+        Deletes all ongoing processes and quits the app.
+        Called on Close event (see MainWindow.closeEvent in app.py, wired
+        up by KeyBinds) or by the Quit button.
         '''
         self.context.pages.save_current_page()
         self.context.reset_build()
         self.context.reset_page()
-        self.context.root.destroy()
+        QApplication.instance().quit()
 
     def go_back(self):
         '''

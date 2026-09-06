@@ -1,39 +1,52 @@
-from customtkinter import CTkFrame, CTkLabel, CTkButton
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGridLayout, QLabel, QPushButton, QWidget
 from ...app_core import Context
 from typing import Callable
 
-class TitleMenu(CTkFrame):
+class TitleMenu(QWidget):
     '''
     The main Widget for the title menu.
     Comes with a title and has a button maker.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, title_label: str = "_default"):
+    def __init__(self, master: QWidget, context: Context, title_label: str = "_default"):
+        super().__init__(master)
         self.context = context
         self.style = context.style
         title_text = self.context.labels.get("title_text", title_label)
 
-        super().__init__(master, fg_color="transparent")
-        self.pack(expand="True", fill="both")
-        
+        master.layout().addWidget(self)
+
+        self.grid = QGridLayout(self)
+        self.setLayout(self.grid)
+
         self.current_row = 1
 
-        title_label = CTkLabel(self, text=title_text, font= self.style.get_font("title"))
-        title_label.grid(row=self.current_row, column=1, pady=self.style.gap2, sticky="sew")
+        title_widget = QLabel(title_text)
+        title_widget.setFont(self.style.get_font("title"))
+        title_widget.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
+        self.grid.addWidget(title_widget, self.current_row, 1)
+        self.grid.setRowMinimumHeight(self.current_row, self.style.gap2[1])
         self.current_row = self.current_row + 1
 
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=0)
-        self.columnconfigure(2, weight=1)
+        self.grid.setColumnStretch(0, 1)
+        self.grid.setColumnStretch(1, 0)
+        self.grid.setColumnStretch(2, 1)
 
-        self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=0)
-        self.rowconfigure(2, weight=1)
+        self.grid.setRowStretch(0, 1)
+        self.grid.setRowStretch(1, 0)
+        self.grid.setRowStretch(2, 1)
 
-    
     def button(self, label: str = "_default", function: Callable | None = None):
-        button = CTkButton(self, text=self.context.labels.get("title_buttons", label), command=function, font=self.style.get_font("title_btn"))
-        button.grid(row = self.current_row, column=1, pady=self.style.gap, ipady=self.style.igap)
-        self.rowconfigure(self.current_row, weight=0)
+        button = QPushButton(self.context.labels.get("title_buttons", label))
+        button.setFont(self.style.get_font("title_btn"))
+        if function is not None:
+            # clicked emits a "checked" bool that callers here don't expect
+            # (they're all zero-arg callables) - dropping it here means a
+            # navigate callback's own default-valued "target" argument
+            # doesn't get silently clobbered by it.
+            button.clicked.connect(lambda checked=False, function=function: function())
+        self.grid.addWidget(button, self.current_row, 1)
+        self.grid.setRowStretch(self.current_row, 0)
         self.current_row = self.current_row + 1
-        self.rowconfigure(self.current_row, weight=1)
+        self.grid.setRowStretch(self.current_row, 1)
