@@ -13,10 +13,13 @@ class BaseForm(ABC, CTkFrame):
         context.labels (i18n), and track game_progress on start.
       - modbus_panel forms pass no `key` (defaults to None) and build their
         text directly from `attack_noun` (not translated).
-    Both branches preserve their original grid layout and call-ordering
-    exactly (including update_idletasks() firing before vs. after the
-    start/stop function in the two hierarchies) - this file unifies the
-    duplicated structure, not the small behavioral differences between them.
+
+    The attack button is optimistic: clicking it immediately shows the
+    target state's text with no command (so it can't be double-clicked
+    mid-transition), and add_attack_button polls attack_status_func on the
+    animation loop to reconcile the button/status label with whatever the
+    process or AP actually confirms - which may lag behind the click for
+    network-backed forms, or land immediately for local processes.
     '''
     def __init__(self, master: CTkFrame, context: Context, attack_noun: str = "Attack", key: str | None = None):
         '''
@@ -37,20 +40,17 @@ class BaseForm(ABC, CTkFrame):
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=0)
 
+        # Resolve attack labels
         if self.key is not None:
             self.status_on_text = self.context.labels.get("network_action_forms", f"{self.key}_on")
             self.status_off_text = self.context.labels.get("network_action_forms", f"{self.key}_off")
             self.start_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_start")
-            self.starting_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_starting")
             self.stop_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_stop")
-            self.stopping_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_stopping")
         else:
             self.status_on_text = f"{self.attack_noun} is on"
             self.status_off_text = f"{self.attack_noun} is off"
             self.start_attack_text = f"Start {self.attack_noun}"
-            self.starting_attack_text = f"Starting {self.attack_noun}..."
             self.stop_attack_text = f"Stop {self.attack_noun}"
-            self.stopping_attack_text = f"Stopping {self.attack_noun}..."
 
         self.current_row = 0
         self.entry_index = 0
@@ -153,12 +153,12 @@ class BaseForm(ABC, CTkFrame):
         # Set function definitions
         self.start_attack = start_attack_func
         self.stop_attack = stop_attack_func
+        self.attack_status_func = attack_status_func
 
-        # Configure attack state
-        if attack_status_func():
-            self.configure_on()
-        else:
-            self.configure_off()
+        # Confirmed state as of the last refresh (None forces the first
+        # refresh below to configure the button/status regardless of state)
+        self.attack_confirmed_state = None
+        self.refresh_attack_button()
 
         # Bind <Return> - a no-op for modbus_panel forms, which never populate self.entries
         def return_handler(event=None):
@@ -171,17 +171,33 @@ class BaseForm(ABC, CTkFrame):
 
         self.has_attack_button = True
 
+        # Polled so the optimistic text/command set by click_start/click_stop
+        # gets reconciled with reality once the underlying process or AP
+        # actually confirms the new state.
+        self.context.animation_manager.add_callback(f"attack_button_{id(self)}", self.refresh_attack_button)
+
+    def refresh_attack_button(self):
+        '''
+        Refresh the attack button based on the current attack status.
+        '''
+        running = bool(self.attack_status_func())
+        if running == self.attack_confirmed_state:
+            return
+        self.attack_confirmed_state = running
+        if running:
+            self.configure_on()
+        else:
+            self.configure_off()
+
     def click_start(self):
+        '''
+        Optimistically set the attack button to the "stop" state and call
+        '''
         if self.key is not None:
             self.context.states.set("game_progress", self.key, value=1)
-            self.attack_button.configure(text=self.starting_attack_text)
-            self.context.root.update_idletasks()
-            self.start_attack()
-        else:
-            self.attack_button.configure(text=self.starting_attack_text)
-            self.start_attack()
-            self.context.root.update_idletasks()
-        self.configure_on()
+        self.attack_button.configure(text=self.stop_attack_text, command=None)
+        self.context.root.update_idletasks()
+        self.start_attack()
 
     def configure_on(self):
         self.attack_button.configure(command=self.click_stop, text=self.stop_attack_text)
@@ -190,15 +206,9 @@ class BaseForm(ABC, CTkFrame):
     def click_stop(self):
         if not self.has_attack_button:
             return
-        if self.key is not None:
-            self.attack_button.configure(text=self.stopping_attack_text)
-            self.context.root.update_idletasks()
-            self.stop_attack()
-        else:
-            self.attack_button.configure(text=self.stopping_attack_text)
-            self.stop_attack()
-            self.context.root.update_idletasks()
-        self.configure_off()
+        self.attack_button.configure(text=self.start_attack_text, command=None)
+        self.context.root.update_idletasks()
+        self.stop_attack()
 
     def configure_off(self):
         self.attack_button.configure(command=self.click_start, text=self.start_attack_text)

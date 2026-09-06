@@ -49,72 +49,52 @@
         "wifi_on": "Connected.",
         "wifi_off": "Disconnected.",
         "wifi_start": "Connect to WiFi",
-        "wifi_starting": "Connecting...",
         "wifi_stop": "Disconnect",
-        "wifi_stopping": "Disconnecting...",
-        
+
         "nmap_on": "",
         "nmap_off": "",
         "nmap_start": "",
-        "nmap_starting": "",
         "nmap_stop": "",
-        "nmap_stopping": "",
-        
+
         "arp_on": "Spoofing is on",
         "arp_off": "Spoofing is off",
         "arp_start": "Start Spoofer",
-        "arp_starting": "Starting...",
         "arp_stop": "Stop Spoofer",
-        "arp_stopping": "Stopping...",
-        
+
         "dos_on": "DoS is on",
         "dos_off": "DoS is off",
         "dos_start": "Start Attack",
-        "dos_starting": "Starting...",
         "dos_stop": "Stop Attack",
-        "dos_stopping": "Stopping...",
-        
+
         "sniff_on": "Sniffer is on",
         "sniff_off": "Sniffer is off",
         "sniff_start": "Start Sniffing",
-        "sniff_starting": "Starting...",
         "sniff_stop": "Stop Sniffing",
-        "sniff_stopping": "Stopping...",
-        
+
         "nfq_on": "NFQ is on",
         "nfq_off": "NFQ is off",
         "nfq_start": "Start NFQ",
-        "nfq_starting": "Starting...",
         "nfq_stop": "Stop NFQ",
-        "nfq_stopping": "Stopping...",
 
         "ap_connect_on": "Connected.",
         "ap_connect_off": "Disconnected.",
         "ap_connect_start": "Connect",
-        "ap_connect_starting": "Connecting...",
         "ap_connect_stop": "Disconnect",
-        "ap_connect_stopping": "Disconnecting...",
 
         "encryption_on": "Encryption is on",
         "encryption_off": "Encryption is off",
         "encryption_start": "Enable Encryption",
-        "encryption_starting": "Enabling...",
         "encryption_stop": "Disable Encryption",
-        "encryption_stopping": "Disabling...",
 
         "ap_tunnel_on": "AP Tunnel is on",
         "ap_tunnel_off": "AP Tunnel is off",
         "ap_tunnel_start": "Enable AP Tunnel",
-        "ap_tunnel_starting": "Enabling...",
         "ap_tunnel_stop": "Disable AP Tunnel",
-        "ap_tunnel_stopping": "Disabling...",
 
         "kalman_on": "Kalman Filter is on",
         "kalman_off": "Kalman Filter is off",
         "kalman_start": "Enable Kalman Filter",
-        "kalman_starting": "Enabling...",
-        "kalman_stop": "Disable Kalman Filter",
-        "kalman_stopping": "Disabling..."
+        "kalman_stop": "Disable Kalman Filter"
     },
     
     "modbus_forms": {

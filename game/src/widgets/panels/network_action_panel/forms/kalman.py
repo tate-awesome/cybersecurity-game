@@ -32,8 +32,6 @@ class KalmanForm(BaseForm):
             lambda: bool(self.context.buffer.defender_status.get("kalman_filter_enabled", True)),
         )
 
-        self.context.animation_manager.add_callback(f"KalmanForm_{id(self)}", self._refresh_status)
-
     def _post_kalman(self, enabled: bool):
         status = self.context.buffer.defender_status
         payload = {
@@ -58,9 +56,3 @@ class KalmanForm(BaseForm):
                 self.context.buffer.put("kalman", f"Failed to reach AP: {e}")
 
         threading.Thread(target=_request, daemon=True).start()
-
-    def _refresh_status(self):
-        if self.context.buffer.defender_status.get("kalman_filter_enabled", True):
-            self.configure_on()
-        else:
-            self.configure_off()

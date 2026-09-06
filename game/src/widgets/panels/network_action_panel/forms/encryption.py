@@ -47,8 +47,6 @@ class EncryptionForm(BaseForm):
             lambda: bool(self.context.buffer.defender_status.get("encryption_status", False)),
         )
 
-        self.context.animation_manager.add_callback(f"EncryptionForm_{id(self)}", self._refresh_status)
-
     def _post_encryption(self, enabled: bool, key: str):
         self.context.buffer.put("encryption", "Enabling encryption..." if enabled else "Disabling encryption...")
 
@@ -68,9 +66,3 @@ class EncryptionForm(BaseForm):
                 self.context.buffer.put("encryption", f"Failed to reach AP: {e}")
 
         threading.Thread(target=_request, daemon=True).start()
-
-    def _refresh_status(self):
-        if self.context.buffer.defender_status.get("encryption_status", False):
-            self.configure_on()
-        else:
-            self.configure_off()

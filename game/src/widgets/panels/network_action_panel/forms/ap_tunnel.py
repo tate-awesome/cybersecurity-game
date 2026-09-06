@@ -29,8 +29,6 @@ class APTunnelForm(BaseForm):
             lambda: bool(self.context.buffer.defender_status.get("ap_communication", False)),
         )
 
-        self.context.animation_manager.add_callback(f"APTunnelForm_{id(self)}", self._refresh_status)
-
     def _post_ap_communication(self, enabled: bool):
         self.context.buffer.put("ap_tunnel", "Enabling AP tunnel..." if enabled else "Disabling AP tunnel...")
 
@@ -50,9 +48,3 @@ class APTunnelForm(BaseForm):
                 self.context.buffer.put("ap_tunnel", f"Failed to reach AP: {e}")
 
         threading.Thread(target=_request, daemon=True).start()
-
-    def _refresh_status(self):
-        if self.context.buffer.defender_status.get("ap_communication", False):
-            self.configure_on()
-        else:
-            self.configure_off()

@@ -45,44 +45,32 @@
         "wifi_on": "#",
         "wifi_off": "#",
         "wifi_start": "#",
-        "wifi_starting": "#",
         "wifi_stop": "#",
-        "wifi_stopping": "#",
-        
+
         "nmap_on": "#",
         "nmap_off": "#",
         "nmap_start": "#",
-        "nmap_starting": "#",
         "nmap_stop": "#",
-        "nmap_stopping": "#",
-        
+
         "arp_on": "#",
         "arp_off": "#",
         "arp_start": "#",
-        "arp_starting": "#",
         "arp_stop": "#",
-        "arp_stopping": "#",
-        
+
         "dos_on": "#",
         "dos_off": "#",
         "dos_start": "#",
-        "dos_starting": "#",
         "dos_stop": "#",
-        "dos_stopping": "#",
-        
+
         "sniff_on": "#",
         "sniff_off": "#",
         "sniff_start": "#",
-        "sniff_starting": "#",
         "sniff_stop": "#",
-        "sniff_stopping": "#",
-        
+
         "nfq_on": "#",
         "nfq_off": "#",
         "nfq_start": "#",
-        "nfq_starting": "#",
-        "nfq_stop": "#",
-        "nfq_stopping": "#"
+        "nfq_stop": "#"
     },
     
     "modbus_forms": {
