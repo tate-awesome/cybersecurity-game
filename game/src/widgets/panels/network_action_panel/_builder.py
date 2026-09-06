@@ -1,4 +1,4 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ....app_core import Context
 from ..panel import Panel
 
@@ -34,7 +34,7 @@ FORM_CLASSES = {
 
 class Builder(Panel):
     KEY = "network_action_panel"
-    def __init__(self, master: CTkFrame, context: Context, available_forms: list[str] | None = None):
+    def __init__(self, master: QWidget, context: Context, available_forms: list[str] | None = None):
 
         super().__init__(master, context, self.KEY)
 
@@ -53,7 +53,7 @@ class Builder(Panel):
             self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
-            form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
+            self.scrollable.grid_layout.addWidget(form, i, 0)
         self.refresh_forms()
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
@@ -67,7 +67,6 @@ class Builder(Panel):
 
 
     def refresh_forms(self):
-        self.update_idletasks()
         for key in self.context.states.get("hacking_forms"):
             if key not in self.forms:
                 # This lesson's available_forms doesn't include this form -
@@ -84,17 +83,17 @@ class Builder(Panel):
         if name not in self.forms:
             raise KeyError(f"No hacking-panel form named {name!r} (check 'hacking_forms' in settings)")
         form = self.forms[name]
-        if not form.winfo_ismapped():
+        if form.isHidden():
             return
-        form.grid_remove()
+        form.hide()
 
     def show_form(self, name: str):
         if name not in self.forms:
             raise KeyError(f"No hacking-panel form named {name!r} (check 'hacking_forms' in settings)")
         form = self.forms[name]
-        if form.winfo_ismapped():
+        if not form.isHidden():
             return
-        form.grid()
+        form.show()
 
     def stop_all(self):
         for form in reversed(self.forms.values()):

@@ -1,4 +1,5 @@
-from customtkinter import CTkFrame, CTkLabel
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QLabel
 from .....app_core import Context
 from .....network.hardware import APPoller
 from ...base_form import BaseForm
@@ -13,7 +14,7 @@ class APConnectForm(BaseForm):
     (context.process_manager.get_process("ap_connect")).
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="ap_connect")
         self.process = self.get_process(APPoller)
 
@@ -23,7 +24,7 @@ class APConnectForm(BaseForm):
         self.url_entry = entry
 
         def do_connect():
-            url = self.url_entry.get().strip().rstrip("/")
+            url = self.url_entry.text().strip().rstrip("/")
             if url:
                 self.process.url = url
             if not self.process.is_running():
@@ -31,9 +32,11 @@ class APConnectForm(BaseForm):
 
         self.add_process_row(do_connect, self.process.stop, self.process.is_running)
 
-        self.conn_label = CTkLabel(self, text="", font=self.style.get_font("small"), text_color="gray")
-        self.conn_label.grid(row=self.current_row, column=1, columnspan=2, sticky="e",
-                              padx=self.style.gap, pady=self.style.gapbot)
+        self.conn_label = QLabel("")
+        self.conn_label.setFont(self.style.get_font("small"))
+        self.conn_label.setStyleSheet("color: gray;")
+        self.conn_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.grid_layout.addWidget(self.conn_label, self.current_row, 1, 1, 2)
         self.current_row += 1
 
         self.context.animation_manager.add_callback(f"APConnectForm_{id(self)}", self._refresh_status)
@@ -47,8 +50,10 @@ class APConnectForm(BaseForm):
 
     def _refresh_status(self):
         if self.process.is_running() and self.process.connected:
-            self.conn_label.configure(text="⬤  Connected", text_color="green")
+            self.conn_label.setText("⬤  Connected")
+            self.conn_label.setStyleSheet("color: green;")
         elif self.process.is_running():
-            self.conn_label.configure(text="⬤  Waiting for response...", text_color="orange")
+            self.conn_label.setText("⬤  Waiting for response...")
+            self.conn_label.setStyleSheet("color: orange;")
         else:
-            self.conn_label.configure(text="")
+            self.conn_label.setText("")

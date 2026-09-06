@@ -1,11 +1,11 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from .....app_core import Context
 from .....network.hardware import Denier
 from ...base_form import BaseForm
 
 
 class DosForm(BaseForm):
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
 
         super().__init__(master, context, key="dos")
         self.process = self.get_process(Denier)

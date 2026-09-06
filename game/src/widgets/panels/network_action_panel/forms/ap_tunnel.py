@@ -1,6 +1,6 @@
 import threading
 import requests
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from .....app_core import Context
 from .....network.hardware import APPoller
 from ...base_form import BaseForm
@@ -13,7 +13,7 @@ class APTunnelForm(BaseForm):
     EncryptionForm for why this isn't a Process/get_process() case.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="ap_tunnel")
 
         self.process = self.context.process_manager.get_process("ap_connect")

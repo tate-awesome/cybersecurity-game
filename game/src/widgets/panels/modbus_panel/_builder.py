@@ -1,4 +1,4 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ....app_core import Context
 from ..panel import Panel
 
@@ -16,7 +16,7 @@ FORM_CLASSES = {
 class Builder(Panel):
     KEY = "modbus_table_panel"
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
 
         super().__init__(master, context, self.KEY)
 
@@ -31,7 +31,7 @@ class Builder(Panel):
             self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
         for i, form in enumerate(self.forms.values()):
-            form.grid(row=i, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
+            self.scrollable.grid_layout.addWidget(form, i, 0)
         # self.refresh_forms()
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
@@ -44,14 +44,12 @@ class Builder(Panel):
 
         clear_button = self.menu_bar.add_button("clear_modbus", self.context.buffer.reset_modbus)
 
-        self.update_idletasks()
         self.refresh_nicknames()
         self.refresh_rows()
         self.refresh_forms()
 
 
     def refresh_forms(self):
-        self.update_idletasks()
         for key in self.context.states.get("modbus_forms"):
             state = self.context.states.get("modbus_forms", key)
 
@@ -67,17 +65,17 @@ class Builder(Panel):
         if name not in self.forms:
             raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_forms' in settings)")
         form = self.forms[name]
-        if not form.winfo_ismapped():
+        if form.isHidden():
             return
-        form.grid_remove()
+        form.hide()
 
     def show_forms(self, name: str):
         if name not in self.forms:
             raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_forms' in settings)")
         form = self.forms[name]
-        if form.winfo_ismapped():
+        if not form.isHidden():
             return
-        form.grid()
+        form.show()
         self.refresh_rows()
         self.refresh_nicknames()
 
