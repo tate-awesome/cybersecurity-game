@@ -1,236 +1,169 @@
 from ...app_core import Context
-from customtkinter import CTkFrame, CTkLabel, CTkButton, CTkOptionMenu
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from ..popup import message
-from .overlay import Overlay
-from CTkToolTip import CTkToolTip
 from typing import Callable
 
-class MenuBar(CTkFrame):
+class MenuBar(QFrame):
     '''
     The main Widget for the menu bar.
     Comes with a label and has a button maker.
-    Inherits CTkFrame.
+    Inherits QFrame.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, title_label: str = "_default"):
+    def __init__(self, master: QWidget, context: Context, title_label: str = "_default"):
+        super().__init__(master)
         self.context = context
         self.style = context.style
 
-        super().__init__(master, fg_color=self.style.color("widget"))
-        self.pack(side="top", padx=self.style.gap, pady=self.style.gaptop, fill="x")
+        master.layout().addWidget(self)
+        self.setStyleSheet(f"background-color: {self.style.color('widget')};")
 
-        self.game_label = CTkLabel(self, text=self.context.labels.get("menu_bar_titles", title_label), font=self.style.get_font(), padx=self.style.igap)
-        self.game_label.pack(fill="y", side="left", padx=self.style.gap)
+        # Qt widgets default to a vertical size policy that's willing to
+        # grow into whatever leftover space its layout has - the old
+        # CTkFrame only ever got fill="x" (not expand=True), so it never
+        # grew past its natural height, leaving Panes to claim the rest.
+        # Maximum reproduces that: this frame can shrink but never grow
+        # past its own sizeHint.
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 
-        self.the_overflow_button = None
-        self.fine_buttons = []
-        self.squashed_buttons = []
+        self.row = QHBoxLayout(self)
+        self.row.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
 
-        self.overflow_button()
+        self.game_label = QLabel(self.context.labels.get("menu_bar_titles", title_label))
+        self.game_label.setFont(self.style.get_font())
+        self.row.addWidget(self.game_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.row.addStretch()
 
     def add_tooltip(self, widget, key: str):
         self.context.style.add_tooltip(widget, "menu_bar_tooltips", key)
 
-    def add_button(self, label: str = "_default", function: Callable | None = None):
-        button = CTkButton(self, text=self.context.labels.get("menu_bar_buttons", label), command=function, font=self.style.get_font())
-        button.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+    def add_button(self, label: str = "_default", function: Callable | None = None) -> QPushButton:
+        button = QPushButton(self.context.labels.get("menu_bar_buttons", label))
+        button.setFont(self.style.get_font())
+        if function is not None:
+            self._connect(button, function)
+        self.row.addWidget(button)
         return button
 
-    def add_dropdown(self, values: list[str], command: Callable[[str], None] | None = None, default: str | None = None) -> CTkOptionMenu:
+    def _connect(self, button: QPushButton, function: Callable):
+        '''
+        clicked emits a "checked" bool that none of these callbacks expect
+        (see TitleMenu.button for the bug this avoids) - drop it before
+        calling through.
+        '''
+        button.clicked.connect(lambda checked=False, function=function: function())
+
+    def add_dropdown(self, values: list[str], command: Callable[[str], None] | None = None, default: str | None = None) -> QComboBox:
         '''
         A button-row dropdown (e.g. ModbusModel's hvac/submarine picker) -
         values/default are already-localized display text, command is
-        called with whichever one the user picks. Doesn't participate in
-        the overflow overlay (see update_squashing/clone_button) - those
-        clone plain CTkButtons by their ._text/._command, which doesn't
-        carry an option menu's current selection.
+        called with whichever one the user picks.
         '''
-        dropdown = CTkOptionMenu(self, values=values, command=command, font=self.style.get_font())
+        dropdown = QComboBox()
+        dropdown.setFont(self.style.get_font())
+        dropdown.addItems(values)
         if default is not None:
-            dropdown.set(default)
-        dropdown.pack(side="right", padx=self.style.gap, pady=self.style.gap)
+            index = dropdown.findText(default)
+            if index >= 0:
+                dropdown.setCurrentIndex(index)
+        if command is not None:
+            dropdown.currentTextChanged.connect(command)
+        self.row.addWidget(dropdown)
         return dropdown
-
-    # Button overflow overlay
-
-    def update_squashing(self):
-        # Calculate the required width (not including the overflow button)
-        required_width = 0
-        for child in self.winfo_children():
-            if self.the_overflow_button is not None and child == self.the_overflow_button:
-                continue
-            required_width += child.winfo_reqwidth() + self.style.igap*2
-
-        # Calculate which buttons are squashed or not
-        self.fine_buttons = []
-        self.squashed_buttons = []
-        available_width = self.winfo_width()
-        for child in self.winfo_children():
-            if child == self.the_overflow_button:
-                continue
-            available_width -= child.winfo_reqwidth() + self.style.igap*2
-            if child == self.game_label:
-                continue
-            if available_width < 0:
-                self.squashed_buttons.append(child)
-            else:
-                self.fine_buttons.append(child)
-
-    def overflow_button(self):
-        text = "..."
-        button = CTkButton(self, text=text, command=None, font=self.style.get_font(), width=0)
-        self.the_overflow_button = button
-        # button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
-        self.overflow_overlay = Overlay(self.context.root, self.context, button, self.populate_overflow_overlay)
-
-        button.pack_forget()
-
-        def configure_handler(event=None):
-            # If the requested width is calculated too early, for example, before a button is done rendering,
-            # it will be about 1 button's width too small. So when it's updated in self.add_button, it does update_idletasks()
-            try:
-                self.update_squashing()
-                for squashed in self.squashed_buttons:
-                    squashed.pack_forget()
-                for fine in self.fine_buttons:
-                    fine.pack(side="right", padx=self.style.gap, pady=self.style.gap)
-                if len(self.squashed_buttons) > 0:
-                    button.pack(side="right", padx=self.style.gap, pady=self.style.gap, after=self.game_label)
-                else:
-                    button.pack_forget()
-            except Exception:
-                # A destroyed widget mid-navigation with this <Configure> callback
-                # still queued raises TclError from winfo_*/pack/pack_forget -
-                # safe to just skip this stale redraw.
-                pass
-
-        self.bind("<Configure>", configure_handler)
-    
-    def clone_button(self, original_button: CTkButton, frame: CTkFrame):
-        proxy_button = CTkButton(frame, text=original_button._text, command=original_button._command, font=self.style.get_font())
-        proxy_button.pack(side="bottom", padx=self.style.gap, pady=self.style.gap)
-
-        original_button.proxy = proxy_button
-
-    def populate_overflow_overlay(self, overlay):
-        for squashed in self.squashed_buttons:
-            self.clone_button(squashed, overlay)
-            # if (child.winfo_width() < child.winfo_reqwidth() or self.the_overflow_button.) and isinstance(child, CTkButton):
-        
 
     # Panel Buttons
 
-
-    def minimize_button(self, frame_widget = None, pane = None):
+    def minimize_button(self, frame_widget: QWidget | None = None, pane: QWidget | None = None):
+        '''
+        Adds a button that hides frame_widget and shrinks pane down to its
+        minimum size, or restores both - and auto-minimizes/restores as
+        the user drags pane's containing Panes sash past that minimum,
+        mirroring the old <Configure>-driven auto-minimize.
+        '''
         minimize_text = self.context.labels.get("menu_bar_buttons", "minimize")
         maximize_text = self.context.labels.get("menu_bar_buttons", "maximize")
         button = self.add_button("minimize")
-        body_packed = True
-        configure_options = {}
-        manager = "none"
-
-        if frame_widget is not None:
-            manager = frame_widget.winfo_manager()
-
-        def hide_body():
-            nonlocal configure_options, body_packed
-            if not body_packed:
-                return
-            if manager == "pack":
-                configure_options = frame_widget.pack_info()
-                frame_widget.pack_forget()
-                body_packed = False
-            elif manager == "grid":
-                configure_options = frame_widget.grid_info()
-                frame_widget.grid_forget()
-                body_packed = False
-            elif manager == "place":
-                configure_options = frame_widget.place_info()
-                frame_widget.place_forget()
-                body_packed = False
-        
-        def show_body():
-            nonlocal configure_options, body_packed
-            if body_packed:
-                return
-            if manager == "pack":
-                frame_widget.pack(**configure_options)
-                body_packed = True
-            elif manager == "grid":
-                frame_widget.grid(**configure_options)
-                body_packed = True
-            elif manager == "place":
-                frame_widget.place(**configure_options)
-                body_packed = True
+        remembered_size = None
 
         def shrink_pane():
-            if pane is not None:
-                pane.master.add(pane, height=self.style.PANE_MIN_HEIGHT)
+            nonlocal remembered_size
+            if pane is None:
+                return
+            splitter = pane.parent()
+            index = splitter.indexOf(pane)
+            sizes = splitter.sizes()
+            remembered_size = sizes[index]
+            min_size = self.style.PANE_MIN_HEIGHT if splitter.orientation() == Qt.Orientation.Vertical else self.style.PANE_MIN_WIDTH
+            sizes[index] = min_size
+            splitter.setSizes(sizes)
 
         def grow_pane():
-            if pane is not None:
-                if pane.default_size:
-                    size = pane.default_size
-                else:
-                    size = self.style.PANE_BIG
-                pane.master.add(pane, height=size*self.style.get_scale_correction())
+            if pane is None:
+                return
+            splitter = pane.parent()
+            index = splitter.indexOf(pane)
+            sizes = splitter.sizes()
+            sizes[index] = remembered_size if remembered_size else self.style.PANE_BIG
+            splitter.setSizes(sizes)
 
-        def click_minimize():
-            button.configure(command=click_maximize, text=maximize_text)
-            if hasattr(button, "proxy"):
-                button.proxy.configure(command=click_maximize, text=maximize_text)
-            shrink_pane()
-            hide_body()
-        
+        def click_minimize(already_shrunk: bool = False):
+            button.clicked.disconnect()
+            self._connect(button, click_maximize)
+            button.setText(maximize_text)
+            if not already_shrunk:
+                shrink_pane()
+            if frame_widget is not None:
+                frame_widget.hide()
+
         def click_maximize():
-            button.configure(command=click_minimize, text=minimize_text)
-            if hasattr(button, "proxy"):
-                button.proxy.configure(command=click_minimize, text=minimize_text)
+            button.clicked.disconnect()
+            self._connect(button, click_minimize)
+            button.setText(minimize_text)
             grow_pane()
-            show_body()
-        
-        def manual_growth():
-            button.configure(command=click_minimize, text=minimize_text)
-            show_body()
-        
-        button.configure(command=click_minimize)
+            if frame_widget is not None:
+                frame_widget.show()
 
-        def configure_handler(event=None):
-            try:
-                if pane is not None:
-                    if pane.winfo_height() < self.style.PANE_MIN_HEIGHT + self.style.igap:
-                        click_minimize()
-                    else:
-                        manual_growth()
-            except Exception:
-                # See overflow_button's configure_handler - a destroyed pane
-                # mid-navigation with this callback still queued raises TclError.
-                pass
+        def on_sash_moved(pos=None, index=None):
+            if pane is None:
+                return
+            splitter = pane.parent()
+            min_size = self.style.PANE_MIN_HEIGHT if splitter.orientation() == Qt.Orientation.Vertical else self.style.PANE_MIN_WIDTH
+            current = pane.height() if splitter.orientation() == Qt.Orientation.Vertical else pane.width()
+            if current <= min_size + self.style.igap:
+                click_minimize(already_shrunk=True)
+
+        self._connect(button, click_minimize)
         if pane is not None:
-            pane.bind("<Configure>", configure_handler)
+            pane.parent().splitterMoved.connect(on_sash_moved)
+
+        return button
 
     def reversible_button(self, start_func: Callable, stop_func: Callable, inactive_label: str, active_label: str, start_active: bool = False):
         inactive_name = self.context.labels.get("menu_bar_buttons", inactive_label)
         active_name = self.context.labels.get("menu_bar_buttons", active_label)
         button = self.add_button(inactive_label)
+
         def stop():
             stop_func()
-            if hasattr(button, "proxy"):
-                button.proxy.configure(command=start, text=inactive_name)
-            button.configure(command=start, text=inactive_name)
+            button.clicked.disconnect()
+            self._connect(button, start)
+            button.setText(inactive_name)
 
         def start():
             start_func()
-            if hasattr(button, "proxy"):
-                button.proxy.configure(command=stop, text=active_name)
-            button.configure(command=stop, text=active_name)
+            button.clicked.disconnect()
+            self._connect(button, stop)
+            button.setText(active_name)
 
         # Sync the button's initial text/command to whatever state start_func/stop_func
         # already represent, without re-invoking either (they're already in that state).
         if start_active:
-            button.configure(command=stop, text=active_name)
+            self._connect(button, stop)
+            button.setText(active_name)
         else:
-            button.configure(command=start, text=inactive_name)
+            self._connect(button, start)
+            button.setText(inactive_name)
         return button
 
     # Page Buttons
@@ -238,7 +171,7 @@ class MenuBar(CTkFrame):
     def quit_button(self):
         button = self.add_button("quit_button", self.context.router.quit)
         self.add_tooltip(button, "quit_button")
-    
+
     def refresh_button(self):
         button = self.add_button("refresh_button", self.context.router.refresh)
         self.add_tooltip(button, "refresh_button")
@@ -250,11 +183,11 @@ class MenuBar(CTkFrame):
     def back_button(self):
         button = self.add_button("back_button", self.context.router.go_back)
         self.add_tooltip(button, "back_button")
-    
+
     def toggle_button(self):
         button = self.add_button("toggle_button", self.context.style.toggle_mode)
         self.add_tooltip(button, "toggle_button")
-    
+
     def theme_button(self):
         button = self.add_button("theme_button", self.context.style.select_theme)
         self.add_tooltip(button, "theme_button")
@@ -281,11 +214,11 @@ class MenuBar(CTkFrame):
     def preset_button(self):
         button = self.add_button("preset_button", self.context.states.select)
         self.add_tooltip(button, "preset_button")
-    
+
     def labels_button(self):
         button = self.add_button("labels_button", self.context.labels.select)
         self.add_tooltip(button, "labels_button")
-    
+
     def help_button(self):
         button = self.add_button("help_button", lambda: message(self, self.context, self.context.help_message()))
         self.add_tooltip(button, "help_button")
@@ -314,4 +247,3 @@ class MenuBar(CTkFrame):
         self.labels_button()
         self.data_button()
         self.page_button()
-        
