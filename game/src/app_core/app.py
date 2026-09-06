@@ -1,13 +1,18 @@
-import customtkinter as ctk
+import sys
 
-from .router import Router
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication, QMainWindow
 
-import platform
+# TODO: Router (and everything it builds - Context, Style, ClickManager,
+# AnimationManager, every Page/Panel) is still written against
+# customtkinter. Re-enable this import and the Router(...) call below once
+# that chain has been migrated to PySide6.
+# from .router import Router
 
 
 class App():
     '''
-    Creates the Router and starts the CTk main loop
+    Creates the Router and starts the GUI main loop
     '''
 
     def __init__(self, start_page: str | None = None, title="Game", start_fullscreen = False):
@@ -16,16 +21,19 @@ class App():
         from the manifest's "startup_page" instead.
         '''
 
-        # Start a CTk app
-        self.root = ctk.CTk()
-        self.root.title(title)
+        # Start a Qt app
+        self.app = QApplication.instance() or QApplication(sys.argv)
+
+        self.root = QMainWindow()
+        self.root.setWindowTitle(title)
         self.set_geometry(start_fullscreen)
-        
+        self.root.show()
+
         # Create the router, which will handle page navigation
-        Router(self.root, start_page)
+        # Router(self.root, start_page)
 
         # Start the main loop
-        self.root.mainloop()
+        sys.exit(self.app.exec())
 
 
     def set_geometry(self, start_fullscreen):
@@ -33,24 +41,19 @@ class App():
         Sets the size and position of the window, then starts maximized or fullscreen
         '''
         f = 3.0/4.0
-        w = int(f*self.root.winfo_screenwidth())
-        h = int(f*self.root.winfo_screenheight())
-        self.root.geometry(f"{w}x{h}")
+        screen = self.app.primaryScreen().availableGeometry()
+        w = int(f*screen.width())
+        h = int(f*screen.height())
+        self.root.resize(w, h)
 
         if start_fullscreen:
-            self.root.attributes("-fullscreen", True)
+            self.root.showFullScreen()
         else:
-            self.root.after(
+            QTimer.singleShot(
                 50,
                 self.maximize
             )
 
-    
+
     def maximize(self):
-        try:
-            self.root.state("zoomed")
-        except Exception:
-            try:
-                self.root.attributes("-zoomed", True)
-            except Exception:
-                pass
+        self.root.showMaximized()

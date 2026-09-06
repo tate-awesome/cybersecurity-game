@@ -60,5 +60,5 @@ elif os_name == "Linux" or os_name == "Darwin":
 else:
     print(f"Running on an unidentified system: {os_name}")
 
-# Create the App object, which owns the CTk root
+# Create the App object, which owns the GUI root
 game = App(title="Game", start_fullscreen=False)

@@ -8,3 +8,4 @@ flask
 matplotlib
 CTkToolTip
 python-nmap # must install nmap separately on the system
+pyside6
