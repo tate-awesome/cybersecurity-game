@@ -173,8 +173,6 @@ class Style:
         return int(self.igap * self.get_scale_correction())
 
     def add_tooltip(self, widget, class_key: str, widget_key: str):
-        # Native Qt tooltip - simpler than CTkToolTip (no custom border/
-        # offset styling), which is an acceptable loss for now.
         widget.setToolTip(self.context.labels.get(class_key, widget_key))
 
     def apply_theme(self, theme_name: str):

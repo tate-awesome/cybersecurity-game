@@ -9,7 +9,6 @@ from matplotlib.figure import Figure
 # Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette -
 # ported as-is from the old HVACView._build_graph, see its comment: not
 # pulled from Style on purpose, matplotlib needs a single concrete color
-# string and CTk colors can be light/dark-mode tuples.
 _FIG_BG      = "#16213e"
 _AXES_BG     = "#0a0a1a"
 _GRID        = "#0f3460"

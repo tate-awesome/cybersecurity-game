@@ -1,4 +1,3 @@
-customtkinter
 scapy
 netifaces2
 netfilterqueue; sys_platform == 'linux'
@@ -6,7 +5,6 @@ pydivert; sys_platform == 'win32'
 requests
 flask
 matplotlib
-CTkToolTip
 python-nmap # must install nmap separately on the system
 pyside6
 qt-material
