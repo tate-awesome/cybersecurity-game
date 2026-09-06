@@ -1,6 +1,6 @@
 from ...app_core import Context
 from .overlay import Overlay
-from customtkinter import CTkFrame, CTkLabel, CTkCheckBox, CTkButton
+from PySide6.QtWidgets import QCheckBox, QFrame, QLabel, QPushButton, QVBoxLayout
 from typing import Callable
 
 
@@ -16,7 +16,7 @@ class CheckboxOverlay:
     settings category to read/write (state_key) and what to title the column
     (category_label).
     '''
-    def __init__(self, button: CTkButton, context: Context, refresh_function: Callable,
+    def __init__(self, button: QPushButton, context: Context, refresh_function: Callable,
                  state_key: str, category_label: str, visibility_key: str | None = None):
         self.context = context
         self.style = context.style
@@ -31,14 +31,14 @@ class CheckboxOverlay:
         med = self.style.get_font()
 
         # Create box filter widgets
-        checkbox_frame = CTkFrame(overlay, fg_color=self.style.color("panel"))
-        checkbox_frame.pack(side="top", padx=self.style.gap, pady=self.style.gaptop)
+        category_frame = QFrame()
+        category_frame.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        category_layout = QVBoxLayout(category_frame)
+        overlay.layout().addWidget(category_frame)
 
-        category_frame = CTkFrame(checkbox_frame, fg_color=self.style.color("widget"))
-        category_frame.pack(side="left", padx=self.style.gap, pady=self.style.gap, anchor="n")
-        category_label = CTkLabel(category_frame, text=self.category_label, font=med)
-        category_label.pack(side="top", pady=self.style.gap, anchor="n")
-
+        category_label = QLabel(self.category_label)
+        category_label.setFont(med)
+        category_layout.addWidget(category_label)
 
         available_forms: dict[str, int] = self.context.states.get(self.visibility_key) if self.visibility_key else None
         for key in self.context.states.get(self.state_key):
@@ -46,14 +46,19 @@ class CheckboxOverlay:
                 print(f"Form is invisible: {key!r}")
                 continue
 
-            checkbox = CTkCheckBox(category_frame, text=self.context.labels.get(self.state_key, key), font=med)
-            checkbox.pack(side="top", anchor="w", pady=self.style.gap, padx=self.style.gap)
-            # Load previous input
+            checkbox = QCheckBox(self.context.labels.get(self.state_key, key))
+            checkbox.setFont(med)
+            category_layout.addWidget(checkbox)
+
+            # Load previous input before connecting, so restoring it doesn't itself trigger autosave
             value = box_slots[key]
-            if value == "1" or value == 1: checkbox.select()
-            else: checkbox.deselect()
-            # Configure for autosave (give it a function with a value container, its key, and itself)
-            def autosave(value=box_slots, key=key, b=checkbox):
-                value[key] = str(b.get())
+            checkbox.setChecked(value == "1" or value == 1)
+
+            # Configure for autosave (give it a function with a value container and its key).
+            # Stored as "1"/"0" - the convention this settings data already uses
+            # everywhere else (matching customtkinter's CTkCheckBox.get(), which
+            # returned 1/0, not Qt's own True/False).
+            def autosave(checked: bool, value=box_slots, key=key):
+                value[key] = "1" if checked else "0"
                 self.refresh_function()
-            checkbox.configure(command=autosave)
+            checkbox.toggled.connect(autosave)

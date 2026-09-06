@@ -9,3 +9,4 @@ matplotlib
 CTkToolTip
 python-nmap # must install nmap separately on the system
 pyside6
+qt-material

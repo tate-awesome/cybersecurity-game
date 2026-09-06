@@ -1,24 +1,17 @@
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QApplication, QInputDialog
 import darkdetect
+import qt_material
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
-# Approximate stand-in for customtkinter's "blue" theme, keyed the same way
-# Style.color() was already called everywhere - light mode value first, dark
-# mode value second - so callers didn't need to change. Not wired up to any
-# theme-file loading yet (see load_preferred_theme/select_theme below).
-PALETTE = {
-    "root":            ("#F2F2F2", "#242424"),
-    "panel":           ("#EBEBEB", "#2B2B2B"),
-    "widget":          ("#FFFFFF", "#333333"),
-    "accent":          ("#3B8ED0", "#1F6AA5"),
-    "field":           ("#F9F9FA", "#343638"),
-    "field_text":      ("#000000", "#FFFFFF"),
-    "scrollbar":       ("#C0C0C0", "#4A4A4A"),
-    "scrollbar_hover": ("#A0A0A0", "#5A5A5A"),
-}
+# Fallback themes when no preference is saved yet, or when toggle_mode's
+# target mode has no variant in the current color family (e.g. light_orange
+# has no dark_orange - see qt_material.list_themes()).
+DEFAULT_DARK_THEME = "dark_teal.xml"
+DEFAULT_LIGHT_THEME = "light_teal.xml"
 
 class Style:
 
@@ -39,9 +32,14 @@ class Style:
         self.PANE_MIN_HEIGHT = self.igap*10
         self.PANE_BIG = self.igap*100
         self.fonts = {}
-        self.mode = "Dark" if darkdetect.isDark() else "Light"
-        self.current_theme = "blue"
         self.context = context
+
+        # Preferences don't exist yet at this point in startup (see
+        # ContextManager.start_session) - this is just a system-appropriate
+        # bootstrap default; load_preferred_theme() overrides it once
+        # preferences are available.
+        self._theme_colors: dict[str, str] = {}
+        self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
     def packing(self, type = "default"):
         options = {}
@@ -116,20 +114,29 @@ class Style:
 
     def color(self, type: str) -> str:
         '''
-        Returns the input string OR a theme color:
+        Returns the input string OR a color from the active qt-material
+        theme (see apply_theme) - qt-material only exposes 7 named roles,
+        so several of these keys share one:
         "root": window background
         "panel": panel background
         "widget": nested/inner widget background
-        "accent": button/highlight color
+        "accent": button/highlight color (the theme's primary color)
         "field": text field background
         "field_text": text field text color
         "scrollbar": scrollbar handle color
         "scrollbar_hover": scrollbar handle hover color
         '''
-        i = 0 if self.mode == "Light" else 1
-        if type not in PALETTE:
-            return type
-        return PALETTE[type][i]
+        colors = {
+            "root": self._root_color,
+            "panel": self._panel_color,
+            "widget": self._theme_colors["secondaryLightColor"],
+            "accent": self._theme_colors["primaryColor"],
+            "field": self._theme_colors["secondaryLightColor"],
+            "field_text": self._theme_colors["secondaryTextColor"],
+            "scrollbar": self._theme_colors["secondaryLightColor"],
+            "scrollbar_hover": self._theme_colors["primaryLightColor"],
+        }
+        return colors.get(type, type)
 
     def get_column_width(self, column_name):
         match column_name:
@@ -170,42 +177,87 @@ class Style:
         # offset styling), which is an acceptable loss for now.
         widget.setToolTip(self.context.labels.get(class_key, widget_key))
 
-    def load_preferred_theme(self):
-        # TODO: customtkinter's JSON theme-file loading (ThemeManager) has
-        # no Qt equivalent yet; only the preference itself carries over.
-        if self.context.preferences.has("theme"):
-            self.current_theme = self.context.preferences.data["theme"]
+    def apply_theme(self, theme_name: str):
+        '''
+        Applies a qt-material theme globally (its QSS stylesheet covers
+        every native Qt widget automatically) and refreshes the color()
+        values this app's own hand-styled widgets pull from. Those are set
+        once, inline, at construction time (see Panel/BaseForm/MenuBar
+        etc.), so - unlike native widgets - they only pick up a new theme
+        on their next rebuild; callers changing the theme after startup
+        (toggle_mode, select_theme) follow this with context.router.refresh().
+        '''
+        app = QApplication.instance()
+        qt_material.apply_stylesheet(app, theme=theme_name)
+        self.current_theme = theme_name
+        self._theme_colors = qt_material.get_theme(theme_name)
+        self.mode = "Dark" if theme_name.startswith("dark_") else "Light"
+
+        # qt-material's secondaryColor/secondaryDarkColor aren't consistently
+        # ordered by actual lightness across its dark_*/light_* theme families
+        # (dark families: secondaryColor is the darkest of the two; light
+        # families: secondaryDarkColor is) - so root (outermost, should read
+        # as most "recessed") and panel (should read as "raised" above it)
+        # are assigned by comparing their actual luminance rather than
+        # assuming either name means what it says relative to the other.
+        secondary = self._theme_colors["secondaryColor"]
+        secondary_dark = self._theme_colors["secondaryDarkColor"]
+        if self._luminance(secondary) <= self._luminance(secondary_dark):
+            self._root_color, self._panel_color = secondary, secondary_dark
         else:
-            self.current_theme = "blue"
+            self._root_color, self._panel_color = secondary_dark, secondary
+
+    def _luminance(self, hex_color: str) -> int:
+        hex_color = hex_color.lstrip("#")
+        return sum(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+
+    def load_preferred_theme(self):
+        saved = self.context.preferences.data.get("theme")
+        if self.context.preferences.has("theme") and saved in qt_material.list_themes():
+            self.apply_theme(saved)
+        else:
+            self.load_default_theme()
 
     def load_default_theme(self):
-        self.current_theme = "blue"
-
-    def load_preferred_mode(self):
-        if self.context.preferences.has("mode"):
-            self.mode = self.context.preferences.data["mode"]
-
-    def load_default_mode(self):
-        self.mode = "Light"
+        self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
     def toggle_mode(self):
         '''
-        Toggles the appearance mode (light/dark mode)
+        Toggles between the light and dark variant of the current theme's
+        color family (e.g. dark_teal.xml <-> light_teal.xml). Falls back to
+        the default theme for the target mode if this family has no variant
+        for it (e.g. light_orange has no dark_orange).
         '''
-        self.mode = "Light" if self.mode == "Dark" else "Dark"
-        self.context.preferences.set("mode", self.mode)
+        current_mode, _, family = self.current_theme.partition("_")
+        target_mode = "light" if current_mode == "dark" else "dark"
+        target_theme = f"{target_mode}_{family}"
+        if target_theme not in qt_material.list_themes():
+            target_theme = DEFAULT_DARK_THEME if target_mode == "dark" else DEFAULT_LIGHT_THEME
+
+        self.apply_theme(target_theme)
+        self.context.preferences.set("theme", self.current_theme)
         self.context.router.refresh()
 
     def select_theme(self):
         '''
-        Opens a dialog for the user to select a theme file.
-        TODO: no theme file format is loaded yet - only the selected path
-        is recorded, pending a Qt-native theme/palette system.
+        Opens a dialog for the user to pick one of qt-material's built-in
+        themes by name - replacing customtkinter's arbitrary theme-file
+        picker, since qt-material ships named presets rather than files to
+        browse to.
         '''
-        themes_dir = self.context.paths.themes
-        file_path = self.context.paths.select_path(themes_dir, "Select a Theme File")
-        if file_path is None:
+        themes = qt_material.list_themes()
+        labels = [self._theme_display_name(t) for t in themes]
+        current_index = themes.index(self.current_theme) if self.current_theme in themes else 0
+
+        label, ok = QInputDialog.getItem(
+            self.root, "Select a Theme", "Theme:", labels, current_index, editable=False
+        )
+        if not ok:
             return
-        self.current_theme = file_path
+
+        self.apply_theme(themes[labels.index(label)])
         self.context.preferences.set("theme", self.current_theme)
         self.context.router.refresh()
+
+    def _theme_display_name(self, theme_file: str) -> str:
+        return theme_file.removesuffix(".xml").replace("_", " ").title()

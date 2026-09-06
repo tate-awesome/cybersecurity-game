@@ -1,10 +1,10 @@
-from customtkinter import CTkFrame, CTkEntry, CTkLabel, CTkButton
-from abc import ABC, abstractmethod
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
 from typing import Callable
 from ...app_core import Context
 from ...network.process import Process
 
-class BaseForm(ABC, CTkFrame):
+class BaseForm(QWidget):
     '''
     Shared by network_action_panel's and modbus_panel's process/action forms. The two
     differ only in how they source display text and lay out the process
@@ -21,12 +21,13 @@ class BaseForm(ABC, CTkFrame):
     process or AP actually confirms - which may lag behind the click for
     network-backed forms, or land immediately for local processes.
     '''
-    def __init__(self, master: CTkFrame, context: Context, process_noun: str = "Process", key: str | None = None):
+    def __init__(self, master: QWidget, context: Context, process_noun: str = "Process", key: str | None = None):
         '''
         process_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
         key, if given, selects the "network_action_forms"/"network_action_panels" i18n text
         for this form instead of building plain text from process_noun.
         '''
+        super().__init__(master)
 
         self.style = context.style
         self.context = context
@@ -34,11 +35,12 @@ class BaseForm(ABC, CTkFrame):
         self.process_noun = process_noun
         self.has_process_button = False
 
-        super().__init__(master, fg_color=self.style.color("widget"))
+        self.setStyleSheet(f"background-color: {self.style.color('widget')};")
 
-        self.columnconfigure(0, weight=0)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=0)
+        self.grid_layout = QGridLayout(self)
+        self.grid_layout.setColumnStretch(0, 0)
+        self.grid_layout.setColumnStretch(1, 1)
+        self.grid_layout.setColumnStretch(2, 0)
 
         # Resolve attack labels
         if self.key is not None:
@@ -54,9 +56,18 @@ class BaseForm(ABC, CTkFrame):
 
         self.current_row = 0
         self.entry_index = 0
-        self.entries = []
+        self.entries: list[QLineEdit] = []
         self.start_process = lambda: None
         self.stop_process = lambda: None
+        self._process_button_connected = False
+
+    def wire_button(self, button: QPushButton, function: Callable):
+        '''
+        clicked emits a "checked" bool that none of these callbacks expect -
+        drop it before calling through. Reusable by subclasses (e.g. Modify)
+        that wire up their own buttons outside of add_process_row/add_button.
+        '''
+        button.clicked.connect(lambda checked=False, function=function: function())
 
     def get_process(self, process_class: type[Process], *args, tags: list[str] | None = None, **kwargs) -> Process:
         '''
@@ -85,17 +96,19 @@ class BaseForm(ABC, CTkFrame):
         if text is None:
             assert self.key is not None, "add_header() with no text requires key to be set"
             text = str(self.context.labels.get("hacking_forms", self.key))
-        self.header = CTkLabel(self, text=text, font=self.style.get_font())
-        self.header.grid(row=self.current_row, column=0, columnspan="10", sticky="ew", pady=self.style.gap)
+        self.header = QLabel(text)
+        self.header.setFont(self.style.get_font())
+        self.grid_layout.addWidget(self.header, self.current_row, 0, 1, 10, Qt.AlignmentFlag.AlignCenter)
         self.current_row += 1
 
-    def add_label_row(self, label_slot: str, label_keys: list[str]) -> list[CTkLabel]:
+    def add_label_row(self, label_slot: str, label_keys: list[str]) -> list[QLabel]:
         column = 0
         output = []
         for key in label_keys:
             text = self.context.labels.get(label_slot, key)
-            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=column, sticky="ew", pady=self.style.gapbot, padx=self.style.nogap)
+            label = QLabel(text)
+            label.setFont(self.style.get_font("mono"))
+            self.grid_layout.addWidget(label, self.current_row, column)
             column += 1
             output.append(label)
         self.current_row += 1
@@ -111,22 +124,24 @@ class BaseForm(ABC, CTkFrame):
         assert self.key is not None, "add_labeled_entry() requires key to be set"
 
         # Create widgets
-        label_widget = CTkLabel(self, text=label, font=self.style.get_font(), anchor="e")
-        label_widget.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
+        label_widget = QLabel(label)
+        label_widget.setFont(self.style.get_font())
+        label_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.grid_layout.addWidget(label_widget, self.current_row, 1)
 
-        entry = CTkEntry(self, font=self.style.get_font())
-        entry.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
+        entry = QLineEdit()
+        entry.setFont(self.style.get_font())
+        self.grid_layout.addWidget(entry, self.current_row, 2)
         self.entries.append(entry)
 
         # Bind autosave
         save_slots = self.context.states.get("hack_forms", self.key)
-        def autosave(event=None, e=entry, idx=self.entry_index):
-            save_slots[idx] = e.get()
-        entry.bind("<KeyRelease>", autosave)
+        def autosave(text, e=entry, idx=self.entry_index):
+            save_slots[idx] = text
+        entry.textEdited.connect(autosave)
 
         # Load saved entry input
-        entry.delete(0, "end")
-        entry.insert(0, save_slots[self.entry_index])
+        entry.setText(save_slots[self.entry_index])
 
         # Update current index
         self.current_row += 1
@@ -140,15 +155,19 @@ class BaseForm(ABC, CTkFrame):
             return
 
         # Create widgets
-        self.process_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        self.process_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
+        self.process_status = QLabel(default_status)
+        self.process_status.setFont(self.style.get_font())
+        self.process_button = QPushButton("")
+        self.process_button.setFont(self.style.get_font())
 
         if self.key is not None:
-            self.process_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
-            self.process_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
+            self.process_status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self.grid_layout.addWidget(self.process_status, self.current_row, 1)
+            self.grid_layout.addWidget(self.process_button, self.current_row, 2)
         else:
-            self.process_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gapbot)
-            self.process_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gapbot)
+            self.process_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.grid_layout.addWidget(self.process_status, self.current_row, 0)
+            self.grid_layout.addWidget(self.process_button, self.current_row, 2)
 
         # Set function definitions
         self.start_process = start_func
@@ -160,11 +179,9 @@ class BaseForm(ABC, CTkFrame):
         self.process_confirmed_state = None
         self.refresh_process_button()
 
-        # Bind <Return> - a no-op for modbus_panel forms, which never populate self.entries
-        def return_handler(event=None):
-            self.click_start()
+        # Return submits the form - a no-op for modbus_panel forms, which never populate self.entries
         for entry in self.entries:
-            entry.bind("<Return>", return_handler)
+            entry.returnPressed.connect(self.click_start)
 
         # Update current index
         self.current_row += 1
@@ -195,38 +212,60 @@ class BaseForm(ABC, CTkFrame):
         '''
         if self.key is not None:
             self.context.states.set("game_progress", self.key, value=1)
-        self.process_button.configure(text=self.stop_process_text, command=None)
+        self.process_button.setText(self.stop_process_text)
+        self._disconnect_process_button()
         # Unset the confirmed state so the next poll always reconciles the
         # button, even if start_process() fails and status_func() reports
         # the same value it did before this click (e.g. still False) -
         # otherwise refresh_process_button sees "no change" and never fires.
         self.process_confirmed_state = None
-        self.context.root.update_idletasks()
+        self.process_button.repaint()  # paint the optimistic text now, in case start_process() blocks briefly
         self.start_process()
 
     def configure_on(self):
-        self.process_button.configure(command=self.click_stop, text=self.stop_process_text)
-        self.process_status.configure(text=self.status_on_text)
+        self._disconnect_process_button()
+        self.wire_button(self.process_button, self.click_stop)
+        self._process_button_connected = True
+        self.process_button.setText(self.stop_process_text)
+        self.process_status.setText(self.status_on_text)
 
     def click_stop(self):
         if not self.has_process_button:
             return
-        self.process_button.configure(text=self.start_process_text, command=None)
+        self.process_button.setText(self.start_process_text)
+        self._disconnect_process_button()
         self.process_confirmed_state = None
-        self.context.root.update_idletasks()
+        self.process_button.repaint()
         self.stop_process()
 
     def configure_off(self):
-        self.process_button.configure(command=self.click_start, text=self.start_process_text)
-        self.process_status.configure(text=self.status_off_text)
+        self._disconnect_process_button()
+        self.wire_button(self.process_button, self.click_start)
+        self._process_button_connected = True
+        self.process_button.setText(self.start_process_text)
+        self.process_status.setText(self.status_off_text)
+
+    def _disconnect_process_button(self):
+        # Tracked explicitly rather than relying on disconnect() to raise
+        # when nothing's connected - PySide6 only logs a RuntimeWarning in
+        # that case (not a catchable RuntimeError), which would otherwise
+        # spam the console on every form's first build.
+        if self._process_button_connected:
+            self.process_button.clicked.disconnect()
+            self._process_button_connected = False
 
     def add_button(self, default_status: str = "", button_text: str = "", button_func: Callable | None = None):
         # Create widgets
-        status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
+        status = QLabel(default_status)
+        status.setFont(self.style.get_font())
+        status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.grid_layout.addWidget(status, self.current_row, 1)
 
-        button = CTkButton(self, text=button_text, font=self.style.get_font(), command=button_func)
-        button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
+        button = QPushButton(button_text)
+        button.setFont(self.style.get_font())
+        if button_func is not None:
+            self.wire_button(button, button_func)
+        self.grid_layout.addWidget(button, self.current_row, 2)
 
         # Update current index
         self.current_row += 1

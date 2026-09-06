@@ -24,8 +24,8 @@ class AttackerV0(Page):
 
     # # Forms
         hacking_side = Panes(trifold.pane(0), context, "vertical", 2, [2.3, 2], False)
-    #     HackingPanel(hacking_side.pane(0), context)
-    #     ModbusPanel(hacking_side.pane(1), context)
+        HackingPanel(hacking_side.pane(0), context)
+        ModbusPanel(hacking_side.pane(1), context)
 
     # Console
         console = Panes(trifold.pane(1), context, "vertical", 3, [3, 3, 3], False)

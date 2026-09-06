@@ -55,7 +55,6 @@ Shared data for a page. Passed to next pages on navigation.
         self.labels: LocalizationManager = LocalizationManager(self)
         self.buffer: Buffer = Buffer(self)
         self.style.load_preferred_theme()
-        self.style.load_preferred_mode()
 
     def reset_session(self):
         '''
@@ -65,7 +64,6 @@ Shared data for a page. Passed to next pages on navigation.
         self.states.reset()
         self.labels.reset()
         # self.style.load_default_theme()
-        # self.style.load_default_mode()
 
     def start_page(self):
         '''

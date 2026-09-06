@@ -1,17 +1,18 @@
-from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QLineEdit, QPushButton, QWidget
 from .....app_core import Context
 from ...base_form import BaseForm
 
 class Modify(BaseForm):
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="Modifying")
         # Assign local references
         self.buffer = context.buffer.modbus
         # Create form
-        
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=1)
+
+        self.grid_layout.setColumnStretch(0, 1)
+        self.grid_layout.setColumnStretch(1, 1)
+        self.grid_layout.setColumnStretch(2, 1)
 
         self.add_header("ModBus Modifiers")
 
@@ -32,7 +33,7 @@ class Modify(BaseForm):
         self.add_process_row(self.enable_modify, self.disable_modify, self.modify_is_enabled)
 
         _, reset_button = self.add_button("Reset Modifiers")
-        reset_button.configure(command=self.reset_modifiers)
+        self.wire_button(reset_button, self.reset_modifiers)
 
         self.load_saved_input()
 
@@ -41,14 +42,18 @@ class Modify(BaseForm):
         self.current_column = 0
 
         def label(text):
-            label = CTkLabel(self, text=text, font=self.style.get_font("mono"))
-            label.grid(row=self.current_row, column=self.current_column, sticky="", pady=self.style.gapbot)
+            label = QLabel(text)
+            label.setFont(self.style.get_font("mono"))
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.grid_layout.addWidget(label, self.current_row, self.current_column)
             self.current_column += 1
             return label
 
         def entry():
-            entry = CTkEntry(self, font=self.style.get_font("mono"))
-            entry.grid(row=self.current_row, column=self.current_column, sticky="")
+            entry = QLineEdit()
+            entry.setFont(self.style.get_font("mono"))
+            entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.grid_layout.addWidget(entry, self.current_row, self.current_column)
             self.entries.append(entry)
             self.current_column += 1
             return entry
@@ -65,10 +70,9 @@ class Modify(BaseForm):
     def refresh_nicknames(self):
         for key, row in self.rows.items():
             variable_name = self.context.labels.variable_name(key)
-            row["name"].configure(text=variable_name)
+            row["name"].setText(variable_name)
 
     def refresh_rows(self):
-        self.update_idletasks()
         for key in self.context.states.get_registers():
             self.row_visibility(key)
 
@@ -76,17 +80,20 @@ class Modify(BaseForm):
         state = self.context.states.get_register(key, "show")
         row = self.rows[key]
         for _, widget in row.items():
-            if (state == 0 or state == "0") and widget.winfo_ismapped():
-                widget.grid_remove()
-            elif (state == 1 or state == "1") and not widget.winfo_ismapped():
-                widget.grid()
+            if (state == 0 or state == "0") and not widget.isHidden():
+                widget.hide()
+            elif (state == 1 or state == "1") and widget.isHidden():
+                widget.show()
 
-    def add_button(self, text) -> tuple[CTkLabel, CTkButton]:
-        status = CTkLabel(self, text="", font=self.style.get_font(), anchor="e")
-        status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gapbot)
+    def add_button(self, text) -> tuple[QLabel, QPushButton]:
+        status = QLabel("")
+        status.setFont(self.style.get_font())
+        status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.grid_layout.addWidget(status, self.current_row, 0)
 
-        button = CTkButton(self, text=text, font=self.style.get_font(), command=None)
-        button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gapbot)
+        button = QPushButton(text)
+        button.setFont(self.style.get_font())
+        self.grid_layout.addWidget(button, self.current_row, 2)
         self.current_row += 1
 
         return status, button
@@ -97,37 +104,35 @@ class Modify(BaseForm):
             valid = True
             for _, row in self.rows.items():
                 try:
-                    float(row["multiplier"].get())
-                    float(row["offset"].get())
+                    float(row["multiplier"].text())
+                    float(row["offset"].text())
                 except:
                     valid = False
                     pass
 
             if not valid:
-                self.save_status.configure(text="! Must be Numbers !")
+                self.save_status.setText("! Must be Numbers !")
                 return
 
             # Then save
             for key, row in self.rows.items():
-                mult = float(row["multiplier"].get())
+                mult = float(row["multiplier"].text())
                 self.context.states.set_register(key, "multiplier", mult)
-                offset = float(row["offset"].get())
+                offset = float(row["offset"].text())
                 self.context.states.set_register(key, "offset", offset)
 
-            self.save_status.configure(text="Modifiers Saved.")
+            self.save_status.setText("Modifiers Saved.")
 
-        self.save_button.configure(command=save)
-        def event_callback(event=None):
-            save()
-        
+        self.wire_button(self.save_button, save)
+
         for entry in self.entries:
-            entry.bind("<Return>", event_callback)
+            entry.returnPressed.connect(save)
 
     def bind_input_alert(self):
-        def alert(event=None):
-            self.save_status.configure(text="! Unsaved Modifiers !")
+        def alert(text=None):
+            self.save_status.setText("! Unsaved Modifiers !")
         for entry in self.entries:
-            entry.bind("<Key>", alert)
+            entry.textEdited.connect(alert)
 
     def load_saved_input(self):
         for key, row in self.rows.items():
@@ -135,14 +140,12 @@ class Modify(BaseForm):
             offset_str = self.context.states.get_register(key, "offset")
 
             mult = f"{float(multiplier_str):g}"
-            row["multiplier"].delete(0, "end")
-            row["multiplier"].insert(0, mult)
+            row["multiplier"].setText(mult)
 
             offset = f"{float(offset_str):g}"
-            row["offset"].delete(0, "end")
-            row["offset"].insert(0, offset)
-        
-        self.save_status.configure(text="Modifiers Saved.")
+            row["offset"].setText(offset)
+
+        self.save_status.setText("Modifiers Saved.")
 
     # Enable Modify Button
 

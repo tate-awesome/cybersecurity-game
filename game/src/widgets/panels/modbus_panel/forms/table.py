@@ -1,18 +1,18 @@
-from customtkinter import CTkFrame, CTkLabel
+from PySide6.QtWidgets import QWidget
 from .....app_core import Context
 from ...base_form import BaseForm
 
 class MitmTable(BaseForm):
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="NFQ")
         # Assign local references
         self.buffer = context.buffer.modbus
         # Create form
-        
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=1)
-        self.columnconfigure(3, weight=1)
+
+        self.grid_layout.setColumnStretch(0, 1)
+        self.grid_layout.setColumnStretch(1, 1)
+        self.grid_layout.setColumnStretch(2, 1)
+        self.grid_layout.setColumnStretch(3, 1)
 
         self.add_header("ModBus Readings")
 
@@ -29,15 +29,14 @@ class MitmTable(BaseForm):
             self.rows[key]["outgoing"] = labels[2]
             self.rows[key]["source"] = labels[3]
 
-        self.context.animation_manager.add_callback("modbus_table", self.update)
+        self.context.animation_manager.add_callback("modbus_table", self.refresh_values)
 
     def refresh_nicknames(self):
         for key, row in self.rows.items():
             variable_name = self.context.labels.variable_name(key)
-            row["name"].configure(text=variable_name)
+            row["name"].setText(variable_name)
 
     def refresh_rows(self):
-        self.update_idletasks()
         for key in self.context.states.get_registers():
             state = self.context.states.get_register(key, "show")
             if state == "1" or state == 1:
@@ -50,16 +49,16 @@ class MitmTable(BaseForm):
             raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_variables' in settings)")
         row = self.rows[key]
         for _, widget in row.items():
-            if not widget.winfo_ismapped():
-                widget.grid()
+            if widget.isHidden():
+                widget.show()
 
     def hide_row(self, key: str):
         if key not in self.rows:
             raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_variables' in settings)")
         row = self.rows[key]
         for _, widget in row.items():
-            if widget.winfo_ismapped():
-                widget.grid_remove()
+            if not widget.isHidden():
+                widget.hide()
 
     def format_number(self, value: float, decimals: int = 2) -> str:
         value = round(value, decimals)
@@ -67,7 +66,7 @@ class MitmTable(BaseForm):
             value = 0.00
         return f"{value:.{decimals}f}".rstrip("0").rstrip(".")
 
-    def update(self):   
+    def refresh_values(self):
         for key in self.rows:
             this_row = self.rows[key]
             in_str = "-"
@@ -75,14 +74,14 @@ class MitmTable(BaseForm):
             command = "-"
             factor_str = self.context.states.get_register(key, "factor")
             factor = 1.0
-            try: 
+            try:
                 f = float(factor_str)
                 factor = f
             except:
                 message = "err: factor"
-                this_row["incoming"].configure(text=message)
-                this_row["outgoing"].configure(text=message)
-                this_row["source"].configure(text=message)
+                this_row["incoming"].setText(message)
+                this_row["outgoing"].setText(message)
+                this_row["source"].setText(message)
                 continue
 
             # TODO switch to a get dump type of thing where it dumps all the changed values
@@ -98,6 +97,6 @@ class MitmTable(BaseForm):
             if com := self.buffer.get_command(key):
                 command = com
 
-            this_row["incoming"].configure(text=in_str)
-            this_row["outgoing"].configure(text=out_str)
-            this_row["source"].configure(text=command)
+            this_row["incoming"].setText(in_str)
+            this_row["outgoing"].setText(out_str)
+            this_row["source"].setText(command)

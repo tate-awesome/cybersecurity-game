@@ -8,7 +8,6 @@ class PreferencesData(TypedDict, total=False):
     clear() (see below) - loaded from user-editable JSON on disk, so this
     doesn't guarantee the shape at runtime (see Preferences.has()'s guard).
     '''
-    mode: str
     theme: str
     labels_file: str
     page: str
@@ -56,7 +55,6 @@ class Preferences:
     def clear(self):
         self.data.clear()
         self.data = {
-            "mode": "",             # autosaved in Style
             "theme": "",            # autosaved in Style
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router

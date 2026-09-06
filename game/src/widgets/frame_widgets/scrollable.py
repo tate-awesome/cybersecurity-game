@@ -1,92 +1,46 @@
 from ...app_core import Context
-from customtkinter import CTkFrame, CTkScrollableFrame
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGridLayout, QScrollArea, QWidget
 
-class Scrollable(CTkScrollableFrame):
+class Scrollable(QScrollArea):
     '''
-    Vertically scrollable CTk frame with mousewheel support
-    Inherits CTkScrollableFrame.
+    Vertically scrollable frame. Inherits QScrollArea, which handles mouse
+    wheel scrolling natively (including only scrolling when content
+    overflows the viewport) - none of the manual wheel-binding customtkinter
+    needed applies here.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context, height: int = -1, fill = "both", expand=True):
+    def __init__(self, master: QWidget, context: Context, height: int = -1, fill = "both", expand=True):
+        super().__init__(master)
         self.context = context
-        self.master = master
         style = context.style
         self.style = style
 
-        super().__init__(master, fg_color=style.color("panel"))
-        
+        master.layout().addWidget(self)
+        self.setStyleSheet(f"QScrollArea {{ background-color: {style.color('panel')}; border: none; }}")
+        self.setWidgetResizable(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.inner = QWidget()
+        self.inner.setStyleSheet(f"background-color: {style.color('panel')};")
+        self.grid_layout = QGridLayout(self.inner)
+        self.setWidget(self.inner)
+
         if not height == -1:
-            self.configure(height=height)
+            self.setFixedHeight(height)
 
-        self.pack(side="top", fill=fill, expand=expand, padx=style.cgap, pady=style.cgap)
-        self.bind_scroll()
+    def columnconfigure(self, index: int, weight: int):
+        self.grid_layout.setColumnStretch(index, weight)
 
-
-    def bind_scroll(self):
-        canvas = self._parent_canvas
-
-        def is_scrollworthy():
-            visible_height = self._parent_canvas.winfo_height()
-            # 2. Get the true bounding box height of all internal content
-            bbox = self._parent_canvas.bbox("all")
-            if bbox:
-                content_height = bbox[3] - bbox[1]
-            else:
-                content_height = 0
-
-            # 3. Only allow scrolling if the content is strictly taller than the window
-            if content_height > visible_height:
-                return True
-            else:
-                return False
-
-        def _on_mousewheel(event):
-            if is_scrollworthy():
-                canvas.yview_scroll(-int(event.delta / 2), "units")
-
-        def _on_mouseup(event):
-            if is_scrollworthy():
-                canvas.yview_scroll(-1, "units")
-
-        def _on_mousedown(event):
-            if is_scrollworthy():
-                canvas.yview_scroll(1, "units")
-
-        def _on_shift_mousewheel(event):
-            return "break"
-
-        def _bind_to_mousewheel(_):
-            canvas.bind_all("<Shift-MouseWheel>", _on_shift_mousewheel)
-            canvas.bind_all("<Shift-Button-4>", _on_shift_mousewheel)
-            canvas.bind_all("<Shift-Button-5>", _on_shift_mousewheel)
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
-            canvas.bind_all("<Button-4>", _on_mouseup)
-            canvas.bind_all("<Button-5>", _on_mousedown)
-
-        def _unbind_from_mousewheel(_):
-            canvas.unbind_all("<MouseWheel>")
-            canvas.unbind_all("<Button-4>")
-            canvas.unbind_all("<Button-5>")
-
-        canvas.bind("<Enter>", _bind_to_mousewheel)
-        canvas.bind("<Leave>", _unbind_from_mousewheel)
-
-    def add_deadspace(self, type: str = "pack", height: float | int = 100):
-        style = self.context.style
-        self.update_idletasks()
-        if isinstance(height, float):
-            h = self.winfo_height() * height
-        elif isinstance(height, int):
-            h = height
-        else:
-            h = self.winfo_height() * 0.8
-        
-        frame = CTkFrame(self, fg_color=style.color("panel"), height=h)
-        if type == "pack":
-            frame.pack(side="top", fill="x", expand=False, padx=style.nogap, pady=style.nogap)
-        elif type == "grid":
-            frame.grid(row=100, column=0, pady=self.style.gap, padx=self.style.gap, sticky="ew")
-        return frame
+    def add_deadspace(self, type: str = "grid", height: float | int = 100):
+        '''
+        Reserves empty space below the last row of content so it doesn't
+        sit flush against the bottom of the scroll area. Only "grid" is
+        used by anything converted so far - giving a trailing row a
+        stretch factor achieves the same thing a spacer frame did, without
+        needing to know how many rows are already in use.
+        '''
+        self.grid_layout.setRowStretch(999, 1)
 
     def top(self):
-        self._parent_canvas.yview_moveto(0)
+        self.verticalScrollBar().setValue(0)
