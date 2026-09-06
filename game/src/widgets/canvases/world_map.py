@@ -1,5 +1,5 @@
 from .core.canvas import Canvas
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ...app_core import Context
 
 
@@ -8,7 +8,7 @@ class WorldMap(Canvas):
     Canvas that displays elements from the world map: boat trails, boats, grid, ocean, etc.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
 
         # Create the canvas widget
         super().__init__(master, context, ((0,0),(200,200)))

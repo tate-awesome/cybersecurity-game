@@ -1,9 +1,9 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 from ...app_core import Context
 
 import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+matplotlib.use("QtAgg")
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
 # Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette -
@@ -18,7 +18,7 @@ _ROOM_LINE   = "#4caf50"
 _TARGET_LINE = "#e94560"
 
 
-class DefenderHVACChart(CTkFrame):
+class DefenderHVACChart(QWidget):
     '''
     Defender-page counterpart to House: a rolling room-vs-target temperature
     graph read from context.buffer.defender_modbus, ported from the old
@@ -31,9 +31,14 @@ class DefenderHVACChart(CTkFrame):
 
     MAX_POINTS = 300
 
-    def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, fg_color=context.style.color("widget"))
-        self.pack(side="top", fill="both", expand=True, pady=context.style.gap, padx=context.style.gap)
+    def __init__(self, master: QWidget, context: Context):
+        super().__init__(master)
+        self.setStyleSheet(f"background-color: {context.style.color('widget')};")
+        master.layout().addWidget(self)
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(
+            context.style.igap, context.style.igap, context.style.igap, context.style.igap
+        )
         self.context = context
         self.modbus = context.buffer.defender_modbus
 
@@ -59,8 +64,11 @@ class DefenderHVACChart(CTkFrame):
 
         self._fig = fig
         self._ax = ax
-        self._figure_canvas = FigureCanvasTkAgg(fig, master=self)
-        self._figure_canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
+        # FigureCanvasQTAgg is itself a QWidget, unlike Tk's FigureCanvasTkAgg
+        # (which needed .get_tk_widget() to get at the actual Tk widget) -
+        # it goes straight into the layout.
+        self._figure_canvas = FigureCanvasQTAgg(fig)
+        self.layout().addWidget(self._figure_canvas)
         self._figure_canvas.draw()
 
         self.start_animation()

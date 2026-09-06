@@ -1,4 +1,4 @@
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ....app_core import Context
 from ...canvases.house import House
@@ -50,8 +50,10 @@ class Builder(Panel):
             self.labels_by_key[key] = self.context.labels.get("modbus_model_options", key)
         self.key_by_label = {label: key for key, label in self.labels_by_key.items()}
 
-        self.body = CTkFrame(self, fg_color="transparent")
-        self.body.pack(side="top", fill="both", expand=True)
+        self.body = QWidget()
+        self.body.setLayout(QVBoxLayout())
+        self.body.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().addWidget(self.body)
 
         self.model = None
         self.model_key = None
@@ -95,7 +97,12 @@ class Builder(Panel):
 
         if self.model is not None:
             self.model.stop_animation()
-            self.model.destroy()
+            # deleteLater() alone only schedules the actual deletion for the
+            # next event loop iteration - it doesn't detach the widget from
+            # the layout immediately, so removeWidget() first ensures the
+            # outgoing and incoming model can't ever both be in there together.
+            self.body.layout().removeWidget(self.model)
+            self.model.deleteLater()
 
         self.model = MODELS[key](self.body, self.context)
         self.model_key = key

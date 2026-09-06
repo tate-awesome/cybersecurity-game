@@ -1,4 +1,4 @@
-from customtkinter import CTkTextbox
+from PySide6.QtWidgets import QGridLayout, QPlainTextEdit
 from ....app_core import Context
 from ...canvases.network_diagram import NetworkDiagramCanvas
 from ...canvases.strip_chart import StripChart
@@ -16,8 +16,15 @@ class Builder(Panel):
 
         left_frame = panes.pane(0)
         right_frame = panes.pane(1)
-        right_frame.columnconfigure(0, weight=1)
-        right_frame.rowconfigure(0, weight=1)
+        # StripChart places itself via master.grid_layout (see time_core's
+        # StripChartBase) - right_frame only has the plain QVBoxLayout Panes
+        # gives every pane, so a real grid goes inside it. Also lets
+        # selected_text share the exact same cell as rate_chart (both added
+        # at (0, 0)) the way the old grid_remove()/grid() swap needed.
+        right_frame.grid_layout = QGridLayout()
+        right_frame.layout().addLayout(right_frame.grid_layout)
+        right_frame.grid_layout.setColumnStretch(0, 1)
+        right_frame.grid_layout.setRowStretch(0, 1)
 
         self.diagram = NetworkDiagramCanvas(left_frame, context)
 
@@ -31,9 +38,12 @@ class Builder(Panel):
                                       lambda: {"": list(self.buffer.get_window_type_pps())})
         self.rate_chart.start_animation()
 
-        self.selected_text = CTkTextbox(right_frame, wrap="none", font=self.style.get_font("mono"), state="disabled")
-        self.selected_text.grid(row=0, column=0, sticky="nsew")
-        self.selected_text.grid_remove()
+        self.selected_text = QPlainTextEdit()
+        self.selected_text.setFont(self.style.get_font("mono"))
+        self.selected_text.setReadOnly(True)
+        self.selected_text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        right_frame.grid_layout.addWidget(self.selected_text, 0, 0)
+        self.selected_text.hide()
 
         self.menu_bar.minimize_button(panes, master)
 
@@ -47,11 +57,11 @@ class Builder(Panel):
         if mode != self.current_mode:
             self.current_mode = mode
             if mode == "paused":
-                self.rate_chart.grid_remove()
-                self.selected_text.grid()
+                self.rate_chart.hide()
+                self.selected_text.show()
             else:
-                self.selected_text.grid_remove()
-                self.rate_chart.grid()
+                self.selected_text.hide()
+                self.rate_chart.show()
 
         if mode != "paused":
             return
@@ -63,8 +73,7 @@ class Builder(Panel):
             return
         self.current_selected_number = number
 
-        self.selected_text.configure(state="normal")
-        self.selected_text.delete("1.0", "end")
         if mpkt is not None:
-            self.selected_text.insert("1.0", mpkt.get("pkt").show(dump=True))
-        self.selected_text.configure(state="disabled")
+            self.selected_text.setPlainText(mpkt.get("pkt").show(dump=True))
+        else:
+            self.selected_text.clear()

@@ -1,5 +1,6 @@
 from .core.canvas import Canvas
-from customtkinter import CTkFrame
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QWidget
 from ...app_core import Context
 from scapy.all import conf, get_if_hwaddr
 
@@ -12,22 +13,25 @@ class NetworkDiagramCanvas(Canvas):
     path of the single packet selected in the packet console.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, ((-1.3, -1.3), (1.3, 1.3)))
         self.network = context.buffer.network
         self.packets = context.buffer.packets
         default_interface = conf.iface
         self.mac_address = get_if_hwaddr(default_interface)
+        node_font = QFont("Consolas", 9)
 
         def draw_host(mac, point, color):
+            # Fixed pixel radius regardless of zoom, unlike Draw.circle()
+            # (a world-space radius that would scale with it) - drawn
+            # directly in canvas space instead.
             cx, cy = self.camera.world_to_canvas([point])[0]
-            self.pooled_item(
-                "oval", (cx - NODE_RADIUS, cy - NODE_RADIUS, cx + NODE_RADIUS, cy + NODE_RADIUS),
-                fill=context.style.color(color), outline=""
+            self.draw._draw_oval(
+                (cx - NODE_RADIUS, cy - NODE_RADIUS, cx + NODE_RADIUS, cy + NODE_RADIUS),
+                fill=context.style.color(color)
             )
-            self.pooled_item(
-                "text", (cx, cy - NODE_RADIUS - 8), text=mac,
-                fill=context.style.color("field_text"), font=("Consolas", 9)
+            self.draw._draw_text(
+                cx, cy - NODE_RADIUS - 8, mac, node_font, context.style.color("field_text")
             )
 
         def frame_callback():

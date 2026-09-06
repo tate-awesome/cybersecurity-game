@@ -1,7 +1,6 @@
 from ....app_core import Context
 from ...canvases.house import House
 from ..panel import Panel
-from typing import cast
 
 class Builder(Panel):
     KEY = "hvac_panel"

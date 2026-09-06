@@ -1,7 +1,6 @@
 from ....app_core import Context
 from ...canvases.world_map import WorldMap
 from ..panel import Panel
-from typing import cast
 
 class Builder(Panel):
     KEY = "submarine_panel"

@@ -1,5 +1,5 @@
 from .core.canvas import Canvas
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ...app_core import Context
 
 
@@ -13,7 +13,7 @@ class DefenderWorldMap(Canvas):
     model like WorldMap/House already are.
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, ((0, 0), (200, 200)))
         self.map_buffer = context.buffer.defender_map
         self.modbus = context.buffer.defender_modbus

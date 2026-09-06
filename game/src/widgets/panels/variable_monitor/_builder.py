@@ -12,7 +12,6 @@ class Builder(Panel):
         self.buffer = self.context.buffer.modbus
 
         scrollable = Scrollable(self, context)
-        scrollable.configure(fg_color=self.style.color("panel"))
         scrollable.columnconfigure(0, weight=1)
         time_offset = [0.0, 0.0] # reference to two floats: time scale and time offset, used to synchronize the time axis of all strip charts in this monitor
         current_row = 0
@@ -62,10 +61,8 @@ class Builder(Panel):
             state = self.context.states.get_register(key, "show")
             widget = self.strip_charts[key]
             if state == "1" or state == 1:
-                if not widget.winfo_ismapped():
-                    self.update_idletasks()
-                    widget.grid()
+                if widget.isHidden():
+                    widget.show()
             else:
-                if widget.winfo_ismapped():
-                    self.update_idletasks()
-                    widget.grid_remove()
+                if not widget.isHidden():
+                    widget.hide()

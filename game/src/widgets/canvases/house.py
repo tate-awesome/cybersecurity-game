@@ -1,9 +1,9 @@
 from .core.canvas import Canvas
 from ...app_core import Context
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 
 class House(Canvas):
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, ((0, 0), (100, 100)))
         self.buffer = context.buffer.hvac
 
@@ -23,7 +23,7 @@ class House(Canvas):
             if sprite_enabled("background"):
                 self.draw.background(color("background"))
 
-            if self.winfo_width() <= 1 or self.winfo_height() <= 1:
+            if self.width() <= 1 or self.height() <= 1:
                 return
 
             # The house (slave) sends its temperature to the controller (master); the controller
@@ -42,7 +42,7 @@ class House(Canvas):
 
             # Lay the controller above the room on a tall/square canvas, or to its left on a wide
             # canvas, so the vent wall it drives always sits nearest to it.
-            if self.winfo_width() > self.winfo_height():
+            if self.width() > self.height():
                 controller_bl, controller_tr = (4, 25), (30, 75)
                 room_bl, room_tr = (30, 8), (94, 92)
                 vent_wall, back_wall = "left", "right"
