@@ -42,7 +42,7 @@ class EncryptionForm(BaseForm):
         def stop_encryption():
             self._post_encryption(False, self.key_entry.get().strip())
 
-        self.add_attack_button(
+        self.add_process_row(
             start_encryption, stop_encryption,
             lambda: bool(self.context.buffer.defender_status.get("encryption_status", False)),
         )

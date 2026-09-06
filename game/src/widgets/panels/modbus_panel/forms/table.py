@@ -4,7 +4,7 @@ from ...base_form import BaseForm
 
 class MitmTable(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, attack_noun="NFQ")
+        super().__init__(master, context, process_noun="NFQ")
         # Assign local references
         self.buffer = context.buffer.modbus
         # Create form

@@ -26,7 +26,7 @@ class KalmanForm(BaseForm):
 
         self.add_header()
 
-        self.add_attack_button(
+        self.add_process_row(
             lambda: self._post_kalman(True),
             lambda: self._post_kalman(False),
             lambda: bool(self.context.buffer.defender_status.get("kalman_filter_enabled", True)),

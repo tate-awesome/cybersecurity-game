@@ -6,33 +6,33 @@ from ...network.process import Process
 
 class BaseForm(ABC, CTkFrame):
     '''
-    Shared by network_action_panel's and modbus_panel's attack/action forms. The two
-    differ only in how they source display text and lay out the attack
+    Shared by network_action_panel's and modbus_panel's process/action forms. The two
+    differ only in how they source display text and lay out the process
     button row:
       - network_action_panel forms pass a `key` and look their text up via
         context.labels (i18n), and track game_progress on start.
       - modbus_panel forms pass no `key` (defaults to None) and build their
-        text directly from `attack_noun` (not translated).
+        text directly from `process_noun` (not translated).
 
-    The attack button is optimistic: clicking it immediately shows the
+    The process button is optimistic: clicking it immediately shows the
     target state's text with no command (so it can't be double-clicked
-    mid-transition), and add_attack_button polls attack_status_func on the
+    mid-transition), and add_process_button polls process_status_func on the
     animation loop to reconcile the button/status label with whatever the
     process or AP actually confirms - which may lag behind the click for
     network-backed forms, or land immediately for local processes.
     '''
-    def __init__(self, master: CTkFrame, context: Context, attack_noun: str = "Attack", key: str | None = None):
+    def __init__(self, master: CTkFrame, context: Context, process_noun: str = "Process", key: str | None = None):
         '''
-        attack_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
+        process_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
         key, if given, selects the "network_action_forms"/"network_action_panels" i18n text
-        for this form instead of building plain text from attack_noun.
+        for this form instead of building plain text from process_noun.
         '''
 
         self.style = context.style
         self.context = context
         self.key = key
-        self.attack_noun = attack_noun
-        self.has_attack_button = False
+        self.process_noun = process_noun
+        self.has_process_button = False
 
         super().__init__(master, fg_color=self.style.color("widget"))
 
@@ -44,19 +44,19 @@ class BaseForm(ABC, CTkFrame):
         if self.key is not None:
             self.status_on_text = self.context.labels.get("network_action_forms", f"{self.key}_on")
             self.status_off_text = self.context.labels.get("network_action_forms", f"{self.key}_off")
-            self.start_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_start")
-            self.stop_attack_text = self.context.labels.get("network_action_forms", f"{self.key}_stop")
+            self.start_process_text = self.context.labels.get("network_action_forms", f"{self.key}_start")
+            self.stop_process_text = self.context.labels.get("network_action_forms", f"{self.key}_stop")
         else:
-            self.status_on_text = f"{self.attack_noun} is on"
-            self.status_off_text = f"{self.attack_noun} is off"
-            self.start_attack_text = f"Start {self.attack_noun}"
-            self.stop_attack_text = f"Stop {self.attack_noun}"
+            self.status_on_text = f"{self.process_noun} is on"
+            self.status_off_text = f"{self.process_noun} is off"
+            self.start_process_text = f"Start {self.process_noun}"
+            self.stop_process_text = f"Stop {self.process_noun}"
 
         self.current_row = 0
         self.entry_index = 0
         self.entries = []
-        self.start_attack = lambda: None
-        self.stop_attack = lambda: None
+        self.start_process = lambda: None
+        self.stop_process = lambda: None
 
     def get_process(self, process_class: type[Process], *args, tags: list[str] | None = None, **kwargs) -> Process:
         '''
@@ -134,31 +134,31 @@ class BaseForm(ABC, CTkFrame):
 
         return label_widget, entry
 
-    def add_attack_button(self, start_attack_func: Callable, stop_attack_func: Callable, attack_status_func: Callable[[], bool], default_status: str = ""):
+    def add_process_row(self, start_func: Callable, stop_func: Callable, status_func: Callable[[], bool], default_status: str = ""):
 
-        if self.has_attack_button:
+        if self.has_process_button:
             return
 
         # Create widgets
-        self.attack_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
-        self.attack_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
+        self.process_status = CTkLabel(self, text=default_status, font=self.style.get_font(), anchor="e")
+        self.process_button = CTkButton(self, text="", font=self.style.get_font(), command=None)
 
         if self.key is not None:
-            self.attack_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
-            self.attack_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
+            self.process_status.grid(row=self.current_row, column=1, sticky="w", pady=self.style.gapbot, padx=self.style.gap)
+            self.process_button.grid(row=self.current_row, column=2, sticky="ew", pady=self.style.gapbot, padx=self.style.gap)
         else:
-            self.attack_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gapbot)
-            self.attack_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gapbot)
+            self.process_status.grid(row=self.current_row, column=0, sticky="", pady=self.style.gapbot)
+            self.process_button.grid(row=self.current_row, column=2, sticky="", pady=self.style.gapbot)
 
         # Set function definitions
-        self.start_attack = start_attack_func
-        self.stop_attack = stop_attack_func
-        self.attack_status_func = attack_status_func
+        self.start_process = start_func
+        self.stop_process = stop_func
+        self.status_func = status_func
 
         # Confirmed state as of the last refresh (None forces the first
         # refresh below to configure the button/status regardless of state)
-        self.attack_confirmed_state = None
-        self.refresh_attack_button()
+        self.process_confirmed_state = None
+        self.refresh_process_button()
 
         # Bind <Return> - a no-op for modbus_panel forms, which never populate self.entries
         def return_handler(event=None):
@@ -169,21 +169,21 @@ class BaseForm(ABC, CTkFrame):
         # Update current index
         self.current_row += 1
 
-        self.has_attack_button = True
+        self.has_process_button = True
 
         # Polled so the optimistic text/command set by click_start/click_stop
         # gets reconciled with reality once the underlying process or AP
         # actually confirms the new state.
-        self.context.animation_manager.add_callback(f"attack_button_{id(self)}", self.refresh_attack_button)
+        self.context.animation_manager.add_callback(f"process_button_{id(self)}", self.refresh_process_button)
 
-    def refresh_attack_button(self):
+    def refresh_process_button(self):
         '''
-        Refresh the attack button based on the current attack status.
+        Refresh the process button based on the current process status.
         '''
-        running = bool(self.attack_status_func())
-        if running == self.attack_confirmed_state:
+        running = bool(self.status_func())
+        if running == self.process_confirmed_state:
             return
-        self.attack_confirmed_state = running
+        self.process_confirmed_state = running
         if running:
             self.configure_on()
         else:
@@ -191,28 +191,28 @@ class BaseForm(ABC, CTkFrame):
 
     def click_start(self):
         '''
-        Optimistically set the attack button to the "stop" state and call
+        Optimistically set the process button to the "stop" state and call
         '''
         if self.key is not None:
             self.context.states.set("game_progress", self.key, value=1)
-        self.attack_button.configure(text=self.stop_attack_text, command=None)
+        self.process_button.configure(text=self.stop_process_text, command=None)
         self.context.root.update_idletasks()
-        self.start_attack()
+        self.start_process()
 
     def configure_on(self):
-        self.attack_button.configure(command=self.click_stop, text=self.stop_attack_text)
-        self.attack_status.configure(text=self.status_on_text)
+        self.process_button.configure(command=self.click_stop, text=self.stop_process_text)
+        self.process_status.configure(text=self.status_on_text)
 
     def click_stop(self):
-        if not self.has_attack_button:
+        if not self.has_process_button:
             return
-        self.attack_button.configure(text=self.start_attack_text, command=None)
+        self.process_button.configure(text=self.start_process_text, command=None)
         self.context.root.update_idletasks()
-        self.stop_attack()
+        self.stop_process()
 
     def configure_off(self):
-        self.attack_button.configure(command=self.click_start, text=self.start_attack_text)
-        self.attack_status.configure(text=self.status_off_text)
+        self.process_button.configure(command=self.click_start, text=self.start_process_text)
+        self.process_status.configure(text=self.status_off_text)
 
     def add_button(self, default_status: str = "", button_text: str = "", button_func: Callable | None = None):
         # Create widgets

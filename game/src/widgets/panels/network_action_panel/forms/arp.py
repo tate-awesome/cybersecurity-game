@@ -14,4 +14,4 @@ class ArpForm(BaseForm):
 
         label1, entry1 = self.add_labeled_entry("Target IP:")
         label2, entry2 = self.add_labeled_entry("Host IP:")
-        self.add_attack_button(lambda: self.process.start(entry1.get(), entry2.get()), self.process.stop, self.process.is_running)
+        self.add_process_row(lambda: self.process.start(entry1.get(), entry2.get()), self.process.stop, self.process.is_running)

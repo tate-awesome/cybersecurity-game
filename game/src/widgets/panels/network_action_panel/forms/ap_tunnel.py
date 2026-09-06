@@ -23,7 +23,7 @@ class APTunnelForm(BaseForm):
 
         self.add_header()
 
-        self.add_attack_button(
+        self.add_process_row(
             lambda: self._post_ap_communication(True),
             lambda: self._post_ap_communication(False),
             lambda: bool(self.context.buffer.defender_status.get("ap_communication", False)),

@@ -4,7 +4,7 @@ from ...base_form import BaseForm
 
 class Modify(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, attack_noun="Modifying")
+        super().__init__(master, context, process_noun="Modifying")
         # Assign local references
         self.buffer = context.buffer.modbus
         # Create form
@@ -29,7 +29,7 @@ class Modify(BaseForm):
         self.bind_input_save()
         self.bind_input_alert()
 
-        self.add_attack_button(self.enable_modify, self.disable_modify, self.modify_is_enabled)
+        self.add_process_row(self.enable_modify, self.disable_modify, self.modify_is_enabled)
 
         _, reset_button = self.add_button("Reset Modifiers")
         reset_button.configure(command=self.reset_modifiers)

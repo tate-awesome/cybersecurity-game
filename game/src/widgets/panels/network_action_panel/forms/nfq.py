@@ -11,4 +11,4 @@ class NFQForm(BaseForm):
 
         self.header = self.add_header()
 
-        self.add_attack_button(self.process.start, self.process.stop, self.process.is_running)
+        self.add_process_row(self.process.start, self.process.stop, self.process.is_running)

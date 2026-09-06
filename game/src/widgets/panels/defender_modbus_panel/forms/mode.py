@@ -11,7 +11,7 @@ class ModeForm(BaseForm):
     '''
 
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, attack_noun="Mode")
+        super().__init__(master, context, process_noun="Mode")
 
         self.add_header("Operation Mode")
 

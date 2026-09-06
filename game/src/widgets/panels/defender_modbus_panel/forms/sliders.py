@@ -37,7 +37,7 @@ class SlidersForm(BaseForm):
     '''
 
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, attack_noun="Sliders")
+        super().__init__(master, context, process_noun="Sliders")
 
         # Shares the AP Connect form's poller process rather than starting
         # its own - see EncryptionForm for why this isn't a

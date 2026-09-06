@@ -18,7 +18,7 @@ class ReadoutForm(BaseForm):
     '''
 
     def __init__(self, master: CTkFrame, context: Context):
-        super().__init__(master, context, attack_noun="Readout")
+        super().__init__(master, context, process_noun="Readout")
 
         for i in range(len(ATTRIBUTES) + 1):
             self.columnconfigure(i, weight=1)

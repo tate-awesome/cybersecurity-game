@@ -29,7 +29,7 @@ class APConnectForm(BaseForm):
             if not self.process.is_running():
                 self.process.start()
 
-        self.add_attack_button(do_connect, self.process.stop, self.process.is_running)
+        self.add_process_row(do_connect, self.process.stop, self.process.is_running)
 
         self.conn_label = CTkLabel(self, text="", font=self.style.get_font("small"), text_color="gray")
         self.conn_label.grid(row=self.current_row, column=1, columnspan=2, sticky="e",

@@ -6,7 +6,7 @@ from ...base_form import BaseForm
 class NmapForm(BaseForm):
     def __init__(self, master: CTkFrame, context: Context):
 
-        super().__init__(master, context, key="nmap", attack_noun="Network Map")
+        super().__init__(master, context, key="nmap", process_noun="Network Map")
         self.process = self.get_process(NMapper)
 
         self.header = self.add_header()
