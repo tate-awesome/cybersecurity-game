@@ -1,32 +1,38 @@
-from customtkinter import CTkCanvas
-from....app_core import Context
+from ....app_core import Context
 from .camera import Camera
 from . import transforms as t
 import math, time
 
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QFontMetricsF, QPen, QPolygonF
+
 class Draw:
     '''
     Contains helper functions for drawing objects in world space.
-    Has access to the canvas and camera
+    Has access to the canvas and camera. canvas.painter is a live QPainter,
+    set by the canvas's paintEvent for the duration of one frame - unlike
+    the old pooled-item Tk version, there's no benefit to reusing drawn
+    items across frames here (QPainter has none of Tcl's per-item overhead),
+    so this just draws everything fresh every frame.
     '''
-    def __init__(self, canvas: CTkCanvas, context: Context, camera: Camera):
+    def __init__(self, canvas, context: Context, camera: Camera):
         self.canvas = canvas
         self.camera = camera
         self.context = context
 
     def background(self, color: str):
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
-        self.canvas.pooled_item("rectangle", (0, 0, w, h), fill=color)
+        w = self.canvas.width()
+        h = self.canvas.height()
+        self.canvas.painter.fillRect(QRectF(0, 0, w, h), QColor(color))
 
     def ocean(self):
         self.background("#003459")
 
     def bbox(self):
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
+        w = self.canvas.width()
+        h = self.canvas.height()
         o = 3
-        self.canvas.pooled_item("rectangle", (0, 0, w-o/2, h-o/2), fill="", outline="black", width=o)
+        self._draw_rect((0, 0, w - o / 2, h - o / 2), outline="black", width=o)
 
     def test_triangle(self):
         '''
@@ -45,8 +51,8 @@ class Draw:
             if i == 0:
                 color = "red"
 
-            self.canvas.pooled_item("line", t.flatten(h_line), width=2, fill=color)
-            self.canvas.pooled_item("line", t.flatten(v_line), width=2, fill=color)
+            self._draw_line(h_line, color, 2)
+            self._draw_line(v_line, color, 2)
 
         # Triangle
         triangle = [ (-1,0), (0,2), (1,0) ]          #   /.\  centered on a 10x10 plane with origin at 0
@@ -54,14 +60,98 @@ class Draw:
         angle = (time.time() % 20.0) * math.pi / 10.0
         triangle = t.rotate(triangle, angle, (0,0))  #   <.
         triangle = self.camera.world_to_canvas(triangle)
-        self.canvas.pooled_item("polygon", triangle, fill="green", width="5", outline="blue")
+        self._draw_polygon(triangle, fill="green", outline="blue", width=5)
 
         # Inscribed circle
         circle_box = [ (-2,-2), (2,2) ]
         circle_box = t.scale(circle_box, 2.0, (0,0))
         circle_box = self.camera.world_to_canvas(circle_box)
-        self.canvas.pooled_item("oval", circle_box, fill="", outline="blue", width="3")
+        self._draw_oval(t.flatten(circle_box), outline="blue", width=3)
 
+    # ------------------------------------------------------------------
+    # QPainter primitives - the direct replacements for pooled_item()
+    # ------------------------------------------------------------------
+
+    def _draw_line(self, coords, color: str, width: float = 1, arrow_end: bool = False):
+        painter = self.canvas.painter
+        painter.setPen(QPen(QColor(color), width))
+        if isinstance(coords[0], (tuple, list)):
+            points = [(x, y) for x, y in coords]
+            painter.drawPolyline(QPolygonF([QPointF(x, y) for x, y in points]))
+            if arrow_end and len(points) >= 2:
+                self._draw_arrowhead(points[-2], points[-1], color)
+        else:
+            x1, y1, x2, y2 = coords
+            painter.drawLine(QPointF(x1, y1), QPointF(x2, y2))
+            if arrow_end:
+                self._draw_arrowhead((x1, y1), (x2, y2), color)
+
+    def _draw_arrowhead(self, from_point: tuple[float, float], to_point: tuple[float, float], color: str, size: float = 8):
+        '''
+        Draws a filled triangular arrowhead at to_point, pointing along the
+        from_point -> to_point direction. Tk's arrow="last" line option has
+        no QPainter equivalent, so this replicates it by hand.
+        '''
+        (x1, y1), (x2, y2) = from_point, to_point
+        angle = math.atan2(y2 - y1, x2 - x1)
+        spread = math.radians(25)
+        left = (x2 - size * math.cos(angle - spread), y2 - size * math.sin(angle - spread))
+        right = (x2 - size * math.cos(angle + spread), y2 - size * math.sin(angle + spread))
+        self._draw_polygon([(x2, y2), left, right], fill=color, outline=color)
+
+    def _draw_rect(self, coords, fill: str | None = None, outline: str | None = None, width: float = 1):
+        painter = self.canvas.painter
+        x1, y1, x2, y2 = coords
+        rect = QRectF(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+        painter.setPen(QPen(QColor(outline), width) if outline else Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill) if fill else Qt.BrushStyle.NoBrush)
+        painter.drawRect(rect)
+
+    def _draw_oval(self, coords, fill: str | None = None, outline: str | None = None, width: float = 1):
+        painter = self.canvas.painter
+        x1, y1, x2, y2 = coords
+        rect = QRectF(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+        painter.setPen(QPen(QColor(outline), width) if outline else Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill) if fill else Qt.BrushStyle.NoBrush)
+        painter.drawEllipse(rect)
+
+    def _draw_polygon(self, points, fill: str | None = None, outline: str | None = None, width: float = 1):
+        painter = self.canvas.painter
+        painter.setPen(QPen(QColor(outline), width) if outline else Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill) if fill else Qt.BrushStyle.NoBrush)
+        painter.drawPolygon(QPolygonF([QPointF(x, y) for x, y in points]))
+
+    def _draw_text(self, x: float, y: float, text: str, font, color: str, anchor: str = "center"):
+        '''
+        anchor follows Tk's create_text convention this was ported from -
+        "center" (Tk's own default when none is given) pins the text's
+        center to (x, y); "n"/"w"/"nw"/"ne"/"sw"/"se" pin that edge/corner.
+        '''
+        metrics = QFontMetricsF(font)
+        width = metrics.horizontalAdvance(text)
+        height = metrics.height()
+
+        if anchor == "center":
+            rect = QRectF(x - width / 2, y - height / 2, width, height)
+        elif anchor == "n":
+            rect = QRectF(x - width / 2, y, width, height)
+        elif anchor == "w":
+            rect = QRectF(x, y - height / 2, width, height)
+        elif anchor == "nw":
+            rect = QRectF(x, y, width, height)
+        elif anchor == "ne":
+            rect = QRectF(x - width, y, width, height)
+        elif anchor == "sw":
+            rect = QRectF(x, y - height, width, height)
+        elif anchor == "se":
+            rect = QRectF(x - width, y - height, width, height)
+        else:
+            raise ValueError(f"Unsupported text anchor: {anchor}")
+
+        painter = self.canvas.painter
+        painter.setFont(font)
+        painter.setPen(QColor(color))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, text)
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -70,7 +160,7 @@ class Draw:
         if len(points) < 2:
             return
         points = self.camera.world_to_canvas(points)
-        self.canvas.pooled_item("line", points, width=1, fill=line_color)
+        self._draw_line(points, line_color, 1)
 
     def arrow(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -79,7 +169,7 @@ class Draw:
         if len(points) < 2:
             return
         points = self.camera.world_to_canvas(points)
-        self.canvas.pooled_item("line", points, width=thickness, fill=line_color, arrow="last")
+        self._draw_line(points, line_color, thickness, arrow_end=True)
 
     def visible_arrow(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
@@ -97,7 +187,7 @@ class Draw:
         num_points = int(radius * abs(end_angle - start_angle) + 5)
         points = t.get_arc_points(center, radius, start_angle, end_angle, num_points)
         points = self.camera.world_to_canvas(points)
-        self.canvas.pooled_item("line", points, width=2, fill=line_color)
+        self._draw_line(points, line_color, 2)
 
 
     def grid_lines(self, lines_color="white", axes_color="red", numbers_color="#3a6070"):
@@ -110,8 +200,8 @@ class Draw:
             color = lines_color
             if i == 0:
                 color = axes_color
-            self.canvas.pooled_item("line", t.flatten(h_line), width=0.5, fill=color)
-            self.canvas.pooled_item("line", t.flatten(v_line), width=0.5, fill=color)
+            self._draw_line(h_line, color, 0.5)
+            self._draw_line(v_line, color, 0.5)
 
             # Draw labels every 20 units using already-transformed coordinates
             if i % 20 == 0:
@@ -122,11 +212,9 @@ class Draw:
 
                 # X axis label — sits above the top of each vertical line
                 font = self.context.style.get_font("chart_numbers")
-                self.canvas.pooled_item("text", (x_pixel, v_line[0][1] + 10),
-                                        text=str(i), fill=numbers_color, font=font)
+                self._draw_text(x_pixel, v_line[0][1] + 10, str(i), font, numbers_color)
                 # Y axis label — sits to the left of each horizontal line
-                self.canvas.pooled_item("text", (h_line[0][0] - 16, y_pixel),
-                                        text=str(i), fill=numbers_color, font=font)
+                self._draw_text(h_line[0][0] - 16, y_pixel, str(i), font, numbers_color)
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
         the_boat = [
@@ -142,73 +230,9 @@ class Draw:
         the_boat = t.scale(the_boat, scale)
 
         the_boat = t.translate(the_boat, position)
-        
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
-    
+
         the_boat = self.camera.world_to_canvas(the_boat)
-        self.canvas.pooled_item("polygon", the_boat, fill=fill_color, outline=line_color)
-
-    def random_spline_path(target_points, samples_per_segment):
-        import random
-        points = []
-        for _ in range(target_points):
-            x = random.randint(0, 200)
-            y = random.randint(0, 200)
-            points.append((x,y))
-        points.append(points[0])
-
-        spline = []
-        for i in range(1, len(points) - 2):
-            p0, p1, p2, p3 = points[i-1], points[i], points[i+1], points[i+2]
-
-            for j in range(samples_per_segment):
-                t = j / samples_per_segment
-                t2 = t * t
-                t3 = t2 * t
-
-                x = 0.5 * (
-                    (2 * p1[0]) +
-                    (-p0[0] + p2[0]) * t +
-                    (2*p0[0] - 5*p1[0] + 4*p2[0] - p3[0]) * t2 +
-                    (-p0[0] + 3*p1[0] - 3*p2[0] + p3[0]) * t3
-                )
-
-                y = 0.5 * (
-                    (2 * p1[1]) +
-                    (-p0[1] + p2[1]) * t +
-                    (2*p0[1] - 5*p1[1] + 4*p2[1] - p3[1]) * t2 +
-                    (-p0[1] + 3*p1[1] - 3*p2[1] + p3[1]) * t3
-                )
-
-                spline.append((x, y))
-        return spline
-    
-    def strip_chart_axes(self, axes_color="red", bounds=(0, 100)):
-        # Draw the axes lines
-        # self.line([(0, bounds[0]), (0, bounds[1])], axes_color, thickness=2)  # Y-axis
-        # self.line([(0, bounds[0]), (100, bounds[0])], axes_color, thickness=2)  # X-axis
-        ...
-
-    def strip_chart_grid(self, grid_color="gray", bounds=(0, 100)):
-        # Draw horizontal grid lines
-        # for y in range(bounds[0], bounds[1] + 1, 10):
-        #     self.line([(0, y), (100, y)], grid_color, thickness=1)
-        ...
-
-    def strip_chart_grid_numbers(self, number_color="black"):
-        # Draw numbers along the Y-axis
-        # for y in range(0, 101, 10):
-        #     x_pixel = self.camera.world_to_canvas([(0, y)])[0][0]
-        #     y_pixel = self.camera.world_to_canvas([(0, y)])[0][1]
-        #     self.canvas.create_text(x_pixel - 10, y_pixel, text=str(y), fill=number_color, font=("Courier", 7))
-        ...
-
-    def strip_chart_path(self, path_points: list[tuple[float, float]], path_color="red"):
-        if len(path_points) < 2:
-            return
-        path_points = self.camera.data_to_strip_chart(path_points)
-        self.canvas.pooled_item("line", path_points, width=2, fill=path_color)
+        self._draw_polygon(the_boat, fill=fill_color, outline=line_color)
 
     # --------------------------------------------------------------------------------------------------------------------------
     #                                                       HVAC House
@@ -220,7 +244,7 @@ class Draw:
         '''
         points = self.camera.world_to_canvas([bl, tr])
         (x0, y0), (x1, y1) = points
-        self.canvas.pooled_item("rectangle", (x0, y0, x1, y1), fill=fill_color, outline=outline_color, width=thickness)
+        self._draw_rect((x0, y0, x1, y1), fill=fill_color, outline=outline_color, width=thickness)
 
     def circle(self, center: tuple[float, float], radius: float, fill_color="", outline_color="", thickness=2):
         '''
@@ -230,7 +254,7 @@ class Draw:
         tr = (center[0] + radius, center[1] + radius)
         points = self.camera.world_to_canvas([bl, tr])
         (x0, y0), (x1, y1) = points
-        self.canvas.pooled_item("oval", (x0, y0, x1, y1), fill=fill_color, outline=outline_color, width=thickness)
+        self._draw_oval((x0, y0, x1, y1), fill=fill_color, outline=outline_color, width=thickness)
 
     def label(self, position: tuple[float, float], text: str, text_color="black", font_name="chart_label"):
         '''
@@ -238,7 +262,7 @@ class Draw:
         '''
         point = self.camera.world_to_canvas([position])[0]
         font = self.context.style.get_font(font_name)
-        self.canvas.pooled_item("text", (point[0], point[1]), text=text, fill=text_color, font=font)
+        self._draw_text(point[0], point[1], text, font, text_color)
 
     def wall_point(self, bl: tuple[float, float], tr: tuple[float, float], wall: str, t=0.5) -> tuple[float, float]:
         '''
@@ -366,7 +390,7 @@ class Draw:
                     start[1] + ny * along + ay * wobble,
                 ))
             canvas_points = self.camera.world_to_canvas(points)
-            self.canvas.pooled_item("line", canvas_points, width=thickness, fill=color, smooth=True)
+            self._draw_line(canvas_points, color, thickness)
             self._hvac_arrowhead(points[-1], (nx, ny), color)
 
     def _hvac_arrowhead(self, tip: tuple[float, float], direction: tuple[float, float], color: str, size=2.5):
@@ -379,4 +403,4 @@ class Draw:
         left = (back[0] + px * size * 0.5, back[1] + py * size * 0.5)
         right = (back[0] - px * size * 0.5, back[1] - py * size * 0.5)
         points = self.camera.world_to_canvas([tip, left, right])
-        self.canvas.pooled_item("polygon", points, fill=color, outline=color)
+        self._draw_polygon(points, fill=color, outline=color)

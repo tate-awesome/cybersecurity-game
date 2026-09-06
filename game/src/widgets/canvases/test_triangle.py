@@ -1,5 +1,5 @@
 from .core.canvas import Canvas
-from customtkinter import CTkFrame
+from PySide6.QtWidgets import QWidget
 from ...app_core import Context
 
 
@@ -8,7 +8,7 @@ class TriangleCanvas(Canvas):
     Canvas that demonstrates/tests the canvas, camera, drawing, and transforms classes
     '''
 
-    def __init__(self, master: CTkFrame, context: Context):
+    def __init__(self, master: QWidget, context: Context):
 
         # Create the canvas widget
         super().__init__(master, context, ((-5,-5),(5,5)))
