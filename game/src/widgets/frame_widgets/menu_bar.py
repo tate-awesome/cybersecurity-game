@@ -17,7 +17,7 @@ class MenuBar(QFrame):
         self.style = context.style
 
         master.layout().addWidget(self)
-        self.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
 
         # Qt widgets default to a vertical size policy that's willing to
         # grow into whatever leftover space its layout has - the old

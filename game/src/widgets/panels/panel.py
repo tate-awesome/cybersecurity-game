@@ -14,7 +14,7 @@ class Panel(QWidget):
         self.context = context
         self.style = context.style
 
-        self.setStyleSheet(f"background-color: {self.style.color('panel')};")
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')};", self))
         master.layout().addWidget(self)
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)

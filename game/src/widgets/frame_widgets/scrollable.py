@@ -22,8 +22,15 @@ class Scrollable(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.inner = QWidget()
-        self.inner.setStyleSheet(f"background-color: {style.color('panel')};")
+        self.inner.setStyleSheet(style.themed(f"background-color: {style.color('panel')};", self.inner))
         self.grid_layout = QGridLayout(self.inner)
+        # Without explicit values here, stacked rows (forms, strip charts,
+        # etc.) fall back to Qt's default layout spacing, which is roughly
+        # zero once each row is its own full-width widget - they end up
+        # welded edge-to-edge with no panel-colored gap to separate them.
+        self.grid_layout.setContentsMargins(style.igap, style.igap, style.igap, style.igap)
+        self.grid_layout.setVerticalSpacing(style.igap)
+        self.grid_layout.setHorizontalSpacing(style.igap)
         self.setWidget(self.inner)
 
         if not height == -1:

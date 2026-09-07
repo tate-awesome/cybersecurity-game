@@ -25,8 +25,9 @@ class Overlay(QWidget):
         self.populate_func = populate_func
         self._last_hidden_at = 0.0
 
-        self.setStyleSheet(f"background-color: {self.style.color('panel')}; border: 2px solid {self.style.color('accent')};")
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')}; border: 2px solid {self.style.color('accent')};", self))
         self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
 
         button.clicked.connect(lambda checked=False: self._toggle())
 

@@ -93,7 +93,7 @@ class HVACView:
         throughout.
         '''
         section = QWidget()
-        section.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        section.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", section))
         layout = QVBoxLayout(section)
         layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         layout.setSpacing(4)
@@ -386,7 +386,7 @@ class HVACView:
 
     def _build_graph(self, parent: QWidget):
         self._graph_root = QWidget()
-        self._graph_root.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        self._graph_root.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self._graph_root))
         self._graph_root.setLayout(QVBoxLayout())
         self._graph_root.layout().setContentsMargins(8, 8, 8, 8)
         parent.layout().addWidget(self._graph_root)

@@ -35,14 +35,17 @@ class FilterOverlay:
         # Create filter checkbox row - one frame per category, side by side
         box_slots = self.context.states.get("packet_filter_checkboxes")
         checkbox_row = QHBoxLayout()
+        checkbox_row.setSpacing(self.style.igap)
         overlay.layout().addLayout(checkbox_row)
 
         # Create each column of checkboxes based on the hard-coded category
         for category in self.filter_columns:
 
             category_frame = QFrame()
-            category_frame.setStyleSheet(f"background-color: {self.style.color('widget')};")
+            category_frame.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", category_frame))
             category_layout = QVBoxLayout(category_frame)
+            category_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+            category_layout.setSpacing(self.style.cgap * 2)
             checkbox_row.addWidget(category_frame)
 
             category_label = QLabel(self.context.labels.get("packet_filter_categories", category))
@@ -71,6 +74,8 @@ class FilterOverlay:
         text_slots = self.context.states.get("packet_filter_entries")
         entry_frame = QFrame()
         entry_layout = QVBoxLayout(entry_frame)
+        entry_layout.setContentsMargins(0, self.style.igap, 0, 0)
+        entry_layout.setSpacing(self.style.cgap * 2)
         overlay.layout().addWidget(entry_frame)
 
         # Create each text filter label and entry

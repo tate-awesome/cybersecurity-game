@@ -35,9 +35,12 @@ class BaseForm(QWidget):
         self.process_noun = process_noun
         self.has_process_button = False
 
-        self.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
 
         self.grid_layout = QGridLayout(self)
+        self.grid_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        self.grid_layout.setVerticalSpacing(self.style.cgap * 2)
+        self.grid_layout.setHorizontalSpacing(self.style.igap)
         self.grid_layout.setColumnStretch(0, 0)
         self.grid_layout.setColumnStretch(1, 1)
         self.grid_layout.setColumnStretch(2, 0)
@@ -126,7 +129,7 @@ class BaseForm(QWidget):
         # Create widgets
         label_widget = QLabel(label)
         label_widget.setFont(self.style.get_font())
-        label_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label_widget.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.grid_layout.addWidget(label_widget, self.current_row, 1)
 
         entry = QLineEdit()
@@ -161,11 +164,11 @@ class BaseForm(QWidget):
         self.process_button.setFont(self.style.get_font())
 
         if self.key is not None:
-            self.process_status.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.grid_layout.addWidget(self.process_status, self.current_row, 1)
             self.grid_layout.addWidget(self.process_button, self.current_row, 2)
         else:
-            self.process_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.grid_layout.addWidget(self.process_status, self.current_row, 0)
             self.grid_layout.addWidget(self.process_button, self.current_row, 2)
 

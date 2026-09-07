@@ -33,7 +33,7 @@ class Panes(QSplitter):
 
         self.setHandleWidth(style.igap)
         color = style.color("root")
-        self.setStyleSheet(f"QSplitter::handle {{ background-color: {color}; }} QSplitter > QWidget {{ background-color: {color}; }}")
+        self.setStyleSheet(style.themed(f"QSplitter::handle {{ background-color: {color}; }} QSplitter > QWidget {{ background-color: {color}; }}"))
 
         min_size = style.PANE_MIN_WIDTH if direction == "horizontal" else style.PANE_MIN_HEIGHT
         initial_sizes = []

@@ -204,7 +204,7 @@ class DefenderV0(Page):
         throughout.
         '''
         section = QWidget()
-        section.setStyleSheet(f"background-color: {self.style.color('widget')};")
+        section.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", section))
         layout = QVBoxLayout(section)
         layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         layout.setSpacing(4)
@@ -351,7 +351,7 @@ class DefenderV0(Page):
 
         for source in ["client", "server"]:
             card = QWidget()
-            card.setStyleSheet(f"background-color: {self.style.color('widget')};")
+            card.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", card))
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
             outer_layout.addWidget(card, 1)
@@ -403,7 +403,7 @@ class DefenderV0(Page):
 
         cols = ["Time", "X (m)", "Y (m)", "Theta", "Speed", "Rudder"]
         col_frame = QWidget()
-        col_frame.setStyleSheet(f"background-color: {self.style.color('panel')};")
+        col_frame.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", col_frame))
         col_layout = QGridLayout(col_frame)
         parent.layout().addWidget(col_frame)
         for i, col in enumerate(cols):
@@ -827,7 +827,7 @@ class DefenderV0(Page):
 
         for r_idx, packet in enumerate(rows):
             row_labels = []
-            bg = self.style.color("widget") if r_idx % 2 == 0 else self.style.color("panel")
+            bg = self.style.color("field") if r_idx % 2 == 0 else self.style.color("widget")
             for c_idx, key in enumerate(cols):
                 raw = packet.get(key, "—")
                 if key == "received_at":

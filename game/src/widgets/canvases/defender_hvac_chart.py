@@ -32,7 +32,7 @@ class DefenderHVACChart(QWidget):
 
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master)
-        self.setStyleSheet(f"background-color: {context.style.color('widget')};")
+        self.setStyleSheet(f"background-color: {context.style.color('field')};")
         master.layout().addWidget(self)
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(

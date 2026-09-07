@@ -63,7 +63,7 @@ Shared data for a page. Passed to next pages on navigation.
         self.pages.reload()
         self.states.reset()
         self.labels.reset()
-        # self.style.load_default_theme()
+        self.style.load_default_theme()
 
     def start_page(self):
         '''

@@ -8,9 +8,9 @@ class PacketTreeview:
     """
     Wraps a QTreeWidget into a small row-oriented API, so callers never need
     to import or touch QTreeWidget directly. QTreeWidget already provides
-    its own scrollbars and (via the app-wide qt-material stylesheet) its own
-    theming, so this needs none of the manual ttk.Style/scrollbar wiring the
-    tkinter version did.
+    its own scrollbars and (via the app-wide stylesheet built in Style) its
+    own theming, so this needs none of the manual ttk.Style/scrollbar wiring
+    the tkinter version did.
     """
 
     def __init__(self, parent: QWidget, context: Context):
@@ -32,7 +32,8 @@ class PacketTreeview:
     def _build(self, parent: QWidget) -> QTreeWidget:
         tree = QTreeWidget()
         tree.setFont(self.style.get_font("treeview"))
-        tree.setStyleSheet("QTreeWidget::item { padding: 4px; }")
+        tree.setStyleSheet(self.style.themed("QTreeWidget::item { padding: 4px; }"))
+        tree.setAlternatingRowColors(True)
 
         tree.setColumnCount(len(self.columns))
         tree.setHeaderLabels([self.context.labels.get("packet_columns", col) for col in self.columns])
