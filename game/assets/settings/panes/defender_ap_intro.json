@@ -1,0 +1,31 @@
+{
+    "_note": "First defender lesson's pane tree - the network_action_panel restricted to the AP Connection/Encryption/AP Tunnel forms, paired with the packet console and network graph/status so a student can watch the AP link they're securing. Mirrors attacker_recon.json's layout.",
+
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 2,
+            "widget": {"_ref": "panels/_network_action.json"}
+        },
+        {
+            "weight": 3,
+            "widget": {"_ref": "panels/_packet_console.json"}
+        },
+        {
+            "weight": 3,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 1,
+                        "widget": {"_ref": "panels/_network_graph.json"}
+                    },
+                    {
+                        "weight": 1,
+                        "widget": {"_ref": "panels/_status_console.json"}
+                    }
+                ]
+            }
+        }
+    ]
+}

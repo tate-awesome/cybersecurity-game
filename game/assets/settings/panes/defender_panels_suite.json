@@ -1,0 +1,59 @@
+{
+    "_note": "Panels-based defender pane tree - the same trifold layout as attacker_suite.json/defender_suite.json, but with defender_modbus_panel standing in for modbus_table_panel and defender_stripchart_panel standing in for modbus_chart_panel (see DefenderVPanels, game/src/pages/defender_panels/defender_v_panels.py). Shared by the defender_hvac/defender_submarine lessons and the full defender_panels_suite lesson - only their settings (network_action_visibility/modbus_model_visibility) differ.",
+
+    "orientation": "horizontal",
+    "children": [
+        {
+            "weight": 2,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 2.3,
+                        "widget": {"_ref": "panels/_network_action.json"}
+                    },
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_defender_modbus.json"}
+                    }
+                ]
+            }
+        },
+        {
+            "weight": 3,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_packet_console.json"}
+                    },
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_network_graph.json"}
+                    },
+                    {
+                        "weight": 3,
+                        "widget": {"_ref": "panels/_status_console.json"}
+                    }
+                ]
+            }
+        },
+        {
+            "weight": 3,
+            "panes": {
+                "orientation": "vertical",
+                "children": [
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_modbus_model.json"}
+                    },
+                    {
+                        "weight": 2,
+                        "widget": {"_ref": "panels/_defender_stripchart.json"}
+                    }
+                ]
+            }
+        }
+    ]
+}
