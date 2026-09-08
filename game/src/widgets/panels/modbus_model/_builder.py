@@ -20,7 +20,7 @@ MODELS = {
 # Defender-flavored models are driven by the AP's own reported mode
 # (context.buffer.defender_status.submarine_mode) instead of a manual
 # dropdown pick - see _auto_switch. Only a page whose modbus_model_visibility
-# actually enables one of these (DefenderVPanels) ever exercises this.
+# actually enables one of these (the defender lessons) ever exercises this.
 DEFENDER_MODELS = {"defender_submarine", "defender_hvac"}
 
 class Builder(Panel):

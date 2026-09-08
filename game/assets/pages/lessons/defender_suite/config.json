@@ -1,5 +1,5 @@
 {
-    "_note": "Full instructor build of defender/v0.",
+    "_note": "Full instructor build of the panels-based defender rebuild - the data-driven lesson that replaced the old hardcoded DefenderVPanels test page. Both defender models are enabled and auto-switch with the AP's reported mode, and every defender form (ap_connect/encryption/ap_tunnel/kalman) is visible alongside the offensive forms, same as full_attacker_suite.",
 
     "build_type": "workspace",
 
@@ -7,7 +7,10 @@
         "_ref": [
             "_packages/_default.json",
             "hack_settings/lab.json",
-            "visibility/_admin.json"
+            "visibility/_admin.json",
+            "hack_settings/defender_panels.json",
+            "modbus_settings/defender_panels.json",
+            "visibility/defender_panels.json"
         ]
     },
 
@@ -18,5 +21,5 @@
         ]
     },
 
-    "panes": { "_ref": "defender_suite.json" }
+    "panes": { "_ref": "defender_panels_suite.json" }
 }

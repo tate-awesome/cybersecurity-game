@@ -1,5 +1,5 @@
 {
-    "_note": "Panels-based defender pane tree - the same trifold layout as attacker_suite.json/defender_suite.json, but with defender_modbus_panel standing in for modbus_table_panel and defender_stripchart_panel standing in for modbus_chart_panel (see DefenderVPanels, game/src/pages/defender_panels/defender_v_panels.py). Shared by the defender_hvac/defender_submarine lessons and the full defender_panels_suite lesson - only their settings (network_action_visibility/modbus_model_visibility) differ.",
+    "_note": "Panels-based defender pane tree - the same trifold layout as attacker_suite.json, but with defender_modbus_panel standing in for modbus_table_panel and defender_stripchart_panel standing in for modbus_chart_panel. Shared by the defender_hvac/defender_submarine lessons and the full defender_suite lesson - only their settings (network_action_visibility/modbus_model_visibility) differ.",
 
     "orientation": "horizontal",
     "children": [

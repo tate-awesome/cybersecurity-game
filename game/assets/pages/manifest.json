@@ -59,13 +59,6 @@
             "estimated_minutes": 1,
             "gradable": true
         },
-        "full_defender_suite": {
-            "path": "lessons/defender_suite",
-            "title_label": "lesson_defender_suite",
-            "prerequisites": [],
-            "estimated_minutes": 1,
-            "gradable": true
-        },
         "lesson_defender_ap": {
             "path": "lessons/defender_ap_intro",
             "title_label": "lesson_defender_ap",
@@ -87,9 +80,9 @@
             "estimated_minutes": 25,
             "gradable": true
         },
-        "full_defender_panels": {
-            "path": "lessons/defender_panels_suite",
-            "title_label": "lesson_defender_panels_suite",
+        "full_defender_suite": {
+            "path": "lessons/defender_suite",
+            "title_label": "lesson_defender_suite",
             "prerequisites": [],
             "estimated_minutes": 1,
             "gradable": true

@@ -1,5 +1,5 @@
 {
-    "_note": "Admin-level visibility for the DefenderVPanels test page. Deep-merges on top of _admin.json - adds the new defender-only form/model keys without needing to touch the shared admin file, which attacker_suite/defender_suite also load.",
+    "_note": "Admin-level visibility for the full defender_suite lesson. Deep-merges on top of _admin.json - adds the new defender-only form/model keys without needing to touch the shared admin file, which attacker_suite also loads.",
 
     "network_action_visibility": {
         "ap_connect": 1,
