@@ -1,0 +1,16 @@
+{
+    "_note": "Defensive AP-connection forms only (ap_connect/encryption/ap_tunnel) for the defender_ap_intro lesson - no offensive forms, no Kalman filter (that's submarine-specific, taught in lesson_defender_submarine).",
+
+    "network_action_visibility": {
+        "wifi": 0,
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "ap_connect": 1,
+        "encryption": 1,
+        "ap_tunnel": 1,
+        "kalman": 0
+    }
+}

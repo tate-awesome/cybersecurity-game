@@ -192,7 +192,12 @@
         "lesson_hvac": "HVAC System",
         "lesson_submarine": "Submarine System",
         "lesson_attacker_suite": "Full Attacker Suite",
-        "lesson_defender_suite": "Full Defender Suite"
+        "lesson_defender_suite": "Full Defender Suite",
+
+        "lesson_defender_ap": "Defending the AP",
+        "lesson_defender_hvac": "Defending: HVAC System",
+        "lesson_defender_submarine": "Defending: Submarine System",
+        "lesson_defender_panels_suite": "Full Defender Panels Suite"
     },
 
     "menu_bar_titles": {
@@ -213,6 +218,10 @@
         "modbus_hvac_lesson": "ModBus HVAC Exercise",
         "modbus_submarine_lesson": "ModBus Submarine Exercise",
         "defender_suite_lesson": "Full Defender Exercise",
+        "defender_ap_intro_lesson": "Defending the AP",
+        "defender_hvac_lesson": "Defender HVAC Exercise",
+        "defender_submarine_lesson": "Defender Submarine Exercise",
+        "defender_panels_suite_lesson": "Full Defender Panels Exercise",
         "generic_page": "Generic Page Builder",
 
         "submarine_panel": "Submarine Model",

@@ -1,0 +1,25 @@
+{
+    "_note": "Full instructor build of the panels-based defender rebuild as a proper workspace lesson - a data-driven counterpart to the hardcoded DefenderVPanels test page (game/src/pages/defender_panels/defender_v_panels.py). Both defender models are enabled and auto-switch with the AP's reported mode, and every defender form (ap_connect/encryption/ap_tunnel/kalman) is visible alongside the offensive forms, same as full_attacker_suite/full_defender_suite.",
+
+    "build_type": "workspace",
+
+    "settings": {
+        "_ref": [
+            "_packages/_default.json",
+            "hack_settings/lab.json",
+            "visibility/_admin.json",
+            "hack_settings/defender_panels.json",
+            "modbus_settings/defender_panels.json",
+            "visibility/defender_panels.json"
+        ]
+    },
+
+    "menu_bar": {
+        "title": "defender_panels_suite_lesson",
+        "buttons": [
+            { "_ref": "admin.json" }
+        ]
+    },
+
+    "panes": { "_ref": "defender_panels_suite.json" }
+}

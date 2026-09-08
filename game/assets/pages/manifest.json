@@ -65,6 +65,34 @@
             "prerequisites": [],
             "estimated_minutes": 1,
             "gradable": true
+        },
+        "lesson_defender_ap": {
+            "path": "lessons/defender_ap_intro",
+            "title_label": "lesson_defender_ap",
+            "prerequisites": [],
+            "estimated_minutes": 15,
+            "gradable": false
+        },
+        "lesson_defender_hvac": {
+            "path": "lessons/defender_hvac",
+            "title_label": "lesson_defender_hvac",
+            "prerequisites": ["lesson_defender_ap"],
+            "estimated_minutes": 20,
+            "gradable": true
+        },
+        "lesson_defender_submarine": {
+            "path": "lessons/defender_submarine",
+            "title_label": "lesson_defender_submarine",
+            "prerequisites": ["lesson_defender_ap"],
+            "estimated_minutes": 25,
+            "gradable": true
+        },
+        "full_defender_panels": {
+            "path": "lessons/defender_panels_suite",
+            "title_label": "lesson_defender_panels_suite",
+            "prerequisites": [],
+            "estimated_minutes": 1,
+            "gradable": true
         }
     }
 }

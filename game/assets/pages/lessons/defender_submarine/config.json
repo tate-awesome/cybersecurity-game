@@ -1,0 +1,41 @@
+{
+    "_note": "Defender counterpart to lesson_submarine - defender_modbus_panel/defender_stripchart_panel paired with the defender_submarine model, which is driven by the AP's own reported mode rather than picked manually. Also enables the Kalman Filter form, which rejects spoofed/noisy sensor readings on the submarine's client/server channels.",
+
+    "build_type": "workspace",
+
+    "settings": {
+        "_ref": [
+            "_packages/_default.json",
+            "hack_settings/lab.json",
+            "hack_settings/defender_panels.json",
+            "modbus_settings/defender_panels.json"
+        ],
+        "network_action_visibility": {
+            "wifi": 0,
+            "nmap": 0,
+            "arp": 0,
+            "dos": 0,
+            "sniff": 0,
+            "nfq": 0,
+            "ap_connect": 1,
+            "encryption": 1,
+            "ap_tunnel": 1,
+            "kalman": 1
+        },
+        "modbus_model_visibility": {
+            "hvac": 0,
+            "submarine": 0,
+            "defender_hvac": 0,
+            "defender_submarine": 1
+        }
+    },
+
+    "menu_bar": {
+        "title": "defender_submarine_lesson",
+        "buttons": [
+            { "_ref": "basic.json" }
+        ]
+    },
+
+    "panes": { "_ref": "defender_panels_suite.json" }
+}
