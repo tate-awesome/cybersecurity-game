@@ -42,7 +42,7 @@ class Builder(Panel):
 
         # self.start_animation(framerate_ms=100)
 
-        # menu_bar.minimize_button(scrollable, self.master)
+        self.menu_bar.minimize_button(scrollable, master)
         self.menu_bar.add_button() # set the zero point of the variable monitor
         self.menu_bar.add_button("pause") # pause or resume the variable monitor
 

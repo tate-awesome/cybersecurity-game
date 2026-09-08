@@ -50,6 +50,8 @@ class Builder(Panel):
         overlay = CheckboxOverlay(forms_button, context, self.refresh_forms,
                                    "defender_modbus_forms", "Show Forms", "defender_modbus_visibility")
 
+        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
+
         self.refresh_forms()
 
     def refresh_forms(self):

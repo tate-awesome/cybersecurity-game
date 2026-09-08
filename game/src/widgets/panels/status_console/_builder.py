@@ -12,7 +12,7 @@ class Builder(Panel):
 
         self.text_box = self.create_text_box(self)
 
-        # minimize_button = self.menu_bar.minimize_button(self.text_box, master)
+        minimize_button = self.menu_bar.minimize_button(self.text_box, master)
 
         pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "pause", "unpause")
 
@@ -59,7 +59,9 @@ class Builder(Panel):
         textbox.setFont(self.style.get_font("mono"))
         textbox.setReadOnly(True)
         textbox.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
-        parent.layout().addWidget(textbox)
+        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
+        # trailing-filler interaction).
+        parent.layout().addWidget(textbox, 1)
         return textbox
 
     # Buttons

@@ -46,7 +46,13 @@ class TitleMenu(QWidget):
             # navigate callback's own default-valued "target" argument
             # doesn't get silently clobbered by it.
             button.clicked.connect(lambda checked=False, function=function: function())
-        self.grid.addWidget(button, self.current_row, 1)
+        # No alignment flag here means "fill" - QGridLayout stretches the
+        # button to the column's width, and since the title label shares
+        # that same column, every button ends up as wide as the title text.
+        # AlignHCenter switches to the button's own sizeHint width (title
+        # text plus QPushButton's padding: 6px 12px from style.py), centered
+        # in the column instead of stretched across it.
+        self.grid.addWidget(button, self.current_row, 1, Qt.AlignmentFlag.AlignHCenter)
         self.grid.setRowStretch(self.current_row, 0)
         self.current_row = self.current_row + 1
         self.grid.setRowStretch(self.current_row, 1)

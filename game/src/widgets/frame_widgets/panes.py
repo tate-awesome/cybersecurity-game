@@ -1,6 +1,26 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QSplitter, QVBoxLayout, QWidget
 from ...app_core import Context
+
+
+class _PaneContainer(QWidget):
+    '''
+    A QSplitter child's real enforced minimum size is
+    minimumSize().expandedTo(minimumSizeHint()) - the *larger* of the
+    explicit floor Panes sets below (PANE_MIN_WIDTH/HEIGHT) and whatever
+    this widget's own layout wants, which for a deeply nested page (panels
+    full of forms, sliders, canvases, more Panes...) can add up to far more
+    than the screen, dragging the whole QMainWindow's minimum size up with
+    it - CTk's pack/grid geometry had no equivalent hard floor, so panes
+    could always be dragged down to a small size with content just
+    clipping instead. Pinning minimumSizeHint() here keeps that same
+    freedom: the explicit setMinimumWidth/Height call below becomes the
+    only floor, and content is never consulted for it.
+    '''
+
+    def minimumSizeHint(self):
+        return QSize(0, 0)
+
 
 class Panes(QSplitter):
 
@@ -27,7 +47,12 @@ class Panes(QSplitter):
         self.direction = direction
         style = context.style
 
-        master.layout().addWidget(self)
+        # Stretch 1 so a Panes used as a panel's body (e.g. NetworkDiagram's
+        # nested split) claims all leftover space over Panel's trailing
+        # filler widget (see panel.py) - harmless when master isn't a Panel
+        # (a Page's top-level trifold, a nested pane's sole child), since
+        # there's nothing else in those layouts competing for the space.
+        master.layout().addWidget(self, 1)
         margin = style.igap if pad_around else 0
         master.layout().setContentsMargins(margin, margin, margin, margin)
 
@@ -38,7 +63,7 @@ class Panes(QSplitter):
         min_size = style.PANE_MIN_WIDTH if direction == "horizontal" else style.PANE_MIN_HEIGHT
         initial_sizes = []
         for i in range(child_count):
-            pane = QWidget()
+            pane = _PaneContainer()
             pane.setLayout(QVBoxLayout())
             pane.layout().setContentsMargins(0, 0, 0, 0)
             if direction == "horizontal":
@@ -51,6 +76,11 @@ class Panes(QSplitter):
             stretch = max(1, round(1000 / child_sizes[i]))
             self.setStretchFactor(i, stretch)
             initial_sizes.append(stretch)
+            # This pane's authored proportion of the splitter, as designed
+            # in the page file's own child_sizes - MenuBar.minimize_button
+            # reads this back to compute a maximizing pane's target size,
+            # independent of whatever the sashes have since been dragged to.
+            pane.default_stretch = stretch
             self.panels.append(pane)
 
         # setStretchFactor alone only governs how a *later* resize

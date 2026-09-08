@@ -16,7 +16,11 @@ class Scrollable(QScrollArea):
         style = context.style
         self.style = style
 
-        master.layout().addWidget(self)
+        # Stretch 1 so this claims all leftover space over Panel's trailing
+        # filler widget (see panel.py) - Qt distributes leftover strictly by
+        # relative stretch factor, so without this a same-stretch (0) filler
+        # can end up winning space this should have gotten instead.
+        master.layout().addWidget(self, 1)
         self.setStyleSheet(f"QScrollArea {{ background-color: {style.color('panel')}; border: none; }}")
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

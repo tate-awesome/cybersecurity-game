@@ -75,7 +75,9 @@ class Map:
 
         # Create canvas
         self.canvas = _MapCanvas(self)
-        parent.layout().addWidget(self.canvas)
+        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
+        # trailing-filler interaction, harmless when parent isn't a Panel).
+        parent.layout().addWidget(self.canvas, 1)
 
         # Start animation loop - registered with the shared animation_manager
         # (instead of a raw self-rescheduling canvas.after() loop) so a

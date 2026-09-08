@@ -1,6 +1,6 @@
 import time
 from PySide6.QtCore import QPoint, Qt
-from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from ...app_core import Context
 from typing import Callable
 
@@ -24,6 +24,7 @@ class Overlay(QWidget):
         self.close_text = self.context.labels.get("menu_bar_buttons", "close_overlay")
         self.populate_func = populate_func
         self._last_hidden_at = 0.0
+        self._parent_overlay: "Overlay | None" = None
 
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')}; border: 2px solid {self.style.color('accent')};", self))
         self.setLayout(QVBoxLayout())
@@ -45,27 +46,59 @@ class Overlay(QWidget):
             self.click_open()
 
     def click_open(self):
-        self._close_other_overlays()
+        # QApplication.activePopupWidget() is Qt's own live answer to
+        # "which popup is the user currently inside" - the same question
+        # the CTk version's global click listener answered by hand (it had
+        # no widget-parent relationship between Toplevels to lean on
+        # either). Whatever popup is still active right now, right before
+        # this one grabs, is genuinely the context this click happened in:
+        # true even when the click arrived indirectly (see menu_bar.py's
+        # overflow overlay, which triggers a real button's own click()
+        # from a proxy sitting in *its* popup - activePopupWidget() still
+        # correctly reports that popup, unlike either button's fixed
+        # widget-parent chain, which the proxy indirection breaks).
+        active_popup = QApplication.activePopupWidget()
+        self._parent_overlay = active_popup if isinstance(active_popup, Overlay) and active_popup is not self else None
+
+        self._close_unrelated_overlays()
         self.populate_func(self)
         self.button.setText(self.close_text)
         self.adjustSize()
         self.move(self.calculate_placement(self.anchor))
         self.show()
 
-    def _close_other_overlays(self):
+    def _lineage(self) -> set["Overlay"]:
+        '''
+        This overlay plus every ancestor recorded in _parent_overlay at
+        open time, closest first - the set of overlays a close sweep
+        should leave alone.
+        '''
+        lineage = set()
+        node = self
+        while node is not None and node not in lineage:
+            lineage.add(node)
+            node = node._parent_overlay
+        return lineage
+
+    def _close_unrelated_overlays(self):
         '''
         Qt's popup-grab dismissal (see the class docstring) only reacts to
-        real mouse events - it doesn't know about, or coordinate with,
-        other independent Overlay instances. Clicking a different trigger
-        button while another overlay is already open is a real click on a
-        real widget, not an "outside click" as far as that overlay's own
-        grab is concerned, so without this it would stay open alongside
-        the new one. Every overlay is parented to context.root (see
-        CheckboxOverlay/VariableOverlay/FilterOverlay), so that's searched
-        rather than keeping a separate registry.
+        real mouse events outside every open popup - it doesn't know that
+        two Overlay instances opened from unrelated trigger buttons should
+        also close each other. Closes every other currently open overlay
+        except this one and its lineage of ancestor overlays (see
+        click_open/_parent_overlay), so opening an overlay from a button
+        that lives inside an already-open one (a nested picker, or a proxy
+        button in the menu bar's own overflow popup) doesn't blow away
+        that parent - only truly unrelated overlays get closed, matching
+        the CTk version's lineage-aware global click listener. Every
+        overlay is parented to context.root (see CheckboxOverlay/
+        VariableOverlay/FilterOverlay), so that's searched rather than
+        keeping a separate registry.
         '''
+        lineage = self._lineage()
         for overlay in self.context.root.findChildren(Overlay):
-            if overlay is not self and overlay.isVisible():
+            if overlay not in lineage and overlay.isVisible():
                 overlay.hide()
 
     def click_close(self):
@@ -79,6 +112,13 @@ class Overlay(QWidget):
         self._last_hidden_at = time.monotonic()
         self.button.setText(self.open_text)
         self._clear_contents()
+        # A closed overlay taking any overlays opened *from inside it* down
+        # with it (rather than leaving them floating with no parent left)
+        # mirrors a submenu closing when its parent menu does.
+        for overlay in self.context.root.findChildren(Overlay):
+            if overlay is not self and overlay._parent_overlay is self and overlay.isVisible():
+                overlay.hide()
+        self._parent_overlay = None
         super().hideEvent(event)
 
     def keyPressEvent(self, event):

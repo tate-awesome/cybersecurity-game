@@ -1,7 +1,7 @@
 from ...app_core import Context
 
 # Widgets
-from ...widgets import Panes, MenuBar, Scrollable
+from ...widgets import Panes, MenuBar, Scrollable, ShiftWheelSlider
 from ...widgets import popup
 from ...widgets.map import Map
 from ...drawing.viewport import ViewPort
@@ -18,7 +18,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QButtonGroup, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QSlider, QVBoxLayout, QWidget,
+    QPushButton, QVBoxLayout, QWidget,
 )
 
 import threading
@@ -471,7 +471,7 @@ class DefenderV0(Page):
             value_label.setStyleSheet("color: gray;")
             header_layout.addWidget(value_label)
 
-            slider = QSlider(Qt.Orientation.Horizontal)
+            slider = ShiftWheelSlider(Qt.Orientation.Horizontal)
             slider.setRange(0, SLIDER_RESOLUTION)
             slider.setValue(self._to_slider_pos(default, min_val, max_val))
 

@@ -1,9 +1,10 @@
 import threading
 import requests
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QSlider, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from .....app_core import Context
 from .....network.hardware import APPoller
+from ....frame_widgets.shift_wheel_slider import ShiftWheelSlider
 from ...base_form import BaseForm
 
 SUBMARINE_SLIDER_DEFS = [
@@ -110,7 +111,7 @@ class SlidersForm(BaseForm):
             value_label.setStyleSheet("color: gray;")
             header_layout.addWidget(value_label)
 
-            slider = QSlider(Qt.Orientation.Horizontal)
+            slider = ShiftWheelSlider(Qt.Orientation.Horizontal)
             slider.setRange(0, SLIDER_RESOLUTION)
             slider.setValue(self._to_slider_pos(default, min_val, max_val))
 

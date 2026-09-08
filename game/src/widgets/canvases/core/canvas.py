@@ -31,7 +31,9 @@ class Canvas(QWidget):
         '''
         super().__init__()
         self.context = context
-        master.layout().addWidget(self)
+        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
+        # trailing-filler interaction, harmless when master isn't a Panel).
+        master.layout().addWidget(self, 1)
 
         # A bare QWidget has no natural size of its own, unlike the old
         # CTkCanvas - without a floor, one of these stacked alongside other

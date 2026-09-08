@@ -49,7 +49,9 @@ class PacketTreeview:
             if col == "Info":
                 header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
 
-        parent.layout().addWidget(tree)
+        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
+        # trailing-filler interaction).
+        parent.layout().addWidget(tree, 1)
         return tree
 
     # ------------------------------------------------------------------

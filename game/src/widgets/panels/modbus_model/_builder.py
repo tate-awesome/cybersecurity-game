@@ -53,7 +53,9 @@ class Builder(Panel):
         self.body = QWidget()
         self.body.setLayout(QVBoxLayout())
         self.body.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().addWidget(self.body)
+        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
+        # trailing-filler interaction).
+        self.layout().addWidget(self.body, 1)
 
         self.model = None
         self.model_key = None

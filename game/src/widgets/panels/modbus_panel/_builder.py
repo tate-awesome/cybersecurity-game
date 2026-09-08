@@ -44,6 +44,8 @@ class Builder(Panel):
 
         clear_button = self.menu_bar.add_button("clear_modbus", self.context.buffer.reset_modbus)
 
+        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
+
         self.refresh_nicknames()
         self.refresh_rows()
         self.refresh_forms()

@@ -12,13 +12,13 @@ import threading
 
 import requests
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 import matplotlib
 matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from ...widgets import popup
+from ...widgets import popup, ShiftWheelSlider
 
 # Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette.
 # Not pulled from the app's Style object on purpose — CTk colors can be
@@ -343,7 +343,7 @@ class HVACView:
             value_label.setStyleSheet("color: gray;")
             header_layout.addWidget(value_label)
 
-            slider = QSlider(Qt.Orientation.Horizontal)
+            slider = ShiftWheelSlider(Qt.Orientation.Horizontal)
             slider.setRange(0, SLIDER_RESOLUTION)
             slider.setValue(self._to_slider_pos(default, min_val, max_val))
 

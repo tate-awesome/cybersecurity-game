@@ -38,7 +38,12 @@ class BaseForm(QWidget):
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
 
         self.grid_layout = QGridLayout(self)
-        self.grid_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        # No left/right margin - the CTk version never padded the frame
+        # itself (see add_label_row's padx=nogap), only individual rows
+        # like add_labeled_entry/add_process_row padded their own widgets
+        # via padx=gap. A blanket horizontal margin here would inset every
+        # row, including the ones meant to reach the form's edges.
+        self.grid_layout.setContentsMargins(0, self.style.igap, 0, self.style.igap)
         self.grid_layout.setVerticalSpacing(self.style.cgap * 2)
         self.grid_layout.setHorizontalSpacing(self.style.igap)
         self.grid_layout.setColumnStretch(0, 0)
