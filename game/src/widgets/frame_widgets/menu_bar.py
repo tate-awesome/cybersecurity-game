@@ -74,7 +74,7 @@ class MenuBar(QFrame):
 
         master.layout().addWidget(self)
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
-
+        self.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
         # Qt widgets default to a vertical size policy that's willing to
         # grow into whatever leftover space its layout has - the old
         # CTkFrame only ever got fill="x" (not expand=True), so it never

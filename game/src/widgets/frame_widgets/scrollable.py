@@ -41,8 +41,26 @@ class Scrollable(QScrollArea):
         self.grid_layout.setHorizontalSpacing(style.igap)
         self.setWidget(self.inner)
 
+        # The vertical scrollbar (ScrollBarAsNeeded, the default we don't
+        # override) already reads as its own bit of right-edge padding once
+        # it's showing, so the full igap margin on top of it looks like too
+        # much space - 2px instead keeps content from sitting flush against
+        # the scrollbar. Without a scrollbar there's nothing providing that
+        # separation, so it falls back to the normal igap. rangeChanged
+        # fires exactly when scrolling becomes possible/impossible (its
+        # min/max span is what ScrollBarAsNeeded itself keys visibility off
+        # of), which covers content being added/removed/hidden/shown after
+        # construction, not just this initial layout.
+        self.verticalScrollBar().rangeChanged.connect(self._update_right_margin)
+        self._update_right_margin(self.verticalScrollBar().minimum(), self.verticalScrollBar().maximum())
+
         if not height == -1:
             self.setFixedHeight(height)
+
+    def _update_right_margin(self, min_value: int, max_value: int):
+        margins = self.grid_layout.contentsMargins()
+        right = 0 if max_value > min_value else self.style.igap
+        self.grid_layout.setContentsMargins(margins.left(), margins.top(), right, margins.bottom())
 
     def columnconfigure(self, index: int, weight: int):
         self.grid_layout.setColumnStretch(index, weight)
