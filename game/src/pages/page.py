@@ -22,7 +22,7 @@ class Page(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('root')};", self))
         self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         # A page's own MenuBar and its Panes content are both typically
         # "widget"-colored - with no gap between them they read as one
         # fused bar instead of two distinct regions (global page toolbar vs.

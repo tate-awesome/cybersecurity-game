@@ -62,7 +62,7 @@ class WorkspacePage(Page):
         total_weight = sum(weights)
         divisors = [total_weight / weight for weight in weights]
 
-        panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, True)
+        panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, False)
 
         for i, child in enumerate(children):
             pane = panes.pane(i)
