@@ -10,7 +10,7 @@ class Modify(BaseForm):
         self.buffer = context.buffer.modbus
         # Create form
 
-        self.grid_layout.setColumnStretch(0, 1)
+        self.grid_layout.setColumnStretch(0, 0)
         self.grid_layout.setColumnStretch(1, 1)
         self.grid_layout.setColumnStretch(2, 1)
 
@@ -44,7 +44,7 @@ class Modify(BaseForm):
         def label(text):
             label = QLabel(text)
             label.setFont(self.style.get_font("mono"))
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.grid_layout.addWidget(label, self.current_row, self.current_column)
             self.current_column += 1
             return label

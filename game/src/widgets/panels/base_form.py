@@ -133,6 +133,10 @@ class BaseForm(QWidget):
             text = self.context.labels.get(label_slot, key)
             label = QLabel(text)
             label.setFont(self.style.get_font("mono"))
+            if column == 0:
+                label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            else:
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.grid_layout.addWidget(label, self.current_row, column)
             column += 1
             output.append(label)
