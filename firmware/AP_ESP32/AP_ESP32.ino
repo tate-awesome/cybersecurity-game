@@ -568,6 +568,13 @@ String buildConfigPage() {
           display: block;
         }
 
+        /* Click-to-set is only wired up on whichever canvas is live,
+           so only that one advertises itself as clickable. */
+        .minimap-svg.clickable,
+        .chart-svg.clickable {
+          cursor: crosshair;
+        }
+
         .minimap-caption {
           font-size: 0.65rem;
           color: #555;
@@ -695,13 +702,19 @@ String buildConfigPage() {
                     <circle id="live-client-dot" cx="110" cy="110" r="4.5" fill="#4fd1ff" stroke="#0a0a1a" stroke-width="1" opacity="0" />
                     <!-- target -->
                     <circle id="target-dot" cx="110" cy="110" r="5" fill="#e94560" stroke="#fff" stroke-width="1.5" />
+                    <!-- click preview: ghost crosshair that follows the pointer -->
+                    <g id="minimap-hover" opacity="0" pointer-events="none">
+                      <line id="minimap-hover-h" x1="10" y1="110" x2="210" y2="110" stroke="#e0e0e0" stroke-width="0.8" stroke-dasharray="2,4" opacity="0.5" />
+                      <line id="minimap-hover-v" x1="110" y1="10" x2="110" y2="210" stroke="#e0e0e0" stroke-width="0.8" stroke-dasharray="2,4" opacity="0.5" />
+                      <circle id="minimap-hover-dot" cx="110" cy="110" r="4" fill="none" stroke="#e0e0e0" stroke-width="1.2" opacity="0.8" />
+                    </g>
                   </svg>
                   <div class="legend-row">
                     <span class="legend-item"><span class="legend-dot" style="background:#e94560;"></span>Target</span>
                     <span class="legend-item"><span class="legend-dot" style="background:#4fd1ff;"></span>Client Live</span>
                     <span class="legend-item"><span class="legend-dot" style="background:#ffb84f;"></span>Server Live</span>
                   </div>
-                  <div class="minimap-caption">Display range: 0–200 on each axis</div>
+                  <div class="minimap-caption">Display range: 0–200 on each axis &nbsp;|&nbsp; click the map to set a target</div>
                 </div>
 
                 <div class="section-title">Set Target Position</div>
@@ -713,7 +726,7 @@ String buildConfigPage() {
                   <label for="sub_target_y">Target Y</label>
                   <input type="number" step="0.1" id="sub_target_y" placeholder="e.g. 100.0">
                 </div>
-                <button class="btn btn-primary" onclick="setSubmarineTarget()">
+                <button class="btn btn-primary" id="btn-set-target" onclick="setSubmarineTarget()">
                   Set Target
                 </button>
 
@@ -761,6 +774,7 @@ String buildConfigPage() {
                     <span class="legend-item"><span class="legend-line" style="border-color:#e94560;"></span>Live Temp</span>
                     <span class="legend-item"><span class="legend-line dashed" style="border-color:#4fd1ff;"></span>Target Setpoint</span>
                   </div>
+                  <div class="minimap-caption">Click the chart to set a temperature</div>
                 </div>
 
                 <div class="section-title">Set Target Temperature</div>
@@ -769,7 +783,7 @@ String buildConfigPage() {
                   <input type="number" step="0.1" id="hvac_target" placeholder="e.g. 75.2">
                 </div>
 
-                <button class="btn btn-primary" onclick="setHvacTarget()">
+                <button class="btn btn-primary" id="btn-set-hvac" onclick="setHvacTarget()">
                   Set Temperature
                 </button>
 
@@ -800,7 +814,7 @@ String buildConfigPage() {
 
                 <div class="form-group">
                   <label for="ssid">Network SSID</label>
-                  <input type="text" id="ssid" placeholder="e.g. MyLabRouter" value=")rawhtml" + g_ssid + R"rawhtml(">
+                  <input type="text" id="ssid" placeholder="e.g. MyLabRouter" value="AP-Config">
                 </div>
 
                 <div class="form-group">
@@ -812,7 +826,7 @@ String buildConfigPage() {
 
                 <div class="form-group">
                   <label for="flask_ip">Flask Server IP</label>
-                  <input type="text" id="flask_ip" placeholder="e.g. 192.168.8.167" value=")rawhtml" + g_flask_ip + R"rawhtml(">
+                  <input type="text" id="flask_ip" placeholder="e.g. 192.168.8.167" value="192.168.8.114">
                 </div>
 
                 <button class="btn btn-primary" onclick="saveConfig()">
@@ -898,6 +912,18 @@ String buildConfigPage() {
       </div>
 
       <script>
+        // ── Shared UI state ───────────────────────────────────────
+        //    null = mode not known yet (no successful /status poll),
+        //    which keeps both canvases inert until we do know.
+        let currentSubmarineMode = null;
+
+        // Scale of the most recent HVAC chart render, needed to turn a
+        // pixel position back into a temperature. null while collecting.
+        let hvacScale = null;
+
+        // SVG y-coordinate the pointer is hovering at on the HVAC chart.
+        let hvacHoverY = null;
+
         // ── Tab switching ──────────────────────────────────────────
         function showTab(name) {
           document.getElementById('tab-system').classList.toggle('active', name === 'system');
@@ -948,6 +974,18 @@ String buildConfigPage() {
           subBadge.className   = 'model-badge ' + (isSubmarine ? 'badge-active' : 'badge-inactive');
           hvacBadge.textContent = isSubmarine ? 'INACTIVE' : 'ACTIVE';
           hvacBadge.className   = 'model-badge ' + (isSubmarine ? 'badge-inactive' : 'badge-active');
+
+          // Click-to-set follows the same one-model-at-a-time rule.
+          currentSubmarineMode = isSubmarine;
+          document.getElementById('target-minimap').classList.toggle('clickable', isSubmarine);
+          document.getElementById('hvac-chart').classList.toggle('clickable', !isSubmarine);
+
+          if (isSubmarine) {
+            hvacHoverY = null;          // drop a stale HVAC hover line
+          } else {
+            setMinimapHover(null);      // drop a stale minimap ghost crosshair
+          }
+          applyHvacHover();
         }
 
         // ── Mask the encryption key for display — show only the first
@@ -966,17 +1004,210 @@ String buildConfigPage() {
         }
 
 
+        // ── Mini-map geometry, shared by the forward and inverse maps ──
+        const MINIMAP = { svgMin: 10, svgMax: 210, rangeMin: 0, rangeMax: 200 };
 
         // ── Map a raw (x, y) telemetry value onto the mini-map's SVG ──
         //    Fixed 0–200 display range on each axis, clamped so an
         //    out-of-range point still shows at the nearest edge.
         function minimapCoords(x, y) {
           if (x === undefined || x === null || isNaN(x) || y === undefined || y === null || isNaN(y)) return null;
-          const svgMin = 10, svgMax = 210, rangeMin = 0, rangeMax = 200;
+          const { svgMin, svgMax, rangeMin, rangeMax } = MINIMAP;
           const clamp = v => Math.max(rangeMin, Math.min(rangeMax, v));
-          const toSvg = v => svgMin + (clamp(v) / (rangeMax - rangeMin)) * (svgMax - svgMin);
+          const toSvg = v => svgMin + ((clamp(v) - rangeMin) / (rangeMax - rangeMin)) * (svgMax - svgMin);
           // SVG y-axis grows downward; flip so higher Y plots toward the top
           return { x: toSvg(x), y: svgMin + svgMax - toSvg(y) };
+        }
+
+        // ── Inverse of minimapCoords: SVG point → world (x, y) ────────
+        //    Returns null for a point outside the plotted world bounds,
+        //    so clicks on the margin are ignored rather than clamped.
+        function minimapValues(sx, sy) {
+          const { svgMin, svgMax, rangeMin, rangeMax } = MINIMAP;
+          if (sx < svgMin || sx > svgMax || sy < svgMin || sy > svgMax) return null;
+          const toVal = s => rangeMin + ((s - svgMin) / (svgMax - svgMin)) * (rangeMax - rangeMin);
+          return { x: toVal(sx), y: toVal(svgMin + svgMax - sy) };
+        }
+
+        // ── Convert a pointer event to SVG user coordinates ───────────
+        //    getScreenCTM covers the viewBox scale and the letterboxing
+        //    that preserveAspectRatio adds when the box isn't square.
+        function svgPointFromEvent(svg, evt) {
+          const ctm = typeof svg.getScreenCTM === 'function' ? svg.getScreenCTM() : null;
+          if (ctm && typeof svg.createSVGPoint === 'function') {
+            const pt = svg.createSVGPoint();
+            pt.x = evt.clientX;
+            pt.y = evt.clientY;
+            const p = pt.matrixTransform(ctm.inverse());
+            return { x: p.x, y: p.y };
+          }
+          // Fallback for environments without a live CTM.
+          const r  = svg.getBoundingClientRect();
+          const vb = svg.viewBox.baseVal;
+          return {
+            x: vb.x + ((evt.clientX - r.left) / r.width)  * vb.width,
+            y: vb.y + ((evt.clientY - r.top)  / r.height) * vb.height
+          };
+        }
+
+        // ── Ghost crosshair previewing where a click would land ───────
+        function setMinimapHover(pos) {
+          const g = document.getElementById('minimap-hover');
+          if (!pos) { g.setAttribute('opacity', '0'); return; }
+          document.getElementById('minimap-hover-h').setAttribute('y1', pos.y.toFixed(1));
+          document.getElementById('minimap-hover-h').setAttribute('y2', pos.y.toFixed(1));
+          document.getElementById('minimap-hover-v').setAttribute('x1', pos.x.toFixed(1));
+          document.getElementById('minimap-hover-v').setAttribute('x2', pos.x.toFixed(1));
+          document.getElementById('minimap-hover-dot').setAttribute('cx', pos.x.toFixed(1));
+          document.getElementById('minimap-hover-dot').setAttribute('cy', pos.y.toFixed(1));
+          g.setAttribute('opacity', '1');
+        }
+
+        // ── Click the mini-map to fill in and submit a target ─────────
+        function handleMinimapClick(evt) {
+          if (currentSubmarineMode !== true) return;      // SUBMARINE mode only
+          const svg  = document.getElementById('target-minimap');
+          const p    = svgPointFromEvent(svg, evt);
+          const vals = minimapValues(p.x, p.y);
+          if (!vals) return;                              // outside the world bounds
+          document.getElementById('sub_target_x').value = vals.x.toFixed(1);
+          document.getElementById('sub_target_y').value = vals.y.toFixed(1);
+          document.getElementById('btn-set-target').click();
+        }
+
+        // ── Format an elapsed-ms span as a short "Xs"/"Xm" label ────
+        function formatElapsed(ms) {
+          const s = Math.round(ms / 1000);
+          if (s < 60) return s + 's';
+          return Math.round(s / 60) + 'm';
+        }
+
+        // ── Draw the HVAC live-temp vs setpoint line chart ──────────
+        function renderHvacChart(samples) {
+          const svg = document.getElementById('hvac-chart');
+          if (!samples || samples.length < 2) {
+            svg.innerHTML = '<text x="200" y="85" text-anchor="middle" font-size="12" fill="#555">Collecting data&#8230;</text>';
+            hvacScale  = null;      // no axis to invert a click against
+            hvacHoverY = null;
+            return;
+          }
+
+          const W = 400, H = 160, padL = 38, padR = 10, padT = 10, padB = 22;
+          const plotW = W - padL - padR, plotH = H - padT - padB;
+
+          const times = samples.map(s => s.t);
+          const minT = times[0], maxT = times[times.length - 1];
+          const span = Math.max(maxT - minT, 1);
+
+          const rooms   = samples.map(s => s.room);
+          const targets = samples.map(s => s.target);
+          const allV = rooms.concat(targets);
+          let minV = Math.min(...allV), maxV = Math.max(...allV);
+          if (minV === maxV) { minV -= 1; maxV += 1; }
+          const pad = (maxV - minV) * 0.15 || 1;
+          minV -= pad; maxV += pad;
+          const vSpan = maxV - minV;
+
+          const xAt = t => padL + ((t - minT) / span) * plotW;
+          const yAt = v => padT + (1 - (v - minV) / vSpan) * plotH;
+
+          // Remember the axis so pointer positions can be read back as °F.
+          hvacScale = { W, H, padL, padR, padT, padB, plotW, plotH, minV, maxV };
+
+          const roomPts   = samples.map(s => `${xAt(s.t).toFixed(1)},${yAt(s.room).toFixed(1)}`).join(' ');
+          const targetPts = samples.map(s => `${xAt(s.t).toFixed(1)},${yAt(s.target).toFixed(1)}`).join(' ');
+          const gridYs = [0, 0.5, 1].map(f => (padT + f * plotH).toFixed(1));
+
+          svg.innerHTML = `
+            ${gridYs.map(gy => `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="#16213e" stroke-width="1" />`).join('')}
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H - padB}" stroke="#0f3460" stroke-width="1.5" />
+            <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#0f3460" stroke-width="1.5" />
+            <polyline points="${targetPts}" fill="none" stroke="#4fd1ff" stroke-width="2" stroke-dasharray="4,3" />
+            <polyline points="${roomPts}" fill="none" stroke="#e94560" stroke-width="2" />
+            <text x="${padL - 4}" y="${(padT + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="#666">${maxV.toFixed(1)}&#176;</text>
+            <text x="${padL - 4}" y="${H - padB}" text-anchor="end" font-size="9" fill="#666">${minV.toFixed(1)}&#176;</text>
+            <text x="${padL}" y="${H - 4}" text-anchor="start" font-size="9" fill="#555">-${formatElapsed(span)}</text>
+            <text x="${W - padR}" y="${H - 4}" text-anchor="end" font-size="9" fill="#555">now</text>
+            <g id="hvac-hover" opacity="0" pointer-events="none">
+              <line id="hvac-hover-line" x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}"
+                    stroke="#4fd1ff" stroke-width="2" stroke-dasharray="4,3" opacity="0.55" />
+              <rect id="hvac-hover-bg" x="${padL + 3}" y="${padT}" width="44" height="13" rx="3"
+                    fill="#0a0a1a" opacity="0.9" />
+              <text id="hvac-hover-label" x="${padL + 6}" y="${padT}" font-size="10" fill="#4fd1ff">—</text>
+            </g>
+          `;
+
+          applyHvacHover();   // the redraw wiped the old hover group
+        }
+
+        // ── Preview line showing the setpoint a click would apply ────
+        //    Tracks the pointer's pixel position, and re-reads its value
+        //    from the current axis so it always matches what a click does.
+        function applyHvacHover() {
+          const g = document.getElementById('hvac-hover');
+          if (!g) return;
+          if (hvacHoverY === null || !hvacScale || currentSubmarineMode !== false) {
+            g.setAttribute('opacity', '0');
+            return;
+          }
+
+          const s = hvacScale;
+          const y = Math.max(s.padT, Math.min(s.H - s.padB, hvacHoverY));
+          const v = s.minV + (1 - (y - s.padT) / s.plotH) * (s.maxV - s.minV);
+          const labelY = Math.max(s.padT + 11, y - 5);
+
+          const line = document.getElementById('hvac-hover-line');
+          line.setAttribute('y1', y.toFixed(1));
+          line.setAttribute('y2', y.toFixed(1));
+          document.getElementById('hvac-hover-bg').setAttribute('y', (labelY - 10).toFixed(1));
+          const label = document.getElementById('hvac-hover-label');
+          label.setAttribute('y', labelY.toFixed(1));
+          label.textContent = v.toFixed(1) + '\u00B0F';
+
+          g.setAttribute('opacity', '1');
+        }
+
+        // ── Read a pointer position on the chart as a temperature ────
+        function hvacHitFromEvent(evt) {
+          if (!hvacScale) return null;
+          const svg = document.getElementById('hvac-chart');
+          const p   = svgPointFromEvent(svg, evt);
+          const s   = hvacScale;
+          if (p.x < s.padL || p.x > s.W - s.padR) return null;     // outside plot
+          if (p.y < s.padT || p.y > s.H - s.padB) return null;
+          const v = s.minV + (1 - (p.y - s.padT) / s.plotH) * (s.maxV - s.minV);
+          return { v, y: p.y };
+        }
+
+        // ── Click the chart to fill in and submit a setpoint ─────────
+        function handleHvacChartClick(evt) {
+          if (currentSubmarineMode !== false) return;     // HVAC mode only
+          const hit = hvacHitFromEvent(evt);
+          if (!hit) return;
+          document.getElementById('hvac_target').value = hit.v.toFixed(1);
+          document.getElementById('btn-set-hvac').click();
+        }
+
+        // ── Wire up both canvases ───────────────────────────────────
+        function initCanvasTargeting() {
+          const minimap = document.getElementById('target-minimap');
+          minimap.addEventListener('click', handleMinimapClick);
+          minimap.addEventListener('pointermove', evt => {
+            if (currentSubmarineMode !== true) { setMinimapHover(null); return; }
+            const p = svgPointFromEvent(minimap, evt);
+            setMinimapHover(minimapValues(p.x, p.y) ? p : null);
+          });
+          minimap.addEventListener('pointerleave', () => setMinimapHover(null));
+
+          const chart = document.getElementById('hvac-chart');
+          chart.addEventListener('click', handleHvacChartClick);
+          chart.addEventListener('pointermove', evt => {
+            if (currentSubmarineMode !== false) { hvacHoverY = null; applyHvacHover(); return; }
+            const hit = hvacHitFromEvent(evt);
+            hvacHoverY = hit ? hit.y : null;
+            applyHvacHover();
+          });
+          chart.addEventListener('pointerleave', () => { hvacHoverY = null; applyHvacHover(); });
         }
 
         // ── Plot target + live telemetry positions on the mini-map ──
@@ -1008,57 +1239,6 @@ String buildConfigPage() {
           } else {
             serverDot.setAttribute('opacity', '0');
           }
-        }
-
-        // ── Format an elapsed-ms span as a short "Xs"/"Xm" label ────
-        function formatElapsed(ms) {
-          const s = Math.round(ms / 1000);
-          if (s < 60) return s + 's';
-          return Math.round(s / 60) + 'm';
-        }
-
-        // ── Draw the HVAC live-temp vs setpoint line chart ──────────
-        function renderHvacChart(samples) {
-          const svg = document.getElementById('hvac-chart');
-          if (!samples || samples.length < 2) {
-            svg.innerHTML = '<text x="200" y="85" text-anchor="middle" font-size="12" fill="#555">Collecting data&#8230;</text>';
-            return;
-          }
-
-          const W = 400, H = 160, padL = 38, padR = 10, padT = 10, padB = 22;
-          const plotW = W - padL - padR, plotH = H - padT - padB;
-
-          const times = samples.map(s => s.t);
-          const minT = times[0], maxT = times[times.length - 1];
-          const span = Math.max(maxT - minT, 1);
-
-          const rooms   = samples.map(s => s.room);
-          const targets = samples.map(s => s.target);
-          const allV = rooms.concat(targets);
-          let minV = Math.min(...allV), maxV = Math.max(...allV);
-          if (minV === maxV) { minV -= 1; maxV += 1; }
-          const pad = (maxV - minV) * 0.15 || 1;
-          minV -= pad; maxV += pad;
-          const vSpan = maxV - minV;
-
-          const xAt = t => padL + ((t - minT) / span) * plotW;
-          const yAt = v => padT + (1 - (v - minV) / vSpan) * plotH;
-
-          const roomPts   = samples.map(s => `${xAt(s.t).toFixed(1)},${yAt(s.room).toFixed(1)}`).join(' ');
-          const targetPts = samples.map(s => `${xAt(s.t).toFixed(1)},${yAt(s.target).toFixed(1)}`).join(' ');
-          const gridYs = [0, 0.5, 1].map(f => (padT + f * plotH).toFixed(1));
-
-          svg.innerHTML = `
-            ${gridYs.map(gy => `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="#16213e" stroke-width="1" />`).join('')}
-            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H - padB}" stroke="#0f3460" stroke-width="1.5" />
-            <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="#0f3460" stroke-width="1.5" />
-            <polyline points="${targetPts}" fill="none" stroke="#4fd1ff" stroke-width="2" stroke-dasharray="4,3" />
-            <polyline points="${roomPts}" fill="none" stroke="#e94560" stroke-width="2" />
-            <text x="${padL - 4}" y="${(padT + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="#666">${maxV.toFixed(1)}&#176;</text>
-            <text x="${padL - 4}" y="${H - padB}" text-anchor="end" font-size="9" fill="#666">${minV.toFixed(1)}&#176;</text>
-            <text x="${padL}" y="${H - 4}" text-anchor="start" font-size="9" fill="#555">-${formatElapsed(span)}</text>
-            <text x="${W - padR}" y="${H - 4}" text-anchor="end" font-size="9" fill="#555">now</text>
-          `;
         }
 
         // ── Fetch HVAC temperature history and redraw the chart ─────
@@ -1215,6 +1395,10 @@ String buildConfigPage() {
 
           if (resp.ok) {
             showToast(`Target sent: (${x}, ${y})`);
+            // Only clear on success — a failed send leaves the values in
+            // place so they can be retried without retyping.
+            document.getElementById('sub_target_x').value = '';
+            document.getElementById('sub_target_y').value = '';
             refreshStatus();
           } else {
             showToast('Failed to set target.');
@@ -1238,6 +1422,9 @@ String buildConfigPage() {
 
           if (resp.ok) {
             showToast('Setpoint sent: ' + val.toFixed(1) + '°F');
+            // Only clear on success — a failed send leaves the values in
+            // place so they can be retried without retyping.
+            document.getElementById('hvac_target').value = '';
             refreshStatus();
           } else {
             showToast('Failed to set HVAC target.');
@@ -1251,6 +1438,7 @@ String buildConfigPage() {
         }
 
         // ── Start auto-refresh ────────────────────────────────────
+        initCanvasTargeting();
         refreshStatus();
         fetchHvacHistory();
         setInterval(() => {
