@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGridLayout, QLabel, QLineEdit, QPushButton, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
 from typing import Callable
 from ...app_core import Context
 from ...network.process import Process
@@ -86,6 +86,33 @@ class BaseForm(QWidget):
         '''
         button.clicked.connect(lambda checked=False, function=function: function())
 
+    def fixed_width_wrapper(self, widget: QWidget, alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft) -> QWidget:
+        '''
+        Wraps `widget` (expected to already have its own setFixedWidth) in
+        an ordinarily-growable QWidget, so the grid cell can be given this
+        wrapper instead of `widget` itself. A grid column sizes itself to
+        match whatever's placed in it - handing it a fixed-width widget
+        directly locks that ENTIRE COLUMN to that width everywhere it's
+        used, which in a multi-row form sharing columns (e.g. Modify's
+        multiplier/offset table) rigidly locks every row's column instead
+        of just the one widget that's supposed to be fixed-size. The
+        wrapper has no size of its own, so it stretches/shrinks with the
+        column normally while `widget` stays visually locked within
+        whatever room that leaves, pinned to `alignment` (an explicit
+        stretch on the far side rather than Qt's own alignment handling -
+        a lone item with nothing else competing for space in a box layout
+        gets centered by default, not pinned to a specific side).
+        '''
+        wrapper = QWidget()
+        layout = QHBoxLayout(wrapper)
+        layout.setContentsMargins(0, 0, 0, 0)
+        if alignment != Qt.AlignmentFlag.AlignLeft:
+            layout.addStretch()
+        layout.addWidget(widget)
+        if alignment != Qt.AlignmentFlag.AlignRight:
+            layout.addStretch()
+        return wrapper
+
     def get_process(self, process_class: type[Process], *args, tags: list[str] | None = None, **kwargs) -> Process:
         '''
         Retrieves this form's process from context.process_manager, creating
@@ -159,8 +186,15 @@ class BaseForm(QWidget):
         self.grid_layout.addWidget(label_widget, self.current_row, 1)
 
         entry = QLineEdit()
+        entry.setAlignment(Qt.AlignmentFlag.AlignLeft)
         entry.setFont(self.style.get_font())
-        self.grid_layout.addWidget(entry, self.current_row, 2)
+        # QLineEdit's default horizontal size policy is Expanding - even
+        # sitting in column 2 (stretch=0, see __init__), its own policy
+        # still lets it balloon to fill whatever room that column ends up
+        # with. A fixed width overrides that, and fixed_width_wrapper keeps
+        # it from also locking the whole column to that width.
+        entry.setFixedWidth(self.style.igap * 16)
+        self.grid_layout.addWidget(self.fixed_width_wrapper(entry), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
         self.entries.append(entry)
 
         # Bind autosave
@@ -192,12 +226,11 @@ class BaseForm(QWidget):
         if self.key is not None:
             self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.grid_layout.addWidget(self.process_status, self.current_row, 1, 1, 1)
-            
-            self.grid_layout.addWidget(self.process_button, self.current_row, 2)
+            self.grid_layout.addWidget(self.fixed_width_wrapper(self.process_button), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
         else:
             self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.grid_layout.addWidget(self.process_status, self.current_row, 0, 1, 2)
-            self.grid_layout.addWidget(self.process_button, self.current_row, 2)
+            self.grid_layout.addWidget(self.fixed_width_wrapper(self.process_button), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
 
         # Set function definitions
         self.start_process = start_func

@@ -53,7 +53,13 @@ class Modify(BaseForm):
             entry = QLineEdit()
             entry.setFont(self.style.get_font("mono"))
             entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.grid_layout.addWidget(entry, self.current_row, self.current_column)
+            # Fixed width (values here are always short numbers) wrapped in
+            # a growable placeholder - see BaseForm.fixed_width_wrapper -
+            # so this doesn't also lock the multiplier/offset columns
+            # themselves to that width for every row in the table.
+            entry.setFixedWidth(self.style.igap * 8)
+            wrapper = self.fixed_width_wrapper(entry, Qt.AlignmentFlag.AlignCenter)
+            self.grid_layout.addWidget(wrapper, self.current_row, self.current_column)
             self.entries.append(entry)
             self.current_column += 1
             return entry
@@ -93,7 +99,7 @@ class Modify(BaseForm):
 
         button = QPushButton(text)
         button.setFont(self.style.get_font())
-        self.grid_layout.addWidget(button, self.current_row, 2)
+        self.grid_layout.addWidget(self.fixed_width_wrapper(button), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
         self.current_row += 1
 
         return status, button
