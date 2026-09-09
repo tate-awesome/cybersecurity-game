@@ -1,3 +1,4 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from ...app_core import Context
 from .. import MenuBar
@@ -14,6 +15,12 @@ class Panel(QWidget):
         self.context = context
         self.style = context.style
 
+        # A plain QWidget doesn't paint a stylesheet background at all by
+        # default (unlike QFrame/QScrollArea, which do) - it stays
+        # visually transparent and whatever's behind it (its parent pane)
+        # shows straight through, regardless of what color this stylesheet
+        # says. WA_StyledBackground opts this widget into that painting.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')};", self))
         master.layout().addWidget(self)
         self.setLayout(QVBoxLayout())

@@ -26,6 +26,10 @@ class Scrollable(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.inner = QWidget()
+        # A plain QWidget doesn't paint a stylesheet background at all by
+        # default (unlike QFrame/QScrollArea, which do) - see Panel/
+        # BaseForm for the same fix and the full explanation.
+        self.inner.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.inner.setStyleSheet(style.themed(f"background-color: {style.color('panel')};", self.inner))
         self.grid_layout = QGridLayout(self.inner)
         # Without explicit values here, stacked rows (forms, strip charts,

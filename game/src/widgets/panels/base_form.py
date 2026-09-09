@@ -35,6 +35,15 @@ class BaseForm(QWidget):
         self.process_noun = process_noun
         self.has_process_button = False
 
+        # A plain QWidget doesn't paint a stylesheet background at all by
+        # default (unlike QFrame/QScrollArea, which do) - it stays
+        # visually transparent and whatever's behind it (Scrollable's own
+        # background) shows straight through, regardless of what color
+        # this stylesheet says - which is also why stacked forms had no
+        # visible gap between them: both the form and the gap were really
+        # just Scrollable's background showing through. WA_StyledBackground
+        # opts this widget into that painting.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
 
         self.grid_layout = QGridLayout(self)
@@ -43,8 +52,8 @@ class BaseForm(QWidget):
         # like add_labeled_entry/add_process_row padded their own widgets
         # via padx=gap. A blanket horizontal margin here would inset every
         # row, including the ones meant to reach the form's edges.
-        self.grid_layout.setContentsMargins(0, self.style.igap, 0, self.style.igap)
-        self.grid_layout.setVerticalSpacing(self.style.cgap * 2)
+        self.grid_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        self.grid_layout.setVerticalSpacing(self.style.igap)
         self.grid_layout.setHorizontalSpacing(self.style.igap)
         self.grid_layout.setColumnStretch(0, 0)
         self.grid_layout.setColumnStretch(1, 1)
@@ -106,7 +115,15 @@ class BaseForm(QWidget):
             text = str(self.context.labels.get("hacking_forms", self.key))
         self.header = QLabel(text)
         self.header.setFont(self.style.get_font())
-        self.grid_layout.addWidget(self.header, self.current_row, 0, 1, 10, Qt.AlignmentFlag.AlignCenter)
+        # columnSpan=-1 spans to the layout's actual last column (as
+        # declared by the setColumnStretch calls in __init__) instead of a
+        # hardcoded 10 - that hardcoded span was wider than the 3 columns
+        # this form ever really uses, so Qt treated the row as having 7
+        # extra phantom columns past the real content, each still adding
+        # its own horizontal spacing and stealing width the actual columns
+        # should have gotten, which is what left a gap on the form's right
+        # edge.
+        self.grid_layout.addWidget(self.header, self.current_row, 0, 1, -1, Qt.AlignmentFlag.AlignCenter)
         self.current_row += 1
 
     def add_label_row(self, label_slot: str, label_keys: list[str]) -> list[QLabel]:
