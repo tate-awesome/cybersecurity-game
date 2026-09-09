@@ -191,11 +191,12 @@ class BaseForm(QWidget):
 
         if self.key is not None:
             self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            self.grid_layout.addWidget(self.process_status, self.current_row, 1)
+            self.grid_layout.addWidget(self.process_status, self.current_row, 1, 1, 1)
+            
             self.grid_layout.addWidget(self.process_button, self.current_row, 2)
         else:
             self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            self.grid_layout.addWidget(self.process_status, self.current_row, 0)
+            self.grid_layout.addWidget(self.process_status, self.current_row, 0, 1, 2)
             self.grid_layout.addWidget(self.process_button, self.current_row, 2)
 
         # Set function definitions

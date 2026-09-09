@@ -88,8 +88,8 @@ class Modify(BaseForm):
     def add_button(self, text) -> tuple[QLabel, QPushButton]:
         status = QLabel("")
         status.setFont(self.style.get_font())
-        status.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.grid_layout.addWidget(status, self.current_row, 0)
+        status.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.grid_layout.addWidget(status, self.current_row, 0, 1, 2)
 
         button = QPushButton(text)
         button.setFont(self.style.get_font())
