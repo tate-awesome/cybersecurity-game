@@ -300,8 +300,25 @@ class MenuBar(QFrame):
             # everyone floating apart.
             splitter.setSizes([round(s) for s in sizes])
 
-        def grow_pane():
+        def restore_floor():
+            '''
+            Restores this pane's normal PANE_MIN_HEIGHT/WIDTH floor if
+            shrink_pane lowered it - shared by grow_pane's click-to-restore
+            path and on_sash_moved's drag-to-restore path below, since only
+            one of them (grow_pane) also needs to resize the pane afterward.
+            '''
             nonlocal normal_min_extent
+            if pane is None or normal_min_extent is None:
+                return
+            splitter = pane.parent()
+            vertical = splitter.orientation() == Qt.Orientation.Vertical
+            if vertical:
+                pane.setMinimumHeight(normal_min_extent)
+            else:
+                pane.setMinimumWidth(normal_min_extent)
+            normal_min_extent = None
+
+        def grow_pane():
             if pane is None:
                 return
             splitter = pane.parent()
@@ -311,12 +328,7 @@ class MenuBar(QFrame):
             # Restore this pane's normal floor before asking the splitter
             # for more room - otherwise it's still pinned at the minimized
             # (menu-bar-only) height from shrink_pane.
-            if normal_min_extent is not None:
-                if vertical:
-                    pane.setMinimumHeight(normal_min_extent)
-                else:
-                    pane.setMinimumWidth(normal_min_extent)
-                normal_min_extent = None
+            restore_floor()
 
             sizes = [float(s) for s in splitter.sizes()]
             current = sizes[index]
@@ -359,7 +371,14 @@ class MenuBar(QFrame):
             if frame_widget is not None:
                 frame_widget.hide()
 
-        def click_maximize():
+        def unminimize(resize: bool):
+            '''
+            Shared by click_maximize (button click - also resizes the pane
+            back out to its authored share) and on_sash_moved (the user
+            already dragged the pane to whatever size they wanted, so this
+            only needs to reveal frame_widget in place, not also resize it
+            out from under them).
+            '''
             nonlocal is_minimized
             if not is_minimized:
                 return
@@ -367,18 +386,31 @@ class MenuBar(QFrame):
             button.clicked.disconnect()
             self._connect(button, click_minimize)
             button.setText(minimize_text)
-            grow_pane()
+            if resize:
+                grow_pane()
+            else:
+                restore_floor()
             if frame_widget is not None:
                 frame_widget.show()
 
+        def click_maximize():
+            unminimize(resize=True)
+
         def on_sash_moved(pos=None, index=None):
-            if pane is None or is_minimized:
+            if pane is None:
                 return
             splitter = pane.parent()
             min_size = self.style.PANE_MIN_HEIGHT if splitter.orientation() == Qt.Orientation.Vertical else self.style.PANE_MIN_WIDTH
             current = pane.height() if splitter.orientation() == Qt.Orientation.Vertical else pane.width()
-            if current <= min_size + self.style.igap:
+            big_enough = current > min_size + self.style.igap
+            if not is_minimized and not big_enough:
                 click_minimize()
+            elif is_minimized and big_enough:
+                # The user dragged this pane back open by hand - show
+                # frame_widget in place instead of requiring an explicit
+                # click on the now-hidden Maximize button, the same way
+                # dragging it down to its floor auto-minimizes above.
+                unminimize(resize=False)
 
         self._connect(button, click_minimize)
         if pane is not None:
