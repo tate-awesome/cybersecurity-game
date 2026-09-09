@@ -1395,6 +1395,10 @@ String buildConfigPage() {
 
           if (resp.ok) {
             showToast(`Target sent: (${x}, ${y})`);
+            // Only clear on success — a failed send leaves the values in
+            // place so they can be retried without retyping.
+            document.getElementById('sub_target_x').value = '';
+            document.getElementById('sub_target_y').value = '';
             refreshStatus();
           } else {
             showToast('Failed to set target.');
@@ -1418,6 +1422,9 @@ String buildConfigPage() {
 
           if (resp.ok) {
             showToast('Setpoint sent: ' + val.toFixed(1) + '°F');
+            // Only clear on success — a failed send leaves the values in
+            // place so they can be retried without retyping.
+            document.getElementById('hvac_target').value = '';
             refreshStatus();
           } else {
             showToast('Failed to set HVAC target.');
