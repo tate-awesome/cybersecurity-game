@@ -59,12 +59,13 @@ class Builder(Panel):
 
         self.model = None
         self.model_key = None
+        self.model_dropdown = None
 
         if self.labels_by_key:
             preferred = self.context.states.get("model_type")
             start_key = preferred if preferred in self.labels_by_key else next(iter(self.labels_by_key))
 
-            self.menu_bar.add_dropdown(
+            self.model_dropdown = self.menu_bar.add_dropdown(
                 list(self.labels_by_key.values()),
                 command=self.select_model_by_label,
                 default=self.labels_by_key[start_key],
@@ -75,13 +76,14 @@ class Builder(Panel):
 
 
         # If a defender-flavored model is visible, it takes over model
-        # selection entirely from here on - the dropdown stays (so both
-        # remain individually inspectable) but whichever one matches the
-        # AP's current mode wins on every tick, overriding a manual pick -
-        # as long as the Auto-Switch checkbox stays checked. Unchecking it
-        # (or picking a model from the dropdown, see select_model_by_label)
-        # removes _auto_switch from the animation manager entirely rather
-        # than having it check a flag every tick and no-op.
+        # selection entirely from here on - whichever one matches the AP's
+        # current mode wins on every tick, overriding a manual pick (and
+        # updating the dropdown to match - see select_model's _sync_dropdown
+        # call), as long as the Auto-Switch checkbox stays checked.
+        # Unchecking it (or picking a model from the dropdown, see
+        # select_model_by_label) removes _auto_switch from the animation
+        # manager entirely rather than having it check a flag every tick
+        # and no-op.
         self.auto_switch_checkbox = None
         self._auto_switch_callback_name = f"ModbusModelAutoSwitch_{id(self)}"
         # available_models is a dict keyed by "auto_switch" too (see
@@ -146,3 +148,25 @@ class Builder(Panel):
         self.model = MODELS[key](self.body, self.context)
         self.model_key = key
         self.context.states.set("model_type", value=key)
+        self._sync_dropdown(key)
+
+    def _sync_dropdown(self, key: str):
+        '''
+        Keeps the dropdown's displayed text matching whichever model is
+        actually showing, including when _auto_switch changes it out from
+        under a manual pick - not just at construction. Signals are
+        blocked around the change so this can't loop back into
+        select_model_by_label as though the user had picked it themselves
+        (which would also uncheck the Auto-Switch checkbox).
+        '''
+        if self.model_dropdown is None:
+            return
+        label = self.labels_by_key.get(key)
+        if label is None:
+            return
+        index = self.model_dropdown.findText(label)
+        if index < 0 or self.model_dropdown.currentIndex() == index:
+            return
+        self.model_dropdown.blockSignals(True)
+        self.model_dropdown.setCurrentIndex(index)
+        self.model_dropdown.blockSignals(False)
