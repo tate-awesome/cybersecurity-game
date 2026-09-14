@@ -5,7 +5,8 @@
     },
     "modbus_model_visibility": {
         "hvac": 1,
-        "submarine": 1
+        "submarine": 1,
+        "auto_switch": 1
     },
     "network_action_visibility": {
         "wifi": 1,

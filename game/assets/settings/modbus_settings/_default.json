@@ -9,6 +9,8 @@
 
     "model_type": "agnostic",
 
+    "modbus_model_auto_switch": 1,
+
     "modbus_variables": {
         "hreg_1": {
             "label": "hreg_1",

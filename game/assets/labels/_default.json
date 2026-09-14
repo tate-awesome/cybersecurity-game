@@ -271,7 +271,8 @@
         "columns_overlay": "Columns",
         "close_overlay": "Close",
         "fit_stripchart": "Fit Data",
-        "unfit_stripchart": "Align Time"
+        "unfit_stripchart": "Align Time",
+        "auto_switch": "Auto-Switch"
 
     },
 

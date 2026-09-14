@@ -7,8 +7,10 @@
         "_ref": ["_packages/_default.json", "modbus_settings/hvac.json"],
         "modbus_model_visibility": {
             "hvac": 1,
-            "submarine": 0
-        }
+            "submarine": 0,
+            "auto_switch": 0
+        },
+        "modbus_model_auto_switch": 0
     },
 
     "menu_bar": {

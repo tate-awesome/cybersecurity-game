@@ -73,14 +73,44 @@ class Builder(Panel):
         else:
             print("No models are visible for this page")
 
-        self.menu_bar.minimize_button(self.body, master)
 
         # If a defender-flavored model is visible, it takes over model
         # selection entirely from here on - the dropdown stays (so both
         # remain individually inspectable) but whichever one matches the
-        # AP's current mode wins on every tick, overriding a manual pick.
-        if DEFENDER_MODELS & set(self.labels_by_key):
-            self.context.animation_manager.add_callback(f"ModbusModelAutoSwitch_{id(self)}", self._auto_switch)
+        # AP's current mode wins on every tick, overriding a manual pick -
+        # as long as the Auto-Switch checkbox stays checked. Unchecking it
+        # (or picking a model from the dropdown, see select_model_by_label)
+        # removes _auto_switch from the animation manager entirely rather
+        # than having it check a flag every tick and no-op.
+        self.auto_switch_checkbox = None
+        self._auto_switch_callback_name = f"ModbusModelAutoSwitch_{id(self)}"
+        # available_models is a dict keyed by "auto_switch" too (see
+        # visibility/_default.json's modbus_model_visibility) unless it fell
+        # back to the plain list of every MODELS key above, in which case
+        # nothing has hidden the checkbox and it defaults to visible.
+        auto_switch_visible = (
+            not isinstance(available_models, dict)
+            or available_models.get("auto_switch") not in (0, "0")
+        )
+        if auto_switch_visible and DEFENDER_MODELS & set(self.labels_by_key):
+            auto_switch_enabled = bool(self.context.states.get("modbus_model_auto_switch"))
+            self.auto_switch_checkbox = self.menu_bar.add_checkbox(
+                self.context.labels.get("menu_bar_buttons", "auto_switch"),
+                checked=auto_switch_enabled,
+                command=self._set_auto_switch,
+            )
+            if auto_switch_enabled:
+                self.context.animation_manager.add_callback(self._auto_switch_callback_name, self._auto_switch)
+
+        self.menu_bar.minimize_button(self.body, master)
+
+    def _set_auto_switch(self, enabled: bool):
+        self.context.states.set("modbus_model_auto_switch", value=1 if enabled else 0)
+        if enabled:
+            self.context.animation_manager.add_callback(self._auto_switch_callback_name, self._auto_switch)
+            self._auto_switch()
+        else:
+            self.context.animation_manager.remove_callback(self._auto_switch_callback_name)
 
     def _auto_switch(self):
         submarine_mode = bool(self.context.buffer.defender_status.get("submarine_mode", True))
@@ -90,8 +120,15 @@ class Builder(Panel):
 
     def select_model_by_label(self, label: str):
         key = self.key_by_label.get(label)
-        if key is not None:
-            self.select_model(key)
+        if key is None:
+            return
+        # A manual dropdown pick overrides auto-switching - uncheck the box
+        # (which itself drops the animation-manager callback via
+        # _set_auto_switch) so the very next tick doesn't immediately
+        # switch back out from under the user's pick.
+        if self.auto_switch_checkbox is not None:
+            self.auto_switch_checkbox.setChecked(False)
+        self.select_model(key)
 
     def select_model(self, key: str):
         if key == self.model_key or key not in MODELS:

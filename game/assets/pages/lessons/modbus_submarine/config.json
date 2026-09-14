@@ -10,8 +10,10 @@
         ],
         "modbus_model_visibility": {
             "hvac": 0,
-            "submarine": 1
-        }
+            "submarine": 1,
+            "auto_switch": 0
+        },
+        "modbus_model_auto_switch": 0
     },
 
     "menu_bar": {

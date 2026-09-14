@@ -8,7 +8,11 @@
             "_packages/_default.json",
             "hack_settings/lab.json",
             "visibility/_admin.json"
-        ]
+        ],
+        "modbus_model_visibility": {
+            "auto_switch": 0
+        },
+        "modbus_model_auto_switch": 0
     },
 
     "menu_bar": {

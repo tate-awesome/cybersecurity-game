@@ -1,6 +1,6 @@
 from ...app_core import Context
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from ..popup import message
 from .overlay import Overlay
 from typing import Callable
@@ -125,7 +125,7 @@ class MenuBar(QFrame):
         width = margins.left() + margins.right()
         width += self.game_label.sizeHint().width()
         for entry in self._entries:
-            if entry["kind"] == "dropdown":
+            if entry["kind"] in ("dropdown", "checkbox"):
                 width += spacing + entry["widget"].sizeHint().width()
         width += spacing + self.the_overflow_button.sizeHint().width()
         return QSize(width, self.sizeHint().height())
@@ -169,6 +169,22 @@ class MenuBar(QFrame):
             dropdown.currentTextChanged.connect(command)
         self._insert_entry(dropdown, "dropdown")
         return dropdown
+
+    def add_checkbox(self, label: str, checked: bool = False, command: Callable[[bool], None] | None = None) -> QCheckBox:
+        '''
+        A button-row checkbox (e.g. ModbusModel's Auto-Switch toggle) -
+        never squashed into the overflow overlay, same as add_dropdown and
+        for the same reason (nothing here clones a checkbox's live checked
+        state into the overlay). command is called with the new checked
+        state on every toggle, including programmatic ones (checkbox.setChecked).
+        '''
+        checkbox = QCheckBox(label)
+        checkbox.setFont(self.style.get_font())
+        checkbox.setChecked(checked)
+        if command is not None:
+            checkbox.toggled.connect(command)
+        self._insert_entry(checkbox, "checkbox")
+        return checkbox
 
     # Button overflow overlay
     #
