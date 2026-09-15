@@ -1,6 +1,7 @@
 scapy
 netifaces2
 netfilterqueue; sys_platform == 'linux'
+PyGObject; sys_platform == 'linux' # provides libnm bindings for wifi.py, also requires the system 'network-manager' / 'gir1.2-nm-1.0' package
 pydivert; sys_platform == 'win32'
 requests
 flask

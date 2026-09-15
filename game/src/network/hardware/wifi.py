@@ -1,5 +1,16 @@
-import os, subprocess, platform
+import platform
 from ..process import Process
+
+try:
+    import gi
+    gi.require_version("NM", "1.0")
+    from gi.repository import GLib, NM
+    _NM_IMPORT_ERROR = None
+except (ImportError, ValueError) as e:
+    NM = None
+    GLib = None
+    _NM_IMPORT_ERROR = e
+
 
 class Wifi(Process):
     def __init__(self, buffer, context):
@@ -7,105 +18,104 @@ class Wifi(Process):
         self.is_connected = False
         self.previous_network = None
         self.os_name = platform.system()
+        self._client: "NM.Client | None" = None
+
+    def _get_client(self):
+        if _NM_IMPORT_ERROR is not None:
+            self.buffer.put("wifi", f"python-gobject/libnm bindings not available: {_NM_IMPORT_ERROR}")
+            return None
+        if self._client is None:
+            try:
+                self._client = NM.Client.new(None)
+            except GLib.Error as e:
+                self.buffer.put("wifi", f"Failed to connect to NetworkManager: {e}")
+                return None
+        return self._client
+
+    def _wifi_device(self, client):
+        for device in client.get_devices():
+            if device.get_device_type() == NM.DeviceType.WIFI:
+                return device
+        return None
+
+    @staticmethod
+    def _ssid_to_str(ssid) -> "str | None":
+        return NM.utils_ssid_to_utf8(ssid.get_data()) if ssid is not None else None
 
     def get_network_history(self) -> list[str]:
-        path = "/etc/NetworkManager/system-connections/"
-        output = []
+        client = self._get_client()
+        if client is None:
+            return []
 
-        # Check if the directory exists
-        if not os.path.exists(path):
-            print("NetworkManager directory not found. Are you using a different network manager?")
-            return output
-
-        try:
-            # List all configuration files in the directory
-            files = os.listdir(path)
-            
-            if not files:
-                print("No saved Wi-Fi networks found.")
-                return output
-
-            for file in files:
-                # NetworkManager profiles usually end with .nmconnection or have no extension
-                if file.endswith(".nmconnection"):
-                    output.append(f"{file.replace('.nmconnection', '')}")
-                else:
-                    output.append(f"{file}")
-
-        except PermissionError:
-            print("Permission denied. Please run this script with 'sudo'.")
-        finally:
-            return output
+        return [
+            connection.get_id()
+            for connection in client.get_connections()
+            if connection.get_connection_type() == NM.SETTING_WIRELESS_SETTING_NAME
+        ]
 
     def get_current_ssid(self) -> str:
-        try:
-            # Run nmcli to get only the active Wi-Fi connection name
-            result = subprocess.run(
-                ["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            # Loop through lines to find the active network
-            for line in result.stdout.strip().split("\n"):
-                if line.startswith("yes:"):
-                    # Split 'yes:NetworkName' and return the network name
-                    return line.split(":", 1)[1]
-                    
-            return "Not connected to Wi-Fi"
-        except subprocess.CalledProcessError:
-            return "Error: NetworkManager is not running or accessible"
-        except FileNotFoundError:
-            return "Error: 'nmcli' command not found. Ensure NetworkManager is installed."
+        client = self._get_client()
+        if client is None:
+            return "Error: could not reach NetworkManager"
+
+        device = self._wifi_device(client)
+        if device is None:
+            return "Error: no Wi-Fi device found"
+
+        ssid = self._ssid_to_str(device.get_active_access_point().get_ssid()) if device.get_active_access_point() else None
+        return ssid if ssid else "Not connected to Wi-Fi"
 
     def get_available_networks(self) -> list[str]:
-        try:
-            # Run nmcli to list nearby Wi-Fi networks
-            # The '--fields' flag extracts just the SSID (network name) and BSSID
-            cmd = ['nmcli', '-f', 'SSID', 'dev', 'wifi']
-            output = subprocess.check_output(cmd).decode('utf-8', errors='ignore')
-            
-            # Split output into lines and clean them up
-            lines = [line.strip() for line in output.split('\n') if line.strip()]
-            
-            # Remove the header row "SSID"
-            if lines:
-                lines.pop(0)
-                
-            # Filter out empty or hidden SSIDs (often displayed as '--'), strip
-            # the "Auto " prefix nmcli sometimes prepends to profile names, and
-            # de-duplicate (the same SSID can be broadcast by multiple APs).
-            networks = list({line.replace("Auto ", "") for line in lines if line and line != '--'})
-
-            return networks
-
-
-        except FileNotFoundError:
-            print("Error: 'nmcli' command not found. Ensure NetworkManager is installed.")
-            return []
-        except subprocess.CalledProcessError:
-            print("Error: Failed to scan for Wi-Fi networks.")
+        client = self._get_client()
+        if client is None:
             return []
 
-    def connect_to_saved_wifi(self, ssid):
-        try:
-            # Run the nmcli command to bring up the saved connection
-            result = subprocess.run(
-                ["nmcli", "connection", "up", ssid],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            print(f"Success: {result.stdout.strip()}")
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to connect: {e.stderr.strip()}")
+        device = self._wifi_device(client)
+        if device is None:
+            return []
+
+        networks = {self._ssid_to_str(ap.get_ssid()) for ap in device.get_access_points()}
+        return [ssid for ssid in networks if ssid]
+
+    def connect_to_saved_wifi(self, ssid) -> bool:
+        client = self._get_client()
+        if client is None:
             return False
+
+        connection = next(
+            (
+                c for c in client.get_connections()
+                if c.get_connection_type() == NM.SETTING_WIRELESS_SETTING_NAME and c.get_id() == ssid
+            ),
+            None,
+        )
+        if connection is None:
+            self.buffer.put("wifi", f"No saved connection profile named '{ssid}'")
+            return False
+
+        device = self._wifi_device(client)
+        loop = GLib.MainLoop()
+        outcome = {"ok": False}
+
+        def on_activated(client, async_result, _loop):
+            try:
+                client.activate_connection_finish(async_result)
+                outcome["ok"] = True
+            except GLib.Error as e:
+                self.buffer.put("wifi", f"Failed to connect: {e}")
+            finally:
+                _loop.quit()
+
+        client.activate_connection_async(connection, device, None, None, on_activated, loop)
+        loop.run()
+
+        if outcome["ok"]:
+            self.buffer.put("wifi", f"Success: connected to {ssid}")
+        return outcome["ok"]
 
     def start(self, match_name: str):
         if self.os_name != "Linux":
-            self.buffer.put("wifi", f"WiFi switching is only supported on Linux (NetworkManager/nmcli), not {self.os_name}.")
+            self.buffer.put("wifi", f"WiFi switching is only supported on Linux (NetworkManager/libnm), not {self.os_name}.")
             return
         if self.is_running():
             self.buffer.put("wifi", "WiFi is already connected")
