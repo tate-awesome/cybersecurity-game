@@ -13,7 +13,9 @@
         "wifi": [""],
         "arp": ["",""],
         "sniff": ["",""],
-        "dos": ["",""]
+        "dos": ["",""],
+        "ap_connect": ["http://192.168.4.1"],
+        "encryption": [""]
     },
 
     "hacking_forms": {
@@ -22,7 +24,11 @@
         "arp": 1,
         "dos": 0,
         "sniff": 1,
-        "nfq": 1
+        "nfq": 1,
+        "ap_connect": 1,
+        "encryption": 1,
+        "ap_tunnel": 1,
+        "kalman": 1
     }
     
 }

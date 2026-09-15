@@ -5,7 +5,13 @@
         "ap_connect": 1,
         "encryption": 1,
         "ap_tunnel": 1,
-        "kalman": 1
+        "kalman": 1,
+        "wifi": 1,
+        "nmap": 1,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 1,
+        "nfq": 0
     },
 
     "modbus_model_visibility": {

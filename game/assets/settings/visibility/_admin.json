@@ -5,7 +5,8 @@
     },
     "modbus_model_visibility": {
         "hvac": 1,
-        "submarine": 1
+        "submarine": 1,
+        "auto_switch": 1
     },
     "network_action_visibility": {
         "wifi": 1,
@@ -13,6 +14,15 @@
         "arp": 1,
         "dos": 1,
         "sniff": 1,
-        "nfq": 1
+        "nfq": 1,
+        "ap_connect": 1,
+        "encryption": 1,
+        "ap_tunnel": 1,
+        "kalman": 1
+    },
+    "defender_modbus_visibility": {
+        "mode": 1,
+        "readout": 1,
+        "sliders": 1
     }
 }
