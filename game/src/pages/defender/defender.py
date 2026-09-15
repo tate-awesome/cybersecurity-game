@@ -841,7 +841,8 @@ class DefenderV0(Page):
                         text = str(raw)
 
                 lbl = QLabel(text)
-                lbl.setFont(self.style.get_font("small"))
+                font = QFont("Arial", 10, QFont.Weight.Light, False)
+                lbl.setFont(font)
                 lbl.setStyleSheet(f"background-color: {bg};")
                 log_layout.addWidget(lbl, r_idx, c_idx)
                 row_labels.append(lbl)
