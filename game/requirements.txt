@@ -1,3 +1,5 @@
+# On Linux Ubuntu/Debian: run this, to support PyGObject, used in wifi.py
+# sudo apt-get install -y network-manager gir1.2-nm-1.0 libcairo2-dev libgirepository-2.0-dev gobject-introspection
 scapy
 netifaces2
 netfilterqueue; sys_platform == 'linux'
