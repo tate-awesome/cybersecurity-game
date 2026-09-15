@@ -58,10 +58,22 @@ class _PollUnpacker:
         self._unpack_status(data)
         self._unpack_client_points(data.get("client_points") or [])
         self._unpack_server_points(data.get("server_points") or [])
-        self._unpack_hvac(data, poll_time)
+        self._unpack_hvac(data)
         self._unpack_target(data, poll_time)
 
     def _latest_received_at(self, data: dict) -> float:
+        '''
+        Only meaningful for submarine data (see _unpack_target's target_x/
+        target_y) - client_points/server_points are the AP's submarine
+        telemetry buffers, and the AP's /set_mode handler never clears them
+        on a mode switch, so while it's sitting in HVAC mode they just go
+        stale: still present and non-empty, but frozen at whatever
+        received_at they last had in submarine mode. Deriving the *HVAC*
+        fields' own timestamp from this would timestamp every HVAC poll
+        identically for as long as the AP stays in HVAC mode, collapsing
+        temperature/heater history into one x position instead of a real
+        timeline - see _unpack_hvac, which uses its own wall clock instead.
+        '''
         points = data.get("server_points") or data.get("client_points") or []
         if points:
             try:
@@ -129,20 +141,38 @@ class _PollUnpacker:
             if (value := point.get("state_anomaly_detected")) is not None:
                 self.status.put("state_anomaly", bool(value))
 
-    def _unpack_hvac(self, data: dict, poll_time: float):
-        # Flat, single-source fields - no per-point timestamp of their own,
-        # so they share the poll's own received_at-derived time.
+    def _unpack_hvac(self, data: dict):
+        # Flat, single-source fields with no per-point timestamp of their
+        # own and no real relationship to client_points/server_points (see
+        # _latest_received_at) - timestamped with the unpacker's own wall
+        # clock instead. That's fine even though it's a different clock
+        # than submarine data's AP-uptime one: HVAC history is only ever
+        # plotted against itself (DefenderHVACChart/defender_stripchart_
+        # panel never overlay it with submarine x/y/theta), so all that
+        # matters is that current_temp/target_temp/heater stay internally
+        # consistent and keep moving forward every poll - which client_
+        # points/server_points can't guarantee while the AP sits in HVAC
+        # mode, but time.time() always can.
+        hvac_time = time.time()
         if (value := data.get("current_temp")) is not None:
-            self.modbus.put("temperature", "client_clean", float(value), poll_time)
+            self.modbus.put("temperature", "client_clean", float(value), hvac_time)
+        if (value := data.get("target_temp")) is not None:
+            self.modbus.put("temperature", "target", float(value), hvac_time)
         if (value := data.get("heater_on")) is not None:
-            self.status.put("heater_on", bool(value))
+            heater_on = bool(value)
+            # Kept as a status flag too (ModeForm/hvac_view read it for a
+            # plain ON/OFF label), but also recorded as a 0.0/1.0 modbus
+            # history so charts can plot it over time like temperature -
+            # see DefenderHVACChart/defender_stripchart_panel.
+            self.status.put("heater_on", heater_on)
+            self.modbus.put("heater", "client_clean", 1.0 if heater_on else 0.0, hvac_time)
         if (value := data.get("HVAC_anomaly_detected")) is not None:
             self.status.put("hvac_anomaly", bool(value))
 
     def _unpack_target(self, data: dict, poll_time: float):
+        # Submarine-only now - target_temp moved into _unpack_hvac above,
+        # since it needs the HVAC wall clock, not this AP-uptime one.
         if (value := data.get("target_x")) is not None:
             self.modbus.put("x", "target", float(value), poll_time)
         if (value := data.get("target_y")) is not None:
             self.modbus.put("y", "target", float(value), poll_time)
-        if (value := data.get("target_temp")) is not None:
-            self.modbus.put("temperature", "target", float(value), poll_time)
