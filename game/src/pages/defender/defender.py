@@ -81,7 +81,7 @@ class DefenderV0(Page):
         menu_bar.page_buttons()
 
         # ── Three-pane layout ────────────────────────────────────────────────
-        trifold = Panes(self, context, "horizontal", 3, [4, 3, 2], True)
+        trifold = Panes(self, context, "horizontal", 3, [2.25, 2, 1.5], True)
         left_p = Scrollable(trifold.pane(0), context)
         middle_p = trifold.pane(1)
         right_p = trifold.pane(2)
@@ -122,7 +122,7 @@ class DefenderV0(Page):
         middle_p.layout().addWidget(self._submarine_middle)
 
         self._build_packet_log(self._submarine_middle)
-        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS [MODBUS]", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
+        self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
         # ── Kalman Filter block ─────────────────────────────────────────────
         kalman_section = self._section(self._submarine_middle, "KALMAN FILTER")
 
@@ -841,7 +841,8 @@ class DefenderV0(Page):
                         text = str(raw)
 
                 lbl = QLabel(text)
-                lbl.setFont(self.style.get_font("small"))
+                font = QFont("Arial", 10, QFont.Weight.Light, False)
+                lbl.setFont(font)
                 lbl.setStyleSheet(f"background-color: {bg};")
                 log_layout.addWidget(lbl, r_idx, c_idx)
                 row_labels.append(lbl)
