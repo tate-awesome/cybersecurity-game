@@ -1,9 +1,34 @@
 from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether, conf
-from scapy.arch import get_if_addr, get_if_hwaddr
+from scapy.arch import get_if_addr, get_if_hwaddr, get_working_if
 from scapy.contrib import modbus
 import json, socket, uuid
 from scapy.contrib.modbus import *
 from typing import Any
+
+
+def _resolve_local_mac() -> str:
+    '''
+    The MAC address of the network interface actually used for outbound
+    traffic - used below to tell "packets addressed to us" apart from any
+    other traffic a sniffer/nfq happens to see.
+
+    uuid.getnode() is unreliable for this on any machine with more than one
+    MAC-bearing adapter, which is the common case on Windows (Wi-Fi +
+    Ethernet + Bluetooth + VPN/virtual adapters, etc.) but rare on a typical
+    single-NIC Linux box - it has no notion of "the active one" and can
+    return an unrelated, even disconnected, adapter's MAC (observed: it
+    picked a laptop's Bluetooth radio over its connected Wi-Fi adapter).
+    When that happens, direction never resolves to "in"/"out" for sniffed
+    packets, which silently breaks modbus transaction tracking (is_primary
+    never gets set - see TransactionManager). get_working_if() resolves the
+    adapter scapy would actually route traffic through instead.
+    '''
+    try:
+        return get_if_hwaddr(get_working_if().name).lower()
+    except Exception:
+        node = uuid.getnode()
+        return ':'.join(f'{(node >> ele) & 0xff:02x}' for ele in range(40, -8, -8)).lower()
+
 
 class MetaPacket:
 
@@ -39,7 +64,7 @@ class MetaPacket:
         "modbus_word"       # str - "variable list = value list"
     }
 
-    LOCAL_MAC = ':'.join(f'{(uuid.getnode() >> ele) & 0xff:02x}' for ele in range(40, -8, -8)).lower()
+    LOCAL_MAC = _resolve_local_mac()
     BROADCAST_MAC = "ff:ff:ff:ff:ff:ff"
 
     def __init__(  self, pkt: Packet, first_packet_time: float, number: int,
