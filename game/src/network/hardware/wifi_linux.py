@@ -334,15 +334,13 @@ class Wifi(WifiBaseClass):
         else:
             self.buffer.put("wifi", f"Failed to disconnect: {outcome['message']}")
 
-    def start(self, match_name: str):
-        if not match_name.strip():
-            self.buffer.put("wifi", "Device Name field is empty; enter a network name to search for.")
-            return
-
-        if self.is_running():
-            self.buffer.put("wifi", "WiFi is already connected")
-            return
-
+    def _start_impl(self, match_name: str):
+        '''
+        The actual scan/match/connect flow, run on a background thread by
+        WifiBaseClass.start() - see its docstring for why. is_running()/the
+        empty-field and already-running checks are handled there before this
+        is even called.
+        '''
         client = self._get_client()
         if client is None or self._wifi_ready(client) is None:
             return
@@ -397,7 +395,9 @@ class Wifi(WifiBaseClass):
         # Flip to "running" now, before the connection attempt actually
         # finishes, so the GUI doesn't sit showing "disconnected" for the
         # whole (sometimes multi-second) auth/DHCP handshake between this
-        # message and the "Connected to ..." one below. _connecting tells
+        # message and the "Connected to ..." one below. self._connecting is
+        # already True the whole time this method runs (WifiBaseClass.start()
+        # claims it before spawning this thread), which is what tells
         # is_running() to skip its live-mismatch check meanwhile, since the
         # device is still legitimately mid-switch and won't match
         # target_network yet - that's not a dropped connection.
@@ -410,10 +410,6 @@ class Wifi(WifiBaseClass):
         # the instant it succeeded.
         self.target_network = target_available
         self.match_name = match_name
-        self._connecting = True
-        try:
-            if not self.connect_to_saved_wifi(target_history):
-                self.is_connected = False
-                self.target_network = None
-        finally:
-            self._connecting = False
+        if not self.connect_to_saved_wifi(target_history):
+            self.is_connected = False
+            self.target_network = None

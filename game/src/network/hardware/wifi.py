@@ -4,6 +4,7 @@ Wifi module. Shared state machine, with platform-specific network calls
 wifi_windows.py - see net_filter_queue.py for the same split.
 '''
 
+import threading
 import time
 
 from ..process import Process
@@ -129,29 +130,76 @@ class WifiBaseClass(Process):
 
         return self.is_connected
 
+    def start(self, match_name: str):
+        '''
+        Scanning and connecting can take real, human-noticeable time - a
+        connect attempt alone can run up to CONNECT_TIMEOUT_SECONDS. Doing
+        that on the calling (GUI) thread would freeze the app for the whole
+        stretch, so the actual work (_start_impl, platform-specific) runs on
+        a background thread instead; this just validates the input and
+        claims _connecting synchronously, so a rapid double-click can't slip
+        a second attempt in before the thread has even started.
+
+        _connecting also doubles as "don't touch the OS Wi-Fi APIs from the
+        polling thread right now" for is_running() (see can_sense there) -
+        on Linux in particular, NM's default GLib main context isn't safe to
+        iterate from two threads paying attention to it at once, so the
+        poller has to sit out entirely while a background thread is mid
+        scan/connect/disconnect.
+        '''
+        if not match_name.strip():
+            self.buffer.put("wifi", "Device Name field is empty; enter a network name to search for.")
+            return
+
+        if self.is_running() or self._connecting:
+            self.buffer.put("wifi", "A Wi-Fi connection change is already in progress.")
+            return
+
+        self._connecting = True
+        threading.Thread(target=self._run_start, args=(match_name,), daemon=True).start()
+
+    def _run_start(self, match_name: str):
+        try:
+            self._start_impl(match_name)
+        finally:
+            self._connecting = False
+
     def stop(self):
         if not self.is_running():
             self.buffer.put("wifi", "Wifi is already disconnected.")
             self.is_connected = False
             return
 
+        if self._connecting:
+            self.buffer.put("wifi", "A Wi-Fi connection change is already in progress.")
+            return
+
         # Unlike start(), flip to "not running" *before* the restore attempt
         # rather than after: stopping means the forced switch is over, so the
         # GUI should read as disconnected for the whole "Restoring..." ...
-        # "Connected to ..." window below, not just once it finishes.
+        # "Connected to ..." window below, not just once it finishes. The
+        # restore/disconnect itself can block for real time (same reasoning
+        # as start()), so it runs on a background thread too, with
+        # _connecting claimed for the same reason.
         self._unwatch_active_connection()
         self.is_connected = False
         self.target_network = None
+        self._connecting = True
+        threading.Thread(target=self._run_stop, daemon=True).start()
 
-        if self.previous_network:
-            self.buffer.put("wifi", f"Restoring previous connection: {self.previous_network}")
-            self.connect_to_saved_wifi(self.previous_network)
-        else:
-            # No fallback was ever recorded - e.g. the target network was
-            # already the active connection when this was started, so
-            # there's nothing non-matching to restore. Still disconnect
-            # rather than leaving the target connection active: Stop should
-            # always mean "not connected through this process" - it just has
-            # nowhere else to switch to.
-            self.buffer.put("wifi", "No previous network was recorded; disconnecting.")
-            self.disconnect_current()
+    def _run_stop(self):
+        try:
+            if self.previous_network:
+                self.buffer.put("wifi", f"Restoring previous connection: {self.previous_network}")
+                self.connect_to_saved_wifi(self.previous_network)
+            else:
+                # No fallback was ever recorded - e.g. the target network was
+                # already the active connection when this was started, so
+                # there's nothing non-matching to restore. Still disconnect
+                # rather than leaving the target connection active: Stop
+                # should always mean "not connected through this process" -
+                # it just has nowhere else to switch to.
+                self.buffer.put("wifi", "No previous network was recorded; disconnecting.")
+                self.disconnect_current()
+        finally:
+            self._connecting = False
