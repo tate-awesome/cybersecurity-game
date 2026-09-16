@@ -510,10 +510,17 @@ class HVACView:
     def show(self):
         self._left_root.show()
         self._graph_root.show()
+        # See DefenderModbusBuffer.resume_hvac/pause_hvac (and
+        # DefenderHVACChart.start_animation, the panel-driven counterpart to
+        # this class) - without this, temperature/heater history never
+        # advances past its frozen 0.0 relative time and the graph plots
+        # every sample at the same x position.
+        self._context.buffer.defender_modbus.resume_hvac()
 
     def hide(self):
         self._left_root.hide()
         self._graph_root.hide()
+        self._context.buffer.defender_modbus.pause_hvac()
 
     def _refresh_visibility(self):
         submarine_mode = bool(self._context.buffer.defender_status.get("submarine_mode", True))
