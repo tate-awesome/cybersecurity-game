@@ -4,7 +4,19 @@ Wifi module. Shared state machine, with platform-specific network calls
 wifi_windows.py - see net_filter_queue.py for the same split.
 '''
 
+import time
+
 from ..process import Process
+
+# A manual network switch (or a brief AP hiccup) doesn't jump cleanly from
+# the old SSID to the new one - there's normally a gap of a second or two
+# where get_current_ssid() reports nothing while the OS disassociates from
+# the old network and associates with the new one. is_running() is polled
+# every 100ms (see base_form.py's refresh_process_button), so without a
+# grace period the very first poll during that gap would immediately declare
+# the connection lost, before the OS even finishes reconnecting - see
+# is_running() below.
+RECONNECT_GRACE_SECONDS = 5
 
 
 class WifiBaseClass(Process):
@@ -14,7 +26,9 @@ class WifiBaseClass(Process):
         self.is_connected = False
         self.previous_network = None
         self.target_network = None
+        self.match_name: "str | None" = None
         self._connecting = False
+        self._mismatch_since: "float | None" = None
 
     def _unwatch_active_connection(self):
         '''
@@ -25,6 +39,15 @@ class WifiBaseClass(Process):
 
     def _describe_lost_connection(self) -> str:
         return f"Lost connection to '{self.target_network}'; it may no longer be in range."
+
+    @staticmethod
+    def _matches(text: "str | None", pattern: "str | None") -> bool:
+        '''Case-insensitive substring check: does pattern appear anywhere in text?'''
+        return text is not None and pattern is not None and pattern.lower() in text.lower()
+
+    @staticmethod
+    def _equal_ci(a: "str | None", b: "str | None") -> bool:
+        return a is not None and b is not None and a.lower() == b.lower()
 
     def is_running(self) -> bool:
         '''
@@ -42,9 +65,45 @@ class WifiBaseClass(Process):
         on its own, so forcing it here would at best be redundant and at
         worst fight whatever the OS is already doing.
         '''
+        can_sense = self.match_name is not None and not self._connecting
+        current = self.get_current_ssid() if can_sense else None
+
+        if can_sense and current is not None and not self._matches(current, self.match_name):
+            # previous_network is always "whatever non-matching network was
+            # last seen", kept live here rather than only captured once at
+            # start() - so if the user hops through a string of unrelated
+            # networks before finally landing on one that matches, the
+            # fallback stop() restores is the last one they were actually on,
+            # not whatever they happened to be on the moment Start was
+            # clicked.
+            self.previous_network = current
+
         if self.is_connected and self.target_network is not None and not self._connecting:
-            current = self.get_current_ssid()
             if current is not None and current == self.target_network:
+                self._mismatch_since = None
+                return self.is_connected
+
+            # The OS switched us to a different network than the one we were
+            # tracking - but if it still matches the original search pattern
+            # (e.g. the AP handed off between two SSIDs matching the same
+            # Device Name filter), that's not a lost connection: keep
+            # previous_network as-is for stop() to restore later, just start
+            # tracking the new SSID so future polls don't keep re-triggering
+            # this branch.
+            if self._matches(current, self.match_name):
+                self.buffer.put("wifi", f"Reconnected to a different matching network: '{current}'.")
+                self.target_network = current
+                self._mismatch_since = None
+                return self.is_connected
+
+            # Not (yet) a match either way - give it RECONNECT_GRACE_SECONDS
+            # before treating it as lost, in case this is a transient gap
+            # partway through a manual switch that's about to land on
+            # target_network or a match_name-matching network above.
+            now = time.monotonic()
+            if self._mismatch_since is None:
+                self._mismatch_since = now
+            if now - self._mismatch_since < RECONNECT_GRACE_SECONDS:
                 return self.is_connected
 
             if current is not None and current == self.previous_network:
@@ -55,6 +114,19 @@ class WifiBaseClass(Process):
             self._unwatch_active_connection()
             self.is_connected = False
             self.target_network = None
+            self._mismatch_since = None
+
+        elif not self.is_connected and self._matches(current, self.match_name):
+            # Even while "off" (never started, or a previously detected
+            # loss), keep watching for the OS landing on a network matching
+            # the last Device Name filter used - e.g. the user reconnects
+            # manually before ever clicking Start again. previous_network was
+            # already kept current by the bookkeeping above (whatever
+            # non-matching network, if any, was seen right before this one).
+            self.buffer.put("wifi", f"Detected an existing matching connection: '{current}'.")
+            self.is_connected = True
+            self.target_network = current
+
         return self.is_connected
 
     def stop(self):
@@ -75,4 +147,11 @@ class WifiBaseClass(Process):
             self.buffer.put("wifi", f"Restoring previous connection: {self.previous_network}")
             self.connect_to_saved_wifi(self.previous_network)
         else:
-            self.buffer.put("wifi", "No previous network was recorded; leaving current connection as is.")
+            # No fallback was ever recorded - e.g. the target network was
+            # already the active connection when this was started, so
+            # there's nothing non-matching to restore. Still disconnect
+            # rather than leaving the target connection active: Stop should
+            # always mean "not connected through this process" - it just has
+            # nowhere else to switch to.
+            self.buffer.put("wifi", "No previous network was recorded; disconnecting.")
+            self.disconnect_current()

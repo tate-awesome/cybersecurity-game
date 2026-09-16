@@ -299,7 +299,46 @@ class Wifi(WifiBaseClass):
             self.buffer.put("wifi", f"Failed to connect to '{ssid}': {outcome['message']}")
         return outcome["ok"]
 
+    def disconnect_current(self):
+        '''
+        Drops whatever the device is currently connected to, without
+        switching to anything else - used by stop() when no previous_network
+        was ever recorded, so Stop still means "not connected" even with
+        nowhere to fall back to.
+        '''
+        client = self._get_client()
+        if client is None:
+            return
+
+        device = self._wifi_device(client)
+        if device is None:
+            self.buffer.put("wifi", "No Wi-Fi device found on this system.")
+            return
+
+        loop = GLib.MainLoop()
+        outcome = {"ok": False, "message": None}
+
+        def on_disconnected(dev, async_result, _loop):
+            try:
+                dev.disconnect_finish(async_result)
+                outcome["ok"] = True
+            except GLib.Error as e:
+                outcome["message"] = e.message
+            loop.quit()
+
+        device.disconnect_async(None, on_disconnected, loop)
+        loop.run()
+
+        if outcome["ok"]:
+            self.buffer.put("wifi", "Disconnected.")
+        else:
+            self.buffer.put("wifi", f"Failed to disconnect: {outcome['message']}")
+
     def start(self, match_name: str):
+        if not match_name.strip():
+            self.buffer.put("wifi", "Device Name field is empty; enter a network name to search for.")
+            return
+
         if self.is_running():
             self.buffer.put("wifi", "WiFi is already connected")
             return
@@ -309,8 +348,15 @@ class Wifi(WifiBaseClass):
             return
 
         if self.previous_network is None:
-            self.previous_network = self.get_current_ssid()
-            if self.previous_network:
+            current = self.get_current_ssid()
+            if self._matches(current, match_name):
+                # Already sitting on a network matching the target pattern -
+                # there's nothing to fall back to, and saving it as
+                # previous_network would make stop() "restore" the very
+                # connection it just tore down.
+                self.buffer.put("wifi", f"Already connected to a matching network: {current}")
+            elif current is not None:
+                self.previous_network = current
                 self.buffer.put("wifi", f"Saved current connection: {self.previous_network}")
             else:
                 self.buffer.put("wifi", "Not currently connected to any network; nothing to restore later.")
@@ -322,11 +368,11 @@ class Wifi(WifiBaseClass):
         target_available = None
         for network in available:
             self.buffer.put("wifi", f"      {network}")
-            if match_name in network:
+            if self._matches(network, match_name):
                 target_available = network
 
         if target_available is None:
-            self.buffer.put("wifi", f"No available network matching '{match_name}' was found nearby.")
+            self.buffer.put("wifi", f"No matching available or historical network was found for '{match_name}'.")
             return
         self.buffer.put("wifi", f"Found matching available connection: {target_available}")
 
@@ -335,11 +381,15 @@ class Wifi(WifiBaseClass):
         target_history = None
         for network in history:
             self.buffer.put("wifi", f"      {network}")
-            if target_available in network:
+            if self._matches(network, target_available):
                 target_history = network
 
         if target_history is None:
-            self.buffer.put("wifi", f"'{target_available}' has no saved connection profile; connect to it manually once first.")
+            self.buffer.put(
+                "wifi",
+                f"No matching available or historical network was found for '{match_name}' "
+                f"('{target_available}' is nearby but has no saved connection profile; connect to it manually once first).",
+            )
             return
         self.buffer.put("wifi", f"Found matching historical connection: {target_history}")
 
@@ -359,6 +409,7 @@ class Wifi(WifiBaseClass):
         # match and made is_running() think the connection had dropped
         # the instant it succeeded.
         self.target_network = target_available
+        self.match_name = match_name
         self._connecting = True
         try:
             if not self.connect_to_saved_wifi(target_history):
