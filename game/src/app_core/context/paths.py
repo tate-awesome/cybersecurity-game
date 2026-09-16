@@ -1,6 +1,7 @@
-from tkinter.filedialog import askopenfilename
 from pathlib import Path
 import os
+
+from PySide6.QtWidgets import QFileDialog
 
 class Paths:
     def __init__(self):
@@ -30,10 +31,11 @@ class Paths:
 
     def select_path(self, directory: str | os.PathLike[str], prompt: str, filetypes: list[tuple[str, str]] = [("json", "*.json")]) -> str | None:
         try:
-            file_path = askopenfilename(
-                initialdir=directory,
-                title=prompt,
-                filetypes=filetypes
+            file_path, _ = QFileDialog.getOpenFileName(
+                None,
+                prompt,
+                str(directory),
+                self._to_qt_filter(filetypes)
             )
             if file_path == "" or not isinstance(file_path, str):
                 return None
@@ -41,6 +43,16 @@ class Paths:
                 return file_path
         except Exception:
             return None
+
+    @staticmethod
+    def _to_qt_filter(filetypes: list[tuple[str, str]]) -> str:
+        '''
+        Qt's file dialogs take a single ";;"-separated filter string
+        (e.g. "PCAP files (*.pcap *.pcapng);;All files (*.*)") instead of
+        tkinter's list of (label, pattern) tuples, so callers that still
+        pass the tkinter-style filetypes list need it converted.
+        '''
+        return ";;".join(f"{label} ({patterns})" for label, patterns in filetypes)
 
     def generate_path(self, file_path: Path):
         try:
