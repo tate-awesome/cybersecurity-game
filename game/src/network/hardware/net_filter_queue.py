@@ -62,6 +62,18 @@ class NetFilterQueueBaseClass(Process):
 
         for i, variable in enumerate(mpkt.get("variables")):
 
+            # A response can legitimately reference a register address that
+            # isn't in this game's configured modbus_variables (e.g. the
+            # real device exposes more registers than the settings define,
+            # or the address arithmetic in set_modbus_information() lands
+            # outside the configured range) - get_register() raises KeyError
+            # for that, which used to propagate out of this whole function
+            # uncaught, killing every step downstream of the caller's own
+            # modify_mpkt() call for that packet.
+            if variable not in self.context.states.get_registers():
+                print(f"weird register in metapacket: {variable}")
+                continue
+
             factor_str = self.context.states.get_register(variable, "factor")
             mult_str = self.context.states.get_register(variable, "multiplier")
             offs_str = self.context.states.get_register(variable, "offset")

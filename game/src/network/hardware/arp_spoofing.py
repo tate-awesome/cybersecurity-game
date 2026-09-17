@@ -155,12 +155,11 @@ class ArpSpoofer(Process):
 
     def enable_ip_forwarding(self):
         if self.os_name == "Windows":
-            # IP Forwarding is maybe possible
-            # self.buffer.put("arp", "Running on Windows. IP forwarding is not possible, so ARP spoofing may not work properly.")
             try:
                 # Enables IPv4 and IPv6 packet forwarding globally on all connected interfaces
                 subprocess.run(["powershell", "-Command", "Set-NetIPInterface -Forwarding Enabled"], check=True)
                 print("IP forwarding enabled successfully via PowerShell.")
+                self.forwarding_enabled = True
             except subprocess.CalledProcessError as e:
                 print(f"PowerShell error: Check if Python is executing with Run As Administrator privileges. {e}")
 
