@@ -19,6 +19,15 @@ except OSError as e:
 # bound rather than blocking the caller forever.
 CONNECT_TIMEOUT_SECONDS = 20
 
+# Same idea for WlanScan: right after boot (or a bad disconnect), Windows'
+# own background scanning is lazy - WlanGetAvailableNetworkList can come back
+# stale/empty until something (e.g. opening the Wi-Fi flyout in Settings)
+# kicks off a fresh scan itself. WlanScan requests one explicitly, but the
+# actual scan still finishes asynchronously (reported via the same
+# WLAN_NOTIFICATION_ACM mechanism) - bound the wait so a driver that never
+# reports back doesn't hang get_available_networks() forever.
+SCAN_TIMEOUT_SECONDS = 10
+
 WLAN_MAX_NAME_LENGTH = 256
 DOT11_SSID_MAX_LENGTH = 32
 
@@ -35,6 +44,8 @@ WLAN_INTERFACE_STATE_CONNECTED = 1
 WLAN_NOTIFICATION_SOURCE_NONE = 0
 WLAN_NOTIFICATION_SOURCE_ACM = 0x00000008
 
+WLAN_NOTIFICATION_ACM_SCAN_COMPLETE = 7
+WLAN_NOTIFICATION_ACM_SCAN_FAIL = 8
 WLAN_NOTIFICATION_ACM_CONNECTION_COMPLETE = 10
 WLAN_NOTIFICATION_ACM_CONNECTION_ATTEMPT_FAIL = 11
 
@@ -236,6 +247,11 @@ if _wlanapi is not None:
 
     _wlanapi.WlanDisconnect.argtypes = [wintypes.HANDLE, ctypes.POINTER(GUID), ctypes.c_void_p]
     _wlanapi.WlanDisconnect.restype = wintypes.DWORD
+
+    _wlanapi.WlanScan.argtypes = [
+        wintypes.HANDLE, ctypes.POINTER(GUID), ctypes.POINTER(DOT11_SSID), ctypes.c_void_p, ctypes.c_void_p,
+    ]
+    _wlanapi.WlanScan.restype = wintypes.DWORD
 
     _wlanapi.WlanRegisterNotification.argtypes = [
         wintypes.HANDLE, wintypes.DWORD, wintypes.BOOL, WLAN_NOTIFICATION_CALLBACK,
@@ -461,7 +477,50 @@ class Wifi(WifiBaseClass):
         finally:
             _wlanapi.WlanFreeMemory(list_ptr)
 
-    def get_available_networks(self) -> "list[str]":
+    def _scan_for_networks(self, client, interface_guid):
+        '''
+        Explicitly requests a scan (see SCAN_TIMEOUT_SECONDS above for why)
+        and waits for it to finish before returning, using the same
+        ACM-notification pattern connect_to_saved_wifi() uses to wait for a
+        connection attempt to resolve. Best-effort: if registering for
+        notifications or starting the scan fails, this just gives up
+        quietly and get_available_networks() falls back to whatever's
+        already cached, same as if this method didn't exist.
+        '''
+        done_event = threading.Event()
+
+        def on_notification(notification_ptr, _context):
+            data = notification_ptr.contents
+            if _guid_bytes(data.InterfaceGuid) != _guid_bytes(interface_guid):
+                return
+            if data.NotificationCode in (WLAN_NOTIFICATION_ACM_SCAN_COMPLETE, WLAN_NOTIFICATION_ACM_SCAN_FAIL):
+                done_event.set()
+
+        callback = WLAN_NOTIFICATION_CALLBACK(on_notification)
+        prev_source = wintypes.DWORD()
+        register_result = _wlanapi.WlanRegisterNotification(
+            client, WLAN_NOTIFICATION_SOURCE_ACM, True, callback, None, None, ctypes.byref(prev_source),
+        )
+        if register_result != 0:
+            return
+
+        try:
+            scan_result = _wlanapi.WlanScan(client, ctypes.byref(interface_guid), None, None, None)
+            if scan_result == 0:
+                done_event.wait(SCAN_TIMEOUT_SECONDS)
+        finally:
+            null_callback = ctypes.cast(None, WLAN_NOTIFICATION_CALLBACK)
+            _wlanapi.WlanRegisterNotification(client, WLAN_NOTIFICATION_SOURCE_NONE, True, null_callback, None, None, None)
+
+    def get_available_networks(self, match_name: "str | None" = None) -> "list[str]":
+        '''
+        match_name, when given, is checked against the already-cached
+        network list (WlanGetAvailableNetworkList without requesting a fresh
+        scan) before doing anything else - if the target is already known to
+        be nearby, an explicit WlanScan and its up-to-SCAN_TIMEOUT_SECONDS
+        wait for a completion notification would be pure dead time on top of
+        an answer this call already has.
+        '''
         client = self._get_client()
         if client is None:
             return []
@@ -470,8 +529,12 @@ class Wifi(WifiBaseClass):
         if interface_guid is None:
             return []
 
-        networks = set(self._get_available_networks(client, interface_guid))
-        return [ssid for ssid in networks if ssid]
+        cached = set(self._get_available_networks(client, interface_guid))
+        if match_name is None or not any(self._matches(ssid, match_name) for ssid in cached):
+            self._scan_for_networks(client, interface_guid)
+            cached = set(self._get_available_networks(client, interface_guid))
+
+        return [ssid for ssid in cached if ssid]
 
     @staticmethod
     def _reason_code_to_string(reason_code: int) -> str:
@@ -645,8 +708,9 @@ class Wifi(WifiBaseClass):
                 self.buffer.put("wifi", "Not currently connected to any network; nothing to restore later.")
         else:
             self.buffer.put("wifi", f"Using saved connection: {self.previous_network}")
-
-        available = self.get_available_networks()
+        
+        self.is_connected = True
+        available = self.get_available_networks(match_name)
         self.buffer.put("wifi", "Available Networks:")
         target_available = None
         for network in available:
@@ -690,7 +754,6 @@ class Wifi(WifiBaseClass):
         # is_running() to skip its live-mismatch check meanwhile, since the
         # device is still legitimately mid-switch and won't match
         # target_network yet - that's not a dropped connection.
-        self.is_connected = True
         self.target_network = target_available
         self.match_name = match_name
         if not self.connect_to_saved_wifi(target_history):

@@ -15,6 +15,13 @@ except (ImportError, ValueError) as e:
 # bound rather than freezing the caller's GLib.MainLoop forever.
 CONNECT_TIMEOUT_SECONDS = 20
 
+# Mirrors wifi_windows.py's SCAN_TIMEOUT_SECONDS: request_scan_async only
+# confirms NetworkManager accepted the request, not that the scan actually
+# finished - that's reported later via the device's "last-scan" property
+# changing (or never, if the radio is busy/removed mid-scan), so bound the
+# wait rather than blocking the caller forever.
+SCAN_TIMEOUT_SECONDS = 10
+
 
 class Wifi(WifiBaseClass):
     '''
@@ -174,7 +181,56 @@ class Wifi(WifiBaseClass):
         access_point = device.get_active_access_point()
         return self._ssid_to_str(access_point.get_ssid()) if access_point else None
 
-    def get_available_networks(self) -> list[str]:
+    def _scan_for_networks(self, device):
+        '''
+        Requests a fresh scan and waits (up to SCAN_TIMEOUT_SECONDS) for NM
+        to report it done via the "last-scan" property changing, mirroring
+        the WLAN_NOTIFICATION_ACM_SCAN_COMPLETE wait on Windows. Best-effort:
+        if the request itself fails, this gives up quietly and
+        get_available_networks() falls back to whatever's already cached,
+        same as if this method didn't exist.
+        '''
+        loop = GLib.MainLoop()
+        done = {"flag": False}
+
+        def finish():
+            if done["flag"]:
+                return
+            done["flag"] = True
+            loop.quit()
+
+        def on_last_scan_changed(_device, _pspec):
+            finish()
+
+        def on_scanned(_device, async_result, _user_data):
+            try:
+                device.request_scan_finish(async_result)
+            except GLib.Error:
+                # Request itself was rejected (e.g. scanning too frequently)
+                # - nothing more to wait for.
+                finish()
+
+        def on_timeout():
+            finish()
+            return GLib.SOURCE_REMOVE
+
+        handler_id = device.connect("notify::last-scan", on_last_scan_changed)
+        timeout_id = GLib.timeout_add_seconds(SCAN_TIMEOUT_SECONDS, on_timeout)
+        try:
+            device.request_scan_async(None, on_scanned, None)
+            loop.run()
+        finally:
+            device.disconnect(handler_id)
+            GLib.source_remove(timeout_id)
+
+    def get_available_networks(self, match_name: "str | None" = None) -> list[str]:
+        '''
+        match_name, when given, is checked against the already-cached access
+        points before doing anything else - if the target is already known
+        to be nearby, an explicit request_scan_async and its up-to-
+        SCAN_TIMEOUT_SECONDS wait would be pure dead time on top of an answer
+        this call already has.
+        '''
         client = self._get_client()
         if client is None:
             return []
@@ -183,8 +239,16 @@ class Wifi(WifiBaseClass):
         if device is None:
             return []
 
-        networks = {self._ssid_to_str(ap.get_ssid()) for ap in device.get_access_points()}
-        return [ssid for ssid in networks if ssid]
+        def cached() -> list[str]:
+            networks = {self._ssid_to_str(ap.get_ssid()) for ap in device.get_access_points()}
+            return [ssid for ssid in networks if ssid]
+
+        networks = cached()
+        if match_name is None or not any(self._matches(ssid, match_name) for ssid in networks):
+            self._scan_for_networks(device)
+            networks = cached()
+
+        return networks
 
     @staticmethod
     def _describe_activation_error(e: "GLib.Error") -> str:
@@ -361,7 +425,7 @@ class Wifi(WifiBaseClass):
         else:
             self.buffer.put("wifi", f"Using saved connection: {self.previous_network}")
 
-        available = self.get_available_networks()
+        available = self.get_available_networks(match_name)
         self.buffer.put("wifi", "Available Networks:")
         target_available = None
         for network in available:

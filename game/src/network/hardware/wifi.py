@@ -191,6 +191,12 @@ class WifiBaseClass(Process):
         try:
             if self.previous_network:
                 self.buffer.put("wifi", f"Restoring previous connection: {self.previous_network}")
+                # Scan for it first, same as start() does for its target -
+                # connect_to_saved_wifi()'s own in-range check only reads
+                # whatever's already cached, which by now could easily be
+                # stale (e.g. left over from scanning for a completely
+                # different match_name back when this run started).
+                self.get_available_networks(self.previous_network)
                 self.connect_to_saved_wifi(self.previous_network)
             else:
                 # No fallback was ever recorded - e.g. the target network was
