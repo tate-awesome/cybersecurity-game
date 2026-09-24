@@ -11,5 +11,7 @@ pydivert; sys_platform == 'win32'
 requests
 flask
 matplotlib
-python-nmap # must install nmap separately on the system
+python-nmap # must have installed nmap separately on the system
 pyside6
+darkdetect
+pyinstaller

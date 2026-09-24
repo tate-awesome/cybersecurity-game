@@ -1,7 +1,6 @@
 from ...app_core import Context
 from ...widgets import TitleMenu, popup
 from ..page import Page
-from ..demo.v0.main import run as run_demo_proof
 
 class TitlePage(Page):
     '''
@@ -15,7 +14,7 @@ class TitlePage(Page):
     have to hand-list every link the manifest already knows about.
     '''
 
-    ACTIONS = ("navigate", "back", "quit", "open_ap_config", "resume", "demo_proof", "delete_user_data")
+    ACTIONS = ("navigate", "back", "quit", "open_ap_config", "resume", "delete_user_data")
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -72,8 +71,6 @@ class TitlePage(Page):
             if self.context.preferences.has("page"):
                 target = self.context.preferences.get("page")
                 panel.button(label, lambda target=target: self.router.show(target))
-        elif action == "demo_proof":
-            panel.button(label, run_demo_proof)
         elif action == "delete_user_data":
             panel.button(label, lambda: popup.delete_user_data_dialog(self, self.context, self.context.delete_user_data))
         else:
