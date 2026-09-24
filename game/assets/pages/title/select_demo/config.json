@@ -6,7 +6,6 @@
         { "label": "boat_motion", "action": "navigate", "target": "demo/boat_motion" },
         { "label": "sprites", "action": "navigate", "target": "demo/sprites" },
         { "label": "triangle", "action": "navigate", "target": "demo/triangle" },
-        { "label": "proof", "action": "demo_proof" },
         { "label": "back", "action": "back" },
         { "label": "quit", "action": "quit" }
     ]

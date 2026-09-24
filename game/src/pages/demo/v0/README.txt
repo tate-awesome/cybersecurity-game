@@ -1,1 +1,0 @@
-This project was the proof of concept presentable deal. Fall 2025

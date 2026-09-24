@@ -1,4 +1,3 @@
-from customtkinter import CTkBaseClass, CTkToplevel, CTkFrame, CTkLabel, CTkButton  # quit_dialog only - still unmigrated, dead code (unused anywhere)
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
 
@@ -64,41 +63,39 @@ def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
         window.show()
         return window
 
-def quit_dialog(master: CTkBaseClass, context: Context, quit_func):
+def quit_dialog(master: QWidget, context: Context, quit_func):
         style = context.style
-        window = CTkToplevel(master)
-        window.title("Confirm")
-        window.config(padx=style.igap, pady=style.igap)
         message = "Are you sure you want to quit?\nNothing will be saved."
 
-        # Center to app
-        width = 500
-        height = 300
-        root_x = master.winfo_rootx()
-        root_y = master.winfo_rooty()
-        win_x = root_x + master.winfo_width()/2 - width/2
-        win_y = root_y + master.winfo_height()/2 - height/2
+        window = QDialog(master)
+        window.setWindowTitle("Confirm")
+        window.resize(500, 300)
+        window.setModal(True)  # block interactions with main window
 
-        window.geometry(f"{width}x{height}+{int(win_x)}+{int(win_y)}")
+        layout = QVBoxLayout(window)
 
-        # Add widgets to the window
-        frame = CTkFrame(window)
-        frame.pack(fill="both", side="top", expand=True, padx=style.gap, pady=style.gap)
+        label = QLabel(message)
+        label.setFont(style.get_font())
+        label.setWordWrap(True)
+        layout.addWidget(label)
 
-        label = CTkLabel(frame, text=message, font=style.get_font(), wraplength=width - 2*style.igap)
-        label.pack(pady=style.gap, padx=style.gap)
+        buttons_row = QHBoxLayout()
+        layout.addStretch()
+        layout.addLayout(buttons_row)
 
-        buttons_frame = CTkFrame(frame)
-        buttons_frame.pack(side="bottom")
+        def confirm():
+            quit_func()
+            window.accept()
 
-        quit_button = CTkButton(buttons_frame, text="Yes, quit", command=quit_func, font=style.get_font())
-        quit_button.grid(pady=style.gap, column=0, sticky="ew")
+        quit_button = QPushButton("Yes, quit")
+        quit_button.setFont(style.get_font())
+        quit_button.clicked.connect(confirm)
+        buttons_row.addWidget(quit_button)
 
-        continue_button = CTkButton(buttons_frame, text="No, continue", command=window.destroy, font=style.get_font())
-        continue_button.grid(pady=style.gap, column=0, sticky="ew")
+        continue_button = QPushButton("No, continue")
+        continue_button.setFont(style.get_font())
+        continue_button.clicked.connect(window.reject)
+        buttons_row.addWidget(continue_button)
 
-        window.transient(master)
-        window.update_idletasks()
-        window.grab_set()      # block interactions with main window
-        window.focus_force()   # force focus to the window
+        window.show()
         return window
