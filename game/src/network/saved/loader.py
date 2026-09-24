@@ -1,5 +1,4 @@
 from scapy.all import rdpcap
-from tkinter.filedialog import askopenfilename
 import os, threading, time
 
 from ..process import Process

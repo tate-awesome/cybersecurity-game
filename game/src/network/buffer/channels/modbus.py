@@ -51,6 +51,15 @@ class ModbusBuffer:
 
         for i, var in enumerate(variables):
             key = f"{var}_{direction}"
+            # A response can reference a register address this game's
+            # settings never configured (e.g. the real device exposes more
+            # registers than modbus_variables defines) - stripchart_locks/
+            # stripchart_buffers only have entries for configured registers,
+            # so there's nothing to chart for this one; skip it rather than
+            # raising and losing every other variable in this same packet.
+            if key not in self.stripchart_locks:
+                print(f"weird stripchart buffer key: {key}")
+                continue
             with self.stripchart_locks[key]:
                 if len(self.stripchart_buffers[key]) > 0:
                 # duplicate value to make a staircase shape

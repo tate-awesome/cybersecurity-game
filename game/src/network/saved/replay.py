@@ -5,7 +5,7 @@ import threading
 
 from scapy.all import Ether, IP
 
-from tkinter.filedialog import asksaveasfilename
+from PySide6.QtWidgets import QFileDialog
 
 from ..process import Process
 from ..buffer.meta_packet import MetaPacket
@@ -290,16 +290,18 @@ class Replay(Process):
 
         directory = self.context.paths.mcaptures
 
-        file_path = asksaveasfilename(
-            initialdir=directory,
-            title="Save JSON replay",
-            defaultextension=".jsonl",
-            filetypes=[
-                ("JSON Lines", "*.jsonl"),
-                ("JSON", "*.json"),
-                ("All files", "*.*"),
-            ],
+        file_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "Save JSON replay",
+            str(directory),
+            "JSON Lines (*.jsonl);;JSON (*.json);;All files (*.*)"
         )
+
+        # Qt doesn't auto-append the filter's extension the way tkinter's
+        # defaultextension did, so add it back when the user typed a bare
+        # filename.
+        if file_path and not os.path.splitext(file_path)[1]:
+            file_path += ".jsonl"
 
         if not file_path:
             self.buffer.put(

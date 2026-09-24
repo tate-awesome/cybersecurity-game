@@ -1,7 +1,13 @@
+# On Linux Ubuntu/Debian: run this, to support PyGObject, used in wifi.py
+# sudo apt-get install -y network-manager gir1.2-nm-1.0 libcairo2-dev libgirepository-2.0-dev gobject-introspection
 scapy
 netifaces2
 netfilterqueue; sys_platform == 'linux'
-pydivert; sys_platform == 'win32'
+PyGObject; sys_platform == 'linux' # provides libnm bindings for wifi.py, also requires the system 'network-manager' / 'gir1.2-nm-1.0' package
+# On Windows: run these, to support pydivert/windivert, used in nfq_windows.py
+# Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name IPEnableRouter -Value 1 -Type DWord
+# Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" -Name IPEnableRouter | Select-Object IPEnableRouter
+pydivert; sys_platform == 'win32' 
 requests
 flask
 matplotlib

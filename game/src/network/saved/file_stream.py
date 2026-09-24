@@ -4,7 +4,7 @@ import os
 import queue
 import threading
 
-from tkinter.filedialog import asksaveasfilename
+from PySide6.QtWidgets import QFileDialog
 
 from ..buffer.meta_packet import MetaPacket
 from ..process import Process
@@ -114,16 +114,18 @@ class FileStream(Process):
 
         directory = self.context.paths.mcaptures
 
-        file_path = asksaveasfilename(
-            initialdir=directory,
-            title="Choose where to stream JSON replay data",
-            defaultextension=".jsonl",
-            filetypes=[
-                ("JSON Lines", "*.jsonl"),
-                ("JSON", "*.json"),
-                ("All files", "*.*"),
-            ],
+        file_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "Choose where to stream JSON replay data",
+            str(directory),
+            "JSON Lines (*.jsonl);;JSON (*.json);;All files (*.*)"
         )
+
+        # Qt doesn't auto-append the filter's extension the way tkinter's
+        # defaultextension did, so add it back when the user typed a bare
+        # filename.
+        if file_path and not os.path.splitext(file_path)[1]:
+            file_path += ".jsonl"
 
         if not file_path:
             self.buffer.put("json", "Stream start cancelled")
