@@ -107,9 +107,9 @@ class PageManager:
         '''
         Loads the page's default config, then overlays anything a
         student previously autosaved for this exact page (see
-        save_current_page) on top of its "settings" and "panes" - the
-        input/register values their forms held, and the pane weights
-        they'd dragged - before pushing the merged settings into
+        save_current_page) on top of its "settings" and "panes" - only
+        the input/register values and pane weights they changed from
+        those defaults - before pushing the merged settings into
         context.states so the page's widgets have the right values to
         read as they build themselves. Called by WorkspacePage, the
         only build type with "settings"/"panes" to begin with.
@@ -154,30 +154,73 @@ class PageManager:
 
     def save_current_page(self):
         '''
-        Autosaves the page currently on screen: its context.states
-        (kept live by the widgets that read/write it as the student
-        works) and its pane weights (read straight off the live Panes
-        tree, since dragging a sash doesn't itself touch context.states)
-        - to assets/user_data/page_data/<key>/config.json, so
-        prepare_page_config can restore them next time this page is
-        shown. Called by the Router right before it tears down or
-        rebuilds the current page (quit, go_back, refresh), while the
-        page's widgets are still alive to read from. A no-op for
-        anything but a "workspace" page, the only build type with
-        "settings"/"panes" worth saving.
+        Autosaves the page currently on screen to
+        user_data/page_data/<key>/config.json - but only what differs
+        from the page's own config.json defaults, so prepare_page_config
+        can rebuild the full state by merging this diff back on top of
+        them. Anything the student never touched stays out of the file,
+        so later edits to the page's defaults still reach them.
+
+        Saves the diff of context.states (kept live by the widgets that
+        read/write it as the student works) against the default
+        "settings", and the live pane weights (read straight off the
+        Panes tree, since dragging a sash doesn't itself touch
+        context.states) only if their proportions differ from the
+        default "panes". If nothing differs, any old save is deleted
+        instead. Called by ContextManager on page exit/app close (and by
+        the Router before a refresh), while the page's widgets are still
+        alive to read from. A no-op for anything but a "workspace" page,
+        the only build type with "settings"/"panes" worth saving.
         '''
         key = self.context.router.current_page
         if key is None or self.get_build_type(key) != "workspace":
             return
 
-        saved: dict = {"settings": self.context.states.data}
+        default = self.load_page_config(key)
+        saved: dict = {}
+
+        settings = self.context.json.diff(default.get("settings", {}), self.context.states.data)
+        if settings:
+            saved["settings"] = settings
 
         panes_root = getattr(self.context.router.current_frame, "panes_root", None)
         if panes_root is not None:
-            saved["panes"] = panes_root.get_weights()
+            weights = panes_root.get_weights()
+            if not self.pane_weights_match(default.get("panes"), weights):
+                saved["panes"] = weights
 
         path = self.context.paths.user_pages / key / "config.json"
-        self.context.json.save_to_file(saved, path)
+        if saved:
+            self.context.json.save_to_file(saved, path)
+        else:
+            path.unlink(missing_ok=True)
+
+    def pane_weights_match(self, default: dict | None, live: dict | None, tolerance: float = 0.02) -> bool:
+        '''
+        Whether a live pane tree (see Panes.get_weights - pixel sizes)
+        splits every level in the same proportions as the default pane
+        tree's "weight"s, within tolerance (a fraction of the parent's
+        total) to absorb pixel rounding. Matched by position, same as
+        merge_pane_weights.
+        '''
+        if not isinstance(default, dict) or not isinstance(live, dict):
+            return True
+        default_children = default.get("children") or []
+        live_children = live.get("children") or []
+        if len(default_children) != len(live_children):
+            return False
+        default_total = sum(child.get("weight", 1) for child in default_children)
+        live_total = sum(child.get("weight", 0) for child in live_children)
+        if default_total <= 0 or live_total <= 0:
+            return default_total == live_total
+        for default_child, live_child in zip(default_children, live_children):
+            default_share = default_child.get("weight", 1) / default_total
+            live_share = live_child.get("weight", 0) / live_total
+            if abs(default_share - live_share) > tolerance:
+                return False
+            if not self.pane_weights_match(default_child.get("panes"), live_child.get("panes"), tolerance):
+                return False
+        return True
 
     def delete_saved_page(self, key: str):
         '''

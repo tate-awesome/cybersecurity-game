@@ -125,7 +125,7 @@ class Router:
         whatever was still on screen.
         '''
         if save:
-            self.context.pages.save_current_page()
+            self.context.save_page()
         self.context.reset_build()
         self.context.start_build()
         self.show(self.navigation_stack[-1])
@@ -136,9 +136,8 @@ class Router:
         Called on Close event (see MainWindow.closeEvent in app.py, wired
         up by KeyBinds) or by the Quit button.
         '''
-        self.context.pages.save_current_page()
-        self.context.reset_build()
         self.context.reset_page()
+        self.context.reset_build()
         QApplication.instance().quit()
 
     def go_back(self):
@@ -147,9 +146,8 @@ class Router:
         '''
         if len(self.navigation_stack) < 1:
             return
-        self.context.pages.save_current_page()
-        self.context.reset_build()
         self.context.reset_page()
+        self.context.reset_build()
         self.context.start_build()
         self.context.start_page()
         self.navigation_stack.pop()

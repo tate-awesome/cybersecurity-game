@@ -166,6 +166,29 @@ class Json:
             else:
                 base_dict[key] = value
 
+    def diff(self, default: dict, current: dict) -> dict:
+        '''
+        The inverse of deep_merge: returns only the parts of current that
+        differ from default, so deep_merge(copy_of_default, diff(default,
+        current)) reproduces current. Nested dicts are compared key by key;
+        anything else (lists, scalars) is kept whole if it differs at all.
+        Keys current is missing that default has are ignored - deep_merge
+        has no way to express a deletion anyway.
+        '''
+        if not isinstance(default, dict) or not isinstance(current, dict):
+            return current if current != default else {}
+        output = {}
+        for key, value in current.items():
+            if key not in default:
+                output[key] = value
+            elif isinstance(value, dict) and isinstance(default[key], dict):
+                nested = self.diff(default[key], value)
+                if nested:
+                    output[key] = nested
+            elif value != default[key]:
+                output[key] = value
+        return output
+
     def save_to_file(self, data: dict, file_path: Path):
         try:
             self.paths.generate_path(file_path.parent)

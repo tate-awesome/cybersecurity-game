@@ -73,11 +73,23 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         self.process_manager: ProcessManager = ProcessManager(self)
 
-    def reset_page(self):
+    def reset_page(self, save: bool = True):
         '''
-        Resets page members on page exit
+        Resets page members on page exit (navigating away or closing the
+        app), autosaving the page first unless save=False. Must be called
+        while the page's widgets are still alive, since saving reads the
+        live pane sizes off them.
         '''
+        if save:
+            self.save_page()
         self.process_manager.abort_all()
+
+    def save_page(self):
+        '''
+        Autosaves the current page's differences from its own defaults
+        to user_data (see PageManager.save_current_page).
+        '''
+        self.pages.save_current_page()
 
     def start_build(self):
         '''
