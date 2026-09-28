@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel
 from .....app_core import Context
-from .....network.hardware import APPoller
+from .....network.hardware import APPoller, AP_POLLER_KEY
 from ...base_form import BaseForm
 
 
@@ -9,13 +9,18 @@ class APConnectForm(BaseForm):
     '''
     Starts/stops the AP poller process and reports its live connected
     status - the panels-based counterpart to DefenderV0's URL entry +
-    Connect button + connected dot, but as a network_action_panel form so
-    every other defender form can reach the same process by name
-    (context.process_manager.get_process("ap_connect")).
+    Connect button + connected dot. This is the one AP poller every
+    defender widget shares (process_manager key AP_POLLER_KEY - DefenderV0
+    reclaims the same one); the other defender forms never touch it
+    directly, they queue commands on context.buffer.defender_status for it
+    to send.
     '''
 
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="ap_connect")
+        # get_process() registers under this form's key - which has to be
+        # the shared poller's key, or this would start a second poller.
+        assert self.key == AP_POLLER_KEY
         self.process = self.get_process(APPoller)
 
         self.add_header()

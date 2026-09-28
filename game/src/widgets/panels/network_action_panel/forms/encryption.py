@@ -1,28 +1,24 @@
-import threading
-import requests
 from PySide6.QtWidgets import QWidget
 from .....app_core import Context
-from .....network.hardware import APPoller
+from .....network.hardware import ap_commands
+from .... import popup
 from ...base_form import BaseForm
 
 
 class EncryptionForm(BaseForm):
     '''
-    Toggles AP-level encryption. Shares the AP Connect form's poller
-    process (same process_manager key, "ap_connect") instead of starting
-    its own - encryption is posted through that same connection, not a
-    separate one. Not itself a Process/get_process() case: there's no
-    background thread of its own to start/stop, only a one-shot POST whose
-    result already lives in context.buffer.defender_status.
+    Toggles AP-level encryption, like DefenderV0's encryption block: the key
+    must be non-empty ASCII to turn it on, the key entry is locked while
+    it's on, and turning it off clears the key. Not a Process of its own -
+    the command goes out through the shared AP poller via
+    context.buffer.defender_status (see ap_commands), and the button reads
+    its state back from there.
     '''
+
+    abortable = False
 
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="encryption")
-
-        self.process = self.context.process_manager.get_process("ap_connect")
-        if self.process is None:
-            self.process = APPoller(self.context.buffer, self.context)
-            self.context.process_manager.add_process("ap_connect", self.process)
 
         self.add_header()
 
@@ -30,39 +26,27 @@ class EncryptionForm(BaseForm):
         self.key_entry = entry
 
         def start_encryption():
-            key = self.key_entry.get().strip()
+            key = self.key_entry.text().strip()
             if not key:
-                self.context.buffer.put("encryption", "Refused to enable encryption with an empty key")
+                popup.message(self, self.context, "Please enter an encryption key before enabling encryption.")
                 return
             if not key.isascii():
-                self.context.buffer.put("encryption", "Refused to enable encryption: key must be ASCII")
+                popup.message(self, self.context, "Encryption key must be ASCII.")
                 return
-            self._post_encryption(True, key)
+            ap_commands.set_encryption(self.context.buffer, True, key)
 
         def stop_encryption():
-            self._post_encryption(False, self.key_entry.get().strip())
+            ap_commands.set_encryption(self.context.buffer, False, self.key_entry.text().strip())
+            self.key_entry.clear()
+            self.context.states.get("hack_forms", self.key)[0] = ""
 
-        self.add_process_row(
-            start_encryption, stop_encryption,
-            lambda: bool(self.context.buffer.defender_status.get("encryption_status", False)),
-        )
+        self.add_process_row(start_encryption, stop_encryption,
+                             lambda: ap_commands.encryption_enabled(self.context.buffer))
 
-    def _post_encryption(self, enabled: bool, key: str):
-        self.context.buffer.put("encryption", "Enabling encryption..." if enabled else "Disabling encryption...")
+        self.context.animation_manager.add_callback(f"EncryptionForm_{id(self)}", self._refresh_entry)
+        self._refresh_entry()
 
-        def _request():
-            try:
-                resp = requests.post(
-                    f"{self.process.url}/set_encryption",
-                    json={"encryption_status": enabled, "encryption_key": key},
-                    timeout=3,
-                )
-                if resp.ok:
-                    self.context.buffer.defender_status.put("encryption_status", enabled)
-                    self.context.buffer.put("encryption", "Encryption is on" if enabled else "Encryption is off")
-                else:
-                    self.context.buffer.put("encryption", f"AP rejected encryption request (HTTP {resp.status_code})")
-            except Exception as e:
-                self.context.buffer.put("encryption", f"Failed to reach AP: {e}")
-
-        threading.Thread(target=_request, daemon=True).start()
+    def _refresh_entry(self):
+        enabled = not ap_commands.encryption_enabled(self.context.buffer)
+        if self.key_entry.isEnabled() != enabled:
+            self.key_entry.setEnabled(enabled)

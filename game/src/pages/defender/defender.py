@@ -12,7 +12,7 @@ from ..page import Page
 from .hvac_view import HVACView
 
 # Network
-from ...network.hardware import APPoller
+from ...network.hardware import APPoller, AP_POLLER_KEY, ap_commands
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -21,9 +21,6 @@ from PySide6.QtWidgets import (
     QPushButton, QVBoxLayout, QWidget,
 )
 
-import threading
-import requests
-import time
 
 # QSlider only steps through integers - each slider's own float min/max is
 # mapped onto this many integer positions (see _to_slider_pos/_from_slider_pos).
@@ -65,16 +62,18 @@ class DefenderV0(Page):
         self.rudder_error_threshold = 2.75
         self.speed_error_threshold = 2.0
         self._syncing_sliders = False
-        self._submarine_pending_revision = 0
 
         # ── AP poller process — a background thread that has to survive a
         # page refresh, so it's owned by context.process_manager the same
         # way a network_action_panel form owns its attack process, and
         # regained here rather than recreated whenever this page rebuilds.
-        self._ap_poller = self.context.process_manager.get_process("ap_poll")
+        # Same key as the panels' AP Connect form - there's only ever one
+        # poller, and every command this page sends goes through it via
+        # context.buffer.defender_status (see ap_commands).
+        self._ap_poller = self.context.process_manager.get_process(AP_POLLER_KEY)
         if self._ap_poller is None:
             self._ap_poller = APPoller(self.context.buffer, self.context)
-            self.context.process_manager.add_process("ap_poll", self._ap_poller)
+            self.context.process_manager.add_process(AP_POLLER_KEY, self._ap_poller)
 
         # ── Menu bar ─────────────────────────────────────────────────────────
         menu_bar = MenuBar(self, context, "defender")
@@ -123,19 +122,6 @@ class DefenderV0(Page):
 
         self._build_packet_log(self._submarine_middle)
         self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
-        # ── Kalman Filter block ─────────────────────────────────────────────
-        kalman_section = self._section(self._submarine_middle, "KALMAN FILTER")
-
-        self._submarine_kalman_label = QLabel("Status: ON")
-        self._submarine_kalman_label.setFont(self.style.get_font())
-        self._submarine_kalman_label.setStyleSheet("color: green;")
-        kalman_section.layout().addWidget(self._submarine_kalman_label)
-
-        self._submarine_kalman_button = QPushButton("Toggle Kalman Filter")
-        self._submarine_kalman_button.setFont(self.style.get_font())
-        self._wire_button(self._submarine_kalman_button, self._toggle_submarine_kalman_filter)
-        kalman_section.layout().addWidget(self._submarine_kalman_button)
-
         self._hvac_middle = QWidget()
         self._hvac_middle.setLayout(QVBoxLayout())
         self._hvac_middle.layout().setContentsMargins(0, 0, 0, 0)
@@ -145,6 +131,21 @@ class DefenderV0(Page):
         # (see hvac_view.py's _build_kalman_block) - it owns the button, the
         # label, and the toggle state, so there's no callback threaded back
         # into this page just to update a label this class doesn't build.
+
+        # ── Submarine Kalman Filter block ───────────────────────────────────
+        # Outside _submarine_middle so it stays on screen in HVAC mode,
+        # greyed out (see _refresh_submarine_kalman_ui) instead of vanishing.
+        self._submarine_kalman_section = self._section(middle_p, "KALMAN FILTER")
+
+        self._submarine_kalman_label = QLabel("Status: ON")
+        self._submarine_kalman_label.setFont(self.style.get_font())
+        self._submarine_kalman_label.setStyleSheet("color: green;")
+        self._submarine_kalman_section.layout().addWidget(self._submarine_kalman_label)
+
+        self._submarine_kalman_button = QPushButton("Toggle Kalman Filter")
+        self._submarine_kalman_button.setFont(self.style.get_font())
+        self._wire_button(self._submarine_kalman_button, self._toggle_submarine_kalman_filter)
+        self._submarine_kalman_section.layout().addWidget(self._submarine_kalman_button)
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
 
@@ -188,6 +189,7 @@ class DefenderV0(Page):
         self.context.animation_manager.add_callback(f"DefenderConnection_{id(self)}", self._refresh_connection)
         self.context.animation_manager.add_callback(f"DefenderSubmarineValues_{id(self)}", self._refresh_submarine_values)
         self.context.animation_manager.add_callback(f"DefenderFlags_{id(self)}", self._refresh_flags)
+        self.context.animation_manager.add_callback(f"DefenderKalman_{id(self)}", self._refresh_submarine_kalman_ui)
 
         # ── Start polling ────────────────────────────────────────────────────
         self._poll()
@@ -270,7 +272,7 @@ class DefenderV0(Page):
         self._enc_button.setFont(self.style.get_font())
 
         def enc_button():
-            if not self.context.buffer.defender_status.get("encryption_status", False):
+            if not ap_commands.encryption_enabled(self.context.buffer):
                 # Encryption is off - try to turn it on
                 if self._enc_key_entry.text().strip() == "":
                     # Empty key — show error
@@ -498,55 +500,24 @@ class DefenderV0(Page):
         section.layout().addWidget(reset_button)
 
     def _post_slider_settings(self):
-        payload = {
+        ap_commands.push_submarine_settings(self.context.buffer, {
             "sensor_noise_variance": self.sensor_noise_variance,
             "kalman_expected_sensor_variance": self.kalman_expected_sensor_variance,
             "rudder_error_threshold": self.rudder_error_threshold,
             "speed_error_threshold": self.speed_error_threshold,
-            "kalman_filter_enabled": self.context.buffer.defender_status.get("kalman_filter_enabled", True),
-        }
-
-        def _request():
-            try:
-                resp = requests.post(
-                    f"{self._ap_poller.url}/set_settings",
-                    json=payload,
-                    timeout=3,
-                )
-                if resp.ok:
-                    body = resp.json()
-                    self._submarine_pending_revision = int(
-                        body.get("settings_revision", 0)
-                    )
-                    print(
-                        "Settings posted, revision:",
-                        self._submarine_pending_revision
-                    )
-            except Exception as e:
-                print("post_slider_settings:", e)
-
-        threading.Thread(target=_request, daemon=True).start()
+        })
 
     def _sync_submarine_sliders(self):
         status = self.context.buffer.defender_status
 
-        client_revision = int(
-            status.get("client_settings_revision", 0) or 0
-        )
+        # Wait until the client/server have picked up our last post, or
+        # this would yank the sliders back to their old values.
+        if not ap_commands.submarine_settings_synced(self.context.buffer):
+            return
 
-        server_revision = int(
-            status.get("server_settings_revision", 0) or 0
-        )
-
-        if self._submarine_pending_revision > 0:
-
-            if (
-                client_revision < self._submarine_pending_revision
-                or server_revision < self._submarine_pending_revision
-            ):
-                return
-
-            self._submarine_pending_revision = 0
+        # Never yank a slider out from under the user mid-drag.
+        if any(slider.isSliderDown() for slider in self._sliders.values()):
+            return
 
         values = {
             "Sensor Noise Variance":
@@ -652,52 +623,16 @@ class DefenderV0(Page):
         return self._url_entry.text().strip().rstrip("/") or self._ap_poller.url
 
     def _toggle_encryption(self):
-        new_state = not self.context.buffer.defender_status.get("encryption_status", False)
-        enc_key   = self._enc_key_entry.text().strip()
-
-        def _request():
-            try:
-                resp = requests.post(
-                    f"{self._ap_poller.url}/set_encryption",
-                    json={"encryption_status": new_state, "encryption_key": enc_key},
-                    timeout=3,
-                )
-                if resp.ok:
-                    # Written straight to the shared status channel instead of
-                    # an instance attribute, so every widget reading
-                    # encryption_status (this page's own block and HVACView's)
-                    # sees the same confirmed value instead of two copies that
-                    # can drift apart.
-                    self.context.buffer.defender_status.put("encryption_status", new_state)
-            except Exception:
-                pass
-
-        threading.Thread(target=_request, daemon=True).start()
+        buffer = self.context.buffer
+        ap_commands.set_encryption(buffer, not ap_commands.encryption_enabled(buffer), self._enc_key_entry.text().strip())
 
     def _toggle_AP_communication(self):
-        new_state = not self.context.buffer.defender_status.get("ap_communication", False)
-
-        def _request():
-            try:
-                resp = requests.post(
-                    f"{self._ap_poller.url}/set_AP_communication",
-                    json={"AP_communication": new_state},
-                    timeout=3,
-                )
-                if resp.ok:
-                    # The AP never echoes AP_communication back on /api/data,
-                    # so ap_communication in defender_status is this page's own
-                    # confirmed-by-POST record, not something the poll unpacker
-                    # ever writes - the last successful set is authoritative.
-                    self.context.buffer.defender_status.put("ap_communication", new_state)
-            except Exception:
-                pass
-
-        threading.Thread(target=_request, daemon=True).start()
+        buffer = self.context.buffer
+        ap_commands.set_ap_tunnel(buffer, not ap_commands.ap_tunnel_enabled(buffer))
 
     def _refresh_AP_communication_ui(self):
         try:
-            if self.context.buffer.defender_status.get("ap_communication", False):
+            if ap_commands.ap_tunnel_enabled(self.context.buffer):
                 self._filter_label.setText("Status: ON")
                 self._filter_label.setStyleSheet("color: green;")
                 self._filter_button.setText("Disable Communication Through AP")
@@ -726,17 +661,23 @@ class DefenderV0(Page):
         self._update_log()
 
     def _toggle_submarine_kalman_filter(self):
-        new_state = not self.context.buffer.defender_status.get("kalman_filter_enabled", True)
-        self.context.buffer.defender_status.put("kalman_filter_enabled", new_state)
+        buffer = self.context.buffer
+        ap_commands.set_kalman(buffer, not ap_commands.kalman_enabled(buffer))
 
-        if new_state:
-            self._submarine_kalman_label.setText("Kalman Filter Status: ON")
-            self._submarine_kalman_label.setStyleSheet("color: green;")
-        else:
-            self._submarine_kalman_label.setText("Kalman Filter Status: OFF")
-            self._submarine_kalman_label.setStyleSheet("color: gray;")
+    def _refresh_submarine_kalman_ui(self):
+        '''
+        Its own animation_manager callback (see __init__), independent of
+        _refresh_submarine_values, which skips everything in HVAC mode.
+        '''
+        submarine_mode = ap_commands.submarine_mode(self.context.buffer)
+        if self._submarine_kalman_section.isEnabled() != submarine_mode:
+            self._submarine_kalman_section.setEnabled(submarine_mode)
 
-        self._post_slider_settings()
+        on = ap_commands.kalman_enabled(self.context.buffer)
+        self._submarine_kalman_label.setText("Status: ON" if on else "Status: OFF")
+        # An explicit stylesheet color overrides the disabled palette, so
+        # greying out in HVAC mode has to be done here too.
+        self._submarine_kalman_label.setStyleSheet(f"color: {'green' if on and submarine_mode else 'gray'};")
 
     # ════════════════════════════════════════════════════════════════════════
     #  UI update helpers
@@ -802,7 +743,7 @@ class DefenderV0(Page):
         attribute = "client_clean" if self._log_source == "client" else "server_clean"
         modbus = self.context.buffer.defender_modbus
         fields = ["x", "y", "theta", "speed", "rudder"]
-        histories = {field: modbus.get_history(field, attribute) for field in fields}
+        histories = {field: modbus.get_samples(field, attribute) for field in fields}
         length = min((len(history) for history in histories.values()), default=0)
 
         rows = []
@@ -851,14 +792,16 @@ class DefenderV0(Page):
 
     def _refresh_encryption_ui(self):
         try:
-            if self.context.buffer.defender_status.get("encryption_status", False):
+            if ap_commands.encryption_enabled(self.context.buffer):
                 self._enc_label.setText("Status: ON")
                 self._enc_label.setStyleSheet("color: green;")
                 self._enc_button.setText("Disable Encryption")
+                self._enc_key_entry.setEnabled(False)
             else:
                 self._enc_label.setText("Status: OFF")
                 self._enc_label.setStyleSheet("color: gray;")
                 self._enc_button.setText("Enable Encryption")
+                self._enc_key_entry.setEnabled(True)
         except Exception as e:
             print("refresh_encryption_ui:", e)
 

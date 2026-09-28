@@ -230,7 +230,9 @@
         "packet_panel": "Packets",
         "status_panel": "Status",
         "defender_modbus_panel": "Defender Data",
-        "defender_stripchart_panel": "Defender Monitors"
+        "defender_stripchart_panel": "Defender Monitors",
+        "defender_console_panel": "Packet Log (last 10)",
+        "defender_flag_panel": "Defender Flags"
     },
     
     "menu_bar_buttons": {
@@ -286,7 +288,6 @@
 
     "defender_modbus_forms": {
         "mode": "Operation Mode",
-        "readout": "Live Readout",
         "sliders": "Filter Settings"
     },
 

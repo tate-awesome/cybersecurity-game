@@ -97,11 +97,11 @@ class DefenderHVACChart(QWidget):
         # see DefenderModbusBuffer.resume_hvac/pause_hvac. Lets the
         # temperature/target/heater history's relative-time clock advance
         # again after having been frozen while some other model was shown.
-        self.modbus.resume_hvac()
+        self.modbus.resume_hvac(self)
 
     def stop_animation(self):
         self.context.animation_manager.remove_callback(f"DefenderHVACChart_{id(self)}")
-        self.modbus.pause_hvac()
+        self.modbus.pause_hvac(self)
 
     def redraw(self):
         room_history = self.modbus.get_history("temperature", "client_clean")[-self.MAX_POINTS:]

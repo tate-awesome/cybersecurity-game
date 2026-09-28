@@ -62,6 +62,7 @@ class Builder(Panel):
             self.strip_charts[key] = strip_chart
             current_row += 1
 
+        self._submarine_mode = None
         self.context.animation_manager.add_callback(f"DefenderStripchartVisibility_{id(self)}", self.refresh_visibility)
         self.refresh_visibility()
 
@@ -69,11 +70,19 @@ class Builder(Panel):
 
     def refresh_visibility(self):
         submarine_mode = bool(self.context.buffer.defender_status.get("submarine_mode", True))
+        if submarine_mode == self._submarine_mode:
+            return
+        self._submarine_mode = submarine_mode
         active_variables = SUBMARINE_VARIABLES if submarine_mode else HVAC_VARIABLES
 
         for key, widget in self.strip_charts.items():
-            visible = key in active_variables
-            if visible and widget.isHidden():
-                widget.show()
-            elif not visible and not widget.isHidden():
-                widget.hide()
+            widget.setVisible(key in active_variables)
+
+        # HVAC history's clock only advances while some HVAC view is
+        # showing it (see DefenderModbusBuffer.pause_hvac) - these charts
+        # count, or they'd plot every sample at one frozen x position
+        # whenever the HVAC model isn't also on screen.
+        if submarine_mode:
+            self.modbus.pause_hvac(self)
+        else:
+            self.modbus.resume_hvac(self)

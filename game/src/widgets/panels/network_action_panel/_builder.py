@@ -98,6 +98,8 @@ class Builder(Panel):
 
     def stop_all(self):
         for form in reversed(self.forms.values()):
+            if not form.abortable:
+                continue
             try:
                 form.click_stop()
             except Exception as e:

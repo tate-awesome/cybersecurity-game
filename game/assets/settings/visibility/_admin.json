@@ -22,7 +22,6 @@
     },
     "defender_modbus_visibility": {
         "mode": 1,
-        "readout": 1,
         "sliders": 1
     }
 }

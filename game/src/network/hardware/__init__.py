@@ -4,7 +4,7 @@ from .arp_spoofing import ArpSpoofer
 from .dos import Denier
 from .nmap import NMapper
 from .sniffing import Sniffer
-from .ap_poller import APPoller
+from .ap_poller import APPoller, AP_POLLER_KEY
 
 if platform.system() == "Windows":
     from .nfq_windows import NetFilterQueue

@@ -67,28 +67,33 @@ class DefenderModbusBuffer:
             # domain put() uses), since pause/resume happen from the UI
             # thread independent of polls.
             self._hvac_active = False
+            self._hvac_owners: set[int] = set()
             self._hvac_paused_at: float | None = None
             self._hvac_paused_elapsed = 0.0
             self._hvac_frozen_time = 0.0
 
-    def pause_hvac(self):
+    def pause_hvac(self, owner: object):
         '''
-        Called when DefenderHVACChart stops animating - a different model
-        is now on screen (or the panel's gone). Freezes "temperature"/
-        "heater" history's relative-time advancement so an idle stretch
-        with the HVAC model swapped out doesn't stretch a long gap across
-        the chart once it's swapped back in; values keep getting recorded
-        (a live readout table elsewhere still wants the latest reading),
-        they just all land at the same frozen relative time until resumed.
+        Called when an HVAC view (DefenderHVACChart, the stripchart panel's
+        HVAC charts, DefenderV0's HVACView) stops showing HVAC history -
+        once none are left, freezes "temperature"/"heater" history's
+        relative-time advancement so an idle stretch with nothing HVAC on
+        screen doesn't stretch a long gap across the chart once one's shown
+        again; values keep getting recorded (a live readout elsewhere still
+        wants the latest reading), they just all land at the same frozen
+        relative time until resumed. Tracked per owner, so one view going
+        away can't freeze the clock under another that's still showing.
         '''
         with self.lock:
-            if self._hvac_active:
+            self._hvac_owners.discard(id(owner))
+            if self._hvac_active and not self._hvac_owners:
                 self._hvac_active = False
                 self._hvac_paused_at = wall_time()
 
-    def resume_hvac(self):
-        '''Called when DefenderHVACChart starts animating - see pause_hvac.'''
+    def resume_hvac(self, owner: object):
+        '''Called when an HVAC view starts showing HVAC history - see pause_hvac.'''
         with self.lock:
+            self._hvac_owners.add(id(owner))
             if not self._hvac_active:
                 self._hvac_active = True
                 if self._hvac_paused_at is not None:
@@ -152,6 +157,18 @@ class DefenderModbusBuffer:
     def get_history(self, variable: str, attribute: str) -> list[tuple[float, float]]:
         with self.lock:
             return list(self.histories.get(variable, {}).get(attribute, ()))
+
+    def get_samples(self, variable: str, attribute: str) -> list[tuple[float, float]]:
+        '''
+        get_history() without put()'s staircase re-stamps - one entry per
+        sample actually received. Every put() appends either just the sample
+        (the first) or a re-stamp followed by the sample, so counting back
+        from the newest entry, every other one is a real sample - and
+        trimming only ever drops from the old end, which can't shift that.
+        '''
+        with self.lock:
+            history = list(self.histories.get(variable, {}).get(attribute, ()))
+        return history[::-1][::2][::-1]
 
     def get_all_histories_and_legends(self, variable: str) -> dict[str, list[tuple[float, float]]]:
         '''

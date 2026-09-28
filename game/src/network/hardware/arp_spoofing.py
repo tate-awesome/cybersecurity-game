@@ -86,9 +86,6 @@ class ArpSpoofer(Process):
         return self.running
 
     def stop(self):
-        # disable forwarding
-        if self.forwarding_enabled:
-            self.disable_ip_forwarding()
 
         if self.running == False:
             self.buffer.put("arp", "ARP Spoof is not running")
@@ -103,6 +100,9 @@ class ArpSpoofer(Process):
 
         self.restore(self.target_ip, self.host_ip)
         self.restore(self.host_ip, self.target_ip)
+        # disable forwarding
+        if self.forwarding_enabled:
+            self.disable_ip_forwarding()
         self.buffer.put("arp", "Stopped ARP Spoof.")
 
 

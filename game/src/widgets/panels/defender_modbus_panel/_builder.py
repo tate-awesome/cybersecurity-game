@@ -3,24 +3,21 @@ from ....app_core import Context
 from ..panel import Panel
 
 from .forms.mode import ModeForm
-from .forms.readout import ReadoutForm
 from .forms.sliders import SlidersForm
 
 from ....widgets import Scrollable, CheckboxOverlay
 
 FORM_CLASSES = {
     "mode": ModeForm,
-    "readout": ReadoutForm,
     "sliders": SlidersForm,
 }
 
 
 class Builder(Panel):
     '''
-    Defender-page counterpart to modbus_table_panel: mode label, live
-    client/server readout table, and filter sliders, all reading from
-    context.buffer.defender_modbus/defender_status (AP-polled telemetry)
-    instead of context.buffer.modbus (sniffed MetaPackets).
+    Defender-page counterpart to modbus_table_panel: mode label and filter
+    sliders, reading from context.buffer.defender_status (AP-polled
+    telemetry) instead of context.buffer.modbus (sniffed MetaPackets).
     '''
 
     KEY = "defender_modbus_panel"
