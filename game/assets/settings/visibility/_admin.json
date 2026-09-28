@@ -18,7 +18,7 @@
         "ap_connect": 1,
         "encryption": 1,
         "ap_tunnel": 1,
-        "kalman": 1
+        "kalman": 0
     },
     "defender_modbus_visibility": {
         "mode": 1,

@@ -20,8 +20,9 @@ class Builder(Panel):
     '''
     DefenderV0's middle pane minus its packet log (that's
     defender_console_panel): the error-detection flags for whichever mode
-    the AP is in, and the submarine Kalman filter status and toggle -
-    greyed out in HVAC mode, like the network_action_panel's Kalman form.
+    the AP is in, and the Kalman filter status and toggle for that mode
+    (submarine's or HVAC's - the AP keeps them separately), like the
+    original page's middle pane and HVACView respectively.
     Reads and commands everything through context.buffer.defender_status.
     '''
 
@@ -99,7 +100,6 @@ class Builder(Panel):
             self._submarine_mode = submarine_mode
             self.submarine_section.setVisible(submarine_mode)
             self.hvac_section.setVisible(not submarine_mode)
-            self.kalman_section.setEnabled(submarine_mode)
 
         for key, dot in (self.submarine_dots | self.hvac_dots).items():
             raised = bool(buffer.defender_status.get(key, False))
@@ -107,6 +107,4 @@ class Builder(Panel):
 
         on = ap_commands.kalman_enabled(buffer)
         self.kalman_label.setText("Status: ON" if on else "Status: OFF")
-        # An explicit stylesheet color overrides the disabled palette, so
-        # greying out in HVAC mode has to be done here too.
-        self.kalman_label.setStyleSheet(f"color: {'green' if on and submarine_mode else 'gray'};")
+        self.kalman_label.setStyleSheet(f"color: {'green' if on else 'gray'};")

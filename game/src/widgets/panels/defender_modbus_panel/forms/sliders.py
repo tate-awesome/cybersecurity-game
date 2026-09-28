@@ -40,7 +40,9 @@ class SlidersForm(BaseForm):
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="Sliders")
 
-        self.add_header("Filter Settings")
+        # Retitled per mode like DefenderV0/HVACView's "SUBMARINE SETTINGS"/
+        # "HVAC SETTINGS" sections - see refresh.
+        self.add_header("Submarine Settings")
 
         self._syncing = False
 
@@ -160,6 +162,7 @@ class SlidersForm(BaseForm):
 
         if submarine_mode != self._submarine_mode:
             self._submarine_mode = submarine_mode
+            self.header.setText("Submarine Settings" if submarine_mode else "HVAC Settings")
             if submarine_mode:
                 self.hvac_frame.hide()
                 self.submarine_frame.show()
@@ -167,16 +170,27 @@ class SlidersForm(BaseForm):
                 self.submarine_frame.hide()
                 self.hvac_frame.show()
 
-        # Never yank a slider out from under the user mid-drag.
-        sliders = list(self.submarine_sliders.values()) + list(self.hvac_sliders.values())
-        if any(slider.isSliderDown() for slider in sliders):
-            return
+        # Both groups sync every tick whichever one is showing, like the
+        # original page (HVACView synced its sliders even while hidden) - so
+        # the moment the AP switches modes, the newly shown group already
+        # holds the AP's current values instead of whatever it last showed.
+        self._sync_submarine()
+        self._sync_hvac()
 
+    def _sync_submarine(self):
+        # Never yank a slider out from under the user mid-drag, and wait
+        # until the client/server have picked up the last post.
+        if any(slider.isSliderDown() for slider in self.submarine_sliders.values()):
+            return
+        if not ap_commands.submarine_settings_synced(self.context.buffer):
+            return
         status = self.context.buffer.defender_status
-        if submarine_mode:
-            if ap_commands.submarine_settings_synced(self.context.buffer):
-                values = {field: status.get(field) for field in ap_commands.SUBMARINE_SLIDER_FIELDS}
-                self._set_group(SUBMARINE_SLIDER_DEFS, self.submarine_sliders, self.submarine_labels, values)
-        else:
-            values = {field: status.expected(reported) for field, reported in ap_commands.HVAC_SLIDER_FIELDS.items()}
-            self._set_group(HVAC_SLIDER_DEFS, self.hvac_sliders, self.hvac_labels, values)
+        values = {field: status.get(field) for field in ap_commands.SUBMARINE_SLIDER_FIELDS}
+        self._set_group(SUBMARINE_SLIDER_DEFS, self.submarine_sliders, self.submarine_labels, values)
+
+    def _sync_hvac(self):
+        if any(slider.isSliderDown() for slider in self.hvac_sliders.values()):
+            return
+        status = self.context.buffer.defender_status
+        values = {field: status.expected(reported) for field, reported in ap_commands.HVAC_SLIDER_FIELDS.items()}
+        self._set_group(HVAC_SLIDER_DEFS, self.hvac_sliders, self.hvac_labels, values)

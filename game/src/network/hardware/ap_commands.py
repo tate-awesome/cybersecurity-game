@@ -99,18 +99,17 @@ def set_ap_tunnel(buffer: "Buffer", enabled: bool):
 
 
 # ── Kalman filter ───────────────────────────────────────────────────────
-# Unlike encryption/AP tunnel, these aren't mode-switched: the panels'
-# Kalman widgets (and DefenderV0's middle-pane block) always mean the
-# submarine filter and grey out in HVAC mode, while HVACView owns HVAC's
-# separate filter through the hvac_ variants - so a toggle never silently
-# changes which filter it's showing when the AP switches modes.
+# The AP keeps a separate filter per mode. The panels' Kalman widgets use
+# the mode-switched kalman_enabled/set_kalman, like encryption/AP tunnel;
+# DefenderV0's submarine block and HVACView each use their own mode's
+# variant directly, since each is only ever shown in its own mode.
 
-def kalman_enabled(buffer: "Buffer") -> bool:
+def submarine_kalman_enabled(buffer: "Buffer") -> bool:
     # Defaults on, like the AP firmware itself.
     return bool(buffer.defender_status.expected("kalman_filter_enabled", True))
 
 
-def set_kalman(buffer: "Buffer", enabled: bool):
+def set_submarine_kalman(buffer: "Buffer", enabled: bool):
     # Only the one field - /set_settings applies just the fields it's
     # given, so this can't clobber the sliders with stale values.
     buffer.defender_status.send("/set_settings", {"kalman_filter_enabled": enabled},
@@ -125,6 +124,17 @@ def hvac_kalman_enabled(buffer: "Buffer") -> bool:
 def set_hvac_kalman(buffer: "Buffer", enabled: bool):
     _hvac_send(buffer, {"hvac_kalman_filter_enabled": enabled}, {"hvac_kalman_filter_enabled": enabled}, "kalman",
                "HVAC Kalman Filter is on" if enabled else "HVAC Kalman Filter is off")
+
+
+def kalman_enabled(buffer: "Buffer") -> bool:
+    return submarine_kalman_enabled(buffer) if submarine_mode(buffer) else hvac_kalman_enabled(buffer)
+
+
+def set_kalman(buffer: "Buffer", enabled: bool):
+    if submarine_mode(buffer):
+        set_submarine_kalman(buffer, enabled)
+    else:
+        set_hvac_kalman(buffer, enabled)
 
 
 def read_hvac_state(buffer: "Buffer"):

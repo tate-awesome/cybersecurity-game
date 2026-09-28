@@ -6,11 +6,11 @@ from ...base_form import BaseForm
 
 class KalmanForm(BaseForm):
     '''
-    Toggles the submarine Kalman filter (DefenderV0's middle-pane toggle).
-    Greyed out while the AP is in HVAC mode rather than switching to HVAC's
-    separate filter, so its status always means the same thing. Goes
-    through the shared AP poller via context.buffer.defender_status - see
-    EncryptionForm.
+    Toggles the Kalman filter for whichever mode the AP is in - submarine's
+    (DefenderV0's middle-pane toggle) or HVAC's (HVACView's), which the AP
+    keeps separately. Goes through the shared AP poller via
+    context.buffer.defender_status - see EncryptionForm. Hidden in every
+    shipped config (its toggle lives in defender_flag_panel), but kept.
     '''
 
     abortable = False
@@ -26,10 +26,3 @@ class KalmanForm(BaseForm):
             lambda: ap_commands.kalman_enabled(self.context.buffer),
         )
 
-        self.context.animation_manager.add_callback(f"KalmanForm_{id(self)}", self._refresh_mode)
-        self._refresh_mode()
-
-    def _refresh_mode(self):
-        enabled = ap_commands.submarine_mode(self.context.buffer)
-        if self.isEnabled() != enabled:
-            self.setEnabled(enabled)

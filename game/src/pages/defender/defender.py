@@ -122,6 +122,19 @@ class DefenderV0(Page):
 
         self._build_packet_log(self._submarine_middle)
         self._build_flags_block(self._submarine_middle, "SUBMARINE ERROR DETECTION FLAGS", self.SUBMARINE_FLAG_DEFS, "_submarine_flag_labels",)
+        # ── Kalman Filter block ─────────────────────────────────────────────
+        kalman_section = self._section(self._submarine_middle, "KALMAN FILTER")
+
+        self._submarine_kalman_label = QLabel("Status: ON")
+        self._submarine_kalman_label.setFont(self.style.get_font())
+        self._submarine_kalman_label.setStyleSheet("color: green;")
+        kalman_section.layout().addWidget(self._submarine_kalman_label)
+
+        self._submarine_kalman_button = QPushButton("Toggle Kalman Filter")
+        self._submarine_kalman_button.setFont(self.style.get_font())
+        self._wire_button(self._submarine_kalman_button, self._toggle_submarine_kalman_filter)
+        kalman_section.layout().addWidget(self._submarine_kalman_button)
+
         self._hvac_middle = QWidget()
         self._hvac_middle.setLayout(QVBoxLayout())
         self._hvac_middle.layout().setContentsMargins(0, 0, 0, 0)
@@ -131,21 +144,6 @@ class DefenderV0(Page):
         # (see hvac_view.py's _build_kalman_block) - it owns the button, the
         # label, and the toggle state, so there's no callback threaded back
         # into this page just to update a label this class doesn't build.
-
-        # ── Submarine Kalman Filter block ───────────────────────────────────
-        # Outside _submarine_middle so it stays on screen in HVAC mode,
-        # greyed out (see _refresh_submarine_kalman_ui) instead of vanishing.
-        self._submarine_kalman_section = self._section(middle_p, "KALMAN FILTER")
-
-        self._submarine_kalman_label = QLabel("Status: ON")
-        self._submarine_kalman_label.setFont(self.style.get_font())
-        self._submarine_kalman_label.setStyleSheet("color: green;")
-        self._submarine_kalman_section.layout().addWidget(self._submarine_kalman_label)
-
-        self._submarine_kalman_button = QPushButton("Toggle Kalman Filter")
-        self._submarine_kalman_button.setFont(self.style.get_font())
-        self._wire_button(self._submarine_kalman_button, self._toggle_submarine_kalman_filter)
-        self._submarine_kalman_section.layout().addWidget(self._submarine_kalman_button)
 
         self._build_mode_block(middle_p)       # mode-agnostic — always visible
 
@@ -662,22 +660,19 @@ class DefenderV0(Page):
 
     def _toggle_submarine_kalman_filter(self):
         buffer = self.context.buffer
-        ap_commands.set_kalman(buffer, not ap_commands.kalman_enabled(buffer))
+        ap_commands.set_submarine_kalman(buffer, not ap_commands.submarine_kalman_enabled(buffer))
 
     def _refresh_submarine_kalman_ui(self):
         '''
         Its own animation_manager callback (see __init__), independent of
-        _refresh_submarine_values, which skips everything in HVAC mode.
+        _refresh_submarine_values.
         '''
-        submarine_mode = ap_commands.submarine_mode(self.context.buffer)
-        if self._submarine_kalman_section.isEnabled() != submarine_mode:
-            self._submarine_kalman_section.setEnabled(submarine_mode)
-
-        on = ap_commands.kalman_enabled(self.context.buffer)
-        self._submarine_kalman_label.setText("Status: ON" if on else "Status: OFF")
-        # An explicit stylesheet color overrides the disabled palette, so
-        # greying out in HVAC mode has to be done here too.
-        self._submarine_kalman_label.setStyleSheet(f"color: {'green' if on and submarine_mode else 'gray'};")
+        if ap_commands.submarine_kalman_enabled(self.context.buffer):
+            self._submarine_kalman_label.setText("Status: ON")
+            self._submarine_kalman_label.setStyleSheet("color: green;")
+        else:
+            self._submarine_kalman_label.setText("Status: OFF")
+            self._submarine_kalman_label.setStyleSheet("color: gray;")
 
     # ════════════════════════════════════════════════════════════════════════
     #  UI update helpers
