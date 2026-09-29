@@ -45,7 +45,8 @@ class LessonSelectPage(Page):
     Page constructor for build_type "lesson_select". Everything floats on
     the page's (optional) procedural background:
 
-      - a transparent MenuBar on top, built from config["menu_bar"]
+      - a transparent MenuBar on top, titled by config["title"] with
+        config["menu_bar"]'s buttons
       - a transparent scrollable sidebar on the left of collapsible
         sections, one per config["sections"] entry, each listing the
         lessons whose "category" matches it - every page directly inside
@@ -79,7 +80,7 @@ class LessonSelectPage(Page):
 
         self.add_background(config)
 
-        menu_bar = self.build_menu_bar(config.get("menu_bar", {}))
+        menu_bar = self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
         menu_bar.setStyleSheet(self.style.themed("background-color: transparent;", menu_bar))
 
         body = QHBoxLayout()

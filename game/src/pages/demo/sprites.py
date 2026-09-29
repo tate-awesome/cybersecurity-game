@@ -10,8 +10,8 @@ class Sprites(Page):
     def __init__(self, context: Context):
         super().__init__(context)
         menu_bar = MenuBar(self, context, "sprites_demo")
-        menu_bar.quit_button()
         menu_bar.back_button()
+        menu_bar.quit_button()
         world_map = Map(self, context, self.frame_callback, 100)
 
 

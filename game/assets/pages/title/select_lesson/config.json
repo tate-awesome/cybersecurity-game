@@ -20,11 +20,5 @@
         { "label": "defender_lessons", "category": "defender", "numbered": true }
     ],
 
-    "menu_bar": {
-        "title": "select_lesson",
-        "buttons": [
-            { "builtin": "back_button" },
-            { "builtin": "quit_button" }
-        ]
-    }
+    "menu_bar": ["back_button", "quit_button"]
 }

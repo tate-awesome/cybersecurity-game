@@ -12,8 +12,8 @@ class BoatMotion(Page):
     def __init__(self, context: Context):
         super().__init__(context)
         menu_bar = MenuBar(self, context, "boat_motion_demo")
-        menu_bar.quit_button()
         menu_bar.back_button()
+        menu_bar.quit_button()
 
         # Make initial boat path
         self.positions = sprites.random_spline_path(20, 100)

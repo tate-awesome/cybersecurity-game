@@ -28,7 +28,7 @@ class WorkspacePage(Page):
         # above it repaint. The panes turn transparent only if it's there.
         self.transparent_panes = self.add_background(config, self.DEFAULT_BACKGROUND)
 
-        self.build_menu_bar(config.get("menu_bar", {}))
+        self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 
         panes_config = config.get("panes")
         self.panes_root = self.build_panes(panes_config, self) if panes_config else None

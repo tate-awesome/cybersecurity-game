@@ -92,9 +92,9 @@ class MenuBar(QFrame):
         self.row.addStretch()
 
         # Button overflow overlay - see update_squashing/_populate_overflow_overlay.
-        # Always the rightmost widget in the row (add_button/add_dropdown
-        # insert new entries just before it), hidden until squashing finds
-        # something to put in it.
+        # Sits just left of every button (add_button/add_dropdown append new
+        # entries after it), where the buttons squashed into it would have
+        # been, hidden until squashing finds something to put in it.
         self._entries: list[dict] = []
         self._squashed_entries: list[dict] = []
         self.the_overflow_button = QPushButton("...")
@@ -194,10 +194,8 @@ class MenuBar(QFrame):
     # overflow ("...") button appears with clones of them in a popup.
 
     def _insert_entry(self, widget: QWidget, kind: str):
-        # Insert just before the overflow button so it stays the rightmost
-        # widget in the row no matter how many buttons/dropdowns get added.
-        index = self.row.indexOf(self.the_overflow_button)
-        self.row.insertWidget(index, widget)
+        # Entries fill in left to right after the overflow button
+        self.row.addWidget(widget)
         self._entries.append({"widget": widget, "kind": kind})
         self._update_squashing()
 
@@ -212,16 +210,27 @@ class MenuBar(QFrame):
             available_width = self.width() - margins.left() - margins.right()
             available_width -= self.game_label.sizeHint().width() + spacing
 
-            fine = []
-            squashed = []
-            for entry in self._entries:
-                available_width -= entry["widget"].sizeHint().width() + spacing
-                if entry["kind"] != "button" or available_width >= 0:
-                    fine.append(entry)
-                else:
-                    squashed.append(entry)
+            # Fit buttons in from the right, so the leftmost ones squash
+            # first - a bar's most important buttons (back, quit, a panel's
+            # minimize) go last, on the right, and stay visible longest.
+            def split(width: int) -> tuple[list[dict], list[dict]]:
+                fine = []
+                squashed = []
+                for entry in reversed(self._entries):
+                    width -= entry["widget"].sizeHint().width() + spacing
+                    if entry["kind"] != "button" or width >= 0:
+                        fine.append(entry)
+                    else:
+                        squashed.append(entry)
+                return fine, squashed
 
-            self._squashed_entries = squashed
+            fine, squashed = split(available_width)
+            if squashed:
+                # The overflow button itself takes room once it's showing
+                fine, squashed = split(available_width - self.the_overflow_button.sizeHint().width() - spacing)
+
+            # Back in left-to-right order for the overflow overlay
+            self._squashed_entries = squashed[::-1]
             for entry in fine:
                 entry["widget"].setVisible(True)
             for entry in squashed:
@@ -527,18 +536,23 @@ class MenuBar(QFrame):
         self.add_tooltip(button, "page_button")
 
     def page_buttons(self):
-        self.quit_button()
-        self.refresh_button()
-        self.reset_button()
-        self.back_button()
-        self.help_button()
+        '''
+        Every page button, left to right in the standard order: preferences,
+        data tools, page actions, then navigation (back, quit) on the right.
+        Leftmost buttons are squashed into the overflow menu first.
+        '''
         self.toggle_button()
         self.theme_button()
+        self.labels_button()
+        self.page_button()
         self.pcap_button()
         self.save_button()
         self.load_button()
         self.stream_button()
         self.preset_button()
-        self.labels_button()
         self.data_button()
-        self.page_button()
+        self.refresh_button()
+        self.reset_button()
+        self.help_button()
+        self.back_button()
+        self.quit_button()

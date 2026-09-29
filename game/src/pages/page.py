@@ -29,25 +29,20 @@ class Page(QWidget):
         # the panel grid below it).
         self.layout().setSpacing(self.style.igap)
 
-    def build_menu_bar(self, menu_bar_config: dict):
+    def build_menu_bar(self, title: str, buttons: list[str]):
         '''
-        Builds the page's MenuBar and calls one MenuBar method per
-        {"builtin": "<method_name>"} entry in menu_bar_config["buttons"]
-        (already expanded from any {"_ref": ...} splices by Json).
-        Returns the MenuBar.
+        Builds the page's MenuBar - titled with the labels key
+        "menu_bar_titles_<title>" - and adds one button per name in
+        buttons, in order, each the name of a MenuBar button method
+        (e.g. "quit_button"). Returns the MenuBar.
         '''
         from ..widgets import MenuBar
-        title = menu_bar_config.get("title", "_default")
         menu_bar = MenuBar(self, self.context, title)
 
-        for button in menu_bar_config.get("buttons", []):
-            name = button.get("builtin")
-            if name is None:
-                print(f"Menu bar button config {button!r} has no 'builtin' key, skipping")
-                continue
-            method = getattr(menu_bar, name, None)
+        for name in buttons:
+            method = getattr(menu_bar, name, None) if isinstance(name, str) else None
             if not callable(method):
-                print(f"MenuBar has no builtin button named {name!r}, skipping")
+                print(f"MenuBar has no button named {name!r}, skipping")
                 continue
             method()
         return menu_bar

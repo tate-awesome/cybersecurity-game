@@ -31,20 +31,18 @@
 
     "settings": {},
 
-    "menu_bar": {
-        "title": "modbus_mitm_lesson",
-        "buttons": [
-            {"builtin": "quit_button"},
-            {"builtin": "back_button"},
-            {"builtin": "refresh_button"},
-            {"builtin": "reset_button"},
-            {"builtin": "help_button"},
-            {"builtin": "toggle_button"},
-            {"builtin": "theme_button"},
-            {"builtin": "page_button"},
-            {"builtin": "labels_button"}
-        ]
-    },
+    "title": "modbus_mitm_lesson",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
 
     "panes": {
         "h_panes": {
