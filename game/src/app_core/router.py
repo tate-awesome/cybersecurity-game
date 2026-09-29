@@ -14,7 +14,7 @@ from ..pages.attacker.attacker import AttackerV0
 from ..pages.defender.defender import DefenderV0
 
 # /generic (data-driven pages, dispatched by each page's own config "build_type").
-# start, title/select_mode and title/select_demo are build_type "title" pages
+# start and title/select_demo are build_type "title" pages
 # and title/select_lesson is "lesson_select", all discovered below - no
 # hand-written entries needed for them.
 from ..pages.generic import WorkspacePage, TitlePage, LessonSelectPage

@@ -24,8 +24,6 @@ class TitlePage(Page):
         "resume": "title_buttons_resume",
         "open_ap_config": "title_buttons_ap_page",
         "delete_user_data": "title_buttons_delete_user_data",
-        "hardware_attacker": "title_buttons_hardware_attacker",
-        "hardware_defender": "title_buttons_hardware_defender",
     }
 
     def __init__(self, context: Context):
@@ -64,7 +62,3 @@ class TitlePage(Page):
                 panel.button(label, lambda target=target: self.router.show(target))
         elif action == "delete_user_data":
             panel.button(label, lambda: popup.delete_user_data_dialog(self, self.context, self.context.delete_user_data))
-        elif action == "hardware_attacker":
-            panel.button(label, lambda: self.router.show("attacker"))
-        elif action == "hardware_defender":
-            panel.button(label, lambda: self.router.show("defender"))
