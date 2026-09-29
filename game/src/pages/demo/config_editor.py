@@ -5,11 +5,14 @@ import re
 from typing import Any, Callable
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-                               QPlainTextEdit, QScrollArea, QVBoxLayout, QWidget)
+                               QPlainTextEdit, QScrollArea, QTabWidget, QVBoxLayout, QWidget)
 
 from ...app_core import Context
 from ...pages.page import Page
+from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
+from .layout_editor import LayoutEditor
 from ...widgets import MenuBar, PANELS, popup
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
@@ -70,6 +73,7 @@ class ConfigEditor(Page):
     # Kept on the class so it survives the page rebuild that the theme
     # buttons trigger (see Style.toggle_mode/select_theme -> router.refresh)
     selected_key: str | None = None
+    selected_tab: int = 0
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -92,21 +96,22 @@ class ConfigEditor(Page):
         if keys:
             self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
                                                   default=self.workspace_name(ConfigEditor.selected_key))
-        menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
-        if keys:
-            menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
-        menu_bar.add_button("save_config", self.save)
+        # The editor's own buttons sit next to back/quit, so they're the last to squash
         menu_bar.toggle_button()
         menu_bar.theme_button()
         menu_bar.labels_button()
         menu_bar.page_button()
+        menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
+        if keys:
+            menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
+        menu_bar.add_button("save_config", self.save)
         menu_bar.back_button()
         menu_bar.quit_button()
 
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet(self.style.themed("QScrollArea { background-color: transparent; border: none; }"))
-        self.layout().addWidget(self.scroll, 1)
+        self.tabs = QTabWidget()
+        self.tabs.setFont(self.style.get_font("default"))
+        self.tabs.currentChanged.connect(self.remember_tab)
+        self.layout().addWidget(self.tabs, 1)
         self.status = QLabel()
         self.status.setFont(self.style.get_font("default"))
         self.status.setWordWrap(True)
@@ -213,16 +218,20 @@ class ConfigEditor(Page):
         # Each reads its widget back as a config value, raising ValueError with a message if it can't
         self.field_readers: dict[str, Callable[[], Any]] = {}
         self.setting_readers: list[tuple[tuple, Callable[[], Any]]] = []
-        self.weight_readers: list[tuple[tuple, Callable[[], Any]]] = []
         self.button_boxes: dict[str, QCheckBox] = {}
         self.prerequisite_boxes: dict[str, QCheckBox] = {}
 
-        body = QWidget()
-        self.form = QVBoxLayout(body)
-        self.form.setSpacing(self.style.igap)
-        self.form.setContentsMargins(0, 0, self.style.igap, 0)
-        self.scroll.setWidget(body)
+        # Rebuilding the tabs changes the current tab, which shouldn't count as picking one
+        self.tabs.blockSignals(True)
+        # clear() only takes the pages out of the tab widget - delete them too
+        old_pages = [self.tabs.widget(index) for index in range(self.tabs.count())]
+        self.tabs.clear()
+        for page in old_pages:
+            page.deleteLater()
+        self.build_tabs(key)
+        self.tabs.blockSignals(False)
 
+    def build_tabs(self, key: str | None):
         if key is None:
             self.set_status("No workspaces found.", "field_text")
             return
@@ -233,15 +242,92 @@ class ConfigEditor(Page):
             self.set_status(f"This workspace's config.json isn't valid JSON (line {error.lineno}): {error.msg}", "red")
             return
 
+        self.form = self.new_tab("Workspace")
         self.build_workspace_section()
+        self.build_description_tab()
+        self.form = self.new_tab("Menu Bar")
         self.build_menu_bar_section()
-        self.build_panes_section()
+        self.layout_editor = LayoutEditor(self, self.config.get("panes"))
+        self.tabs.addTab(self.layout_editor.shape_tab, "Layout Shape")
+        self.tabs.addTab(self.layout_editor.weights_tab, "Layout Weights")
+        self.form = self.new_tab("Settings")
         settings = copy.deepcopy(self.default_settings)
         self.json.deep_merge(settings, self.config.get("settings", {}))
         for name, default in self.default_settings.items():
             self.build_setting_section(name, default, settings[name])
-        self.form.addStretch(1)
+        self.tabs.setCurrentIndex(min(ConfigEditor.selected_tab, self.tabs.count() - 1))
         self.set_status(f"Editing {self.pages.config_paths[key]}", "field_text")
+
+    # Tabs
+    def new_tab(self, title: str) -> "TopLayout":
+        '''Adds a scrolling tab and returns where its sections go (they stack from the top).'''
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(self.style.themed("QScrollArea { background-color: transparent; border: none; }"))
+        body = QWidget()
+        form = QVBoxLayout(body)
+        form.setSpacing(self.style.igap)
+        form.setContentsMargins(0, self.style.igap, self.style.igap, 0)
+        form.addStretch(1)
+        scroll.setWidget(body)
+        self.tabs.addTab(scroll, title)
+        return TopLayout(form)
+
+    def remember_tab(self, index: int):
+        ConfigEditor.selected_tab = index
+
+    def build_description_tab(self):
+        '''
+        The markdown the workspace select page shows for this workspace
+        (_note), with a live preview beside it - rendered the same way
+        that page does, images included - and the developer note below.
+        '''
+        page = QWidget()
+        columns = QHBoxLayout(page)
+        columns.setSpacing(self.style.igap)
+        self.tabs.addTab(page, "Description")
+
+        left = QVBoxLayout()
+        columns.addLayout(left, 1)
+        note = self.config.get("_note", "")
+        note_text = "\n\n".join(note) if isinstance(note, list) else str(note)
+        readers = {}
+        for name, rows in (("_note", None), ("_dev_note", 4)):
+            label = QLabel(name)
+            label.setFont(self.style.get_font("title_btn"))
+            left.addWidget(label)
+            explanation = QLabel(self.workspace_note(name))
+            explanation.setFont(self.style.get_font("small"))
+            explanation.setWordWrap(True)
+            left.addWidget(explanation)
+            text = note_text if name == "_note" else str(self.config.get("_dev_note", ""))
+            editor, reader = self.text_area(text, rows=rows)
+            left.addWidget(editor, 1 if rows is None else 0)
+            readers[name] = (editor, reader)
+        note_editor, note_reader = readers["_note"]
+        self.field_readers["_dev_note"] = readers["_dev_note"][1]
+
+        def read_note():
+            # Unedited: keep the original blocks, even ones with blank lines inside them
+            if note_reader() == note_text:
+                return note
+            return [block.strip() for block in note_reader().split("\n\n") if block.strip()]
+        self.field_readers["_note"] = read_note
+
+        preview = NoteBrowser()
+        preview.setOpenExternalLinks(True)
+        preview.setFont(self.style.get_font("default"))
+        preview.setStyleSheet(self.style.themed(
+            f"QTextBrowser {{ background-color: {self.style.color('field')}; color: {self.style.color('field_text')};"
+            f" border: none; border-radius: {self.style.PANEL_RADIUS}px; padding: 8px; }}"))
+        preview.setSearchPaths([str(self.pages.config_paths[ConfigEditor.selected_key].parent)])
+        columns.addWidget(preview, 1)
+        def refresh_preview():
+            preview.document().clear()
+            preview.setMarkdown(WorkspaceSelectPage.join_note(read_note()))
+        note_editor.textChanged.connect(refresh_preview)
+        refresh_preview()
 
     # Form building - one value per row: its name on the left, its input on the right
     def section(self, title: str, explanation: str | None) -> "Rows":
@@ -304,17 +390,6 @@ class ConfigEditor(Page):
             self.prerequisite_boxes[key] = box
         self.field_readers["prerequisites"] = lambda: [key for key, box in self.prerequisite_boxes.items() if box.isChecked()]
 
-        note = self.config.get("_note", "")
-        note_text = "\n\n".join(note) if isinstance(note, list) else str(note)
-        editor, note_reader = self.text_area(note_text, rows=14)
-        def read_note():
-            # Unedited: keep the original blocks, even ones with blank lines inside them
-            if note_reader() == note_text:
-                return note
-            return [block.strip() for block in note_reader().split("\n\n") if block.strip()]
-        add("_note", editor, read_note)
-        editor, reader = self.text_area(str(self.config.get("_dev_note", "")), rows=3)
-        add("_dev_note", editor, reader)
 
     def build_menu_bar_section(self):
         rows = self.section("menu_bar", self.workspace_note("menu_bar") + " Checked buttons appear in the order listed here.")
@@ -324,36 +399,13 @@ class ConfigEditor(Page):
             rows.add(name, box)
             self.button_boxes[name] = box
 
-    def build_panes_section(self):
-        rows = self.section("panes", self.workspace_note("panes") + " Only the weights can be changed here.")
-        def add_group(group: dict, path: tuple, depth: int):
-            name = path[-1]
-            kind = "side by side" if name.startswith("h_panes") else "stacked"
-            entry, reader = self.number_entry("weight", group.get("weight", 1))
-            rows.add(f"{name} ({kind})", entry, depth=depth)
-            self.weight_readers.append((path + ("weight",), reader))
-            for key, value in group.items():
-                if key == "weight" or key.startswith("_"):
-                    continue
-                if self.pages.pane_group(key) and isinstance(value, dict):
-                    add_group(value, path + (key,), depth + 1)
-                else:
-                    entry, reader = self.number_entry(key, value)
-                    rows.add(key, entry, depth=depth + 1)
-                    self.weight_readers.append((path + (key,), reader))
-        for key, group in self.config.get("panes", {}).items():
-            if self.pages.pane_group(key) and isinstance(group, dict):
-                add_group(group, (key,), 0)
-
     def build_setting_section(self, name: str, default, value):
         explanation = self.notes.get("settings_fields", {}).get(name, "No explanation yet - add one to _default_notes.json.")
         rows = self.section(name, explanation)
         if isinstance(default, dict):
             self.add_setting_rows(rows, (name,), default, value, depth=0)
         else:
-            widget, reader = self.leaf(name, default, value)
-            rows.add(name, widget)
-            self.setting_readers.append(((name,), reader))
+            self.add_setting_row(rows, (name,), default, value, depth=0)
 
     def add_setting_rows(self, rows: "Rows", path: tuple, default: dict, value: dict, depth: int):
         for key, item_default in default.items():
@@ -361,9 +413,20 @@ class ConfigEditor(Page):
                 rows.heading(key, depth=depth)
                 self.add_setting_rows(rows, path + (key,), item_default, value[key], depth + 1)
             else:
-                widget, reader = self.leaf(key, item_default, value[key])
-                rows.add(key, widget, depth=depth)
-                self.setting_readers.append((path + (key,), reader))
+                self.add_setting_row(rows, path + (key,), item_default, value[key], depth)
+
+    def add_setting_row(self, rows: "Rows", path: tuple, default, value, depth: int):
+        '''
+        One setting: an input only if this workspace changes it from the
+        default - otherwise just the default and a Change button. Hidden
+        inputs read back as the default, so they never end up in the file.
+        '''
+        key = path[-1]
+        widget, reader = self.leaf(key, default, value)
+        cell = OverrideCell(self, key, widget, default, overridden=(value != default))
+        cell.label = rows.add(key, cell, depth=depth)
+        cell.show_state()
+        self.setting_readers.append((path, lambda: reader() if cell.overridden else copy.deepcopy(default)))
 
     # Widgets, each paired with a reader that turns it back into a config value
     def leaf(self, key: str, default, value) -> tuple[QWidget, Callable[[], Any]]:
@@ -407,10 +470,12 @@ class ConfigEditor(Page):
             return int(number) if number == int(number) and "." not in text() else number
         return entry, read
 
-    def text_area(self, text: str, rows: int) -> tuple[QPlainTextEdit, Callable[[], str]]:
+    def text_area(self, text: str, rows: int | None) -> tuple[QPlainTextEdit, Callable[[], str]]:
+        '''A multi-line text box, rows lines tall - or growing to fill its space if rows is None.'''
         editor = QPlainTextEdit(text)
         editor.setFont(self.style.get_font("default"))
-        editor.setFixedHeight(self.fontMetrics().lineSpacing() * rows + 16)
+        if rows is not None:
+            editor.setFixedHeight(self.fontMetrics().lineSpacing() * rows + 16)
         editor.textChanged.connect(self.mark_dirty)
         return editor, editor.toPlainText
 
@@ -468,12 +533,8 @@ class ConfigEditor(Page):
 
         config["menu_bar"] = [name for name, box in self.button_boxes.items() if box.isChecked()]
 
-        for path, reader in self.weight_readers:
-            value, failed = read(reader)
-            if not failed:
-                if value <= 0:
-                    errors.append(f'"{path[-1]}" weight must be above 0')
-                set_path(config["panes"], path, value)
+        config["panes"], layout_errors = self.layout_editor.authored()
+        errors += layout_errors
         return config, errors
 
 
@@ -497,12 +558,100 @@ class Rows:
         self.grid.addWidget(self.label(text, depth, tooltip), self.row, 0)
         self.row += 1
 
-    def add(self, text: str, widget: QWidget, depth: int = 0, tooltip: str = ""):
-        self.grid.addWidget(self.label(text, depth, tooltip), self.row, 0, Qt.AlignmentFlag.AlignTop)
+    def add(self, text: str, widget: QWidget, depth: int = 0, tooltip: str = "") -> QLabel:
+        label = self.label(text, depth, tooltip)
+        self.grid.addWidget(label, self.row, 0, Qt.AlignmentFlag.AlignTop)
         # Inputs narrower than the column (checkboxes, number boxes) sit at its left edge instead of centered
         fills = not isinstance(widget, QCheckBox) and widget.maximumWidth() >= QWIDGETSIZE_MAX
         self.grid.addWidget(widget, self.row, 1, Qt.AlignmentFlag(0) if fills else Qt.AlignmentFlag.AlignLeft)
         self.row += 1
+        return label
+
+
+class OverrideCell(QWidget):
+    '''
+    A setting's input column. While the workspace uses the default, it shows
+    only "Default: ..." and a Change button; Change reveals the input
+    (starting at the default) with a Use Default button to go back. A
+    changed setting's name is shown in bold.
+    '''
+
+    def __init__(self, page: ConfigEditor, key: str, widget: QWidget, default, overridden: bool):
+        super().__init__()
+        self.page = page
+        self.widget = widget
+        self.default = default
+        self.overridden = overridden
+        self.label: QLabel | None = None
+        style = page.style
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(style.igap)
+        self.default_text = QLabel(f"Default: {self.describe(key, default)}")
+        # A copy: get_font hands out the shared, cached font every widget uses
+        font = QFont(style.get_font("default"))
+        font.setItalic(True)
+        self.default_text.setFont(font)
+        # Some defaults are long lists - wrap them instead of widening the whole tab
+        self.default_text.setWordWrap(True)
+        layout.addWidget(self.default_text)
+        self.change_button = QPushButton("Change")
+        self.change_button.setFont(style.get_font("small"))
+        self.change_button.clicked.connect(lambda checked=False: self.set_overridden(True))
+        layout.addWidget(self.change_button)
+        fills = not isinstance(widget, QCheckBox) and widget.maximumWidth() >= QWIDGETSIZE_MAX
+        layout.addWidget(widget, 1 if fills else 0)
+        self.reset_button = QPushButton("Use Default")
+        self.reset_button.setFont(style.get_font("small"))
+        self.reset_button.clicked.connect(lambda checked=False: self.set_overridden(False))
+        layout.addWidget(self.reset_button)
+        # Takes the free space when the input's hidden (or doesn't fill), so the buttons keep their size
+        layout.addStretch(0)
+
+    @staticmethod
+    def describe(key: str, default) -> str:
+        if is_switch(key, default):
+            return "on" if default in (1, True) else "off"
+        if isinstance(default, list):
+            return ", ".join(str(item) for item in default) if any(str(item) for item in default) else "(empty)"
+        if isinstance(default, float):
+            return f"{default:g}"
+        return str(default) if str(default) else "(empty)"
+
+    def show_state(self):
+        self.default_text.setVisible(not self.overridden)
+        self.change_button.setVisible(not self.overridden)
+        self.widget.setVisible(self.overridden)
+        self.reset_button.setVisible(self.overridden)
+        if self.label is not None:
+            font = self.label.font()
+            font.setBold(self.overridden)
+            self.label.setFont(font)
+
+    def set_overridden(self, overridden: bool):
+        self.overridden = overridden
+        if not overridden:
+            self.reset_input()
+        self.show_state()
+        self.page.mark_dirty()
+        if overridden:
+            self.widget.setFocus()
+
+    def reset_input(self):
+        '''Puts the input back to the default, so changing it again starts from there.'''
+        widget, default = self.widget, self.default
+        widget.blockSignals(True)
+        if isinstance(widget, QCheckBox):
+            widget.setChecked(default in (1, "1", True))
+        elif isinstance(widget, QLineEdit):
+            if isinstance(default, list):
+                widget.setText(", ".join(str(item) for item in default))
+            elif isinstance(default, float):
+                widget.setText(f"{default:g}")
+            else:
+                widget.setText(str(default))
+        widget.blockSignals(False)
 
 
 class NewWorkspaceDialog(QDialog):
@@ -644,3 +793,13 @@ class DeleteWorkspaceDialog(QDialog):
     def delete(self):
         self.accept()
         self.editor.remove_workspace(self.key)
+
+
+class TopLayout:
+    '''A tab's section list: sections go above its trailing stretch, so they stack from the top.'''
+
+    def __init__(self, layout: QVBoxLayout):
+        self.layout = layout
+
+    def addWidget(self, widget: QWidget):
+        self.layout.insertWidget(self.layout.count() - 1, widget)

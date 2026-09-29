@@ -214,11 +214,19 @@ class MenuBar(QFrame):
             # first - a bar's most important buttons (back, quit, a panel's
             # minimize) go last, on the right, and stay visible longest.
             def split(width: int) -> tuple[list[dict], list[dict]]:
+                # Dropdowns/checkboxes never squash, so their room comes off the top
+                # before any button is fitted - wherever they sit in the row
+                for entry in self._entries:
+                    if entry["kind"] != "button":
+                        width -= entry["widget"].sizeHint().width() + spacing
                 fine = []
                 squashed = []
                 for entry in reversed(self._entries):
+                    if entry["kind"] != "button":
+                        fine.append(entry)
+                        continue
                     width -= entry["widget"].sizeHint().width() + spacing
-                    if entry["kind"] != "button" or width >= 0:
+                    if width >= 0:
                         fine.append(entry)
                     else:
                         squashed.append(entry)
