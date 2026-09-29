@@ -74,15 +74,28 @@ class Router:
         # The page key the 404 page reports as missing
         self.missing_page: str | None = None
 
-        # Register any data-driven page PageManager discovered whose
-        # build_type is known, without overriding a hand-written entry above.
-        for key, build_type in self.context.pages.build_types.items():
-            if key not in PAGES and build_type in GENERIC_BUILD_TYPES:
-                PAGES[key] = GENERIC_BUILD_TYPES[build_type]
+        self.register_discovered_pages()
 
         if start_page is None:
             start_page = START_PAGE
         self.show(start_page)
+
+    def register_discovered_pages(self):
+        '''
+        Registers every data-driven page PageManager discovered whose
+        build_type is known, without overriding a hand-written entry above,
+        and drops any data-driven page that's no longer there. Called at
+        startup, and again after pages are created or deleted while running
+        (see the workspace editor).
+        '''
+        build_types = self.context.pages.build_types
+        generic_classes = set(GENERIC_BUILD_TYPES.values())
+        for key, page_class in list(PAGES.items()):
+            if page_class in generic_classes and key not in build_types:
+                del PAGES[key]
+        for key, build_type in build_types.items():
+            if key not in PAGES and build_type in GENERIC_BUILD_TYPES:
+                PAGES[key] = GENERIC_BUILD_TYPES[build_type]
 
     def show(self, next_page: str):
         '''

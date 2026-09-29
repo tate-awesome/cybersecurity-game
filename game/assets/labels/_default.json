@@ -217,6 +217,8 @@
     "menu_bar_buttons_fields_button": "Save Inputs",
     "menu_bar_buttons_page_button": "Favorite Page",
     "menu_bar_buttons_delete_all_workspace_data_button": "Delete All Workspace Data",
+    "menu_bar_buttons_new_workspace": "New Workspace",
+    "menu_bar_buttons_delete_workspace": "Delete Workspace",
     "menu_bar_buttons_save_config": "Save Config",
     "menu_bar_buttons_clear_packets_button": "Clear Data",
     "menu_bar_buttons_stream_button": "Start Stream",

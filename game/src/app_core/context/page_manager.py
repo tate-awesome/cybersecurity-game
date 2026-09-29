@@ -1,4 +1,5 @@
 
+import json
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -316,3 +317,36 @@ class PageManager:
         '''
         shutil.rmtree(self.context.paths.user_pages, ignore_errors=True)
         self.context.paths.generate_path(self.context.paths.user_pages)
+
+    # Creating and deleting pages
+    def create_folder_page(self, key: str, config: dict):
+        '''
+        Writes a new folder page - assets/pages/<key>/config.json - and
+        rediscovers pages so it can be navigated to. The Router still has
+        to register it (see Router.register_discovered_pages).
+        '''
+        folder = self.context.paths.pages / key
+        folder.mkdir(parents=True)
+        (folder / self.FOLDER_CONFIG).write_text(self.context.json.format_config(config), encoding="utf-8")
+        self.discover()
+
+    def delete_folder_page(self, key: str):
+        '''
+        Permanently deletes a folder page: its whole folder under
+        assets/pages, every student's autosaved data for it, and any other
+        page's "prerequisites" entry naming it. Rediscovers pages afterward;
+        the Router still has to drop it (see Router.register_discovered_pages).
+        '''
+        path = self.config_paths.get(key)
+        if path is None or path.name != self.FOLDER_CONFIG:
+            raise ValueError(f"{key!r} isn't a folder page")
+        shutil.rmtree(path.parent)
+        shutil.rmtree(self.context.paths.user_pages / key, ignore_errors=True)
+        for other_path in self.config_paths.values():
+            if not other_path.is_file():
+                continue
+            other = json.loads(other_path.read_text(encoding="utf-8"))
+            if key in other.get("prerequisites", []):
+                other["prerequisites"] = [item for item in other["prerequisites"] if item != key]
+                other_path.write_text(self.context.json.format_config(other), encoding="utf-8")
+        self.discover()

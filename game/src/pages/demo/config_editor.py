@@ -1,10 +1,11 @@
 import copy
 import inspect
 import json
+import re
 from typing import Any, Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QLabel, QLineEdit,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
                                QPlainTextEdit, QScrollArea, QVBoxLayout, QWidget)
 
 from ...app_core import Context
@@ -91,6 +92,9 @@ class ConfigEditor(Page):
         if keys:
             self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
                                                   default=self.workspace_name(ConfigEditor.selected_key))
+        menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
+        if keys:
+            menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
         menu_bar.add_button("save_config", self.save)
         menu_bar.toggle_button()
         menu_bar.theme_button()
@@ -112,6 +116,74 @@ class ConfigEditor(Page):
 
     def workspace_name(self, key: str) -> str:
         return self.labels.get(self.pages.link_label(key))
+
+    # Creating and deleting workspaces
+    def workspace_folder(self) -> str:
+        '''The folder workspaces live in, as listed by the workspace select page.'''
+        return self.pages.load_page_config("title/select_workspace").get("link_folder", "workspaces")
+
+    def unless_unsaved(self, action: Callable[[], None]):
+        '''Runs action, first asking to discard any unsaved changes.'''
+        if not self.dirty:
+            action()
+            return
+        popup.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
+                             "Yes, discard", "No, keep editing", action)
+
+    def new_workspace(self):
+        NewWorkspaceDialog(self).show()
+
+    def create_workspace(self, name: str, folder: str, template_key: str):
+        '''
+        Makes a new workspace by copying template_key's config - its layout,
+        menu bar and settings - with a fresh name, description and place at
+        the end of its section, plus the two labels it needs, then opens it.
+        '''
+        key = f"{self.workspace_folder()}/{folder}"
+        config = json.loads(self.pages.config_paths[template_key].read_text(encoding="utf-8"))
+        config.pop("_dev_note", None)
+        category = config.get("category")
+        orders = [other.get("order", 0) for other in self.pages.pages_in(self.workspace_folder()).values()
+                  if other.get("category") == category]
+        config.update({
+            "_note": [f"# {name}", "Describe this workspace here: its summary, objectives, reading, and videos."],
+            "link_label": f"title_buttons_workspace_{folder}",
+            "include": 1,
+            "order": max(orders, default=0) + 1,
+            "prerequisites": [],
+            "title": f"{folder}_workspace",
+        })
+        # _note first, the way every workspace config starts
+        config = {"_note": config.pop("_note"), **config}
+        self.labels.add_default_label(config["link_label"], name, after_prefix="title_buttons_workspace_")
+        self.labels.add_default_label(f"menu_bar_titles_{config['title']}", name, after_prefix="menu_bar_titles_")
+        self.pages.create_folder_page(key, config)
+        self.router.register_discovered_pages()
+        ConfigEditor.selected_key = key
+        self.router.refresh(save=False)
+
+    def delete_workspace(self):
+        key = ConfigEditor.selected_key
+        if key is not None:
+            DeleteWorkspaceDialog(self, key).show()
+
+    def remove_workspace(self, key: str):
+        '''
+        Permanently deletes a workspace: its folder, every student's saved
+        data for it, other workspaces' prerequisites naming it, and its two
+        labels (unless another page still uses them).
+        '''
+        config = self.pages.load_page_config(key)
+        label_keys = [config.get("link_label"), f"menu_bar_titles_{config.get('title')}"]
+        self.pages.delete_folder_page(key)
+        still_used = set()
+        for other_key in self.pages.config_paths:
+            other = self.pages.load_page_config(other_key)
+            still_used |= {other.get("link_label"), f"menu_bar_titles_{other.get('title')}"}
+        self.labels.remove_default_labels([label for label in label_keys if label not in still_used])
+        self.router.register_discovered_pages()
+        ConfigEditor.selected_key = None
+        self.router.refresh(save=False)
 
     # Loading
     def pick(self, name: str):
@@ -431,3 +503,144 @@ class Rows:
         fills = not isinstance(widget, QCheckBox) and widget.maximumWidth() >= QWIDGETSIZE_MAX
         self.grid.addWidget(widget, self.row, 1, Qt.AlignmentFlag(0) if fills else Qt.AlignmentFlag.AlignLeft)
         self.row += 1
+
+
+class NewWorkspaceDialog(QDialog):
+    '''
+    Asks for a new workspace's name, its folder name (filled in from the name
+    until edited by hand), and which existing workspace to copy its layout,
+    menu bar and settings from - the form can't add or remove panels itself.
+    '''
+
+    FOLDER_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
+
+    def __init__(self, editor: ConfigEditor):
+        super().__init__(editor)
+        self.editor = editor
+        style = editor.style
+        self.setWindowTitle("New Workspace")
+        self.setModal(True)
+        self.resize(600, 300)
+        layout = QVBoxLayout(self)
+        grid = QGridLayout()
+        layout.addLayout(grid)
+
+        def add(row: int, text: str, widget: QWidget):
+            label = QLabel(text)
+            label.setFont(style.get_font())
+            widget.setFont(style.get_font())
+            grid.addWidget(label, row, 0)
+            grid.addWidget(widget, row, 1)
+
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("e.g. Wireless Sniffing")
+        add(0, "Name", self.name)
+        self.folder = QLineEdit()
+        self.folder.setPlaceholderText("e.g. wireless_sniffing")
+        add(1, "Folder", self.folder)
+        self.template = QComboBox()
+        self.template.addItems(list(editor.keys_by_name))
+        if ConfigEditor.selected_key is not None:
+            self.template.setCurrentText(editor.workspace_name(ConfigEditor.selected_key))
+        add(2, "Copy layout from", self.template)
+
+        self.error = QLabel()
+        self.error.setFont(style.get_font("small"))
+        self.error.setWordWrap(True)
+        self.error.setStyleSheet(f"color: {style.color('red')};")
+        layout.addWidget(self.error)
+        layout.addStretch(1)
+
+        buttons = QHBoxLayout()
+        layout.addLayout(buttons)
+        create = QPushButton("Create")
+        create.setFont(style.get_font())
+        create.clicked.connect(self.create)
+        buttons.addWidget(create)
+        cancel = QPushButton("Cancel")
+        cancel.setFont(style.get_font())
+        cancel.clicked.connect(self.reject)
+        buttons.addWidget(cancel)
+
+        self.folder_edited = False
+        self.name.textEdited.connect(self.suggest_folder)
+        self.folder.textEdited.connect(lambda _: setattr(self, "folder_edited", True))
+
+    def suggest_folder(self, name: str):
+        if not self.folder_edited:
+            self.folder.setText(re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_"))
+
+    def problems(self, name: str, folder: str) -> list[str]:
+        editor = self.editor
+        if not name:
+            return ["Give the workspace a name."]
+        if not self.FOLDER_PATTERN.fullmatch(folder):
+            return ["The folder name must start with a lowercase letter and use only lowercase letters, numbers, and underscores."]
+        key = f"{editor.workspace_folder()}/{folder}"
+        if (editor.context.paths.pages / key).exists():
+            return [f"There's already a folder named \"{folder}\"."]
+        taken = [label for label in (f"title_buttons_workspace_{folder}", f"menu_bar_titles_{folder}_workspace")
+                 if label in editor.labels.data]
+        if taken:
+            return [f"The label \"{taken[0]}\" already exists - pick a different folder name."]
+        return []
+
+    def create(self):
+        name, folder = self.name.text().strip(), self.folder.text().strip()
+        problems = self.problems(name, folder)
+        if problems:
+            self.error.setText(problems[0])
+            return
+        template = self.editor.keys_by_name[self.template.currentText()]
+        self.accept()
+        self.editor.create_workspace(name, folder, template)
+
+
+class DeleteWorkspaceDialog(QDialog):
+    '''
+    Deleting a workspace can't be undone, so it has to be confirmed by
+    typing the workspace's folder name exactly.
+    '''
+
+    def __init__(self, editor: ConfigEditor, key: str):
+        super().__init__(editor)
+        self.editor = editor
+        self.key = key
+        style = editor.style
+        folder = key.rsplit("/", 1)[-1]
+        self.setWindowTitle("Delete Workspace")
+        self.setModal(True)
+        self.resize(600, 300)
+        layout = QVBoxLayout(self)
+
+        message = QLabel(
+            f"Permanently delete \"{editor.workspace_name(key)}\"?\n\n"
+            f"This deletes its folder ({key}) and everything in it, its labels, and every student's saved "
+            "data for it. It can't be undone.\n\n"
+            f"Type {folder} below to confirm."
+        )
+        message.setFont(style.get_font())
+        message.setWordWrap(True)
+        layout.addWidget(message)
+        confirm = QLineEdit()
+        confirm.setFont(style.get_font())
+        confirm.setPlaceholderText(folder)
+        layout.addWidget(confirm)
+        layout.addStretch(1)
+
+        buttons = QHBoxLayout()
+        layout.addLayout(buttons)
+        self.delete_button = QPushButton("Delete forever")
+        self.delete_button.setFont(style.get_font())
+        self.delete_button.setEnabled(False)
+        self.delete_button.clicked.connect(self.delete)
+        buttons.addWidget(self.delete_button)
+        cancel = QPushButton("Cancel")
+        cancel.setFont(style.get_font())
+        cancel.clicked.connect(self.reject)
+        buttons.addWidget(cancel)
+        confirm.textChanged.connect(lambda text: self.delete_button.setEnabled(text == folder))
+
+    def delete(self):
+        self.accept()
+        self.editor.remove_workspace(self.key)
