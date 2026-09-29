@@ -36,7 +36,7 @@ class WorkspacePage(Page):
     def build_panes(self, node: dict, master):
         '''
         Recursively builds a widgets.Panes tree from a pane-tree node:
-        {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": {...}}]}
+        {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": "<panel type>"}]}
         Each child's "weight" is its proportional share of its parent -
         bigger weight, bigger pane - converted here into the divisors
         widgets.Panes actually expects (pane size = total size / divisor).
@@ -60,8 +60,8 @@ class WorkspacePage(Page):
             if "panes" in child:
                 self.build_panes(child["panes"], pane)
             elif "widget" in child:
-                widget = child["widget"]
-                widgets.panel(widget.get("type"), pane, self.context)
+                # A panel's type is its class's KEY (see widgets.PANELS)
+                widgets.panel(child["widget"], pane, self.context)
             else:
                 print(f"Pane-tree child {child!r} has neither 'panes' nor 'widget', skipping")
 

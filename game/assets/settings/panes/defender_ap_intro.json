@@ -5,11 +5,11 @@
     "children": [
         {
             "weight": 2,
-            "widget": {"_ref": "panels/_network_action.json"}
+            "widget": "network_action_panel"
         },
         {
             "weight": 3,
-            "widget": {"_ref": "panels/_defender_console.json"}
+            "widget": "defender_console_panel"
         },
         {
             "weight": 3,
@@ -18,11 +18,11 @@
                 "children": [
                     {
                         "weight": 1,
-                        "widget": {"_ref": "panels/_defender_flag.json"}
+                        "widget": "defender_flag_panel"
                     },
                     {
                         "weight": 1,
-                        "widget": {"_ref": "panels/_status_console.json"}
+                        "widget": "status_panel"
                     }
                 ]
             }
