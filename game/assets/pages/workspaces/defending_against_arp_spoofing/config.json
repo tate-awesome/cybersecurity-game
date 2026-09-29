@@ -9,7 +9,7 @@
 
     "schema_version": 1,
     "link_label": "title_buttons_workspace_defending_against_arp_spoofing",
-    "include": 0,
+    "include": 1,
     "category": "defender",
     "order": 4,
     "prerequisites": ["workspaces/defender_ap_intro"],
