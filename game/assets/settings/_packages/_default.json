@@ -141,7 +141,7 @@
     "modbus_variables": {
         "hreg_1": {
             "label": "hreg_1",
-            "show": 0.0,
+            "show": 0,
             "nickname": "",
             "factor": 1.0,
             "units": "",

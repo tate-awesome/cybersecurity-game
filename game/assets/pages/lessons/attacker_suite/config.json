@@ -35,6 +35,22 @@
             "arp": ["192.168.4.2", "192.168.4.10"],
             "dos": ["192.168.4.2", "192.168.4.10"]
         },
+        "hacking_forms": {
+            "wifi": 1,
+            "nmap": 1,
+            "arp": 1,
+            "dos": 0,
+            "sniff": 1,
+            "nfq": 1,
+            "ap_connect": 0,
+            "encryption": 0,
+            "ap_tunnel": 0,
+            "kalman": 0
+        },
+         "modbus_forms": {
+            "table": 1,
+            "modify": 1
+        },
         "modbus_table_visibility": {"table": 1, "modify": 1},
         "modbus_model_visibility": {"hvac": 1, "submarine": 1},
         "network_action_visibility": {
@@ -47,8 +63,7 @@
             "ap_connect": 1,
             "encryption": 1,
             "ap_tunnel": 1
-        },
-        "defender_modbus_visibility": {"mode": 1, "sliders": 1}
+        }
     },
 
     "menu_bar": {

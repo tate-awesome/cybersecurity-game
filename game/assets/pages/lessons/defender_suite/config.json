@@ -37,12 +37,11 @@
         },
         "hacking_forms": {
             "wifi": 1,
-            "nmap": 1,
+            "nmap": 0,
             "sniff": 1,
             "ap_connect": 1,
             "encryption": 1,
-            "ap_tunnel": 1,
-            "kalman": 1
+            "ap_tunnel": 1
         },
         "modbus_table_visibility": {"table": 1, "modify": 1},
         "modbus_model_visibility": {"auto_switch": 1, "defender_hvac": 1, "defender_submarine": 1},
