@@ -225,6 +225,7 @@ class LayoutEditor:
 
     def fill_weight_rows(self):
         body = QWidget()
+        self.editor.paint_root(body)
         grid = QGridLayout(body)
         grid.setColumnStretch(1, 1)
         grid.setAlignment(Qt.AlignmentFlag.AlignTop)

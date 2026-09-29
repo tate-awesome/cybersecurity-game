@@ -367,6 +367,17 @@ class Style:
             QPushButton:hover {{ background-color: {accent_hover}; }}
             QPushButton:pressed {{ background-color: {accent_pressed}; }}
             QPushButton:disabled {{ background-color: {c["widget"]}; color: {c["border"]}; }}
+            QTabWidget::pane {{ border: 1px solid {c["border"]}; border-radius: 4px; }}
+            QTabBar::tab {{
+                background-color: {c["widget"]};
+                color: {c["text"]};
+                padding: 6px 12px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-right: 2px;
+            }}
+            QTabBar::tab:selected {{ background-color: {c["accent"]}; color: {c["accent_text"]}; }}
+            QTabBar::tab:hover:!selected {{ background-color: {c["panel"]}; }}
             QLineEdit, QComboBox, QPlainTextEdit, QTextEdit {{
                 background-color: {c["field"]};
                 color: {c["field_text"]};

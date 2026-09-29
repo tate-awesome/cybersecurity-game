@@ -30,6 +30,7 @@
         "theme_button",
         "labels_button",
         "page_button",
+        "workspace_editor_button",
         "delete_all_workspace_data_button",
         "back_button",
         "quit_button"
