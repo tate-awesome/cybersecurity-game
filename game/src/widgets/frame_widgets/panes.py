@@ -24,7 +24,7 @@ class _PaneContainer(QWidget):
 
 class Panes(QSplitter):
 
-    def __init__(self, master: QWidget, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] = [4, 3, 2], pad_around = True):
+    def __init__(self, master: QWidget, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] = [4, 3, 2], pad_around = True, transparent = False):
         '''
         Args:
             child_sizes: pane size is (approximately) proportional to 1/child_size[i],
@@ -32,6 +32,9 @@ class Panes(QSplitter):
             means the first pane starts smallest and the last starts biggest. Purely a
             starting point: the user can drag any sash afterwards (see get_weights, which
             is how a dragged layout gets remembered across sessions).
+            transparent: leave the gaps between panes (sash handles and the pane
+            containers under each panel) unpainted instead of root-colored, so a
+            page background shows through them - see WorkspacePage.
         '''
         if not direction in ["horizontal", "vertical"] or child_count < 2:
             raise ValueError(
@@ -57,7 +60,7 @@ class Panes(QSplitter):
         master.layout().setContentsMargins(margin, margin, margin, margin)
 
         self.setHandleWidth(style.igap)
-        color = style.color("root")
+        color = "transparent" if transparent else style.color("root")
         self.setStyleSheet(style.themed(f"QSplitter::handle {{ background-color: {color}; }} QSplitter > QWidget {{ background-color: {color}; }}"))
 
         min_size = style.PANE_MIN_WIDTH if direction == "horizontal" else style.PANE_MIN_HEIGHT

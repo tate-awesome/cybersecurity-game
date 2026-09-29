@@ -25,6 +25,17 @@ class VisualBackground(QWidget):
     blur softens the whole visual (see set_blur) - the intended look for
     a page background, where it should read as texture, not content.
 
+    animate=False shows a still frame and never ticks - for backgrounds
+    behind busy pages (workspaces), where the visual only shows through
+    thin gaps and every frame would otherwise force the panels above to
+    repaint too. paint_options are handed to the visual at paint time
+    (e.g. {"packets": False}) - per background, so one shared simulation
+    can look different on different pages.
+
+    Each finished frame is cached as an image, so extra paint events -
+    Qt repaints whatever sits behind a panel whenever that panel updates -
+    just copy pixels instead of redrawing the visual.
+
     Runs its own ~30 fps QTimer rather than registering with the shared
     AnimationManager, whose 100 ms tick is fine for data panels but visibly
     choppy for continuous motion. The timer pauses while hidden, so a
@@ -45,12 +56,17 @@ class VisualBackground(QWidget):
     # for the next page's background to pick up.
     SHARED: dict[str, dict] = {}
 
-    def __init__(self, master: QWidget, context: Context, visual_key: str | None = None, intensity: float = 1.0, in_layout: bool = True, blur: float = 0.0, shared: bool = False):
+    def __init__(self, master: QWidget, context: Context, visual_key: str | None = None, intensity: float = 1.0,
+                 in_layout: bool = True, blur: float = 0.0, shared: bool = False, animate: bool = True,
+                 paint_options: dict | None = None):
         super().__init__(master)
         self.context = context
         self.style = context.style
         self.intensity = intensity
         self.shared = shared
+        self.animate = animate
+        self.paint_options = paint_options or {}
+        self.frame: QImage | None = None
         self.set_blur(blur)
         self.state: dict = {"visual": None, "cycle_elapsed": 0.0}
         self.cycling = False
@@ -94,25 +110,30 @@ class VisualBackground(QWidget):
             if self.shared:
                 self.SHARED[key] = self.state
         self.sync_size()
-        self.update()
+        self.invalidate()
 
     def set_intensity(self, intensity: float):
         self.intensity = intensity
-        self.update()
+        self.invalidate()
 
     def set_blur(self, radius: float):
         '''
         Blurs the whole visual by roughly radius pixels (0 = sharp). No
-        visual needs to know it's being blurred - see paint_blurred.
+        visual needs to know it's being blurred - see render_blurred.
         '''
         self.blur_levels = 0 if radius <= 0 else max(1, round(math.log2(radius)) - 1)
-        self.update()
+        self.invalidate()
 
     def next_visual(self):
         keys = list(VISUALS)
         index = (keys.index(self.visual.KEY) + 1) % len(keys) if self.visual else 0
         self.visual = VISUALS[keys[index]]()
         self.sync_size()
+
+    def invalidate(self):
+        '''Drops the cached frame so the next paint renders a fresh one.'''
+        self.frame = None
+        self.update()
 
     # Loop
     def tick(self):
@@ -123,11 +144,10 @@ class VisualBackground(QWidget):
         if self.visual is None or self.width() <= 0 or self.height() <= 0:
             return
         # Background mode ignores mouse events (so clicks reach the page's
-        # own widgets), so read the global cursor instead of tracking moves -
-        # that also keeps working while the cursor is over a button or panel
+        # own widgets), so read the global cursor and buttons instead of
+        # waiting for events - that also keeps working over a button or panel
         local = self.mapFromGlobal(QCursor.pos())
         self.visual.pointer = (float(local.x()), float(local.y())) if self.rect().contains(local) else None
-        # Likewise the button: ask the app rather than waiting for press events
         buttons = QApplication.mouseButtons()
         self.visual.pressed = bool(buttons & Qt.MouseButton.LeftButton)
         self.visual.pulling = bool(buttons & Qt.MouseButton.RightButton)
@@ -137,7 +157,7 @@ class VisualBackground(QWidget):
                 self.state["cycle_elapsed"] = 0.0
                 self.next_visual()
         self.visual.step(dt)
-        self.update()
+        self.invalidate()
 
     def palette_for_theme(self) -> VisualPalette:
         return VisualPalette(
@@ -147,25 +167,26 @@ class VisualBackground(QWidget):
             self.intensity,
         )
 
-    # Qt events
-    def paintEvent(self, event):
-        palette = self.palette_for_theme()
-        painter = QPainter(self)
+    # Rendering
+    def render_frame(self, palette: VisualPalette) -> QImage:
+        '''
+        One finished frame: full size when sharp, half size when blurred
+        (paintEvent stretches it back up). paint_options are handed to the
+        visual for just this render, since a shared visual may be on screen
+        with different options elsewhere.
+        '''
+        self.visual.paint_options = self.paint_options
+        if self.blur_levels > 0:
+            return self.render_blurred(palette)
+        image = QImage(self.width(), self.height(), QImage.Format.Format_RGB32)
+        image.fill(palette.background)
+        painter = QPainter(image)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        try:
-            painter.fillRect(self.rect(), palette.background)
-            if self.visual is None or self.visual.width <= 0:
-                return
-            if self.blur_levels > 0:
-                # paint_blurred returns half size - the final doubling is here
-                painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-                painter.drawImage(self.rect(), self.paint_blurred(palette))
-            else:
-                self.visual.paint(painter, palette)
-        finally:
-            painter.end()
+        self.visual.paint(painter, palette)
+        painter.end()
+        return image
 
-    def paint_blurred(self, palette: VisualPalette) -> QImage:
+    def render_blurred(self, palette: VisualPalette) -> QImage:
         '''
         An image-pyramid blur: render the visual at half size, halve it
         blur_levels more times, then scale back up one doubling at a time.
@@ -174,7 +195,8 @@ class VisualBackground(QWidget):
         half the work happens on tiny images, it's cheaper than drawing
         sharp at full size. Qt's own QGraphicsBlurEffect was tried first:
         about 3x slower here, and it leaves faint rectangles around each
-        drawn shape's bounding box.
+        drawn shape's bounding box. Returns half size - the final doubling
+        happens in paintEvent.
         '''
         width, height = max(1, self.width() // 2), max(1, self.height() // 2)
         image = QImage(width, height, QImage.Format.Format_RGB32)
@@ -194,6 +216,22 @@ class VisualBackground(QWidget):
             image = image.scaled(size, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
         return image
 
+    # Qt events
+    def paintEvent(self, event):
+        palette = self.palette_for_theme()
+        painter = QPainter(self)
+        try:
+            if self.visual is None or self.visual.width <= 0:
+                painter.fillRect(self.rect(), palette.background)
+                return
+            if self.frame is None:
+                self.frame = self.render_frame(palette)
+            # A half-size blurred frame gets stretched back up smoothly
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+            painter.drawImage(self.rect(), self.frame)
+        finally:
+            painter.end()
+
     def sync_size(self):
         '''
         Hands the visual this widget's size - but only while on screen. A
@@ -205,6 +243,7 @@ class VisualBackground(QWidget):
             return
         if (self.visual.width, self.visual.height) != (self.width(), self.height()):
             self.visual.resize(self.width(), self.height())
+        self.invalidate()
 
     def resizeEvent(self, event):
         self.sync_size()
@@ -218,7 +257,8 @@ class VisualBackground(QWidget):
 
     def showEvent(self, event):
         self.last_tick = time.perf_counter()
-        self.timer.start(self.FRAME_MS)
+        if self.animate:
+            self.timer.start(self.FRAME_MS)
         super().showEvent(event)
         self.sync_size()
 

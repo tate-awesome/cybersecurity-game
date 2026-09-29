@@ -12,11 +12,21 @@ class WorkspacePage(Page):
     sections, instead of hardcoding a specific page's layout.
     '''
 
+    # Used when a page's config has no "background" of its own (set
+    # "background": false to turn it off). Shares the title pages'
+    # network, frozen where it was when the page opened.
+    DEFAULT_BACKGROUND = {"visual": "network_mesh", "blur": 6, "animate": False, "packets": False}
+
     def __init__(self, context: Context):
         super().__init__(context)
 
         key = context.router.current_page
         config = context.pages.prepare_page_config(key)
+
+        # The network behind the gaps between panels - still and without
+        # packets, so it reads as texture and never makes the panels
+        # above it repaint. The panes turn transparent only if it's there.
+        self.transparent_panes = self.add_background(config, self.DEFAULT_BACKGROUND)
 
         self.build_menu_bar(config.get("menu_bar", {}))
 
@@ -42,7 +52,8 @@ class WorkspacePage(Page):
         total_weight = sum(weights)
         divisors = [total_weight / weight for weight in weights]
 
-        panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, False)
+        panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, False,
+                              transparent=self.transparent_panes)
 
         for i, child in enumerate(children):
             pane = panes.pane(i)

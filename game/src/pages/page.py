@@ -52,16 +52,23 @@ class Page(QWidget):
             method()
         return menu_bar
 
-    def add_background(self, config: dict):
+    def add_background(self, config: dict, default: dict | None = None) -> bool:
         '''
         Plays a procedural visual behind this page's content if its config
-        has a "background": {"visual": <VISUALS key or "cycle">,
-        "blur": <px, default 0>, "intensity": <0-1, default 1>}.
+        has a "background": {
+            "visual": <VISUALS key or "cycle">,
+            "blur": <px, default 0>,
+            "intensity": <0-1, default 1>,
+            "animate": <default true - false shows a still frame>,
+            "packets": <default true - false draws a network mesh without traffic>
+        }. With no "background" key, `default` is used instead (if given);
+        "background": false turns it off even when there's a default.
         Call it before adding content that should be drawn on top.
+        Returns whether a background was added.
         '''
-        background = config.get("background")
+        background = config.get("background", default)
         if not isinstance(background, dict):
-            return
+            return False
         from ..widgets import VisualBackground
         VisualBackground(
             self, self.context,
@@ -71,4 +78,7 @@ class Page(QWidget):
             blur=background.get("blur", 0.0),
             # Same running network from page to page, not a fresh one each time
             shared=True,
+            animate=background.get("animate", True),
+            paint_options={"packets": background.get("packets", True)},
         )
+        return True

@@ -454,6 +454,9 @@ class NetworkMesh(Visual):
 
     # Drawing
     def paint(self, painter: QPainter, palette: VisualPalette):
+        # {"packets": False} draws just the mesh - no pings or packets
+        show_packets = self.paint_options.get("packets", True)
+
         # Backbone links
         pen = QPen(palette.color("foreground", 0.28), 2.2)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
@@ -468,7 +471,7 @@ class NetworkMesh(Visual):
 
         # Arrival pings
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        for ping in self.pings:
+        for ping in self.pings if show_packets else ():
             progress = ping["age"] / self.PING_SECONDS
             radius = 4 + progress * (26 if ping["node"][0] == "router" else 16)
             painter.setPen(QPen(palette.color("accent", 0.5 * (1.0 - progress)), 1.5))
@@ -488,6 +491,8 @@ class NetworkMesh(Visual):
             painter.drawEllipse(QPointF(*self.position(("host", index))), 2.6, 2.6)
 
         # Packets
+        if not show_packets:
+            return
         for packet in self.packets:
             ax, ay = self.position(packet["path"][packet["hop"]])
             bx, by = self.position(packet["path"][packet["hop"] + 1])

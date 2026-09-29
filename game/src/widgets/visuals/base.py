@@ -91,6 +91,9 @@ class Visual:
         self.pointer: tuple[float, float] | None = None
         self.pressed = False
         self.pulling = False
+        # Per-render drawing options from whichever VisualBackground is
+        # painting this visual right now (e.g. {"packets": False})
+        self.paint_options: dict = {}
 
     def resize(self, width: int, height: int):
         first = self.width == 0 or self.height == 0
