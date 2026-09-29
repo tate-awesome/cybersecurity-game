@@ -28,3 +28,47 @@ class Page(QWidget):
         # fused bar instead of two distinct regions (global page toolbar vs.
         # the panel grid below it).
         self.layout().setSpacing(self.style.igap)
+
+    def build_menu_bar(self, menu_bar_config: dict):
+        '''
+        Builds the page's MenuBar and calls one MenuBar method per
+        {"builtin": "<method_name>"} entry in menu_bar_config["buttons"]
+        (already expanded from any {"_ref": ...} splices by Json).
+        Returns the MenuBar.
+        '''
+        from ..widgets import MenuBar
+        title = menu_bar_config.get("title", "_default")
+        menu_bar = MenuBar(self, self.context, title)
+
+        for button in menu_bar_config.get("buttons", []):
+            name = button.get("builtin")
+            if name is None:
+                print(f"Menu bar button config {button!r} has no 'builtin' key, skipping")
+                continue
+            method = getattr(menu_bar, name, None)
+            if not callable(method):
+                print(f"MenuBar has no builtin button named {name!r}, skipping")
+                continue
+            method()
+        return menu_bar
+
+    def add_background(self, config: dict):
+        '''
+        Plays a procedural visual behind this page's content if its config
+        has a "background": {"visual": <VISUALS key or "cycle">,
+        "blur": <px, default 0>, "intensity": <0-1, default 1>}.
+        Call it before adding content that should be drawn on top.
+        '''
+        background = config.get("background")
+        if not isinstance(background, dict):
+            return
+        from ..widgets import VisualBackground
+        VisualBackground(
+            self, self.context,
+            background.get("visual"),
+            intensity=background.get("intensity", 1.0),
+            in_layout=False,
+            blur=background.get("blur", 0.0),
+            # Same running network from page to page, not a fresh one each time
+            shared=True,
+        )

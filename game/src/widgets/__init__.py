@@ -25,6 +25,7 @@ from .panels.defender_console._builder import Builder as DefenderConsole
 from .panels.defender_flag_panel._builder import Builder as DefenderFlagPanel
 
 from .canvases.test_triangle import TriangleCanvas
+from .visuals import VISUALS, VisualBackground
 
 PANELS = {
     HackingPanel.KEY: HackingPanel,

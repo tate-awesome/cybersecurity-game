@@ -151,6 +151,15 @@
         "stream_button": "Continuously streams captured packets to a JSON Lines file as they arrive."
     },
 
+    "visual_names": {
+        "_default": "Visual",
+        "network_mesh": "Network Mesh",
+        "telemetry": "Telemetry Traces",
+        "kernel": "Kernel Packet Flow",
+        "kalman": "Kalman Tracks",
+        "cycle": "Cycle All"
+    },
+
     "title_text": {
         "_default": "Title Text",
         "main_title": "The Game",
@@ -177,6 +186,7 @@
         "boat_motion": "Boat Motion Demo",
         "sprites": "Sprites Demo",
         "triangle": "Triangle Demo",
+        "visuals": "Procedural Visuals",
         "proof": "Proof of Concept",
 
         "generic_page": "Generic Builder",
@@ -210,6 +220,8 @@
         "boat_motion_demo": "Boat Motion Demo",
         "triangle_demo": "Triangle Demo",
         "sprites_demo": "Sprites Demo",
+        "visuals_demo": "Procedural Visuals",
+        "select_lesson": "Select Lesson",
 
         "arp_ip_lesson": "ARP & IP Basics",
         "network_recon_lesson": "Network Recon Exercise",
@@ -242,6 +254,7 @@
     
     "menu_bar_buttons": {
         "_default": "Button",
+        "background_preview": "Background Preview",
         "labels_button": "Load Labels",
         "preset_button": "Load Presets",
         "pcap_button": "Load PCAP",

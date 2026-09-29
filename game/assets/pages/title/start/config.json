@@ -1,6 +1,7 @@
 {
     "build_type": "title",
     "title": "main_title",
+    "background": { "visual": "network_mesh", "blur": 6 },
 
     "buttons": [
         { "label": "resume", "action": "resume" },

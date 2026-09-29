@@ -204,6 +204,7 @@ class Style:
         "accent": button/highlight color
         "field": text field background
         "field_text": text field text color
+        "text": general text color
         "scrollbar": scrollbar handle color
         "scrollbar_hover": scrollbar handle hover color
         '''
@@ -214,6 +215,7 @@ class Style:
             "accent": self._theme_colors["accent"],
             "field": self._theme_colors["field"],
             "field_text": self._theme_colors["field_text"],
+            "text": self._theme_colors["text"],
             "scrollbar": self._theme_colors["scrollbar"],
             "scrollbar_hover": self._theme_colors["scrollbar_hover"],
         }

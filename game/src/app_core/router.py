@@ -7,6 +7,7 @@ from . import Context
 from ..pages.demo.sprites import Sprites
 from ..pages.demo.boat_motion import BoatMotion
 from ..pages.demo.triangle import Triangle
+from ..pages.demo.visuals import Visuals
 
 # /attacker
 from ..pages.attacker.attacker import AttackerV0
@@ -27,6 +28,7 @@ PAGES: dict[str, type] = {
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,
+        "demo/visuals": Visuals,
 }
 
 # Page builder classes for data-driven pages, keyed by the "build_type" a

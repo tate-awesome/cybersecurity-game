@@ -23,26 +23,6 @@ class WorkspacePage(Page):
         panes_config = config.get("panes")
         self.panes_root = self.build_panes(panes_config, self) if panes_config else None
 
-    def build_menu_bar(self, menu_bar_config: dict):
-        '''
-        Builds the page's MenuBar and calls one MenuBar method per
-        {"builtin": "<method_name>"} entry in menu_bar_config["buttons"]
-        (already expanded from any {"_ref": ...} splices by Json).
-        '''
-        title = menu_bar_config.get("title", "_default")
-        menu_bar = widgets.MenuBar(self, self.context, title)
-
-        for button in menu_bar_config.get("buttons", []):
-            name = button.get("builtin")
-            if name is None:
-                print(f"Menu bar button config {button!r} has no 'builtin' key, skipping")
-                continue
-            method = getattr(menu_bar, name, None)
-            if not callable(method):
-                print(f"MenuBar has no builtin button named {name!r}, skipping")
-                continue
-            method()
-
     def build_panes(self, node: dict, master):
         '''
         Recursively builds a widgets.Panes tree from a pane-tree node:

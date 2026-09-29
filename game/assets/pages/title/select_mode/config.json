@@ -1,6 +1,7 @@
 {
     "build_type": "title",
     "title": "select_mode",
+    "background": { "visual": "network_mesh", "blur": 6 },
 
     "buttons": [
         { "_from_manifest": "old_game_modes" },

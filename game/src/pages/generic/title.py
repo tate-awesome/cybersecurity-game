@@ -12,6 +12,9 @@ class TitlePage(Page):
     per entry of that manifest table (see expand_from_manifest) instead of
     being a button itself, so link-heavy pages (mode/lesson select) don't
     have to hand-list every link the manifest already knows about.
+
+    An optional config["background"] plays a procedural visual behind the
+    menu - see Page.add_background.
     '''
 
     ACTIONS = ("navigate", "back", "quit", "open_ap_config", "resume", "delete_user_data")
@@ -21,6 +24,8 @@ class TitlePage(Page):
 
         key = context.router.current_page
         config = context.pages.load_page_config(key)
+
+        self.add_background(config)
 
         panel = TitleMenu(self, context, config.get("title", "_default"))
         self.build_buttons(config.get("buttons", []), panel)

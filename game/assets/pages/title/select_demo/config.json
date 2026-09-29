@@ -1,11 +1,13 @@
 {
     "build_type": "title",
     "title": "select_demo",
+    "background": { "visual": "network_mesh", "blur": 6 },
 
     "buttons": [
         { "label": "boat_motion", "action": "navigate", "target": "demo/boat_motion" },
         { "label": "sprites", "action": "navigate", "target": "demo/sprites" },
         { "label": "triangle", "action": "navigate", "target": "demo/triangle" },
+        { "label": "visuals", "action": "navigate", "target": "demo/visuals" },
         { "label": "back", "action": "back" },
         { "label": "quit", "action": "quit" }
     ]
