@@ -35,6 +35,17 @@ FORM_CLASSES = {
 
 class Builder(Panel):
     KEY = "network_action_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    # Its NFQ form runs the packet interceptor, which rewrites registers - hence modbus_registers and modbus_packet_modify_enabled
+    SETTINGS = (
+        "network_action_forms_available",
+        "network_action_forms_shown",
+        "network_action_form_inputs",
+        "game_progress",
+        "modbus_registers",
+        "modbus_packet_modify_enabled",
+    )
     def __init__(self, master: QWidget, context: Context, available_forms: list[str] | None = None):
 
         super().__init__(master, context, self.KEY)

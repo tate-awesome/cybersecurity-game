@@ -157,6 +157,7 @@ class LayoutEditor:
             self.selected = select
         self.editor.mark_dirty()
         self.refresh()
+        self.editor.refresh_usage()
 
     def add(self, new: dict):
         # Inside a selected group, or right after a selected panel

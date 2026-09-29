@@ -15,6 +15,14 @@ FORM_CLASSES = {
 
 class Builder(Panel):
     KEY = "modbus_table_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "modbus_table_forms_available",
+        "modbus_table_forms_shown",
+        "modbus_registers",
+        "modbus_packet_modify_enabled",
+    )
 
     def __init__(self, master: QWidget, context: Context):
 

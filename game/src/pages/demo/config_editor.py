@@ -13,6 +13,7 @@ from ...app_core import Context
 from ...pages.page import Page
 from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
+from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
@@ -130,6 +131,8 @@ class ConfigEditor(Page):
         self.tabs.setFont(self.style.get_font("default"))
         self.tabs.currentChanged.connect(self.remember_tab)
         self.layout().addWidget(self.tabs, 1)
+        self.find_bar = FindBar(self, context, self.tabs)
+        self.layout().addWidget(self.find_bar)
         self.status = QLabel()
         self.status.setFont(self.style.get_font("default"))
         self.status.setWordWrap(True)
@@ -257,6 +260,8 @@ class ConfigEditor(Page):
         # Each reads its widget back as a config value, raising ValueError with a message if it can't
         self.field_readers: dict[str, Callable[[], Any]] = {}
         self.setting_cells: list["SettingCell"] = []
+        self.usage_labels: dict[str, QLabel] = {}
+        self.setting_frames: dict[str, QFrame] = {}
         self.button_boxes: dict[str, QCheckBox] = {}
         self.prerequisite_boxes: dict[str, QCheckBox] = {}
         self.field_widgets: dict[str, QWidget] = {}
@@ -291,10 +296,12 @@ class ConfigEditor(Page):
         self.tabs.addTab(self.layout_editor.shape_tab, "Layout Shape")
         self.tabs.addTab(self.layout_editor.weights_tab, "Layout Weights")
         self.form = self.new_tab("Settings")
+        self.settings_form = self.form
         raw = self.config.get("settings", {})
         self.raw_settings = raw if isinstance(raw, dict) else {}
         for name, default in self.default_settings.items():
             self.build_setting_section(name, default)
+        self.refresh_usage()
         self.tabs.setCurrentIndex(min(ConfigEditor.selected_tab, self.tabs.count() - 1))
         self.set_status(f"Editing {self.pages.config_paths[key]}", "field_text")
 
@@ -380,7 +387,7 @@ class ConfigEditor(Page):
         refresh_preview()
 
     # Form building - one value per row: its name on the left, its input on the right
-    def section(self, title: str, explanation: str | None) -> "Rows":
+    def section(self, title: str, explanation: str | None, note: QLabel | None = None) -> "Rows":
         frame = QFrame()
         frame.setStyleSheet(self.style.themed(
             f"QFrame {{ background-color: {self.style.color('panel')}; border-radius: {self.style.PANEL_RADIUS}px; }}", frame))
@@ -394,6 +401,8 @@ class ConfigEditor(Page):
             text.setFont(self.style.get_font("small"))
             text.setWordWrap(True)
             layout.addWidget(text)
+        if note is not None:
+            layout.addWidget(note)
         grid = QGridLayout()
         grid.setHorizontalSpacing(self.style.igap * 2)
         grid.setColumnStretch(1, 1)
@@ -452,7 +461,11 @@ class ConfigEditor(Page):
 
     def build_setting_section(self, name: str, default):
         explanation = self.notes.get("settings_fields", {}).get(name, "No explanation yet - add one to _default_notes.json.")
-        rows = self.section(name, explanation)
+        usage = QLabel()
+        usage.setWordWrap(True)
+        self.usage_labels[name] = usage
+        rows = self.section(name, explanation, note=usage)
+        self.setting_frames[name] = rows.grid.parentWidget()
         rows.setting_header()
         if isinstance(default, dict):
             self.add_setting_rows(rows, (name,), default, depth=0)
@@ -466,6 +479,61 @@ class ConfigEditor(Page):
                 self.add_setting_rows(rows, path + (key,), item_default, depth + 1)
             else:
                 self.add_setting_row(rows, path + (key,), item_default, depth)
+
+    def layout_panels(self) -> list[str]:
+        '''The panel types in the layout being edited, in layout order, each once.'''
+        found = []
+        def walk(entry: dict):
+            if "widget" in entry:
+                if entry["widget"] not in found:
+                    found.append(entry["widget"])
+            else:
+                for child in entry["panes"]["children"]:
+                    walk(child)
+        walk(self.layout_editor.root)
+        return found
+
+    def refresh_usage(self):
+        '''
+        Notes under each settings group which panels in this layout use it
+        (each panel class lists its keys in SETTINGS). Called again whenever
+        the layout's shape changes.
+        '''
+        panels = self.layout_panels()
+        for name, label in getattr(self, "usage_labels", {}).items():
+            users = [panel for panel in panels if name in getattr(PANELS.get(panel), "SETTINGS", ())]
+            font = QFont(self.style.get_font("small"))   # a copy - get_font's font is shared
+            if users:
+                label.setText("Used by panels: " + ", ".join(users))
+                label.setStyleSheet("")
+            else:
+                label.setText("Not used by any panel in this layout")
+                font.setItalic(True)
+                text = QColor(self.style.color("text"))
+                label.setStyleSheet(f"color: rgba({text.red()}, {text.green()}, {text.blue()}, 150);")
+            label.setFont(font)
+        self.sort_settings(panels)
+
+    def sort_settings(self, panels: list[str]):
+        '''
+        Orders the Settings tab's groups by how many panels in this layout use
+        them, most first - then by how many panel types use them at all, then
+        in _default.json's order. Groups nothing in the layout uses end up last.
+        '''
+        frames = getattr(self, "setting_frames", {})
+        if not frames:
+            return
+        names = list(self.default_settings)
+        def in_layout(name):
+            return sum(1 for panel in panels if name in getattr(PANELS.get(panel), "SETTINGS", ()))
+        def overall(name):
+            return sum(1 for panel_class in PANELS.values() if name in getattr(panel_class, "SETTINGS", ()))
+        order = sorted(frames, key=lambda name: (-in_layout(name), -overall(name), names.index(name)))
+        layout = self.settings_form.layout
+        for position, name in enumerate(order):
+            if layout.indexOf(frames[name]) != position:
+                layout.removeWidget(frames[name])
+                layout.insertWidget(position, frames[name])
 
     def config_value(self, path: tuple):
         '''(True, value) if this workspace's own "settings" has path, else (False, None).'''

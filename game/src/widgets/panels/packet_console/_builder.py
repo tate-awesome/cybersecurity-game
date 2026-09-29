@@ -8,6 +8,16 @@ from ....network.buffer.meta_packet import MetaPacket
 
 class Builder(Panel):
     KEY = "packet_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "packet_columns",
+        "packet_console_state",
+        "packet_filter_categories",
+        "packet_filter_checkboxes",
+        "packet_filter_entries",
+        "packet_filter_function",
+    )
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, self.KEY)
 

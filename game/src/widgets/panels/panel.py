@@ -11,6 +11,9 @@ class Panel(QWidget):
     This structure parallelizes all the gui elements that fill a pane and have a menu bar.
     '''
     KEY = "base_panel"
+    # Settings keys (from _packages/_default.json) this panel reads or writes.
+    # The workspace editor uses them to show which panels in a layout use a setting.
+    SETTINGS: tuple[str, ...] = ()
     BORDER_WIDTH = 2
 
     def __init__(self, master: QWidget, context: Context, menu_bar_label: str | None = None):

@@ -35,6 +35,19 @@ class Builder(Panel):
 
     KEY = "modbus_model_panel"
 
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    # Its hvac/submarine models draw with the house and submarine map canvases
+    SETTINGS = (
+        "modbus_models_available",
+        "modbus_model_selected",
+        "modbus_model_auto_switch",
+        "submarine_map_sprites",
+        "submarine_map_colors",
+        "hvac_house_sprites",
+        "hvac_house_colors",
+    )
+
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 

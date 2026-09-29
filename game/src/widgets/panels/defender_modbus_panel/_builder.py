@@ -22,6 +22,13 @@ class Builder(Panel):
 
     KEY = "defender_modbus_panel"
 
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "defender_modbus_forms_available",
+        "defender_modbus_forms_shown",
+    )
+
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, self.KEY)
 

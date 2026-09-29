@@ -27,7 +27,7 @@
         "hvac_house_sprites": "Which parts of the HVAC house model are drawn (1 = drawn). Turn these on in any workspace that shows the HVAC model.",
         "strip_chart_sprites": "Not used by the game yet.",
         "strip_chart_colors": "Colors for the strip charts: background and grid, one color per plotted line in \"paths\", and the live-value markers in \"heads\".",
-        "strip_chart_auto_fit": "1 starts the ModBus Monitors charts in fit mode, zoomed to fit the recent data. Students can toggle it.",
+        "strip_chart_auto_fit": "1 starts every strip chart (ModBus Monitors, Defender Monitors, the network graph's rate chart) in fit mode, zoomed to fit the recent data. Students can toggle it.",
         "strip_chart_auto_fit_max_seconds": "How many seconds of history fit mode shows at most.",
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",

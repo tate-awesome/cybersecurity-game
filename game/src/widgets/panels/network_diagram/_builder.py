@@ -7,6 +7,15 @@ from ..panel import Panel
 
 class Builder(Panel):
     KEY = "network_graph_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    # packet_console_state pauses it along with the packet console; its rate chart is a strip chart
+    SETTINGS = (
+        "packet_console_state",
+        "strip_chart_colors",
+        "strip_chart_auto_fit",
+        "strip_chart_auto_fit_max_seconds",
+    )
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 
