@@ -1,5 +1,22 @@
 {
-    "_note": "Full instructor build of the panels-based defender rebuild - the data-driven lesson that replaced the old hardcoded DefenderVPanels test page. Both defender models are enabled and auto-switch with the AP's reported mode, and every defender form (ap_connect/encryption/ap_tunnel/kalman) is visible alongside the offensive forms, same as full_attacker_suite.",
+    "_note": [
+        "# Admin Suite: Full Defender Suite",
+        "## Summary",
+        "The Full Defender Suite is the instructor's view of the defender side of the lab. Every defender panel is unlocked at once - Defender Data, Defender Monitors, the Packet Log, Defender Flags, and every AP form (connection, encryption, tunnel, and Kalman filter) - and both the HVAC and submarine models are enabled, switching automatically to match whichever mode the AP reports.",
+        "Use this page to prepare demonstrations, check that the hardware is reporting correctly before class, or run an open-ended blue-team exercise once students have finished all three defender lessons. Because the offensive forms are visible here too, it's also a good place to stage a live attack-and-defend demo from one screen. It isn't a graded lesson, and it doesn't hold students' hands - nothing is hidden.",
+        "## Objectives",
+        "- Verify the AP, HVAC, and submarine hardware are all reporting before a class session.\n- Demonstrate every defender control from a single page.\n- Run free-form blue-team exercises after the defender lessons are complete.\n- Stage side-by-side attack and defense demonstrations.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapters 1-6 (all defender material)\n- Chapter 14: Red Team vs. Blue Team\n- Instructor's Companion, Part II: Running the Defender Labs",
+        "## Videos",
+        "- [Instructor Walkthrough: The Defender Suite (18 min)](https://example.com/cps-course/videos/admin-defender-suite)\n- [Pre-Class Hardware Checklist (6 min)](https://example.com/cps-course/videos/admin-hardware-checklist)",
+        "## Screenshot",
+        "![Full Defender Suite page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Defender Lesson 3, *Defending: Submarine System* - students should finish all three defender lessons before free-form work here.\n\n**Next:** The *Full Attacker Suite*, its offensive counterpart."
+    ],
+
+    "_dev_note": "Full instructor build of the panels-based defender rebuild - the data-driven lesson that replaced the old hardcoded DefenderVPanels test page. Both defender models are enabled and auto-switch with the AP's reported mode, and every defender form (ap_connect/encryption/ap_tunnel/kalman) is visible alongside the offensive forms, same as full_attacker_suite.",
 
     "build_type": "workspace",
 

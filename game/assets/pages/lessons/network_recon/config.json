@@ -1,5 +1,22 @@
 {
-    "_note": "First lesson on the network_recon layout - nmap/sniffing forms, network graph, packet console.",
+    "_note": [
+        "# Attacker Lesson 2: Network Recon",
+        "## Summary",
+        "Reconnaissance is the quiet first phase of nearly every real attack: before touching anything, an attacker figures out what's on the network, what each device is, and what services it exposes. In this lesson you'll use nmap scanning and passive packet sniffing to build a map of the lab network from scratch.",
+        "You'll start by scanning for live hosts and open ports, then compare what an active scan reveals with what you can learn just by listening. The Network Graph and Packet Console show the results side by side, and you'll learn to filter the flood of packets down to the conversations that matter - especially the ModBus traffic on port 502 that the next lessons target. Keep the defender's perspective in mind too: every scan you run leaves footprints someone could notice.",
+        "## Objectives",
+        "- Run an nmap host discovery scan and identify every device on the lab network.\n- Run a port scan and identify which device is serving ModBus (port 502).\n- Capture traffic passively and filter it down to a single conversation.\n- Compare active scanning with passive sniffing in terms of information gained and noise made.\n- Produce a simple network map naming each device and its role.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 8: Network Reconnaissance\n- Chapter 4, section 4.2: How ModBus Devices Advertise Themselves",
+        "## Videos",
+        "- [nmap Fundamentals (13 min)](https://example.com/cps-course/videos/a2-nmap-fundamentals)\n- [Passive Recon: Learning by Listening (9 min)](https://example.com/cps-course/videos/a2-passive-recon)\n- [Packet Filters That Actually Help (8 min)](https://example.com/cps-course/videos/a2-packet-filters)",
+        "## Screenshot",
+        "![Network Recon lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 1, *IP & ARP Basics*, which explained how devices find each other.\n\n**Next:** Attacker Lesson 3, *ModBus Intro*, where you start reading the industrial data you found here."
+    ],
+
+    "_dev_note": "First lesson on the network_recon layout - nmap/sniffing forms, network graph, packet console.",
 
     "build_type": "workspace",
 

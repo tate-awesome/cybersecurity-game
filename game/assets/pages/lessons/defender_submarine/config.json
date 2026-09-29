@@ -1,5 +1,22 @@
 {
-    "_note": "Defender counterpart to lesson_submarine - defender_modbus_panel/defender_stripchart_panel paired with the defender_submarine model, which is driven by the AP's own reported mode rather than picked manually. The Kalman Filter form stays hidden (kept, not deleted) - its toggle lives in the defender flag panel instead, so it doesn't appear in two places.",
+    "_note": [
+        "# Defender Lesson 3: Defending the Submarine System",
+        "## Summary",
+        "The submarine model steers by position, speed, heading, and rudder angle, all reported over ModBus through the AP. Unlike the HVAC system, its values change quickly and its sensors are noisy - so telling a real attack apart from ordinary sensor jitter is much harder. In this lesson you defend a moving vessel, and learn why filtering and anomaly flags are a defender's best friends.",
+        "You'll watch the vessel's track and telemetry in real time, then use the Defender Flags panel to see when state, speed, or rudder readings cross their filtering thresholds. You'll toggle the Kalman filter on and off to see how it smooths noisy measurements into a believable estimate of where the submarine actually is - and how a sudden jump that the filter refuses to believe is a strong hint that someone is injecting false data.",
+        "## Objectives",
+        "- Monitor the submarine's position, speed, heading, and rudder in the Defender panels.\n- Explain the difference between sensor noise and a deliberate false-data injection.\n- Toggle the Kalman filter and describe how it changes the estimated track.\n- Interpret each Submarine Error Detection Flag and what might trigger it.\n- Keep the AP link encrypted and tunneled while monitoring, and explain why it matters here.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 6: Navigation Systems, Sensor Noise, and Kalman Filters\n- Chapter 4, section 4.5: Holding Registers vs. Input Registers\n- Appendix B: A Gentle Introduction to State Estimation",
+        "## Videos",
+        "- [Kalman Filters Without the Scary Math (15 min)](https://example.com/cps-course/videos/d3-kalman-intuition)\n- [Noise or Attack? Reading Anomaly Flags (9 min)](https://example.com/cps-course/videos/d3-anomaly-flags)\n- [Case Study: Spoofed Navigation at Sea (11 min)](https://example.com/cps-course/videos/d3-navigation-spoofing)",
+        "## Screenshot",
+        "![Defending the Submarine System lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Defender Lesson 2, *Defending: HVAC System*, where you learned to baseline ModBus telemetry.\n\n**Next:** Attacker Lesson 1, *IP & ARP Basics* - you switch sides and start learning how the attacks you've been defending against actually work."
+    ],
+
+    "_dev_note": "Defender counterpart to lesson_submarine - defender_modbus_panel/defender_stripchart_panel paired with the defender_submarine model, which is driven by the AP's own reported mode rather than picked manually. The Kalman Filter form stays hidden (kept, not deleted) - its toggle lives in the defender flag panel instead, so it doesn't appear in two places.",
 
     "build_type": "workspace",
 

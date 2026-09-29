@@ -16,7 +16,7 @@ from ..pages.defender.defender import DefenderV0
 # title/start, title/select_mode, title/select_demo and title/select_lesson
 # are all build_type "title" pages, discovered below - no hand-written
 # entries needed for them.
-from ..pages.generic import WorkspacePage, TitlePage
+from ..pages.generic import WorkspacePage, TitlePage, LessonSelectPage
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
@@ -37,6 +37,7 @@ PAGES: dict[str, type] = {
 GENERIC_BUILD_TYPES: dict[str, type] = {
     "workspace": WorkspacePage,
     "title": TitlePage,
+    "lesson_select": LessonSelectPage,
 }
 
 

@@ -1,5 +1,22 @@
 {
-    "_note": "Second lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
+    "_note": [
+        "# Attacker Lesson 4: ModBus MITM",
+        "## Summary",
+        "A man-in-the-middle (MITM) sits between two devices that believe they're talking directly to each other. In this lesson you bring together the two weaknesses you've studied - ARP's blind trust from lesson 1 and ModBus's lack of authentication from lesson 3 - and see what happens when they meet on the lab network.",
+        "Working only against the lab's own controller, you'll observe the ModBus conversation from the middle and see how values could be altered in transit, so that each side receives something different from what the other sent. Then you'll go back to the defender view and ask the most important question in the course: which of the defenses from the defender lessons would have stopped this, and why? Encryption and the AP tunnel should look very different to you after this lesson.",
+        "## Objectives",
+        "- Explain how an ARP-based man-in-the-middle position is established, at a conceptual level.\n- Observe ModBus traffic passing through the middle position in the lab.\n- Describe how in-transit modification changes what each side sees.\n- Identify which defender-lesson controls prevent or reveal this attack.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 10: Man-in-the-Middle Attacks\n- Review Chapter 3: Encryption and Secure Tunnels",
+        "## Videos",
+        "- [Anatomy of a Man-in-the-Middle (13 min)](https://example.com/cps-course/videos/a4-mitm-anatomy)\n- [Why Encryption Breaks MITM (8 min)](https://example.com/cps-course/videos/a4-encryption-vs-mitm)",
+        "## Screenshot",
+        "![ModBus MITM lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 3, *ModBus Intro*.\n\n**Next:** Attacker Lesson 5, *HVAC System*, where these ideas meet a physical process."
+    ],
+
+    "_dev_note": "Second lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
 
     "build_type": "workspace",
 

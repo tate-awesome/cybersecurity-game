@@ -183,6 +183,11 @@
 
         "back": "Back",
         "quit": "Quit",
+        "start_lesson": "Start Lesson",
+
+        "admin_suites": "Admin Suites",
+        "attacker_lessons": "Attacker Lessons",
+        "defender_lessons": "Defender Lessons",
 
         "lesson_arp_ip": "IP & ARP Basics",
         "lesson_recon": "Network Recon",

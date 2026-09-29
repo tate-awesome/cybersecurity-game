@@ -1,5 +1,22 @@
 {
-    "_note": "Denial-of-service lesson on the dos_attack layout.",
+    "_note": [
+        "# Bonus Lesson: Denial of Service",
+        "## Summary",
+        "Not every attack tries to change data - some just try to stop it from arriving. A denial-of-service (DoS) attack overwhelms a device or link until legitimate traffic can't get through. For an industrial system, that can be just as dangerous as tampering: a controller that can't hear its operator, or an operator who can't see the controller, is flying blind.",
+        "In this lesson you'll observe the lab network's normal traffic, then watch what happens to the ModBus conversation and the physical models when the link is saturated. Afterward you'll look at it from the defender's side: how does a DoS show up in the packet log and status panel, and which design choices make a system degrade gracefully instead of failing outright? Only ever run this against the lab network - DoS against anything else is illegal and harmful.",
+        "## Objectives",
+        "- Explain how a denial-of-service attack differs from data manipulation.\n- Observe the effect of a saturated link on ModBus telemetry and the physical models.\n- Identify the signs of a DoS in the defender's panels.\n- Describe design choices that help a system fail safely.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 13: Denial of Service\n- Chapter 13, sidebar: Failing Safe in Industrial Systems",
+        "## Videos",
+        "- [Denial of Service, Explained (9 min)](https://example.com/cps-course/videos/bonus-dos-explained)\n- [Fail-Safe Design for Control Systems (12 min)](https://example.com/cps-course/videos/bonus-fail-safe)",
+        "## Screenshot",
+        "![Denial of Service lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 6, *Submarine System*.\n\n**Next:** The Admin Suites, for a red vs. blue capstone exercise."
+    ],
+
+    "_dev_note": "Denial-of-service lesson on the dos_attack layout.",
 
     "build_type": "workspace",
 

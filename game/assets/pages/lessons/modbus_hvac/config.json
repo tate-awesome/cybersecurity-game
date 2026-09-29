@@ -1,5 +1,22 @@
 {
-    "_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
+    "_note": [
+        "# Attacker Lesson 5: HVAC System",
+        "## Summary",
+        "Cyber-physical attacks are different from ordinary data breaches: the target isn't information, it's the physical world. An HVAC system that reports the wrong temperature, or quietly ignores its setpoint, can waste energy, damage equipment, or make a building unsafe - all without anyone seeing an alarm.",
+        "In this lesson you'll work with the lab's house model and its HVAC registers. You'll watch how the model responds to register values, then see how manipulated values change what the operator sees versus what the equipment actually does. Pay close attention to the gap between the two - that gap is what the Defender Monitors in Defender Lesson 2 were built to catch.",
+        "## Objectives",
+        "- Map the HVAC registers to the house model's behavior.\n- Explain the difference between what an operator sees and what the process is actually doing.\n- Describe the physical consequences of manipulated HVAC values.\n- Relate what you observe to the baselining approach from Defender Lesson 2.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 11: Attacking Physical Processes\n- Review Chapter 5: Building Automation and HVAC Telemetry",
+        "## Videos",
+        "- [When Bits Become Heat: Cyber-Physical Impact (12 min)](https://example.com/cps-course/videos/a5-cyber-physical-impact)\n- [Case Study: Building Automation Incidents (10 min)](https://example.com/cps-course/videos/a5-building-case-study)",
+        "## Screenshot",
+        "![HVAC System lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 4, *ModBus MITM*.\n\n**Next:** Attacker Lesson 6, *Submarine System*, which applies the same ideas to a moving vessel."
+    ],
+
+    "_dev_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
 
     "build_type": "workspace",
 

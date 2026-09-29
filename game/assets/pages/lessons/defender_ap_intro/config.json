@@ -1,5 +1,22 @@
 {
-    "_note": "First defender lesson - AP Connection/Encryption/AP Tunnel forms on the defender_ap_intro layout. No ModBus panels yet; this is the defensive counterpart to lesson_arp_ip/lesson_recon.",
+    "_note": [
+        "# Defender Lesson 1: Defending the AP",
+        "## Summary",
+        "Every device in this lab - the HVAC controller, the submarine, and you - talks through a single Wi-Fi access point (AP). That makes the AP the front door of the whole system: whoever can reach it can read the telemetry flowing through it, and whoever can read the telemetry can start planning how to tamper with it. In this lesson you take the defender's seat and learn how that front door works before anyone tries to break it down.",
+        "You'll connect to the AP, watch its status and packet log come alive, and then lock the link down in two steps. First you'll enable encryption with a shared key so that anyone sniffing the air sees noise instead of readable ModBus values. Then you'll bring up the AP tunnel, which wraps your session so only an authenticated client can talk to the devices behind the AP. By the end you should be able to explain what each layer protects against, and what it doesn't.",
+        "## Objectives",
+        "- Connect to the lab AP and confirm a healthy connection in the Status panel.\n- Read the Packet Log and identify which fields change as the system runs.\n- Enable encryption with a shared key and explain what an eavesdropper can and can't see afterward.\n- Enable the AP tunnel and describe how it differs from link encryption.\n- Recognize the Defender Flags panel and what each flag will be used for in later lessons.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 1: Networks, Packets, and the Protocol Stack (required)\n- Chapter 2: Wireless Networks and Access Points (required)\n- Chapter 3: Encryption and Secure Tunnels (required)",
+        "## Videos",
+        "- [Your First Access Point: How Wi-Fi Really Works (12 min)](https://example.com/cps-course/videos/d1-access-points)\n- [Shared-Key Encryption in Five Minutes (5 min)](https://example.com/cps-course/videos/d1-shared-key-encryption)\n- [Tunnels vs. Encryption: What's the Difference? (9 min)](https://example.com/cps-course/videos/d1-tunnels)",
+        "## Screenshot",
+        "![Defending the AP lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** None - this is the first lesson. Make sure you've read chapters 1-3 first.\n\n**Next:** Defender Lesson 2, *Defending: HVAC System*, where you use this secured link to monitor a live building-automation controller."
+    ],
+
+    "_dev_note": "First defender lesson - AP Connection/Encryption/AP Tunnel forms on the defender_ap_intro layout. No ModBus panels yet; this is the defensive counterpart to lesson_arp_ip/lesson_recon.",
 
     "build_type": "workspace",
 

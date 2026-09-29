@@ -1,5 +1,22 @@
 {
-    "_note": "Full instructor build of attacker/v0, submarine lesson. Filename stem ('attacker_lab') is this page's default save-slot key for saved input values, since save_slots.inputs is omitted below.",
+    "_note": [
+        "# Admin Suite: Full Attacker Suite",
+        "## Summary",
+        "The Full Attacker Suite is the instructor's view of the offensive side of the lab. Every network action form, the ModBus data table and modify tools, the network graph, packet console, and both physical models are available at once, with the lab hack settings and admin visibility applied.",
+        "Use this page to rehearse demonstrations before class, troubleshoot the lab hardware, or act as the red team in a capstone exercise once students have finished the attacker lessons. Nothing is hidden or staged here, so it's not meant as a student's first look at any of these tools - the numbered lessons introduce them one at a time for a reason. As always, use it only against the lab network.",
+        "## Objectives",
+        "- Rehearse attack demonstrations against the lab hardware.\n- Troubleshoot network and ModBus connectivity before a class session.\n- Serve as the red team in a red vs. blue capstone exercise.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapters 7-12 (all attacker material)\n- Chapter 14: Red Team vs. Blue Team\n- Instructor's Companion, Part III: Running the Attacker Labs Safely",
+        "## Videos",
+        "- [Instructor Walkthrough: The Attacker Suite (20 min)](https://example.com/cps-course/videos/admin-attacker-suite)\n- [Running a Red vs. Blue Capstone (14 min)](https://example.com/cps-course/videos/admin-red-vs-blue)",
+        "## Screenshot",
+        "![Full Attacker Suite page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 6, *Submarine System* - students should finish every attacker lesson before free-form work here.\n\n**Next:** The *Full Defender Suite*, its defensive counterpart."
+    ],
+
+    "_dev_note": "Full instructor build of attacker/v0, submarine lesson. Filename stem ('attacker_lab') is this page's default save-slot key for saved input values, since save_slots.inputs is omitted below.",
 
     "build_type": "workspace",
 

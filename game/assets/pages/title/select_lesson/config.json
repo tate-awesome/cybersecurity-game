@@ -1,10 +1,24 @@
 {
-    "build_type": "title",
+    "build_type": "lesson_select",
     "title": "select_lesson",
 
+    "_note": [
+        "# Select a Lesson",
+        "Pick a lesson from the list on the left to read its summary, objectives, reading, and videos here. When you're ready, press **Start Lesson**.",
+        "**New here? Start with Defender Lesson 1: Defending the AP.** Before starting lesson 1, read chapters 1-3 of *Securing Cyber-Physical Systems: A Hands-On Guide* - they cover the networking, Wi-Fi, and encryption basics every lesson builds on.",
+        "The defender lessons come first, then the attacker lessons, each in numbered order. Every lesson summary names the lesson before and after it, so you can follow the course straight through.",
+        "Instructors: open an **Admin Suite** page for unrestricted access to every panel and form, without a lesson's guard rails."
+    ],
+
+    "sections": [
+        { "label": "admin_suites", "category": "admin" },
+        { "label": "attacker_lessons", "category": "attacker", "numbered": true },
+        { "label": "defender_lessons", "category": "defender", "numbered": true }
+    ],
+
     "buttons": [
-        { "_from_manifest": "lessons" },
         { "label": "back", "action": "back" },
+        { "label": "start_lesson", "action": "start" },
         { "label": "quit", "action": "quit" }
     ]
 }

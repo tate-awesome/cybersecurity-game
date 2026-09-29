@@ -1,5 +1,22 @@
 {
-    "_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
+    "_note": [
+        "# Attacker Lesson 3: ModBus Intro",
+        "## Summary",
+        "ModBus is one of the oldest and most widely used industrial protocols in the world. It's simple: a client asks a server to read or write numbered registers and coils, and the server answers. It's also completely unauthenticated - there's no password, no signature, and no encryption in the base protocol. In this lesson you'll learn to read ModBus traffic and understand what it's saying.",
+        "Using the ModBus table, you'll decode requests and responses captured from the lab network: which function code was used, which registers were read, and what values came back. You'll learn to map raw register numbers onto real-world meanings like temperature or rudder angle. The table is read-only in this lesson; changing values comes later, once you understand exactly what you'd be changing.",
+        "## Objectives",
+        "- Name the common ModBus function codes (read coils, read holding registers, write single register, and so on).\n- Decode a ModBus request and response pair from the Packet Console.\n- Use the ModBus table to follow a register's value over time.\n- Map register addresses onto the physical quantities they represent.\n- Explain why ModBus's lack of authentication is a security problem.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 9: ModBus Reads, Writes, and Registers\n- Review Chapter 4: Industrial Control Systems and ModBus",
+        "## Videos",
+        "- [ModBus Function Codes Explained (11 min)](https://example.com/cps-course/videos/a3-function-codes)\n- [Decoding a ModBus Packet by Hand (9 min)](https://example.com/cps-course/videos/a3-decoding-modbus)\n- [Registers, Coils, and What They Mean (7 min)](https://example.com/cps-course/videos/a3-registers-coils)",
+        "## Screenshot",
+        "![ModBus Intro lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 2, *Network Recon*, where you found the ModBus devices on the network.\n\n**Next:** Attacker Lesson 4, *ModBus MITM*, where you put yourself between client and server and start changing what they say."
+    ],
+
+    "_dev_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
 
     "build_type": "workspace",
 

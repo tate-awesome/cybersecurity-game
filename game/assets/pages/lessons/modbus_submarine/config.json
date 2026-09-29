@@ -1,5 +1,22 @@
 {
-    "_note": "First lesson on the modbus_submarine layout - the submarine world-map model paired with the lab_submarine settings package (submarine registers).",
+    "_note": [
+        "# Attacker Lesson 6: Submarine System",
+        "## Summary",
+        "The final attacker lesson moves from a building to a vessel. The submarine model reports its position, speed, heading, and rudder over ModBus, and the world map shows where it thinks it is. Navigation data is especially sensitive because operators trust it implicitly - if the map says the vessel is on course, few people double-check.",
+        "You'll study how the submarine's registers drive the world map, then see how manipulated navigation values produce a track that looks plausible but is wrong. Compare this to Defender Lesson 3: noisy sensors and a Kalman filter made the defender's job harder, but the filter's refusal to accept impossible jumps is exactly what makes crude manipulation stand out. Think about what an attacker would have to do to stay under those thresholds - and why that's so difficult.",
+        "## Objectives",
+        "- Map the submarine registers to the world-map display.\n- Explain how manipulated navigation data misleads an operator.\n- Relate the defender's anomaly flags and Kalman filter to what you observe.\n- Summarize the full attack chain from recon to physical impact.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 12: Attacking Navigation Systems\n- Review Chapter 6: Navigation Systems, Sensor Noise, and Kalman Filters",
+        "## Videos",
+        "- [Trusting the Map: Navigation Integrity (11 min)](https://example.com/cps-course/videos/a6-navigation-integrity)\n- [The Full Kill Chain, Start to Finish (16 min)](https://example.com/cps-course/videos/a6-kill-chain)",
+        "## Screenshot",
+        "![Submarine System lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 5, *HVAC System*.\n\n**Next:** You've finished the lesson sequence. Your instructor may run a red-team vs. blue-team exercise using the Admin Suites."
+    ],
+
+    "_dev_note": "First lesson on the modbus_submarine layout - the submarine world-map model paired with the lab_submarine settings package (submarine registers).",
 
     "build_type": "workspace",
 

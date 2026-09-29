@@ -1,5 +1,22 @@
 {
-    "_note": "Trimmed student build of attacker/v0, ARP-spoofing intro lesson. Shares nothing structurally with attacker_lab.json except the widget/button vocabulary - a different lesson, a different page.json, a different save slot ('attacker_intro_arp'), so a student's saved inputs here never collide with the instructor lab build's saved inputs.",
+    "_note": [
+        "# Attacker Lesson 1: IP & ARP Basics",
+        "## Summary",
+        "Before you can attack anything on a network, you have to understand how devices find each other. Every device on the lab network has an IP address (its logical address) and a MAC address (its hardware address), and the Address Resolution Protocol (ARP) is the glue that maps one to the other. ARP was designed for trusted networks - any device can announce \"that IP is me,\" and everyone else simply believes it.",
+        "In this lesson you'll look at your own addresses, watch ARP requests and replies in the packet console, and see the network graph fill in as devices announce themselves. You'll then explore what ARP's blind trust means for security: if you answer for someone else's IP, their traffic comes to you instead. You won't carry out a full man-in-the-middle attack yet - the goal here is to understand the mechanism well enough that the later lessons make sense.",
+        "## Objectives",
+        "- Identify the IP and MAC address of your machine, the AP, and each lab device.\n- Read ARP request and reply packets in the Packet Console and explain each field.\n- Use the Network Graph to see which devices are talking to each other.\n- Explain why ARP has no way to verify who is telling the truth.\n- Describe, in your own words, how ARP spoofing redirects traffic.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 7: IP Addressing and ARP\n- Review Chapter 1, section 1.3: Layers 2 and 3",
+        "## Videos",
+        "- [IP vs. MAC Addresses (7 min)](https://example.com/cps-course/videos/a1-ip-vs-mac)\n- [ARP: The Protocol That Believes Everything (10 min)](https://example.com/cps-course/videos/a1-arp-trust)\n- [Reading Packets Like a Pro (12 min)](https://example.com/cps-course/videos/a1-reading-packets)",
+        "## Screenshot",
+        "![IP & ARP Basics lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Defender Lesson 3, *Defending: Submarine System* - the last of the defender lessons.\n\n**Next:** Attacker Lesson 2, *Network Recon*, where you map the whole network before choosing a target."
+    ],
+
+    "_dev_note": "Trimmed student build of attacker/v0, ARP-spoofing intro lesson. Shares nothing structurally with attacker_lab.json except the widget/button vocabulary - a different lesson, a different page.json, a different save slot ('attacker_intro_arp'), so a student's saved inputs here never collide with the instructor lab build's saved inputs.",
     "build_type": "workspace",
     "settings": { "_ref": [
         "_packages/_default.json",

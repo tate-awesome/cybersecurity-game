@@ -1,5 +1,22 @@
 {
-    "_note": "Defender counterpart to lesson_hvac - defender_modbus_panel/defender_stripchart_panel paired with the defender_hvac model, which is driven by the AP's own reported mode rather than picked manually. AP Connection/Encryption/AP Tunnel forms stay visible so the student can (dis)connect and secure the link that feeds this telemetry; no Kalman filter here, that's submarine-specific.",
+    "_note": [
+        "# Defender Lesson 2: Defending the HVAC System",
+        "## Summary",
+        "Heating, ventilation, and air-conditioning (HVAC) controllers look harmless, but they're a favorite foothold for attackers: they sit on building networks, they're rarely patched, and they speak ModBus - a protocol with no built-in authentication at all. In this lesson you monitor a live HVAC controller through the AP you secured in lesson 1, learning what \"normal\" looks like so you can spot when something isn't.",
+        "The Defender Data panel shows the controller's registers as they arrive, and the Defender Monitors strip charts plot them over time. You'll watch temperature setpoints, fan states, and heating/cooling modes change, then compare what you see before and after turning encryption and the AP tunnel on and off. The key habit this lesson builds is baselining: a defender who knows the normal rhythm of a system notices the first odd beat.",
+        "## Objectives",
+        "- Connect to the AP and confirm the HVAC model is being driven by live telemetry.\n- Identify each HVAC register in the Defender Data panel and what physical value it represents.\n- Use the strip charts to describe the system's normal operating pattern.\n- Explain why ModBus traffic is dangerous to leave unencrypted on a shared network.\n- Use the Packet Log and Defender Flags to notice a value that falls outside its normal range.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 4: Industrial Control Systems and ModBus\n- Chapter 5: Building Automation and HVAC Telemetry\n- Review Chapter 3, section 3.4: Choosing What to Encrypt",
+        "## Videos",
+        "- [ModBus in Plain English (10 min)](https://example.com/cps-course/videos/d2-modbus-plain-english)\n- [How a Building Thinks: HVAC Control Loops (14 min)](https://example.com/cps-course/videos/d2-hvac-control-loops)\n- [Baselining: Knowing Normal Before You Hunt Abnormal (8 min)](https://example.com/cps-course/videos/d2-baselining)",
+        "## Screenshot",
+        "![Defending the HVAC System lesson page](screenshot.png)",
+        "## Where This Fits",
+        "**Previous:** Defender Lesson 1, *Defending the AP* - you'll need the connection and encryption skills from there.\n\n**Next:** Defender Lesson 3, *Defending: Submarine System*, which adds noisy navigation sensors and a Kalman filter to the picture."
+    ],
+
+    "_dev_note": "Defender counterpart to lesson_hvac - defender_modbus_panel/defender_stripchart_panel paired with the defender_hvac model, which is driven by the AP's own reported mode rather than picked manually. AP Connection/Encryption/AP Tunnel forms stay visible so the student can (dis)connect and secure the link that feeds this telemetry; no Kalman filter here, that's submarine-specific.",
 
     "build_type": "workspace",
 
