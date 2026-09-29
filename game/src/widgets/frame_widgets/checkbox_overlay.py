@@ -15,15 +15,20 @@ class CheckboxOverlay:
     packet-console column visibility - those only ever differed in which
     settings category to read/write (state_key) and what to title the column
     (category_label).
+
+    Each checkbox is labeled with the labels key "<label_group>_<key>";
+    label_group defaults to state_key.
     '''
     def __init__(self, button: QPushButton, context: Context, refresh_function: Callable,
-                 state_key: str, category_label: str, visibility_key: str | None = None):
+                 state_key: str, category_label: str, visibility_key: str | None = None,
+                 label_group: str | None = None):
         self.context = context
         self.style = context.style
         self.refresh_function = refresh_function
         self.state_key = state_key
         self.category_label = category_label
         self.visibility_key = visibility_key
+        self.label_group = label_group or state_key
         self.overlay = Overlay(self.context.root, context, button, self.populate_overlay)
 
     def populate_overlay(self, overlay: Overlay):
@@ -48,7 +53,7 @@ class CheckboxOverlay:
                 print(f"Form is invisible: {key!r}")
                 continue
 
-            checkbox = QCheckBox(self.context.labels.get(f"{self.state_key}_{key}"))
+            checkbox = QCheckBox(self.context.labels.get(f"{self.label_group}_{key}"))
             checkbox.setFont(med)
             category_layout.addWidget(checkbox)
 

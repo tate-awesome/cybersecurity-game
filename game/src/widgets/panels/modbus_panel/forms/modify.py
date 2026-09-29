@@ -156,13 +156,13 @@ class Modify(BaseForm):
     # Enable Modify Button
 
     def enable_modify(self):
-        self.context.states.set("modbus_modify_enabled", value=1)
+        self.context.states.set("modbus_packet_modify_enabled", value=1)
 
     def disable_modify(self):
-        self.context.states.set("modbus_modify_enabled", value=0)
+        self.context.states.set("modbus_packet_modify_enabled", value=0)
 
     def modify_is_enabled(self):
-        state = self.context.states.get("modbus_modify_enabled")
+        state = self.context.states.get("modbus_packet_modify_enabled")
         if state == 1: return True
         else: return False
 

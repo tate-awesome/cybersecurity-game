@@ -29,7 +29,7 @@
 
     "build_type": "workspace",
 
-    "settings": {"network_action_visibility": {"wifi": 1, "nmap": 1, "arp": 1, "sniff": 1}},
+    "settings": {"network_action_forms_available": {"wifi": 1, "nmap": 1, "arp": 1, "sniff": 1}},
 
     "title": "arp_ip_lesson",
     "menu_bar": [

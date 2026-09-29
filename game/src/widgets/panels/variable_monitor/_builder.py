@@ -47,10 +47,10 @@ class Builder(Panel):
         self.menu_bar.add_button("pause") # pause or resume the variable monitor
 
         def start_fit():
-            self.context.states.set("fit_stripchart_line", value=1)
+            self.context.states.set("strip_chart_auto_fit", value=1)
         def stop_fit():
-            self.context.states.set("fit_stripchart_line", value=0)
-        fit_now = self.context.states.get("fit_stripchart_line")
+            self.context.states.set("strip_chart_auto_fit", value=0)
+        fit_now = self.context.states.get("strip_chart_auto_fit")
         self.menu_bar.reversible_button(start_fit, stop_fit, "fit_stripchart", "unfit_stripchart",
                                          start_active=(fit_now == 1 or fit_now == "1"))
 

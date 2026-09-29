@@ -23,7 +23,7 @@ FORM_CLASSES = {
     "sniff": SniffForm,
     "nfq": NFQForm,
     # Defender-only forms - invisible everywhere except a page whose
-    # network_action_visibility explicitly enables them (the defender
+    # network_action_forms_available explicitly enables them (the defender
     # lessons - see assets/pages/lessons/defender_*).
     # ap_connect is listed first since encryption/ap_tunnel/kalman look up
     # its process by name rather than creating their own if it's missing.
@@ -41,7 +41,7 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
-        available_forms: dict[str, int] = self.context.states.get("network_action_visibility")
+        available_forms: dict[str, int] = self.context.states.get("network_action_forms_available")
         if available_forms is None:
             available_forms = list(FORM_CLASSES.keys())
 
@@ -61,20 +61,21 @@ class Builder(Panel):
 
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "hacking_forms", "Show Forms", "network_action_visibility")
+        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "network_action_forms_shown", "Show Forms", "network_action_forms_available",
+                                 label_group="hacking_forms")
 
         stop_button = self.menu_bar.add_button("abort_all", self.stop_all)
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
 
     def refresh_forms(self):
-        for key in self.context.states.get("hacking_forms"):
+        for key in self.context.states.get("network_action_forms_shown"):
             if key not in self.forms:
                 # This lesson's available_forms doesn't include this form -
                 # nothing to show/hide, and the "Show Forms" overlay still
                 # lists every form regardless of what a given lesson offers.
                 continue
-            if self.context.states.get("hacking_forms", key) == "1" or self.context.states.get("hacking_forms", key) == 1:
+            if self.context.states.get("network_action_forms_shown", key) == "1" or self.context.states.get("network_action_forms_shown", key) == 1:
                 self.show_form(key)
             else:
                 self.hide_form(key)
@@ -82,7 +83,7 @@ class Builder(Panel):
 
     def hide_form(self, name: str):
         if name not in self.forms:
-            raise KeyError(f"No hacking-panel form named {name!r} (check 'hacking_forms' in settings)")
+            raise KeyError(f"No hacking-panel form named {name!r} (check 'network_action_forms_shown' in settings)")
         form = self.forms[name]
         if form.isHidden():
             return
@@ -90,7 +91,7 @@ class Builder(Panel):
 
     def show_form(self, name: str):
         if name not in self.forms:
-            raise KeyError(f"No hacking-panel form named {name!r} (check 'hacking_forms' in settings)")
+            raise KeyError(f"No hacking-panel form named {name!r} (check 'network_action_forms_shown' in settings)")
         form = self.forms[name]
         if not form.isHidden():
             return

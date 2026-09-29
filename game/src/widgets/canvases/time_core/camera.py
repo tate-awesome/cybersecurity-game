@@ -60,7 +60,7 @@ class Camera:
         return PIXELS_PER_SECOND * self.time_scale[0]
 
     def is_fit_mode(self) -> bool:
-        value = self.context.states.get("fit_stripchart_line")
+        value = self.context.states.get("strip_chart_auto_fit")
         return value == 1 or value == "1"
 
     def time_to_canvas_x(self, time_value: float, now: float, pixels_per_second: float = None, time_offset: float = None) -> float:

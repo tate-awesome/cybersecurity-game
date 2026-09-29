@@ -33,7 +33,7 @@ class ModbusBuffer:
         # being built, when a missing assets/ folder means there are no
         # settings (and so no registers) yet - that should reach the 404
         # page instead of crashing startup
-        for var_name in self.context.states.data.get("modbus_variables", {}):
+        for var_name in self.context.states.data.get("modbus_registers", {}):
             for dir in ["in", "out"]:
                 key = f"{var_name}_{dir}"
                 self.stripchart_buffers[key] = deque(maxlen=self.max_size)
@@ -57,7 +57,7 @@ class ModbusBuffer:
             key = f"{var}_{direction}"
             # A response can reference a register address this game's
             # settings never configured (e.g. the real device exposes more
-            # registers than modbus_variables defines) - stripchart_locks/
+            # registers than modbus_registers defines) - stripchart_locks/
             # stripchart_buffers only have entries for configured registers,
             # so there's nothing to chart for this one; skip it rather than
             # raising and losing every other variable in this same packet.

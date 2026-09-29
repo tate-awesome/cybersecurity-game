@@ -29,7 +29,7 @@
 
     "build_type": "workspace",
 
-    "settings": {"modbus_table_visibility": {"table": 1}},
+    "settings": {"modbus_table_forms_available": {"table": 1}},
 
     "title": "modbus_intro_lesson",
     "menu_bar": [

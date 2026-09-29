@@ -204,7 +204,7 @@ class BaseForm(QWidget):
         self.entries.append(entry)
 
         # Bind autosave
-        save_slots = self.context.states.get("hack_forms", self.key)
+        save_slots = self.context.states.get("network_action_form_inputs", self.key)
         def autosave(text, e=entry, idx=self.entry_index):
             save_slots[idx] = text
         entry.textEdited.connect(autosave)

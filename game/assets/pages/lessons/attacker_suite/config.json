@@ -30,12 +30,12 @@
     "build_type": "workspace",
 
     "settings": {
-        "hack_forms": {
+        "network_action_form_inputs": {
             "wifi": ["AP-Config"],
             "arp": ["192.168.4.2", "192.168.4.10"],
             "dos": ["192.168.4.2", "192.168.4.10"]
         },
-        "hacking_forms": {
+        "network_action_forms_shown": {
             "wifi": 1,
             "nmap": 1,
             "arp": 1,
@@ -47,10 +47,10 @@
             "ap_tunnel": 0,
             "kalman": 0
         },
-        "modbus_forms": {"table": 1, "modify": 1},
-        "modbus_table_visibility": {"table": 1, "modify": 1},
-        "modbus_model_visibility": {"hvac": 1, "submarine": 1},
-        "network_action_visibility": {
+        "modbus_table_forms_shown": {"table": 1, "modify": 1},
+        "modbus_table_forms_available": {"table": 1, "modify": 1},
+        "modbus_models_available": {"hvac": 1, "submarine": 1},
+        "network_action_forms_available": {
             "wifi": 1,
             "nmap": 1,
             "arp": 1,

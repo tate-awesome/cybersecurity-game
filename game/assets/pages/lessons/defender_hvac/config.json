@@ -30,12 +30,12 @@
     "build_type": "workspace",
 
     "settings": {
-        "hack_forms": {
+        "network_action_form_inputs": {
             "wifi": ["AP-Config"],
             "arp": ["192.168.4.2", "192.168.4.10"],
             "dos": ["192.168.4.2", "192.168.4.10"]
         },
-        "hacking_forms": {
+        "network_action_forms_shown": {
             "wifi": 1,
             "nmap": 1,
             "sniff": 1,
@@ -44,9 +44,9 @@
             "ap_tunnel": 1,
             "kalman": 1
         },
-        "modbus_model_visibility": {"defender_hvac": 1, "defender_submarine": 0},
-        "network_action_visibility": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "defender_modbus_forms": {"mode": 1, "sliders": 1}
+        "modbus_models_available": {"defender_hvac": 1, "defender_submarine": 0},
+        "network_action_forms_available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
     "title": "defender_hvac_lesson",

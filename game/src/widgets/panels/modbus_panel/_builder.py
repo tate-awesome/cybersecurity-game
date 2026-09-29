@@ -22,7 +22,7 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
-        self.available_forms: dict[str, int] = self.context.states.get("modbus_table_visibility")
+        self.available_forms: dict[str, int] = self.context.states.get("modbus_table_forms_available")
         if self.available_forms is None:
             self.available_forms = list(FORM_CLASSES.keys())
 
@@ -40,7 +40,8 @@ class Builder(Panel):
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_forms", "Show Forms", "modbus_table_visibility")
+        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_table_forms_shown", "Show Forms", "modbus_table_forms_available",
+                                        label_group="modbus_forms")
 
         clear_button = self.menu_bar.add_button("clear_modbus", self.context.buffer.reset_modbus)
 
@@ -52,8 +53,8 @@ class Builder(Panel):
 
 
     def refresh_forms(self):
-        for key in self.context.states.get("modbus_forms"):
-            state = self.context.states.get("modbus_forms", key)
+        for key in self.context.states.get("modbus_table_forms_shown"):
+            state = self.context.states.get("modbus_table_forms_shown", key)
 
             invisible = key not in self.available_forms or self.available_forms[key] == 0 or self.available_forms[key] == "0"
             selected = state == "1" or state == 1
@@ -65,7 +66,7 @@ class Builder(Panel):
 
     def hide_forms(self, name: str):
         if name not in self.forms:
-            raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_forms' in settings)")
+            raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_table_forms_shown' in settings)")
         form = self.forms[name]
         if form.isHidden():
             return
@@ -73,7 +74,7 @@ class Builder(Panel):
 
     def show_forms(self, name: str):
         if name not in self.forms:
-            raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_forms' in settings)")
+            raise KeyError(f"No modbus-panel form named {name!r} (check 'modbus_table_forms_shown' in settings)")
         form = self.forms[name]
         if not form.isHidden():
             return

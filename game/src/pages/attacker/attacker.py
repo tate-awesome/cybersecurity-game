@@ -35,7 +35,7 @@ class AttackerV0(Page):
 
 
     # Displays
-        model = self.context.states.get("model_type")
+        model = self.context.states.get("modbus_model_selected")
         if model == "submarine":
             display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
             BoatModel(display.pane(0), context)

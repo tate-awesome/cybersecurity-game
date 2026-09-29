@@ -38,7 +38,7 @@ class EncryptionForm(BaseForm):
         def stop_encryption():
             ap_commands.set_encryption(self.context.buffer, False, self.key_entry.text().strip())
             self.key_entry.clear()
-            self.context.states.get("hack_forms", self.key)[0] = ""
+            self.context.states.get("network_action_form_inputs", self.key)[0] = ""
 
         self.add_process_row(start_encryption, stop_encryption,
                              lambda: ap_commands.encryption_enabled(self.context.buffer))

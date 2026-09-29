@@ -8,7 +8,7 @@ from ...canvases.defender_hvac_chart import DefenderHVACChart
 from ..panel import Panel
 
 MODELS = {
-    # Order matters as a fallback: a page whose "model_type" isn't
+    # Order matters as a fallback: a page whose "modbus_model_selected" isn't
     # "hvac"/"submarine" (e.g. the "agnostic" default) starts on
     # whichever of these comes first.
     "submarine": WorldMap,
@@ -19,7 +19,7 @@ MODELS = {
 
 # Defender-flavored models are driven by the AP's own reported mode
 # (context.buffer.defender_status.submarine_mode) instead of a manual
-# dropdown pick - see _auto_switch. Only a page whose modbus_model_visibility
+# dropdown pick - see _auto_switch. Only a page whose modbus_models_available
 # actually enables one of these (the defender lessons) ever exercises this.
 DEFENDER_MODELS = {"defender_submarine", "defender_hvac"}
 
@@ -38,7 +38,7 @@ class Builder(Panel):
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 
-        available_models: dict[str, int] = self.context.states.get("modbus_model_visibility")
+        available_models: dict[str, int] = self.context.states.get("modbus_models_available")
         if available_models is None:
             available_models = list(MODELS.keys())
 
@@ -62,7 +62,7 @@ class Builder(Panel):
         self.model_dropdown = None
 
         if self.labels_by_key:
-            preferred = self.context.states.get("model_type")
+            preferred = self.context.states.get("modbus_model_selected")
             start_key = preferred if preferred in self.labels_by_key else next(iter(self.labels_by_key))
 
             self.model_dropdown = self.menu_bar.add_dropdown(
@@ -87,7 +87,7 @@ class Builder(Panel):
         self.auto_switch_checkbox = None
         self._auto_switch_callback_name = f"ModbusModelAutoSwitch_{id(self)}"
         # available_models is a dict keyed by "auto_switch" too (see
-        # visibility/_default.json's modbus_model_visibility) unless it fell
+        # visibility/_default.json's modbus_models_available) unless it fell
         # back to the plain list of every MODELS key above, in which case
         # nothing has hidden the checkbox and it defaults to visible.
         auto_switch_visible = (
@@ -147,7 +147,7 @@ class Builder(Panel):
 
         self.model = MODELS[key](self.body, self.context)
         self.model_key = key
-        self.context.states.set("model_type", value=key)
+        self.context.states.set("modbus_model_selected", value=key)
         self._sync_dropdown(key)
 
     def _sync_dropdown(self, key: str):

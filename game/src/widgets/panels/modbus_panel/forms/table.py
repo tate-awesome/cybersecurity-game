@@ -46,7 +46,7 @@ class MitmTable(BaseForm):
 
     def show_row(self, key: str):
         if key not in self.rows:
-            raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_variables' in settings)")
+            raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_registers' in settings)")
         row = self.rows[key]
         for _, widget in row.items():
             if widget.isHidden():
@@ -54,7 +54,7 @@ class MitmTable(BaseForm):
 
     def hide_row(self, key: str):
         if key not in self.rows:
-            raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_variables' in settings)")
+            raise KeyError(f"No modbus table row for register {key!r} (check 'modbus_registers' in settings)")
         row = self.rows[key]
         for _, widget in row.items():
             if not widget.isHidden():

@@ -30,7 +30,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "hacking_forms": {
+        "network_action_forms_shown": {
             "wifi": 1,
             "nmap": 1,
             "sniff": 1,
@@ -39,7 +39,7 @@
             "ap_tunnel": 1,
             "kalman": 1
         },
-        "network_action_visibility": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1}
+        "network_action_forms_available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1}
     },
 
     "title": "defender_ap_intro_lesson",

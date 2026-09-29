@@ -27,7 +27,7 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
-        self.available_forms: dict[str, int] = self.context.states.get("defender_modbus_visibility")
+        self.available_forms: dict[str, int] = self.context.states.get("defender_modbus_forms_available")
         if self.available_forms is None:
             self.available_forms = list(FORM_CLASSES.keys())
 
@@ -45,17 +45,18 @@ class Builder(Panel):
 
         forms_button = self.menu_bar.add_button("forms_overlay")
         overlay = CheckboxOverlay(forms_button, context, self.refresh_forms,
-                                   "defender_modbus_forms", "Show Forms", "defender_modbus_visibility")
+                                   "defender_modbus_forms_shown", "Show Forms", "defender_modbus_forms_available",
+                                   label_group="defender_modbus_forms")
 
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
         self.refresh_forms()
 
     def refresh_forms(self):
-        for key in self.context.states.get("defender_modbus_forms"):
+        for key in self.context.states.get("defender_modbus_forms_shown"):
             if key not in self.forms:
                 continue
-            state = self.context.states.get("defender_modbus_forms", key)
+            state = self.context.states.get("defender_modbus_forms_shown", key)
             if state == "1" or state == 1:
                 self.show_form(key)
             else:
@@ -64,7 +65,7 @@ class Builder(Panel):
 
     def hide_form(self, name: str):
         if name not in self.forms:
-            raise KeyError(f"No defender_modbus_panel form named {name!r} (check 'defender_modbus_forms' in settings)")
+            raise KeyError(f"No defender_modbus_panel form named {name!r} (check 'defender_modbus_forms_shown' in settings)")
         form = self.forms[name]
         if form.isHidden():
             return
@@ -72,7 +73,7 @@ class Builder(Panel):
 
     def show_form(self, name: str):
         if name not in self.forms:
-            raise KeyError(f"No defender_modbus_panel form named {name!r} (check 'defender_modbus_forms' in settings)")
+            raise KeyError(f"No defender_modbus_panel form named {name!r} (check 'defender_modbus_forms_shown' in settings)")
         form = self.forms[name]
         if not form.isHidden():
             return

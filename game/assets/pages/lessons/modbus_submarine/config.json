@@ -30,8 +30,8 @@
     "build_type": "workspace",
 
     "settings": {
-        "model_type": "submarine",
-        "modbus_variables": {
+        "modbus_model_selected": "submarine",
+        "modbus_registers": {
             "hreg_3": {"show": 1.0, "nickname": "Speed", "factor": 0.00122, "units": "TODO", "modify": 1},
             "hreg_4": {"show": 1.0, "nickname": "Rudder", "factor": 0.00122, "units": "TODO", "modify": 1},
             "hreg_10": {"show": 1.0, "nickname": "X Position", "factor": 0.01, "units": "Meters", "modify": 1},
@@ -44,7 +44,7 @@
                 "modify": 1
             }
         },
-        "modbus_model_visibility": {"submarine": 1}
+        "modbus_models_available": {"submarine": 1}
     },
 
     "title": "modbus_submarine_lesson",

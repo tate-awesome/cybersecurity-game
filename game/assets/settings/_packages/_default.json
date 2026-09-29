@@ -1,5 +1,5 @@
 {
-    "world_map_sprites": {
+    "submarine_map_sprites": {
         "boat_in": 0,
         "boat_out": 0,
         "path_in": 0,
@@ -13,7 +13,7 @@
         "ocean": 0
     },
 
-    "world_map_colors": {
+    "submarine_map_colors": {
         "ocean": "field",
         "grid_lines": "field_text",
         "grid_axes": "red",
@@ -77,9 +77,9 @@
         ]
     },
 
-    "fit_stripchart_line": 0,
+    "strip_chart_auto_fit": 0,
 
-    "fitted_stripchart_max_time": 60,
+    "strip_chart_auto_fit_max_seconds": 60,
 
     "game_progress": {
         "wifi": 0,
@@ -90,7 +90,7 @@
         "dos": 0
     },
 
-    "hack_forms": {
+    "network_action_form_inputs": {
         "wifi": [
             ""
         ],
@@ -114,7 +114,7 @@
         ]
     },
 
-    "hacking_forms": {
+    "network_action_forms_shown": {
         "wifi": 0,
         "nmap": 0,
         "arp": 0,
@@ -127,18 +127,18 @@
         "kalman": 0
     },
 
-    "modbus_forms": {
+    "modbus_table_forms_shown": {
         "table": 0,
         "modify": 0
     },
 
-    "modbus_modify_enabled": 0,
+    "modbus_packet_modify_enabled": 0,
 
-    "model_type": "agnostic",
+    "modbus_model_selected": "agnostic",
 
     "modbus_model_auto_switch": 0,
 
-    "modbus_variables": {
+    "modbus_registers": {
         "hreg_1": {
             "label": "hreg_1",
             "show": 0,
@@ -383,18 +383,18 @@
         "modbus_word": 0
     },
 
-    "modbus_table_visibility": {
+    "modbus_table_forms_available": {
         "table": 0,
         "modify": 0
     },
 
-    "modbus_model_visibility": {
+    "modbus_models_available": {
         "hvac": 0,
         "submarine": 0,
         "auto_switch": 0
     },
 
-    "network_action_visibility": {
+    "network_action_forms_available": {
         "wifi": 0,
         "nmap": 0,
         "arp": 0,
@@ -407,7 +407,7 @@
         "kalman": 0
     },
 
-    "defender_modbus_visibility": {
+    "defender_modbus_forms_available": {
         "mode": 0,
         "sliders": 0
     }

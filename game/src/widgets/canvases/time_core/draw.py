@@ -166,7 +166,7 @@ class Draw:
         # --- Time (x) axis ---
         # Fit mode overrides the usual zoom/pan-driven time axis: it scales/shifts the
         # x-axis (without touching the camera's own zoom/pan state) so the history
-        # exactly fills the plot area, capped to the most recent fitted_stripchart_max_time
+        # exactly fills the plot area, capped to the most recent strip_chart_auto_fit_max_seconds
         # seconds of data. It only kicks in when there's more than one point to fit to.
         point_count = sum(len(points) for points in history_lists)
         fit_enabled = camera.is_fit_mode() and point_count > 1
@@ -175,7 +175,7 @@ class Draw:
             all_times = [point_time for points in history_lists for point_time, _ in points]
             data_max = max(all_times)
             data_min = min(all_times)
-            max_span = float(self.context.states.get("fitted_stripchart_max_time"))
+            max_span = float(self.context.states.get("strip_chart_auto_fit_max_seconds"))
             if data_max - data_min > max_span:
                 data_min = data_max - max_span
             span = float(data_max - data_min)

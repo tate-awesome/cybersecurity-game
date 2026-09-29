@@ -89,7 +89,7 @@ class InputManager:
 
     # Registers
     def get_registers(self):
-        return self.get("modbus_variables")
+        return self.get("modbus_registers")
 
     def get_register(self, key: str, field: str):
         return self.get_registers()[key][field]

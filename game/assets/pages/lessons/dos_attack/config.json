@@ -30,7 +30,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "hack_forms": {
+        "network_action_form_inputs": {
             "wifi": ["AP-Config"],
             "arp": ["192.168.4.2", "192.168.4.10"],
             "dos": ["192.168.4.2", "192.168.4.10"]

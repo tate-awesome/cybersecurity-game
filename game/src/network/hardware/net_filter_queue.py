@@ -50,7 +50,7 @@ class NetFilterQueueBaseClass(Process):
         if not mpkt.get("is_modbus") or len(mpkt.get("variables")) < 1:
             return original_pkt, modified_flag
 
-        if not self.context.states.get("modbus_modify_enabled") == 1:
+        if not self.context.states.get("modbus_packet_modify_enabled") == 1:
             return original_pkt, modified_flag
 
         # Work on an independent copy. mpkt is the caller's already-recorded
@@ -63,7 +63,7 @@ class NetFilterQueueBaseClass(Process):
         for i, variable in enumerate(mpkt.get("variables")):
 
             # A response can legitimately reference a register address that
-            # isn't in this game's configured modbus_variables (e.g. the
+            # isn't in this game's configured modbus_registers (e.g. the
             # real device exposes more registers than the settings define,
             # or the address arithmetic in set_modbus_information() lands
             # outside the configured range) - get_register() raises KeyError
