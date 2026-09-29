@@ -1,0 +1,5 @@
+{
+    "_note": "Hand-written page (see the Router's PAGES) - this file only gives links to it a label. The 404 page itself never reads assets/, so it still works when this file is missing.",
+    "schema_version": 1,
+    "link_label": "title_buttons_not_found_demo"
+}

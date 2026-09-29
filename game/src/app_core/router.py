@@ -13,11 +13,14 @@ from ..pages.demo.visuals import Visuals
 from ..pages.attacker.attacker import AttackerV0
 from ..pages.defender.defender import DefenderV0
 
-# /generic (data-driven pages, dispatched by each page's own config.json "build_type").
-# title/start, title/select_mode, title/select_demo and title/select_lesson
-# are all build_type "title" pages, discovered below - no hand-written
-# entries needed for them.
+# /generic (data-driven pages, dispatched by each page's own config "build_type").
+# start, title/select_mode and title/select_demo are build_type "title" pages
+# and title/select_lesson is "lesson_select", all discovered below - no
+# hand-written entries needed for them.
 from ..pages.generic import WorkspacePage, TitlePage, LessonSelectPage
+
+# Hard-coded 404 page - needs nothing from assets/, so it still works without it
+from ..pages.not_found import NotFound
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
@@ -29,6 +32,7 @@ PAGES: dict[str, type] = {
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,
         "demo/visuals": Visuals,
+        "404": NotFound,
 }
 
 # Page builder classes for data-driven pages, keyed by the "build_type" a
@@ -43,6 +47,12 @@ GENERIC_BUILD_TYPES: dict[str, type] = {
 }
 
 
+# The app's entry point: assets/pages/start.json
+START_PAGE = "start"
+# Shown in place of any page that doesn't exist (see Router.show)
+NOT_FOUND_PAGE = "404"
+
+
 class Router:
     '''
     Handles page navigation by calling page builder functions. (Pages can't import each other because of circular imports)
@@ -52,14 +62,15 @@ class Router:
     def __init__(self, root: QMainWindow, start_page: str | None = None):
         '''
         Creates the app's Context object and shows the first page.
-        If start_page isn't given, it's read from the manifest's
-        "startup_page" instead.
+        If start_page isn't given, it's START_PAGE.
         '''
         self.context: Context = Context(root, self)
         self.style = self.context.style
         self.navigation_stack: list[str] = []
         self.current_frame: QWidget | None = None
         self.current_page: str | None = None
+        # The page key the 404 page reports as missing
+        self.missing_page: str | None = None
 
         # Register any data-driven page PageManager discovered whose
         # build_type is known, without overriding a hand-written entry above.
@@ -68,26 +79,29 @@ class Router:
                 PAGES[key] = GENERIC_BUILD_TYPES[build_type]
 
         if start_page is None:
-            start_page = self.context.pages.startup_page()
+            start_page = START_PAGE
         self.show(start_page)
 
     def show(self, next_page: str):
         '''
         Displays the specified page, which should be a key in the PAGES dict. Clears the current page first.
+        A key that isn't in PAGES (even START_PAGE, e.g. when assets/ is
+        missing) shows the 404 page in its place. The missing key still goes
+        on the navigation stack, so Back leaves the 404 page like any other.
         '''
-        # Handle 404
-        if next_page not in PAGES:
-            print(f"Page '{next_page}' not found. Redirecting to title page.")
-            self.navigation_stack = []
-            next_page = "title/start"
-
-        # Handle first page ever (usually title or 404 reset)
+        # Handle first page ever (usually the start page or a reset)
         if len(self.navigation_stack) == 0:
             self.navigation_stack.append(next_page)
 
         # Handle deeper page (not refresh)
         if not next_page == self.navigation_stack[-1]:
             self.navigation_stack.append(next_page)
+
+        # Handle 404
+        self.missing_page = next_page
+        if next_page not in PAGES:
+            print(f"Page '{next_page}' not found. Showing the 404 page.")
+            next_page = NOT_FOUND_PAGE
 
         # Clear the window
         self._clear_central_widget()
@@ -98,14 +112,20 @@ class Router:
             self.current_frame = PAGES[next_page](self.context)
             self.context.root.setCentralWidget(self.current_frame)
         except Exception as e:
-            print(f"Error building page '{next_page}': {e}. Redirecting to title page.")
             self.context.reset_build()
             self._clear_central_widget()
-
+            self.context.start_build()
             self.navigation_stack = []
-            self.current_page = "title/start"
-            self.current_frame = PAGES["title/start"](self.context)
-            self.context.root.setCentralWidget(self.current_frame)
+            if next_page == START_PAGE:
+                # Nowhere left to fall back to - most likely broken assets
+                print(f"Error building the start page: {e}. Showing the 404 page.")
+                self.navigation_stack.append(START_PAGE)
+                self.current_page = NOT_FOUND_PAGE
+                self.current_frame = PAGES[NOT_FOUND_PAGE](self.context)
+                self.context.root.setCentralWidget(self.current_frame)
+            else:
+                print(f"Error building page '{next_page}': {e}. Redirecting to the start page.")
+                self.show(START_PAGE)
 
     def _clear_central_widget(self):
         '''

@@ -37,8 +37,8 @@ class TitleMenu(QWidget):
         self.grid.setRowStretch(1, 0)
         self.grid.setRowStretch(2, 1)
 
-    def button(self, label: str = "_default", function: Callable | None = None):
-        button = QPushButton(self.context.labels.get(f"title_buttons_{label}"))
+    def button(self, label_key: str = "title_buttons__default", function: Callable | None = None):
+        button = QPushButton(self.context.labels.get(label_key))
         button.setFont(self.style.get_font("title_btn"))
         if function is not None:
             # clicked emits a "checked" bool that callers here don't expect

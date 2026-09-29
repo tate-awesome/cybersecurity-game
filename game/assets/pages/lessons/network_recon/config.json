@@ -18,6 +18,15 @@
 
     "_dev_note": "First lesson on the network_recon layout - nmap/sniffing forms, network graph, packet console.",
 
+    "schema_version": 1,
+    "link_label": "title_buttons_lesson_recon",
+    "include": 1,
+    "category": "attacker",
+    "order": 2,
+    "prerequisites": [],
+    "estimated_minutes": 15,
+    "gradable": false,
+
     "build_type": "workspace",
 
     "settings": {

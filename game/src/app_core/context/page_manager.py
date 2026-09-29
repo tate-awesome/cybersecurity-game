@@ -1,84 +1,74 @@
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
 
 class PageManager:
     '''
-    Parses assets/pages/manifest.json - the single source of truth linking
-    stable keys (the startup page, game modes, lessons) to page folders -
-    and discovers every page's own config.json so the Router can dispatch
-    data-driven pages by the "build_type" each one declares for itself.
+    Discovers every page config under assets/pages so the Router can
+    dispatch data-driven pages by the "build_type" each one declares for
+    itself, and so pages can link to each other by key.
 
-    A page's key is its path relative to assets/pages (e.g. "attacker_lab",
-    "title/select_mode"), which doubles as the folder its config.json lives
-    in. The manifest only needs an entry for a page when something else
-    needs to address it by a friendlier/stable name (see game_modes,
-    lessons) - most pages need no manifest entry at all.
+    A page's key is its path relative to assets/pages, without ".json".
+    A page is either a single file (assets/pages/start.json -> "start") or
+    a folder holding a config.json, for pages that ship their own files
+    like screenshots (assets/pages/lessons/arp_ip/config.json ->
+    "lessons/arp_ip"). Everything else about a page - its link label,
+    lesson metadata, what it links to - lives in its own config.
     '''
+
+    SCHEMA_VERSION = 1
+    FOLDER_CONFIG = "config.json"
 
     def __init__(self, context: "Context"):
         self.context: "Context" = context
-        self.manifest_path = self.context.paths.pages / "manifest.json"
-        self.manifest: dict = {}
+        self.config_paths: dict[str, Path] = {}
         self.build_types: dict[str, str] = {}
-        manifest: dict = self.context.json.load(self.manifest_path)
-        self.parse_manifest(manifest)
+        self.discover()
 
     # Startup
-    def parse_manifest(self, manifest: dict):
-        self.manifest = manifest
-        self.build_types = self.discover_build_types()
-
-    def discover_build_types(self) -> dict[str, str]:
+    def discover(self):
         '''
-        Walks every config.json under assets/pages and records its declared
-        "build_type", keyed by its path relative to assets/pages - the same
-        key used to navigate to it. A page with no (or an unrecognized)
-        build_type is left out of the result; it's either page chrome not
-        yet converted to a generic page, or a page still built by a
-        hand-written page class registered directly in the Router.
+        Walks every page config under assets/pages, recording where each
+        key's config lives and the "build_type" it declares. A page with no
+        build_type is still linkable (see link_label) - it's built by a
+        hand-written page class registered directly in the Router. Warns
+        about any config whose "schema_version" this code doesn't know.
         '''
-        build_types: dict[str, str] = {}
+        self.config_paths = {}
+        self.build_types = {}
         pages_root = self.context.paths.pages
         if not pages_root.is_dir():
-            return build_types
-        for config_path in pages_root.rglob("config.json"):
-            key = config_path.parent.relative_to(pages_root).as_posix()
-            config = self.context.json.load(config_path, self.settings_roots())
+            return
+        for config_path in sorted(pages_root.rglob("*.json")):
+            if config_path.name == self.FOLDER_CONFIG:
+                key = config_path.parent.relative_to(pages_root).as_posix()
+            elif (config_path.parent / self.FOLDER_CONFIG).is_file():
+                # Some other file a folder page ships with, not a page itself
+                continue
+            else:
+                key = config_path.relative_to(pages_root).with_suffix("").as_posix()
+            self.config_paths[key] = config_path
+
+            config = self.load_page_config(key)
+            if config.get("schema_version") != self.SCHEMA_VERSION:
+                print(f"Page {key!r} has schema_version {config.get('schema_version')!r}, expected {self.SCHEMA_VERSION}")
             build_type = config.get("build_type")
             if isinstance(build_type, str):
-                build_types[key] = build_type
-        return build_types
+                self.build_types[key] = build_type
 
     # Reset
     def reload(self):
-        manifest: dict = self.context.json.load(self.manifest_path)
-        self.parse_manifest(manifest)
-
-    # Control (readonly)
-    def get(self, *keys: str) -> Any:
-        '''
-        Returns the value at the given key sequence in the manifest.
-        Raises a KeyError naming the full path if the path doesn't have a value.
-        '''
-        output = self.manifest
-        for i, key in enumerate(keys):
-            if not isinstance(output, dict) or key not in output:
-                raise KeyError(f"manifest{''.join(f'[{k!r}]' for k in keys[:i + 1])} not found (full path requested: {keys})")
-            output = output[key]
-        return output
-
-    def startup_page(self) -> str:
-        return self.get("startup_page")
+        self.discover()
 
     # Page config
     def load_page_config(self, key: str) -> dict:
         '''
-        Loads and _ref-resolves the config.json for the page at the given
-        key (its path relative to assets/pages, e.g. "attacker_lab").
+        Loads and _ref-resolves the config for the page at the given key
+        (see the class docstring). Returns {} for a key with no config,
+        like a hand-written page nothing needs to link to.
 
         The "settings", "menu_bar" and "panes" keys are smart-unpacked: any
         "_ref" inside them resolves against their own known folder under
@@ -88,8 +78,33 @@ class PageManager:
         nested under assets/pages, and lets pages be moved or organized
         into subfolders freely without breaking those references.
         '''
-        path = self.context.paths.pages / key / "config.json"
+        path = self.config_paths.get(key)
+        if path is None:
+            return {}
         return self.context.json.load(path, self.settings_roots())
+
+    def link_label(self, key: str) -> str:
+        '''
+        The labels key a button linking to this page should show - the
+        page's own "link_label" - so every link to a page reads the same.
+        '''
+        label = self.load_page_config(key).get("link_label")
+        if not isinstance(label, str):
+            print(f"Page {key!r} has no link_label")
+            return "title_buttons__default"
+        return label
+
+    def pages_in(self, folder: str) -> dict[str, dict]:
+        '''
+        Every page directly inside the given folder (e.g. "lessons"),
+        keyed by page key, each with its loaded config.
+        '''
+        prefix = f"{folder.strip('/')}/"
+        return {
+            key: self.load_page_config(key)
+            for key in self.config_paths
+            if key.startswith(prefix) and "/" not in key[len(prefix):]
+        }
 
     def settings_roots(self) -> dict[str, Path]:
         settings = self.context.paths.settings

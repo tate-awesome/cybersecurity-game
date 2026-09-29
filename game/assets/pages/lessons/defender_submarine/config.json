@@ -18,6 +18,15 @@
 
     "_dev_note": "Defender counterpart to lesson_submarine - defender_modbus_panel/defender_stripchart_panel paired with the defender_submarine model, which is driven by the AP's own reported mode rather than picked manually. The Kalman Filter form stays hidden (kept, not deleted) - its toggle lives in the defender flag panel instead, so it doesn't appear in two places.",
 
+    "schema_version": 1,
+    "link_label": "title_buttons_lesson_defender_submarine",
+    "include": 1,
+    "category": "defender",
+    "order": 3,
+    "prerequisites": ["lessons/defender_ap_intro"],
+    "estimated_minutes": 25,
+    "gradable": true,
+
     "build_type": "workspace",
 
     "settings": {

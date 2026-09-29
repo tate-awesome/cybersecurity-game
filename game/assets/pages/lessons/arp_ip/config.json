@@ -17,6 +17,15 @@
     ],
 
     "_dev_note": "Trimmed student build of attacker/v0, ARP-spoofing intro lesson. Shares nothing structurally with attacker_lab.json except the widget/button vocabulary - a different lesson, a different page.json, a different save slot ('attacker_intro_arp'), so a student's saved inputs here never collide with the instructor lab build's saved inputs.",
+    "schema_version": 1,
+    "link_label": "title_buttons_lesson_arp_ip",
+    "include": 1,
+    "category": "attacker",
+    "order": 1,
+    "prerequisites": [],
+    "estimated_minutes": 20,
+    "gradable": true,
+
     "build_type": "workspace",
     "settings": { "_ref": [
         "_packages/_default.json",

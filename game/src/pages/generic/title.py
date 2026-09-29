@@ -4,20 +4,29 @@ from ..page import Page
 
 class TitlePage(Page):
     '''
-    Page constructor for build_type "title". Reads its own config.json and
+    Page constructor for build_type "title". Reads its own config and
     builds a TitleMenu with one button per entry in config["buttons"].
 
-    Each button is {"label": <labels.title_buttons key>, "action": <name>, ...}.
-    A {"_from_manifest": "<table>"} entry expands into one navigate button
-    per entry of that manifest table (see expand_from_manifest) instead of
-    being a button itself, so link-heavy pages (mode/lesson select) don't
-    have to hand-list every link the manifest already knows about.
+    Each button is one of:
+      - {"link": "<page key>"} - navigates to that page, labeled with
+        the linked page's own "link_label" (see PageManager.link_label).
+      - {"action": "<name>"} - one of the built-in actions below, each
+        with its own fixed label.
 
     An optional config["background"] plays a procedural visual behind the
     menu - see Page.add_background.
     '''
 
-    ACTIONS = ("navigate", "back", "quit", "open_ap_config", "resume", "delete_user_data")
+    # Built-in action name -> the labels key its button shows
+    ACTION_LABELS = {
+        "back": "title_buttons_back",
+        "quit": "title_buttons_quit",
+        "resume": "title_buttons_resume",
+        "open_ap_config": "title_buttons_ap_page",
+        "delete_user_data": "title_buttons_delete_user_data",
+        "hardware_attacker": "title_buttons_hardware_attacker",
+        "hardware_defender": "title_buttons_hardware_defender",
+    }
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -28,45 +37,22 @@ class TitlePage(Page):
         self.add_background(config)
 
         panel = TitleMenu(self, context, config.get("title", "_default"))
-        self.build_buttons(config.get("buttons", []), panel)
-
-    def build_buttons(self, buttons_config: list, panel: TitleMenu):
-        for button in buttons_config:
-            table = button.get("_from_manifest")
-            if table is not None:
-                for generated in self.expand_from_manifest(table):
-                    self.build_button(generated, panel)
-            else:
-                self.build_button(button, panel)
-
-    def expand_from_manifest(self, table_name: str) -> list[dict]:
-        '''
-        Expands a manifest table (e.g. "old_game_modes", "lessons") into one
-        {"label": ..., "action": "navigate", "target": ...} button per entry.
-        A plain string entry (old_game_modes) is the target page key directly;
-        a dict entry (lessons) carries its target under "path" and an
-        optional display label under "title_label".
-        '''
-        table = self.context.pages.get(table_name)
-        buttons = []
-        for key, value in table.items():
-            if isinstance(value, dict):
-                target = value.get("path", key)
-                label = value.get("title_label", key)
-            else:
-                target = value
-                label = key
-            buttons.append({"label": label, "action": "navigate", "target": target})
-        return buttons
+        for button in config.get("buttons", []):
+            self.build_button(button, panel)
 
     def build_button(self, button: dict, panel: TitleMenu):
-        action = button.get("action")
-        label = button.get("label", "_default")
+        if "link" in button:
+            target = button["link"]
+            panel.button(self.context.pages.link_label(target), lambda target=target: self.router.show(target))
+            return
 
-        if action == "navigate":
-            target = button.get("target")
-            panel.button(label, lambda target=target: self.router.show(target))
-        elif action == "back":
+        action = button.get("action")
+        if action not in self.ACTION_LABELS:
+            print(f"Title button config {button!r} has no link and unknown action {action!r}, skipping")
+            return
+        label = self.ACTION_LABELS[action]
+
+        if action == "back":
             panel.button(label, self.router.go_back)
         elif action == "quit":
             panel.button(label, self.router.quit)
@@ -78,5 +64,7 @@ class TitlePage(Page):
                 panel.button(label, lambda target=target: self.router.show(target))
         elif action == "delete_user_data":
             panel.button(label, lambda: popup.delete_user_data_dialog(self, self.context, self.context.delete_user_data))
-        else:
-            print(f"Title button config {button!r} has unknown action {action!r}, skipping")
+        elif action == "hardware_attacker":
+            panel.button(label, lambda: self.router.show("attacker"))
+        elif action == "hardware_defender":
+            panel.button(label, lambda: self.router.show("defender"))

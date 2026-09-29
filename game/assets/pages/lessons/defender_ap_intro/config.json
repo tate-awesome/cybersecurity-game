@@ -18,6 +18,15 @@
 
     "_dev_note": "First defender lesson - AP Connection/Encryption/AP Tunnel forms on the defender_ap_intro layout. No ModBus panels yet; this is the defensive counterpart to lesson_arp_ip/lesson_recon.",
 
+    "schema_version": 1,
+    "link_label": "title_buttons_lesson_defender_ap",
+    "include": 1,
+    "category": "defender",
+    "order": 1,
+    "prerequisites": [],
+    "estimated_minutes": 15,
+    "gradable": false,
+
     "build_type": "workspace",
 
     "settings": {

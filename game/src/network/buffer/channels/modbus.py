@@ -29,7 +29,11 @@ class ModbusBuffer:
         with self.singles_lock:
             self.singles = {}
             self.commands = {}
-        for var_name in self.context.states.get_registers():
+        # .get rather than get_registers(): runs while the Context is still
+        # being built, when a missing assets/ folder means there are no
+        # settings (and so no registers) yet - that should reach the 404
+        # page instead of crashing startup
+        for var_name in self.context.states.data.get("modbus_variables", {}):
             for dir in ["in", "out"]:
                 key = f"{var_name}_{dir}"
                 self.stripchart_buffers[key] = deque(maxlen=self.max_size)

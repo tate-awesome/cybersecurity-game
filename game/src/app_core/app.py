@@ -32,8 +32,8 @@ class App():
 
     def __init__(self, start_page: str | None = None, title="Game", start_fullscreen = False):
         '''
-        start_page: page key to open first. If None, the Router reads it
-        from the manifest's "startup_page" instead.
+        start_page: page key to open first. If None, the Router opens
+        its START_PAGE.
         '''
 
         # Start a Qt app

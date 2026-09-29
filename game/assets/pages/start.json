@@ -1,0 +1,15 @@
+{
+    "schema_version": 1,
+    "link_label": "title_buttons_main_menu",
+    "build_type": "title",
+    "title": "main_title",
+    "background": { "visual": "network_mesh", "blur": 6 },
+
+    "buttons": [
+        { "action": "resume" },
+        { "link": "title/select_mode" },
+        { "action": "open_ap_config" },
+        { "action": "delete_user_data" },
+        { "action": "quit" }
+    ]
+}

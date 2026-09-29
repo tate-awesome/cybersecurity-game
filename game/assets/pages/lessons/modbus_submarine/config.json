@@ -18,6 +18,15 @@
 
     "_dev_note": "First lesson on the modbus_submarine layout - the submarine world-map model paired with the lab_submarine settings package (submarine registers).",
 
+    "schema_version": 1,
+    "link_label": "title_buttons_lesson_submarine",
+    "include": 1,
+    "category": "attacker",
+    "order": 6,
+    "prerequisites": [],
+    "estimated_minutes": 25,
+    "gradable": true,
+
     "build_type": "workspace",
 
     "settings": {

@@ -1,4 +1,6 @@
 {
+    "schema_version": 1,
+    "link_label": "title_buttons_lessons",
     "build_type": "lesson_select",
     "title": "select_lesson",
     "background": { "visual": "network_mesh", "blur": 6 },
@@ -11,6 +13,7 @@
         "Instructors: open an **Admin Suite** page for unrestricted access to every panel and form, without a lesson's guard rails."
     ],
 
+    "link_folder": "lessons",
     "sections": [
         { "label": "admin_suites", "category": "admin" },
         { "label": "attacker_lessons", "category": "attacker", "numbered": true },

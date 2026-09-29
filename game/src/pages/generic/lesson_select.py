@@ -48,7 +48,9 @@ class LessonSelectPage(Page):
       - a transparent MenuBar on top, built from config["menu_bar"]
       - a transparent scrollable sidebar on the left of collapsible
         sections, one per config["sections"] entry, each listing the
-        manifest lessons whose "category" matches it
+        lessons whose "category" matches it - every page directly inside
+        the config["link_folder"] folder with "include": 1, sorted by
+        their "order"
       - the summary area filling the rest
 
     With nothing selected, the summary area shows this page's own "_note"
@@ -73,6 +75,7 @@ class LessonSelectPage(Page):
         self.default_note = self.join_note(config.get("_note", ""))
         self.default_folder = context.paths.pages / key
         self.selected_target: str | None = None
+        self.lessons = context.pages.pages_in(config.get("link_folder", "lessons"))
 
         self.add_background(config)
 
@@ -137,7 +140,7 @@ class LessonSelectPage(Page):
 
         for i, (label, target) in enumerate(lessons, start=1):
             # "&" would otherwise be eaten as a keyboard-mnemonic marker
-            text = self.labels.get(f"title_buttons_{label}").replace("&", "&&")
+            text = self.labels.get(label).replace("&", "&&")
             if numbered:
                 text = f"{i}. {text}"
             button = LessonButton(text)
@@ -165,14 +168,16 @@ class LessonSelectPage(Page):
 
     def lessons_in(self, category: str | None) -> list[tuple[str, str]]:
         '''
-        Every manifest lesson whose "category" matches, in manifest order,
-        as (title_label, target page key) pairs.
+        Every included lesson whose "category" matches, sorted by "order"
+        (then page key), as (link_label, target page key) pairs.
         '''
-        lessons = []
-        for key, value in self.context.pages.get("lessons").items():
-            if value.get("category") == category:
-                lessons.append((value.get("title_label", key), value.get("path", key)))
-        return lessons
+        matches = [
+            (config.get("order", 0), key, config)
+            for key, config in self.lessons.items()
+            if config.get("include") == 1 and config.get("category") == category
+        ]
+        matches.sort(key=lambda match: match[:2])
+        return [(self.context.pages.link_label(key), key) for _, key, _ in matches]
 
     # Summary
     def build_summary(self, body: QHBoxLayout):

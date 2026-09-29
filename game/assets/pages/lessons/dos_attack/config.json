@@ -18,6 +18,15 @@
 
     "_dev_note": "Denial-of-service lesson on the dos_attack layout.",
 
+    "schema_version": 1,
+    "link_label": "title_buttons_lesson_dos_attack",
+    "include": 0,
+    "category": "attacker",
+    "order": 7,
+    "prerequisites": [],
+    "estimated_minutes": 20,
+    "gradable": false,
+
     "build_type": "workspace",
 
     "settings": {
