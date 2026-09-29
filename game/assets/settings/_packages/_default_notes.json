@@ -1,0 +1,52 @@
+{
+    "_note": "Plain-language explanations of every field in a workspace config and in _default.json, shown by the Workspace Config Editor demo page. When you add a field to _default.json, explain it here too.",
+
+    "workspace_fields": {
+        "_note": "Markdown shown on the workspace select page when this workspace is selected: summary, objectives, reading, videos. One string, or a list of blocks joined with blank lines. Images like screenshot.png load from the workspace's own folder.",
+        "_dev_note": "Notes for developers. Never shown in the game - any field whose name starts with \"_\" is ignored.",
+        "schema_version": "The config format version. Always 1 for now.",
+        "link_label": "The labels key for this workspace's name, shown on its button in the workspace select page (e.g. \"title_buttons_workspace_arp_ip\"). Must exist in assets/labels/_default.json.",
+        "include": "1 lists this workspace on the workspace select page, 0 hides it.",
+        "category": "Which workspace select section it's listed under: \"admin\", \"attacker\" or \"defender\".",
+        "order": "Its position within that section. Lower numbers come first; numbered sections show it as \"1.\", \"2.\", ...",
+        "prerequisites": "Workspaces to finish first, by page key (e.g. \"workspaces/defender_ap_intro\"). Not used by the game yet.",
+        "estimated_minutes": "Roughly how long the lesson takes. Not used by the game yet.",
+        "gradable": "Whether the lesson can be graded. Not used by the game yet.",
+        "build_type": "Must be \"workspace\" for a workspace page.",
+        "settings": "Only the settings this workspace changes from _default.json, where every option starts off (0). Turn on what the lesson needs: each form, model or column usually needs both its *_available and *_shown entry set to 1. See the Settings Fields section below.",
+        "title": "The menu bar title, as the labels key \"menu_bar_titles_<title>\" (e.g. \"arp_ip_workspace\").",
+        "menu_bar": "The menu bar's buttons, left to right. Put the most important ones last: on a narrow window, buttons squash into the \"...\" menu from the left.",
+        "panes": "The panel layout: exactly one \"h_panes\" (side by side) or \"v_panes\" (stacked) group. Inside a group, \"<panel type>\": <weight> places a panel and a nested group places more panes; \"weight\" is the group's own share of its parent. Weights are proportional. Sibling groups need different names, like \"v_panes_left\" and \"v_panes_right\".",
+        "background": "Optional. The moving background behind the panels, e.g. {\"visual\": \"network_mesh\", \"blur\": 6}. false turns it off; leave it out for the usual still network."
+    },
+
+    "settings_fields": {
+        "submarine_map_sprites": "Which parts of the submarine model's map are drawn (1 = drawn). Turn these on in any workspace that shows the submarine model.",
+        "submarine_map_colors": "Colors for the submarine model's map, as theme color names (\"field\", \"red\", ...) or hex codes.",
+        "hvac_house_colors": "Colors for the HVAC house model, as theme color names or hex codes.",
+        "hvac_house_sprites": "Which parts of the HVAC house model are drawn (1 = drawn). Turn these on in any workspace that shows the HVAC model.",
+        "strip_chart_sprites": "Not used by the game yet.",
+        "strip_chart_colors": "Colors for the strip charts: background and grid, one color per plotted line in \"paths\", and the live-value markers in \"heads\".",
+        "strip_chart_auto_fit": "1 starts the ModBus Monitors charts in fit mode, zoomed to fit the recent data. Students can toggle it.",
+        "strip_chart_auto_fit_max_seconds": "How many seconds of history fit mode shows at most.",
+        "game_progress": "Records which network forms the student has started. Not read by the game yet.",
+        "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
+        "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Show Forms. A form only appears if network_action_forms_available also offers it.",
+        "network_action_forms_available": "Which network action forms this workspace offers at all (1). Forms that aren't available can't be shown, even through Show Forms.",
+        "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"table\" (live register values) and \"modify\" (rewriting values in transit).",
+        "modbus_table_forms_available": "Which ModBus table panel forms this workspace offers at all.",
+        "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
+        "defender_modbus_forms_available": "Which defender ModBus panel forms this workspace offers at all.",
+        "modbus_models_available": "Which physical models the model panel offers in its dropdown (\"hvac\", \"submarine\", and the AP-driven \"defender_hvac\"/\"defender_submarine\"). \"auto_switch\": 1 also offers the checkbox that follows the AP's reported mode.",
+        "modbus_model_selected": "Which model the model panel starts on. If it isn't available here, the panel starts on the first one that is.",
+        "modbus_model_auto_switch": "1 starts with the defender models following the AP's reported mode automatically.",
+        "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
+        "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
+        "packet_console_state": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph.",
+        "packet_filter_categories": "How the packet filter's checkboxes are grouped, and which checkboxes each group has.",
+        "packet_filter_checkboxes": "Which packet filters start out ticked (1). Nothing ticked shows every packet.",
+        "packet_filter_entries": "What starts out typed into the packet filter's text boxes, like an address to filter by.",
+        "packet_filter_function": "\"summary\" is the plain-language description of the current packet filter.",
+        "packet_columns": "Which packet console columns are shown (1). Students can change this with Show Columns."
+    }
+}

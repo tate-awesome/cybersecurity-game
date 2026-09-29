@@ -8,6 +8,7 @@ from ..pages.demo.sprites import Sprites
 from ..pages.demo.boat_motion import BoatMotion
 from ..pages.demo.triangle import Triangle
 from ..pages.demo.visuals import Visuals
+from ..pages.demo.config_editor import ConfigEditor
 
 # /attacker
 from ..pages.attacker.attacker import AttackerV0
@@ -32,6 +33,7 @@ PAGES: dict[str, type] = {
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,
         "demo/visuals": Visuals,
+        "demo/config_editor": ConfigEditor,
         "404": NotFound,
 }
 

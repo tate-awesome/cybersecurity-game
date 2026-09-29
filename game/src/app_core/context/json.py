@@ -189,6 +189,32 @@ class Json:
                 output[key] = value
         return output
 
+    # Page config keys that start a new blank-line-separated section (see format_config)
+    CONFIG_SECTIONS = {"_dev_note", "schema_version", "build_type", "settings", "title", "panes"}
+
+    def format_config(self, config: dict) -> str:
+        '''
+        A page config as readable JSON text: one top-level key per line,
+        a blank line before each section (CONFIG_SECTIONS), and any value
+        short enough kept on one line.
+        '''
+        parts = []
+        for i, (key, value) in enumerate(config.items()):
+            separator = "" if i == 0 else (",\n\n" if key in self.CONFIG_SECTIONS else ",\n")
+            parts.append(f"{separator}    {json.dumps(key)}: {self.format_value(value, 4)}")
+        return "{\n" + "".join(parts) + "\n}\n"
+
+    def format_value(self, value, indent: int, width: int = 100) -> str:
+        one_line = json.dumps(value, ensure_ascii=False)
+        if not isinstance(value, (dict, list)) or indent + len(one_line) <= width:
+            return one_line
+        pad = " " * (indent + 4)
+        if isinstance(value, dict):
+            items = [f"{pad}{json.dumps(k)}: {self.format_value(v, indent + 4, width)}" for k, v in value.items()]
+            return "{\n" + ",\n".join(items) + "\n" + " " * indent + "}"
+        items = [pad + self.format_value(v, indent + 4, width) for v in value]
+        return "[\n" + ",\n".join(items) + "\n" + " " * indent + "]"
+
     def save_to_file(self, data: dict, file_path: Path):
         try:
             self.paths.generate_path(file_path.parent)

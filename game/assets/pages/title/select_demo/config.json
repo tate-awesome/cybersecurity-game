@@ -10,6 +10,7 @@
         { "link": "demo/sprites" },
         { "link": "demo/triangle" },
         { "link": "demo/visuals" },
+        { "link": "demo/config_editor" },
         { "link": "404" },
         { "action": "back" },
         { "action": "quit" }
