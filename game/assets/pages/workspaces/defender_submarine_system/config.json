@@ -1,0 +1,57 @@
+{
+    "_note": [
+        "# Defender Lesson 1: The Submarine System",
+        "## Summary",
+        "The submarine model combines a submarine and a server that communicates over the air. The submarine takes in control commands from the server in order to navigate towards a target that only the server knows the location of.",
+        "In this lesson you will learn the specifics of the submarine system and how to change the target which the submarine follows.",
+        "## Objectives",
+        "- Understand the variables which control the movement of the submarine\n- Understand which variables are owned by the Client\n- Understand which variables are owned by the Server\n- Understand what the Client computes\n- Understand what the Server computes",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** Attacker Lesson 1, *IP & ARP Basics* - you switch sides and start learning how a network attack works"
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_defender_submarine_system",
+    "include": 1,
+    "category": "defender",
+    "order": 1,
+    "prerequisites": [],
+    "estimated_minutes": 5,
+    "gradable": false,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
+        "modbus_models_available": {"defender_submarine": 1},
+        "network_action_forms_available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
+        "defender_modbus_forms_available": {"mode": 1, "sliders": 1},
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
+    },
+
+    "title": "defender_submarine_system_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "panes": {
+        "v_panes": {
+            "weight": 1,
+            "h_panes_top": {"weight": 4, "defender_console_panel": 3, "modbus_model_panel": 3},
+            "v_panes_bottom": {"weight": 3, "defender_stripchart_panel": 2}
+        }
+    }
+}
