@@ -19,7 +19,7 @@
     "_dev_note": "Denial-of-service lesson on the dos_attack layout.",
 
     "schema_version": 1,
-    "link_label": "title_buttons_lesson_dos_attack",
+    "link_label": "title_buttons_workspace_dos_attack",
     "include": 0,
     "category": "attacker",
     "order": 7,
@@ -90,7 +90,7 @@
         }
     },
 
-    "title": "dos_attack_lesson",
+    "title": "dos_attack_workspace",
     "menu_bar": [
         "toggle_button",
         "theme_button",

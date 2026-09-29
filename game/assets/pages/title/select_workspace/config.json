@@ -1,24 +1,37 @@
 {
     "schema_version": 1,
-    "link_label": "title_buttons_lessons",
-    "build_type": "lesson_select",
-    "title": "select_lesson",
+    "link_label": "title_buttons_workspaces",
+    "build_type": "workspace_select",
+    "title": "select_workspace",
     "background": { "visual": "network_mesh", "blur": 6 },
 
     "_note": [
-        "# Select a Lesson",
-        "Pick a lesson from the list on the left to read its summary, objectives, reading, and videos here. When you're ready, press **Start Lesson** - or just double-click the lesson.",
+        "# Select a Workspace",
+        "Each workspace is a set of tools for one lesson or exercise. Pick one from the list on the left to read its summary, objectives, reading, and videos here. When you're ready, press **Open Workspace** - or just double-click it.",
         "**New here? Start with Defender Lesson 1: Defending the AP.** Before starting lesson 1, read chapters 1-3 of *Securing Cyber-Physical Systems: A Hands-On Guide* - they cover the networking, Wi-Fi, and encryption basics every lesson builds on.",
         "The defender lessons come first, then the attacker lessons, each in numbered order. Every lesson summary names the lesson before and after it, so you can follow the course straight through.",
-        "Instructors: open an **Admin Suite** page for unrestricted access to every panel and form, without a lesson's guard rails."
+        "Instructors: open an **Admin Suite** workspace for unrestricted access to every panel and form, without a lesson's guard rails.",
+        "## Your Saved Work",
+        "Every workspace remembers your work on its own. Whenever you leave a workspace, refresh it, or close the game, it saves what you changed there:",
+        "- what you typed into forms, like IP addresses and network names\n- which forms and packet columns you turned on or off\n- register nicknames, units, and scaling\n- packet filters\n- panel sizes you dragged",
+        "Only what differs from the workspace's starting setup is saved, so anything you never touched keeps up with updates to the workspace. Your work in one workspace never affects another - each has its own save in `user_data/page_data`, next to the game.",
+        "To start a workspace over, select it here and press **Delete Saved Data**, or press **Reset Page** inside it. **Delete All Workspace Data** in the menu bar clears every workspace at once. None of these touch your theme, labels, or favorite page - those are saved separately."
     ],
 
-    "link_folder": "lessons",
+    "link_folder": "workspaces",
     "sections": [
         { "label": "admin_suites", "category": "admin" },
         { "label": "attacker_lessons", "category": "attacker", "numbered": true },
         { "label": "defender_lessons", "category": "defender", "numbered": true }
     ],
 
-    "menu_bar": ["back_button", "quit_button"]
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "delete_all_workspace_data_button",
+        "back_button",
+        "quit_button"
+    ]
 }

@@ -5,14 +5,14 @@ from PySide6.QtGui import QColor, QImage, QTextDocument
 from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QPushButton, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget
 
 from ...app_core import Context
-from ...widgets import Scrollable
+from ...widgets import Scrollable, popup
 from ..page import Page
 
 
 class NoteBrowser(QTextBrowser):
     '''
-    Read-only markdown view for a lesson's _note. Relative image paths
-    (e.g. "screenshot.png") resolve against the lesson's own folder via
+    Read-only markdown view for a workspace's _note. Relative image paths
+    (e.g. "screenshot.png") resolve against the workspace's own folder via
     searchPaths, and images are scaled down to fit the viewport so a
     full-size screenshot doesn't force horizontal scrolling.
     '''
@@ -30,8 +30,8 @@ class NoteBrowser(QTextBrowser):
         return resource
 
 
-class LessonButton(QPushButton):
-    '''A sidebar lesson button that also reports double-clicks, to start a lesson directly.'''
+class WorkspaceButton(QPushButton):
+    '''A sidebar workspace button that also reports double-clicks, to open a workspace directly.'''
 
     doubleClicked = Signal()
 
@@ -40,26 +40,26 @@ class LessonButton(QPushButton):
         event.accept()
 
 
-class LessonSelectPage(Page):
+class WorkspaceSelectPage(Page):
     '''
-    Page constructor for build_type "lesson_select". Everything floats on
+    Page constructor for build_type "workspace_select". Everything floats on
     the page's (optional) procedural background:
 
       - a transparent MenuBar on top, titled by config["title"] with
         config["menu_bar"]'s buttons
       - a transparent scrollable sidebar on the left of collapsible
         sections, one per config["sections"] entry, each listing the
-        lessons whose "category" matches it - every page directly inside
+        workspaces whose "category" matches it - every page directly inside
         the config["link_folder"] folder with "include": 1, sorted by
         their "order"
       - the summary area filling the rest
 
     With nothing selected, the summary area shows this page's own "_note"
-    straight on the background. Clicking a lesson shows that lesson's
-    config.json "_note" (markdown) on an opaque box instead, with a Start
-    Lesson button pinned to the box's bottom-right corner - it stays put
-    while the summary scrolls under it. Double-clicking a lesson starts it
-    immediately.
+    straight on the background. Clicking a workspace shows that
+    workspace's config.json "_note" (markdown) on an opaque box instead,
+    with Delete Saved Data and Open Workspace buttons pinned to the box's
+    bottom-right corner - they stay put while the summary scrolls under
+    them. Double-clicking a workspace opens it immediately.
 
     A _note can be one string or a list of markdown blocks, joined with
     blank lines between them.
@@ -76,7 +76,7 @@ class LessonSelectPage(Page):
         self.default_note = self.join_note(config.get("_note", ""))
         self.default_folder = context.paths.pages / key
         self.selected_target: str | None = None
-        self.lessons = context.pages.pages_in(config.get("link_folder", "lessons"))
+        self.workspaces = context.pages.pages_in(config.get("link_folder", "workspaces"))
 
         self.add_background(config)
 
@@ -100,8 +100,8 @@ class LessonSelectPage(Page):
 
         self.build_summary(body)
 
-        self.lesson_group = QButtonGroup(self)
-        self.lesson_group.setExclusive(True)
+        self.workspace_group = QButtonGroup(self)
+        self.workspace_group.setExclusive(True)
         row = 0
         for section in config.get("sections", []):
             row = self.build_section(section, row)
@@ -112,13 +112,13 @@ class LessonSelectPage(Page):
     # Sidebar
     def build_section(self, section: dict, row: int) -> int:
         '''
-        Adds one collapsible section (header button + lesson buttons) to
+        Adds one collapsible section (header button + workspace buttons) to
         the sidebar starting at the given grid row, and returns the next
-        free row. "numbered" prefixes each lesson with its position, so
+        free row. "numbered" prefixes each workspace with its position, so
         the default note can point students at e.g. "Defender Lesson 1".
         '''
         title = self.labels.get(f'title_buttons_{section.get("label", "_default")}')
-        lessons = self.lessons_in(section.get("category"))
+        workspaces = self.workspaces_in(section.get("category"))
         numbered = section.get("numbered", False)
 
         header = QPushButton()
@@ -139,12 +139,12 @@ class LessonSelectPage(Page):
         content_layout.setSpacing(self.style.cgap * 2)
         self.scrollable.grid_layout.addWidget(content, row + 1, 0)
 
-        for i, (label, target) in enumerate(lessons, start=1):
+        for i, (label, target) in enumerate(workspaces, start=1):
             # "&" would otherwise be eaten as a keyboard-mnemonic marker
             text = self.labels.get(label).replace("&", "&&")
             if numbered:
                 text = f"{i}. {text}"
-            button = LessonButton(text)
+            button = WorkspaceButton(text)
             button.setToolTip(text.replace("&&", "&"))
             button.setCheckable(True)
             # Let long titles clip inside the sidebar instead of widening it past its fixed width
@@ -156,7 +156,7 @@ class LessonSelectPage(Page):
             ))
             button.clicked.connect(lambda checked=False, target=target: self.select(target))
             button.doubleClicked.connect(lambda target=target: self.start(target))
-            self.lesson_group.addButton(button)
+            self.workspace_group.addButton(button)
             content_layout.addWidget(button)
 
         def update(expanded: bool, title=title, header=header, content=content):
@@ -167,14 +167,14 @@ class LessonSelectPage(Page):
 
         return row + 2
 
-    def lessons_in(self, category: str | None) -> list[tuple[str, str]]:
+    def workspaces_in(self, category: str | None) -> list[tuple[str, str]]:
         '''
-        Every included lesson whose "category" matches, sorted by "order"
+        Every included workspace whose "category" matches, sorted by "order"
         (then page key), as (link_label, target page key) pairs.
         '''
         matches = [
             (config.get("order", 0), key, config)
-            for key, config in self.lessons.items()
+            for key, config in self.workspaces.items()
             if config.get("include") == 1 and config.get("category") == category
         ]
         matches.sort(key=lambda match: match[:2])
@@ -184,10 +184,11 @@ class LessonSelectPage(Page):
     def build_summary(self, body: QHBoxLayout):
         '''
         The summary box: a frame holding the markdown browser, transparent
-        until a lesson is selected (see set_summary_opaque), plus a Start
-        Lesson button that isn't in any layout - it's placed by hand in the
-        box's bottom-right corner on every resize (see eventFilter), so it
-        floats over the browser and stays put while the summary scrolls.
+        until a workspace is selected (see set_summary_opaque), plus a row
+        of action buttons (Delete Saved Data, Open Workspace) that isn't in
+        any layout - it's placed by hand in the box's bottom-right corner on
+        every resize (see eventFilter), so it floats over the browser and
+        stays put while the summary scrolls.
         '''
         self.summary_box = QFrame()
         box_layout = QVBoxLayout(self.summary_box)
@@ -202,14 +203,25 @@ class LessonSelectPage(Page):
         self.browser.viewport().setAutoFillBackground(False)
         box_layout.addWidget(self.browser)
 
-        self.start_button = QPushButton(self.labels.get("title_buttons_start_lesson"), self.summary_box)
+        self.actions = QWidget(self.summary_box)
+        actions_layout = QHBoxLayout(self.actions)
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(self.style.igap)
+
+        self.delete_button = QPushButton(self.labels.get("title_buttons_delete_workspace_data"))
+        self.delete_button.setFont(self.style.get_font("title_btn"))
+        self.delete_button.clicked.connect(lambda checked=False: self.delete_saved_data(self.selected_target))
+        actions_layout.addWidget(self.delete_button)
+
+        self.start_button = QPushButton(self.labels.get("title_buttons_open_workspace"))
         self.start_button.setFont(self.style.get_font("title_btn"))
         self.start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
-        self.start_button.hide()
+        actions_layout.addWidget(self.start_button)
+        self.actions.hide()
 
         self.summary_box.installEventFilter(self)
         # The scrollbar appearing/disappearing changes where the corner is
-        self.browser.verticalScrollBar().rangeChanged.connect(lambda *_: self.place_start_button())
+        self.browser.verticalScrollBar().rangeChanged.connect(lambda *_: self.place_actions())
         self.set_summary_opaque(False)
 
     def set_summary_opaque(self, opaque: bool):
@@ -217,41 +229,42 @@ class LessonSelectPage(Page):
         self.summary_box.setStyleSheet(self.style.themed(
             f"background-color: {color}; border-radius: {self.style.PANEL_RADIUS}px;", self.summary_box
         ))
-        self.start_button.setVisible(opaque)
-        self.place_start_button()
+        self.actions.setVisible(opaque)
+        self.place_actions()
 
-    def place_start_button(self):
+    def place_actions(self):
         padding = self.style.igap * 2
         scrollbar = self.browser.verticalScrollBar()
         scrollbar_width = scrollbar.width() if scrollbar.isVisible() else 0
-        size = self.start_button.sizeHint()
-        self.start_button.resize(size)
-        self.start_button.move(
+        size = self.actions.sizeHint()
+        self.actions.resize(size)
+        self.actions.move(
             self.summary_box.width() - size.width() - padding - scrollbar_width,
             self.summary_box.height() - size.height() - padding,
         )
-        self.start_button.raise_()
+        self.actions.raise_()
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if watched is self.summary_box and event.type() == QEvent.Type.Resize:
-            self.place_start_button()
+            self.place_actions()
         return False
 
     def select(self, target: str):
         self.selected_target = target
         config = self.context.pages.load_page_config(target)
         self.set_summary_opaque(True)
+        self.refresh_delete_button()
         self.show_note(self.join_note(config.get("_note", "")), self.context.paths.pages / target)
 
     def show_note(self, markdown: str, folder: Path):
         self.browser.setSearchPaths([str(folder)])
         self.browser.document().clear()
         self.browser.setMarkdown(markdown)
-        if self.start_button.isVisible():
-            # Room at the bottom so the last lines can scroll up past the pinned button
+        if self.actions.isVisible():
+            # Room at the bottom so the last lines can scroll up past the pinned buttons
             root = self.browser.document().rootFrame()
             frame_format = root.frameFormat()
-            frame_format.setBottomMargin(self.start_button.sizeHint().height() + self.style.igap * 2)
+            frame_format.setBottomMargin(self.actions.sizeHint().height() + self.style.igap * 2)
             root.setFrameFormat(frame_format)
         self.browser.verticalScrollBar().setValue(0)
 
@@ -269,3 +282,19 @@ class LessonSelectPage(Page):
     def start(self, target: str | None):
         if target is not None:
             self.router.show(target)
+
+    # Saved data
+    def refresh_delete_button(self):
+        '''Only lets the selected workspace's saved data be deleted if it has any.'''
+        has_data = self.selected_target is not None and self.context.pages.has_saved_page(self.selected_target)
+        self.delete_button.setEnabled(has_data)
+        self.delete_button.setToolTip("" if has_data else "Nothing saved for this workspace yet")
+
+    def delete_saved_data(self, target: str | None):
+        if target is None:
+            return
+        name = self.labels.get(self.context.pages.link_label(target))
+        def delete():
+            self.context.pages.delete_saved_page(target)
+            self.refresh_delete_button()
+        popup.delete_workspace_data_dialog(self, self.context, name, delete)

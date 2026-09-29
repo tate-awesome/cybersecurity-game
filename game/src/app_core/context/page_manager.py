@@ -1,4 +1,5 @@
 
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -14,9 +15,9 @@ class PageManager:
     A page's key is its path relative to assets/pages, without ".json".
     A page is either a single file (assets/pages/start.json -> "start") or
     a folder holding a config.json, for pages that ship their own files
-    like screenshots (assets/pages/lessons/arp_ip/config.json ->
-    "lessons/arp_ip"). Everything else about a page - its link label,
-    lesson metadata, what it links to - lives in its own config.
+    like screenshots (assets/pages/workspaces/arp_ip/config.json ->
+    "workspaces/arp_ip"). Everything else about a page - its link label,
+    workspace metadata, what it links to - lives in its own config.
     '''
 
     SCHEMA_VERSION = 1
@@ -147,7 +148,7 @@ class PageManager:
 
     def pages_in(self, folder: str) -> dict[str, dict]:
         '''
-        Every page directly inside the given folder (e.g. "lessons"),
+        Every page directly inside the given folder (e.g. "workspaces"),
         keyed by page key, each with its loaded config.
         '''
         prefix = f"{folder.strip('/')}/"
@@ -297,7 +298,21 @@ class PageManager:
         save_current_page), so the next time it's built -
         prepare_page_config finding nothing there to overlay -
         it falls back to its own config.json defaults instead of
-        whatever was last saved for it. Used by ContextManager.reset_data.
+        whatever was last saved for it. Used by ContextManager.reset_data
+        and the workspace select page.
         '''
         path = self.context.paths.user_pages / key / "config.json"
         path.unlink(missing_ok=True)
+
+    def has_saved_page(self, key: str) -> bool:
+        '''Whether the given page has any autosaved page_data (see save_current_page).'''
+        return (self.context.paths.user_pages / key / "config.json").is_file()
+
+    def delete_all_saved_pages(self):
+        '''
+        Deletes every page's autosaved page_data - the whole
+        user_data/page_data folder - leaving everything else in user_data
+        (preferences like theme, labels and favorite page; captures) alone.
+        '''
+        shutil.rmtree(self.context.paths.user_pages, ignore_errors=True)
+        self.context.paths.generate_path(self.context.paths.user_pages)

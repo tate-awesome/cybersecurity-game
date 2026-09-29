@@ -45,6 +45,8 @@ class Visuals(Page):
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
         menu_bar.toggle_button()
         menu_bar.theme_button()
+        menu_bar.labels_button()
+        menu_bar.page_button()
         menu_bar.back_button()
         menu_bar.quit_button()
 

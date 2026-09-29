@@ -26,9 +26,12 @@ def message(master: QWidget, context: Context, message: str):
         window.show()
         return window
 
-def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
+def confirm_dialog(master: QWidget, context: Context, message: str, confirm_text: str, cancel_text: str, confirm_func):
+        '''
+        A modal yes/no dialog: shows message, and calls confirm_func only if
+        the user presses the confirm_text button.
+        '''
         style = context.style
-        message = "Are you sure you want to delete all user data?\nSaved page progress, captures, and preferences will be permanently lost."
 
         window = QDialog(master)
         window.setWindowTitle("Confirm")
@@ -47,15 +50,15 @@ def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
         layout.addLayout(buttons_row)
 
         def confirm():
-            delete_func()
+            confirm_func()
             window.accept()
 
-        delete_button = QPushButton("Yes, delete")
-        delete_button.setFont(style.get_font())
-        delete_button.clicked.connect(confirm)
-        buttons_row.addWidget(delete_button)
+        confirm_button = QPushButton(confirm_text)
+        confirm_button.setFont(style.get_font())
+        confirm_button.clicked.connect(confirm)
+        buttons_row.addWidget(confirm_button)
 
-        cancel_button = QPushButton("No, cancel")
+        cancel_button = QPushButton(cancel_text)
         cancel_button.setFont(style.get_font())
         cancel_button.clicked.connect(window.reject)
         buttons_row.addWidget(cancel_button)
@@ -63,39 +66,21 @@ def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
         window.show()
         return window
 
+def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
+        message = "Are you sure you want to delete all user data?\nSaved page progress, captures, and preferences will be permanently lost."
+        return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
+
+def delete_workspace_data_dialog(master: QWidget, context: Context, workspace_name: str, delete_func):
+        message = (f"Delete your saved data for \"{workspace_name}\"?\n"
+                   "Its form entries, toggles, register settings, and panel sizes go back to the workspace's defaults.")
+        return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
+
+def delete_all_workspace_data_dialog(master: QWidget, context: Context, delete_func):
+        message = ("Delete your saved data for every workspace?\n"
+                   "Every workspace's form entries, toggles, register settings, and panel sizes go back to their defaults. "
+                   "Your theme, labels, and favorite page are kept.")
+        return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
+
 def quit_dialog(master: QWidget, context: Context, quit_func):
-        style = context.style
         message = "Are you sure you want to quit?\nNothing will be saved."
-
-        window = QDialog(master)
-        window.setWindowTitle("Confirm")
-        window.resize(500, 300)
-        window.setModal(True)  # block interactions with main window
-
-        layout = QVBoxLayout(window)
-
-        label = QLabel(message)
-        label.setFont(style.get_font())
-        label.setWordWrap(True)
-        layout.addWidget(label)
-
-        buttons_row = QHBoxLayout()
-        layout.addStretch()
-        layout.addLayout(buttons_row)
-
-        def confirm():
-            quit_func()
-            window.accept()
-
-        quit_button = QPushButton("Yes, quit")
-        quit_button.setFont(style.get_font())
-        quit_button.clicked.connect(confirm)
-        buttons_row.addWidget(quit_button)
-
-        continue_button = QPushButton("No, continue")
-        continue_button.setFont(style.get_font())
-        continue_button.clicked.connect(window.reject)
-        buttons_row.addWidget(continue_button)
-
-        window.show()
-        return window
+        return confirm_dialog(master, context, message, "Yes, quit", "No, continue", quit_func)

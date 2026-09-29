@@ -1,7 +1,7 @@
 from ...app_core import Context
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
-from ..popup import message
+from ..popup import delete_all_workspace_data_dialog, message
 from .overlay import Overlay
 from typing import Callable
 
@@ -534,6 +534,19 @@ class MenuBar(QFrame):
     def page_button(self):
         button = self.add_button("page_button", self.context.preferences.save_page)
         self.add_tooltip(button, "page_button")
+
+    def delete_all_workspace_data_button(self):
+        '''
+        Asks for confirmation, then deletes every workspace's autosaved data
+        (only user_data/page_data - preferences are kept) and rebuilds the
+        current page so anything showing saved-data state updates.
+        '''
+        def delete():
+            self.context.pages.delete_all_saved_pages()
+            self.context.router.refresh(save=False)
+        button = self.add_button("delete_all_workspace_data_button",
+                                 lambda: delete_all_workspace_data_dialog(self, self.context, delete))
+        self.add_tooltip(button, "delete_all_workspace_data_button")
 
     def page_buttons(self):
         '''

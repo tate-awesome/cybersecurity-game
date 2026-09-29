@@ -24,7 +24,7 @@ FORM_CLASSES = {
     "nfq": NFQForm,
     # Defender-only forms - invisible everywhere except a page whose
     # network_action_forms_available explicitly enables them (the defender
-    # lessons - see assets/pages/lessons/defender_*).
+    # lessons - see assets/pages/workspaces/defender_*).
     # ap_connect is listed first since encryption/ap_tunnel/kalman look up
     # its process by name rather than creating their own if it's missing.
     "ap_connect": APConnectForm,

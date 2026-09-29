@@ -391,7 +391,9 @@
     "modbus_models_available": {
         "hvac": 0,
         "submarine": 0,
-        "auto_switch": 0
+        "auto_switch": 0,
+        "defender_hvac": 0,
+        "defender_submarine": 0
     },
 
     "network_action_forms_available": {
@@ -408,6 +410,11 @@
     },
 
     "defender_modbus_forms_available": {
+        "mode": 0,
+        "sliders": 0
+    },
+
+    "defender_modbus_forms_shown": {
         "mode": 0,
         "sliders": 0
     }

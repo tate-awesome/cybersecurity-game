@@ -15,9 +15,9 @@ from ..pages.defender.defender import DefenderV0
 
 # /generic (data-driven pages, dispatched by each page's own config "build_type").
 # start and title/select_demo are build_type "title" pages
-# and title/select_lesson is "lesson_select", all discovered below - no
+# and title/select_workspace is "workspace_select", all discovered below - no
 # hand-written entries needed for them.
-from ..pages.generic import WorkspacePage, TitlePage, LessonSelectPage
+from ..pages.generic import WorkspacePage, TitlePage, WorkspaceSelectPage
 
 # Hard-coded 404 page - needs nothing from assets/, so it still works without it
 from ..pages.not_found import NotFound
@@ -43,7 +43,7 @@ PAGES: dict[str, type] = {
 GENERIC_BUILD_TYPES: dict[str, type] = {
     "workspace": WorkspacePage,
     "title": TitlePage,
-    "lesson_select": LessonSelectPage,
+    "workspace_select": WorkspaceSelectPage,
 }
 
 

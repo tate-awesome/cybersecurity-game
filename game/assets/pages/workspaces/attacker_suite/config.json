@@ -19,7 +19,7 @@
     "_dev_note": "Full instructor build of attacker/v0, submarine lesson. Filename stem ('attacker_lab') is this page's default save-slot key for saved input values, since save_slots.inputs is omitted below.",
 
     "schema_version": 1,
-    "link_label": "title_buttons_lesson_attacker_suite",
+    "link_label": "title_buttons_workspace_attacker_suite",
     "include": 1,
     "category": "admin",
     "order": 1,
@@ -111,7 +111,7 @@
         }
     },
 
-    "title": "attacker_suite_lesson",
+    "title": "attacker_suite_workspace",
     "menu_bar": [
         "toggle_button",
         "theme_button",

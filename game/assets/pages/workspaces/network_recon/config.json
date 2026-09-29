@@ -19,7 +19,7 @@
     "_dev_note": "First lesson on the network_recon layout - nmap/sniffing forms, network graph, packet console.",
 
     "schema_version": 1,
-    "link_label": "title_buttons_lesson_recon",
+    "link_label": "title_buttons_workspace_recon",
     "include": 1,
     "category": "attacker",
     "order": 2,
@@ -42,7 +42,7 @@
         }
     },
 
-    "title": "network_recon_lesson",
+    "title": "network_recon_workspace",
     "menu_bar": [
         "toggle_button",
         "theme_button",

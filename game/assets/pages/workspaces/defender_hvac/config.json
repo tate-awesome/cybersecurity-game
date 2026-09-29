@@ -19,11 +19,11 @@
     "_dev_note": "Defender counterpart to lesson_hvac - defender_modbus_panel/defender_stripchart_panel paired with the defender_hvac model, which is driven by the AP's own reported mode rather than picked manually. AP Connection/Encryption/AP Tunnel forms stay visible so the student can (dis)connect and secure the link that feeds this telemetry; no Kalman filter here, that's submarine-specific.",
 
     "schema_version": 1,
-    "link_label": "title_buttons_lesson_defender_hvac",
+    "link_label": "title_buttons_workspace_defender_hvac",
     "include": 1,
     "category": "defender",
     "order": 2,
-    "prerequisites": ["lessons/defender_ap_intro"],
+    "prerequisites": ["workspaces/defender_ap_intro"],
     "estimated_minutes": 20,
     "gradable": true,
 
@@ -37,7 +37,7 @@
         "defender_modbus_forms_available": {"mode": 1, "sliders": 1}
     },
 
-    "title": "defender_hvac_lesson",
+    "title": "defender_hvac_workspace",
     "menu_bar": [
         "toggle_button",
         "theme_button",

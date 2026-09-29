@@ -19,7 +19,7 @@
     "_dev_note": "First lesson on the modbus_hvac layout - the house model paired with the lab_hvac settings package (HVAC registers).",
 
     "schema_version": 1,
-    "link_label": "title_buttons_lesson_hvac",
+    "link_label": "title_buttons_workspace_hvac",
     "include": 1,
     "category": "attacker",
     "order": 5,
@@ -66,7 +66,7 @@
         }
     },
 
-    "title": "modbus_hvac_lesson",
+    "title": "modbus_hvac_workspace",
     "menu_bar": [
         "toggle_button",
         "theme_button",
