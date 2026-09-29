@@ -1,5 +1,5 @@
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
@@ -52,22 +52,30 @@ class LocalizationManager:
         print(file_path)
 
     # Control (readonly)
-    def get(self, *keys: str) -> Any:
+    def get(self, key: str) -> str:
         '''
-        Returns the value at the given key sequence in the data dict.
-        Raises a KeyError naming the full path if the path doesn't have a value.
+        Returns the label for the given flat key (e.g. "menu_bar_buttons_quit").
+        Raises a KeyError naming the key if there's no label for it.
         '''
-        output = self.data
-        for i, key in enumerate(keys):
-            if not isinstance(output, dict) or key not in output:
-                raise KeyError(f"labels{''.join(f'[{k!r}]' for k in keys[:i + 1])} not found (full path requested: {keys})")
-            output = output[key]
-        return output
+        if key not in self.data:
+            raise KeyError(f"labels[{key!r}] not found")
+        return self.data[key]
+
+    def group(self, prefix: str) -> dict[str, str]:
+        '''
+        Returns every label whose key starts with "<prefix>_", keyed by the
+        rest of its key and kept in file order - e.g. group("packet_columns")
+        -> {"time_word": "Time", ...}. For widgets that build one element per
+        label in a group (table headers, columns) instead of looking up
+        labels one at a time.
+        '''
+        start = f"{prefix}_"
+        return {key[len(start):]: text for key, text in self.data.items() if key.startswith(start)}
 
     def variable_name(self, key):
         nickname = self.context.states.get_register(key, "nickname")
         if len(nickname) > 0:
             variable_name = nickname
         else:
-            variable_name = self.get("modbus_variables", key)
+            variable_name = self.get(f"modbus_variables_{key}")
         return variable_name

@@ -113,7 +113,7 @@ class LessonSelectPage(Page):
         free row. "numbered" prefixes each lesson with its position, so
         the default note can point students at e.g. "Defender Lesson 1".
         '''
-        title = self.labels.get("title_buttons", section.get("label", "_default"))
+        title = self.labels.get(f'title_buttons_{section.get("label", "_default")}')
         lessons = self.lessons_in(section.get("category"))
         numbered = section.get("numbered", False)
 
@@ -137,7 +137,7 @@ class LessonSelectPage(Page):
 
         for i, (label, target) in enumerate(lessons, start=1):
             # "&" would otherwise be eaten as a keyboard-mnemonic marker
-            text = self.labels.get("title_buttons", label).replace("&", "&&")
+            text = self.labels.get(f"title_buttons_{label}").replace("&", "&&")
             if numbered:
                 text = f"{i}. {text}"
             button = LessonButton(text)
@@ -196,7 +196,7 @@ class LessonSelectPage(Page):
         self.browser.viewport().setAutoFillBackground(False)
         box_layout.addWidget(self.browser)
 
-        self.start_button = QPushButton(self.labels.get("title_buttons", "start_lesson"), self.summary_box)
+        self.start_button = QPushButton(self.labels.get("title_buttons_start_lesson"), self.summary_box)
         self.start_button.setFont(self.style.get_font("title_btn"))
         self.start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
         self.start_button.hide()

@@ -48,7 +48,7 @@ class CheckboxOverlay:
                 print(f"Form is invisible: {key!r}")
                 continue
 
-            checkbox = QCheckBox(self.context.labels.get(self.state_key, key))
+            checkbox = QCheckBox(self.context.labels.get(f"{self.state_key}_{key}"))
             checkbox.setFont(med)
             category_layout.addWidget(checkbox)
 

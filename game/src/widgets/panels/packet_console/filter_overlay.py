@@ -48,14 +48,14 @@ class FilterOverlay:
             category_layout.setSpacing(self.style.cgap * 2)
             checkbox_row.addWidget(category_frame)
 
-            category_label = QLabel(self.context.labels.get("packet_filter_categories", category))
+            category_label = QLabel(self.context.labels.get(f"packet_filter_categories_{category}"))
             category_label.setFont(self.style.get_font())
             category_layout.addWidget(category_label)
 
             # Create each checkbox in the category
             for filter_key in self.filter_columns[category]:
 
-                filter_box = QCheckBox(self.context.labels.get("packet_filter_checkboxes", filter_key))
+                filter_box = QCheckBox(self.context.labels.get(f"packet_filter_checkboxes_{filter_key}"))
                 filter_box.setFont(self.style.get_font())
                 category_layout.addWidget(filter_box)
 
@@ -81,7 +81,7 @@ class FilterOverlay:
         # Create each text filter label and entry
         for text_slot in text_slots:
 
-            filter_label = QLabel(self.context.labels.get("packet_filter_entries", text_slot))
+            filter_label = QLabel(self.context.labels.get(f"packet_filter_entries_{text_slot}"))
             filter_label.setFont(self.style.get_font())
             entry_layout.addWidget(filter_label)
 
@@ -181,7 +181,7 @@ class FilterOverlay:
                 for checkbox_key in self.filter_columns[category]:
                     checkbox_value = self._checkbox_value(box_slots, checkbox_key)
                     if checkbox_value == "1" or checkbox_value == 1:
-                        category_conditions.append(self.context.labels.get("packet_filter_checkboxes", checkbox_key))
+                        category_conditions.append(self.context.labels.get(f"packet_filter_checkboxes_{checkbox_key}"))
 
                 if len(category_conditions) > 0:
                     category_summary = f"{category_summary} {' OR '.join(category_conditions)}"

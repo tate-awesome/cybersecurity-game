@@ -47,7 +47,7 @@ class Builder(Panel):
             if key not in available_models or available_models[key] in (0, "0"):
                 print(f"Model is invisible: {key!r}")
                 continue
-            self.labels_by_key[key] = self.context.labels.get("modbus_model_options", key)
+            self.labels_by_key[key] = self.context.labels.get(f"modbus_model_options_{key}")
         self.key_by_label = {label: key for key, label in self.labels_by_key.items()}
 
         self.body = QWidget()
@@ -97,7 +97,7 @@ class Builder(Panel):
         if auto_switch_visible and DEFENDER_MODELS & set(self.labels_by_key):
             auto_switch_enabled = bool(self.context.states.get("modbus_model_auto_switch"))
             self.auto_switch_checkbox = self.menu_bar.add_checkbox(
-                self.context.labels.get("menu_bar_buttons", "auto_switch"),
+                self.context.labels.get("menu_bar_buttons_auto_switch"),
                 checked=auto_switch_enabled,
                 command=self._set_auto_switch,
             )

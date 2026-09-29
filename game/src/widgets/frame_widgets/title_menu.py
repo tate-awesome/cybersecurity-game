@@ -13,7 +13,7 @@ class TitleMenu(QWidget):
         super().__init__(master)
         self.context = context
         self.style = context.style
-        title_text = self.context.labels.get("title_text", title_label)
+        title_text = self.context.labels.get(f"title_text_{title_label}")
 
         master.layout().addWidget(self)
 
@@ -38,7 +38,7 @@ class TitleMenu(QWidget):
         self.grid.setRowStretch(2, 1)
 
     def button(self, label: str = "_default", function: Callable | None = None):
-        button = QPushButton(self.context.labels.get("title_buttons", label))
+        button = QPushButton(self.context.labels.get(f"title_buttons_{label}"))
         button.setFont(self.style.get_font("title_btn"))
         if function is not None:
             # clicked emits a "checked" bool that callers here don't expect

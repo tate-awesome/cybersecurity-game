@@ -21,7 +21,7 @@ class Overlay(QWidget):
         self.style = context.style
         self.button = button
         self.open_text = button.text()
-        self.close_text = self.context.labels.get("menu_bar_buttons", "close_overlay")
+        self.close_text = self.context.labels.get("menu_bar_buttons_close_overlay")
         self.populate_func = populate_func
         self._last_hidden_at = 0.0
         self._parent_overlay: "Overlay | None" = None

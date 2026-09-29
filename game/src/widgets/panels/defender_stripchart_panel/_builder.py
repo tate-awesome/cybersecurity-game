@@ -33,7 +33,7 @@ class Builder(Panel):
 
         for key in VARIABLES:
             def get_title(k=key):
-                return self.context.labels.get("modbus_variables", k)
+                return self.context.labels.get(f"modbus_variables_{k}")
 
             def get_units(k=key):
                 return ""
@@ -51,7 +51,7 @@ class Builder(Panel):
                 # ever get a client_clean history, plus target for temperature).
                 raw = self.modbus.get_all_histories_and_legends(k)
                 return {
-                    self.context.labels.get("defender_modbus_readout", attribute): history
+                    self.context.labels.get(f"defender_modbus_readout_{attribute}"): history
                     for attribute, history in raw.items()
                 }
 

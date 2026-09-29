@@ -67,10 +67,10 @@ class BaseForm(QWidget):
 
         # Resolve attack labels
         if self.key is not None:
-            self.status_on_text = self.context.labels.get("network_action_forms", f"{self.key}_on")
-            self.status_off_text = self.context.labels.get("network_action_forms", f"{self.key}_off")
-            self.start_process_text = self.context.labels.get("network_action_forms", f"{self.key}_start")
-            self.stop_process_text = self.context.labels.get("network_action_forms", f"{self.key}_stop")
+            self.status_on_text = self.context.labels.get(f"network_action_forms_{self.key}_on")
+            self.status_off_text = self.context.labels.get(f"network_action_forms_{self.key}_off")
+            self.start_process_text = self.context.labels.get(f"network_action_forms_{self.key}_start")
+            self.stop_process_text = self.context.labels.get(f"network_action_forms_{self.key}_stop")
         else:
             self.status_on_text = f"{self.process_noun} is on"
             self.status_off_text = f"{self.process_noun} is off"
@@ -145,7 +145,7 @@ class BaseForm(QWidget):
         '''
         if text is None:
             assert self.key is not None, "add_header() with no text requires key to be set"
-            text = str(self.context.labels.get("hacking_forms", self.key))
+            text = str(self.context.labels.get(f"hacking_forms_{self.key}"))
         self.header = QLabel(text)
         self.header.setFont(self.style.get_font())
         # columnSpan=-1 spans to the layout's actual last column (as
@@ -163,7 +163,7 @@ class BaseForm(QWidget):
         column = 0
         output = []
         for key in label_keys:
-            text = self.context.labels.get(label_slot, key)
+            text = self.context.labels.get(f"{label_slot}_{key}")
             label = QLabel(text)
             label.setFont(self.style.get_font("mono"))
             if column == 0:

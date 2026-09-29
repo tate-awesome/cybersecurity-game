@@ -30,7 +30,7 @@ class VariableOverlay:
         col = 0
 
         # Top Row
-        top_labels = self.context.labels.get("modbus_settings")
+        top_labels = self.context.labels.group("modbus_settings")
         for key, text in top_labels.items():
             top_label = QLabel(text)
             top_label.setFont(med)
@@ -49,7 +49,7 @@ class VariableOverlay:
 
         for slot in self.context.states.get_registers().values():
             # "label": "hreg_8",
-            variable_name = self.context.labels.get("modbus_variables", slot["label"])
+            variable_name = self.context.labels.get(f'modbus_variables_{slot["label"]}')
             var_label = QLabel(variable_name)
             var_label.setFont(med)
             grid.addWidget(var_label, row, col)

@@ -354,7 +354,7 @@ class Draw:
                 # "register_direction" key) just displays as-is rather than
                 # raising, since it's already legible text, not a category lookup.
                 try:
-                    legend_text = self.context.labels.get("stripcharts", key)
+                    legend_text = self.context.labels.get(f"stripcharts_{key}")
                 except KeyError:
                     legend_text = key
             else:

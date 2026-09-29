@@ -86,7 +86,7 @@ class MenuBar(QFrame):
         self.row = QHBoxLayout(self)
         self.row.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
 
-        self.game_label = QLabel(self.context.labels.get("menu_bar_titles", title_label))
+        self.game_label = QLabel(self.context.labels.get(f"menu_bar_titles_{title_label}"))
         self.game_label.setFont(self.style.get_font())
         self.row.addWidget(self.game_label, 0, Qt.AlignmentFlag.AlignVCenter)
         self.row.addStretch()
@@ -134,7 +134,7 @@ class MenuBar(QFrame):
         self.context.style.add_tooltip(widget, "menu_bar_tooltips", key)
 
     def add_button(self, label: str = "_default", function: Callable | None = None) -> QPushButton:
-        button = QPushButton(self.context.labels.get("menu_bar_buttons", label))
+        button = QPushButton(self.context.labels.get(f"menu_bar_buttons_{label}"))
         button.setFont(self.style.get_font())
         if function is not None:
             self._connect(button, function)
@@ -262,8 +262,8 @@ class MenuBar(QFrame):
         growing pane back to its authored share of the splitter - see
         Panes.default_stretch - rather than an arbitrary fixed size.
         '''
-        minimize_text = self.context.labels.get("menu_bar_buttons", "minimize")
-        maximize_text = self.context.labels.get("menu_bar_buttons", "maximize")
+        minimize_text = self.context.labels.get("menu_bar_buttons_minimize")
+        maximize_text = self.context.labels.get("menu_bar_buttons_maximize")
         button = self.add_button("minimize")
         is_minimized = False
         normal_min_extent = None  # pane's PANE_MIN_HEIGHT/WIDTH floor, remembered while it's lowered
@@ -435,8 +435,8 @@ class MenuBar(QFrame):
         return button
 
     def reversible_button(self, start_func: Callable, stop_func: Callable, inactive_label: str, active_label: str, start_active: bool = False):
-        inactive_name = self.context.labels.get("menu_bar_buttons", inactive_label)
-        active_name = self.context.labels.get("menu_bar_buttons", active_label)
+        inactive_name = self.context.labels.get(f"menu_bar_buttons_{inactive_label}")
+        active_name = self.context.labels.get(f"menu_bar_buttons_{active_label}")
         button = self.add_button(inactive_label)
 
         def stop():

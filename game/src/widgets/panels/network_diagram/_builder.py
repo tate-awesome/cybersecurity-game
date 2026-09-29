@@ -29,9 +29,9 @@ class Builder(Panel):
         self.diagram = NetworkDiagramCanvas(left_frame, context)
 
         def title():
-            return self.context.labels.get("network_graph", "stripchart_title")
+            return self.context.labels.get("network_graph_stripchart_title")
         def units():
-            return self.context.labels.get("network_graph", "stripchart_units")
+            return self.context.labels.get("network_graph_stripchart_units")
         def factor():
             return 1.0
         self.rate_chart = StripChart(right_frame, context, (0, 0), title, units, factor,

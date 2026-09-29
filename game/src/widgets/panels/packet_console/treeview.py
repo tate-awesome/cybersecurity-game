@@ -16,12 +16,7 @@ class PacketTreeview:
     def __init__(self, parent: QWidget, context: Context):
         self.context = context
         self.style = context.style
-        packet_columns = context.labels.get("packet_columns")
-        if not isinstance(packet_columns, dict):
-            # A malformed labels file shouldn't take the whole packet console
-            # down at construction - fall back to no columns instead.
-            packet_columns = {}
-        self.columns = list(packet_columns.keys())
+        self.columns = list(context.labels.group("packet_columns").keys())
 
         self._items: dict[str, QTreeWidgetItem] = {}
         self.frame = self._tree = self._build(parent)
@@ -36,7 +31,7 @@ class PacketTreeview:
         tree.setAlternatingRowColors(True)
 
         tree.setColumnCount(len(self.columns))
-        tree.setHeaderLabels([self.context.labels.get("packet_columns", col) for col in self.columns])
+        tree.setHeaderLabels([self.context.labels.get(f"packet_columns_{col}") for col in self.columns])
         tree.setRootIsDecorated(False)  # flat table, no expand arrows - matches show="headings"
         tree.setUniformRowHeights(True)
         tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)

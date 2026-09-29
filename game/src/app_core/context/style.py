@@ -256,7 +256,7 @@ class Style:
         return int(self.igap * self.get_scale_correction())
 
     def add_tooltip(self, widget, class_key: str, widget_key: str):
-        widget.setToolTip(self.context.labels.get(class_key, widget_key))
+        widget.setToolTip(self.context.labels.get(f"{class_key}_{widget_key}"))
 
     def apply_theme(self, theme_name: str):
         '''

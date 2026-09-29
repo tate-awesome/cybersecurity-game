@@ -27,7 +27,7 @@ class Visuals(Page):
 
         # Display name -> visual key, in registry order, plus the cycle option
         keys = [*VISUALS, "cycle"]
-        names = {labels.get("visual_names", key): key for key in keys}
+        names = {labels.get(f"visual_names_{key}"): key for key in keys}
         if Visuals.selected_key not in keys:
             Visuals.selected_key = keys[0]
 
@@ -39,10 +39,10 @@ class Visuals(Page):
         menu_bar.add_dropdown(
             list(names),
             self.select,
-            default=labels.get("visual_names", Visuals.selected_key),
+            default=labels.get(f"visual_names_{Visuals.selected_key}"),
         )
         self.names = names
-        menu_bar.add_checkbox(labels.get("menu_bar_buttons", "background_preview"), Visuals.preview, self.set_preview)
+        menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
         menu_bar.toggle_button()
         menu_bar.theme_button()
         menu_bar.back_button()
