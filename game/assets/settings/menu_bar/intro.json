@@ -1,6 +1,0 @@
-[
-    {"builtin": "back_button"},
-    {"builtin": "help_button"},
-    {"builtin": "refresh_button"},
-    {"builtin": "quit_button"}
-]

@@ -1,8 +1,0 @@
-{
-    "_ref": [
-        "_default.json",
-        "../hack_settings/lab.json",
-        "../modbus_settings/hvac.json",
-        "../packet_console_settings/lab.json"
-    ]
-}

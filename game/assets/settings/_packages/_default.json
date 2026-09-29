@@ -1,9 +1,414 @@
 {
-    "_ref": [
-        "../color_settings/_default.json",
-        "../hack_settings/_default.json",
-        "../modbus_settings/_default.json",
-        "../packet_console_settings/_default.json",
-        "../visibility/_default.json"
-    ]
+    "world_map_sprites": {
+        "boat_in": 0,
+        "boat_out": 0,
+        "path_in": 0,
+        "path_out": 0,
+        "boat_in_label": 0,
+        "boat_out_label": 0,
+        "boat_in_position": 0,
+        "boat_out_position": 0,
+        "grid_numbers": 0,
+        "grid_lines": 0,
+        "ocean": 0
+    },
+
+    "world_map_colors": {
+        "ocean": "field",
+        "grid_lines": "field_text",
+        "grid_axes": "red",
+        "grid_numbers": "field_text",
+        "path_in": "red",
+        "boat_in_fill": "red",
+        "boat_in_outline": "red",
+        "path_out": "orange",
+        "boat_out_fill": "orange",
+        "boat_out_outline": "orange"
+    },
+
+    "hvac_house_colors": {
+        "background": "field",
+        "line_art": "field_text",
+        "fill": "widget",
+        "text": "field_text",
+        "coldness": "blue",
+        "hotness": "red"
+    },
+
+    "hvac_house_sprites": {
+        "background": 0,
+        "room": 0,
+        "room_thermostat": 0,
+        "window": 0,
+        "vent": 0,
+        "controller_box": 0,
+        "controller_thermostat": 0,
+        "indicator": 0
+    },
+
+    "strip_chart_sprites": {
+        "grid_lines": 0,
+        "grid_axes": 0,
+        "grid_numbers": 0,
+        "head_in": 0,
+        "head_out": 0,
+        "path_in": 0,
+        "path_out": 0,
+        "head_in_label": 0,
+        "head_out_label": 0
+    },
+
+    "strip_chart_colors": {
+        "background": "field",
+        "grid_lines": "black",
+        "grid_axes": "accent",
+        "grid_numbers": "field_text",
+        "paths": [
+            "red",
+            "orange",
+            "yellow",
+            "green",
+            "blue",
+            "purple"
+        ],
+        "heads": [
+            "blue",
+            "green"
+        ]
+    },
+
+    "fit_stripchart_line": 0,
+
+    "fitted_stripchart_max_time": 60,
+
+    "game_progress": {
+        "wifi": 0,
+        "nmap": 0,
+        "arp": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "dos": 0
+    },
+
+    "hack_forms": {
+        "wifi": [
+            ""
+        ],
+        "arp": [
+            "",
+            ""
+        ],
+        "sniff": [
+            "",
+            ""
+        ],
+        "dos": [
+            "",
+            ""
+        ],
+        "ap_connect": [
+            "http://192.168.4.1"
+        ],
+        "encryption": [
+            ""
+        ]
+    },
+
+    "hacking_forms": {
+        "wifi": 0,
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "ap_connect": 0,
+        "encryption": 0,
+        "ap_tunnel": 0,
+        "kalman": 0
+    },
+
+    "modbus_forms": {
+        "table": 0,
+        "modify": 0
+    },
+
+    "modbus_modify_enabled": 0,
+
+    "model_type": "agnostic",
+
+    "modbus_model_auto_switch": 0,
+
+    "modbus_variables": {
+        "hreg_1": {
+            "label": "hreg_1",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_2": {
+            "label": "hreg_2",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_3": {
+            "label": "hreg_3",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_4": {
+            "label": "hreg_4",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_5": {
+            "label": "hreg_5",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_6": {
+            "label": "hreg_6",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_7": {
+            "label": "hreg_7",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_8": {
+            "label": "hreg_8",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_9": {
+            "label": "hreg_9",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_10": {
+            "label": "hreg_10",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_11": {
+            "label": "hreg_11",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_12": {
+            "label": "hreg_12",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_13": {
+            "label": "hreg_13",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_14": {
+            "label": "hreg_14",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        },
+        "hreg_15": {
+            "label": "hreg_15",
+            "show": 0.0,
+            "nickname": "",
+            "factor": 1.0,
+            "units": "",
+            "multiplier": 1.0,
+            "offset": 0.0,
+            "modify": 0
+        }
+    },
+
+    "packet_console_state": {
+        "mode": "live"
+    },
+
+    "packet_filter_categories": {
+        "hack": [
+            "nmap",
+            "arp",
+            "dos",
+            "sniff",
+            "nfq",
+            "pcap"
+        ],
+        "layers": [
+            "TCP",
+            "ARP",
+            "UDP",
+            "DNS",
+            "MODBUSADUREQUEST",
+            "MODBUSADURESPONSE",
+            "MODBUSPDU03READHOLDINGREGISTERSREQUEST",
+            "MODBUSPDU03READHOLDINGREGISTERSRESPONSE",
+            "MODBUSPDU06WRITESINGLEREGISTERREQUEST",
+            "MODBUSPDU06WRITESINGLEREGISTERRESPONSE"
+        ],
+        "direction": [
+            "in",
+            "out"
+        ]
+    },
+
+    "packet_filter_checkboxes": {
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "pcap": 0,
+        "TCP": 0,
+        "ARP": 0,
+        "UDP": 0,
+        "DNS": 0,
+        "misc": 0,
+        "MODBUSADUREQUEST": 0,
+        "MODBUSADURESPONSE": 0,
+        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": 0,
+        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": 0,
+        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": 0,
+        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": 0,
+        "out": 0,
+        "in": 0,
+        "other": 0
+    },
+
+    "packet_filter_entries": {
+        "address_filter": ""
+    },
+
+    "packet_filter_function": {
+        "summary": "Currently filtering for any packets.",
+        "function": "lambda mpkt: True",
+        "secret explanation for awful coding practice": "This is just the default filter on startup. It gets changed to eval() of itself"
+    },
+
+    "packet_columns": {
+        "time_word": 0,
+        "number": 0,
+        "length": 0,
+        "observer": 0,
+        "hack": 0,
+        "purpose": 0,
+        "mac_src": 0,
+        "mac_dst": 0,
+        "ip_src": 0,
+        "ip_dst": 0,
+        "direction": 0,
+        "protocol": 0,
+        "layers_word": 0,
+        "summary": 0,
+        "mac_word": 0,
+        "ip_word": 0,
+        "variables": 0,
+        "values": 0,
+        "command": 0,
+        "command_type": 0,
+        "is_modbus": 0,
+        "is_useful": 0,
+        "is_primary": 0,
+        "command_word": 0,
+        "modbus_word": 0
+    },
+
+    "modbus_table_visibility": {
+        "table": 0,
+        "modify": 0
+    },
+
+    "modbus_model_visibility": {
+        "hvac": 0,
+        "submarine": 0,
+        "auto_switch": 0
+    },
+
+    "network_action_visibility": {
+        "wifi": 0,
+        "nmap": 0,
+        "arp": 0,
+        "dos": 0,
+        "sniff": 0,
+        "nfq": 0,
+        "ap_connect": 0,
+        "encryption": 0,
+        "ap_tunnel": 0,
+        "kalman": 0
+    },
+
+    "defender_modbus_visibility": {
+        "mode": 0,
+        "sliders": 0
+    }
 }
