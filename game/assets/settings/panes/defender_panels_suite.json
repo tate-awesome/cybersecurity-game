@@ -1,59 +1,23 @@
 {
     "_note": "Panels-based defender pane tree - the same trifold layout as attacker_suite.json, but with defender_modbus_panel standing in for modbus_table_panel and defender_stripchart_panel standing in for modbus_chart_panel, and defender_console_panel/defender_flag_panel (the old defender page's packet log and flags) standing in for the packet console and network graph. Shared by the defender_hvac/defender_submarine lessons and the full defender_suite lesson - only their settings (network_action_visibility/modbus_model_visibility) differ.",
 
-    "orientation": "horizontal",
-    "children": [
-        {
+    "h_panes": {
+        "weight": 1,
+        "v_panes_left": {
             "weight": 2,
-            "panes": {
-                "orientation": "vertical",
-                "children": [
-                    {
-                        "weight": 2.3,
-                        "widget": "network_action_panel"
-                    },
-                    {
-                        "weight": 2,
-                        "widget": "defender_modbus_panel"
-                    }
-                ]
-            }
+            "network_action_panel": 2.3,
+            "defender_modbus_panel": 2
         },
-        {
+        "v_panes_middle": {
             "weight": 3,
-            "panes": {
-                "orientation": "vertical",
-                "children": [
-                    {
-                        "weight": 3,
-                        "widget": "defender_console_panel"
-                    },
-                    {
-                        "weight": 3,
-                        "widget": "defender_flag_panel"
-                    },
-                    {
-                        "weight": 3,
-                        "widget": "status_panel"
-                    }
-                ]
-            }
+            "defender_console_panel": 3,
+            "defender_flag_panel": 3,
+            "status_panel": 3
         },
-        {
+        "v_panes_right": {
             "weight": 3,
-            "panes": {
-                "orientation": "vertical",
-                "children": [
-                    {
-                        "weight": 2,
-                        "widget": "modbus_model_panel"
-                    },
-                    {
-                        "weight": 2,
-                        "widget": "defender_stripchart_panel"
-                    }
-                ]
-            }
+            "modbus_model_panel": 2,
+            "defender_stripchart_panel": 2
         }
-    ]
+    }
 }

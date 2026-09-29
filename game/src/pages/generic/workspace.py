@@ -37,7 +37,8 @@ class WorkspacePage(Page):
         '''
         Recursively builds a widgets.Panes tree from a pane-tree node:
         {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": "<panel type>"}]}
-        Each child's "weight" is its proportional share of its parent -
+        (PageManager.parse_panes builds this from the h_panes/v_panes
+        layout a page config is written in). Each child's "weight" is its proportional share of its parent -
         bigger weight, bigger pane - converted here into the divisors
         widgets.Panes actually expects (pane size = total size / divisor).
         Returns the Panes built at this node, so the caller can hang onto

@@ -81,7 +81,58 @@ class PageManager:
         path = self.config_paths.get(key)
         if path is None:
             return {}
-        return self.context.json.load(path, self.settings_roots())
+        config = self.context.json.load(path, self.settings_roots())
+        if "panes" in config:
+            config["panes"] = self.parse_panes(config["panes"])
+        return config
+
+    # Pane layouts
+    PANE_GROUPS = {"h_panes": "horizontal", "v_panes": "vertical"}
+
+    def parse_panes(self, layout: dict) -> dict | None:
+        '''
+        Converts an authored pane layout into the positional tree that
+        WorkspacePage.build_panes, Panes.get_weights and the autosave
+        helpers below work with:
+        {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": "<panel type>"}]}
+
+        An authored layout is one group - a key starting with "h_panes"
+        (side by side) or "v_panes" (stacked) - whose contents are, in
+        order: "<panel type>": <weight> for a panel, or another group for
+        a nested set of panes, which gives its own size as its "weight".
+        Weights are proportional shares of the group they sit in. A group
+        only needs the prefix, so sibling groups can be told apart by name
+        ("v_panes_left", "v_panes_right"). Keys starting with "_" are notes.
+        '''
+        if not isinstance(layout, dict):
+            return None
+        groups = [(key, value) for key, value in layout.items() if self.pane_group(key)]
+        if len(groups) != 1:
+            print(f"Pane layout should have exactly one h_panes/v_panes group at its top, found {len(groups)}")
+        if not groups:
+            return None
+        return self.parse_pane_group(*groups[0])
+
+    def pane_group(self, key: str) -> str | None:
+        '''The orientation a key names if it's an h_panes/v_panes group, else None.'''
+        for prefix, orientation in self.PANE_GROUPS.items():
+            if key.startswith(prefix):
+                return orientation
+        return None
+
+    def parse_pane_group(self, key: str, group: dict) -> dict:
+        children = []
+        for child_key, value in group.items():
+            if child_key == "weight" or child_key.startswith("_"):
+                continue
+            if self.pane_group(child_key):
+                if not isinstance(value, dict):
+                    print(f"Pane group {child_key!r} should be an object, skipping")
+                    continue
+                children.append({"weight": value.get("weight", 1), "panes": self.parse_pane_group(child_key, value)})
+            else:
+                children.append({"weight": value, "widget": child_key})
+        return {"orientation": self.pane_group(key), "children": children}
 
     def link_label(self, key: str) -> str:
         '''
