@@ -1,8 +1,0 @@
-{
-    "_note": "Student-level 'Show Forms' toggle for defender_modbus_panel's own forms - mirrors modbus_forms (table/modify) for the new mode/sliders forms.",
-
-    "defender_modbus_forms": {
-        "mode": 1,
-        "sliders": 1
-    }
-}

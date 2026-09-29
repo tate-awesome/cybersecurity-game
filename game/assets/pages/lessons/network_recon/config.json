@@ -29,19 +29,29 @@
 
     "build_type": "workspace",
 
-    "settings": {
-        "_ref": [
-            "_packages/_default.json",
-            "visibility/recon.json"
-        ]
-    },
+    "settings": {"network_action_visibility": {"wifi": 1, "nmap": 1, "arp": 1, "sniff": 1}},
 
     "menu_bar": {
         "title": "network_recon_lesson",
         "buttons": [
-            { "_ref": "basic.json" }
+            {"builtin": "quit_button"},
+            {"builtin": "back_button"},
+            {"builtin": "refresh_button"},
+            {"builtin": "reset_button"},
+            {"builtin": "help_button"},
+            {"builtin": "toggle_button"},
+            {"builtin": "theme_button"},
+            {"builtin": "page_button"},
+            {"builtin": "labels_button"}
         ]
     },
 
-    "panes": { "_ref": "attacker_recon.json" }
+    "panes": {
+        "h_panes": {
+            "weight": 1,
+            "network_action_panel": 2,
+            "packet_panel": 3,
+            "v_panes": {"weight": 3, "network_graph_panel": 1, "status_panel": 1}
+        }
+    }
 }

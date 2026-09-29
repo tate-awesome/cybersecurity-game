@@ -29,14 +29,25 @@ class InputManager:
     def reset(self):
         self.data = self.get_default()
 
-    def load(self, settings: dict):
+    def with_default(self, settings: dict | None) -> dict:
         '''
-        Replaces the current input data outright. Used by PageManager to
-        hand off a page's own settings (its defaults, already merged with
-        anything autosaved for it) right before that page builds, since
-        different pages' registers/forms don't share one global default.
+        Returns a fresh copy of _packages/_default.json with the given
+        settings merged on top. Page configs only list what they change
+        from that default (it has every option, all turned off), so this
+        is always the base a page's settings are applied to.
         '''
-        self.data = settings if isinstance(settings, dict) else {}
+        data = self.get_default()
+        self.context.json.deep_merge(data, settings)
+        return data
+
+    def load(self, settings: dict | None):
+        '''
+        Replaces the current input data with _packages/_default.json plus
+        the given settings on top (see with_default). Used by PageManager
+        to hand off a page's own settings (already merged with anything
+        autosaved for it) right before that page builds.
+        '''
+        self.data = self.with_default(settings)
 
     # Select
     def select(self):

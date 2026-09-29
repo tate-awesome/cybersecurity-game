@@ -176,21 +176,23 @@ class PageManager:
         save_current_page) on top of its "settings" and "panes" - only
         the input/register values and pane weights they changed from
         those defaults - before pushing the merged settings into
-        context.states so the page's widgets have the right values to
-        read as they build themselves. Called by WorkspacePage, the
-        only build type with "settings"/"panes" to begin with.
+        context.states (which puts them on top of _packages/_default.json)
+        so the page's widgets have the right values to read as they build
+        themselves. Called by WorkspacePage, the only build type with
+        "settings"/"panes" to begin with.
         '''
         config = self.load_page_config(key)
+        if not isinstance(config.get("settings"), dict):
+            config["settings"] = {}
 
         saved_path = self.context.paths.user_pages / key / "config.json"
         if saved_path.is_file():
             saved = self.context.json.load(saved_path)
-            if isinstance(config.get("settings"), dict):
-                self.context.json.deep_merge(config["settings"], saved.get("settings"))
+            self.context.json.deep_merge(config["settings"], saved.get("settings"))
             if isinstance(config.get("panes"), dict):
                 self.merge_pane_weights(config["panes"], saved.get("panes"))
 
-        self.context.states.load(config.get("settings", {}))
+        self.context.states.load(config["settings"])
         return config
 
     def merge_pane_weights(self, default: dict | None, saved: dict | None):
@@ -245,7 +247,8 @@ class PageManager:
         default = self.load_page_config(key)
         saved: dict = {}
 
-        settings = self.context.json.diff(default.get("settings", {}), self.context.states.data)
+        page_default = self.context.states.with_default(default.get("settings"))
+        settings = self.context.json.diff(page_default, self.context.states.data)
         if settings:
             saved["settings"] = settings
 

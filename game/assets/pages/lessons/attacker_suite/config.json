@@ -30,23 +30,53 @@
     "build_type": "workspace",
 
     "settings": {
-        "_ref": [
-            "_packages/_default.json",
-            "hack_settings/lab.json",
-            "visibility/_admin.json"
-        ],
-        "modbus_model_visibility": {
-            "auto_switch": 0
+        "hack_forms": {
+            "wifi": ["AP-Config"],
+            "arp": ["192.168.4.2", "192.168.4.10"],
+            "dos": ["192.168.4.2", "192.168.4.10"]
         },
-        "modbus_model_auto_switch": 0
+        "modbus_table_visibility": {"table": 1, "modify": 1},
+        "modbus_model_visibility": {"hvac": 1, "submarine": 1},
+        "network_action_visibility": {
+            "wifi": 1,
+            "nmap": 1,
+            "arp": 1,
+            "dos": 1,
+            "sniff": 1,
+            "nfq": 1,
+            "ap_connect": 1,
+            "encryption": 1,
+            "ap_tunnel": 1
+        },
+        "defender_modbus_visibility": {"mode": 1, "sliders": 1}
     },
 
     "menu_bar": {
         "title": "attacker_suite_lesson",
         "buttons": [
-            { "_ref": "admin.json" }
+            {"builtin": "quit_button"},
+            {"builtin": "back_button"},
+            {"builtin": "refresh_button"},
+            {"builtin": "reset_button"},
+            {"builtin": "help_button"},
+            {"builtin": "toggle_button"},
+            {"builtin": "theme_button"},
+            {"builtin": "page_button"},
+            {"builtin": "labels_button"},
+            {"builtin": "pcap_button"},
+            {"builtin": "save_button"},
+            {"builtin": "load_button"},
+            {"builtin": "stream_button"},
+            {"builtin": "preset_button"}
         ]
     },
 
-    "panes": { "_ref": "attacker_suite.json" }
+    "panes": {
+        "h_panes": {
+            "weight": 1,
+            "v_panes_left": {"weight": 2, "network_action_panel": 2.3, "modbus_table_panel": 2},
+            "v_panes_middle": {"weight": 3, "packet_panel": 3, "network_graph_panel": 3, "status_panel": 3},
+            "v_panes_right": {"weight": 3, "modbus_model_panel": 2, "modbus_chart_panel": 2}
+        }
+    }
 }
