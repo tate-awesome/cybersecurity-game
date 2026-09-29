@@ -1,12 +1,19 @@
 from pathlib import Path
-import os
+import os, sys
 
 from PySide6.QtWidgets import QFileDialog
 
 class Paths:
     def __init__(self):
         # Readonly
-        self.root: Path = Path(__file__).resolve().parents[3]
+        # A PyInstaller build's __file__ points inside its bundle (a temp
+        # dir for --onefile, _internal/ for --onedir), so anchor to the
+        # folder holding the executable instead - assets/ and user_data/
+        # ship next to it.
+        if getattr(sys, "frozen", False):
+            self.root: Path = Path(sys.executable).resolve().parent
+        else:
+            self.root: Path = Path(__file__).resolve().parents[3]
         self.assets: Path = self.root / "assets"
         self.themes: Path = self.assets / "themes"
         self.labels: Path = self.assets / "labels"
@@ -56,7 +63,12 @@ class Paths:
 
     def generate_path(self, file_path: Path):
         try:
+            # mkdir(parents=True) can create several directories at once;
+            # hand every one of them back, not just the leaf.
+            created = [p for p in (file_path, *file_path.parents) if not p.exists()]
             file_path.mkdir(parents=True, exist_ok=True)
+            for path in created:
+                self.lower_permissions(path)
             self.lower_permissions(file_path)
         except Exception as e:
             print(f"Err: [{e}] while generating a directory.")

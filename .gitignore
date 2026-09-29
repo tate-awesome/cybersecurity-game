@@ -5,4 +5,9 @@ __pycache__/
 **/__pycache__/
 *.py[cod]
 *$py.class
+
+# Ignore device-dependent data
 game/user_data
+# Ignore platfrom-dependent data
+game/dist
+*.spec

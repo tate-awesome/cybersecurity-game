@@ -20,6 +20,12 @@ Known issues:
 
 os_name = platform.system()
 
+# Arguments to relaunch ourselves with when elevating. From source,
+# sys.executable is the Python interpreter and argv[0] the script it
+# must run; in a PyInstaller build sys.executable *is* the app, so
+# argv[0] (the app again) must be dropped.
+relaunch_args = sys.argv[1:] if getattr(sys, "frozen", False) else sys.argv
+
 
 def is_admin_windows():
     try:
@@ -38,7 +44,7 @@ if os_name == "Windows":
             None,
             "runas",                  # UAC elevation
             sys.executable,
-            " ".join(f'"{arg}"' for arg in sys.argv),
+            " ".join(f'"{arg}"' for arg in relaunch_args),
             None,
             1
         )
@@ -50,7 +56,7 @@ elif os_name == "Linux" or os_name == "Darwin":
     if os.geteuid() != 0:  # type: ignore[attr-defined]  # os.geteuid only exists on Linux/Darwin, guarded by os_name above
         print("Requesting root privileges for permissions...\a")
         try:
-            subprocess.check_call(["sudo", sys.executable] + sys.argv)
+            subprocess.check_call(["sudo", sys.executable] + relaunch_args)
         except FileNotFoundError:
             print("'sudo' was not found. Continuing without root privileges - some network features may not work.")
         except subprocess.CalledProcessError:

@@ -3,6 +3,7 @@ import json
 import os
 import queue
 import threading
+from pathlib import Path
 
 from PySide6.QtWidgets import QFileDialog
 
@@ -56,6 +57,7 @@ class FileStream(Process):
 
         try:
             file = open(file_path, "w", encoding="utf-8")
+            self.context.paths.lower_permissions(Path(file_path))
         except Exception as e:
             self.buffer.put(
                 "json",
