@@ -169,7 +169,8 @@ class LayoutEditor:
             self.editor.set_status(f"This group already has a {new['widget']} - a group can't hold the same panel type twice.", "red")
             return
         weights = [child["weight"] for child in siblings]
-        new["weight"] = round(sum(weights) / len(weights), 2) if weights else 1
+        average = round(sum(weights) / len(weights), 2) if weights else 1
+        new["weight"] = int(average) if average == int(average) else average
         siblings.insert(index, new)
         self.changed(select=parent_path + (index,))
 

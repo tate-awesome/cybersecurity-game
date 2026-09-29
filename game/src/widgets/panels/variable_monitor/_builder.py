@@ -38,7 +38,7 @@ class Builder(Panel):
             strip_chart.start_animation()
             self.strip_charts[key] = strip_chart
             current_row += 1
-        self.context.animation_manager.add_callback("stripchart_visibility", self.refresh_visibility)
+        self.context.animation_manager.add_callback(f"stripchart_visibility_{id(self)}", self.refresh_visibility)
 
         # self.start_animation(framerate_ms=100)
 

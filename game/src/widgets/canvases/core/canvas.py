@@ -84,12 +84,12 @@ class Canvas(QWidget):
     def start_animation(self, framerate_ms: float = 50):
         self.framerate_ms = framerate_ms
         self.do_animation_loop = True
-        self.context.animation_manager.add_callback(self.__class__.__name__, self.update)
+        self.context.animation_manager.add_callback(f"{self.__class__.__name__}_{id(self)}", self.update)
 
 
     def stop_animation(self):
         self.do_animation_loop = False
-        self.context.animation_manager.remove_callback(self.__class__.__name__)
+        self.context.animation_manager.remove_callback(f"{self.__class__.__name__}_{id(self)}")
 
 
     def resizeEvent(self, event):

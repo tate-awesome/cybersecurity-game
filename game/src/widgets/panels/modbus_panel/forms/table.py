@@ -29,7 +29,7 @@ class MitmTable(BaseForm):
             self.rows[key]["outgoing"] = labels[2]
             self.rows[key]["source"] = labels[3]
 
-        self.context.animation_manager.add_callback("modbus_table", self.refresh_values)
+        self.context.animation_manager.add_callback(f"modbus_table_{id(self)}", self.refresh_values)
 
     def refresh_nicknames(self):
         for key, row in self.rows.items():

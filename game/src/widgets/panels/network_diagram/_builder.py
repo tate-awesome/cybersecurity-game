@@ -49,7 +49,7 @@ class Builder(Panel):
 
         self.current_mode = "live"
         self.current_selected_number = None
-        self.context.animation_manager.add_callback("network_diagram_panel", self.tick)
+        self.context.animation_manager.add_callback(f"network_diagram_panel_{id(self)}", self.tick)
 
     def tick(self):
         mode = self.context.states.get("packet_console_state", "mode")

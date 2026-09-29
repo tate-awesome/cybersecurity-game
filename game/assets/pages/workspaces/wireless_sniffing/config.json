@@ -1,0 +1,62 @@
+{
+    "_note": [
+        "# Attacker Lesson 7: Wireless Sniffing",
+        "## Summary",
+        "Everything on the lab network travels over Wi-Fi, and Wi-Fi is a shared medium: anyone in range can listen. In this lesson you join the lab network and capture its traffic passively, without sending a single packet of your own.",
+        "## Objectives",
+        "- Connect to the lab AP with the WiFi form.\n- Start a passive capture with the Sniff form.\n- Use the IP source and destination columns to tell conversations apart.\n- Explain what an eavesdropper can learn without ever being detected.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*, Chapter 4: Wireless Networks, Commas, and \"Quotes\"",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 2, *Network Recon*."
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_wireless_sniffing",
+    "include": 0,
+    "category": "attacker",
+    "order": 8,
+    "prerequisites": ["workspaces/network_recon"],
+    "estimated_minutes": 25,
+    "gradable": true,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "network_action_form_inputs": {"wifi": ["AP-Config"]},
+        "network_action_forms_shown": {"wifi": 1, "sniff": 1},
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "ip_src": 1,
+            "ip_dst": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        },
+        "network_action_forms_available": {"wifi": 1, "sniff": 1}
+    },
+
+    "title": "wireless_sniffing_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "panes": {
+        "h_panes": {
+            "weight": 1,
+            "network_action_panel": 2,
+            "v_panes": {"weight": 4, "packet_panel": 3, "status_panel": 1},
+            "network_graph_panel": 3
+        }
+    }
+}

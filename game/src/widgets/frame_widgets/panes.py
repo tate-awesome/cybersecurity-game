@@ -36,10 +36,11 @@ class Panes(QSplitter):
             containers under each panel) unpainted instead of root-colored, so a
             page background shows through them - see WorkspacePage.
         '''
-        if not direction in ["horizontal", "vertical"] or child_count < 2:
+        # A single pane is fine - a page's layout may put just one panel in a group
+        if not direction in ["horizontal", "vertical"] or child_count < 1:
             raise ValueError(
                 f"Invalid Panes args: direction={direction!r} (must be 'horizontal' or 'vertical'), "
-                f"child_count={child_count!r} (must be >= 2)"
+                f"child_count={child_count!r} (must be >= 1)"
             )
 
         orientation = Qt.Orientation.Horizontal if direction == "horizontal" else Qt.Orientation.Vertical

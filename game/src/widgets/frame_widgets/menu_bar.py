@@ -88,6 +88,8 @@ class MenuBar(QFrame):
 
         self.game_label = QLabel(self.context.labels.get(f"menu_bar_titles_{title_label}"))
         self.game_label.setFont(self.style.get_font())
+        # A title is a name, never markup - "<b>" in one should show as typed
+        self.game_label.setTextFormat(Qt.TextFormat.PlainText)
         self.row.addWidget(self.game_label, 0, Qt.AlignmentFlag.AlignVCenter)
         self.row.addStretch()
 

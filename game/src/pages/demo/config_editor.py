@@ -220,6 +220,7 @@ class ConfigEditor(Page):
         self.setting_readers: list[tuple[tuple, Callable[[], Any]]] = []
         self.button_boxes: dict[str, QCheckBox] = {}
         self.prerequisite_boxes: dict[str, QCheckBox] = {}
+        self.field_widgets: dict[str, QWidget] = {}
 
         # Rebuilding the tabs changes the current tab, which shouldn't count as picking one
         self.tabs.blockSignals(True)
@@ -361,6 +362,7 @@ class ConfigEditor(Page):
         def add(name: str, widget: QWidget, reader: Callable[[], Any]):
             rows.add(name, widget, tooltip=self.workspace_note(name))
             self.field_readers[name] = reader
+            self.field_widgets[name] = widget
 
         for name in ("link_label", "title"):
             entry, reader = self.text_entry(str(self.config.get(name, "")))
@@ -424,6 +426,7 @@ class ConfigEditor(Page):
         key = path[-1]
         widget, reader = self.leaf(key, default, value)
         cell = OverrideCell(self, key, widget, default, overridden=(value != default))
+        cell.path = path
         cell.label = rows.add(key, cell, depth=depth)
         cell.show_state()
         self.setting_readers.append((path, lambda: reader() if cell.overridden else copy.deepcopy(default)))
@@ -435,9 +438,10 @@ class ConfigEditor(Page):
         if isinstance(default, (int, float)):
             return self.number_entry(key, value, integer=isinstance(default, int))
         if isinstance(default, list):
-            entry, reader = self.text_entry(", ".join(str(item) for item in value))
-            entry.setToolTip("Separate items with commas")
-            return entry, lambda: [item.strip() for item in reader().split(",")]
+            # One item per line, so items can hold commas
+            editor, reader = self.text_area("\n".join(str(item) for item in value), rows=max(1, min(len(value), 6)))
+            editor.setToolTip("One item per line")
+            return editor, lambda: [item.strip() for item in reader().split("\n")]
         return self.text_entry(str(value))
 
     def checkbox(self, value, as_bool: bool, text: str = "") -> tuple[QCheckBox, Callable[[], Any]]:
@@ -583,6 +587,7 @@ class OverrideCell(QWidget):
         self.default = default
         self.overridden = overridden
         self.label: QLabel | None = None
+        self.path: tuple = (key,)
         style = page.style
 
         layout = QHBoxLayout(self)
@@ -644,10 +649,10 @@ class OverrideCell(QWidget):
         widget.blockSignals(True)
         if isinstance(widget, QCheckBox):
             widget.setChecked(default in (1, "1", True))
+        elif isinstance(widget, QPlainTextEdit):
+            widget.setPlainText("\n".join(str(item) for item in default))
         elif isinstance(widget, QLineEdit):
-            if isinstance(default, list):
-                widget.setText(", ".join(str(item) for item in default))
-            elif isinstance(default, float):
+            if isinstance(default, float):
                 widget.setText(f"{default:g}")
             else:
                 widget.setText(str(default))

@@ -31,11 +31,11 @@ class Builder(Panel):
 
     def start_printing(self):
         self.run = True
-        self.context.animation_manager.add_callback("status_panel", self.print_tick)
+        self.context.animation_manager.add_callback(f"status_panel_{id(self)}", self.print_tick)
 
     def stop_printing(self):
         self.run = False
-        self.context.animation_manager.remove_callback("status_panel")
+        self.context.animation_manager.remove_callback(f"status_panel_{id(self)}")
 
     def print_tick(self):
         '''

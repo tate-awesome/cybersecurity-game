@@ -50,11 +50,11 @@ class Builder(Panel):
 
     def start_printing(self):
         self.run = True
-        self.context.animation_manager.add_callback("packet_panel", self.print_tick)
+        self.context.animation_manager.add_callback(f"packet_panel_{id(self)}", self.print_tick)
     
     def stop_printing(self):
         self.run = False
-        self.context.animation_manager.remove_callback("packet_panel")
+        self.context.animation_manager.remove_callback(f"packet_panel_{id(self)}")
 
     def print_tick(self):
 
