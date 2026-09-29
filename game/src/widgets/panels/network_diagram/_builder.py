@@ -9,9 +9,9 @@ class Builder(Panel):
     KEY = "network_graph_panel"
     # The settings keys (see _packages/_default.json) this panel reads or writes -
     # the workspace editor lists it under each of them
-    # packet_console_state pauses it along with the packet console; its rate chart is a strip chart
+    # packet_console's "mode" pauses it along with the packet console; its rate chart is a strip chart
     SETTINGS = (
-        "packet_console_state",
+        "packet_console",
         "strip_chart_colors",
         "strip_chart_auto_fit",
         "strip_chart_auto_fit_max_seconds",
@@ -61,7 +61,7 @@ class Builder(Panel):
         self.context.animation_manager.add_callback(f"network_diagram_panel_{id(self)}", self.tick)
 
     def tick(self):
-        mode = self.context.states.get("packet_console_state", "mode")
+        mode = self.context.states.get("packet_console", "mode")
 
         if mode != self.current_mode:
             self.current_mode = mode

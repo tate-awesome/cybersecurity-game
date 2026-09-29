@@ -12,11 +12,10 @@ class Builder(Panel):
     # the workspace editor lists it under each of them
     SETTINGS = (
         "packet_columns",
-        "packet_console_state",
+        "packet_console",
         "packet_filter_categories",
         "packet_filter_checkboxes",
         "packet_filter_entries",
-        "packet_filter_function",
     )
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, self.KEY)
@@ -124,11 +123,11 @@ class Builder(Panel):
     def pause(self):
         self.stop_printing()
         self.select_child()
-        self.context.states.set("packet_console_state", "mode", value="paused")
+        self.context.states.set("packet_console", "mode", value="paused")
 
     def unpause(self):
         self.start_printing()
-        self.context.states.set("packet_console_state", "mode", value="live")
+        self.context.states.set("packet_console", "mode", value="live")
 
     def unlock_scrolling(self):
         self.jump_to_bottom = False

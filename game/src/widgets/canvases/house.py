@@ -9,9 +9,9 @@ class House(Canvas):
 
         def frame_callback():
             def color(key):
-                return self.context.style.color(self.context.states.get("hvac_house_colors", key))
+                return self.context.style.color(self.context.states.get("model_colors", key))
             def sprite(key):
-                return self.context.states.get("hvac_house_sprites", key)
+                return self.context.states.get("model_sprites", key)
             def sprite_enabled(key):
                 # A malformed/non-numeric sprite config value would otherwise
                 # raise on every frame, permanently freezing this canvas.

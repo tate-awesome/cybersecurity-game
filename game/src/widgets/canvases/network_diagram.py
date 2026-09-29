@@ -44,7 +44,7 @@ class NetworkDiagramCanvas(Canvas):
                 else:
                     draw_host(mac, point, "accent")
 
-            mode = context.states.get("packet_console_state", "mode")
+            mode = context.states.get("packet_console", "mode")
 
             if mode == "paused":
                 mpkt = self.packets.get_selected()

@@ -106,7 +106,7 @@ class FilterOverlay:
         activator_layout = QHBoxLayout(activator_frame)
         overlay.layout().addWidget(activator_frame)
 
-        summary = self.context.states.get("packet_filter_function", "summary")
+        summary = self.context.states.get("packet_console", "summary")
         filter_label = QLabel(summary)
         filter_label.setFont(self.style.get_font())
         filter_label.setWordWrap(True)
@@ -114,7 +114,7 @@ class FilterOverlay:
 
         def activate():
             self.compile_filter()
-            new_summary = self.context.states.get("packet_filter_function", "summary")
+            new_summary = self.context.states.get("packet_console", "summary")
             filter_label.setText(new_summary)
             self.refresh_function()
 
@@ -125,7 +125,7 @@ class FilterOverlay:
             Compile and save the mpkt filter to self.function
             The filter ORs within categories (e.g. show packets with any of these protocols),
             and ANDs between categories (e.g. only show packets that match the source filters AND the protocol filters).
-            Save the summary to settings["packet_filter_function"]["summary"]
+            Save the summary to settings["packet_console"]["summary"]
             '''
             # Grab the filter states only when pressing the button
             import copy
@@ -207,4 +207,4 @@ class FilterOverlay:
                     full_summary = f"{full_summary} packets with {category_summaries}, and involving addresses matching {addresses}."
 
             # Save summary
-            self.context.states.set("packet_filter_function", "summary", value=full_summary)
+            self.context.states.set("packet_console", "summary", value=full_summary)

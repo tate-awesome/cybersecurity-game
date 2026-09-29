@@ -7,8 +7,8 @@ class Builder(Panel):
     # The settings keys (see _packages/_default.json) this panel reads or writes -
     # the workspace editor lists it under each of them
     SETTINGS = (
-        "hvac_house_sprites",
-        "hvac_house_colors",
+        "model_sprites",
+        "model_colors",
     )
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)

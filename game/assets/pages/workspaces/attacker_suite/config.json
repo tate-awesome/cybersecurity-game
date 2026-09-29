@@ -48,9 +48,11 @@
             "kalman": 0
         },
         "modbus_table_forms_shown": {"table": 1, "modify": 1},
-        "modbus_table_forms_available": {"table": 1, "modify": 1},
-        "modbus_models_available": {"hvac": 1, "submarine": 1},
-        "network_action_forms_available": {
+        "available": {
+            "table": 1,
+            "modify": 1,
+            "hvac": 1,
+            "submarine": 1,
             "wifi": 1,
             "nmap": 1,
             "arp": 1,
@@ -78,7 +80,7 @@
             "hreg_14": {"show": 1, "modify": 1},
             "hreg_15": {"show": 1, "modify": 1}
         },
-        "hvac_house_sprites": {
+        "model_sprites": {
             "background": 1,
             "room": 1,
             "room_thermostat": 1,
@@ -86,9 +88,7 @@
             "vent": 1,
             "controller_box": 1,
             "controller_thermostat": 1,
-            "indicator": 1
-        },
-        "submarine_map_sprites": {
+            "indicator": 1,
             "boat_in": 1,
             "boat_out": 1,
             "path_in": 1,

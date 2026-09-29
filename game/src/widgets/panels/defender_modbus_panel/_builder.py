@@ -25,7 +25,7 @@ class Builder(Panel):
     # The settings keys (see _packages/_default.json) this panel reads or writes -
     # the workspace editor lists it under each of them
     SETTINGS = (
-        "defender_modbus_forms_available",
+        "available",
         "defender_modbus_forms_shown",
     )
 
@@ -34,7 +34,7 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
-        self.available_forms: dict[str, int] = self.context.states.get("defender_modbus_forms_available")
+        self.available_forms: dict[str, int] = self.context.states.get("available")
         if self.available_forms is None:
             self.available_forms = list(FORM_CLASSES.keys())
 
@@ -52,7 +52,7 @@ class Builder(Panel):
 
         forms_button = self.menu_bar.add_button("forms_overlay")
         overlay = CheckboxOverlay(forms_button, context, self.refresh_forms,
-                                   "defender_modbus_forms_shown", "Show Forms", "defender_modbus_forms_available",
+                                   "defender_modbus_forms_shown", "Show Forms", "available",
                                    label_group="defender_modbus_forms")
 
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
