@@ -40,7 +40,8 @@
         "modbus_models_available": {"auto_switch": 1, "defender_hvac": 1, "defender_submarine": 1},
         "network_action_forms_available": {"wifi": 1, "nmap": 1, "sniff": 1, "ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
         "defender_modbus_forms_available": {"mode": 1, "sliders": 1},
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "modbus_model_auto_switch": 1
     },
 
     "title": "defender_suite_lesson",

@@ -42,6 +42,51 @@
             "direction": 1,
             "protocol": 1,
             "modbus_word": 1
+        },
+        "network_action_forms_available": {"wifi": 1, "dos": 1, "sniff": 1},
+        "network_action_forms_shown": {"wifi": 1, "dos": 1, "sniff": 1},
+        "modbus_table_forms_available": {"table": 1},
+        "modbus_table_forms_shown": {"table": 1},
+        "modbus_models_available": {"hvac": 1, "submarine": 1},
+        "modbus_registers": {
+            "hreg_1": {"show": 1},
+            "hreg_2": {"show": 1},
+            "hreg_3": {"show": 1},
+            "hreg_4": {"show": 1},
+            "hreg_5": {"show": 1},
+            "hreg_6": {"show": 1},
+            "hreg_7": {"show": 1},
+            "hreg_8": {"show": 1},
+            "hreg_9": {"show": 1},
+            "hreg_10": {"show": 1},
+            "hreg_11": {"show": 1},
+            "hreg_12": {"show": 1},
+            "hreg_13": {"show": 1},
+            "hreg_14": {"show": 1},
+            "hreg_15": {"show": 1}
+        },
+        "hvac_house_sprites": {
+            "background": 1,
+            "room": 1,
+            "room_thermostat": 1,
+            "window": 1,
+            "vent": 1,
+            "controller_box": 1,
+            "controller_thermostat": 1,
+            "indicator": 1
+        },
+        "submarine_map_sprites": {
+            "boat_in": 1,
+            "boat_out": 1,
+            "path_in": 1,
+            "path_out": 1,
+            "boat_in_label": 1,
+            "boat_out_label": 1,
+            "boat_in_position": 1,
+            "boat_out_position": 1,
+            "grid_numbers": 1,
+            "grid_lines": 1,
+            "ocean": 1
         }
     },
 

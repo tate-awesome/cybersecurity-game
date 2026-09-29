@@ -41,7 +41,29 @@
                 "modify": 1
             }
         },
-        "modbus_models_available": {"hvac": 1}
+        "modbus_models_available": {"hvac": 1},
+        "network_action_forms_available": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "modbus_table_forms_available": {"table": 1, "modify": 1},
+        "modbus_table_forms_shown": {"table": 1, "modify": 1},
+        "hvac_house_sprites": {
+            "background": 1,
+            "room": 1,
+            "room_thermostat": 1,
+            "window": 1,
+            "vent": 1,
+            "controller_box": 1,
+            "controller_thermostat": 1,
+            "indicator": 1
+        },
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
     },
 
     "title": "modbus_hvac_lesson",

@@ -44,7 +44,32 @@
                 "modify": 1
             }
         },
-        "modbus_models_available": {"submarine": 1}
+        "modbus_models_available": {"submarine": 1},
+        "network_action_forms_available": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "modbus_table_forms_available": {"table": 1, "modify": 1},
+        "modbus_table_forms_shown": {"table": 1, "modify": 1},
+        "submarine_map_sprites": {
+            "boat_in": 1,
+            "boat_out": 1,
+            "path_in": 1,
+            "path_out": 1,
+            "boat_in_label": 1,
+            "boat_out_label": 1,
+            "boat_in_position": 1,
+            "boat_out_position": 1,
+            "grid_numbers": 1,
+            "grid_lines": 1,
+            "ocean": 1
+        },
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
     },
 
     "title": "modbus_submarine_lesson",

@@ -30,23 +30,11 @@
     "build_type": "workspace",
 
     "settings": {
-        "network_action_form_inputs": {
-            "wifi": ["AP-Config"],
-            "arp": ["192.168.4.2", "192.168.4.10"],
-            "dos": ["192.168.4.2", "192.168.4.10"]
-        },
-        "network_action_forms_shown": {
-            "wifi": 1,
-            "nmap": 1,
-            "sniff": 1,
-            "ap_connect": 1,
-            "encryption": 1,
-            "ap_tunnel": 1,
-            "kalman": 1
-        },
+        "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
         "modbus_models_available": {"defender_hvac": 0, "defender_submarine": 1},
         "network_action_forms_available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "defender_modbus_forms_available": {"mode": 1, "sliders": 1}
     },
 
     "title": "defender_submarine_lesson",

@@ -29,7 +29,37 @@
 
     "build_type": "workspace",
 
-    "settings": {},
+    "settings": {
+        "network_action_forms_available": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "modbus_table_forms_available": {"table": 1, "modify": 1},
+        "modbus_table_forms_shown": {"table": 1, "modify": 1},
+        "modbus_registers": {
+            "hreg_1": {"show": 1, "modify": 1},
+            "hreg_2": {"show": 1, "modify": 1},
+            "hreg_3": {"show": 1, "modify": 1},
+            "hreg_4": {"show": 1, "modify": 1},
+            "hreg_5": {"show": 1, "modify": 1},
+            "hreg_6": {"show": 1, "modify": 1},
+            "hreg_7": {"show": 1, "modify": 1},
+            "hreg_8": {"show": 1, "modify": 1},
+            "hreg_9": {"show": 1, "modify": 1},
+            "hreg_10": {"show": 1, "modify": 1},
+            "hreg_11": {"show": 1, "modify": 1},
+            "hreg_12": {"show": 1, "modify": 1},
+            "hreg_13": {"show": 1, "modify": 1},
+            "hreg_14": {"show": 1, "modify": 1},
+            "hreg_15": {"show": 1, "modify": 1}
+        },
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
+    },
 
     "title": "modbus_mitm_lesson",
     "menu_bar": [
