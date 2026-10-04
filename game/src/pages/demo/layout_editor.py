@@ -157,6 +157,7 @@ class LayoutEditor:
             self.selected = select
         self.editor.mark_dirty()
         self.refresh()
+        self.editor.refresh_usage()
 
     def add(self, new: dict):
         # Inside a selected group, or right after a selected panel
@@ -225,6 +226,7 @@ class LayoutEditor:
 
     def fill_weight_rows(self):
         body = QWidget()
+        self.editor.paint_root(body)
         grid = QGridLayout(body)
         grid.setColumnStretch(1, 1)
         grid.setAlignment(Qt.AlignmentFlag.AlignTop)

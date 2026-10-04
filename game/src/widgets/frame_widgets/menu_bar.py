@@ -558,6 +558,11 @@ class MenuBar(QFrame):
                                  lambda: delete_all_workspace_data_dialog(self, self.context, delete))
         self.add_tooltip(button, "delete_all_workspace_data_button")
 
+    def workspace_editor_button(self):
+        '''Opens the workspace editor (Back returns here).'''
+        button = self.add_button("workspace_editor_button", lambda: self.context.router.show("demo/config_editor"))
+        self.add_tooltip(button, "workspace_editor_button")
+
     def page_buttons(self):
         '''
         Every page button, left to right in the standard order: preferences,

@@ -19,8 +19,8 @@ MODELS = {
 
 # Defender-flavored models are driven by the AP's own reported mode
 # (context.buffer.defender_status.submarine_mode) instead of a manual
-# dropdown pick - see _auto_switch. Only a page whose modbus_models_available
-# actually enables one of these (the defender lessons) ever exercises this.
+# dropdown pick - see _auto_switch. Only a page whose "available" settings
+# group actually offers one of these (the defender lessons) ever exercises this.
 DEFENDER_MODELS = {"defender_submarine", "defender_hvac"}
 
 class Builder(Panel):
@@ -35,10 +35,21 @@ class Builder(Panel):
 
     KEY = "modbus_model_panel"
 
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    # Its hvac/submarine models draw with the house and submarine map canvases
+    SETTINGS = (
+        "available",
+        "modbus_model_selected",
+        "modbus_model_auto_switch",
+        "model_sprites",
+        "model_colors",
+    )
+
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 
-        available_models: dict[str, int] = self.context.states.get("modbus_models_available")
+        available_models: dict[str, int] = self.context.states.get("available")
         if available_models is None:
             available_models = list(MODELS.keys())
 
@@ -86,8 +97,8 @@ class Builder(Panel):
         # and no-op.
         self.auto_switch_checkbox = None
         self._auto_switch_callback_name = f"ModbusModelAutoSwitch_{id(self)}"
-        # available_models is a dict keyed by "auto_switch" too (see
-        # visibility/_default.json's modbus_models_available) unless it fell
+        # available_models is the "available" settings group, which has an
+        # "auto_switch" key too (see _packages/_default.json) unless it fell
         # back to the plain list of every MODELS key above, in which case
         # nothing has hidden the checkbox and it defaults to visible.
         auto_switch_visible = (

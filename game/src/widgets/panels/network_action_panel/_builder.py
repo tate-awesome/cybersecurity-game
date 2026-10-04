@@ -23,7 +23,7 @@ FORM_CLASSES = {
     "sniff": SniffForm,
     "nfq": NFQForm,
     # Defender-only forms - invisible everywhere except a page whose
-    # network_action_forms_available explicitly enables them (the defender
+    # "available" settings group explicitly offers them (the defender
     # lessons - see assets/pages/workspaces/defender_*).
     # ap_connect is listed first since encryption/ap_tunnel/kalman look up
     # its process by name rather than creating their own if it's missing.
@@ -35,13 +35,24 @@ FORM_CLASSES = {
 
 class Builder(Panel):
     KEY = "network_action_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    # Its NFQ form runs the packet interceptor, which rewrites registers - hence modbus_registers and modbus_packet_modify_enabled
+    SETTINGS = (
+        "available",
+        "network_action_forms_shown",
+        "network_action_form_inputs",
+        "game_progress",
+        "modbus_registers",
+        "modbus_packet_modify_enabled",
+    )
     def __init__(self, master: QWidget, context: Context, available_forms: list[str] | None = None):
 
         super().__init__(master, context, self.KEY)
 
         self.scrollable = Scrollable(self, context)
 
-        available_forms: dict[str, int] = self.context.states.get("network_action_forms_available")
+        available_forms: dict[str, int] = self.context.states.get("available")
         if available_forms is None:
             available_forms = list(FORM_CLASSES.keys())
 
@@ -61,7 +72,7 @@ class Builder(Panel):
 
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "network_action_forms_shown", "Show Forms", "network_action_forms_available",
+        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "network_action_forms_shown", "Show Forms", "available",
                                  label_group="hacking_forms")
 
         stop_button = self.menu_bar.add_button("abort_all", self.stop_all)

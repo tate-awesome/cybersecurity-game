@@ -15,6 +15,14 @@ FORM_CLASSES = {
 
 class Builder(Panel):
     KEY = "modbus_table_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "available",
+        "modbus_table_forms_shown",
+        "modbus_registers",
+        "modbus_packet_modify_enabled",
+    )
 
     def __init__(self, master: QWidget, context: Context):
 
@@ -22,7 +30,7 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
 
-        self.available_forms: dict[str, int] = self.context.states.get("modbus_table_forms_available")
+        self.available_forms: dict[str, int] = self.context.states.get("available")
         if self.available_forms is None:
             self.available_forms = list(FORM_CLASSES.keys())
 
@@ -40,7 +48,7 @@ class Builder(Panel):
         variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
 
         forms_button = self.menu_bar.add_button("forms_overlay")
-        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_table_forms_shown", "Show Forms", "modbus_table_forms_available",
+        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_table_forms_shown", "Show Forms", "available",
                                         label_group="modbus_forms")
 
         clear_button = self.menu_bar.add_button("clear_modbus", self.context.buffer.reset_modbus)

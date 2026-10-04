@@ -6,6 +6,14 @@ from typing import Callable
 
 class Builder(Panel):
     KEY = "modbus_chart_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "modbus_registers",
+        "strip_chart_colors",
+        "strip_chart_auto_fit",
+        "strip_chart_auto_fit_max_seconds",
+    )
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
         self.registers = self.context.states.get_registers()

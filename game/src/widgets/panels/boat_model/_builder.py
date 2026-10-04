@@ -4,6 +4,12 @@ from ..panel import Panel
 
 class Builder(Panel):
     KEY = "submarine_panel"
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "model_sprites",
+        "model_colors",
+    )
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
 

@@ -30,8 +30,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "modbus_table_forms_available": {"table": 1},
-        "network_action_forms_available": {"wifi": 1, "sniff": 1},
+        "available": {"table": 1, "wifi": 1, "sniff": 1},
         "network_action_forms_shown": {"wifi": 1, "sniff": 1},
         "modbus_table_forms_shown": {"table": 1},
         "modbus_registers": {

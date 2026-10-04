@@ -20,6 +20,15 @@ class Builder(Panel):
 
     KEY = "defender_stripchart_panel"
 
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    # Draws with the strip chart canvas
+    SETTINGS = (
+        "strip_chart_colors",
+        "strip_chart_auto_fit",
+        "strip_chart_auto_fit_max_seconds",
+    )
+
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
         self.modbus = self.context.buffer.defender_modbus

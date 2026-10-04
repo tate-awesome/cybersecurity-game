@@ -44,12 +44,10 @@
                 "modify": 1
             }
         },
-        "modbus_models_available": {"submarine": 1},
-        "network_action_forms_available": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
+        "available": {"submarine": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
-        "modbus_table_forms_available": {"table": 1, "modify": 1},
         "modbus_table_forms_shown": {"table": 1, "modify": 1},
-        "submarine_map_sprites": {
+        "model_sprites": {
             "boat_in": 1,
             "boat_out": 1,
             "path_in": 1,
