@@ -1,0 +1,53 @@
+{
+    "_note": [
+        "# Defender: Submarine Passive Filtering",
+        "Describe this workspace here: its summary, objectives, reading, and videos."
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_defender_submarine_passive_filtering",
+    "include": 1,
+    "category": "defender",
+    "order": 3,
+    "prerequisites": [],
+    "estimated_minutes": 10,
+    "gradable": false,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "available": {"ap_polled_submarine_map": 1, "kalman": 1},
+        "modbus_model_selected": "ap_polled_submarine_map",
+        "network_action_forms_shown": {"kalman": 1}
+    },
+
+    "title": "defender_submarine_passive_filtering_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "layout_shape": {
+        "v_panes_1": [
+            {
+                "h_panes_1": ["defender_console_panel_1", "defender_flag_panel_1", "modbus_model_panel_1"]
+            },
+            {"h_panes_2": ["defender_stripchart_panel_1"]}
+        ]
+    },
+    "layout_weights": {
+        "h_panes_1": 4,
+        "defender_console_panel_1": 3,
+        "defender_flag_panel_1": 3,
+        "modbus_model_panel_1": 3,
+        "h_panes_2": 3,
+        "defender_stripchart_panel_1": 33
+    }
+}
