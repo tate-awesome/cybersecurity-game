@@ -75,7 +75,7 @@ class ConfigEditor(Page):
 
       - its own fields (name, section, order, description, ...)
       - its menu bar buttons, as checkboxes (saved in the standard order)
-      - its pane layout's weights (the layout itself can't be changed here)
+      - its pane layout's shape and weights (layout_shape, layout_weights)
       - every field in _default.json, holding the workspace's current value
 
     Every section has a plain-language explanation (from
@@ -292,7 +292,7 @@ class ConfigEditor(Page):
         self.build_description_tab()
         self.form = self.new_tab("Menu Bar")
         self.build_menu_bar_section()
-        self.layout_editor = LayoutEditor(self, self.config.get("panes"))
+        self.layout_editor = LayoutEditor(self, self.config.get("layout_shape"), self.config.get("layout_weights"))
         self.tabs.addTab(self.layout_editor.shape_tab, "Layout Shape")
         self.tabs.addTab(self.layout_editor.weights_tab, "Layout Weights")
         self.form = self.new_tab("Settings")
@@ -475,10 +475,27 @@ class ConfigEditor(Page):
     def add_setting_rows(self, rows: "Rows", path: tuple, default: dict, depth: int):
         for key, item_default in default.items():
             if isinstance(item_default, dict):
-                rows.heading(key, depth=depth)
+                rows.heading(key, depth=depth, tooltip=self.key_note(path + (key,)))
                 self.add_setting_rows(rows, path + (key,), item_default, depth + 1)
             else:
                 self.add_setting_row(rows, path + (key,), item_default, depth)
+
+    def key_note(self, path: tuple) -> str:
+        '''
+        The explanation of one settings key, for its name's tooltip - from
+        _default_notes.json's "settings_keys", nested like _default.json,
+        where a "*" entry covers any key without its own (every hreg_N).
+        A nested object's own "_note" explains its heading. A top-level
+        key falls back to its "settings_fields" explanation.
+        '''
+        node = self.notes.get("settings_keys", {})
+        for key in path:
+            node = node.get(key, node.get("*")) if isinstance(node, dict) else None
+        if isinstance(node, dict):
+            node = node.get("_note")
+        if not node and len(path) == 1:
+            node = self.notes.get("settings_fields", {}).get(path[0])
+        return node if isinstance(node, str) else ""
 
     def layout_panels(self) -> list[str]:
         '''The panel types in the layout being edited, in layout order, each once.'''
@@ -553,7 +570,8 @@ class ConfigEditor(Page):
         touched, value = self.config_value(path)
         widget, reader = self.leaf(path[-1], default, value if touched else default)
         cell = SettingCell(self, path, widget, reader, default, touched)
-        cell.label = rows.add(path[-1], cell, depth=depth, default_text=SettingCell.describe(path[-1], default))
+        cell.label = rows.add(path[-1], cell, depth=depth, tooltip=self.key_note(path),
+                              default_text=SettingCell.describe(path[-1], default))
         cell.show_state()
         self.setting_cells.append(cell)
 
@@ -669,7 +687,8 @@ class ConfigEditor(Page):
 
         config["menu_bar"] = [name for name, box in self.button_boxes.items() if box.isChecked()]
 
-        config["panes"], layout_errors = self.layout_editor.authored()
+        config.pop("panes", None)
+        config["layout_shape"], config["layout_weights"], layout_errors = self.layout_editor.authored()
         errors += layout_errors
         return config, errors
 

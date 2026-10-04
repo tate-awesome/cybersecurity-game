@@ -111,7 +111,7 @@ Shared data for a page. Passed to next pages on navigation.
     def reset_data(self):
         '''
         Wipes this session back to defaults: the current page's
-        autosaved settings/panes (see PageManager.save_current_page),
+        autosaved settings/layout weights (see PageManager.save_current_page),
         session-level state, and stored preferences. Refreshes without
         re-autosaving first (save=False), so the current page's now-
         deleted data isn't immediately recreated from whatever was on
@@ -127,7 +127,7 @@ Shared data for a page. Passed to next pages on navigation.
     def delete_user_data(self):
         '''
         Wipes the entire user_data folder - every page's autosaved
-        settings/panes, saved captures, and preferences.json - then
+        settings/layout weights, saved captures, and preferences.json - then
         recreates the empty directory structure the app expects to
         find there. A full factory reset, unlike reset_data (which
         only clears the current page's save and leaves preferences

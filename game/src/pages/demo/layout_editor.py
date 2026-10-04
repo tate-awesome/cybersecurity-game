@@ -11,18 +11,13 @@ if TYPE_CHECKING:
 
 ORIENTATION_NAMES = {"horizontal": "Side by side", "vertical": "Stacked"}
 PREFIXES = {"horizontal": "h_panes", "vertical": "v_panes"}
-# Sibling groups need different names in JSON - named by position, like "v_panes_left"
-POSITION_NAMES = {
-    "horizontal": {2: ["left", "right"], 3: ["left", "middle", "right"]},
-    "vertical": {2: ["top", "bottom"], 3: ["top", "middle", "bottom"]},
-}
 
 
 class LayoutEditor:
     '''
     The workspace editor's two layout tabs, sharing one pane tree - the
-    positional tree PageManager.parse_panes makes:
-    {"orientation", "children": [{"weight", "panes": {...}} | {"weight", "widget": "<panel type>"}]}
+    positional tree PageManager.layout_tree makes:
+    {"id", "orientation", "children": [{"id", "weight", "panes": {...}} | {"id", "weight", "widget": "<panel type>"}]}
 
       - shape_tab: the tree's groups and panels, with buttons to add
         panels and groups, remove them, reorder them, and flip a group's
@@ -31,20 +26,18 @@ class LayoutEditor:
         resize panes, beside every weight as a number.
 
     A spot in the tree is a path: child indexes from the top group, so ()
-    is the top group itself. authored() turns the tree back into the
-    h_panes/v_panes layout a config file holds.
+    is the top group itself. Every panel and group has an id - its type
+    plus a number, like "status_panel_2" - so one panel type can appear
+    any number of times. authored() turns the tree back into the
+    layout_shape and layout_weights a config file holds.
     '''
 
-    def __init__(self, editor: "ConfigEditor", panes: dict | None):
+    def __init__(self, editor: "ConfigEditor", shape: dict | None, weights: dict | None):
         self.editor = editor
         self.style = editor.style
-        self.root_weight = 1
-        tree = editor.pages.parse_panes(panes) if isinstance(panes, dict) else None
-        if isinstance(panes, dict):
-            for key, group in panes.items():
-                if editor.pages.pane_group(key) and isinstance(group, dict):
-                    self.root_weight = group.get("weight", 1)
-        self.root = {"weight": self.root_weight, "panes": tree or {"orientation": "horizontal", "children": []}}
+        tree = editor.pages.layout_tree(shape, weights)
+        tree = tree or {"id": "h_panes_1", "orientation": "horizontal", "children": []}
+        self.root = {"id": tree["id"], "weight": 1, "panes": tree}
         self.selected: tuple = ()
         self.syncing = False
 
@@ -63,6 +56,20 @@ class LayoutEditor:
     def is_group(self, path: tuple) -> bool:
         return "panes" in self.entry(path)
 
+    def all_ids(self, entry: dict | None = None) -> list[str]:
+        entry = entry or self.root
+        ids = [entry["id"]]
+        if "panes" in entry:
+            for child in entry["panes"]["children"]:
+                ids += self.all_ids(child)
+        return ids
+
+    def next_id(self, kind: str) -> str:
+        '''A new id for a panel type or group prefix: one past the highest number it already has.'''
+        numbers = [int(pane_id.rpartition("_")[2]) for pane_id in self.all_ids()
+                   if self.editor.pages.panel_type(pane_id) == kind and pane_id.rpartition("_")[2].isdigit()]
+        return f"{kind}_{max(numbers, default=0) + 1}"
+
     def entry_name(self, entry: dict) -> str:
         if "panes" in entry:
             return ORIENTATION_NAMES[entry["panes"]["orientation"]]
@@ -79,7 +86,8 @@ class LayoutEditor:
         row.addLayout(left, 2)
 
         explanation = QLabel("The workspace's panels and how they're grouped. Select a group to add inside it, "
-                             "or a panel to add right after it. A group can't hold the same panel type twice.")
+                             "or a panel to add right after it. A panel type can be added as many times as you like - "
+                             "each copy gets its own numbered id, so its weight is kept separately.")
         explanation.setFont(self.style.get_font("small"))
         explanation.setWordWrap(True)
         left.addWidget(explanation)
@@ -98,9 +106,9 @@ class LayoutEditor:
         self.panel_type.setFont(self.style.get_font("default"))
         self.panel_type.addItems(list(PANELS))
         controls.addWidget(self.panel_type, 0, 0, 1, 2)
-        controls.addWidget(self.button("Add Panel", lambda: self.add({"widget": self.panel_type.currentText()})), 0, 2)
-        controls.addWidget(self.button("Add Side-by-Side Group", lambda: self.add({"panes": {"orientation": "horizontal", "children": []}})), 1, 0)
-        controls.addWidget(self.button("Add Stacked Group", lambda: self.add({"panes": {"orientation": "vertical", "children": []}})), 1, 1)
+        controls.addWidget(self.button("Add Panel", lambda: self.add({"id": self.next_id(self.panel_type.currentText()), "widget": self.panel_type.currentText()})), 0, 2)
+        controls.addWidget(self.button("Add Side-by-Side Group", lambda: self.add_group("horizontal")), 1, 0)
+        controls.addWidget(self.button("Add Stacked Group", lambda: self.add_group("vertical")), 1, 1)
         controls.addWidget(self.button("Flip Direction", self.flip), 1, 2)
         controls.addWidget(self.button("Move Up", lambda: self.move(-1)), 2, 0)
         controls.addWidget(self.button("Move Down", lambda: self.move(1)), 2, 1)
@@ -131,9 +139,7 @@ class LayoutEditor:
         def add(parent, path: tuple):
             nonlocal current
             entry = self.entry(path)
-            text = self.entry_name(entry)
-            if "widget" in entry:
-                text = f"{text}  ({entry['widget']})"
+            text = f"{self.entry_name(entry)}  ({entry['id']})"
             item = QTreeWidgetItem([text])
             item.setData(0, Qt.ItemDataRole.UserRole, path)
             if parent is None:
@@ -166,14 +172,15 @@ class LayoutEditor:
         else:
             parent_path, index = self.selected[:-1], self.selected[-1] + 1
         siblings = self.entry(parent_path)["panes"]["children"]
-        if "widget" in new and any(child.get("widget") == new["widget"] for child in siblings):
-            self.editor.set_status(f"This group already has a {new['widget']} - a group can't hold the same panel type twice.", "red")
-            return
         weights = [child["weight"] for child in siblings]
         average = round(sum(weights) / len(weights), 2) if weights else 1
         new["weight"] = int(average) if average == int(average) else average
         siblings.insert(index, new)
         self.changed(select=parent_path + (index,))
+
+    def add_group(self, orientation: str):
+        group_id = self.next_id(PREFIXES[orientation])
+        self.add({"id": group_id, "panes": {"id": group_id, "orientation": orientation, "children": []}})
 
     def remove(self):
         if self.selected == ():
@@ -196,8 +203,11 @@ class LayoutEditor:
 
     def flip(self):
         path = self.selected if self.is_group(self.selected) else self.selected[:-1]
-        group = self.entry(path)["panes"]
+        entry = self.entry(path)
+        group = entry["panes"]
         group["orientation"] = "vertical" if group["orientation"] == "horizontal" else "horizontal"
+        # The id names the direction, so it changes with it
+        entry["id"] = group["id"] = self.next_id(PREFIXES[group["orientation"]])
         self.changed(select=path)
 
     # Weights tab
@@ -235,7 +245,7 @@ class LayoutEditor:
             nonlocal row
             entry = self.entry(path)
             if path != ():
-                label = QLabel("    " * (depth - 1) + self.entry_name(entry))
+                label = QLabel("    " * (depth - 1) + f"{self.entry_name(entry)}  ({entry['id']})")
                 label.setFont(self.style.get_font("default"))
                 grid.addWidget(label, row, 0)
                 weight = QLineEdit(f"{entry['weight']:g}")
@@ -295,7 +305,7 @@ class LayoutEditor:
         entry = self.entry(path)
         if "widget" in entry:
             selected = not interactive and path == self.selected
-            box = QLabel(self.entry_name(entry))
+            box = QLabel(f"{self.entry_name(entry)}\n{entry['id']}")
             box.setFont(self.style.get_font("default"))
             box.setAlignment(Qt.AlignmentFlag.AlignCenter)
             box.setWordWrap(True)
@@ -334,23 +344,21 @@ class LayoutEditor:
         self.build_preview(self.weight_preview, interactive=True)
 
     # Saving
-    def authored(self) -> tuple[dict, list[str]]:
-        '''The layout as a config file's "panes" - one h_panes/v_panes group - plus any problems with it.'''
+    def authored(self) -> tuple[dict, dict, list[str]]:
+        '''The layout as a config file's "layout_shape" and "layout_weights", plus any problems with it.'''
         errors = []
-        def group(panes: dict, weight) -> dict:
-            out = {"weight": weight}
+        weights = {}
+        def group(panes: dict) -> list:
             children = panes["children"]
             if not children:
                 errors.append(f"An empty {ORIENTATION_NAMES[panes['orientation']].lower()} group - add a panel to it or remove it.")
-            groups = [child for child in children if "panes" in child]
-            names = iter(POSITION_NAMES[panes["orientation"]].get(len(groups), [str(i) for i in range(1, len(groups) + 1)]))
+            out = []
             for child in children:
-                if "widget" in child:
-                    out[child["widget"]] = child["weight"]
-                else:
-                    prefix = PREFIXES[child["panes"]["orientation"]]
-                    key = prefix if len(groups) == 1 else f"{prefix}_{next(names)}"
-                    out[key] = group(child["panes"], child["weight"])
+                weights[child["id"]] = child["weight"]
+                out.append(child["id"] if "widget" in child else {child["id"]: group(child["panes"])})
             return out
-        top = self.root["panes"]
-        return {PREFIXES[top["orientation"]]: group(top, self.root_weight)}, errors
+        shape = {self.root["id"]: group(self.root["panes"])}
+        ids = self.all_ids()
+        for duplicate in sorted({pane_id for pane_id in ids if ids.count(pane_id) > 1}):
+            errors.append(f'The id "{duplicate}" is used more than once.')
+        return shape, weights, errors

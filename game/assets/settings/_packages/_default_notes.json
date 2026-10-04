@@ -1,5 +1,5 @@
 {
-    "_note": "Plain-language explanations of every field in a workspace config and in _default.json, shown by the Workspace Config Editor demo page. When you add a field to _default.json, explain it here too.",
+    "_note": "Plain-language explanations of every field in a workspace config and in _default.json, shown by the Workspace Config Editor demo page. When you add a field to _default.json, explain it here too - in settings_fields, and each of its keys in settings_keys.",
     "workspace_fields": {
         "_note": "Markdown shown on the workspace select page when this workspace is selected: summary, objectives, reading, videos. One string, or a list of blocks joined with blank lines. Images like screenshot.png load from the workspace's own folder.",
         "_dev_note": "Notes for developers. Never shown in the game - any field whose name starts with \"_\" is ignored.",
@@ -15,7 +15,8 @@
         "settings": "Only the settings this workspace changes from _default.json, where every option starts off (0). Turn on what the lesson needs: each form, model or column usually needs both its \"available\" entry and its *_shown entry set to 1. See the Settings Fields section below.",
         "title": "The menu bar title, as the labels key \"menu_bar_titles_<title>\" (e.g. \"arp_ip_workspace\").",
         "menu_bar": "The menu bar's buttons, left to right. Put the most important ones last: on a narrow window, buttons squash into the \"...\" menu from the left.",
-        "panes": "The panel layout: exactly one \"h_panes\" (side by side) or \"v_panes\" (stacked) group. Inside a group, \"<panel type>\": <weight> places a panel and a nested group places more panes; \"weight\" is the group's own share of its parent. Weights are proportional. Sibling groups need different names, like \"v_panes_left\" and \"v_panes_right\".",
+        "layout_shape": "The panel layout: exactly one group, {\"h_panes_1\": [...]} (side by side) or {\"v_panes_1\": [...]} (stacked), listing its contents in order. Each item is a panel id - its panel type plus a number, like \"status_panel_1\" - or another group of the same form. The same panel type can appear any number of times, as long as each copy has its own number (\"status_panel_1\", \"status_panel_2\"). Every id must be unique, groups included.",
+        "layout_weights": "Each panel or group id from layout_shape and its size: a proportional share of the group it sits in, so a weight-2 pane gets twice the room of a weight-1 neighbour. An id left out gets 1; the top group fills the page and needs none.",
         "background": "Optional. The moving background behind the panels, e.g. {\"visual\": \"network_mesh\", \"blur\": 6}. false turns it off; leave it out for the usual still network."
     },
     "settings_fields": {
@@ -40,5 +41,186 @@
         "packet_filter_checkboxes": "Which packet filters start out ticked (1). Nothing ticked shows every packet.",
         "packet_filter_entries": "What starts out typed into the packet filter's text boxes, like an address to filter by.",
         "packet_columns": "Which packet console columns are shown (1). Students can change this with Show Columns."
+    },
+    "settings_keys": {
+        "_note": "One explanation per key inside each settings field, shown as a tooltip on that key's name in the Workspace Config Editor. Nested like _default.json; a \"*\" entry covers every key at that level that has no entry of its own (e.g. every hreg_N). A nested object's own \"_note\" explains its heading.",
+        "model_sprites": {
+            "boat_in": "Submarine map: the vessel where the device reports it is (the incoming, possibly spoofed, value).",
+            "boat_out": "Submarine map: the vessel where the controller is commanding it to be (the outgoing value).",
+            "path_in": "Submarine map: the trail behind the reported (incoming) vessel.",
+            "path_out": "Submarine map: the trail behind the commanded (outgoing) vessel.",
+            "boat_in_label": "Submarine map: the text label beside the reported vessel.",
+            "boat_out_label": "Submarine map: the text label beside the commanded vessel.",
+            "boat_in_position": "Submarine map: the coordinate readout for the reported vessel.",
+            "boat_out_position": "Submarine map: the coordinate readout for the commanded vessel.",
+            "grid_numbers": "Submarine map: the numbers along the grid lines.",
+            "grid_lines": "Submarine map: the coordinate grid.",
+            "ocean": "Submarine map: the water background.",
+            "background": "HVAC house: the scene background.",
+            "room": "HVAC house: the room outline.",
+            "room_thermostat": "HVAC house: the thermostat on the room wall, showing the room temperature.",
+            "window": "HVAC house: the window.",
+            "vent": "HVAC house: the vent, which shows heating or cooling airflow.",
+            "controller_box": "HVAC house: the controller box.",
+            "controller_thermostat": "HVAC house: the controller's own temperature readout.",
+            "indicator": "HVAC house: the heating/cooling indicator light."
+        },
+        "model_colors": {
+            "ocean": "Submarine map: water color.",
+            "grid_lines": "Submarine map: grid line color.",
+            "grid_axes": "Submarine map: color of the two center axes.",
+            "grid_numbers": "Submarine map: grid number color.",
+            "path_in": "Submarine map: trail color behind the reported (incoming) vessel.",
+            "boat_in_fill": "Submarine map: fill color of the reported vessel.",
+            "boat_in_outline": "Submarine map: outline color of the reported vessel.",
+            "path_out": "Submarine map: trail color behind the commanded (outgoing) vessel.",
+            "boat_out_fill": "Submarine map: fill color of the commanded vessel.",
+            "boat_out_outline": "Submarine map: outline color of the commanded vessel.",
+            "background": "HVAC house: background color.",
+            "line_art": "HVAC house: outline color for the drawing.",
+            "fill": "HVAC house: fill color for walls and boxes.",
+            "text": "HVAC house: text color.",
+            "coldness": "HVAC house: color used for cooling and cold temperatures.",
+            "hotness": "HVAC house: color used for heating and hot temperatures."
+        },
+        "strip_chart_sprites": {
+            "*": "Not used by the game yet."
+        },
+        "strip_chart_colors": {
+            "background": "Chart background color.",
+            "grid_lines": "Grid line color.",
+            "grid_axes": "Axis line color.",
+            "grid_numbers": "Axis number color.",
+            "paths": "One color per plotted line, used in order. One color per line in this box.",
+            "heads": "Colors of the live-value markers at the end of each line, used in order."
+        },
+        "game_progress": {
+            "*": "Set to 1 once the student starts this network action form. Recorded but not read by the game yet."
+        },
+        "network_action_form_inputs": {
+            "wifi": "Wi-Fi form: the \"Device Name\" box - the network to connect to.",
+            "arp": "ARP spoofing form: the target IP, then the host IP to impersonate. One per line.",
+            "sniff": "Not used - the sniffing form has no text boxes.",
+            "dos": "Denial of service form: its two \"Target IP:Port\" boxes, in order. One per line.",
+            "ap_connect": "AP connect form: the access point's address, e.g. http://192.168.4.1.",
+            "encryption": "Encryption form: the starting encryption key."
+        },
+        "network_action_forms_shown": {
+            "wifi": "Wi-Fi form: connects this computer to a wireless network.",
+            "nmap": "Nmap form: scans the network for devices.",
+            "arp": "ARP spoofing form: poisons ARP tables to put this computer in the middle of traffic.",
+            "dos": "Denial of service form: floods a target with traffic.",
+            "sniff": "Sniffing form: captures packets into the packet console.",
+            "nfq": "Packet interceptor form (NetFilterQueue): holds packets so they can be read or rewritten in transit.",
+            "ap_connect": "AP connect form: connects to the access point and shows whether it's connected. Every other defender form talks through this connection.",
+            "encryption": "Encryption form: turns AP-level encryption on or off with a key.",
+            "ap_tunnel": "AP tunnel form: routes device traffic only through the AP, so there's no directly attackable TCP/ModBus.",
+            "kalman": "Kalman filter form: turns the AP's Kalman filter on or off for its current mode. Usually left hidden - the Defender Flags panel has the same toggle."
+        },
+        "modbus_table_forms_shown": {
+            "table": "The live register table.",
+            "modify": "The form for rewriting register values in transit."
+        },
+        "modbus_registers": {
+            "*": {
+                "_note": "Settings for this one holding register.",
+                "label": "The labels key for this register's name.",
+                "show": "1 shows this register in the ModBus table and charts.",
+                "nickname": "A short name shown instead of the register number, like \"heading\".",
+                "factor": "Raw values are multiplied by this for display, e.g. 0.1 to show 235 as 23.5.",
+                "units": "Units shown after the value, like \"deg\" or \"C\".",
+                "multiplier": "When modify is on, the interceptor multiplies this register's value by this in transit.",
+                "offset": "When modify is on, the interceptor adds this to the value in transit, after the multiplier.",
+                "modify": "1 lets the packet interceptor rewrite this register (needs modbus_packet_modify_enabled)."
+            }
+        },
+        "packet_console": {
+            "mode": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph.",
+            "summary": "The plain-language description of the current packet filter, shown to the student.",
+            "function": "The packet filter as Python code, rebuilt by the filter overlay. Leave this alone.",
+            "secret explanation for awful coding practice": "A developer note, not a setting."
+        },
+        "packet_filter_categories": {
+            "hack": "Checkboxes in the \"which tool caught it\" group. One per line.",
+            "layers": "Checkboxes in the protocol layer group. One per line.",
+            "direction": "Checkboxes in the direction group. One per line."
+        },
+        "packet_filter_checkboxes": {
+            "nmap": "Show packets from the Nmap scan.",
+            "arp": "Show packets caught by ARP spoofing.",
+            "dos": "Show packets from the denial of service attack.",
+            "sniff": "Show packets caught by sniffing.",
+            "nfq": "Show packets caught by the packet interceptor.",
+            "pcap": "Show packets loaded from a capture file.",
+            "TCP": "Show TCP packets.",
+            "ARP": "Show ARP packets.",
+            "UDP": "Show UDP packets.",
+            "DNS": "Show DNS packets.",
+            "misc": "Not in any group in packet_filter_categories, so it has no checkbox and does nothing.",
+            "MODBUSADUREQUEST": "Show ModBus requests.",
+            "MODBUSADURESPONSE": "Show ModBus responses.",
+            "MODBUSPDU03READHOLDINGREGISTERSREQUEST": "Show ModBus read holding registers requests.",
+            "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": "Show ModBus read holding registers responses.",
+            "MODBUSPDU06WRITESINGLEREGISTERREQUEST": "Show ModBus write single register requests.",
+            "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": "Show ModBus write single register responses.",
+            "out": "Show packets this computer sent.",
+            "in": "Show packets this computer received.",
+            "other": "Not in any group in packet_filter_categories, so it has no checkbox and does nothing."
+        },
+        "packet_filter_entries": {
+            "address_filter": "Only show packets to or from this address. Empty shows every address."
+        },
+        "packet_columns": {
+            "time_word": "Time the packet arrived, to 4 decimal places.",
+            "number": "The packet's number in the capture.",
+            "length": "Packet size in bytes.",
+            "observer": "What saw the packet: the tool's name, or which side of the interceptor (prerouting/postrouting nfq).",
+            "hack": "Which tool caught it: arp, sniff, dos, nfq or nmap.",
+            "purpose": "Why the tool recorded it.",
+            "mac_src": "Source MAC address.",
+            "mac_dst": "Destination MAC address.",
+            "ip_src": "Source IP address.",
+            "ip_dst": "Destination IP address.",
+            "direction": "\"in\", \"out\" or \"other\".",
+            "protocol": "The packet's top protocol layer.",
+            "layers_word": "Every protocol layer, joined with \"/\".",
+            "summary": "Scapy's one-line summary of the packet.",
+            "mac_word": "Source and destination MAC as \"source -> destination\".",
+            "ip_word": "Source and destination IP as \"source -> destination\".",
+            "variables": "ModBus: the registers the packet touches.",
+            "values": "ModBus: the register values it carries.",
+            "command": "ModBus: the full command name, like \"read holding registers response\".",
+            "command_type": "ModBus: \"Request\" or \"Response\".",
+            "is_modbus": "Whether the packet has a ModBus layer.",
+            "is_useful": "Whether the packet changes a register value.",
+            "is_primary": "Whether it's the first request or response of its ModBus transaction.",
+            "command_word": "ModBus: the short command, like \"Write Request\".",
+            "modbus_word": "ModBus: \"registers = values\" in one column."
+        },
+        "available": {
+            "wifi": "Network action form: Wi-Fi.",
+            "nmap": "Network action form: Nmap scan.",
+            "arp": "Network action form: ARP spoofing.",
+            "dos": "Network action form: denial of service.",
+            "sniff": "Network action form: sniffing.",
+            "nfq": "Network action form: packet interceptor.",
+            "ap_connect": "Network action form: AP connect.",
+            "encryption": "Network action form: AP encryption.",
+            "ap_tunnel": "Network action form: AP tunnel.",
+            "kalman": "Network action form: Kalman filter toggle.",
+            "table": "ModBus table panel form: the live register table.",
+            "modify": "ModBus table panel form: rewriting values in transit.",
+            "mode": "Defender ModBus panel form: the AP's current mode.",
+            "sliders": "Defender ModBus panel form: filter-tuning sliders.",
+            "hvac": "Model panel: the HVAC house, driven by intercepted ModBus traffic.",
+            "submarine": "Model panel: the submarine map, driven by intercepted ModBus traffic.",
+            "auto_switch": "Model panel: the checkbox that switches models to follow the AP's reported mode.",
+            "defender_hvac": "Model panel: the defender's HVAC house, driven by the AP's reports.",
+            "defender_submarine": "Model panel: the defender's submarine map, driven by the AP's reports."
+        },
+        "defender_modbus_forms_shown": {
+            "mode": "The read-only display of the AP's current mode (submarine or HVAC).",
+            "sliders": "The filter-tuning sliders for the AP's current mode."
+        }
     }
 }

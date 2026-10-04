@@ -17,9 +17,14 @@
 
     "settings": {
         "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1},
-        "modbus_models_available": {"defender_submarine": 1},
-        "network_action_forms_available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "defender_modbus_forms_available": {"mode": 1, "sliders": 1},
+        "available": {
+            "defender_submarine": 1,
+            "ap_connect": 1,
+            "encryption": 1,
+            "ap_tunnel": 1,
+            "mode": 1,
+            "sliders": 1
+        },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
@@ -36,16 +41,21 @@
         "quit_button"
     ],
 
-    "panes": {
-        "v_panes": {
-            "weight": 1,
-            "h_panes_top": {
-                "weight": 65,
-                "network_action_panel": 25,
-                "defender_console_panel": 41,
-                "modbus_model_panel": 33
+    "layout_shape": {
+        "v_panes_1": [
+            {
+                "h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]
             },
-            "h_panes_bottom": {"weight": 35, "defender_stripchart_panel": 2, "modbus_model_panel": 2}
-        }
+            {"h_panes_2": ["defender_stripchart_panel_1", "modbus_model_panel_2"]}
+        ]
+    },
+    "layout_weights": {
+        "h_panes_1": 65,
+        "network_action_panel_1": 25,
+        "defender_console_panel_1": 41,
+        "modbus_model_panel_1": 33,
+        "h_panes_2": 35,
+        "defender_stripchart_panel_1": 2,
+        "modbus_model_panel_2": 2
     }
 }

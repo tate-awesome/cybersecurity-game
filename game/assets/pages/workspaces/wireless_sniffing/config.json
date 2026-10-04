@@ -51,12 +51,18 @@
         "quit_button"
     ],
 
-    "panes": {
-        "h_panes": {
-            "weight": 1,
-            "network_action_panel": 2,
-            "v_panes": {"weight": 4, "packet_panel": 3, "status_panel": 1},
-            "network_graph_panel": 3
-        }
+    "layout_shape": {
+        "h_panes_1": [
+            "network_action_panel_1",
+            {"v_panes_1": ["packet_panel_1", "status_panel_1"]},
+            "network_graph_panel_1"
+        ]
+    },
+    "layout_weights": {
+        "network_action_panel_1": 2,
+        "v_panes_1": 4,
+        "packet_panel_1": 3,
+        "status_panel_1": 1,
+        "network_graph_panel_1": 3
     }
 }
