@@ -593,7 +593,7 @@ class ConfigEditor(Page):
     def leaf(self, path: tuple, default, value) -> tuple[QWidget, Callable[[], Any]]:
         key = path[-1]
         if path in SETTING_DROPDOWNS:
-            return self.dropdown(SETTING_DROPDOWNS[path], value)
+            return self.choice_dropdown(SETTING_DROPDOWNS[path], value)
         if is_switch(key, default):
             return self.checkbox(value, as_bool=isinstance(default, bool), as_float=isinstance(value, float))
         if isinstance(default, (int, float)):
@@ -615,7 +615,7 @@ class ConfigEditor(Page):
         on, off = (1.0, 0.0) if as_float else (1, 0)
         return box, lambda: on if box.isChecked() else off
 
-    def dropdown(self, options: list[str], value) -> tuple[QComboBox, Callable[[], str]]:
+    def choice_dropdown(self, options: list[str], value) -> tuple[QComboBox, Callable[[], str]]:
         '''
         A fixed set of choices, each explained by its tooltip (its "available"
         description in _default_notes.json, when it has one). A value that
