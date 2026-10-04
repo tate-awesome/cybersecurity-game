@@ -30,7 +30,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "modbus_model_selected": "hvac",
+        "modbus_model_selected": "sniffed_hvac_house",
         "modbus_registers": {
             "hreg_6": {"show": 1.0, "nickname": "Heater", "factor": 0.01, "units": "State", "modify": 1},
             "hreg_10": {
@@ -41,7 +41,7 @@
                 "modify": 1
             }
         },
-        "available": {"hvac": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
+        "available": {"sniffed_hvac_house": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
         "modbus_table_forms_shown": {"table": 1, "modify": 1},
         "model_sprites": {

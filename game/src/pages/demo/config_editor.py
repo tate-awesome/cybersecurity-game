@@ -475,27 +475,32 @@ class ConfigEditor(Page):
     def add_setting_rows(self, rows: "Rows", path: tuple, default: dict, depth: int):
         for key, item_default in default.items():
             if isinstance(item_default, dict):
-                rows.heading(key, depth=depth, tooltip=self.key_note(path + (key,)))
+                description, details = self.key_notes(path + (key,))
+                rows.heading(key, depth=depth, tooltip=details, description=description)
                 self.add_setting_rows(rows, path + (key,), item_default, depth + 1)
             else:
                 self.add_setting_row(rows, path + (key,), item_default, depth)
 
-    def key_note(self, path: tuple) -> str:
+    def key_notes(self, path: tuple) -> tuple[str, str]:
         '''
-        The explanation of one settings key, for its name's tooltip - from
-        _default_notes.json's "settings_keys", nested like _default.json,
-        where a "*" entry covers any key without its own (every hreg_N).
-        A nested object's own "_note" explains its heading. A top-level
-        key falls back to its "settings_fields" explanation.
+        One settings key's (description, details) from _default_notes.json's
+        "settings_keys", nested like _default.json: the short description
+        for the Description column and the longer details for the key's
+        tooltip. A "*" entry covers any key without its own (every hreg_N),
+        and a nested object's "_note" explains its heading. A top-level key
+        with neither falls back to its "settings_fields" explanation as its
+        tooltip.
         '''
         node = self.notes.get("settings_keys", {})
         for key in path:
             node = node.get(key, node.get("*")) if isinstance(node, dict) else None
-        if isinstance(node, dict):
+        if isinstance(node, dict) and "description" not in node:
             node = node.get("_note")
-        if not node and len(path) == 1:
-            node = self.notes.get("settings_fields", {}).get(path[0])
-        return node if isinstance(node, str) else ""
+        if isinstance(node, dict):
+            return str(node.get("description", "")), str(node.get("details", ""))
+        if len(path) == 1:
+            return "", self.notes.get("settings_fields", {}).get(path[0], "")
+        return "", ""
 
     def layout_panels(self) -> list[str]:
         '''The panel types in the layout being edited, in layout order, each once.'''
@@ -570,7 +575,8 @@ class ConfigEditor(Page):
         touched, value = self.config_value(path)
         widget, reader = self.leaf(path[-1], default, value if touched else default)
         cell = SettingCell(self, path, widget, reader, default, touched)
-        cell.label = rows.add(path[-1], cell, depth=depth, tooltip=self.key_note(path),
+        description, details = self.key_notes(path)
+        cell.label = rows.add(path[-1], cell, depth=depth, tooltip=details, description=description,
                               default_text=SettingCell.describe(path[-1], default))
         cell.show_state()
         self.setting_cells.append(cell)
@@ -709,38 +715,53 @@ class Rows:
         label.setToolTip(tooltip)
         return label
 
-    def heading(self, text: str, depth: int = 0, tooltip: str = ""):
+    def heading(self, text: str, depth: int = 0, tooltip: str = "", description: str = ""):
         self.grid.addWidget(self.label(text, depth, tooltip), self.row, 0)
+        if description:
+            self.grid.addWidget(self.description(description), self.row, 1)
         self.row += 1
 
+    def description(self, text: str) -> QLabel:
+        '''A settings key's short explanation, wrapping within the Description column.'''
+        label = QLabel(text)
+        label.setFont(self.page.style.get_font("small"))
+        label.setWordWrap(True)
+        label.setMinimumWidth(self.DESCRIPTION_WIDTH)
+        return label
+
     DEFAULT_WIDTH = 260
+    DESCRIPTION_WIDTH = 260
 
     def setting_header(self):
         '''
-        Column titles for a settings section: the key, its _default.json
-        value, the Edit/Clear buttons (untitled), and this workspace's value.
+        Column titles for a settings section: the key, what it does, its
+        _default.json value, the Edit/Clear buttons (untitled), and this
+        workspace's value.
         '''
-        self.grid.setColumnStretch(1, 0)
-        self.grid.setColumnStretch(3, 1)
-        self.grid.setColumnMinimumWidth(1, self.DEFAULT_WIDTH)
-        for column, text in ((1, "Default"), (3, "This workspace")):
+        self.grid.setColumnStretch(1, 1)
+        self.grid.setColumnStretch(4, 1)
+        self.grid.setColumnMinimumWidth(1, self.DESCRIPTION_WIDTH)
+        self.grid.setColumnMinimumWidth(2, self.DEFAULT_WIDTH)
+        for column, text in ((1, "Description"), (2, "Default"), (4, "This workspace")):
             label = QLabel(text)
             label.setFont(self.page.style.get_font("small"))
             self.grid.addWidget(label, self.row, column)
         self.row += 1
 
-    def add(self, text: str, widget: QWidget, depth: int = 0, tooltip: str = "", default_text: str | None = None) -> QLabel:
+    def add(self, text: str, widget: QWidget, depth: int = 0, tooltip: str = "", default_text: str | None = None,
+            description: str = "") -> QLabel:
         label = self.label(text, depth, tooltip)
         if default_text is not None:
-            # Settings rows: key and default centred on the row's buttons
+            # Settings rows: key, description and default centred on the row's buttons
             self.grid.addWidget(label, self.row, 0, Qt.AlignmentFlag.AlignVCenter)
+            self.grid.addWidget(self.description(description), self.row, 1, Qt.AlignmentFlag.AlignVCenter)
             default = QLabel(default_text)
             default.setFont(self.page.style.get_font("default"))
             default.setWordWrap(True)
             default.setMaximumWidth(self.DEFAULT_WIDTH)
-            self.grid.addWidget(default, self.row, 1, Qt.AlignmentFlag.AlignVCenter)
-            self.grid.addWidget(widget.touch_button, self.row, 2, Qt.AlignmentFlag.AlignVCenter)
-            self.grid.addWidget(widget, self.row, 3)
+            self.grid.addWidget(default, self.row, 2, Qt.AlignmentFlag.AlignVCenter)
+            self.grid.addWidget(widget.touch_button, self.row, 3, Qt.AlignmentFlag.AlignVCenter)
+            self.grid.addWidget(widget, self.row, 4)
             self.row += 1
             return label
         self.grid.addWidget(label, self.row, 0, Qt.AlignmentFlag.AlignTop)
@@ -753,8 +774,8 @@ class Rows:
 
 class SettingCell(QWidget):
     '''
-    A setting's value column, beside its key and default value. The row
-    reads key | default | button | this workspace, where the last column is
+    A setting's value column, beside its key, description and default value. The row
+    reads key | description | default | button | this workspace, where the last column is
     this widget and the button (touch_button) is placed before it by Rows:
 
       - untouched (only _default.json has this key): Edit | "Uses default"

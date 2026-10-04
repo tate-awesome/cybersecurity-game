@@ -18,7 +18,7 @@
     "settings": {
         "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1},
         "available": {
-            "defender_submarine": 1,
+            "ap_polled_submarine_map": 1,
             "ap_connect": 1,
             "encryption": 1,
             "ap_tunnel": 1,

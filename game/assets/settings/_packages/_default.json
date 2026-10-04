@@ -389,11 +389,11 @@
         "modify": 0,
         "mode": 0,
         "sliders": 0,
-        "hvac": 0,
-        "submarine": 0,
+        "sniffed_hvac_house": 0,
+        "sniffed_submarine_map": 0,
         "auto_switch": 0,
-        "defender_hvac": 0,
-        "defender_submarine": 0
+        "ap_polled_hvac_chart": 0,
+        "ap_polled_submarine_map": 0
     },
 
     "defender_modbus_forms_shown": {

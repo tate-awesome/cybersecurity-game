@@ -32,13 +32,13 @@
     "settings": {
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
         "available": {
-            "defender_submarine": 1,
+            "ap_polled_submarine_map": 1,
             "ap_connect": 1,
             "encryption": 1,
             "ap_tunnel": 1,
             "mode": 1,
             "sliders": 1,
-            "submarine": 1
+            "sniffed_submarine_map": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "network_action_form_inputs": ["http://192.168.4.1"]

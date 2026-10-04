@@ -30,7 +30,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "modbus_model_selected": "submarine",
+        "modbus_model_selected": "sniffed_submarine_map",
         "modbus_registers": {
             "hreg_3": {"show": 1.0, "nickname": "Speed", "factor": 0.00122, "units": "TODO", "modify": 1},
             "hreg_4": {"show": 1.0, "nickname": "Rudder", "factor": 0.00122, "units": "TODO", "modify": 1},
@@ -44,7 +44,7 @@
                 "modify": 1
             }
         },
-        "available": {"submarine": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
+        "available": {"sniffed_submarine_map": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
         "modbus_table_forms_shown": {"table": 1, "modify": 1},
         "model_sprites": {

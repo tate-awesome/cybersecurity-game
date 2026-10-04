@@ -51,8 +51,8 @@
         "available": {
             "table": 1,
             "modify": 1,
-            "hvac": 1,
-            "submarine": 1,
+            "sniffed_hvac_house": 1,
+            "sniffed_submarine_map": 1,
             "wifi": 1,
             "nmap": 1,
             "arp": 1,
