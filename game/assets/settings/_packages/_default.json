@@ -387,10 +387,17 @@
         "kalman": 0,
         "table": 0,
         "modify": 0,
+        "mode": 0,
+        "sliders": 0,
         "sniffed_hvac_house": 0,
         "sniffed_submarine_map": 0,
         "auto_switch": 0,
         "ap_polled_hvac_chart": 0,
         "ap_polled_submarine_map": 0
+    },
+
+    "defender_modbus_forms_shown": {
+        "mode": 0,
+        "sliders": 0
     }
 }

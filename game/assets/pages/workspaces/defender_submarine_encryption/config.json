@@ -33,8 +33,11 @@
             "encryption": 1,
             "arp": 1,
             "sniff": 1,
-            "sniffed_submarine_map": 1
+            "sniffed_submarine_map": 1,
+            "mode": 1,
+            "sliders": 1
         },
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "modbus_model_selected": "ap_polled_submarine_map"
     },
 

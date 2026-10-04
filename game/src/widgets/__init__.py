@@ -18,6 +18,7 @@ from .panels.fixed_model._builder import SniffedSubmarineMap, SniffedHVACHouse, 
 from .panels.network_diagram._builder import Builder as NetworkDiagram
 from .panels.variable_monitor._builder import Builder as VariableMonitor
 from .panels.modbus_panel._builder import Builder as ModbusPanel
+from .panels.defender_modbus_panel._builder import Builder as DefenderModbusPanel
 from .panels.defender_stripchart_panel._builder import Builder as DefenderStripchartPanel
 from .panels.defender_console._builder import Builder as DefenderConsole
 from .panels.defender_flag_panel._builder import Builder as DefenderFlagPanel
@@ -37,6 +38,7 @@ PANELS = {
     PolledSubmarineMap.KEY: PolledSubmarineMap,
     PolledHVACChart.KEY: PolledHVACChart,
     VariableMonitor.KEY: VariableMonitor,
+    DefenderModbusPanel.KEY: DefenderModbusPanel,
     DefenderStripchartPanel.KEY: DefenderStripchartPanel,
     DefenderConsole.KEY: DefenderConsole,
     DefenderFlagPanel.KEY: DefenderFlagPanel,
