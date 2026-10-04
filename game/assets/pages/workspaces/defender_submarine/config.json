@@ -22,7 +22,7 @@
     "link_label": "title_buttons_workspace_defender_submarine",
     "include": 1,
     "category": "defender",
-    "order": 3,
+    "order": 6,
     "prerequisites": ["workspaces/defender_ap_intro"],
     "estimated_minutes": 25,
     "gradable": true,
@@ -31,10 +31,10 @@
 
     "settings": {
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "modbus_models_available": {"defender_hvac": 0, "defender_submarine": 1},
+        "modbus_models_available": {"defender_submarine": 1},
         "network_action_forms_available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
-        "defender_modbus_forms_available": {"mode": 1, "sliders": 1}
+        "defender_modbus_forms_available": {"mode": 1, "sliders": 1},
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
     "title": "defender_submarine_workspace",

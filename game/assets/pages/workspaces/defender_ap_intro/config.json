@@ -22,7 +22,7 @@
     "link_label": "title_buttons_workspace_defender_ap",
     "include": 1,
     "category": "defender",
-    "order": 5,
+    "order": 7,
     "prerequisites": [],
     "estimated_minutes": 15,
     "gradable": false,
