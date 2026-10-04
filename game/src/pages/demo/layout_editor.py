@@ -73,9 +73,23 @@ class LayoutEditor:
     def entry_name(self, entry: dict) -> str:
         if "panes" in entry:
             return ORIENTATION_NAMES[entry["panes"]["orientation"]]
-        panel = entry["widget"]
-        label = f"menu_bar_titles_{panel}"
-        return self.editor.labels.data.get(label, panel)
+        return self.panel_name(entry["widget"])
+
+    # Panel names and explanations, from _default_notes.json's "panels"
+    def panel_note(self, panel: str) -> dict:
+        note = self.editor.notes.get("panels", {}).get(panel)
+        return note if isinstance(note, dict) else {}
+
+    def panel_name(self, panel: str) -> str:
+        return self.panel_note(panel).get("name") or self.editor.labels.data.get(f"menu_bar_titles_{panel}", panel)
+
+    def panel_details(self, panel: str) -> str:
+        return self.panel_note(panel).get("details", "")
+
+    def panel_keys(self) -> list[str]:
+        '''Every panel type, in _default_notes.json's "panels" order, then any it doesn't list.'''
+        listed = [key for key in self.editor.notes.get("panels", {}) if key in PANELS]
+        return listed + [key for key in PANELS if key not in listed]
 
     # Shape tab
     def build_shape_tab(self) -> QWidget:
@@ -104,9 +118,15 @@ class LayoutEditor:
         left.addLayout(controls)
         self.panel_type = QComboBox()
         self.panel_type.setFont(self.style.get_font("default"))
-        self.panel_type.addItems(list(PANELS))
+        for index, panel in enumerate(self.panel_keys()):
+            self.panel_type.addItem(self.panel_name(panel), panel)
+            self.panel_type.setItemData(index, self.panel_details(panel), Qt.ItemDataRole.ToolTipRole)
+        # The closed dropdown explains its current pick too
+        self.panel_type.currentIndexChanged.connect(
+            lambda index: self.panel_type.setToolTip(self.panel_details(self.panel_type.itemData(index))))
+        self.panel_type.setToolTip(self.panel_details(self.panel_type.currentData()))
         controls.addWidget(self.panel_type, 0, 0, 1, 2)
-        controls.addWidget(self.button("Add Panel", lambda: self.add({"id": self.next_id(self.panel_type.currentText()), "widget": self.panel_type.currentText()})), 0, 2)
+        controls.addWidget(self.button("Add Panel", lambda: self.add({"id": self.next_id(self.panel_type.currentData()), "widget": self.panel_type.currentData()})), 0, 2)
         controls.addWidget(self.button("Add Side-by-Side Group", lambda: self.add_group("horizontal")), 1, 0)
         controls.addWidget(self.button("Add Stacked Group", lambda: self.add_group("vertical")), 1, 1)
         controls.addWidget(self.button("Flip Direction", self.flip), 1, 2)
@@ -141,6 +161,8 @@ class LayoutEditor:
             entry = self.entry(path)
             text = f"{self.entry_name(entry)}  ({entry['id']})"
             item = QTreeWidgetItem([text])
+            if "widget" in entry:
+                item.setToolTip(0, self.panel_details(entry["widget"]))
             item.setData(0, Qt.ItemDataRole.UserRole, path)
             if parent is None:
                 self.tree.addTopLevelItem(item)
@@ -306,6 +328,7 @@ class LayoutEditor:
         if "widget" in entry:
             selected = not interactive and path == self.selected
             box = QLabel(f"{self.entry_name(entry)}\n{entry['id']}")
+            box.setToolTip(self.panel_details(entry["widget"]))
             box.setFont(self.style.get_font("default"))
             box.setAlignment(Qt.AlignmentFlag.AlignCenter)
             box.setWordWrap(True)

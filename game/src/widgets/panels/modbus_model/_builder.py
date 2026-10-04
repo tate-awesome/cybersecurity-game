@@ -25,9 +25,9 @@ DEFENDER_MODELS = {"ap_polled_submarine_map", "ap_polled_hvac_chart"}
 
 class Builder(Panel):
     '''
-    Combines the old separate hvac_panel/submarine_panel into one panel
-    with a dropdown that swaps which model canvas is shown. Only one
-    model is ever built at a time - switching destroys the outgoing
+    Every ModBus model in one panel, with a dropdown that swaps which
+    model canvas is shown (see fixed_model for one model, hard coded).
+    Only one model is ever built at a time - switching destroys the outgoing
     canvas (after stopping its animation loop, since a live canvas
     calling into a destroyed widget every frame would raise forever) and
     builds the new one in its place.

@@ -2,7 +2,7 @@
     "_note": [
         "# Admin Suite: Full Defender Suite",
         "## Summary",
-        "The Full Defender Suite is the instructor's view of the defender side of the lab. Every defender panel is unlocked at once - Defender Data, Defender Monitors, the Packet Log, Defender Flags, and every AP form (connection, encryption, tunnel, and Kalman filter) - and both the HVAC and submarine models are enabled, switching automatically to match whichever mode the AP reports.",
+        "The Full Defender Suite is the instructor's view of the defender side of the lab. Every defender panel is unlocked at once - Polled ModBus StripCharts, Polled Packets, Defender Flags, and every AP form (connection, encryption, tunnel, and Kalman filter) - and both the HVAC and submarine models are enabled, switching automatically to match whichever mode the AP reports.",
         "Use this page to prepare demonstrations, check that the hardware is reporting correctly before class, or run an open-ended blue-team exercise once students have finished all three defender lessons. Because the offensive forms are visible here too, it's also a good place to stage a live attack-and-defend demo from one screen. It isn't a graded lesson, and it doesn't hold students' hands - nothing is hidden.",
         "## Objectives",
         "- Verify the AP, HVAC, and submarine hardware are all reporting before a class session.\n- Demonstrate every defender control from a single page.\n- Run free-form blue-team exercises after the defender lessons are complete.\n- Stage side-by-side attack and defense demonstrations.",
@@ -47,11 +47,8 @@
             "sniff": 1,
             "ap_connect": 1,
             "encryption": 1,
-            "ap_tunnel": 1,
-            "mode": 1,
-            "sliders": 1
+            "ap_tunnel": 1
         },
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "modbus_model_auto_switch": 1
     },
 
@@ -75,15 +72,13 @@
 
     "layout_shape": {
         "h_panes_1": [
-            {"v_panes_1": ["network_action_panel_1", "defender_modbus_panel_1"]},
+            "network_action_panel_1",
             {"v_panes_2": ["defender_console_panel_1", "defender_flag_panel_1", "status_panel_1"]},
             {"v_panes_3": ["modbus_model_panel_1", "defender_stripchart_panel_1"]}
         ]
     },
     "layout_weights": {
-        "v_panes_1": 2,
-        "network_action_panel_1": 2.3,
-        "defender_modbus_panel_1": 2,
+        "network_action_panel_1": 2,
         "v_panes_2": 3,
         "defender_console_panel_1": 3,
         "defender_flag_panel_1": 3,

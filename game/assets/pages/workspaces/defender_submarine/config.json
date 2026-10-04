@@ -16,7 +16,7 @@
         "**Previous:** Defender Lesson 2, *Defending: HVAC System*, where you learned to baseline ModBus telemetry.\n\n**Next:** Attacker Lesson 1, *IP & ARP Basics* - you switch sides and start learning how the attacks you've been defending against actually work."
     ],
 
-    "_dev_note": "Defender counterpart to lesson_submarine - defender_modbus_panel/defender_stripchart_panel paired with the defender_submarine model, which is driven by the AP's own reported mode rather than picked manually. The Kalman Filter form stays hidden (kept, not deleted) - its toggle lives in the defender flag panel instead, so it doesn't appear in two places.",
+    "_dev_note": "Defender counterpart to lesson_submarine - defender_console_panel/defender_stripchart_panel paired with the ap_polled_submarine_map model, which is driven by the AP's own reported mode rather than picked manually. The Kalman Filter form stays hidden (kept, not deleted) - its toggle lives in the defender flag panel instead, so it doesn't appear in two places.",
 
     "schema_version": 1,
     "link_label": "title_buttons_workspace_defender_submarine",
@@ -36,11 +36,8 @@
             "ap_connect": 1,
             "encryption": 1,
             "ap_tunnel": 1,
-            "mode": 1,
-            "sliders": 1,
             "sniffed_submarine_map": 1
         },
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "network_action_form_inputs": ["http://192.168.4.1"]
     },
 
@@ -59,15 +56,13 @@
 
     "layout_shape": {
         "h_panes_1": [
-            {"v_panes_1": ["network_action_panel_1", "defender_modbus_panel_1"]},
+            "network_action_panel_1",
             {"v_panes_2": ["defender_console_panel_1", "defender_flag_panel_1", "status_panel_1"]},
             {"v_panes_3": ["modbus_model_panel_1", "defender_stripchart_panel_1"]}
         ]
     },
     "layout_weights": {
-        "v_panes_1": 2,
-        "network_action_panel_1": 2.3,
-        "defender_modbus_panel_1": 2,
+        "network_action_panel_1": 2,
         "v_panes_2": 3,
         "defender_console_panel_1": 3,
         "defender_flag_panel_1": 3,

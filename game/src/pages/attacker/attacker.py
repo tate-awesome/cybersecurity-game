@@ -3,7 +3,7 @@ from ...app_core import Context
 # Better Widgets
 from ...widgets import (
     MenuBar, Panes, HackingPanel, ModbusPanel, PacketConsole,
-    NetworkDiagram, StatusConsole, BoatModel, VariableMonitor, HVACModel,
+    NetworkDiagram, StatusConsole, SniffedSubmarineMap, VariableMonitor, SniffedHVACHouse,
 )
 # Widgets
 from ...widgets import popup
@@ -38,11 +38,11 @@ class AttackerV0(Page):
         model = self.context.states.get("modbus_model_selected")
         if model == "sniffed_submarine_map":
             display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
-            BoatModel(display.pane(0), context)
+            SniffedSubmarineMap(display.pane(0), context)
             VariableMonitor(display.pane(1), context)
         elif model == "sniffed_hvac_house":
             display = Panes(trifold.pane(2), context, "vertical", 2, [2, 2], False)
-            HVACModel(display.pane(0), context)
+            SniffedHVACHouse(display.pane(0), context)
             VariableMonitor(display.pane(1), context)
         else:
             ...

@@ -28,15 +28,7 @@
 
     "settings": {
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "available": {
-            "ap_polled_submarine_map": 1,
-            "ap_connect": 1,
-            "encryption": 1,
-            "ap_tunnel": 1,
-            "mode": 1,
-            "sliders": 1
-        },
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
+        "available": {"ap_polled_submarine_map": 1, "ap_connect": 1, "encryption": 1, "ap_tunnel": 1}
     },
 
     "title": "defender_submarine_system_workspace",

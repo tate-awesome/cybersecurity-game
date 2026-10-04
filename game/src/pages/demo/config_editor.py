@@ -15,6 +15,7 @@ from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
+from ...widgets.panels.modbus_model._builder import MODELS
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
 BUTTON_ORDER = [
@@ -29,6 +30,13 @@ QWIDGETSIZE_MAX = (1 << 24) - 1
 
 # Numeric fields that are real numbers, not 0/1 on-off switches
 NUMBER_FIELDS = {"factor", "multiplier", "offset", "strip_chart_auto_fit_max_seconds"}
+
+# Settings the game itself sets from a dropdown, shown as the same choices here - by
+# path in _default.json. The model panel's dropdown sets modbus_model_selected
+# ("agnostic" is the default: start on the first available model).
+SETTING_DROPDOWNS = {
+    ("modbus_model_selected",): ["agnostic", *MODELS],
+}
 
 
 def menu_bar_buttons() -> list[str]:
@@ -573,7 +581,7 @@ class ConfigEditor(Page):
         input; otherwise ("untouched") just an Edit button.
         '''
         touched, value = self.config_value(path)
-        widget, reader = self.leaf(path[-1], default, value if touched else default)
+        widget, reader = self.leaf(path, default, value if touched else default)
         cell = SettingCell(self, path, widget, reader, default, touched)
         description, details = self.key_notes(path)
         cell.label = rows.add(path[-1], cell, depth=depth, tooltip=details, description=description,
@@ -582,7 +590,10 @@ class ConfigEditor(Page):
         self.setting_cells.append(cell)
 
     # Widgets, each paired with a reader that turns it back into a config value
-    def leaf(self, key: str, default, value) -> tuple[QWidget, Callable[[], Any]]:
+    def leaf(self, path: tuple, default, value) -> tuple[QWidget, Callable[[], Any]]:
+        key = path[-1]
+        if path in SETTING_DROPDOWNS:
+            return self.dropdown(SETTING_DROPDOWNS[path], value)
         if is_switch(key, default):
             return self.checkbox(value, as_bool=isinstance(default, bool), as_float=isinstance(value, float))
         if isinstance(default, (int, float)):
@@ -603,6 +614,27 @@ class ConfigEditor(Page):
             return box, box.isChecked
         on, off = (1.0, 0.0) if as_float else (1, 0)
         return box, lambda: on if box.isChecked() else off
+
+    def dropdown(self, options: list[str], value) -> tuple[QComboBox, Callable[[], str]]:
+        '''
+        A fixed set of choices, each explained by its tooltip (its "available"
+        description in _default_notes.json, when it has one). A value that
+        isn't one of them is kept as an extra choice, so loading and saving
+        never changes it.
+        '''
+        combo = QComboBox()
+        combo.setFont(self.style.get_font("default"))
+        choices = list(options) + ([str(value)] if str(value) not in options else [])
+        notes = self.notes.get("settings_keys", {}).get("available", {})
+        for index, choice in enumerate(choices):
+            combo.addItem(choice)
+            note = notes.get(choice)
+            if isinstance(note, dict):
+                combo.setItemData(index, note.get("details", ""), Qt.ItemDataRole.ToolTipRole)
+        combo.setCurrentText(str(value))
+        combo.setMaximumWidth(360)
+        combo.currentIndexChanged.connect(self.mark_dirty)
+        return combo, combo.currentText
 
     def text_entry(self, text: str) -> tuple[QLineEdit, Callable[[], str]]:
         entry = QLineEdit(text)
@@ -863,6 +895,8 @@ class SettingCell(QWidget):
             widget.setChecked(default in (1, "1", True))
         elif isinstance(widget, QPlainTextEdit):
             widget.setPlainText("\n".join(str(item) for item in default))
+        elif isinstance(widget, QComboBox):
+            widget.setCurrentText(str(default))
         elif isinstance(widget, QLineEdit):
             widget.setText(f"{default:g}" if isinstance(default, float) else str(default))
         widget.blockSignals(False)

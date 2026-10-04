@@ -29,10 +29,9 @@
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Show Forms. A form only appears if \"available\" also offers it.",
-        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: table, modify. Defender ModBus forms: mode, sliders. Models in the model panel: sniffed_hvac_house and sniffed_submarine_map (drawn from sniffed traffic), ap_polled_hvac_chart and ap_polled_submarine_map (drawn from what the AP reports) - and auto_switch offers the checkbox that follows the AP's reported mode. A form also needs its *_forms_shown entry to start out showing.",
+        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: table, modify. Models in the model panel: sniffed_hvac_house and sniffed_submarine_map (drawn from sniffed traffic), ap_polled_hvac_chart and ap_polled_submarine_map (drawn from what the AP reports) - and auto_switch offers the checkbox that follows the AP's reported mode. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"table\" (live register values) and \"modify\" (rewriting values in transit).",
-        "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
-        "modbus_model_selected": "Which model the model panel starts on, by its key in \"available\" (e.g. \"sniffed_submarine_map\"). If it isn't available here, the panel starts on the first one that is.",
+        "modbus_model_selected": "Which model the Model and Source Configurable Visualizers panel starts on, by its key in \"available\" (e.g. \"sniffed_submarine_map\"). If it isn't available here, the panel starts on the first one that is.",
         "modbus_model_auto_switch": "1 starts with the defender models following the AP's reported mode automatically.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
@@ -279,7 +278,7 @@
             },
             "ap_connect": {
                 "description": "AP connect form: connects to the access point and shows whether it's connected. Every other defender form talks through this connection.",
-                "details": "Starts the AP connect form shown. It starts and stops the connection to the access point and shows a live connected/disconnected status. Every other defender form - encryption, AP tunnel, Kalman, mode and sliders - sends its commands through this one connection, so a defender lesson should almost always show it. Also needs available.ap_connect."
+                "details": "Starts the AP connect form shown. It starts and stops the connection to the access point and shows a live connected/disconnected status. The other AP forms - encryption, AP tunnel and Kalman - and the Defender Flags panel's Kalman toggle send its commands through this one connection, so a defender lesson should almost always show it. Also needs available.ap_connect."
             },
             "encryption": {
                 "description": "Encryption form: turns AP-level encryption on or off with a key.",
@@ -615,44 +614,85 @@
                 "description": "ModBus table panel form: rewriting values in transit.",
                 "details": "Offers the ModBus table panel's modify form, for rewriting register values in transit. It still needs modbus_table_forms_shown.modify to start out visible."
             },
-            "mode": {
-                "description": "Defender ModBus panel form: the AP's current mode.",
-                "details": "Offers the defender ModBus panel's mode display, which shows whether the AP is in submarine or HVAC mode. It still needs defender_modbus_forms_shown.mode."
-            },
-            "sliders": {
-                "description": "Defender ModBus panel form: filter-tuning sliders.",
-                "details": "Offers the defender ModBus panel's filter-tuning sliders for the AP's current mode. It still needs defender_modbus_forms_shown.sliders."
-            },
             "sniffed_hvac_house": {
-                "description": "Model panel: the HVAC house, drawn from sniffed ModBus traffic.",
-                "details": "Offers the HVAC house in the model panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons."
+                "description": "Model dropdown: the HVAC house, drawn from sniffed ModBus traffic.",
+                "details": "Offers the HVAC house in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. The fixed Sniffed HVAC House panel shows it whatever this says."
             },
             "sniffed_submarine_map": {
-                "description": "Model panel: the submarine map, drawn from sniffed ModBus traffic.",
-                "details": "Offers the submarine map in the model panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons."
+                "description": "Model dropdown: the submarine map, drawn from sniffed ModBus traffic.",
+                "details": "Offers the submarine map in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. The fixed Sniffed Submarine Map panel shows it whatever this says."
             },
             "auto_switch": {
                 "description": "Model panel: the checkbox that switches models to follow the AP's reported mode.",
-                "details": "Offers the model panel's Auto-Switch checkbox, which keeps the model matched to the AP's reported mode. It only appears when an ap_polled_* model is also offered."
+                "details": "Offers the Model and Source Configurable Visualizers panel's Auto-Switch checkbox, which keeps the model matched to the AP's reported mode. It only appears when an ap_polled_* model is also offered."
             },
             "ap_polled_hvac_chart": {
-                "description": "Model panel: the HVAC chart, drawn from values the AP reports.",
-                "details": "Offers the HVAC chart in the model panel's dropdown. It's drawn from values the access point reports (polled through AP connect), so it belongs in defender lessons."
+                "description": "Model dropdown: the HVAC chart, drawn from values the AP reports.",
+                "details": "Offers the HVAC chart in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from values the access point reports (polled through AP connect), so it belongs in defender lessons. The fixed Polled HVAC Chart panel shows it whatever this says."
             },
             "ap_polled_submarine_map": {
-                "description": "Model panel: the submarine map, drawn from values the AP reports.",
-                "details": "Offers the submarine map in the model panel's dropdown, drawn from values the access point reports (polled through AP connect) rather than sniffed traffic. It belongs in defender lessons."
+                "description": "Model dropdown: the submarine map, drawn from values the AP reports.",
+                "details": "Offers the submarine map in the Model and Source Configurable Visualizers panel's dropdown, drawn from values the access point reports (polled through AP connect) rather than sniffed traffic. It belongs in defender lessons. The fixed Polled Submarine Map panel shows it whatever this says."
             }
+        }
+    },
+    "panels": {
+        "_note": "Every panel a workspace layout can use, in the order the Layout Shape tab's dropdown lists them: its name, and details shown as the dropdown's tooltip - what it does, where its data comes from, and what it affects. When you add a panel to widgets.PANELS, add it here too.",
+        "network_action_panel": {
+            "name": "Network Actions",
+            "details": "What it does: The forms that run network tools: the attacker tools (Wi-Fi, Nmap, ARP spoofing, denial of service, sniffing, packet interceptor) and the defender's AP forms (AP connect, encryption, AP tunnel, Kalman filter). Students can show or hide forms with Show Forms.\n\nWhere its data comes from: What the student types into each form. The attacker tools run on this computer; the AP forms send commands to the access point.\n\nWhat it affects: Almost everything else. The attacker tools fill the packet buffer every Sniffed panel reads, and the packet interceptor rewrites ModBus values in transit. AP connect starts the polling every Polled panel reads, and encryption/AP tunnel change what an attacker can see. Every tool writes progress to the Status Message Textarea.\n\nSettings: available and network_action_forms_shown pick the forms; network_action_form_inputs pre-fills them; modbus_registers and modbus_packet_modify_enabled control what the interceptor rewrites."
         },
-        "defender_modbus_forms_shown": {
-            "mode": {
-                "description": "The read-only display of the AP's current mode (submarine or HVAC).",
-                "details": "Starts the read-only mode display shown, which tells students whether the AP is currently in submarine or HVAC mode. Also needs available.mode."
-            },
-            "sliders": {
-                "description": "The filter-tuning sliders for the AP's current mode.",
-                "details": "Starts the filter-tuning sliders shown. They adjust the AP's filtering thresholds for whichever mode it's in, and switch groups automatically when the mode changes. Also needs available.sliders."
-            }
+        "modbus_table_panel": {
+            "name": "Sniffed Modbus Table",
+            "details": "What it does: A live table of every shown ModBus register - its incoming value, outgoing value and last command - plus the modify form for setting each register's multiplier and offset.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: The modify form decides how the packet interceptor rewrites registers in transit, which changes what the device on the other end receives and what the Sniffed models and charts show for the outgoing side.\n\nSettings: available.table/modify and modbus_table_forms_shown pick the forms; modbus_registers sets each register's name, units, scaling and rewrite; modbus_packet_modify_enabled turns rewriting on."
+        },
+        "packet_panel": {
+            "name": "Sniffed Packet Treeview",
+            "details": "What it does: A scrolling table of every captured packet, one row each, with a filter overlay (by tool, protocol layer, direction and address), a column picker, a pause button and a button to clear the capture. While paused, selecting a row shows that packet in full in the Sniffed Host Network.\n\nWhere its data comes from: Packets captured by any attacker tool in Network Actions, or loaded from a capture file with the menu bar.\n\nWhat it affects: Pausing it also pauses the Sniffed Host Network, since both follow packet_console.mode, and the selected row decides which packet the Host Network shows in full. Filtering only changes what this panel shows - it never drops traffic.\n\nSettings: packet_columns, packet_console, packet_filter_categories, packet_filter_checkboxes and packet_filter_entries."
+        },
+        "network_graph_panel": {
+            "name": "Sniffed Host Network",
+            "details": "What it does: A graph of the hosts seen on the network and the traffic between them, beside a packets-per-second strip chart. While paused, the strip chart is replaced by a full dump of the packet selected in the Sniffed Packet Treeview.\n\nWhere its data comes from: Packets captured by any attacker tool in Network Actions, or loaded from a capture file with the menu bar.\n\nWhat it affects: Only what's shown here. It pauses and resumes with the Sniffed Packet Treeview.\n\nSettings: packet_console.mode pauses it; strip_chart_colors, strip_chart_auto_fit and strip_chart_auto_fit_max_seconds style its rate chart."
+        },
+        "status_panel": {
+            "name": "Status Message Textarea",
+            "details": "What it does: A read-only log of status messages, newest at the bottom, that scrolls itself as messages arrive.\n\nWhere its data comes from: Every running tool and connection: the Network Actions forms, the AP connection and the defender's AP commands report what they're doing and any errors here.\n\nWhat it affects: Nothing - it only reports. It's usually the first place to look when a tool doesn't seem to be working."
+        },
+        "modbus_model_panel": {
+            "name": "Model and Source Configurable Visualizers",
+            "details": "What it does: Any ModBus model in one panel, picked from a dropdown: the sniffed submarine map or HVAC house (drawn from captured traffic), or the polled submarine map or HVAC chart (drawn from what the AP reports). With an AP-polled model offered, an Auto-Switch checkbox can keep it matched to the AP's current mode. Use the fixed model panels instead to show one model with no dropdown, or several at once.\n\nWhere its data comes from: Depends on the model: the sniffed models read ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar; the polled models read values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing but itself - it's a visualizer. Picking a model saves it as modbus_model_selected.\n\nSettings: Turn each model on in available (sniffed_submarine_map, sniffed_hvac_house, ap_polled_submarine_map, ap_polled_hvac_chart) - only those appear in the dropdown. modbus_model_selected picks the starting model. For AP-polled models, available.auto_switch offers the Auto-Switch checkbox and modbus_model_auto_switch starts it checked. model_sprites and model_colors control how the sniffed models are drawn."
+        },
+        "sniffed_submarine_map_panel": {
+            "name": "Sniffed Submarine Map",
+            "details": "What it does: The submarine map, always - no dropdown. Draws the reported (incoming) vessel and the commanded (outgoing) vessel with their trails, so a rewritten position shows up as the two drifting apart.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: model_sprites (ocean, grid_lines, path_in, boat_in) and the submarine keys in model_colors."
+        },
+        "sniffed_hvac_house_panel": {
+            "name": "Sniffed HVAC House",
+            "details": "What it does: The HVAC house, always - no dropdown. Shows the room temperature the house sent beside the reading the controller received, and the heater command on both sides, so a rewritten value shows up as a mismatch.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: model_sprites (background through indicator) and the HVAC keys in model_colors."
+        },
+        "ap_polled_submarine_map_panel": {
+            "name": "Polled Submarine Map",
+            "details": "What it does: The defender's submarine map, always - no dropdown and no auto-switching. Draws the vessel's track and heading as the AP reports them.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions. It stays empty until AP connect is connected.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: None - it doesn't read model_sprites or model_colors."
+        },
+        "ap_polled_hvac_chart_panel": {
+            "name": "Polled HVAC Chart",
+            "details": "What it does: The defender's HVAC chart, always - no dropdown and no auto-switching. A rolling graph of room temperature against the target temperature, with the heater state.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions. It stays empty until AP connect is connected.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: None - its colors are fixed."
+        },
+        "modbus_chart_panel": {
+            "name": "Sniffed ModBus StripCharts",
+            "details": "What it does: One strip chart per shown ModBus register, plotting its incoming and outgoing values over time, so a rewrite in transit shows up as the two lines separating.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: modbus_registers picks and names the registers (show, nickname, units, factor); strip_chart_colors, strip_chart_auto_fit and strip_chart_auto_fit_max_seconds style the charts."
+        },
+        "defender_stripchart_panel": {
+            "name": "Polled ModBus StripCharts",
+            "details": "What it does: One strip chart per value the AP reports, plotting every reading it has - client and server, clean and noisy, plus the target where there is one. It switches to the submarine or HVAC values to match the AP's current mode.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: strip_chart_colors, strip_chart_auto_fit and strip_chart_auto_fit_max_seconds."
+        },
+        "defender_console_panel": {
+            "name": "Polled Packets (Last 10)",
+            "details": "What it does: A table of the 10 newest readings the AP reported, newest first. In submarine mode it shows position, heading, speed and rudder for whichever side the CLIENT/SERVER dropdown picks; in HVAC mode, current and target temperature and the heater.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing - the CLIENT/SERVER dropdown only changes which side this table shows."
+        },
+        "defender_flag_panel": {
+            "name": "Defender Flags",
+            "details": "What it does: The AP's error-detection flags for its current mode - lit when a reading crosses its filtering threshold - plus the Kalman filter's status and an on/off toggle for it.\n\nWhere its data comes from: Flags and filter status the AP reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: The Kalman toggle sends a command to the AP, changing how it filters the readings every Polled panel shows. Submarine and HVAC mode each keep their own Kalman setting on the AP."
         }
     }
 }
