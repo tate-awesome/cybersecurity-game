@@ -1,0 +1,65 @@
+{
+    "_note": [
+        "# Defender: HVAC Communication Channels",
+        "Describe this workspace here: its summary, objectives, reading, and videos."
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_defender_hvac_communication_channels",
+    "include": 1,
+    "category": "defender",
+    "order": 7,
+    "prerequisites": [],
+    "estimated_minutes": 10,
+    "gradable": false,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "network_action_forms_shown": {"arp": 1, "sniff": 1, "ap_tunnel": 1, "ap_connect": 1},
+        "available": {
+            "ap_polled_submarine_map": 1,
+            "ap_connect": 1,
+            "arp": 1,
+            "sniff": 1,
+            "mode": 1,
+            "ap_tunnel": 1
+        },
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "modbus_model_selected": "ap_polled_submarine_map"
+    },
+
+    "title": "defender_hvac_communication_channels_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "layout_shape": {
+        "v_panes_1": [
+            {
+                "h_panes_1": [
+                    "network_action_panel_1",
+                    "defender_console_panel_1",
+                    "ap_polled_hvac_chart_panel_1"
+                ]
+            },
+            {"h_panes_2": ["defender_stripchart_panel_1"]}
+        ]
+    },
+    "layout_weights": {
+        "h_panes_1": 65,
+        "network_action_panel_1": 25,
+        "defender_console_panel_1": 41,
+        "ap_polled_hvac_chart_panel_1": 33,
+        "h_panes_2": 35,
+        "defender_stripchart_panel_1": 68
+    }
+}

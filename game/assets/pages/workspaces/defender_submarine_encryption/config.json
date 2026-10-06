@@ -19,7 +19,7 @@
     "link_label": "title_buttons_workspace_defender_submarine_encryption",
     "include": 1,
     "category": "defender",
-    "order": 2,
+    "order": 4,
     "prerequisites": ["workspaces/defender_submarine_system"],
     "estimated_minutes": 10,
     "gradable": false,
@@ -60,7 +60,7 @@
             {
                 "h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]
             },
-            {"h_panes_2": ["defender_stripchart_panel_1"]}
+            {"h_panes_2": ["defender_stripchart_panel_1", "sniffed_submarine_map_panel_1"]}
         ]
     },
     "layout_weights": {
@@ -69,6 +69,7 @@
         "defender_console_panel_1": 41,
         "modbus_model_panel_1": 33,
         "h_panes_2": 35,
-        "defender_stripchart_panel_1": 68
+        "defender_stripchart_panel_1": 64,
+        "sniffed_submarine_map_panel_1": 36
     }
 }

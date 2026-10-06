@@ -19,7 +19,7 @@
     "link_label": "title_buttons_workspace_defender_submarine_system",
     "include": 1,
     "category": "defender",
-    "order": 1,
+    "order": 2,
     "prerequisites": [],
     "estimated_minutes": 5,
     "gradable": false,
@@ -55,15 +55,15 @@
 
     "layout_shape": {
         "v_panes_1": [
-            {"h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]},
-            {"v_panes_2": ["defender_stripchart_panel_1"]}
+            {
+                "h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]
+            }
         ]
     },
     "layout_weights": {
         "h_panes_1": 4,
+        "network_action_panel_1": 1,
         "defender_console_panel_1": 3,
-        "modbus_model_panel_1": 3,
-        "v_panes_2": 3,
-        "defender_stripchart_panel_1": 2
+        "modbus_model_panel_1": 3
     }
 }

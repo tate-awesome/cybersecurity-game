@@ -19,7 +19,7 @@
     "link_label": "title_buttons_workspace_defender_submarine_communication_channels",
     "include": 1,
     "category": "defender",
-    "order": 4,
+    "order": 8,
     "prerequisites": [],
     "estimated_minutes": 10,
     "gradable": false,
@@ -28,7 +28,14 @@
 
     "settings": {
         "network_action_forms_shown": {"arp": 1, "sniff": 1, "ap_tunnel": 1, "ap_connect": 1},
-        "available": {"ap_polled_submarine_map": 1, "ap_connect": 1, "arp": 1, "sniff": 1, "mode": 1, "ap_tunnel": 1},
+        "available": {
+            "ap_polled_submarine_map": 1,
+            "ap_connect": 1,
+            "arp": 1,
+            "sniff": 1,
+            "mode": 1,
+            "ap_tunnel": 1
+        },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "modbus_model_selected": "ap_polled_submarine_map"
     },

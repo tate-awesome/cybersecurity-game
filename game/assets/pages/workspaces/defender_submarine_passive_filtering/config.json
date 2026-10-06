@@ -19,7 +19,7 @@
     "link_label": "title_buttons_workspace_defender_submarine_passive_filtering",
     "include": 1,
     "category": "defender",
-    "order": 3,
+    "order": 6,
     "prerequisites": [],
     "estimated_minutes": 10,
     "gradable": false,
@@ -49,9 +49,9 @@
     "layout_shape": {
         "v_panes_1": [
             {
-                "h_panes_1": ["network_action_panel_1", "defender_modbus_panel_1", "defender_flag_panel_1", "modbus_model_panel_1"]
+                "h_panes_1": ["defender_modbus_panel_1", "defender_flag_panel_1", "modbus_model_panel_1"]
             },
-            {"h_panes_2": ["defender_console_panel_1", "defender_stripchart_panel_1"]}
+            {"h_panes_2": ["network_action_panel_1", "defender_console_panel_1"]}
         ]
     },
     "layout_weights": {
@@ -60,7 +60,7 @@
         "defender_flag_panel_1": 31,
         "modbus_model_panel_1": 33,
         "h_panes_2": 3,
-        "defender_console_panel_1": 38,
-        "defender_stripchart_panel_1": 62
+        "network_action_panel_1": 36,
+        "defender_console_panel_1": 64
     }
 }
