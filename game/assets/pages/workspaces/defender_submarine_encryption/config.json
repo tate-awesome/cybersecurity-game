@@ -27,9 +27,10 @@
     "build_type": "workspace",
 
     "settings": {
-        "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1},
+        "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1, "ap_connect": 1},
         "available": {
             "ap_polled_submarine_map": 1,
+            "ap_connect": 1,
             "encryption": 1,
             "arp": 1,
             "sniff": 1,

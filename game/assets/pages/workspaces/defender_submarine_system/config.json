@@ -55,7 +55,7 @@
 
     "layout_shape": {
         "v_panes_1": [
-            {"h_panes_1": ["defender_console_panel_1", "modbus_model_panel_1"]},
+            {"h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]},
             {"v_panes_2": ["defender_stripchart_panel_1"]}
         ]
     },

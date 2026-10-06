@@ -27,9 +27,9 @@
     "build_type": "workspace",
 
     "settings": {
-        "available": {"ap_polled_submarine_map": 1, "kalman": 1, "sliders": 1},
+        "available": {"ap_polled_submarine_map": 1, "kalman": 1, "sliders": 1, "ap_connect": 1},
         "modbus_model_selected": "ap_polled_submarine_map",
-        "network_action_forms_shown": {"kalman": 1},
+        "network_action_forms_shown": {"kalman": 1, "ap_connect": 1},
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
@@ -49,7 +49,7 @@
     "layout_shape": {
         "v_panes_1": [
             {
-                "h_panes_1": ["defender_modbus_panel_1", "defender_flag_panel_1", "modbus_model_panel_1"]
+                "h_panes_1": ["network_action_panel_1", "defender_modbus_panel_1", "defender_flag_panel_1", "modbus_model_panel_1"]
             },
             {"h_panes_2": ["defender_console_panel_1", "defender_stripchart_panel_1"]}
         ]
