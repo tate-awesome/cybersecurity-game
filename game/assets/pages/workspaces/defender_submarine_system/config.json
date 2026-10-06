@@ -1,6 +1,6 @@
 {
     "_note": [
-        "# Defender Lesson 1: The Submarine System",
+        "# Defender Lesson 2: The Submarine System",
         "## Summary",
         "The submarine model combines a submarine and a server that communicates over the air. The submarine takes in control commands from the server in order to navigate towards a target that only the server knows the location of.",
         "In this lesson you will learn the specifics of the submarine system and how to change the target which the submarine follows.",
@@ -12,7 +12,7 @@
         "## Videos",
         "- TBD",
         "## Where This Fits",
-        "**Next:** Attacker Lesson 1, *IP & ARP Basics* - you switch sides and start learning how a network attack works"
+        "**Next:** TBD"
     ],
 
     "schema_version": 1,

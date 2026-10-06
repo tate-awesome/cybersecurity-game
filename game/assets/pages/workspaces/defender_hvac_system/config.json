@@ -1,7 +1,18 @@
 {
     "_note": [
-        "# Defender: HVAC System",
-        "Describe this workspace here: its summary, objectives, reading, and videos."
+        "# Defender Lesson 1: The HVAC System",
+        "## Summary",
+        "The submarine HVAC combines a heater and thermostat combo along with a server that communicates over the air. The thermostat sends the termperature of the room to the server, which regulates the status of the heater (on/off). The server can do this because it knows the target temperature of the system. The server then sends the heater status to the heater thermometer combo, which enacts the command.",
+        "In this lesson you will learn the specifics of the HVAC system and how to change the temperature setpoint which the hvac system will try to stick to.",
+        "## Objectives",
+        "- Understand the variables which control the heating of the room\n- Understand which variables are owned by the Client\n- Understand which variables are owned by the Server\n- Understand what the Client computes\n- Understand what the Server computes",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** TBD"
     ],
 
     "schema_version": 1,

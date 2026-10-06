@@ -1,7 +1,18 @@
 {
     "_note": [
-        "# Defender: HVAC Passive Filtering",
-        "Describe this workspace here: its summary, objectives, reading, and videos."
+        "# Defender Lesson 5: HVAC Passive Filtering",
+        "## Summary",
+        "A classic tool utilized by physics based models to verify the validity of communicated data is passive filtering. In the HVAC system, a one-dimensional kalman filter is used to predict the next step of the system before it happens. This prediction is compared to the sensor reads from the next step to judge wether there has been a spoofed input.",
+        "In this lesson you will learn how the HVAC system uses a one-dimensional kalman filter to threshold sensor values to verify the validity of data.",
+        "## Objectives",
+        "- Understand what passive filtering is\n- Understand what makes the filter a one-dimensional filter\n- Understand what each of the detection flags monitor\n- Understand how the prediction of noise in the filter changes the accuracy of the state flag\n- Understand how a kalman filter can be used for more than just thresholding error detection\n- Understand how removing filtering from a noisy system can affect its control loop",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** TBD"
     ],
 
     "schema_version": 1,

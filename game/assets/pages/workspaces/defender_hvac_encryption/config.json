@@ -1,7 +1,18 @@
 {
     "_note": [
-        "# Defender: HVAC Encryption",
-        "Describe this workspace here: its summary, objectives, reading, and videos."
+        "# Defender Lesson 3: HVAC System Encryption",
+        "## Summary",
+        "In any wireless communcation, the obfuscation of transfered data is paramount for private communication. There are many forms of encryption, this system utilizes a simple asymmetric cipher to change the data within the communication tunnel.",
+        "In this lesson you will learn how different forms of encryption generally work, and how this specific system takes in a key and is able to obfuscate data in the communication tunnel.",
+        "## Objectives",
+        "- Understand the difference between an asymmetric and symmetric cipher\n- Understand how an ASCII key is converted to a binary cipher key\n- Understand how an XOR cipher works\n- Understand how encrypting data changes what a bad actor sees\n- Understand what values are being encrypted for the HVAC system",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** TBD"
     ],
 
     "schema_version": 1,

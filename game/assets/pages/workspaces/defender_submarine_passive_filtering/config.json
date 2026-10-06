@@ -1,6 +1,6 @@
 {
     "_note": [
-        "# Defender Lesson 3: Submarine Passive Filtering",
+        "# Defender Lesson 6: Submarine Passive Filtering",
         "## Summary",
         "A classic tool utilized by physics based models to verify the validity of communicated data is passive filtering. In the submarine system, a kalman filter is used to predict the next step of the system before it happens. This prediction is compared to the sensor reads from the next step to judge wether there has been a spoofed input.",
         "In this lesson you will learn how the submarine system uses an extended kalman filter to threshold sensor values to verify the validity of data.",

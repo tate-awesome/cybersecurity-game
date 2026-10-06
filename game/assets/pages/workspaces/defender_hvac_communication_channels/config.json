@@ -1,7 +1,18 @@
 {
     "_note": [
-        "# Defender: HVAC Communication Channels",
-        "Describe this workspace here: its summary, objectives, reading, and videos."
+        "# Defender Lesson 7: HVAC Communication Channels",
+        "## Summary",
+        "Redundancy is a key factor of a robust and secure communication system. The component of a communication system that highly benefits from redundancy is the communication channel. In the submarine system, there exists two separate communication channels. One channel communicates over the air with MODBUS TCP. The secondary channel communicates through an access point using HTTP.",
+        "In this lesson you will learn what a communication channel is, what a communication protocol is, and how an attack can be diverted through redundant communication channels.",
+        "## Objectives",
+        "- Understand what a communication channel is\n- Understand what a communication protocol is \n- Understand the system flow of the MODBUS TCP channel\n- Understand the system flow of the HTTP channel\n- Understand how to utilize the HVAC system's redundant communication channels to divert an attack",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** TBD"
     ],
 
     "schema_version": 1,
