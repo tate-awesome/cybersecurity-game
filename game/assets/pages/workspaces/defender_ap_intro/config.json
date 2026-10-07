@@ -32,7 +32,7 @@
     "settings": {
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
         "available": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "network_action_form_inputs": ["http://192.168.4.1"]
+        "network_action_form_inputs": {"ap_connect": ["http://192.168.4.1", 0]}
     },
 
     "title": "defender_ap_intro_workspace",

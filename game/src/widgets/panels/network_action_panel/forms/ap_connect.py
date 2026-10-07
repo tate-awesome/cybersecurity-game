@@ -28,14 +28,26 @@ class APConnectForm(BaseForm):
         label, entry = self.add_labeled_entry("AP URL:")
         self.url_entry = entry
 
+        # Slot 0 is the URL entry above (add_labeled_entry); slot 1 is
+        # whether the poller is switched on, which decides whether it
+        # auto-connects on startup.
+        self.save_slots = self.context.states.get("network_action_form_inputs", self.key)
+        if len(self.save_slots) < 2:  # saves from before slot 1 existed
+            self.save_slots.append(0)
+
         def do_connect():
+            self.save_slots[1] = 1
             url = self.url_entry.text().strip().rstrip("/")
             if url:
                 self.process.url = url
             if not self.process.is_running():
                 self.process.start()
 
-        self.add_process_row(do_connect, self.process.stop, self.process.is_running)
+        def do_disconnect():
+            self.save_slots[1] = 0
+            self.process.stop()
+
+        self.add_process_row(do_connect, do_disconnect, self.process.is_running)
 
         self.conn_label = QLabel("")
         self.conn_label.setFont(self.style.get_font("small"))
@@ -46,11 +58,10 @@ class APConnectForm(BaseForm):
 
         self.context.animation_manager.add_callback(f"APConnectForm_{id(self)}", self._refresh_status)
 
-        # Auto-connect on first visit, matching the old defender page's
-        # behavior of starting the poller immediately on page load - a
-        # no-op (via is_running()) if regained already-running across a
-        # refresh, so refreshing never double-starts or interrupts it.
-        if not self.process.is_running():
+        # Auto-connect on startup only if switched on in settings - skipped
+        # if regained already-running across a refresh, so refreshing never
+        # double-starts or interrupts it.
+        if self.save_slots[1] and not self.process.is_running():
             self.click_start()
 
     def _refresh_status(self):

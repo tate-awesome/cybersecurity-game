@@ -101,7 +101,8 @@
             ""
         ],
         "ap_connect": [
-            ""
+            "",
+            0
         ],
         "encryption": [
             ""
