@@ -23,11 +23,15 @@ class Paths:
         self.mcaptures: Path = self.assets / "mcaptures"
         self.pages: Path = self.assets / "pages"
 
-        # Dynamically generated, read & write
-        self.user_data: Path = self.generate_path(self.root / "user_data")
-        self.user_mcaptures: Path = self.generate_path(self.user_data / "mcaptures")
-        self.user_pcaptures: Path = self.generate_path(self.user_data / "pcaptures")
-        self.user_pages: Path = self.generate_path(self.user_data / "page_data")
+        # Dynamically generated, read & write. _user_dirs is the single
+        # source of truth for the user_data tree so delete_user_data's
+        # recreate (see ContextManager) stays in sync when a dir is added here.
+        self.user_data: Path = self.root / "user_data"
+        self.user_mcaptures: Path = self.user_data / "mcaptures"
+        self.user_pcaptures: Path = self.user_data / "pcaptures"
+        self.user_pages: Path = self.user_data / "page_data"
+        self._user_dirs: tuple[Path, ...] = (self.user_data, self.user_mcaptures, self.user_pcaptures, self.user_pages)
+        self.create_user_dirs()
 
     #     self.page_folder_names: list[str] = [f.name for f in self.pages.iterdir() if f.is_dir()]
     #     self.page_folders: list[Path] = [self.pages / folder_name for folder_name in self.page_folder_names]
@@ -35,6 +39,15 @@ class Paths:
 
     # def get_page_
 
+
+    def create_user_dirs(self):
+        '''
+        (Re)create the user_data directory tree. generate_path is a no-op
+        for dirs that already exist, so this is safe both on a fresh start
+        and after delete_user_data wipes the tree.
+        '''
+        for path in self._user_dirs:
+            self.generate_path(path)
 
     def select_path(self, directory: str | os.PathLike[str], prompt: str, filetypes: list[tuple[str, str]] | None = None) -> str | None:
         if filetypes is None:

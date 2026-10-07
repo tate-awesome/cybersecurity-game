@@ -8,7 +8,7 @@ from .keybinds import KeyBinds
 from .input_manager import InputManager
 from .localization_manager import LocalizationManager
 from .page_manager import PageManager
-import os, platform, shutil
+import os, shutil
 from .paths import Paths
 from .json import Json
 
@@ -23,11 +23,11 @@ if TYPE_CHECKING:
 
 class ContextManager:
     '''
-Shared data for a page. Passed to next pages on navigation.
-'''
-    '''
-    Important data that needs to be shared across pages, such as the process manager and the router.
-    Every page builder function should take a Context object as an argument and build the page as the root window's central widget.
+    Shared data passed to each page on navigation.
+
+    Holds what needs to outlive a single page, such as the process manager
+    and the router. Every page builder takes a Context and builds the page as
+    the root window's central widget.
     '''
 
     def __init__(self, root: QMainWindow, router: "Router"):
@@ -38,7 +38,6 @@ Shared data for a page. Passed to next pages on navigation.
         self.json: Json = Json(self.paths)
         self.style: Style = Style(self)
 
-        self.os_name: str = platform.system()
         self.start_session()
         self.start_page()
         self.start_build()
@@ -136,10 +135,7 @@ Shared data for a page. Passed to next pages on navigation.
         '''
         shutil.rmtree(self.paths.user_data, ignore_errors=True)
         self.style = Style(self)  # reset style to default
-        self.paths.generate_path(self.paths.user_data)
-        self.paths.generate_path(self.paths.user_mcaptures)
-        self.paths.generate_path(self.paths.user_pcaptures)
-        self.paths.generate_path(self.paths.user_pages)
+        self.paths.create_user_dirs()
         self.preferences.clear()
         self.router.refresh(save=False)
 
@@ -156,5 +152,5 @@ Shared data for a page. Passed to next pages on navigation.
             # Open browser as not sudo
             subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", url])
         else:
-            # 3. Fallback for when you run the script normally without sudo
+            # Fallback when not running under sudo
             webbrowser.open(url)
