@@ -13,7 +13,7 @@ from .forms.encryption import EncryptionForm
 from .forms.ap_tunnel import APTunnelForm
 from .forms.kalman import KalmanForm
 
-from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
+from ....widgets import Scrollable, CheckboxOverlay
 
 FORM_CLASSES = {
     "wifi": WifiForm,

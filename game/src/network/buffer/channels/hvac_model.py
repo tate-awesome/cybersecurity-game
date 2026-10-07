@@ -8,9 +8,6 @@ out heater
 
 '''
 
-from threading import Lock
-from collections import deque
-from math import hypot
 from ..meta_packet import MetaPacket
 from .modbus import ModbusBuffer
 

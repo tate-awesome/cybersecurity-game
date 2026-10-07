@@ -1,7 +1,7 @@
 from ...app_core import Context
 from .overlay import Overlay
 from PySide6.QtWidgets import QCheckBox, QFrame, QLabel, QPushButton, QVBoxLayout
-from typing import Callable
+from collections.abc import Callable
 
 
 class CheckboxOverlay:

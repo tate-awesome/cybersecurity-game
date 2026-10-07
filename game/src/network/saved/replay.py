@@ -8,7 +8,6 @@ from scapy.all import Ether, IP
 from PySide6.QtWidgets import QFileDialog
 
 from ..process import Process
-from ..buffer.meta_packet import MetaPacket
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -70,7 +69,7 @@ class Replay(Process):
 
             self.buffer.put(
                 "json",
-                f"Error during JSON loading: {str(e)}"
+                f"Error during JSON loading: {e!s}"
             )
 
     def select_json_file(self):
@@ -203,7 +202,7 @@ class Replay(Process):
             # Start with an empty buffer state.
             self.buffer.reset()
 
-            with open(self.file_path, "r", encoding="utf-8") as file:
+            with open(self.file_path, encoding="utf-8") as file:
                 for line_number, line in enumerate(file, start=1):
 
                     if self.abort_event.is_set():
@@ -386,7 +385,7 @@ class Replay(Process):
         except Exception as e:
             self.buffer.put(
                 "json",
-                f"Failed to save JSON replay: {str(e)}"
+                f"Failed to save JSON replay: {e!s}"
             )
 
     # ------------------------------------------------------------------

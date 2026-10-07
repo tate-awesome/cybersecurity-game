@@ -20,7 +20,7 @@ class Preferences:
         Themes, accessibility, app behavior, localization
         Created before the root in App().
         '''
-        self.context: "Context" = context
+        self.context: Context = context
         self.data: dict = {}
         self.load()
 

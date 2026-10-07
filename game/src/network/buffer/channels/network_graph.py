@@ -1,11 +1,7 @@
 from ..meta_packet import MetaPacket
-from collections import deque
 from multiprocessing import Lock
 import math
-import time
-from ..meta_packet import MetaPacket
 from .packet import PacketBuffer
-from scapy.all import Packet
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

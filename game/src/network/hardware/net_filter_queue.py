@@ -2,7 +2,7 @@
 NFQ module. Callbacks and persistent object
 '''
 
-from scapy.all import IP, TCP, Packet, Ether, IPv6
+from scapy.all import IP, TCP, Packet
 from scapy.contrib.modbus import *
 from ..process import Process
 from ..buffer.meta_packet import MetaPacket

@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
-from typing import Callable
+from collections.abc import Callable
 from ...app_core import Context
 from ...network.process import Process
 

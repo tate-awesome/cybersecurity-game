@@ -1,7 +1,7 @@
 from .net_filter_queue import NetFilterQueueBaseClass
 from netfilterqueue import NetfilterQueue as NFQ
 
-from scapy.all import IP, TCP, Packet, Ether, IPv6
+from scapy.all import IP, Packet, Ether, IPv6
 import threading, os, select, subprocess
 from .nmap import NMapper
 
@@ -59,7 +59,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             print(result.stdout)
             print(result.stderr)
         
-        self.buffer.put("nfq", f"Adding iptables rule:")
+        self.buffer.put("nfq", "Adding iptables rule:")
         self.buffer.put("nfq", f"sudo iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
         # Part	Meaning
         # iptables	Configure Linux packet filtering rules

@@ -1,7 +1,7 @@
 from .filter_overlay import FilterOverlay
 from .treeview import PacketTreeview
 from ....app_core import Context
-from ... import MenuBar, CheckboxOverlay
+from ... import CheckboxOverlay
 from ..panel import Panel
 from PySide6.QtWidgets import QWidget
 from ....network.buffer.meta_packet import MetaPacket

@@ -44,7 +44,7 @@ class Loader(Process):
         except Exception as e:
             with self._lock:
                 self._is_loading = False
-            self.buffer.put("pcap", f"Error during file selection: {str(e)}")
+            self.buffer.put("pcap", f"Error during file selection: {e!s}")
 
     def select_pcap_file(self):
         self.buffer.put("pcap", "Opening PCAP file dialog...")
@@ -65,7 +65,7 @@ class Loader(Process):
         try:
             self.packets = rdpcap(file_path)
         except Exception as e:
-            self.buffer.put("pcap", f"Failed to read PCAP: {str(e)}")
+            self.buffer.put("pcap", f"Failed to read PCAP: {e!s}")
             with self._lock:
                 self._is_loading = False
             return

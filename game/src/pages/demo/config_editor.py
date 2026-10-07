@@ -2,7 +2,8 @@ import copy
 import inspect
 import json
 import re
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics
@@ -259,7 +260,7 @@ class ConfigEditor(Page):
         self.dirty = False
         # Each reads its widget back as a config value, raising ValueError with a message if it can't
         self.field_readers: dict[str, Callable[[], Any]] = {}
-        self.setting_cells: list["SettingCell"] = []
+        self.setting_cells: list[SettingCell] = []
         self.usage_labels: dict[str, QLabel] = {}
         self.setting_frames: dict[str, QFrame] = {}
         self.button_boxes: dict[str, QCheckBox] = {}
@@ -593,7 +594,7 @@ class ConfigEditor(Page):
             try:
                 number = float(text())
             except ValueError:
-                raise ValueError(f'"{name}" must be a number, not "{text()}"')
+                raise ValueError(f'"{name}" must be a number, not "{text()}"') from None
             if integer:
                 if number != int(number):
                     raise ValueError(f'"{name}" must be a whole number, not "{text()}"')

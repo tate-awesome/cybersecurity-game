@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 class InputManager:
     def __init__(self, context: "Context"):
-        self.context: "Context" = context
+        self.context: Context = context
         self.data: dict = self.get_preferred()
 
     def get_preferred(self) -> dict:

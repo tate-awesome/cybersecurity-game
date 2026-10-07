@@ -1,7 +1,6 @@
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 
-from .style import Style
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

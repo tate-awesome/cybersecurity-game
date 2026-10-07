@@ -2,7 +2,6 @@
 Arp spoofing module. Stateless functions that can be used whenever + Stateful class that manages persistent/async things
 '''
 import scapy.all as scapy
-from scapy.all import  ARP
 import threading, subprocess
 from ..process import Process
 import platform

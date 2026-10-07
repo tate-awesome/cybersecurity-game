@@ -25,7 +25,7 @@ class PageManager:
     FOLDER_CONFIG = "config.json"
 
     def __init__(self, context: "Context"):
-        self.context: "Context" = context
+        self.context: Context = context
         self.config_paths: dict[str, Path] = {}
         self.build_types: dict[str, str] = {}
         self.discover()

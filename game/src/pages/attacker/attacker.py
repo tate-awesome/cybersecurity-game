@@ -6,7 +6,6 @@ from ...widgets import (
     NetworkDiagram, StatusConsole, BoatModel, VariableMonitor, HVACModel,
 )
 # Widgets
-from ...widgets import popup
 from ...pages.page import Page
 
 class AttackerV0(Page):

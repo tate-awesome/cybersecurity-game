@@ -8,7 +8,7 @@ from .keybinds import KeyBinds
 from .input_manager import InputManager
 from .localization_manager import LocalizationManager
 from .page_manager import PageManager
-import os, json, platform, shutil
+import os, platform, shutil
 from .paths import Paths
 from .json import Json
 
@@ -32,7 +32,7 @@ Shared data for a page. Passed to next pages on navigation.
 
     def __init__(self, root: QMainWindow, router: "Router"):
         # All immutable members for the session
-        self.router: "Router" = router
+        self.router: Router = router
         self.root: QMainWindow = root
         self.paths: Paths = Paths()
         self.json: Json = Json(self.paths)

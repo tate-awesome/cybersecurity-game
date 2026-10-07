@@ -290,7 +290,7 @@ class Wifi(WifiBaseClass):
     '''
     def __init__(self, buffer, context):
         super().__init__(buffer, context)
-        self._handle: "wintypes.HANDLE | None" = None
+        self._handle: wintypes.HANDLE | None = None
 
     def _get_client(self):
         if _WLANAPI_IMPORT_ERROR is not None:

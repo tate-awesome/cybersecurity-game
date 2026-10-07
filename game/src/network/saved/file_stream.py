@@ -61,7 +61,7 @@ class FileStream(Process):
         except Exception as e:
             self.buffer.put(
                 "json",
-                f"Failed to open stream file: {str(e)}"
+                f"Failed to open stream file: {e!s}"
             )
             return
 
@@ -165,7 +165,7 @@ class FileStream(Process):
         except Exception as e:
             self.buffer.put(
                 "json",
-                f"Failed to close stream file: {str(e)}"
+                f"Failed to close stream file: {e!s}"
             )
 
         self._file = None
@@ -207,5 +207,5 @@ class FileStream(Process):
         except Exception as e:
             self.buffer.put(
                 "json",
-                f"Failed to write streamed packet: {str(e)}"
+                f"Failed to write streamed packet: {e!s}"
             )

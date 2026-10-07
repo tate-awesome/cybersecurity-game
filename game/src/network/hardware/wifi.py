@@ -27,9 +27,9 @@ class WifiBaseClass(Process):
         self.is_connected = False
         self.previous_network = None
         self.target_network = None
-        self.match_name: "str | None" = None
+        self.match_name: str | None = None
         self._connecting = False
-        self._mismatch_since: "float | None" = None
+        self._mismatch_since: float | None = None
 
     def _unwatch_active_connection(self):
         '''

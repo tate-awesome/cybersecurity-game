@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QWidget
 from ....app_core import Context
 from .draw import Draw
 from .camera import Camera
-from typing import Callable
+from collections.abc import Callable
 
 class Canvas(QWidget):
     '''

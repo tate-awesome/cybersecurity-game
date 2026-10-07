@@ -1,4 +1,4 @@
-from ....geometry import rotate, scale, affine, flatten, translate, get_bearing, get_arc_points
+from ....geometry import affine
 
 '''
 Helper functions for camera, sprites, and drawings. Very useful math with highly granular control

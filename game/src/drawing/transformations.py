@@ -2,7 +2,7 @@
 Module for coordinate transforms used in drawing
 '''
 
-from ..geometry import rotate, scale, affine, flatten, translate, get_bearing, get_arc_points
+from ..geometry import affine
 
 def canvas_fit(points: list[tuple[float, float]], in_bl: tuple[float, float],
                                                     in_tr: tuple[float, float],

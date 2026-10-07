@@ -2,7 +2,6 @@ from ....app_core import Context
 from ... import Scrollable
 from ...canvases.strip_chart import StripChart
 from ..panel import Panel
-from typing import Callable
 
 class Builder(Panel):
     KEY = "modbus_chart_panel"

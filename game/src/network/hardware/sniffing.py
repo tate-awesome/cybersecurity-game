@@ -1,4 +1,4 @@
-from scapy.all import TCP, AsyncSniffer
+from scapy.all import AsyncSniffer
 from ..process import Process
 
 

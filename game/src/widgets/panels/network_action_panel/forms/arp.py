@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QLineEdit
+from PySide6.QtWidgets import QWidget
 from .....app_core import Context
 from .....network.hardware import ArpSpoofer
 from ...base_form import BaseForm

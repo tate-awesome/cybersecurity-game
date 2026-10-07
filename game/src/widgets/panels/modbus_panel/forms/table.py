@@ -87,11 +87,11 @@ class MitmTable(BaseForm):
             # TODO switch to a get dump type of thing where it dumps all the changed values
 
             in_value = self.buffer.get_single(key, "in")
-            if not in_value is None:
+            if in_value is not None:
                 in_str = self.format_number(in_value*factor)
 
             out_value = self.buffer.get_single(key, "out")
-            if not out_value is None:
+            if out_value is not None:
                 out_str = self.format_number(out_value*factor)
 
             if com := self.buffer.get_command(key):

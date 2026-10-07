@@ -18,4 +18,4 @@ VISUALS: dict[str, type[Visual]] = {
     Kalman.KEY: Kalman,
 }
 
-from .background import VisualBackground  # noqa: E402  (needs VISUALS defined first)
+from .background import VisualBackground

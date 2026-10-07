@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 class LocalizationManager:
     def __init__(self, context: "Context"):
-        self.context: "Context" = context
+        self.context: Context = context
         self.default_path = self.context.paths.labels / "_default.json"
         self.data: dict = self.get_preferred()
 

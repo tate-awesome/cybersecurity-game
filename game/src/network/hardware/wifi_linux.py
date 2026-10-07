@@ -29,7 +29,7 @@ class Wifi(WifiBaseClass):
     '''
     def __init__(self, buffer, context):
         super().__init__(buffer, context)
-        self._client: "NM.Client | None" = None
+        self._client: NM.Client | None = None
         self._watched_connection = None
         self._watched_handler_id = None
         self._last_deactivation_reason = None
@@ -302,7 +302,7 @@ class Wifi(WifiBaseClass):
 
         loop = GLib.MainLoop()
         outcome = {"ok": False, "message": None, "done": False, "timed_out": False}
-        state_handler: "list[tuple] | None" = []
+        state_handler: list[tuple] | None = []
 
         def finish(message: "str | None", ok: bool = False):
             if outcome["done"]:

@@ -59,7 +59,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         super().__init__(buffer, context)
         # Only meaningfully set while start_thread's pump loop is alive -
         # declared here so stop() can always safely check it.
-        self.w: "pydivert.WinDivert | None" = None
+        self.w: pydivert.WinDivert | None = None
 
     def start(self):
         if self.is_running():

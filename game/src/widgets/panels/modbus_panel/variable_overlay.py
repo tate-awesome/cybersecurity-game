@@ -1,7 +1,7 @@
 from ....app_core import Context
 from ....widgets import Overlay
 from PySide6.QtWidgets import QCheckBox, QFrame, QGridLayout, QLabel, QLineEdit, QPushButton
-from typing import Callable
+from collections.abc import Callable
 
 
 class VariableOverlay:

@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QWidget
 from threading import Lock
-from typing import Callable
+from collections.abc import Callable
 from ..app_core import Context
 from ..geometry import apply_scale_about
 import time

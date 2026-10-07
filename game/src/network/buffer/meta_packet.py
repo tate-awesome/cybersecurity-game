@@ -1,7 +1,6 @@
-from scapy.all import Packet, IP, TCP, UDP, ARP, DNS, DNSQR, Raw, Ether, conf
-from scapy.arch import get_if_addr, get_if_hwaddr, get_working_if
-from scapy.contrib import modbus
-import json, socket, uuid
+from scapy.all import Packet, IP, Ether
+from scapy.arch import get_if_hwaddr, get_working_if
+import uuid
 from scapy.contrib.modbus import *
 from typing import Any
 

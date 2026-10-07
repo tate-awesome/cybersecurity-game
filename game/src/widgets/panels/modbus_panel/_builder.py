@@ -6,7 +6,7 @@ from .forms.table import MitmTable
 from .forms.modify import Modify
 from .variable_overlay import VariableOverlay
 
-from ....widgets import Scrollable, MenuBar, Overlay, CheckboxOverlay
+from ....widgets import Scrollable, CheckboxOverlay
 
 FORM_CLASSES = {
     "table": MitmTable,

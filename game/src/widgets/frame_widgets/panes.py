@@ -24,7 +24,7 @@ class _PaneContainer(QWidget):
 
 class Panes(QSplitter):
 
-    def __init__(self, master: QWidget, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] = [4, 3, 2], pad_around = True, transparent = False):
+    def __init__(self, master: QWidget, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] | None = None, pad_around = True, transparent = False):
         '''
         Args:
             child_sizes: pane size is (approximately) proportional to 1/child_size[i],
@@ -36,8 +36,10 @@ class Panes(QSplitter):
             containers under each panel) unpainted instead of root-colored, so a
             page background shows through them - see WorkspacePage.
         '''
+        if child_sizes is None:
+            child_sizes = [4, 3, 2]
         # A single pane is fine - a page's layout may put just one panel in a group
-        if not direction in ["horizontal", "vertical"] or child_count < 1:
+        if direction not in ["horizontal", "vertical"] or child_count < 1:
             raise ValueError(
                 f"Invalid Panes args: direction={direction!r} (must be 'horizontal' or 'vertical'), "
                 f"child_count={child_count!r} (must be >= 1)"

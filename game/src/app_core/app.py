@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
 
-class App():
+class App:
     '''
     Creates the Router and starts the GUI main loop
     '''

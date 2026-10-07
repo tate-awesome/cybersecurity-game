@@ -88,7 +88,7 @@ class Kernel(Visual):
             self.falling = []
             self.flashes = []
             self.replies = []
-            self.heat = {key: 0.0 for key in NODES}
+            self.heat = dict.fromkeys(NODES, 0.0)
             self.spawn_clock = 0.0
 
     def point(self, key: str) -> QPointF:

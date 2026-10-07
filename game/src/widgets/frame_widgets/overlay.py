@@ -2,7 +2,7 @@ import time
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from ...app_core import Context
-from typing import Callable
+from collections.abc import Callable
 
 class Overlay(QWidget):
     '''
@@ -24,7 +24,7 @@ class Overlay(QWidget):
         self.close_text = self.context.labels.get("menu_bar_buttons_close_overlay")
         self.populate_func = populate_func
         self._last_hidden_at = 0.0
-        self._parent_overlay: "Overlay | None" = None
+        self._parent_overlay: Overlay | None = None
 
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')}; border: 2px solid {self.style.color('accent')};", self))
         self.setLayout(QVBoxLayout())

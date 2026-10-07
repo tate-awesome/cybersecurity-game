@@ -36,7 +36,9 @@ class Paths:
     # def get_page_
 
 
-    def select_path(self, directory: str | os.PathLike[str], prompt: str, filetypes: list[tuple[str, str]] = [("json", "*.json")]) -> str | None:
+    def select_path(self, directory: str | os.PathLike[str], prompt: str, filetypes: list[tuple[str, str]] | None = None) -> str | None:
+        if filetypes is None:
+            filetypes = [("json", "*.json")]
         try:
             file_path, _ = QFileDialog.getOpenFileName(
                 None,
@@ -72,8 +74,9 @@ class Paths:
             self.lower_permissions(file_path)
         except Exception as e:
             print(f"Err: [{e}] while generating a directory.")
-        finally:
-            return file_path
+        # Return outside finally: a return in finally swallows anything the
+        # except doesn't catch (KeyboardInterrupt/SystemExit), hiding Ctrl-C.
+        return file_path
 
     def lower_permissions(self, path: Path):
         '''

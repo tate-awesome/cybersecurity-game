@@ -1,10 +1,8 @@
 from collections import deque
 from threading import Lock
-from scapy.all import Packet
 
 from ..meta_packet import MetaPacket
 from scapy.contrib.modbus import *
-from .transaction_manager import TransactionManager
 from time import time
 
 from typing import TYPE_CHECKING

@@ -3,7 +3,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from ..popup import delete_all_workspace_data_dialog, message
 from .overlay import Overlay
-from typing import Callable
+from collections.abc import Callable
 
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:

@@ -2,7 +2,7 @@ from ....app_core import Context
 from ... import Overlay
 
 from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
-from typing import Callable
+from collections.abc import Callable
 
 class FilterOverlay:
     def __init__(self, button: QPushButton, context: Context, refresh_function: Callable):

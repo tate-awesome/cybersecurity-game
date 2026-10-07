@@ -63,7 +63,7 @@ class Camera:
         value = self.context.states.get("strip_chart_auto_fit")
         return value == 1 or value == "1"
 
-    def time_to_canvas_x(self, time_value: float, now: float, pixels_per_second: float = None, time_offset: float = None) -> float:
+    def time_to_canvas_x(self, time_value: float, now: float, pixels_per_second: float | None = None, time_offset: float | None = None) -> float:
         '''
         Maps a data time (seconds) to a canvas x pixel. `now` is right-aligned to the
         right edge of the plot area, offset by any panning done by the user.
@@ -75,7 +75,7 @@ class Camera:
         offset = self.time_offset[0] if time_offset is None else time_offset
         return right + offset + (time_value - now) * pps
 
-    def canvas_x_to_time(self, x: float, now: float, pixels_per_second: float = None, time_offset: float = None) -> float:
+    def canvas_x_to_time(self, x: float, now: float, pixels_per_second: float | None = None, time_offset: float | None = None) -> float:
         _, _, right, _ = self.plot_rect()
         pps = self.pixels_per_second() if pixels_per_second is None else pixels_per_second
         if pps == 0:
@@ -95,7 +95,7 @@ class Camera:
         fraction = (value - min_v) / span
         return bottom - fraction * (bottom - top)
 
-    def data_to_strip_chart(self, points_in: list[tuple[float, float]], now: float, factor: float, min_unit: float, max_unit: float, pixels_per_second: float = None, time_offset: float = None) -> list[tuple[float, float]]:
+    def data_to_strip_chart(self, points_in: list[tuple[float, float]], now: float, factor: float, min_unit: float, max_unit: float, pixels_per_second: float | None = None, time_offset: float | None = None) -> list[tuple[float, float]]:
         '''
         Transforms (time, raw_value) points into canvas pixel coordinates.
         '''

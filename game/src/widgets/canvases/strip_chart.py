@@ -1,7 +1,7 @@
 from .time_core.stripchart import StripChartBase
 from PySide6.QtWidgets import QWidget
 from ...app_core import Context
-from typing import Callable
+from collections.abc import Callable
 
 
 class StripChart(StripChartBase):
