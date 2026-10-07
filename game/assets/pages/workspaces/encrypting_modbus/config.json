@@ -1,0 +1,74 @@
+{
+    "_note": [
+        "# Defender Lesson 6: Encrypting ModBus",
+        "## Summary",
+        "Every attack in the attacker track so far has relied on one fact: ModBus travels in the clear, so anyone on the network can read it, change it in transit, or record and replay it. This lesson closes that door. You secure the link that feeds the lab controller, then watch the attacks you already know fail against it.",
+        "You'll connect to the controller through the AP, then turn the Encryption and AP Tunnel forms on and off while watching the Packet Log. With encryption off, the ModBus words are plain and legible - the same view an attacker's sniffer gets. With encryption on, the payloads become opaque: a man-in-the-middle can no longer read or forge a meaningful command, and a replayed capture no longer decrypts to anything the controller will act on. The strip charts and model keep running throughout, so you can confirm that securing the link costs you nothing in visibility as the legitimate operator.",
+        "## Objectives",
+        "- Connect to the lab controller through the AP and confirm live telemetry in the model and strip charts.\n- Read ModBus words in the Packet Log with encryption off, and explain what an attacker learns from them.\n- Turn on Encryption and the AP Tunnel and describe how the Packet Log changes.\n- Explain why encryption defeats both the MITM attack (Lesson 4) and the replay attack (Lesson 9).\n- State the trade-off: what a defender gives up, and what they keep, by encrypting ModBus.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 3: Encryption and Secure Tunnels\n- Chapter 3, section 3.4: Choosing What to Encrypt\n- Review Chapter 10: Man-in-the-Middle Attacks",
+        "## Videos",
+        "- [Why Encryption Breaks MITM and Replay (8 min)](https://example.com/cps-course/videos/d6-encryption-vs-attacks)\n- [Secure Tunnels for Legacy ModBus (12 min)](https://example.com/cps-course/videos/d6-tunnels-for-modbus)",
+        "## Where This Fits",
+        "**Previous:** Defender Lesson 1, *Defending the AP* - you'll reuse the connection and encryption controls from there.\n\n**Next:** Defender Lesson 7, *Detecting the Attack*, for when prevention isn't enough and you have to notice an attack in progress."
+    ],
+
+    "_dev_note": "Defender encryption lesson on the defender_hvac layout (defender_modbus_panel + modbus_model_panel + defender_stripchart_panel), with packet_panel added so the student can see plaintext ModBus words become opaque when encryption is toggled. Base settings copied from defender_hvac. TODO: capture screenshot.png and re-add a '## Screenshot' section to _note.",
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_encrypting_modbus",
+    "include": 1,
+    "category": "defender",
+    "order": 6,
+    "prerequisites": ["workspaces/defender_ap_intro", "workspaces/modbus_mitm"],
+    "estimated_minutes": 20,
+    "gradable": true,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
+        "available": {
+            "defender_hvac": 1,
+            "defender_submarine": 0,
+            "ap_connect": 1,
+            "encryption": 1,
+            "ap_tunnel": 1,
+            "mode": 1,
+            "sliders": 1
+        },
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "network_action_form_inputs": ["http://192.168.4.1"],
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
+    },
+
+    "title": "encrypting_modbus_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "panes": {
+        "h_panes": {
+            "weight": 1,
+            "v_panes_left": {"weight": 2, "network_action_panel": 2.3, "defender_modbus_panel": 2},
+            "v_panes_middle": {"weight": 3, "packet_panel": 3, "defender_flag_panel": 3, "status_panel": 3},
+            "v_panes_right": {"weight": 3, "modbus_model_panel": 2, "defender_stripchart_panel": 2}
+        }
+    }
+}

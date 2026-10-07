@@ -1,0 +1,78 @@
+{
+    "_note": [
+        "# Attacker Lesson 9: ModBus Replay",
+        "## Summary",
+        "You don't always need to be in the conversation to change it. A replay attack records legitimate traffic once, then plays it back later to make a device act on commands the operator never re-sent. Because ModBus has no sequence numbers, timestamps, or authentication, the lab controller cannot tell a fresh request from a recording of an old one - every copy looks exactly as valid as the original.",
+        "In this lesson you capture a stretch of real ModBus traffic off the lab network with the Sniffer, save it to a file, and then replay it against the lab's own controller. Start the stream and watch the ModBus Table and the model react to commands that are no longer being issued live. Then flip the question around: the capture you saved is also evidence - the same file a defender would load in the next lesson to reconstruct exactly what you did.",
+        "## Objectives",
+        "- Capture live ModBus traffic from the lab network using the Sniffer.\n- Save a capture to a file and describe what the saved record contains.\n- Replay the saved capture with the Stream control and observe the controller and model responding to commands no one is sending live.\n- Explain why the absence of sequence numbers, timestamps, and authentication in ModBus makes replay possible.\n- Name at least one defender-lesson control that detects or prevents a replayed command.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 11: Replay and Injection Attacks\n- Review Chapter 4, section 4.3: What ModBus Does Not Protect\n- Review Chapter 3: Encryption and Secure Tunnels",
+        "## Videos",
+        "- [Replay Attacks: Valid Traffic at the Wrong Time (11 min)](https://example.com/cps-course/videos/a9-replay-basics)\n- [Capture, Save, Replay: A Walkthrough (9 min)](https://example.com/cps-course/videos/a9-capture-save-replay)",
+        "## Where This Fits",
+        "**Previous:** Attacker Lesson 4, *ModBus MITM* - where you altered traffic in transit; here you reuse it unaltered, later.\n\n**Next:** Defender Lesson 7, *Detecting the Attack*, which loads a capture like the one you just saved and hunts for the replay."
+    ],
+
+    "_dev_note": "Attacker replay lesson built on the modbus_hvac layout (house model + lab_hvac HVAC registers), same base as modbus_mitm but with the nfq/MITM path removed. The replay mechanism is the menu bar: sniff to capture, save_button (buffer.replay.save_json) to persist, load_button/stream_button (buffer.file_stream start/stop) to replay a saved capture as if live. TODO: capture screenshot.png and re-add a '## Screenshot' section to _note, matching the other lessons.",
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_modbus_replay",
+    "include": 1,
+    "category": "attacker",
+    "order": 9,
+    "prerequisites": ["workspaces/wireless_sniffing", "workspaces/modbus_mitm"],
+    "estimated_minutes": 25,
+    "gradable": true,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "available": {"wifi": 1, "sniff": 1, "table": 1, "modify": 1},
+        "network_action_forms_shown": {"wifi": 1, "sniff": 1},
+        "modbus_table_forms_shown": {"table": 1, "modify": 1},
+        "modbus_registers": {
+            "hreg_1": {"show": 1, "modify": 1},
+            "hreg_2": {"show": 1, "modify": 1},
+            "hreg_3": {"show": 1, "modify": 1},
+            "hreg_4": {"show": 1, "modify": 1},
+            "hreg_5": {"show": 1, "modify": 1},
+            "hreg_6": {"show": 1, "modify": 1},
+            "hreg_7": {"show": 1, "modify": 1},
+            "hreg_8": {"show": 1, "modify": 1}
+        },
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
+    },
+
+    "title": "modbus_replay_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "save_button",
+        "load_button",
+        "stream_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "panes": {
+        "h_panes": {
+            "weight": 1,
+            "v_panes_left": {"weight": 2, "network_action_panel": 2.3, "modbus_table_panel": 2},
+            "v_panes_right": {"weight": 3, "packet_panel": 3, "network_graph_panel": 3, "status_panel": 3},
+            "modbus_chart_panel": 3
+        }
+    }
+}

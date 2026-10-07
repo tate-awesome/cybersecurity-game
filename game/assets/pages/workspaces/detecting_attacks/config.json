@@ -1,0 +1,76 @@
+{
+    "_note": [
+        "# Defender Lesson 7: Detecting the Attack",
+        "## Summary",
+        "Prevention fails. Encryption gets turned off for a maintenance window, a tunnel drops, a device ships with ModBus exposed. When that happens, the defender's job is to notice - fast, and from the evidence alone. This lesson is about seeing the attack, not stopping it.",
+        "You start by baselining: watch the controller through the AP and learn the normal rhythm of the registers, the strip charts, and the packet rate. Then you load a recorded attack with Load PCAP (or replay one with the Stream control) and hunt for what changed. An ARP spoof shows up as a device suddenly answering for an address that isn't its own. A denial-of-service shows up as a packet rate that spikes far past baseline. A replay shows up as commands that repeat too perfectly, with no operator behind them. The Defender Flags panel is where you record each finding - a defender who knows normal notices the first odd beat.",
+        "## Objectives",
+        "- Establish a baseline: describe the controller's normal registers, strip-chart pattern, and packet rate.\n- Load a recorded attack with Load PCAP, or replay one with the Stream control, and inspect it in the Packet Log.\n- Identify the signature of an ARP spoof, a denial-of-service, and a replay from the evidence.\n- Use the Defender Flags panel to record each anomaly you find.\n- Explain why detection matters even when prevention controls (encryption, tunnel) are in place.",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*\n\n- Chapter 12: Detection and Monitoring\n- Chapter 12, section 12.2: Baselining Industrial Traffic\n- Review Chapter 9: ARP Spoofing and Chapter 11: Replay and Injection Attacks",
+        "## Videos",
+        "- [Baselining: Knowing Normal Before You Hunt Abnormal (8 min)](https://example.com/cps-course/videos/d7-baselining)\n- [Reading an Attack Capture After the Fact (13 min)](https://example.com/cps-course/videos/d7-reading-captures)\n- [Three Signatures: Spoof, Flood, Replay (10 min)](https://example.com/cps-course/videos/d7-three-signatures)",
+        "## Where This Fits",
+        "**Previous:** Defender Lesson 6, *Encrypting ModBus* - prevention first; this lesson is for when prevention isn't enough.\n\n**Next:** Defender Full Suite, where detection joins every other defender control in one unrestricted workspace."
+    ],
+
+    "_dev_note": "Defender detection lesson on the defender_hvac layout, with packet_panel and defender_flag_panel foregrounded and the pcap_button + stream_button added to the menu bar so the student can load a recorded attack (assets/pcaptures/tuesday.pcapng) or replay one (assets/mcaptures/stream_2_spoof_process.jsonl via file_stream). Base settings copied from defender_hvac. TODO: capture screenshot.png and re-add a '## Screenshot' section to _note.",
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_detecting_attacks",
+    "include": 1,
+    "category": "defender",
+    "order": 7,
+    "prerequisites": ["workspaces/defender_hvac", "workspaces/defending_against_arp_spoofing"],
+    "estimated_minutes": 30,
+    "gradable": true,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
+        "available": {
+            "defender_hvac": 1,
+            "defender_submarine": 0,
+            "ap_connect": 1,
+            "encryption": 1,
+            "ap_tunnel": 1,
+            "mode": 1,
+            "sliders": 1
+        },
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "network_action_form_inputs": ["http://192.168.4.1"],
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
+    },
+
+    "title": "detecting_attacks_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "pcap_button",
+        "stream_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "panes": {
+        "h_panes": {
+            "weight": 1,
+            "v_panes_left": {"weight": 2, "network_action_panel": 2.3, "defender_modbus_panel": 2},
+            "v_panes_middle": {"weight": 3, "packet_panel": 3, "defender_flag_panel": 3, "status_panel": 3},
+            "v_panes_right": {"weight": 3, "modbus_model_panel": 2, "defender_stripchart_panel": 2}
+        }
+    }
+}
