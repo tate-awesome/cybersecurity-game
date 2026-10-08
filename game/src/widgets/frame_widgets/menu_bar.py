@@ -253,6 +253,7 @@ class MenuBar(QFrame):
             pass
 
     def _populate_overflow_overlay(self, overlay: Overlay):
+        proxies: list[tuple[QPushButton, QPushButton]] = []
         for entry in self._squashed_entries:
             button = entry["widget"]
             proxy = QPushButton(button.text())
@@ -264,6 +265,26 @@ class MenuBar(QFrame):
             # their text and handler dynamically after creation.
             proxy.clicked.connect(lambda checked=False, b=button, p=proxy: self._replay_click(b, p))
             overlay.layout().addWidget(proxy)
+            proxies.append((button, proxy))
+
+        # QPushButton has no text-changed signal, and a button's label can
+        # change from anywhere (a ToggleButton click, an overlay it opens
+        # closing, a pane's sash being dragged to minimize it) - so poll
+        # labels across while this overlay is open, then stop.
+        callback_name = f"overflow_proxies_{id(self)}"
+
+        def sync_proxies():
+            try:
+                if not overlay.isVisible():
+                    self.context.animation_manager.remove_callback(callback_name)
+                    return
+                for button, proxy in proxies:
+                    if proxy.text() != button.text():
+                        proxy.setText(button.text())
+            except RuntimeError:
+                # This menu bar (or a proxy) was destroyed mid-navigation
+                self.context.animation_manager.remove_callback(callback_name)
+        self.context.animation_manager.add_callback(callback_name, sync_proxies)
 
     def _replay_click(self, button: QPushButton, proxy: QPushButton):
         '''
@@ -278,6 +299,11 @@ class MenuBar(QFrame):
             button.click()
         finally:
             button.click_proxy = None
+        # Show the new label right away rather than on the next sync_proxies poll
+        try:
+            proxy.setText(button.text())
+        except RuntimeError:
+            pass  # the click navigated away, destroying the button or proxy
 
     # Panel Buttons
 
