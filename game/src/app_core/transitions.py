@@ -1,5 +1,5 @@
 from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRectF, Qt, QVariantAnimation
-from PySide6.QtGui import QPainter, QPixmap, QRegion
+from PySide6.QtGui import QGuiApplication, QPainter, QPixmap, QRegion
 from PySide6.QtWidgets import QGraphicsEffect, QWidget
 
 
@@ -180,3 +180,116 @@ class PageTransition:
             except RuntimeError:
                 pass
         self.effects = []
+
+
+class PopupEntrance:
+    '''
+    Animates a popup window (an Overlay) opening, as one piece: the window
+    glides SLIDE px out from its trigger button into place while fading in.
+
+    The fade needs the platform to support window opacity (Windows, macOS,
+    X11 with a compositor) - elsewhere, e.g. Wayland, just the glide plays.
+
+    stop() snaps the window to its final state - called when the popup
+    hides mid-animation.
+    '''
+
+    DURATION_MS = 200
+    SLIDE = 10.0
+
+    def __init__(self, window: QWidget, away: tuple[float, float]):
+        '''away is the unit direction from the trigger button toward where the popup sits.'''
+        self.window = window
+        self.final = QPointF(window.pos())
+        self.away = away
+        self.fade_window = self.supports_fade()
+        self.curve = QEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.animation = QVariantAnimation()
+        self.animation.setStartValue(0.0)
+        self.animation.setEndValue(1.0)
+        self.animation.setDuration(self.DURATION_MS)
+        self.animation.valueChanged.connect(self.step)
+        self.animation.finished.connect(self.stop)
+        self.step(0.0)
+        self.animation.start()
+
+    @staticmethod
+    def supports_fade() -> bool:
+        return QGuiApplication.platformName() in ("windows", "cocoa", "xcb")
+
+    def step(self, progress: float):
+        eased = self.curve.valueForProgress(progress)
+        remaining = (1.0 - eased) * self.SLIDE
+        try:
+            self.window.move((self.final - QPointF(self.away[0] * remaining, self.away[1] * remaining)).toPoint())
+            if self.fade_window:
+                self.window.setWindowOpacity(eased)
+        except RuntimeError:
+            # The popup was deleted mid-animation
+            self.stop()
+
+    def stop(self):
+        if self.animation is None:
+            return
+        animation, self.animation = self.animation, None
+        animation.stop()
+        try:
+            self.window.move(self.final.toPoint())
+            if self.fade_window:
+                self.window.setWindowOpacity(1.0)
+        except RuntimeError:
+            pass
+
+
+class PopupExit(QWidget):
+    '''
+    A popup's fade-out. The popup itself hides at once (its open/close
+    bookkeeping stays instant and untouched); this click-through window
+    takes its place, showing a picture of it, and fades out while gliding
+    SLIDE px back toward the trigger button, then deletes itself.
+
+    Only played where window opacity works (see PopupEntrance) - elsewhere
+    the popup just vanishes, as it would without this.
+    '''
+
+    DURATION_MS = 150
+    SLIDE = 6.0
+
+    @classmethod
+    def play(cls, popup: QWidget, away: tuple[float, float]):
+        if not PopupEntrance.supports_fade() or popup.width() <= 0:
+            return
+        cls(popup.parentWidget(), popup.grab(), popup.pos(), away)
+
+    def __init__(self, parent: QWidget | None, pixmap: QPixmap, pos: QPoint, away: tuple[float, float]):
+        super().__init__(parent, Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        self.pixmap = pixmap
+        self.start = QPointF(pos)
+        self.away = away
+        self.curve = QEasingCurve(QEasingCurve.Type.InCubic)
+        self.resize(pixmap.deviceIndependentSize().toSize())
+        self.move(pos)
+
+        self.animation = QVariantAnimation(self)
+        self.animation.setStartValue(0.0)
+        self.animation.setEndValue(1.0)
+        self.animation.setDuration(self.DURATION_MS)
+        self.animation.valueChanged.connect(self.step)
+        self.animation.finished.connect(self.deleteLater)
+        self.step(0.0)
+        self.show()
+        self.animation.start()
+
+    def step(self, progress: float):
+        eased = self.curve.valueForProgress(progress)
+        self.setWindowOpacity(1.0 - eased)
+        offset = eased * self.SLIDE
+        self.move((self.start - QPointF(self.away[0] * offset, self.away[1] * offset)).toPoint())
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.drawPixmap(0, 0, self.pixmap)
+        painter.end()
