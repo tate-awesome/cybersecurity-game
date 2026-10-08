@@ -32,8 +32,8 @@
     "settings": {
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
         "available": {
-            "defender_hvac": 0,
-            "defender_submarine": 1,
+            "ap_polled_hvac_chart": 0,
+            "ap_polled_submarine_map": 1,
             "ap_connect": 1,
             "encryption": 1,
             "ap_tunnel": 1,
