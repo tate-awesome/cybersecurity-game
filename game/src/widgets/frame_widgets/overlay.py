@@ -3,6 +3,7 @@ from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from ...app_core import Context
+from ...app_core.transitions import PopupEntrance, PopupExit
 from collections.abc import Callable
 
 class Overlay(QWidget):
@@ -35,6 +36,9 @@ class Overlay(QWidget):
         self.populate_func = populate_func
         self._last_hidden_at = 0.0
         self._parent_overlay: Overlay | None = None
+        self._entrance: PopupEntrance | None = None
+        # Side of the trigger button this overlay opened out of (see _away_from)
+        self._away = (0.0, 1.0)
 
         self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')}; border: 2px solid {self.style.color('accent')};", self))
         self.setLayout(QVBoxLayout())
@@ -93,7 +97,25 @@ class Overlay(QWidget):
         # proxy that was actually clicked instead.
         target = getattr(self.button, "click_proxy", None) or self.button
         self.move(self.calculate_placement(self.anchor, target))
+        # Started before show() so the very first frame is already in the
+        # entrance pose rather than flashing in at its final spot
+        if self._entrance is not None:
+            self._entrance.stop()
+        self._away = self._away_from(target)
+        self._entrance = PopupEntrance(self, self._away)
         self.show()
+
+    def _away_from(self, target: QWidget) -> tuple[float, float]:
+        '''
+        Unit direction from the trigger button toward where this overlay
+        ended up - the side it opens out of. Read from the actual placement,
+        since calculate_placement flips to the opposite side near a screen edge.
+        '''
+        here = self.geometry().center()
+        there = target.mapToGlobal(target.rect().center())
+        if self.anchor in ("north", "south"):
+            return (0.0, 1.0 if here.y() >= there.y() else -1.0)
+        return (1.0 if here.x() >= there.x() else -1.0, 0.0)
 
     def _lineage(self) -> set["Overlay"]:
         '''
@@ -148,6 +170,13 @@ class Overlay(QWidget):
         # this is the one place that resets the trigger button and clears
         # stale contents regardless of how the overlay got closed.
         self._last_hidden_at = time.monotonic()
+        if self._entrance is not None:
+            self._entrance.stop()
+            self._entrance = None
+        # Fade out a picture of it - taken before _clear_contents empties it.
+        # Not for a spontaneous hide (the OS minimizing the window, etc.)
+        if not event.spontaneous():
+            PopupExit.play(self, self._away)
         if self.button is not None:
             self.button.setText(self.closed_text)
         self._clear_contents()
