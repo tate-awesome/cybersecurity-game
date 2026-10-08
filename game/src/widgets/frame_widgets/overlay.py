@@ -1,5 +1,6 @@
 import time
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, QPointF, Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from ...app_core import Context
 from collections.abc import Callable
@@ -64,7 +65,12 @@ class Overlay(QWidget):
         self.populate_func(self)
         self.button.setText(self.close_text)
         self.adjustSize()
-        self.move(self.calculate_placement(self.anchor))
+        # A click replayed from a menu bar overflow proxy (see
+        # MenuBar._replay_click) lands on a button that's hidden while
+        # squashed, so it has no real on-screen position - anchor to the
+        # proxy that was actually clicked instead.
+        target = getattr(self.button, "click_proxy", None) or self.button
+        self.move(self.calculate_placement(self.anchor, target))
         self.show()
 
     def _lineage(self) -> set["Overlay"]:
@@ -121,6 +127,44 @@ class Overlay(QWidget):
         self._parent_overlay = None
         super().hideEvent(event)
 
+    def mousePressEvent(self, event):
+        '''
+        While popups are stacked, Qt sends every mouse press to the topmost
+        one, and by default a press outside it closes only that one popup -
+        so a single outside click would peel the stack back one layer at a
+        time. Instead, close every overlay except the one under the mouse
+        and its ancestors (all of them, if the press missed every overlay).
+        '''
+        if self.rect().contains(event.position().toPoint()):
+            super().mousePressEvent(event)
+            return
+        global_pos = event.globalPosition().toPoint()
+        under_mouse = QApplication.widgetAt(global_pos)
+        target = under_mouse.window() if under_mouse is not None else None
+        if not isinstance(target, Overlay) or not target.isVisible():
+            target = None
+
+        keep = target._lineage() if target is not None else set()
+        for overlay in self.context.root.findChildren(Overlay):
+            if overlay not in keep and overlay.isVisible():
+                overlay.hide()
+
+        if target is None:
+            # No popups left open, so Qt replays this press onto whatever
+            # main-window widget is under the mouse, same as for a lone popup
+            return
+        # Qt only replays a press once no popups are left at all - deliver
+        # it to the surviving overlay's widget by hand, so a click that
+        # lands on, say, a proxy button in the overflow overlay still
+        # presses it rather than just closing the overlay above it. Qt
+        # routes the matching release there itself (the now-topmost
+        # popup's child under the mouse).
+        receiver = target.childAt(target.mapFromGlobal(global_pos))
+        if receiver is not None:
+            forwarded = QMouseEvent(event.type(), QPointF(receiver.mapFromGlobal(global_pos)), event.globalPosition(),
+                                    event.button(), event.buttons(), event.modifiers())
+            QApplication.sendEvent(receiver, forwarded)
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
             self.hide()
@@ -135,11 +179,12 @@ class Overlay(QWidget):
             if widget is not None:
                 widget.deleteLater()
 
-    def calculate_placement(self, anchor: str) -> QPoint:
-        screen_rect = self.button.screen().availableGeometry()
-        btn_top_left = self.button.mapToGlobal(QPoint(0, 0))
-        btn_w = self.button.width()
-        btn_h = self.button.height()
+    def calculate_placement(self, anchor: str, target: QWidget) -> QPoint:
+        '''Where to put this overlay so it sits on the given side of target.'''
+        screen_rect = target.screen().availableGeometry()
+        btn_top_left = target.mapToGlobal(QPoint(0, 0))
+        btn_w = target.width()
+        btn_h = target.height()
         igap = self.style.igap
 
         frame_w = self.width()

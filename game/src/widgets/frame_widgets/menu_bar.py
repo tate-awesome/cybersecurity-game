@@ -262,8 +262,22 @@ class MenuBar(QFrame):
             # reflects whatever label/handler the button currently has -
             # including buttons like minimize/ToggleButton that swap
             # their text and handler dynamically after creation.
-            proxy.clicked.connect(lambda checked=False, b=button: b.click())
+            proxy.clicked.connect(lambda checked=False, b=button, p=proxy: self._replay_click(b, p))
             overlay.layout().addWidget(proxy)
+
+    def _replay_click(self, button: QPushButton, proxy: QPushButton):
+        '''
+        Clicks the hidden original button, recording the proxy as the
+        widget the click really came from for the duration - an Overlay
+        that button opens anchors itself to that proxy (see
+        Overlay.click_open), since the hidden original has no on-screen
+        position to anchor to.
+        '''
+        button.click_proxy = proxy
+        try:
+            button.click()
+        finally:
+            button.click_proxy = None
 
     # Panel Buttons
 
