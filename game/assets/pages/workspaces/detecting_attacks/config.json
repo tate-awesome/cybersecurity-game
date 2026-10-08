@@ -28,10 +28,11 @@
     "build_type": "workspace",
 
     "settings": {
+        "model_panels": {
+            "modbus_model_panel_1": {"available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "ap_polled_submarine_map": 0}}
+        },
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
         "available": {
-            "ap_polled_hvac_chart": 1,
-            "ap_polled_submarine_map": 0,
             "ap_connect": 1,
             "encryption": 1,
             "ap_tunnel": 1,

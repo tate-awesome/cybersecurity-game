@@ -30,6 +30,9 @@
     "build_type": "workspace",
 
     "settings": {
+        "model_panels": {
+            "modbus_model_panel_1": {"available": {"ap_polled_submarine_map": 0, "ap_polled_hvac_chart": 0}}
+        },
         "network_action_form_inputs": {
             "wifi": ["AP-Config"],
             "arp": ["192.168.4.2", "192.168.4.10"],
@@ -43,7 +46,7 @@
             "protocol": 1,
             "modbus_word": 1
         },
-        "available": {"wifi": 1, "dos": 1, "sniff": 1, "table": 1, "sniffed_hvac_house": 1, "sniffed_submarine_map": 1},
+        "available": {"wifi": 1, "dos": 1, "sniff": 1, "table": 1},
         "network_action_forms_shown": {"wifi": 1, "dos": 1, "sniff": 1},
         "modbus_table_forms_shown": {"table": 1},
         "modbus_registers": {

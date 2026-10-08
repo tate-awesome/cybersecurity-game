@@ -30,6 +30,9 @@
     "build_type": "workspace",
 
     "settings": {
+        "model_panels": {
+            "modbus_model_panel_1": {"available": {"ap_polled_submarine_map": 0, "ap_polled_hvac_chart": 0}}
+        },
         "network_action_form_inputs": {
             "wifi": ["AP-Config"],
             "arp": ["192.168.4.2", "192.168.4.10"],
@@ -51,8 +54,6 @@
         "available": {
             "table": 1,
             "modify": 1,
-            "sniffed_hvac_house": 1,
-            "sniffed_submarine_map": 1,
             "wifi": 1,
             "nmap": 1,
             "arp": 1,

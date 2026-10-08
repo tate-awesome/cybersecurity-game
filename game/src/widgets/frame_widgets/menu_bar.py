@@ -16,7 +16,7 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
                          "configure_workspace_button", "debug_availability_button", "debug_labels_button"]),
     ],
     "modbus_button_group": [
-        ("registers_and_models", ["registers_button", "register_preset_button", "model_view_button"]),
+        ("registers_and_models", ["registers_button", "register_preset_button"]),
     ],
     "captures_button_group": [
         ("load_fast", ["pcap_button", "load_json_fast_button"]),

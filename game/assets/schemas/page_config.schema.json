@@ -127,7 +127,6 @@
                     "clear_all_button",
                     "registers_button",
                     "register_preset_button",
-                    "model_view_button",
                     "delete_all_user_data_button",
                     "delete_all_workspace_data_button",
                     "workspace_editor_button",
@@ -279,16 +278,32 @@
                     "type": "number"
                 },
                 "model_panels": {
-                    "type": "array",
-                    "items": {
-                        "enum": ["", "agnostic", "sniffed_submarine_map", "sniffed_hvac_house", "ap_polled_submarine_map", "ap_polled_hvac_chart"]
+                    "type": "object",
+                    "description": "Each model panel's own settings, by its layout id.",
+                    "propertyNames": {
+                        "pattern": "^modbus_model_panel_[1-5]$"
+                    },
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "available": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "sniffed_submarine_map": {"enum": [0, 1]},
+                                    "sniffed_hvac_house": {"enum": [0, 1]},
+                                    "ap_polled_submarine_map": {"enum": [0, 1]},
+                                    "ap_polled_hvac_chart": {"enum": [0, 1]}
+                                }
+                            },
+                            "start_on": {
+                                "enum": ["", "sniffed_submarine_map", "sniffed_hvac_house", "ap_polled_submarine_map", "ap_polled_hvac_chart"]
+                            },
+                            "show_auto_switch_checkbox": {"enum": [0, 1]},
+                            "auto_switch_on_poll": {"enum": [0, 1]}
+                        }
                     }
-                },
-                "modbus_model_selected": {
-                    "type": "string"
-                },
-                "modbus_model_auto_switch": {
-                    "type": "number"
                 },
                 "modbus_registers": {
                     "type": "object"
@@ -507,8 +522,8 @@
     "$defs": {
         "panel_id": {
             "type": "string",
-            "pattern": "^(network_action_panel|modbus_table_panel|packet_panel|network_graph_panel|status_panel|modbus_model_panel|modbus_chart_panel|defender_modbus_panel|defender_stripchart_panel|defender_console_panel|defender_flag_panel)_[0-9]+$",
-            "description": "A panel type (widgets.PANELS) plus a number, so the same panel can appear more than once."
+            "pattern": "^((network_action_panel|modbus_table_panel|packet_panel|network_graph_panel|status_panel|modbus_chart_panel|defender_modbus_panel|defender_stripchart_panel|defender_console_panel|defender_flag_panel)_[0-9]+|modbus_model_panel_[1-5])$",
+            "description": "A panel type (widgets.PANELS) plus a number, so the same panel can appear more than once. Model panels only go up to 5 - one per model_panels entry in _default.json."
         },
         "pane_group": {
             "type": "object",

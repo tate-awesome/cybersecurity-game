@@ -27,8 +27,10 @@
     "build_type": "workspace",
 
     "settings": {
-        "available": {"ap_polled_submarine_map": 1, "kalman": 1, "sliders": 1, "ap_connect": 1},
-        "modbus_model_selected": "ap_polled_submarine_map",
+        "model_panels": {
+            "modbus_model_panel_1": {"available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "ap_polled_hvac_chart": 0}}
+        },
+        "available": {"kalman": 1, "sliders": 1, "ap_connect": 1},
         "network_action_forms_shown": {"kalman": 1, "ap_connect": 1},
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },

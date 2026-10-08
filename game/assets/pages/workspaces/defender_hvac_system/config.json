@@ -27,11 +27,12 @@
     "build_type": "workspace",
 
     "settings": {
+        "model_panels": {
+            "modbus_model_panel_1": {"available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "ap_polled_submarine_map": 0}}
+        },
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "available": {"ap_polled_submarine_map": 1, "ap_connect": 1, "mode": 1, "sliders": 1},
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
-        "model_panels": ["ap_polled_hvac_chart"],
-        "modbus_model_selected": "ap_polled_hvac_chart"
+        "available": {"ap_connect": 1, "mode": 1, "sliders": 1},
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
     "title": "defender_hvac_system_workspace",

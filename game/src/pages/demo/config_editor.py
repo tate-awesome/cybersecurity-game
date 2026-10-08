@@ -15,8 +15,8 @@ from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
-from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR, MENU_BAR_GROUPS
-from ...widgets.panels.modbus_model._builder import MODELS
+from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
+from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
 BUTTON_ORDER = [
@@ -26,6 +26,10 @@ BUTTON_ORDER = [
     "back_button", "quit_button",
 ]
 
+# This page's own menu bar buttons (the other demo pages use DEMO_MENU_BAR)
+EDITOR_MENU_BAR = ["help_button", "labels_button", "toggle_button", "theme_button",
+                   "page_button", "back_button", "workspaces_button", "title_button", "quit_button"]
+
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
 
@@ -33,11 +37,12 @@ QWIDGETSIZE_MAX = (1 << 24) - 1
 NUMBER_FIELDS = {"factor", "multiplier", "offset", "strip_chart_auto_fit_max_seconds"}
 
 # Settings the game itself sets from a dropdown, shown as the same choices here - by
-# path in _default.json. The model panel's dropdown sets modbus_model_selected
-# ("agnostic" is the default: start on the first available model).
-SETTING_DROPDOWNS = {
-    ("modbus_model_selected",): ["agnostic", *MODELS],
-}
+# path in _default.json. (A model panel's start_on is a dropdown too, but its
+# choices follow that panel's available models - see model_panel_dropdown.)
+SETTING_DROPDOWNS: dict[tuple, list[str]] = {}
+
+# start_on's choice for "the first model this panel offers"
+FIRST_OFFERED = "(first offered)"
 
 
 def menu_bar_buttons() -> list[str]:
@@ -128,7 +133,9 @@ class ConfigEditor(Page):
         if keys:
             menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
         menu_bar.add_button("save_config", self.save)
-        menu_bar.add_config_buttons(DEMO_MENU_BAR)
+        if keys:
+            menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
+        menu_bar.add_config_buttons(EDITOR_MENU_BAR)
 
         self.tabs = QTabWidget()
         self.tabs.setFont(self.style.get_font("default"))
@@ -212,6 +219,11 @@ class ConfigEditor(Page):
         ConfigEditor.selected_key = key
         self.router.refresh(save=False)
 
+    def open_workspace(self):
+        '''Shows the workspace being edited, as saved (Back returns here).'''
+        if ConfigEditor.selected_key is not None:
+            self.router.show(ConfigEditor.selected_key)
+
     def delete_workspace(self):
         key = ConfigEditor.selected_key
         if key is not None:
@@ -268,6 +280,10 @@ class ConfigEditor(Page):
         self.button_boxes: dict[str, QCheckBox] = {}
         self.prerequisite_boxes: dict[str, QCheckBox] = {}
         self.field_widgets: dict[str, QWidget] = {}
+        # Each model panel's rows (grid, first row, row after its last), and its
+        # cells by key under it (see refresh_model_panels)
+        self.model_panel_rows: dict[str, tuple[QGridLayout, int, int]] = {}
+        self.model_panel_cells: dict[str, dict[tuple, SettingCell]] = {}
 
         # Rebuilding the tabs changes the current tab, which shouldn't count as picking one
         self.tabs.blockSignals(True)
@@ -304,6 +320,7 @@ class ConfigEditor(Page):
         self.raw_settings = raw if isinstance(raw, dict) else {}
         for name, default in self.default_settings.items():
             self.build_setting_section(name, default)
+        self.refresh_model_panels()
         self.refresh_usage()
         self.tabs.setCurrentIndex(min(ConfigEditor.selected_tab, self.tabs.count() - 1))
         self.set_status(f"Editing {self.pages.config_paths[key]}", "field_text")
@@ -522,12 +539,15 @@ class ConfigEditor(Page):
 
     def add_setting_rows(self, rows: "Rows", path: tuple, default: dict, depth: int):
         for key, item_default in default.items():
+            first_row = rows.row
             if isinstance(item_default, dict):
                 description, details = self.key_notes(path + (key,))
                 rows.heading(key, depth=depth, tooltip=details, description=description)
                 self.add_setting_rows(rows, path + (key,), item_default, depth + 1)
             else:
                 self.add_setting_row(rows, path + (key,), item_default, depth)
+            if path == ("model_panels",):
+                self.model_panel_rows[key] = (rows.grid, first_row, rows.row)
 
     def key_notes(self, path: tuple) -> tuple[str, str]:
         '''
@@ -570,6 +590,7 @@ class ConfigEditor(Page):
         the layout's shape changes.
         '''
         panels = self.layout_panels()
+        self.show_layout_model_panels()
         for name, label in getattr(self, "usage_labels", {}).items():
             users = [panel for panel in panels if name in getattr(PANELS.get(panel), "SETTINGS", ())]
             font = QFont(self.style.get_font("small"))   # a copy - get_font's font is shared
@@ -583,6 +604,72 @@ class ConfigEditor(Page):
                 label.setStyleSheet(f"color: rgba({text.red()}, {text.green()}, {text.blue()}, 150);")
             label.setFont(font)
         self.sort_settings(panels)
+
+    def show_layout_model_panels(self):
+        '''Shows only the model_panels entries for model panels the layout has - the rest are ignored.'''
+        in_layout = set(self.layout_editor.all_ids())
+        for panel_id, (grid, first, end) in self.model_panel_rows.items():
+            for row in range(first, end):
+                for column in range(grid.columnCount()):
+                    item = grid.itemAtPosition(row, column)
+                    if item is not None and item.widget() is not None:
+                        item.widget().setVisible(panel_id in in_layout)
+
+    # Model panels: start_on's choices and the Auto-Switch rows follow each panel's available models
+    @staticmethod
+    def cell_value(cell: "SettingCell"):
+        '''What a setting will be once saved: its input if touched, else its default.'''
+        if not cell.touched:
+            return cell.default
+        try:
+            return cell.reader()
+        except ValueError:
+            return cell.default
+
+    def offered_models(self, panel_id: str) -> list[str]:
+        cells = self.model_panel_cells.get(panel_id, {})
+        return [model for model in MODELS
+                if ("available", model) in cells and self.cell_value(cells[("available", model)]) in (1, "1", True)]
+
+    def refresh_model_panels(self):
+        '''
+        For each model panel: start_on only offers the models checked under
+        its available, and the Auto-Switch rows are only editable when they
+        can apply - both polled models offered, and for auto_switch_on_poll,
+        the checkbox shown too. Called on every form change (see mark_dirty).
+        '''
+        for panel_id, cells in self.model_panel_cells.items():
+            models = self.offered_models(panel_id)
+            start = cells.get(("start_on",))
+            if start is not None:
+                combo = start.widget
+                current = combo.currentData()
+                combo.blockSignals(True)
+                combo.clear()
+                combo.addItem(FIRST_OFFERED, "")
+                for model in models:
+                    combo.addItem(self.labels.get(f"modbus_model_options_{model}"), model)
+                combo.setCurrentIndex(max(0, combo.findData(current)))
+                combo.blockSignals(False)
+            show = cells.get(("show_auto_switch_checkbox",))
+            run = cells.get(("auto_switch_on_poll",))
+            both_polled = DEFENDER_MODELS <= set(models)
+            if show is not None:
+                show.widget.setEnabled(both_polled)
+            if run is not None:
+                run.widget.setEnabled(both_polled and show is not None and self.cell_value(show) in (1, "1", True))
+
+    def model_panel_dropdown(self, value) -> tuple[QComboBox, Callable[[], str]]:
+        '''start_on's dropdown - filled with its panel's offered models by refresh_model_panels.'''
+        combo = QComboBox()
+        combo.setFont(self.style.get_font("default"))
+        combo.addItem(FIRST_OFFERED, "")
+        if value:
+            combo.addItem(self.labels.get(f"modbus_model_options_{value}"), value)
+            combo.setCurrentIndex(1)
+        combo.setMaximumWidth(360)
+        combo.currentIndexChanged.connect(self.mark_dirty)
+        return combo, combo.currentData
 
     def sort_settings(self, panels: list[str]):
         '''
@@ -628,10 +715,14 @@ class ConfigEditor(Page):
                               default_text=SettingCell.describe(path[-1], default))
         cell.show_state()
         self.setting_cells.append(cell)
+        if path[0] == "model_panels" and len(path) > 2:
+            self.model_panel_cells.setdefault(path[1], {})[path[2:]] = cell
 
     # Widgets, each paired with a reader that turns it back into a config value
     def leaf(self, path: tuple, default, value) -> tuple[QWidget, Callable[[], Any]]:
         key = path[-1]
+        if path[0] == "model_panels" and path[2:] == ("start_on",):
+            return self.model_panel_dropdown(value)
         if path in SETTING_DROPDOWNS:
             return self.choice_dropdown(SETTING_DROPDOWNS[path], value)
         if is_switch(key, default):
@@ -708,6 +799,8 @@ class ConfigEditor(Page):
 
     # Saving
     def mark_dirty(self, *_):
+        # Every form change comes through here, so dependent rows update with it
+        self.refresh_model_panels()
         if not self.dirty:
             self.dirty = True
             self.set_status("Unsaved changes.", "field_text")
@@ -768,6 +861,9 @@ class ConfigEditor(Page):
         config.pop("panes", None)
         config["layout_shape"], config["layout_weights"], layout_errors = self.layout_editor.authored()
         errors += layout_errors
+        for panel_id in self.layout_editor.all_ids():
+            if panel_id in self.model_panel_cells and not self.offered_models(panel_id):
+                errors.append(f'"model_panels" > "{panel_id}": turn on at least one model under available.')
         return config, errors
 
 
@@ -936,7 +1032,12 @@ class SettingCell(QWidget):
         elif isinstance(widget, QPlainTextEdit):
             widget.setPlainText("\n".join(str(item) for item in default))
         elif isinstance(widget, QComboBox):
-            widget.setCurrentText(str(default))
+            # Choices with data (start_on's) are matched by it, plain ones by text
+            index = widget.findData(default)
+            if index >= 0:
+                widget.setCurrentIndex(index)
+            else:
+                widget.setCurrentText(str(default))
         elif isinstance(widget, QLineEdit):
             widget.setText(f"{default:g}" if isinstance(default, float) else str(default))
         widget.blockSignals(False)

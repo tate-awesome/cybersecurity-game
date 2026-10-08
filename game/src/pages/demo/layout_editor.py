@@ -64,11 +64,23 @@ class LayoutEditor:
                 ids += self.all_ids(child)
         return ids
 
-    def next_id(self, kind: str) -> str:
-        '''A new id for a panel type or group prefix: one past the highest number it already has.'''
-        numbers = [int(pane_id.rpartition("_")[2]) for pane_id in self.all_ids()
-                   if self.editor.pages.panel_type(pane_id) == kind and pane_id.rpartition("_")[2].isdigit()]
-        return f"{kind}_{max(numbers, default=0) + 1}"
+    def numbers(self, kind: str) -> list[int]:
+        '''The numbers in use by a panel type's or group prefix's ids.'''
+        return [int(pane_id.rpartition("_")[2]) for pane_id in self.all_ids()
+                if self.editor.pages.panel_type(pane_id) == kind and pane_id.rpartition("_")[2].isdigit()]
+
+    def next_id(self, kind: str) -> str | None:
+        '''
+        A new id for a panel type or group prefix: one past the highest number
+        it already has - or, for a panel type with a MAX_COPIES (its settings
+        are per copy, like ModbusModel's model_panels), the lowest number from
+        1 to MAX_COPIES not in use yet, and None once they all are.
+        '''
+        limit = getattr(PANELS.get(kind), "MAX_COPIES", None)
+        if limit is None:
+            return f"{kind}_{max(self.numbers(kind), default=0) + 1}"
+        free = [number for number in range(1, limit + 1) if number not in self.numbers(kind)]
+        return f"{kind}_{free[0]}" if free else None
 
     def entry_name(self, entry: dict) -> str:
         if "panes" in entry:
@@ -100,8 +112,8 @@ class LayoutEditor:
         row.addLayout(left, 2)
 
         explanation = QLabel("The workspace's panels and how they're grouped. Select a group to add inside it, "
-                             "or a panel to add right after it. A panel type can be added as many times as you like - "
-                             "each copy gets its own numbered id, so its weight is kept separately.")
+                             "or a panel to add right after it. A panel type can be added as many times as you like "
+                             "(model panels up to 5) - each copy gets its own numbered id, so its weight is kept separately.")
         explanation.setFont(self.style.get_font("small"))
         explanation.setWordWrap(True)
         left.addWidget(explanation)
@@ -126,7 +138,7 @@ class LayoutEditor:
             lambda index: self.panel_type.setToolTip(self.panel_details(self.panel_type.itemData(index))))
         self.panel_type.setToolTip(self.panel_details(self.panel_type.currentData()))
         controls.addWidget(self.panel_type, 0, 0, 1, 2)
-        controls.addWidget(self.button("Add Panel", lambda: self.add({"id": self.next_id(self.panel_type.currentData()), "widget": self.panel_type.currentData()})), 0, 2)
+        controls.addWidget(self.button("Add Panel", self.add_panel), 0, 2)
         controls.addWidget(self.button("Add Side-by-Side Group", lambda: self.add_group("horizontal")), 1, 0)
         controls.addWidget(self.button("Add Stacked Group", lambda: self.add_group("vertical")), 1, 1)
         controls.addWidget(self.button("Flip Direction", self.flip), 1, 2)
@@ -199,6 +211,14 @@ class LayoutEditor:
         new["weight"] = int(average) if average == int(average) else average
         siblings.insert(index, new)
         self.changed(select=parent_path + (index,))
+
+    def add_panel(self):
+        panel = self.panel_type.currentData()
+        panel_id = self.next_id(panel)
+        if panel_id is None:
+            self.editor.set_status(f"A layout can only hold {PANELS[panel].MAX_COPIES} of {self.panel_name(panel)}.", "red")
+            return
+        self.add({"id": panel_id, "widget": panel})
 
     def add_group(self, orientation: str):
         group_id = self.next_id(PREFIXES[orientation])
@@ -384,4 +404,9 @@ class LayoutEditor:
         ids = self.all_ids()
         for duplicate in sorted({pane_id for pane_id in ids if ids.count(pane_id) > 1}):
             errors.append(f'The id "{duplicate}" is used more than once.')
+        for pane_id in ids:
+            limit = getattr(PANELS.get(self.editor.pages.panel_type(pane_id)), "MAX_COPIES", None)
+            number = pane_id.rpartition("_")[2]
+            if limit is not None and number.isdigit() and not 1 <= int(number) <= limit:
+                errors.append(f'"{pane_id}": this panel\'s ids only go from 1 to {limit}.')
         return shape, weights, errors

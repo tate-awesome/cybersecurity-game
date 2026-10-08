@@ -29,12 +29,10 @@
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Show Forms. A form only appears if \"available\" also offers it.",
-        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: table, modify. Defender ModBus forms: mode, sliders. Models in the model panel: sniffed_hvac_house and sniffed_submarine_map (drawn from sniffed traffic), ap_polled_hvac_chart and ap_polled_submarine_map (drawn from what the AP reports) - and auto_switch offers the checkbox that follows the AP's reported mode. A form also needs its *_forms_shown entry to start out showing.",
+        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: table, modify. Defender ModBus forms: mode, sliders. Models are offered per model panel instead - see model_panels. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"table\" (live register values) and \"modify\" (rewriting values in transit).",
         "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
-        "model_panels": "What each Model and Source Configurable Visualizers panel shows, one entry per panel: modbus_model_panel_1 reads the first entry, modbus_model_panel_2 the second, and so on. A model key (sniffed_submarine_map, sniffed_hvac_house, ap_polled_submarine_map, ap_polled_hvac_chart) fixes that panel to that model - no dropdown, no Auto-Switch, and none of available, modbus_model_selected or modbus_model_auto_switch apply to it. \"agnostic\", \"\" or no entry at all leaves it flexible: a dropdown of the models offered in available. E.g. [\"agnostic\", \"sniffed_submarine_map\"] makes panel 1 flexible and panel 2 always the sniffed submarine map.",
-        "modbus_model_selected": "Which model the flexible Model and Source Configurable Visualizers panels (see model_panels) start on, by its key in \"available\" (e.g. \"sniffed_submarine_map\"). If it isn't available here, the panel starts on the first one that is.",
-        "modbus_model_auto_switch": "1 starts with the defender models following the AP's reported mode automatically.",
+        "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
         "packet_console": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph. \"summary\" is the plain-language description of the current packet filter.",
@@ -306,6 +304,48 @@
             "modify": {
                 "description": "The form for rewriting register values in transit.",
                 "details": "Starts the modify form shown in the ModBus table panel. Students use it to set each register's multiplier and offset for rewriting values in transit. Also needs available.modify."
+            }
+        },
+        "model_panels": {
+            "*": {
+                "_note": {
+                    "description": "Settings for this one model panel.",
+                    "details": "Settings for the model panel with this layout id. modbus_model_panel_1 to modbus_model_panel_5 all share these keys; entries for panels not in the layout are ignored."
+                },
+                "available": {
+                    "_note": {
+                        "description": "Which models this panel offers.",
+                        "details": "Which models this panel offers. More than one gets a dropdown to switch between them; exactly one shows just that model, titled after it, with no dropdown or Auto-Switch checkbox. All on by default - turn off the ones this panel shouldn't show."
+                    },
+                    "sniffed_submarine_map": {
+                        "description": "1 offers the submarine map in this panel.",
+                        "details": "Offers the submarine map in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons."
+                    },
+                    "sniffed_hvac_house": {
+                        "description": "1 offers the HVAC house in this panel.",
+                        "details": "Offers the HVAC house in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons."
+                    },
+                    "ap_polled_submarine_map": {
+                        "description": "1 offers the defender submarine map in this panel.",
+                        "details": "Offers the defender submarine map in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It's drawn from what the AP reports over the AP connect form's connection, so it belongs in defender lessons."
+                    },
+                    "ap_polled_hvac_chart": {
+                        "description": "1 offers the defender HVAC chart in this panel.",
+                        "details": "Offers the defender HVAC chart in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It's drawn from what the AP reports over the AP connect form's connection, so it belongs in defender lessons."
+                    }
+                },
+                "start_on": {
+                    "description": "The model this panel starts on. Empty starts on the first one offered.",
+                    "details": "The model this panel shows when the workspace opens - one of the models this panel offers. Empty, or a model it doesn't offer, starts on the first one offered (in the order listed under available). A student's pick from the dropdown is saved here, so they come back to it."
+                },
+                "show_auto_switch_checkbox": {
+                    "description": "1 shows the Auto-Switch checkbox. Needs both AP-polled models offered.",
+                    "details": "Shows the Auto-Switch checkbox, which keeps this panel on whichever AP-polled model matches the AP's reported mode. It only appears when both ap_polled_submarine_map and ap_polled_hvac_chart are offered, since it switches between them. Auto-switching never runs without it, so students can always turn it off."
+                },
+                "auto_switch_on_poll": {
+                    "description": "1 starts with Auto-Switch checked. Needs show_auto_switch_checkbox.",
+                    "details": "Starts the Auto-Switch checkbox checked, so the panel follows the AP's reported mode from the start. Ignored when the checkbox isn't shown. Picking a model from the dropdown unchecks it."
+                }
             }
         },
         "modbus_registers": {
@@ -626,26 +666,6 @@
             "sliders": {
                 "description": "Defender ModBus panel form: filter-tuning sliders.",
                 "details": "Offers the defender ModBus panel's filter-tuning sliders for the AP's current mode. It still needs defender_modbus_forms_shown.sliders."
-            },
-            "sniffed_hvac_house": {
-                "description": "Model dropdown: the HVAC house, drawn from sniffed ModBus traffic.",
-                "details": "Offers the HVAC house in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. The fixed Sniffed HVAC House panel shows it whatever this says."
-            },
-            "sniffed_submarine_map": {
-                "description": "Model dropdown: the submarine map, drawn from sniffed ModBus traffic.",
-                "details": "Offers the submarine map in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. The fixed Sniffed Submarine Map panel shows it whatever this says."
-            },
-            "auto_switch": {
-                "description": "Model panel: the checkbox that switches models to follow the AP's reported mode.",
-                "details": "Offers the Model and Source Configurable Visualizers panel's Auto-Switch checkbox, which keeps the model matched to the AP's reported mode. It only appears when an ap_polled_* model is also offered."
-            },
-            "ap_polled_hvac_chart": {
-                "description": "Model dropdown: the HVAC chart, drawn from values the AP reports.",
-                "details": "Offers the HVAC chart in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from values the access point reports (polled through AP connect), so it belongs in defender lessons. The fixed Polled HVAC Chart panel shows it whatever this says."
-            },
-            "ap_polled_submarine_map": {
-                "description": "Model dropdown: the submarine map, drawn from values the AP reports.",
-                "details": "Offers the submarine map in the Model and Source Configurable Visualizers panel's dropdown, drawn from values the access point reports (polled through AP connect) rather than sniffed traffic. It belongs in defender lessons. The fixed Polled Submarine Map panel shows it whatever this says."
             }
         },
         "defender_modbus_forms_shown": {
@@ -683,7 +703,7 @@
         },
         "modbus_model_panel": {
             "name": "Model and Source Configurable Visualizers",
-            "details": "What it does: Any ModBus model in one panel, picked from a dropdown: the sniffed submarine map or HVAC house (drawn from captured traffic), or the polled submarine map or HVAC chart (drawn from what the AP reports). With an AP-polled model offered, an Auto-Switch checkbox can keep it matched to the AP's current mode. Fixed to one model by its model_panels entry, it shows only that model - no dropdown or Auto-Switch - so several can show different models side by side.\n\nWhere its data comes from: Depends on the model: the sniffed models read ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar; the polled models read values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing but itself - it's a visualizer. Picking a model saves it as modbus_model_selected, which every flexible model panel on the page follows.\n\nSettings: model_panels fixes a panel to one model (modbus_model_panel_N reads entry N). For a flexible one, turn each model on in available (sniffed_submarine_map, sniffed_hvac_house, ap_polled_submarine_map, ap_polled_hvac_chart) - only those appear in the dropdown. modbus_model_selected picks the starting model. For AP-polled models, available.auto_switch offers the Auto-Switch checkbox and modbus_model_auto_switch starts it checked. model_sprites and model_colors control how the sniffed models are drawn."
+            "details": "What it does: Any ModBus model: the sniffed submarine map or HVAC house (drawn from captured traffic), or the polled submarine map or HVAC chart (drawn from what the AP reports). Each copy in a layout (up to 5) is set up separately in model_panels: offered more than one model it has a dropdown to switch between them; offered exactly one, it just shows that model. With both polled models offered, an Auto-Switch checkbox can keep it matched to the AP's current mode.\n\nWhere its data comes from: Depends on the model: the sniffed models read ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar; the polled models read values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing but itself - it's a visualizer. Picking a model saves it as that panel's start_on.\n\nSettings: model_panels, under this panel's layout id (available, start_on, show_auto_switch_checkbox, auto_switch_on_poll). model_sprites and model_colors control how the sniffed models are drawn."
         },
         "modbus_chart_panel": {
             "name": "Sniffed ModBus StripCharts",

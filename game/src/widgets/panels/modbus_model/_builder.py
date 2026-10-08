@@ -8,29 +8,36 @@ from ...canvases.defender_hvac_chart import DefenderHVACChart
 from ..panel import Panel
 
 MODELS = {
-    # Order matters as a fallback: a page whose "modbus_model_selected" isn't
-    # one of these keys (e.g. the "agnostic" default) starts on
-    # whichever of these comes first.
+    # Order matters as a fallback: a panel whose "start_on" isn't one of
+    # its available models (e.g. the "" default) starts on whichever of
+    # these comes first.
     "sniffed_submarine_map": WorldMap,
     "sniffed_hvac_house": House,
     "ap_polled_submarine_map": DefenderWorldMap,
     "ap_polled_hvac_chart": DefenderHVACChart,
 }
 
-# Models read from the AP ("ap_polled_*") are driven by the AP's own reported mode
+# Models read from the AP ("ap_polled_*") can be driven by the AP's own reported mode
 # (context.buffer.defender_status.submarine_mode) instead of a manual
-# dropdown pick - see _auto_switch. Only a page whose "available" settings
-# group actually offers one of these (the defender lessons) ever exercises this.
+# dropdown pick - see _auto_switch. That flips between both of them, so it's
+# only offered on a panel where both are available.
 DEFENDER_MODELS = {"ap_polled_submarine_map", "ap_polled_hvac_chart"}
 
-# A "model_panels" entry meaning "not fixed to one model" - see fixed_model
-FLEXIBLE = ("", "agnostic")
+
+def is_on(value) -> bool:
+    return value in (1, "1", True)
+
 
 class Builder(Panel):
     '''
-    Every ModBus model in one panel, with a dropdown that swaps which
-    model canvas is shown - or, fixed by its "model_panels" entry, exactly
-    one model with no dropdown and no auto-switching (see fixed_model).
+    The ModBus models, one at a time, set up per copy of this panel by its
+    "model_panels" entry (keyed by its layout id, e.g. "modbus_model_panel_2"):
+    which models it offers ("available"), which it starts on ("start_on"),
+    and its Auto-Switch checkbox. More than one model gets a dropdown that
+    swaps which canvas is shown; exactly one is just that model, titled
+    after it. Picks and the checkbox are written back to the entry, so
+    autosave remembers them for that copy alone.
+
     Only one model is ever built at a time - switching destroys the outgoing
     canvas (after stopping its animation loop, since a live canvas
     calling into a destroyed widget every frame would raise forever) and
@@ -38,29 +45,28 @@ class Builder(Panel):
     '''
 
     KEY = "modbus_model_panel"
+    # How many copies a layout can hold - one per "model_panels" entry in
+    # _packages/_default.json (the layout editor and schema hold to it too)
+    MAX_COPIES = 5
 
     # The settings keys (see _packages/_default.json) this panel reads or writes -
     # the workspace editor lists it under each of them
     # Its hvac/submarine models draw with the house and submarine map canvases
     SETTINGS = (
         "model_panels",
-        "available",
-        "modbus_model_selected",
-        "modbus_model_auto_switch",
         "model_sprites",
         "model_colors",
     )
 
-    def __init__(self, master, context: Context, panel_id: str | None = None, model: str | None = None):
-        '''
-        model fixes the panel to that model outright - for pages built in
-        code. Otherwise panel_id (its layout id, e.g. "modbus_model_panel_2")
-        picks its "model_panels" entry, which may fix it.
-        '''
-        fixed = model if model is not None else self.fixed_model(context, panel_id)
-        # A fixed panel is titled after its model, e.g. "Polled HVAC Chart"
-        super().__init__(master, context, f"{fixed}_panel" if fixed else self.KEY)
-        self.fixed = fixed
+    def __init__(self, master, context: Context, panel_id: str | None = None):
+        settings = context.states.get("model_panels").get(panel_id)
+        if not isinstance(settings, dict):
+            super().__init__(master, context, f"err: no model_panels entry for {panel_id}")
+            return
+        models = [key for key in MODELS if is_on(settings["available"].get(key))]
+        # A panel with one model is titled after it, e.g. "Polled HVAC Chart"
+        super().__init__(master, context, f"{models[0]}_panel" if len(models) == 1 else self.KEY)
+        self.panel_id = panel_id
 
         self.body = QWidget()
         self.body.setLayout(QVBoxLayout())
@@ -73,62 +79,34 @@ class Builder(Panel):
         self.model_key = None
         self.model_dropdown = None
         self.auto_switch_checkbox = None
-
-        if self.fixed:
-            # None of the page-wide model settings apply - not available,
-            # modbus_model_selected or auto-switching - so any number of
-            # fixed panels can sit on one page without affecting each other.
-            self.labels_by_key = {self.fixed: self.context.labels.get(f"modbus_model_options_{self.fixed}")}
-            self.select_model(self.fixed)
+        self.labels_by_key = {key: self.context.labels.get(f"modbus_model_options_{key}") for key in models}
+        self.key_by_label = {label: key for key, label in self.labels_by_key.items()}
+        if not models:
+            print(f"{panel_id} has no models available")
             self.menu_bar.minimize_button(self.body, master)
             return
 
-        available_models: dict[str, int] = self.context.states.get("available")
-        if available_models is None:
-            available_models = list(MODELS.keys())
-
-        self.labels_by_key: dict[str, str] = {}
-        for key in MODELS:
-            if key not in available_models or available_models[key] in (0, "0"):
-                print(f"Model is invisible: {key!r}")
-                continue
-            self.labels_by_key[key] = self.context.labels.get(f"modbus_model_options_{key}")
-        self.key_by_label = {label: key for key, label in self.labels_by_key.items()}
-
-        if self.labels_by_key:
-            preferred = self.context.states.get("modbus_model_selected")
-            start_key = preferred if preferred in self.labels_by_key else next(iter(self.labels_by_key))
-
+        start_key = settings["start_on"] if settings["start_on"] in models else models[0]
+        if len(models) > 1:
             self.model_dropdown = self.menu_bar.add_dropdown(
                 list(self.labels_by_key.values()),
                 command=self.select_model_by_label,
                 default=self.labels_by_key[start_key],
             )
-            self.select_model(start_key)
-        else:
-            print("No models are visible for this page")
+        # Not saved: start_on only changes once a model is actually picked
+        self.select_model(start_key, save=False)
 
-
-        # If a defender-flavored model is visible, it takes over model
-        # selection entirely from here on - whichever one matches the AP's
-        # current mode wins on every tick, overriding a manual pick (and
-        # updating the dropdown to match - see select_model's _sync_dropdown
-        # call), as long as the Auto-Switch checkbox stays checked.
-        # Unchecking it (or picking a model from the dropdown, see
-        # select_model_by_label) removes _auto_switch from the animation
-        # manager entirely rather than having it check a flag every tick
-        # and no-op.
+        # Auto-switching follows the AP's current mode on every tick,
+        # overriding a manual pick (and updating the dropdown to match - see
+        # select_model's _sync_dropdown call), as long as the Auto-Switch
+        # checkbox stays checked. It never runs without the checkbox, so
+        # there's always a way to turn it off. Unchecking it (or picking a
+        # model from the dropdown, see select_model_by_label) removes
+        # _auto_switch from the animation manager entirely rather than
+        # having it check a flag every tick and no-op.
         self._auto_switch_callback_name = f"ModbusModelAutoSwitch_{id(self)}"
-        # available_models is the "available" settings group, which has an
-        # "auto_switch" key too (see _packages/_default.json) unless it fell
-        # back to the plain list of every MODELS key above, in which case
-        # nothing has hidden the checkbox and it defaults to visible.
-        auto_switch_visible = (
-            not isinstance(available_models, dict)
-            or available_models.get("auto_switch") not in (0, "0")
-        )
-        if auto_switch_visible and DEFENDER_MODELS & set(self.labels_by_key):
-            auto_switch_enabled = bool(self.context.states.get("modbus_model_auto_switch"))
+        if DEFENDER_MODELS <= set(models) and is_on(settings["show_auto_switch_checkbox"]):
+            auto_switch_enabled = is_on(settings["auto_switch_on_poll"])
             self.auto_switch_checkbox = self.menu_bar.add_checkbox(
                 self.context.labels.get("menu_bar_buttons_auto_switch"),
                 checked=auto_switch_enabled,
@@ -139,47 +117,8 @@ class Builder(Panel):
 
         self.menu_bar.minimize_button(self.body, master)
 
-        if self.labels_by_key:
-            self.context.animation_manager.add_callback(f"ModbusModelFollowStates_{id(self)}", self._follow_states)
-
-    @staticmethod
-    def fixed_model(context: Context, panel_id: str | None) -> str | None:
-        '''
-        The model this panel's "model_panels" entry fixes it to, else None.
-        modbus_model_panel_N reads entry N-1; a missing entry, "" or
-        "agnostic" leaves it flexible (dropdown, available, auto-switch).
-        '''
-        if panel_id is None:
-            return None
-        number = panel_id.rpartition("_")[2]
-        entries = context.states.get("model_panels")
-        if not number.isdigit() or not isinstance(entries, list):
-            return None
-        index = int(number) - 1
-        entry = entries[index] if 0 <= index < len(entries) else ""
-        if entry in FLEXIBLE:
-            return None
-        if entry not in MODELS:
-            print(f"model_panels[{index}] is {entry!r}, not a model ({', '.join(MODELS)}) - leaving {panel_id} flexible")
-            return None
-        return entry
-
-    def _follow_states(self):
-        '''
-        Follows modbus_model_auto_switch and modbus_model_selected when
-        something else changes them (see EditModelStyle) - polled every
-        frame. A pick that isn't available on this page is ignored.
-        '''
-        if self.auto_switch_checkbox is not None:
-            enabled = self.context.states.get("modbus_model_auto_switch") in (1, "1", True)
-            if self.auto_switch_checkbox.isChecked() != enabled:
-                self.auto_switch_checkbox.setChecked(enabled)  # -> _set_auto_switch
-        selected = self.context.states.get("modbus_model_selected")
-        if selected != self.model_key and selected in self.labels_by_key:
-            self.select_model(selected)
-
     def _set_auto_switch(self, enabled: bool):
-        self.context.states.set("modbus_model_auto_switch", value=1 if enabled else 0)
+        self.context.states.set("model_panels", self.panel_id, "auto_switch_on_poll", value=1 if enabled else 0)
         if enabled:
             self.context.animation_manager.add_callback(self._auto_switch_callback_name, self._auto_switch)
             self._auto_switch()
@@ -204,7 +143,7 @@ class Builder(Panel):
             self.auto_switch_checkbox.setChecked(False)
         self.select_model(key)
 
-    def select_model(self, key: str):
+    def select_model(self, key: str, save: bool = True):
         if key == self.model_key or key not in MODELS:
             return
 
@@ -219,8 +158,8 @@ class Builder(Panel):
 
         self.model = MODELS[key](self.body, self.context)
         self.model_key = key
-        if not self.fixed:
-            self.context.states.set("modbus_model_selected", value=key)
+        if save:
+            self.context.states.set("model_panels", self.panel_id, "start_on", value=key)
         self._sync_dropdown(key)
 
     def _sync_dropdown(self, key: str):

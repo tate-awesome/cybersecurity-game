@@ -129,11 +129,63 @@
 
     "modbus_packet_modify_enabled": 0,
 
-    "model_panels": [],
-
-    "modbus_model_selected": "agnostic",
-
-    "modbus_model_auto_switch": 0,
+    "model_panels": {
+        "modbus_model_panel_1": {
+            "available": {
+                "sniffed_submarine_map": 1,
+                "sniffed_hvac_house": 1,
+                "ap_polled_submarine_map": 1,
+                "ap_polled_hvac_chart": 1
+            },
+            "start_on": "",
+            "show_auto_switch_checkbox": 1,
+            "auto_switch_on_poll": 1
+        },
+        "modbus_model_panel_2": {
+            "available": {
+                "sniffed_submarine_map": 1,
+                "sniffed_hvac_house": 1,
+                "ap_polled_submarine_map": 1,
+                "ap_polled_hvac_chart": 1
+            },
+            "start_on": "",
+            "show_auto_switch_checkbox": 1,
+            "auto_switch_on_poll": 1
+        },
+        "modbus_model_panel_3": {
+            "available": {
+                "sniffed_submarine_map": 1,
+                "sniffed_hvac_house": 1,
+                "ap_polled_submarine_map": 1,
+                "ap_polled_hvac_chart": 1
+            },
+            "start_on": "",
+            "show_auto_switch_checkbox": 1,
+            "auto_switch_on_poll": 1
+        },
+        "modbus_model_panel_4": {
+            "available": {
+                "sniffed_submarine_map": 1,
+                "sniffed_hvac_house": 1,
+                "ap_polled_submarine_map": 1,
+                "ap_polled_hvac_chart": 1
+            },
+            "start_on": "",
+            "show_auto_switch_checkbox": 1,
+            "auto_switch_on_poll": 1
+        },
+        "modbus_model_panel_5": {
+            "available": {
+                "sniffed_submarine_map": 1,
+                "sniffed_hvac_house": 1,
+                "ap_polled_submarine_map": 1,
+                "ap_polled_hvac_chart": 1
+            },
+            "start_on": "",
+            "show_auto_switch_checkbox": 1,
+            "auto_switch_on_poll": 1
+        }
+    },
 
     "modbus_registers": {
         "hreg_1": {
@@ -396,12 +448,7 @@
         "table": 0,
         "modify": 0,
         "mode": 0,
-        "sliders": 0,
-        "sniffed_hvac_house": 0,
-        "sniffed_submarine_map": 0,
-        "auto_switch": 0,
-        "ap_polled_hvac_chart": 0,
-        "ap_polled_submarine_map": 0
+        "sliders": 0
     },
 
     "defender_modbus_forms_shown": {

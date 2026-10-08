@@ -52,7 +52,6 @@ from .clear_all_captured_buffer_data import ClearAllCapturedBufferData
 # ModBus
 from .edit_modbus_register_display.edit_modbus_register_display import EditModbusRegisterDisplay
 from .settings_overlays.select_register_preset import SelectRegisterPreset
-from .settings_overlays.select_model_view import SelectModelView
 
 # Debug
 from .delete_all_user_data import DeleteAllUserData
@@ -111,7 +110,6 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     # ModBus
     "registers_button": EditModbusRegisterDisplay,
     "register_preset_button": SelectRegisterPreset,
-    "model_view_button": SelectModelView,
     # Debug
     "delete_all_user_data_button": DeleteAllUserData,
     "delete_all_workspace_data_button": DeleteAllWorkspaceSavedData,
