@@ -34,7 +34,10 @@
             "arp": 1,
             "sniff": 1,
             "mode": 1,
-            "ap_tunnel": 1
+            "ap_tunnel": 1,
+            "nfq": 1,
+            "table": 1,
+            "modify": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "modbus_model_selected": "ap_polled_submarine_map"
@@ -58,7 +61,7 @@
             {
                 "h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]
             },
-            {"h_panes_2": ["defender_stripchart_panel_1"]}
+            {"h_panes_2": ["modbus_table_panel_1", "defender_stripchart_panel_1"]}
         ]
     },
     "layout_weights": {
@@ -67,6 +70,7 @@
         "defender_console_panel_1": 41,
         "modbus_model_panel_1": 33,
         "h_panes_2": 35,
+        "modbus_table_panel_1": 68,
         "defender_stripchart_panel_1": 68
     }
 }
