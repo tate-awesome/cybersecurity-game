@@ -96,11 +96,3 @@ class InputManager:
 
     def set_register(self, key: str, field: str, value):
         self.get_registers()[key][field] = value
-
-    # Save
-    def save_inputs(self):
-        page = self.context.router.current_page
-        path = self.context.paths.user_pages / page
-        path = path / "inputs.json"
-        print(path)
-        self.context.json.save_to_file(self.context.states.get(), path)

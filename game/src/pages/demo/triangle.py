@@ -1,7 +1,6 @@
 from ...app_core import Context
 from ...widgets import TriangleCanvas
-from ...widgets.frame_widgets.important_buttons import (GoBackToPreviousPage, LoadLocalizationLabelsFile, QuitApplication,
-                                                       SelectColorTheme, SetCurrentPageAsFavorite, ToggleLightDarkMode)
+from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR
 from ...pages.page import Page
 from ...widgets import MenuBar
 
@@ -12,9 +11,6 @@ class Triangle(Page):
     def __init__(self, context: Context):
         super().__init__(context)
         menu_bar = MenuBar(self, context, "triangle_demo")
-        for button in (ToggleLightDarkMode, SelectColorTheme, LoadLocalizationLabelsFile, SetCurrentPageAsFavorite):
-            menu_bar.add_important(button)
-        menu_bar.add_important(GoBackToPreviousPage)
-        menu_bar.add_important(QuitApplication)
+        menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
         world_map = TriangleCanvas(self, context)

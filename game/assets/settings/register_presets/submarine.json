@@ -1,0 +1,37 @@
+{
+    "hreg_3": {
+        "show": 1.0,
+        "nickname": "Speed",
+        "factor": 0.00122,
+        "units": "TODO",
+        "modify": 1
+    },
+    "hreg_4": {
+        "show": 1.0,
+        "nickname": "Rudder",
+        "factor": 0.00122,
+        "units": "TODO",
+        "modify": 1
+    },
+    "hreg_10": {
+        "show": 1.0,
+        "nickname": "X Position",
+        "factor": 0.01,
+        "units": "Meters",
+        "modify": 1
+    },
+    "hreg_11": {
+        "show": 1.0,
+        "nickname": "Y Position",
+        "factor": 0.01,
+        "units": "Meters",
+        "modify": 1
+    },
+    "hreg_12": {
+        "show": 1.0,
+        "nickname": "Bearing",
+        "factor": 0.0572958,
+        "units": "Degrees",
+        "modify": 1
+    }
+}

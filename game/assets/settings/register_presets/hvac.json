@@ -1,0 +1,16 @@
+{
+    "hreg_6": {
+        "show": 1.0,
+        "nickname": "Heater",
+        "factor": 0.01,
+        "units": "State",
+        "modify": 1
+    },
+    "hreg_10": {
+        "show": 1.0,
+        "nickname": "Temperature",
+        "factor": 0.01,
+        "units": "Degrees (F)",
+        "modify": 1
+    }
+}

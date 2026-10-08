@@ -26,19 +26,21 @@ class Replay(Process):
         self.abort_event = threading.Event()
 
         self.file_path = ""
+        self.realtime = True
 
 
     # ------------------------------------------------------------------
     # Loading
     # ------------------------------------------------------------------
 
-    def load_json(self):
+    def load_json(self, realtime: bool = True):
         """
         Button entry point for loading a replay file.
 
         Packets are streamed off disk one line at a time and replayed
         with the exact time spacing recorded in each packet's .time
-        field - the whole file is never held in memory at once.
+        field - or with realtime=False, as fast as the buffer takes them.
+        The whole file is never held in memory at once.
         """
 
         with self._lock:
@@ -51,6 +53,7 @@ class Replay(Process):
 
             self._is_loading = True
 
+        self.realtime = realtime
         self.abort_event.clear()
 
         try:
@@ -223,13 +226,22 @@ class Replay(Process):
                         )
                         continue
 
-                    if previous_time is not None:
+                    if self.realtime and previous_time is not None:
                         delay = max(0.001, pkt.time - previous_time)
 
                         # Wake up early if an abort is requested mid-wait.
                         if self.abort_event.wait(delay):
                             aborted_prematurely = True
                             break
+
+                    # Not real-time: as fast as the buffer takes them -
+                    # wait while its put queue is nearly full
+                    while not self.realtime and self.buffer.capacity() > 0.9:
+                        if self.abort_event.wait(0.01):
+                            aborted_prematurely = True
+                            break
+                    if aborted_prematurely:
+                        break
 
                     self.buffer.put(source, purpose, pkt, direction)
 

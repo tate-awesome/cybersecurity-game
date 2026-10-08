@@ -33,18 +33,13 @@ class Page(QWidget):
         '''
         Builds the page's MenuBar - titled with the labels key
         "menu_bar_titles_<title>" - and adds one button per name in
-        buttons, in order, each a key of important_buttons.MENU_BAR_BUTTONS
-        (e.g. "quit_button"). Returns the MenuBar.
+        buttons, each a key of important_buttons.MENU_BAR_BUTTONS (e.g.
+        "quit_button") - grouped and ordered by MENU_BAR_GROUPS (see
+        MenuBar.add_config_buttons). Returns the MenuBar.
         '''
         from ..widgets import MenuBar
-        from ..widgets.frame_widgets.important_buttons import MENU_BAR_BUTTONS
         menu_bar = MenuBar(self, self.context, title)
-
-        for name in buttons:
-            if not isinstance(name, str) or name not in MENU_BAR_BUTTONS:
-                print(f"MenuBar has no button named {name!r}, skipping")
-                continue
-            menu_bar.add_important(MENU_BAR_BUTTONS[name])
+        menu_bar.add_config_buttons([name for name in buttons if isinstance(name, str)])
         return menu_bar
 
     def add_background(self, config: dict, default: dict | None = None) -> bool:

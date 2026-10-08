@@ -293,6 +293,7 @@
         "secret explanation for awful coding practice": "This is just the default filter on startup. It gets changed to eval() of itself"
     },
     "requested_packet_treeview_clear": 0,
+    "requested_status_console_clear": 0,
     "status_console": {
         "scroll": "live"
     },

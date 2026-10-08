@@ -20,14 +20,20 @@ class Loader(Process):
         
         self.file_path = ""
         self.packets = []
+        self.realtime = False
 
-    def load_pcap(self):
-        '''Loads a pcap file into the buffer.'''
+    def load_pcap(self, realtime: bool = False):
+        '''
+        Loads a pcap file into the buffer - as fast as the buffer takes
+        packets, or with realtime=True, with the recorded time gaps between
+        packets (see worker).
+        '''
         with self._lock:
             if self._is_loading:
                 self.buffer.put("pcap", "Refused to load another pcap file at the same time.")
                 return
             self._is_loading = True
+        self.realtime = realtime
 
         # Clear any previous abort signal before starting a fresh run
         self.abort_event.clear()
@@ -102,8 +108,22 @@ class Loader(Process):
         try:
             self.buffer.reset()
 
+            # Real-time: post each packet after the recorded gap since the
+            # one before it, waking early if an abort is requested mid-wait
+            previous_time = None
+            while self.realtime and index < total_packets:
+                spkt = self.packets[index]
+                if previous_time is not None:
+                    delay = max(0.001, float(spkt.time - previous_time))
+                    if self.abort_event.wait(delay):
+                        aborted_prematurely = True
+                        break
+                self.buffer.put("pcap", "Loaded packet", spkt)
+                previous_time = spkt.time
+                index += 1
+
             # Rate limiter pumping loop
-            while index < total_packets:
+            while not self.realtime and index < total_packets:
                 # FIX: Check if abort was requested outside the inner processing loop
                 if self.abort_event.is_set():
                     aborted_prematurely = True

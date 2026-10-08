@@ -1,8 +1,7 @@
 from ...app_core import Context
 from ...pages.page import Page
 from ...widgets import MenuBar, VISUALS, VisualBackground
-from ...widgets.frame_widgets.important_buttons import (GoBackToPreviousPage, LoadLocalizationLabelsFile, QuitApplication,
-                                                       SelectColorTheme, SetCurrentPageAsFavorite, ToggleLightDarkMode)
+from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR
 
 
 class Visuals(Page):
@@ -45,10 +44,7 @@ class Visuals(Page):
         )
         self.names = names
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
-        for button in (ToggleLightDarkMode, SelectColorTheme, LoadLocalizationLabelsFile, SetCurrentPageAsFavorite):
-            menu_bar.add_important(button)
-        menu_bar.add_important(GoBackToPreviousPage)
-        menu_bar.add_important(QuitApplication)
+        menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
     def select(self, name: str):
         Visuals.selected_key = self.names[name]

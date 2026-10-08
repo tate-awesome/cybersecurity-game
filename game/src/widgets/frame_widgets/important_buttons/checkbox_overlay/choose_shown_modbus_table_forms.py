@@ -5,7 +5,8 @@ from .checkbox_overlay import CheckboxOverlay
 
 class ChooseShownModbusTableForms(ImportantButton):
     '''Opens checkboxes choosing which ModBus table panel forms are shown (modbus_table_forms_shown) - the panel follows the setting.'''
-    LABEL = "menu_bar_buttons_forms_overlay"
+    LABEL = "menu_bar_buttons_modbus_forms_button"
+    TOOLTIP = "menu_bar_tooltips_modbus_forms_button"
 
     def __init__(self, context: Context):
         super().__init__(context)

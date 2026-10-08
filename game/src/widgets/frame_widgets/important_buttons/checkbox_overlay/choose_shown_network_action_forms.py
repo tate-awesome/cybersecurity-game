@@ -5,7 +5,8 @@ from .checkbox_overlay import CheckboxOverlay
 
 class ChooseShownNetworkActionForms(ImportantButton):
     '''Opens checkboxes choosing which network action forms are shown (network_action_forms_shown) - the panel follows the setting.'''
-    LABEL = "menu_bar_buttons_forms_overlay"
+    LABEL = "menu_bar_buttons_network_forms_button"
+    TOOLTIP = "menu_bar_tooltips_network_forms_button"
 
     def __init__(self, context: Context):
         super().__init__(context)

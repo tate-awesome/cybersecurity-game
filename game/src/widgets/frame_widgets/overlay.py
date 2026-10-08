@@ -41,6 +41,19 @@ class Overlay(QWidget):
         self.layout().setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
 
         button.clicked.connect(lambda checked=False: self._toggle())
+        # Lets a ButtonGroup tell which of its buttons open overlays of their own
+        button.setProperty("opens_overlay", True)
+        button.destroyed.connect(self._on_button_destroyed)
+
+    def _on_button_destroyed(self, *args):
+        '''
+        The trigger button is gone (its page was rebuilt, or the overlay it
+        sat in was closed) - so is any reason to keep this overlay, which
+        is parented to context.root and would otherwise outlive it.
+        '''
+        self.button = None
+        self.hide()
+        self.deleteLater()
 
     def _toggle(self):
         # Debounce: the same click that lands back on the trigger button
@@ -116,6 +129,16 @@ class Overlay(QWidget):
             if overlay not in lineage and overlay.isVisible():
                 overlay.hide()
 
+    def close_chain(self):
+        '''
+        Closes this overlay and every overlay it was opened from - for a
+        final choice made in a nested overlay, like picking from a submenu.
+        '''
+        root = self
+        while root._parent_overlay is not None and root._parent_overlay is not root:
+            root = root._parent_overlay
+        root.hide()  # hideEvent closes the overlays opened from it, down to this one
+
     def click_close(self):
         self.hide()  # triggers hideEvent below, which does the actual cleanup
 
@@ -125,7 +148,8 @@ class Overlay(QWidget):
         # this is the one place that resets the trigger button and clears
         # stale contents regardless of how the overlay got closed.
         self._last_hidden_at = time.monotonic()
-        self.button.setText(self.closed_text)
+        if self.button is not None:
+            self.button.setText(self.closed_text)
         self._clear_contents()
         # A closed overlay taking any overlays opened *from inside it* down
         # with it (rather than leaving them floating with no parent left)

@@ -1,5 +1,6 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
+from collections.abc import Callable
 from .....app_core import Context
 from .....app_core.context.style import Style
 from ...overlay import Overlay
@@ -75,6 +76,17 @@ class SettingsSection(QFrame):
         self.grid.addWidget(label, self.row, 0)
         self.grid.addWidget(editor, self.row, 1)
         self.row += 1
+
+    def button(self, text: str, function: Callable, tooltip: str | None = None) -> QPushButton:
+        '''A full-width button that runs function - for choices applied in one click.'''
+        button = QPushButton(text)
+        button.setFont(self.style.get_font())
+        if tooltip:
+            button.setToolTip(tooltip)
+        button.clicked.connect(lambda checked=False: function())
+        self.grid.addWidget(button, self.row, 0, 1, 2)
+        self.row += 1
+        return button
 
     def checkbox(self, *path: str | int) -> QCheckBox:
         checkbox = QCheckBox()

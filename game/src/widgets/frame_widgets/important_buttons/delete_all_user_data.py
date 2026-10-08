@@ -13,6 +13,7 @@ class DeleteAllUserData(ImportantButton):
     only clears the current page's save and leaves preferences alone).
     '''
     LABEL = "title_buttons_delete_user_data"
+    TOOLTIP = "menu_bar_tooltips_delete_user_data_button"
 
     def on_click(self):
         message = ("Are you sure you want to delete all user data?\n"

@@ -10,6 +10,7 @@ class EditModbusRegisterDisplay(ImportantButton):
     ModBus forms follow the setting.
     '''
     LABEL = "menu_bar_buttons_variables_overlay"
+    TOOLTIP = "menu_bar_tooltips_variables_overlay"
 
     def __init__(self, context: Context):
         super().__init__(context)

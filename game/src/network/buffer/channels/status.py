@@ -50,6 +50,11 @@ class StatusBuffer:
         text_block = "\n\n".join(status_strings) + "\n\n"
         return text_block
 
+    def clear(self):
+        '''Forgets every status so far - new ones keep numbering on from here.'''
+        with self.lock:
+            self.buffer.clear()
+
     def reset_cursor(self):
         with self.lock:
             self.last_displayed = 0

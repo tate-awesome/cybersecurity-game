@@ -10,6 +10,7 @@ class Builder(Panel):
     # the workspace editor lists it under each of them
     SETTINGS = (
         "status_console",
+        "requested_status_console_clear",
     )
     def __init__(self, master, context: Context):
         super().__init__(master, context, self.KEY)
@@ -34,6 +35,11 @@ class Builder(Panel):
         The buffer's getter returns all new lines since the last print, so we don't need to loop.
         Empty lines go after every cluster of statuses
         '''
+        # ClearStatusConsole/ClearAllCapturedBufferData ask for this
+        if self.context.states.get("requested_status_console_clear") in (1, "1"):
+            self.text_box.clear()
+            self.context.states.set("requested_status_console_clear", value=0)
+
         text_block = self.buffer.get_new_lines()
 
         # Add to text box - unless the student has switched to free scrolling

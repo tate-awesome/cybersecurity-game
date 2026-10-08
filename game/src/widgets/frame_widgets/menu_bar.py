@@ -1,9 +1,61 @@
 from ...app_core import Context
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
-from .important_buttons import ImportantButton, PAGE_BUTTONS
+from .important_buttons import ButtonGroup, ImportantButton, MENU_BAR_BUTTONS
 from .overlay import Overlay
 from collections.abc import Callable
+
+# The page menu bar's layout, left to right: each group key ("menu_bar_buttons_<key>" labels
+# its button) maps to its sections, top to bottom - (header key or None, button names).
+# A page config's "menu_bar" only says which buttons a page gets (see MenuBar.add_config_buttons):
+# a group with none of them is left out, and a group with just one shows that button
+# in the group's place instead.
+MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
+    "debug_button_group": [
+        (None, ["delete_all_user_data_button", "delete_all_workspace_data_button", "workspace_editor_button",
+                "debug_availability_button", "debug_labels_button"]),
+    ],
+    "modbus_button_group": [
+        (None, ["registers_button", "register_preset_button", "model_view_button"]),
+    ],
+    "captures_button_group": [
+        ("load_fast", ["pcap_button", "load_json_fast_button"]),
+        ("load_real_time", ["stream_pcap_button", "load_button"]),
+        ("save", ["save_button", "stream_button"]),
+        ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
+    ],
+    "style_button_group": [
+        (None, ["toggle_button", "theme_button", "model_style_button", "strip_chart_style_button"]),
+    ],
+    "workspace_button_group": [
+        ("reload", ["refresh_button", "clear_inputs_button", "reset_layout_button", "reset_button"]),
+        ("customize", ["preset_button"]),
+        ("show_hide", ["network_forms_button", "modbus_forms_button", "defender_forms_button", "packet_columns_button"]),
+    ],
+    "navigation_button_group": [
+        (None, ["page_button", "ap_config_button", "back_button", "workspaces_button", "title_button", "quit_button"]),
+    ],
+    "help_button_group": [
+        (None, ["help_button", "labels_button"]),
+    ],
+}
+
+# Every menu bar button name in layout order - the order the workspace editor lists them in
+MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
+assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu bar button needs exactly one place in MENU_BAR_GROUPS"
+
+# What a standard game page gets (see MenuBar.page_buttons)
+PAGE_BUTTON_NAMES: list[str] = [
+    "help_button", "labels_button",
+    "page_button", "back_button", "quit_button",
+    "refresh_button", "reset_button", "preset_button",
+    "toggle_button", "theme_button",
+    "pcap_button", "load_button", "save_button", "stream_button",
+]
+
+# What the demo pages get
+DEMO_MENU_BAR: list[str] = ["help_button", "labels_button", "page_button", "back_button", "quit_button",
+                            "toggle_button", "theme_button"]
 
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
@@ -509,7 +561,30 @@ class MenuBar(QFrame):
         self._insert_entry(button, "button")
         return button
 
+    def add_config_buttons(self, names: list[str]):
+        '''
+        Adds the named menu bar buttons (a page config's "menu_bar" - keys of
+        important_buttons.MENU_BAR_BUTTONS), grouped and ordered by
+        MENU_BAR_GROUPS rather than by names' own order. Buttons that aren't
+        available right now (see is_available) don't count toward a group.
+        '''
+        for name in names:
+            if name not in MENU_BAR_BUTTONS:
+                print(f"MenuBar has no button named {name!r}, skipping")
+        wanted = set(names)
+        for group_key, sections in MENU_BAR_GROUPS.items():
+            present = []
+            for header, section_names in sections:
+                button_classes = [MENU_BAR_BUTTONS[name] for name in section_names
+                                  if name in wanted and MENU_BAR_BUTTONS[name].is_available(self.context)]
+                if button_classes:
+                    present.append((header, button_classes))
+            button_classes = [button_class for _, section in present for button_class in section]
+            if len(button_classes) == 1:
+                self.add_important(button_classes[0])
+            elif button_classes:
+                self.add_important(ButtonGroup, group_key, present)
+
     def page_buttons(self):
-        '''Every standard page button, in order - see important_buttons.PAGE_BUTTONS.'''
-        for button_class in PAGE_BUTTONS:
-            self.add_important(button_class)
+        '''Every standard page button - see PAGE_BUTTON_NAMES.'''
+        self.add_config_buttons(PAGE_BUTTON_NAMES)

@@ -15,9 +15,7 @@ from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
-from ...widgets.frame_widgets.important_buttons import (GoBackToPreviousPage, LoadLocalizationLabelsFile, QuitApplication,
-                                                       SelectColorTheme, SetCurrentPageAsFavorite, ToggleLightDarkMode,
-                                                       MENU_BAR_BUTTONS)
+from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR, MENU_BAR_BUTTON_ORDER
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
@@ -103,15 +101,11 @@ class ConfigEditor(Page):
         if keys:
             self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
                                                   default=self.workspace_name(ConfigEditor.selected_key))
-        # The editor's own buttons sit next to back/quit, so they're the last to squash
-        for button in (ToggleLightDarkMode, SelectColorTheme, LoadLocalizationLabelsFile, SetCurrentPageAsFavorite):
-            menu_bar.add_important(button)
         menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
         if keys:
             menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
         menu_bar.add_button("save_config", self.save)
-        menu_bar.add_important(GoBackToPreviousPage)
-        menu_bar.add_important(QuitApplication)
+        menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
         self.tabs = QTabWidget()
         self.tabs.setFont(self.style.get_font("default"))
@@ -438,9 +432,9 @@ class ConfigEditor(Page):
 
 
     def build_menu_bar_section(self):
-        rows = self.section("menu_bar", self.workspace_note("menu_bar") + " Checked buttons appear in the order listed here.")
+        rows = self.section("menu_bar", self.workspace_note("menu_bar") + " Checked buttons are grouped and ordered as listed here (see MENU_BAR_GROUPS in menu_bar.py).")
         chosen = set(self.config.get("menu_bar", []))
-        for name in MENU_BAR_BUTTONS:
+        for name in MENU_BAR_BUTTON_ORDER:
             box, _ = self.checkbox(name in chosen, as_bool=True)
             rows.add(name, box)
             self.button_boxes[name] = box

@@ -18,6 +18,7 @@ class Paths:
         self.themes: Path = self.assets / "themes"
         self.labels: Path = self.assets / "labels"
         self.settings: Path = self.assets / "settings"
+        self.register_presets: Path = self.settings / "register_presets"
         self.packages: Path = self.settings / "_packages"
         self.pcaptures: Path = self.assets / "pcaptures"
         self.mcaptures: Path = self.assets / "mcaptures"
