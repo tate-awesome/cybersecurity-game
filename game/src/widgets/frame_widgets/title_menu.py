@@ -21,11 +21,14 @@ class TitleMenu(QWidget):
         self.setLayout(self.grid)
 
         self.current_row = 1
+        # The title, then each button - in order, for the page's entrance (see TitlePage.appear_targets)
+        self.items: list[QWidget] = []
 
         title_widget = QLabel(title_text)
         title_widget.setFont(self.style.get_font("title"))
         title_widget.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         self.grid.addWidget(title_widget, self.current_row, 1)
+        self.items.append(title_widget)
         self.grid.setRowMinimumHeight(self.current_row, self.style.gap2[1])
         self.current_row = self.current_row + 1
 
@@ -54,6 +57,7 @@ class TitleMenu(QWidget):
         # text plus QPushButton's padding: 6px 12px from style.py), centered
         # in the column instead of stretched across it.
         self.grid.addWidget(button, self.current_row, 1, Qt.AlignmentFlag.AlignHCenter)
+        self.items.append(button)
         self.grid.setRowStretch(self.current_row, 0)
         self.current_row = self.current_row + 1
         self.grid.setRowStretch(self.current_row, 1)

@@ -28,6 +28,21 @@ class Page(QWidget):
         # fused bar instead of two distinct regions (global page toolbar vs.
         # the panel grid below it).
         self.layout().setSpacing(self.style.igap)
+        # Set by add_background - left out of page transitions, since the
+        # shared visual carries on from page to page by itself
+        self.background: QWidget | None = None
+
+    def appear_targets(self) -> list[QWidget]:
+        '''
+        The widgets that fade/slide in one after another when this page
+        opens, and that slide out when it's left (see PageTransition).
+        By default the page's top-level content - e.g. its MenuBar, then
+        its Panes - in the order they were added.
+        '''
+        return [
+            child for child in self.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly)
+            if child is not self.background and not child.isHidden() and not child.isWindow()
+        ]
 
     def build_menu_bar(self, title: str, buttons: list[str]):
         '''
@@ -60,7 +75,7 @@ class Page(QWidget):
         if not isinstance(background, dict):
             return False
         from ..widgets import VisualBackground
-        VisualBackground(
+        self.background = VisualBackground(
             self, self.context,
             background.get("visual"),
             intensity=background.get("intensity", 1.0),

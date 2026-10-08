@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
 from . import Context
+from .transitions import PageTransition
 
 # Import page builder objects here
 # /demo
@@ -73,6 +74,7 @@ class Router:
         self.current_page: str | None = None
         # The page key the 404 page reports as missing
         self.missing_page: str | None = None
+        self.transition: PageTransition | None = None
 
         self.register_discovered_pages()
 
@@ -97,12 +99,15 @@ class Router:
             if key not in PAGES and build_type in GENERIC_BUILD_TYPES:
                 PAGES[key] = GENERIC_BUILD_TYPES[build_type]
 
-    def show(self, next_page: str):
+    def show(self, next_page: str, direction: int = 1):
         '''
         Displays the specified page, which should be a key in the PAGES dict. Clears the current page first.
         A key that isn't in PAGES (even START_PAGE, e.g. when assets/ is
         missing) shows the 404 page in its place. The missing key still goes
         on the navigation stack, so Back leaves the 404 page like any other.
+
+        direction is which way the change animates (see PageTransition):
+        1 going deeper, -1 going back, 0 a refresh of the same page.
         '''
         # Handle first page ever (usually the start page or a reset)
         if len(self.navigation_stack) == 0:
@@ -124,6 +129,12 @@ class Router:
             print(f"Page '{next_page}' not found. Showing the 404 page.")
             next_page = NOT_FOUND_PAGE
 
+        # Picture the page being left before it's torn down, for the transition
+        if self.transition is not None:
+            self.transition.stop()
+            self.transition = None
+        snapshot = PageTransition.snapshot(self.context.root.centralWidget(), direction)
+
         # Clear the window
         self._clear_central_widget()
 
@@ -132,6 +143,7 @@ class Router:
         try:
             self.current_frame = PAGES[next_page](self.context)
             self.context.root.setCentralWidget(self.current_frame)
+            self.transition = PageTransition(self.current_frame, snapshot, direction)
         except Exception as e:
             self.context.reset_build()
             self._clear_central_widget()
@@ -172,7 +184,7 @@ class Router:
             self.context.save_page()
         self.context.reset_build()
         self.context.start_build()
-        self.show(self.navigation_stack[-1])
+        self.show(self.navigation_stack[-1], direction=0)
 
     def quit(self):
         '''
@@ -195,4 +207,4 @@ class Router:
         self.context.start_build()
         self.context.start_page()
         self.navigation_stack.pop()
-        self.show(self.navigation_stack[-1])
+        self.show(self.navigation_stack[-1], direction=-1)

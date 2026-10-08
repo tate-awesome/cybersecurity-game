@@ -29,6 +29,11 @@ class TitlePage(Page):
         panel = TitleMenu(self, context, config.get("title", "_default"))
         for button in config.get("buttons", []):
             self.build_button(button, panel)
+        self.menu = panel
+
+    def appear_targets(self):
+        # The title and each button arrive one by one, not the menu as a block
+        return self.menu.items
 
     def build_button(self, button: dict, panel: TitleMenu):
         if "link" in button:
