@@ -7,7 +7,15 @@ class TitleMenu(QWidget):
     '''
     The main Widget for the title menu.
     Comes with a title and has a button maker.
+
+    Sits against the left edge of the page, vertically centered: column 0
+    is a left margin that scales with the width (see resizeEvent), column
+    1 holds the title and buttons, and column 2 soaks up the rest.
     '''
+
+    # Left margin as a fraction of the menu's width, and its floor in px
+    LEFT_MARGIN = 0.08
+    MIN_LEFT_MARGIN = 40
 
     def __init__(self, master: QWidget, context: Context, title_label: str = "_default"):
         super().__init__(master)
@@ -26,19 +34,23 @@ class TitleMenu(QWidget):
 
         title_widget = QLabel(title_text)
         title_widget.setFont(self.style.get_font("title"))
-        title_widget.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
+        title_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
         self.grid.addWidget(title_widget, self.current_row, 1)
         self.items.append(title_widget)
         self.grid.setRowMinimumHeight(self.current_row, self.style.gap2[1])
         self.current_row = self.current_row + 1
 
-        self.grid.setColumnStretch(0, 1)
+        self.grid.setColumnStretch(0, 0)
         self.grid.setColumnStretch(1, 0)
         self.grid.setColumnStretch(2, 1)
 
         self.grid.setRowStretch(0, 1)
         self.grid.setRowStretch(1, 0)
         self.grid.setRowStretch(2, 1)
+
+    def resizeEvent(self, event):
+        self.grid.setColumnMinimumWidth(0, max(self.MIN_LEFT_MARGIN, round(self.width() * self.LEFT_MARGIN)))
+        super().resizeEvent(event)
 
     def add_important(self, button_class: type[ImportantButton], *args) -> ImportantButton | None:
         '''
@@ -53,10 +65,10 @@ class TitleMenu(QWidget):
         # No alignment flag here means "fill" - QGridLayout stretches the
         # button to the column's width, and since the title label shares
         # that same column, every button ends up as wide as the title text.
-        # AlignHCenter switches to the button's own sizeHint width (title
-        # text plus QPushButton's padding: 6px 12px from style.py), centered
-        # in the column instead of stretched across it.
-        self.grid.addWidget(button, self.current_row, 1, Qt.AlignmentFlag.AlignHCenter)
+        # AlignLeft switches to the button's own sizeHint width (title
+        # text plus QPushButton's padding: 6px 12px from style.py), lined
+        # up under the title's left edge instead of stretched across it.
+        self.grid.addWidget(button, self.current_row, 1, Qt.AlignmentFlag.AlignLeft)
         self.items.append(button)
         self.grid.setRowStretch(self.current_row, 0)
         self.current_row = self.current_row + 1
