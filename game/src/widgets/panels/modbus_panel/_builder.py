@@ -4,9 +4,9 @@ from ..panel import Panel
 
 from .forms.table import MitmTable
 from .forms.modify import Modify
-from .variable_overlay import VariableOverlay
 
-from ....widgets import Scrollable, CheckboxOverlay
+from ....widgets import Scrollable
+from ...frame_widgets.important_buttons import ChooseShownModbusTableForms, ClearModbusAndModelData, EditModbusRegisterDisplay
 
 FORM_CLASSES = {
     "table": MitmTable,
@@ -44,24 +44,27 @@ class Builder(Panel):
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
 
-        variables_button = self.menu_bar.add_button("variables_overlay")
-        variables_overlay = VariableOverlay(variables_button, context, self.refresh_rows, self.refresh_nicknames)
-
-        forms_button = self.menu_bar.add_button("forms_overlay")
-        forms_overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "modbus_table_forms_shown", "Show Forms", "available",
-                                        label_group="modbus_forms")
-
-        clear_button = self.menu_bar.add_button("clear_modbus", self.context.buffer.reset_modbus)
+        self.menu_bar.add_important(EditModbusRegisterDisplay)
+        self.menu_bar.add_important(ChooseShownModbusTableForms)
+        self.menu_bar.add_important(ClearModbusAndModelData)
 
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
-        self.refresh_nicknames()
-        self.refresh_rows()
+        self.shown_forms = None  # modbus_table_forms_shown as of the last refresh_forms
         self.refresh_forms()
+        self.context.animation_manager.add_callback(f"modbus_table_forms_{id(self)}", self.refresh_forms)
 
 
     def refresh_forms(self):
-        for key in self.context.states.get("modbus_table_forms_shown"):
+        '''
+        Shows/hides forms to match modbus_table_forms_shown - polled every
+        frame, so it only acts (and scrolls back to the top) when that changed.
+        '''
+        shown = dict(self.context.states.get("modbus_table_forms_shown"))
+        if shown == self.shown_forms:
+            return
+        self.shown_forms = shown
+        for key in shown:
             state = self.context.states.get("modbus_table_forms_shown", key)
 
             invisible = key not in self.available_forms or self.available_forms[key] == 0 or self.available_forms[key] == "0"
@@ -87,18 +90,3 @@ class Builder(Panel):
         if not form.isHidden():
             return
         form.show()
-        self.refresh_rows()
-        self.refresh_nicknames()
-
-    def refresh_rows(self):
-        self.forms["table"].refresh_rows()
-        self.forms["modify"].refresh_rows()
-        self.scrollable.top()
-
-    def refresh_nicknames(self):
-        self.forms["table"].refresh_nicknames()
-        self.forms["modify"].refresh_nicknames()
-
-    def stop_all(self):
-        for form in self.forms.values():
-            form.click_stop()

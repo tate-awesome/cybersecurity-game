@@ -5,7 +5,8 @@ from ..panel import Panel
 from .forms.mode import ModeForm
 from .forms.sliders import SlidersForm
 
-from ....widgets import Scrollable, CheckboxOverlay
+from ....widgets import Scrollable
+from ...frame_widgets.important_buttons import ChooseShownDefenderModbusForms
 
 FORM_CLASSES = {
     "mode": ModeForm,
@@ -50,17 +51,24 @@ class Builder(Panel):
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
 
-        forms_button = self.menu_bar.add_button("forms_overlay")
-        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms,
-                                   "defender_modbus_forms_shown", "Show Forms", "available",
-                                   label_group="defender_modbus_forms")
+        self.menu_bar.add_important(ChooseShownDefenderModbusForms)
 
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
+        self.shown_forms = None  # defender_modbus_forms_shown as of the last refresh_forms
         self.refresh_forms()
+        self.context.animation_manager.add_callback(f"defender_modbus_forms_{id(self)}", self.refresh_forms)
 
     def refresh_forms(self):
-        for key in self.context.states.get("defender_modbus_forms_shown"):
+        '''
+        Shows/hides forms to match defender_modbus_forms_shown - polled every
+        frame, so it only acts (and scrolls back to the top) when that changed.
+        '''
+        shown = dict(self.context.states.get("defender_modbus_forms_shown"))
+        if shown == self.shown_forms:
+            return
+        self.shown_forms = shown
+        for key in shown:
             if key not in self.forms:
                 continue
             state = self.context.states.get("defender_modbus_forms_shown", key)

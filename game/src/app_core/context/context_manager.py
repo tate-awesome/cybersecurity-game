@@ -8,12 +8,10 @@ from .keybinds import KeyBinds
 from .input_manager import InputManager
 from .localization_manager import LocalizationManager
 from .page_manager import PageManager
-import os, shutil
 from .paths import Paths
 from .json import Json
 
 from PySide6.QtWidgets import QMainWindow
-import subprocess, webbrowser
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -106,51 +104,3 @@ class ContextManager:
             self.click_manager.delete()
         if hasattr(self, "animation_manager"):
             self.animation_manager.delete()
-
-    def reset_data(self):
-        '''
-        Wipes this session back to defaults: the current page's
-        autosaved settings/panes (see PageManager.save_current_page),
-        session-level state, and stored preferences. Refreshes without
-        re-autosaving first (save=False), so the current page's now-
-        deleted data isn't immediately recreated from whatever was on
-        screen - the rebuilt page picks up its own config.json defaults
-        instead (see PageManager.prepare_page_config).
-        '''
-        if self.router.current_page is not None:
-            self.pages.delete_saved_page(self.router.current_page)
-        self.reset_session()
-        # self.preferences.clear()
-        self.router.refresh(save=False)
-
-    def delete_user_data(self):
-        '''
-        Wipes the entire user_data folder - every page's autosaved
-        settings/panes, saved captures, and preferences.json - then
-        recreates the empty directory structure the app expects to
-        find there. A full factory reset, unlike reset_data (which
-        only clears the current page's save and leaves preferences
-        alone). Refreshes without re-autosaving first (save=False) so
-        nothing gets written back into the folder that was just wiped.
-        '''
-        shutil.rmtree(self.paths.user_data, ignore_errors=True)
-        self.style = Style(self)  # reset style to default
-        self.paths.create_user_dirs()
-        self.preferences.clear()
-        self.router.refresh(save=False)
-
-    def help_message(self, widget="root"):
-        # TODO get help from progress and current page and source widget
-        return "You need to do something"
-
-    def open_ap_config_page(self):
-        url = "http://192.168.4.1"
-
-        sudo_user = os.environ.get("SUDO_USER")
-
-        if sudo_user:
-            # Open browser as not sudo
-            subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", url])
-        else:
-            # Fallback when not running under sudo
-            webbrowser.open(url)

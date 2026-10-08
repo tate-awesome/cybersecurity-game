@@ -13,8 +13,6 @@ class KalmanForm(BaseForm):
     shipped config (its toggle lives in defender_flag_panel), but kept.
     '''
 
-    abortable = False
-
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="kalman")
 

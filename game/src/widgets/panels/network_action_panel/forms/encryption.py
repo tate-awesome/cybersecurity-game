@@ -15,8 +15,6 @@ class EncryptionForm(BaseForm):
     its state back from there.
     '''
 
-    abortable = False
-
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="encryption")
 

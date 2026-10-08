@@ -1,5 +1,4 @@
 import copy
-import inspect
 import json
 import re
 from typing import Any
@@ -16,27 +15,15 @@ from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
-
-# The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
-BUTTON_ORDER = [
-    "toggle_button", "theme_button", "labels_button", "page_button",
-    "pcap_button", "save_button", "load_button", "stream_button", "preset_button", "data_button",
-    "workspace_editor_button", "delete_all_workspace_data_button", "refresh_button", "reset_button", "help_button",
-    "back_button", "quit_button",
-]
+from ...widgets.frame_widgets.important_buttons import (GoBackToPreviousPage, LoadLocalizationLabelsFile, QuitApplication,
+                                                       SelectColorTheme, SetCurrentPageAsFavorite, ToggleLightDarkMode,
+                                                       MENU_BAR_BUTTONS)
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
 
 # Numeric fields that are real numbers, not 0/1 on-off switches
 NUMBER_FIELDS = {"factor", "multiplier", "offset", "strip_chart_auto_fit_max_seconds"}
-
-
-def menu_bar_buttons() -> list[str]:
-    '''Every MenuBar button a page config's "menu_bar" can name, in the standard order.'''
-    names = [name for name, method in inspect.getmembers(MenuBar, inspect.isfunction)
-             if name.endswith("_button") and list(inspect.signature(method).parameters) == ["self"]]
-    return sorted(names, key=lambda name: (BUTTON_ORDER.index(name) if name in BUTTON_ORDER else len(BUTTON_ORDER), name))
 
 
 def is_switch(key: str, default) -> bool:
@@ -117,16 +104,14 @@ class ConfigEditor(Page):
             self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
                                                   default=self.workspace_name(ConfigEditor.selected_key))
         # The editor's own buttons sit next to back/quit, so they're the last to squash
-        menu_bar.toggle_button()
-        menu_bar.theme_button()
-        menu_bar.labels_button()
-        menu_bar.page_button()
+        for button in (ToggleLightDarkMode, SelectColorTheme, LoadLocalizationLabelsFile, SetCurrentPageAsFavorite):
+            menu_bar.add_important(button)
         menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
         if keys:
             menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
         menu_bar.add_button("save_config", self.save)
-        menu_bar.back_button()
-        menu_bar.quit_button()
+        menu_bar.add_important(GoBackToPreviousPage)
+        menu_bar.add_important(QuitApplication)
 
         self.tabs = QTabWidget()
         self.tabs.setFont(self.style.get_font("default"))
@@ -455,7 +440,7 @@ class ConfigEditor(Page):
     def build_menu_bar_section(self):
         rows = self.section("menu_bar", self.workspace_note("menu_bar") + " Checked buttons appear in the order listed here.")
         chosen = set(self.config.get("menu_bar", []))
-        for name in menu_bar_buttons():
+        for name in MENU_BAR_BUTTONS:
             box, _ = self.checkbox(name in chosen, as_bool=True)
             rows.add(name, box)
             self.button_boxes[name] = box

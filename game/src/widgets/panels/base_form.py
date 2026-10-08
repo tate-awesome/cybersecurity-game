@@ -21,12 +21,6 @@ class BaseForm(QWidget):
     process or AP actually confirms - which may lag behind the click for
     network-backed forms, or land immediately for local processes.
     '''
-    # Whether the network_action_panel's "Abort All" stops this form. False
-    # for forms that toggle a setting on the AP (encryption, AP tunnel,
-    # Kalman) rather than run a process - there's nothing running to abort,
-    # and "stopping" them would switch the defenses off.
-    abortable = True
-
     def __init__(self, master: QWidget, context: Context, process_noun: str = "Process", key: str | None = None):
         '''
         process_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"

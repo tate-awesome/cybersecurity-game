@@ -299,7 +299,7 @@ class PageManager:
         save_current_page), so the next time it's built -
         prepare_page_config finding nothing there to overlay -
         it falls back to its own config.json defaults instead of
-        whatever was last saved for it. Used by ContextManager.reset_data
+        whatever was last saved for it. Used by ResetCurrentPageToDefaults
         and the workspace select page.
         '''
         path = self.context.paths.user_pages / key / "config.json"

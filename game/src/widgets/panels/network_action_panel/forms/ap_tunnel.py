@@ -11,8 +11,6 @@ class APTunnelForm(BaseForm):
     context.buffer.defender_status - see EncryptionForm.
     '''
 
-    abortable = False
-
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, key="ap_tunnel")
 

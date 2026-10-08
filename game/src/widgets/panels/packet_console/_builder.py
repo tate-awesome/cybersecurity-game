@@ -1,7 +1,8 @@
-from .filter_overlay import FilterOverlay
 from .treeview import PacketTreeview
 from ....app_core import Context
-from ... import CheckboxOverlay
+from ...frame_widgets.important_buttons import (ChooseShownPacketConsoleColumns, ClearAllCapturedBufferData,
+                                                 FilterPacketConsole, PausePacketConsole)
+from ...frame_widgets.important_buttons.filter_packet_console.filter_overlay import compile_packet_filter
 from ..panel import Panel
 from PySide6.QtWidgets import QWidget
 from ....network.buffer.meta_packet import MetaPacket
@@ -16,6 +17,7 @@ class Builder(Panel):
         "packet_filter_categories",
         "packet_filter_checkboxes",
         "packet_filter_entries",
+        "requested_packet_treeview_clear",
     )
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, self.KEY)
@@ -24,51 +26,43 @@ class Builder(Panel):
         #  self.create_filter_boxes(menu_frame)
 
         self.treeview = PacketTreeview(self, context)
+        self.shown_columns = None  # packet_columns as of the last refresh_columns
         self.refresh_columns()
         self.treeview.bind_select(self.on_select)
 
-
-        filter_button = self.menu_bar.add_button("filters_overlay")
-        self.filter_overlay = FilterOverlay(filter_button, context, self.apply_filters)
-        self.filter_overlay.compile_filter()
-
-        columns_button = self.menu_bar.add_button("columns_overlay")
-        columns_overlay = CheckboxOverlay(columns_button, context, self.refresh_columns, "packet_columns", "Show Columns")
-
-        # jump_button = self.menu_bar.reversible_button(
-        #     self.unlock_scrolling, self.lock_scrolling, "Disable Jump to Live", "Jump to Live")
-        pause_button = self.menu_bar.reversible_button(self.pause, self.unpause, "pause", "unpause")
+        self.menu_bar.add_important(FilterPacketConsole)
+        self.menu_bar.add_important(ChooseShownPacketConsoleColumns)
+        self.menu_bar.add_important(PausePacketConsole)
         minimize_button = self.menu_bar.minimize_button(self.treeview.frame, master)
-
-        def reset_capture():
-            self.context.buffer.reset()
-            self.clear_tree()
-
-        reset_button = self.menu_bar.add_button("clear_packets_button", reset_capture)
+        self.menu_bar.add_important(ClearAllCapturedBufferData)
 
         # Printing Flags
         self.jump_to_bottom = True
-        self.run = True
+        self.paused = False  # whether print_tick last saw packet_console "mode" as "paused"
 
         # Reset print pointer on refresh
         self.buffer.reset_packet_cursor()
 
         # Start printing loop
-        self.start_printing()
-        
-
-    def start_printing(self):
-        self.run = True
         self.context.animation_manager.add_callback(f"packet_panel_{id(self)}", self.print_tick)
-    
-    def stop_printing(self):
-        self.run = False
-        self.context.animation_manager.remove_callback(f"packet_panel_{id(self)}")
 
     def print_tick(self):
+        '''
+        Called every frame: follows packet_columns, then - unless packet_console
+        "mode" is "paused" (see PausePacketConsole) - adds packets that arrived
+        since the last tick and pass the current filter (see FilterPacketConsole).
+        '''
+        self.refresh_columns()
+
+        if self.context.states.get("packet_console", "mode") == "paused":
+            if not self.paused:
+                self.paused = True
+                self.select_child()
+            return
+        self.paused = False
 
         # Get new packets
-        packets = self.buffer.get_new_packets(self.filter_overlay.function, max_return=1000)
+        packets = self.buffer.get_new_packets(compile_packet_filter(self.context), max_return=1000)
         if not packets:
             return
 
@@ -86,28 +80,26 @@ class Builder(Panel):
         if self.jump_to_bottom:
             self.treeview.scroll_to_bottom()
 
-    def apply_filters(self):
-        self.buffer.reset_packet_cursor()
-        self.treeview.clear()
-
     # Treeview
     def submit_packet(self, packet: MetaPacket):
         values = [packet.get_column_value(col) for col in self.treeview.columns]
         self.treeview.submit(str(packet.get("number")), values)
 
     def refresh_columns(self):
+        '''Shows the columns ticked in packet_columns - only acts when that changed.'''
+        shown = dict(self.context.states.get("packet_columns"))
+        if shown == self.shown_columns:
+            return
+        self.shown_columns = shown
 
         active_columns = []
 
-        for key in self.context.states.get("packet_columns"):
+        for key in shown:
 
             if self.context.states.get("packet_columns", key) == "1" or self.context.states.get("packet_columns", key) == 1:
                 active_columns.append(key)
 
         self.treeview.set_visible_columns(active_columns)
-
-    def clear_tree(self):
-        self.treeview.clear()
 
     # Selection
     def on_select(self, event=None):
@@ -119,16 +111,7 @@ class Builder(Panel):
     def select_child(self, index=-1):
         self.treeview.select_last()
 
-    # Buttons
-    def pause(self):
-        self.stop_printing()
-        self.select_child()
-        self.context.states.set("packet_console", "mode", value="paused")
-
-    def unpause(self):
-        self.start_printing()
-        self.context.states.set("packet_console", "mode", value="live")
-
+    # Scrolling
     def unlock_scrolling(self):
         self.jump_to_bottom = False
 

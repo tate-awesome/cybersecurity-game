@@ -1,7 +1,6 @@
-from ...app_core import Context
-from .overlay import Overlay
+from .....app_core import Context
+from ...overlay import Overlay
 from PySide6.QtWidgets import QCheckBox, QFrame, QLabel, QPushButton, QVBoxLayout
-from collections.abc import Callable
 
 
 class CheckboxOverlay:
@@ -9,7 +8,8 @@ class CheckboxOverlay:
     Binds a button to open and close an overlay with one checkbox per key in
     a context.states settings category, persisted there, with a translated
     label per checkbox (via context.labels) and a category title above them.
-    refresh_function is called whenever a checkbox is toggled.
+    It only writes context.states - whatever shows those forms/columns polls
+    the same category from its own animation callback and follows along.
 
     Used for hacking-panel form visibility, modbus-panel form visibility, and
     packet-console column visibility - those only ever differed in which
@@ -19,12 +19,11 @@ class CheckboxOverlay:
     Each checkbox is labeled with the labels key "<label_group>_<key>";
     label_group defaults to state_key.
     '''
-    def __init__(self, button: QPushButton, context: Context, refresh_function: Callable,
+    def __init__(self, button: QPushButton, context: Context,
                  state_key: str, category_label: str, visibility_key: str | None = None,
                  label_group: str | None = None):
         self.context = context
         self.style = context.style
-        self.refresh_function = refresh_function
         self.state_key = state_key
         self.category_label = category_label
         self.visibility_key = visibility_key
@@ -67,5 +66,4 @@ class CheckboxOverlay:
             # returned 1/0, not Qt's own True/False).
             def autosave(checked: bool, value=box_slots, key=key):
                 value[key] = "1" if checked else "0"
-                self.refresh_function()
             checkbox.toggled.connect(autosave)

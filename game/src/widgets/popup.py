@@ -66,19 +66,9 @@ def confirm_dialog(master: QWidget, context: Context, message: str, confirm_text
         window.show()
         return window
 
-def delete_user_data_dialog(master: QWidget, context: Context, delete_func):
-        message = "Are you sure you want to delete all user data?\nSaved page progress, captures, and preferences will be permanently lost."
-        return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
-
 def delete_workspace_data_dialog(master: QWidget, context: Context, workspace_name: str, delete_func):
         message = (f"Delete your saved data for \"{workspace_name}\"?\n"
                    "Its form entries, toggles, register settings, and panel sizes go back to the workspace's defaults.")
-        return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
-
-def delete_all_workspace_data_dialog(master: QWidget, context: Context, delete_func):
-        message = ("Delete your saved data for every workspace?\n"
-                   "Every workspace's form entries, toggles, register settings, and panel sizes go back to their defaults. "
-                   "Your theme, labels, and favorite page are kept.")
         return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
 
 def quit_dialog(master: QWidget, context: Context, quit_func):

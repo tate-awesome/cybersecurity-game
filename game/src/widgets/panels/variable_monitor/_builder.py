@@ -1,5 +1,6 @@
 from ....app_core import Context
 from ... import Scrollable
+from ...frame_widgets.important_buttons import ToggleStripChartAutoFit
 from ...canvases.strip_chart import StripChart
 from ..panel import Panel
 
@@ -52,14 +53,7 @@ class Builder(Panel):
         self.menu_bar.minimize_button(scrollable, master)
         self.menu_bar.add_button() # set the zero point of the variable monitor
         self.menu_bar.add_button("pause") # pause or resume the variable monitor
-
-        def start_fit():
-            self.context.states.set("strip_chart_auto_fit", value=1)
-        def stop_fit():
-            self.context.states.set("strip_chart_auto_fit", value=0)
-        fit_now = self.context.states.get("strip_chart_auto_fit")
-        self.menu_bar.reversible_button(start_fit, stop_fit, "fit_stripchart", "unfit_stripchart",
-                                         start_active=(fit_now == 1 or fit_now == "1"))
+        self.menu_bar.add_important(ToggleStripChartAutoFit)
 
         self.menu_bar.add_button() # turn on the crosshairs
 

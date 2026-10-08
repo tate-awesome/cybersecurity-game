@@ -24,8 +24,8 @@ class Paths:
         self.pages: Path = self.assets / "pages"
 
         # Dynamically generated, read & write. _user_dirs is the single
-        # source of truth for the user_data tree so delete_user_data's
-        # recreate (see ContextManager) stays in sync when a dir is added here.
+        # source of truth for the user_data tree so DeleteAllUserData's
+        # recreate (see important_buttons) stays in sync when a dir is added here.
         self.user_data: Path = self.root / "user_data"
         self.user_mcaptures: Path = self.user_data / "mcaptures"
         self.user_pcaptures: Path = self.user_data / "pcaptures"
@@ -44,7 +44,7 @@ class Paths:
         '''
         (Re)create the user_data directory tree. generate_path is a no-op
         for dirs that already exist, so this is safe both on a fresh start
-        and after delete_user_data wipes the tree.
+        and after DeleteAllUserData wipes the tree.
         '''
         for path in self._user_dirs:
             self.generate_path(path)

@@ -36,6 +36,8 @@
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
         "packet_console": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph. \"summary\" is the plain-language description of the current packet filter.",
+        "requested_packet_treeview_clear": "Set to 1 to ask the packet console to clear its rows and re-read the packet buffer through its current filter; the console sets it back to 0 once done. Clear Data and filter changes set it - leave it 0.",
+        "status_console": "\"scroll\": \"live\" keeps the status console following new lines as they arrive, \"free\" stops it so the student can scroll back (lines that arrive meanwhile aren't shown).",
         "packet_filter_categories": "How the packet filter's checkboxes are grouped, and which checkboxes each group has.",
         "packet_filter_checkboxes": "Which packet filters start out ticked (1). Nothing ticked shows every packet.",
         "packet_filter_entries": "What starts out typed into the packet filter's text boxes, like an address to filter by.",

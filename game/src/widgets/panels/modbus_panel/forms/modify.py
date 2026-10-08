@@ -37,6 +37,18 @@ class Modify(BaseForm):
 
         self.load_saved_input()
 
+        self.refresh_registers()
+        self.context.animation_manager.add_callback(f"modbus_modify_registers_{id(self)}", self.refresh_registers)
+
+    def refresh_registers(self):
+        '''
+        Follows each register's "show" and "nickname" in modbus_registers
+        (edited by EditModbusRegisterDisplay) - polled every frame; both
+        steps only touch widgets whose state actually changed.
+        '''
+        self.refresh_rows()
+        self.refresh_nicknames()
+
     def add_var_row(self, key):
         this_row = {}
         self.current_column = 0

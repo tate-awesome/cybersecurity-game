@@ -158,7 +158,7 @@ class Router:
 
         save=False skips autosaving the current page first - used when
         the caller has already reset or deleted this page's saved data
-        (see ContextManager.reset_data) and wants the rebuild to pick up
+        (see ResetCurrentPageToDefaults) and wants the rebuild to pick up
         fresh config.json defaults instead of immediately re-saving
         whatever was still on screen.
         '''

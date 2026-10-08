@@ -30,6 +30,17 @@ class MitmTable(BaseForm):
             self.rows[key]["source"] = labels[3]
 
         self.context.animation_manager.add_callback(f"modbus_table_{id(self)}", self.refresh_values)
+        self.refresh_registers()
+        self.context.animation_manager.add_callback(f"modbus_table_registers_{id(self)}", self.refresh_registers)
+
+    def refresh_registers(self):
+        '''
+        Follows each register's "show" and "nickname" in modbus_registers
+        (edited by EditModbusRegisterDisplay) - polled every frame; both
+        steps only touch widgets whose state actually changed.
+        '''
+        self.refresh_rows()
+        self.refresh_nicknames()
 
     def refresh_nicknames(self):
         for key, row in self.rows.items():

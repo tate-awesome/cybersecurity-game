@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGridLayout, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import QGridLayout, QLabel, QWidget
 from ...app_core import Context
-from collections.abc import Callable
+from .important_buttons import ImportantButton
 
 class TitleMenu(QWidget):
     '''
@@ -37,15 +37,16 @@ class TitleMenu(QWidget):
         self.grid.setRowStretch(1, 0)
         self.grid.setRowStretch(2, 1)
 
-    def button(self, label_key: str = "title_buttons__default", function: Callable | None = None):
-        button = QPushButton(self.context.labels.get(label_key))
+    def add_important(self, button_class: type[ImportantButton], *args) -> ImportantButton | None:
+        '''
+        Adds an important button (see important_buttons) as the next row -
+        args are passed through to its constructor after context. Returns
+        the button, or None if it isn't available right now (see is_available).
+        '''
+        if not button_class.is_available(self.context):
+            return None
+        button = button_class(self.context, *args)
         button.setFont(self.style.get_font("title_btn"))
-        if function is not None:
-            # clicked emits a "checked" bool that callers here don't expect
-            # (they're all zero-arg callables) - dropping it here means a
-            # navigate callback's own default-valued "target" argument
-            # doesn't get silently clobbered by it.
-            button.clicked.connect(lambda checked=False, function=function: function())
         # No alignment flag here means "fill" - QGridLayout stretches the
         # button to the column's width, and since the title label shares
         # that same column, every button ends up as wide as the title text.
@@ -56,3 +57,4 @@ class TitleMenu(QWidget):
         self.grid.setRowStretch(self.current_row, 0)
         self.current_row = self.current_row + 1
         self.grid.setRowStretch(self.current_row, 1)
+        return button

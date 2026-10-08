@@ -13,7 +13,8 @@ from .forms.encryption import EncryptionForm
 from .forms.ap_tunnel import APTunnelForm
 from .forms.kalman import KalmanForm
 
-from ....widgets import Scrollable, CheckboxOverlay
+from ....widgets import Scrollable
+from ...frame_widgets.important_buttons import AbortAllNetworkActions, ChooseShownNetworkActionForms
 
 FORM_CLASSES = {
     "wifi": WifiForm,
@@ -66,21 +67,27 @@ class Builder(Panel):
 
         for i, form in enumerate(self.forms.values()):
             self.scrollable.grid_layout.addWidget(form, i, 0)
+        self.shown_forms = None  # network_action_forms_shown as of the last refresh_forms
         self.refresh_forms()
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.add_deadspace("grid")
+        self.context.animation_manager.add_callback(f"network_action_forms_{id(self)}", self.refresh_forms)
 
-
-        forms_button = self.menu_bar.add_button("forms_overlay")
-        overlay = CheckboxOverlay(forms_button, context, self.refresh_forms, "network_action_forms_shown", "Show Forms", "available",
-                                 label_group="hacking_forms")
-
-        stop_button = self.menu_bar.add_button("abort_all", self.stop_all)
+        self.menu_bar.add_important(ChooseShownNetworkActionForms)
+        self.menu_bar.add_important(AbortAllNetworkActions)
         minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
 
 
     def refresh_forms(self):
-        for key in self.context.states.get("network_action_forms_shown"):
+        '''
+        Shows/hides forms to match network_action_forms_shown - polled every
+        frame, so it only acts (and scrolls back to the top) when that changed.
+        '''
+        shown = dict(self.context.states.get("network_action_forms_shown"))
+        if shown == self.shown_forms:
+            return
+        self.shown_forms = shown
+        for key in shown:
             if key not in self.forms:
                 # This lesson's available_forms doesn't include this form -
                 # nothing to show/hide, and the "Show Forms" overlay still
@@ -107,12 +114,3 @@ class Builder(Panel):
         if not form.isHidden():
             return
         form.show()
-
-    def stop_all(self):
-        for form in reversed(self.forms.values()):
-            if not form.abortable:
-                continue
-            try:
-                form.click_stop()
-            except Exception as e:
-                print(f"Error stopping {form}: {e}")

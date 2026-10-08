@@ -1,7 +1,7 @@
 from ...app_core import Context
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
-from ..popup import delete_all_workspace_data_dialog, message
+from .important_buttons import ImportantButton, PAGE_BUTTONS
 from .overlay import Overlay
 from collections.abc import Callable
 
@@ -146,8 +146,8 @@ class MenuBar(QFrame):
     def _connect(self, button: QPushButton, function: Callable):
         '''
         clicked emits a "checked" bool that none of these callbacks expect
-        (see TitleMenu.button for the bug this avoids) - drop it before
-        calling through.
+        (a callback's own default-valued argument would silently get
+        clobbered by it) - drop it before calling through.
         '''
         button.clicked.connect(lambda checked=False, function=function: function())
 
@@ -260,7 +260,7 @@ class MenuBar(QFrame):
             # Replays a real click on the (hidden) original button rather
             # than capturing its callback at insert time, so a proxy always
             # reflects whatever label/handler the button currently has -
-            # including buttons like minimize/reversible_button that swap
+            # including buttons like minimize/ToggleButton that swap
             # their text and handler dynamically after creation.
             proxy.clicked.connect(lambda checked=False, b=button: b.click())
             overlay.layout().addWidget(proxy)
@@ -453,134 +453,21 @@ class MenuBar(QFrame):
 
         return button
 
-    def reversible_button(self, start_func: Callable, stop_func: Callable, inactive_label: str, active_label: str, start_active: bool = False):
-        inactive_name = self.context.labels.get(f"menu_bar_buttons_{inactive_label}")
-        active_name = self.context.labels.get(f"menu_bar_buttons_{active_label}")
-        button = self.add_button(inactive_label)
+    # Important Buttons
 
-        def stop():
-            stop_func()
-            button.clicked.disconnect()
-            self._connect(button, start)
-            button.setText(inactive_name)
-
-        def start():
-            start_func()
-            button.clicked.disconnect()
-            self._connect(button, stop)
-            button.setText(active_name)
-
-        # Sync the button's initial text/command to whatever state start_func/stop_func
-        # already represent, without re-invoking either (they're already in that state).
-        if start_active:
-            self._connect(button, stop)
-            button.setText(active_name)
-        else:
-            self._connect(button, start)
-            button.setText(inactive_name)
+    def add_important(self, button_class: type[ImportantButton], *args) -> ImportantButton | None:
+        '''
+        Adds an important button (see important_buttons) - args are passed
+        through to its constructor after context. Returns the button, or
+        None if it isn't available right now (see is_available).
+        '''
+        if not button_class.is_available(self.context):
+            return None
+        button = button_class(self.context, *args)
+        self._insert_entry(button, "button")
         return button
 
-    # Page Buttons
-
-    def quit_button(self):
-        button = self.add_button("quit_button", self.context.router.quit)
-        self.add_tooltip(button, "quit_button")
-
-    def refresh_button(self):
-        button = self.add_button("refresh_button", self.context.router.refresh)
-        self.add_tooltip(button, "refresh_button")
-
-    def reset_button(self):
-        button = self.add_button("reset_button", self.context.reset_data)
-        self.add_tooltip(button, "reset_button")
-
-    def back_button(self):
-        button = self.add_button("back_button", self.context.router.go_back)
-        self.add_tooltip(button, "back_button")
-
-    def toggle_button(self):
-        button = self.add_button("toggle_button", self.context.style.toggle_mode)
-        self.add_tooltip(button, "toggle_button")
-
-    def theme_button(self):
-        button = self.add_button("theme_button", self.context.style.select_theme)
-        self.add_tooltip(button, "theme_button")
-
-    def pcap_button(self):
-        button = self.add_button("pcap_button", self.context.buffer.loader.load_pcap)
-        self.add_tooltip(button, "pcap_button")
-
-    def save_button(self):
-        button = self.add_button("save_button", self.context.buffer.replay.save_json)
-
-    def load_button(self):
-        button = self.add_button("load_button", self.context.buffer.replay.load_json)
-
-    def stream_button(self):
-        button = self.reversible_button(
-            self.context.buffer.file_stream.start,
-            self.context.buffer.file_stream.stop,
-            "stream_button",
-            "stream_button_active",
-        )
-        self.add_tooltip(button, "stream_button")
-
-    def preset_button(self):
-        button = self.add_button("preset_button", self.context.states.select)
-        self.add_tooltip(button, "preset_button")
-
-    def labels_button(self):
-        button = self.add_button("labels_button", self.context.labels.select)
-        self.add_tooltip(button, "labels_button")
-
-    def help_button(self):
-        button = self.add_button("help_button", lambda: message(self, self.context, self.context.help_message()))
-        self.add_tooltip(button, "help_button")
-
-    def data_button(self):
-        button = self.add_button("fields_button", self.context.states.save_inputs)
-        self.add_tooltip(button, "fields_button")
-
-    def page_button(self):
-        button = self.add_button("page_button", self.context.preferences.save_page)
-        self.add_tooltip(button, "page_button")
-
-    def delete_all_workspace_data_button(self):
-        '''
-        Asks for confirmation, then deletes every workspace's autosaved data
-        (only user_data/page_data - preferences are kept) and rebuilds the
-        current page so anything showing saved-data state updates.
-        '''
-        def delete():
-            self.context.pages.delete_all_saved_pages()
-            self.context.router.refresh(save=False)
-        button = self.add_button("delete_all_workspace_data_button",
-                                 lambda: delete_all_workspace_data_dialog(self, self.context, delete))
-        self.add_tooltip(button, "delete_all_workspace_data_button")
-
-    def workspace_editor_button(self):
-        '''Opens the workspace editor (Back returns here).'''
-        button = self.add_button("workspace_editor_button", lambda: self.context.router.show("demo/config_editor"))
-        self.add_tooltip(button, "workspace_editor_button")
-
     def page_buttons(self):
-        '''
-        Every page button, left to right in the standard order: preferences,
-        data tools, page actions, then navigation (back, quit) on the right.
-        Leftmost buttons are squashed into the overflow menu first.
-        '''
-        self.toggle_button()
-        self.theme_button()
-        self.labels_button()
-        self.page_button()
-        self.pcap_button()
-        self.save_button()
-        self.load_button()
-        self.stream_button()
-        self.preset_button()
-        self.data_button()
-        self.refresh_button()
-        self.reset_button()
-        self.help_button()
-        self.back_button()
-        self.quit_button()
+        '''Every standard page button, in order - see important_buttons.PAGE_BUTTONS.'''
+        for button_class in PAGE_BUTTONS:
+            self.add_important(button_class)

@@ -6,7 +6,6 @@ from .frame_widgets.title_menu import TitleMenu
 from .frame_widgets.panes import Panes
 from .frame_widgets.scrollable import Scrollable
 from .frame_widgets.overlay import Overlay
-from .frame_widgets.checkbox_overlay import CheckboxOverlay
 from .frame_widgets.shift_wheel_slider import ShiftWheelSlider
 
 from .panels.panel import Panel as GenericPanel

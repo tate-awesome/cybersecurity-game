@@ -21,6 +21,21 @@ class PacketTreeview:
         self._items: dict[str, QTreeWidgetItem] = {}
         self.frame = self._tree = self._build(parent)
 
+        context.animation_manager.add_callback(f"packet_treeview_clear_{id(self)}", self.clear_if_requested)
+
+    def clear_if_requested(self):
+        '''
+        Called every frame. When requested_packet_treeview_clear is set (by
+        ClearAllCapturedBufferData, or a packet filter change), clears every
+        row and rewinds the packet cursor - so the console re-reads the whole
+        buffer through its current filter - then marks the request handled.
+        '''
+        if self.context.states.get("requested_packet_treeview_clear") not in (1, "1"):
+            return
+        self.clear()
+        self.context.buffer.packets.reset_packet_cursor()
+        self.context.states.set("requested_packet_treeview_clear", value=0)
+
     # ------------------------------------------------------------------
     # Construction / styling
     # ------------------------------------------------------------------

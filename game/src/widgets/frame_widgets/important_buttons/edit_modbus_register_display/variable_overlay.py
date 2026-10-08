@@ -1,19 +1,19 @@
-from ....app_core import Context
-from ....widgets import Overlay
+from .....app_core import Context
+from ...overlay import Overlay
 from PySide6.QtWidgets import QCheckBox, QFrame, QGridLayout, QLabel, QLineEdit, QPushButton
-from collections.abc import Callable
 
 
 class VariableOverlay:
     '''
-    Binds a button to open and close an overlay with checkboxes for each form, which are saved in the context states for persistence.
-    The refresh function is called when any checkbox is clicked
+    Binds a button to open and close an overlay editing each modbus
+    register's show/nickname/factor/units/modify fields in
+    context.states["modbus_registers"]. It only writes context.states - the
+    ModBus table/modifier forms poll those fields from their own animation
+    callbacks and follow along.
     '''
-    def __init__(self, button: QPushButton, context: Context, refresh_rows: Callable, refresh_nicknames: Callable):
+    def __init__(self, button: QPushButton, context: Context):
         self.context = context
         self.style = context.style
-        self.refresh_rows = refresh_rows
-        self.refresh_nicknames = refresh_nicknames
         self.overlay = Overlay(self.context.root, context, button, self.populate_overlay, "east")
 
     def populate_overlay(self, overlay: Overlay):
@@ -149,7 +149,6 @@ class VariableOverlay:
         # Bind autosave
         def autosave(text, slot=slot, key=key):
             slot[key] = text
-            self.refresh_nicknames()
         entry.textEdited.connect(autosave)
         # set_entries needs to trigger this same save when it sets text
         # programmatically, since textEdited (deliberately) doesn't fire for that.
@@ -172,7 +171,6 @@ class VariableOverlay:
         # returned 1/0, not Qt's own True/False).
         def autosave(checked: bool, slot=slot, key=key):
             slot[key] = "1" if checked else "0"
-            self.refresh_rows()
         checkbox.toggled.connect(autosave)
 
     def select_all(self, checkboxes: list[QCheckBox]):
