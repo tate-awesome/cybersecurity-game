@@ -58,13 +58,16 @@ class VisualBackground(QWidget):
 
     def __init__(self, master: QWidget, context: Context, visual_key: str | None = None, intensity: float = 1.0,
                  in_layout: bool = True, blur: float = 0.0, shared: bool = False, animate: bool = True,
-                 paint_options: dict | None = None):
+                 paint_options: dict | None = None, fps: float = 1000 / FRAME_MS):
         super().__init__(master)
         self.context = context
         self.style = context.style
         self.intensity = intensity
         self.shared = shared
         self.animate = animate
+        # Lower for backgrounds behind busy pages, where each frame also
+        # repaints the panels above
+        self.frame_ms = max(1, round(1000 / max(1.0, fps)))
         self.paint_options = paint_options or {}
         self.frame: QImage | None = None
         self.set_blur(blur)
@@ -151,6 +154,9 @@ class VisualBackground(QWidget):
         buttons = QApplication.mouseButtons()
         self.visual.pressed = bool(buttons & Qt.MouseButton.LeftButton)
         self.visual.pulling = bool(buttons & Qt.MouseButton.RightButton)
+        # The options also steer the simulation (e.g. {"packets": False}
+        # stops traffic), and whichever background is ticking is the one on screen
+        self.visual.paint_options = self.paint_options
         if self.cycling:
             self.state["cycle_elapsed"] += dt
             if self.state["cycle_elapsed"] >= self.CYCLE_SECONDS:
@@ -258,7 +264,7 @@ class VisualBackground(QWidget):
     def showEvent(self, event):
         self.last_tick = time.perf_counter()
         if self.animate:
-            self.timer.start(self.FRAME_MS)
+            self.timer.start(self.frame_ms)
         super().showEvent(event)
         self.sync_size()
 

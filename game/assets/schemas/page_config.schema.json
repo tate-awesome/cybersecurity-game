@@ -84,6 +84,10 @@
                         },
                         "packets": {
                             "type": "boolean"
+                        },
+                        "fps": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
                         }
                     }
                 }

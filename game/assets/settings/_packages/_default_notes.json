@@ -17,7 +17,7 @@
         "menu_bar": "The menu bar's buttons, left to right. Put the most important ones last: on a narrow window, buttons squash into the \"...\" menu from the left.",
         "layout_shape": "The panel layout: exactly one group, {\"h_panes_1\": [...]} (side by side) or {\"v_panes_1\": [...]} (stacked), listing its contents in order. Each item is a panel id - its panel type plus a number, like \"status_panel_1\" - or another group of the same form. The same panel type can appear any number of times, as long as each copy has its own number (\"status_panel_1\", \"status_panel_2\"). Every id must be unique, groups included.",
         "layout_weights": "Each panel or group id from layout_shape and its size: a proportional share of the group it sits in, so a weight-2 pane gets twice the room of a weight-1 neighbour. An id left out gets 1; the top group fills the page and needs none.",
-        "background": "Optional. The moving background behind the panels, e.g. {\"visual\": \"network_mesh\", \"blur\": 6}. false turns it off; leave it out for the usual still network."
+        "background": "Optional. The moving background behind the panels, e.g. {\"visual\": \"network_mesh\", \"blur\": 6}. false turns it off; leave it out for the usual drifting network with no traffic."
     },
     "settings_fields": {
         "model_sprites": "Which parts of the model canvases are drawn (1 = drawn). Submarine map: ocean, grid_lines, path_in and boat_in (the other submarine keys aren't used yet). HVAC house: background through indicator. Turn these on in any workspace that shows those models.",

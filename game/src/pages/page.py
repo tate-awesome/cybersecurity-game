@@ -65,7 +65,9 @@ class Page(QWidget):
             "blur": <px, default 0>,
             "intensity": <0-1, default 1>,
             "animate": <default true - false shows a still frame>,
-            "packets": <default true - false draws a network mesh without traffic>
+            "packets": <default true - false stops the network's traffic: no packets
+                        are sent, moved or drawn, while the nodes keep moving>,
+            "fps": <default 30 - animation frame rate>
         }. With no "background" key, `default` is used instead (if given);
         "background": false turns it off even when there's a default.
         Call it before adding content that should be drawn on top.
@@ -85,5 +87,6 @@ class Page(QWidget):
             shared=True,
             animate=background.get("animate", True),
             paint_options={"packets": background.get("packets", True)},
+            fps=background.get("fps", 30),
         )
         return True

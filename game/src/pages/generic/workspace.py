@@ -14,8 +14,9 @@ class WorkspacePage(Page):
 
     # Used when a page's config has no "background" of its own (set
     # "background": false to turn it off). Shares the title pages'
-    # network, frozen where it was when the page opened.
-    DEFAULT_BACKGROUND = {"visual": "network_mesh", "blur": 6, "animate": False, "packets": False}
+    # network, still drifting but with its traffic stopped - and at a
+    # low frame rate, since every frame repaints the panels above it.
+    DEFAULT_BACKGROUND = {"visual": "network_mesh", "blur": 6, "packets": False, "fps": 10}
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -23,9 +24,9 @@ class WorkspacePage(Page):
         key = context.router.current_page
         config = context.pages.prepare_page_config(key)
 
-        # The network behind the gaps between panels - still and without
-        # packets, so it reads as texture and never makes the panels
-        # above it repaint. The panes turn transparent only if it's there.
+        # The network behind the gaps between panels - slowly drifting and
+        # without packets, so it reads as texture rather than content. The
+        # panes turn transparent only if it's there.
         self.transparent_panes = self.add_background(config, self.DEFAULT_BACKGROUND)
 
         self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
