@@ -1,7 +1,7 @@
 import copy
 import json
 import re
-from typing import Any
+from typing import Any, ClassVar
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
@@ -40,6 +40,24 @@ NUMBER_FIELDS = {"factor", "multiplier", "offset", "strip_chart_auto_fit_max_sec
 # path in _default.json. (A model panel's start_on is a dropdown too, but its
 # choices follow that panel's available models - see model_panel_dropdown.)
 SETTING_DROPDOWNS: dict[tuple, list[str]] = {}
+
+# The settings tabs and the _default.json groups each one holds - or, for a tab
+# with sub-tabs, its (sub-tab, groups) pairs. Anything not listed here goes
+# to the last tab, so a new setting is never left out.
+SETTING_TABS: list[tuple[str, list[str] | list[tuple[str, list[str]]]]] = [
+    ("Panel Availability", ["available", "network_action_forms_shown", "modbus_table_forms_shown",
+                            "defender_modbus_forms_shown", "model_panels"]),
+    ("Attacker Options", [
+        ("Attacker Options", ["modbus_packet_modify_enabled", "network_action_form_inputs"]),
+        ("Modbus Registers", ["modbus_registers"]),
+        ("Packet Console", ["packet_console", "packet_filter_categories", "packet_filter_checkboxes",
+                            "packet_filter_entries", "packet_columns"]),
+    ]),
+    ("Defender Options", []),
+    ("Appearance", ["model_sprites", "model_colors", "strip_chart_sprites", "strip_chart_colors",
+                    "strip_chart_auto_fit", "strip_chart_auto_fit_max_seconds"]),
+    ("Misc.", []),
+]
 
 # start_on's choice for "the first model this panel offers"
 FIRST_OFFERED = "(first offered)"
@@ -90,7 +108,8 @@ class ConfigEditor(Page):
       - its own fields (name, section, order, description, ...)
       - its menu bar buttons, as checkboxes (saved in the standard order)
       - its pane layout's shape and weights (layout_shape, layout_weights)
-      - every field in _default.json, holding the workspace's current value
+      - every field in _default.json, holding the workspace's current value,
+        split across tabs by SETTING_TABS
 
     Every section has a plain-language explanation (from
     _default_notes.json). The form is built only from fields that already
@@ -106,6 +125,8 @@ class ConfigEditor(Page):
     # buttons trigger (see Style.toggle_mode/select_theme -> router.refresh)
     selected_key: str | None = None
     selected_tab: int = 0
+    # Each settings tab with sub-tabs' last-picked sub-tab, by its title
+    selected_subtabs: ClassVar[dict[str, int]] = {}
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -314,20 +335,17 @@ class ConfigEditor(Page):
         self.layout_editor = LayoutEditor(self, self.config.get("layout_shape"), self.config.get("layout_weights"))
         self.tabs.addTab(self.layout_editor.shape_tab, "Layout Shape")
         self.tabs.addTab(self.layout_editor.weights_tab, "Layout Weights")
-        self.form = self.new_tab("Settings")
-        self.settings_form = self.form
         raw = self.config.get("settings", {})
         self.raw_settings = raw if isinstance(raw, dict) else {}
-        for name, default in self.default_settings.items():
-            self.build_setting_section(name, default)
+        self.build_settings_tabs()
         self.refresh_model_panels()
         self.refresh_usage()
         self.tabs.setCurrentIndex(min(ConfigEditor.selected_tab, self.tabs.count() - 1))
         self.set_status(f"Editing {self.pages.config_paths[key]}", "field_text")
 
     # Tabs
-    def new_tab(self, title: str) -> "TopLayout":
-        '''Adds a scrolling tab and returns where its sections go (they stack from the top).'''
+    def new_tab(self, title: str, tabs: QTabWidget | None = None) -> "TopLayout":
+        '''Adds a scrolling tab (to tabs, default the page's own) and returns where its sections go (they stack from the top).'''
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -339,7 +357,7 @@ class ConfigEditor(Page):
         form.setContentsMargins(0, self.style.igap, self.style.igap, 0)
         form.addStretch(1)
         scroll.setWidget(body)
-        self.tabs.addTab(scroll, title)
+        (tabs or self.tabs).addTab(scroll, title)
         return TopLayout(form)
 
     def paint_root(self, widget: QWidget):
@@ -524,6 +542,41 @@ class ConfigEditor(Page):
         group_box.clicked.connect(click)
         sync()
 
+    def build_settings_tabs(self):
+        '''
+        One tab per SETTING_TABS entry - or a row of sub-tabs, for an entry
+        that lists them - each holding its settings groups in _default.json's order.
+        '''
+        def pages(entries) -> list[tuple[str, list[str]]]:
+            return entries if entries and isinstance(entries[0], tuple) else []
+        listed = {name for _, entries in SETTING_TABS
+                  for name in ([name for _, names in pages(entries) for name in names] or entries)}
+        self.settings_forms: dict[str, TopLayout] = {}
+        for title, entries in SETTING_TABS:
+            if not pages(entries):
+                if title == SETTING_TABS[-1][0]:
+                    entries = entries + [name for name in self.default_settings if name not in listed]
+                self.form = self.new_tab(title)
+                self.build_settings_page(title, entries)
+                continue
+            subtabs = QTabWidget()
+            subtabs.setFont(self.style.get_font("default"))
+            self.tabs.addTab(subtabs, title)
+            for subtitle, names in pages(entries):
+                self.form = self.new_tab(subtitle, subtabs)
+                self.build_settings_page(subtitle, names)
+            subtabs.setCurrentIndex(min(ConfigEditor.selected_subtabs.get(title, 0), subtabs.count() - 1))
+            subtabs.currentChanged.connect(lambda index, title=title: ConfigEditor.selected_subtabs.__setitem__(title, index))
+
+    def build_settings_page(self, title: str, names: list[str]):
+        '''The settings groups named, in _default.json's order, on the tab self.form belongs to.'''
+        names = [name for name in self.default_settings if name in names]
+        if not names:
+            self.section(title, "No settings here yet.")
+        for name in names:
+            self.build_setting_section(name, self.default_settings[name])
+            self.settings_forms[name] = self.form
+
     def build_setting_section(self, name: str, default):
         explanation = self.notes.get("settings_fields", {}).get(name, "No explanation yet - add one to _default_notes.json.")
         usage = QLabel()
@@ -673,7 +726,7 @@ class ConfigEditor(Page):
 
     def sort_settings(self, panels: list[str]):
         '''
-        Orders the Settings tab's groups by how many panels in this layout use
+        Orders each settings tab's groups by how many panels in this layout use
         them, most first - then by how many panel types use them at all, then
         in _default.json's order. Groups nothing in the layout uses end up last.
         '''
@@ -686,11 +739,12 @@ class ConfigEditor(Page):
         def overall(name):
             return sum(1 for panel_class in PANELS.values() if name in getattr(panel_class, "SETTINGS", ()))
         order = sorted(frames, key=lambda name: (-in_layout(name), -overall(name), names.index(name)))
-        layout = self.settings_form.layout
-        for position, name in enumerate(order):
-            if layout.indexOf(frames[name]) != position:
-                layout.removeWidget(frames[name])
-                layout.insertWidget(position, frames[name])
+        for form in {id(form): form for form in self.settings_forms.values()}.values():
+            tab_order = [name for name in order if self.settings_forms[name] is form]
+            for position, name in enumerate(tab_order):
+                if form.layout.indexOf(frames[name]) != position:
+                    form.layout.removeWidget(frames[name])
+                    form.layout.insertWidget(position, frames[name])
 
     def config_value(self, path: tuple):
         '''(True, value) if this workspace's own "settings" has path, else (False, None).'''

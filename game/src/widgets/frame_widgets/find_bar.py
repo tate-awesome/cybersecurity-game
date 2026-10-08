@@ -1,7 +1,7 @@
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt
 from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
-                               QPushButton, QScrollArea, QTabWidget, QTextBrowser, QTreeWidget, QWidget)
+                               QPushButton, QScrollArea, QStackedWidget, QTabWidget, QTextBrowser, QTreeWidget, QWidget)
 import shiboken6
 
 from ...app_core import Context
@@ -117,7 +117,7 @@ class FindBar(QFrame):
         for tab in range(self.tabs.count()):
             page = self.tabs.widget(tab)
             for widget in page.findChildren(QWidget):
-                if not widget.isVisibleTo(page) or isinstance(widget, (QPushButton, QTextBrowser)):
+                if not self.shown_in(widget, page) or isinstance(widget, (QPushButton, QTextBrowser)):
                     continue
                 corner = widget.mapTo(page, QPoint(0, 0))
                 order = (tab, corner.y(), corner.x())
@@ -145,6 +145,31 @@ class FindBar(QFrame):
         return [match[1:] for match in found]
 
     @staticmethod
+    def shown_in(widget: QWidget, page: QWidget) -> bool:
+        '''
+        Whether widget shows on page once page is the current tab - like
+        isVisibleTo, except a sub-tab that isn't the current one (hidden by
+        its QTabWidget's stack) still counts, since show_match switches to it.
+        '''
+        while widget is not page and widget is not None:
+            parent = widget.parentWidget()
+            in_tab_stack = isinstance(parent, QStackedWidget) and isinstance(parent.parentWidget(), QTabWidget)
+            if widget.isHidden() and not in_tab_stack:
+                return False
+            widget = parent
+        return widget is page
+
+    @staticmethod
+    def show_tabs(widget: QWidget):
+        '''Switches every sub-tab holding widget to the one it's on.'''
+        while widget is not None:
+            parent = widget.parentWidget()
+            if isinstance(parent, QStackedWidget) and isinstance(parent.parentWidget(), QTabWidget):
+                tabs = parent.parentWidget()
+                tabs.setCurrentIndex(tabs.indexOf(widget))
+            widget = parent
+
+    @staticmethod
     def tree_items(tree: QTreeWidget) -> list:
         '''Every item in tree, top to bottom.'''
         items = []
@@ -170,6 +195,7 @@ class FindBar(QFrame):
         self.count.setStyleSheet("")
         tab, widget, where = self.matches[self.index]
         self.tabs.setCurrentIndex(tab)
+        self.show_tabs(widget)
         for scroll in self.scroll_areas(widget):
             scroll.ensureWidgetVisible(widget, 50, 120)
         length = len(self.field.text())
