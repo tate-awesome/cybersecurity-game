@@ -44,15 +44,33 @@
 
     "title": "arp_ip_workspace",
     "menu_bar": [
+        "delete_all_user_data_button",
+        "delete_all_workspace_data_button",
+        "workspace_editor_button",
+        "configure_workspace_button",
+        "debug_availability_button",
+        "debug_labels_button",
         "toggle_button",
         "theme_button",
-        "labels_button",
-        "page_button",
+        "model_style_button",
+        "strip_chart_style_button",
         "refresh_button",
+        "clear_inputs_button",
+        "reset_layout_button",
         "reset_button",
-        "help_button",
+        "preset_button",
+        "network_forms_button",
+        "modbus_forms_button",
+        "defender_forms_button",
+        "packet_columns_button",
+        "page_button",
+        "ap_config_button",
         "back_button",
-        "quit_button"
+        "workspaces_button",
+        "title_button",
+        "quit_button",
+        "help_button",
+        "labels_button"
     ],
 
     "panes": {

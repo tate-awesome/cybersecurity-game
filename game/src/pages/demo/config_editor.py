@@ -15,7 +15,7 @@ from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
-from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR, MENU_BAR_BUTTON_ORDER
+from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR, MENU_BAR_GROUPS
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
@@ -432,12 +432,57 @@ class ConfigEditor(Page):
 
 
     def build_menu_bar_section(self):
-        rows = self.section("menu_bar", self.workspace_note("menu_bar") + " Checked buttons are grouped and ordered as listed here (see MENU_BAR_GROUPS in menu_bar.py).")
+        rows = self.section("menu_bar", self.workspace_note("menu_bar") + " Checked buttons are grouped and ordered as listed here "
+                            "(see MENU_BAR_GROUPS in menu_bar.py). A group or header checkbox turns all of its buttons on or off.")
         chosen = set(self.config.get("menu_bar", []))
-        for name in MENU_BAR_BUTTON_ORDER:
-            box, _ = self.checkbox(name in chosen, as_bool=True)
-            rows.add(name, box)
-            self.button_boxes[name] = box
+        for group_key, sections in MENU_BAR_GROUPS.items():
+            group_box = self.group_checkbox()
+            rows.add(group_key, group_box, tooltip=self.labels.get(f"menu_bar_buttons_{group_key}"))
+            group_boxes = []
+            for header, names in sections:
+                header_box = self.group_checkbox()
+                rows.add(header, header_box, depth=1, tooltip=self.labels.get(f"menu_bar_headers_{header}"))
+                header_boxes = []
+                for name in names:
+                    box, _ = self.checkbox(name in chosen, as_bool=True)
+                    rows.add(name, box, depth=2)
+                    self.button_boxes[name] = box
+                    header_boxes.append(box)
+                self.link_group_checkbox(header_box, header_boxes)
+                group_boxes += header_boxes
+            self.link_group_checkbox(group_box, group_boxes)
+
+    def group_checkbox(self) -> QCheckBox:
+        '''A checkbox standing for several others - see link_group_checkbox.'''
+        box = QCheckBox()
+        box.setFont(self.style.get_font("default"))
+        box.setTristate(True)
+        return box
+
+    def link_group_checkbox(self, group_box: QCheckBox, boxes: list[QCheckBox]):
+        '''
+        Makes group_box show whether all, some, or none of boxes are
+        checked, and clicking it check all of them - or uncheck all, if they
+        already were. It's never saved itself; only boxes are.
+        '''
+        def sync():
+            checked = sum(box.isChecked() for box in boxes)
+            state = (Qt.CheckState.Checked if checked == len(boxes)
+                     else Qt.CheckState.PartiallyChecked if checked else Qt.CheckState.Unchecked)
+            group_box.blockSignals(True)
+            group_box.setCheckState(state)
+            group_box.blockSignals(False)
+
+        def click(*_):
+            target = not all(box.isChecked() for box in boxes)
+            for box in boxes:
+                box.setChecked(target)
+            sync()
+
+        for box in boxes:
+            box.toggled.connect(sync)
+        group_box.clicked.connect(click)
+        sync()
 
     def build_setting_section(self, name: str, default):
         explanation = self.notes.get("settings_fields", {}).get(name, "No explanation yet - add one to _default_notes.json.")

@@ -58,6 +58,7 @@ from .settings_overlays.select_model_view import SelectModelView
 from .delete_all_user_data import DeleteAllUserData
 from .delete_all_workspace_saved_data import DeleteAllWorkspaceSavedData
 from .open_workspace_editor import OpenWorkspaceEditor
+from .configure_this_workspace import ConfigureThisWorkspace
 from .settings_overlays.edit_workspace_availability import EditWorkspaceAvailability
 from .toggle_debug_labels import ToggleDebugLabels
 
@@ -115,6 +116,7 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     "delete_all_user_data_button": DeleteAllUserData,
     "delete_all_workspace_data_button": DeleteAllWorkspaceSavedData,
     "workspace_editor_button": OpenWorkspaceEditor,
+    "configure_workspace_button": ConfigureThisWorkspace,
     "debug_availability_button": EditWorkspaceAvailability,
     "debug_labels_button": ToggleDebugLabels,
 }

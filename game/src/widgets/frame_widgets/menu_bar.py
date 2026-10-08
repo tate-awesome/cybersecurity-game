@@ -12,11 +12,11 @@ from collections.abc import Callable
 # in the group's place instead.
 MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
     "debug_button_group": [
-        (None, ["delete_all_user_data_button", "delete_all_workspace_data_button", "workspace_editor_button",
-                "debug_availability_button", "debug_labels_button"]),
+        ("debug_tools", ["delete_all_user_data_button", "delete_all_workspace_data_button", "workspace_editor_button",
+                         "configure_workspace_button", "debug_availability_button", "debug_labels_button"]),
     ],
     "modbus_button_group": [
-        (None, ["registers_button", "register_preset_button", "model_view_button"]),
+        ("registers_and_models", ["registers_button", "register_preset_button", "model_view_button"]),
     ],
     "captures_button_group": [
         ("load_fast", ["pcap_button", "load_json_fast_button"]),
@@ -25,7 +25,7 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
     ],
     "style_button_group": [
-        (None, ["toggle_button", "theme_button", "model_style_button", "strip_chart_style_button"]),
+        ("appearance", ["toggle_button", "theme_button", "model_style_button", "strip_chart_style_button"]),
     ],
     "workspace_button_group": [
         ("reload", ["refresh_button", "clear_inputs_button", "reset_layout_button", "reset_button"]),
@@ -33,10 +33,10 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("show_hide", ["network_forms_button", "modbus_forms_button", "defender_forms_button", "packet_columns_button"]),
     ],
     "navigation_button_group": [
-        (None, ["page_button", "ap_config_button", "back_button", "workspaces_button", "title_button", "quit_button"]),
+        ("pages", ["page_button", "ap_config_button", "back_button", "workspaces_button", "title_button", "quit_button"]),
     ],
     "help_button_group": [
-        (None, ["help_button", "labels_button"]),
+        ("help_and_language", ["help_button", "labels_button"]),
     ],
 }
 
@@ -44,8 +44,13 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
 MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
 assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu bar button needs exactly one place in MENU_BAR_GROUPS"
 
+def group_button_names(group_key: str) -> list[str]:
+    '''Every button name in one of MENU_BAR_GROUPS, in order.'''
+    return [name for _, names in MENU_BAR_GROUPS[group_key] for name in names]
+
+
 # What a standard game page gets (see MenuBar.page_buttons)
-PAGE_BUTTON_NAMES: list[str] = [
+PAGE_BUTTON_NAMES: list[str] = group_button_names("debug_button_group") + [
     "help_button", "labels_button",
     "page_button", "back_button", "quit_button",
     "refresh_button", "reset_button", "preset_button",
@@ -54,7 +59,7 @@ PAGE_BUTTON_NAMES: list[str] = [
 ]
 
 # What the demo pages get
-DEMO_MENU_BAR: list[str] = ["help_button", "labels_button", "page_button", "back_button", "quit_button",
+DEMO_MENU_BAR: list[str] = group_button_names("debug_button_group") + ["help_button", "labels_button", "page_button", "back_button", "quit_button",
                             "toggle_button", "theme_button"]
 
 
