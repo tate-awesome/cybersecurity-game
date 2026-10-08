@@ -13,16 +13,25 @@ class Overlay(QWidget):
     click-outside tracking (a ClickManager listener, climbing the widget's
     parent chain, a manual Escape binding) the customtkinter version needed
     since CTkFrame has no such built-in.
-    '''
 
-    def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south"):
+    The trigger button keeps its own text with a triangle appended - ▾
+    while closed, ▴ while open - so every overlay button reads as one at a
+    glance, and shows which overlay is open. closed_text/open_text replace
+    those whole texts instead (e.g. MenuBar's overflow button: » and ×).
+    '''
+    CLOSED_MARKER = "▾"
+    OPEN_MARKER = "▴"
+
+    def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south",
+                 closed_text: str | None = None, open_text: str | None = None):
         super().__init__(master, Qt.WindowType.Popup)
         self.anchor = anchor
         self.context = context
         self.style = context.style
         self.button = button
-        self.open_text = button.text()
-        self.close_text = self.context.labels.get("menu_bar_buttons_close_overlay")
+        self.closed_text = closed_text or f"{button.text()} {self.CLOSED_MARKER}"
+        self.open_text = open_text or f"{button.text()} {self.OPEN_MARKER}"
+        button.setText(self.closed_text)
         self.populate_func = populate_func
         self._last_hidden_at = 0.0
         self._parent_overlay: Overlay | None = None
@@ -63,7 +72,7 @@ class Overlay(QWidget):
 
         self._close_unrelated_overlays()
         self.populate_func(self)
-        self.button.setText(self.close_text)
+        self.button.setText(self.open_text)
         self.adjustSize()
         # A click replayed from a menu bar overflow proxy (see
         # MenuBar._replay_click) lands on a button that's hidden while
@@ -116,7 +125,7 @@ class Overlay(QWidget):
         # this is the one place that resets the trigger button and clears
         # stale contents regardless of how the overlay got closed.
         self._last_hidden_at = time.monotonic()
-        self.button.setText(self.open_text)
+        self.button.setText(self.closed_text)
         self._clear_contents()
         # A closed overlay taking any overlays opened *from inside it* down
         # with it (rather than leaving them floating with no parent left)

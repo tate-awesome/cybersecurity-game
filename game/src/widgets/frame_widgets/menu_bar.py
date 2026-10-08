@@ -99,11 +99,13 @@ class MenuBar(QFrame):
         # been, hidden until squashing finds something to put in it.
         self._entries: list[dict] = []
         self._squashed_entries: list[dict] = []
-        self.the_overflow_button = QPushButton("...")
+        self.the_overflow_button = QPushButton()
         self.the_overflow_button.setFont(self.style.get_font())
+        self.add_tooltip(self.the_overflow_button, "overflow")
         self.row.addWidget(self.the_overflow_button)
         self.the_overflow_button.hide()
-        self.overflow_overlay = Overlay(self.context.root, self.context, self.the_overflow_button, self._populate_overflow_overlay)
+        self.overflow_overlay = Overlay(self.context.root, self.context, self.the_overflow_button, self._populate_overflow_overlay,
+                                        closed_text="»", open_text="×")
 
     def minimumSizeHint(self):
         '''
@@ -193,7 +195,7 @@ class MenuBar(QFrame):
     # Ported from the CTk version's update_squashing/overflow_button/
     # clone_button/populate_overflow_overlay: when the menu bar isn't wide
     # enough to fit every button, the ones that don't fit are hidden and an
-    # overflow ("...") button appears with clones of them in a popup.
+    # overflow ("»") button appears with clones of them in a popup.
 
     def _insert_entry(self, widget: QWidget, kind: str):
         # Entries fill in left to right after the overflow button
