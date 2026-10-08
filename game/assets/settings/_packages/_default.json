@@ -1,24 +1,24 @@
 {
     "model_sprites": {
-        "boat_in": 0,
-        "boat_out": 0,
-        "path_in": 0,
-        "path_out": 0,
-        "boat_in_label": 0,
-        "boat_out_label": 0,
-        "boat_in_position": 0,
-        "boat_out_position": 0,
-        "grid_numbers": 0,
-        "grid_lines": 0,
-        "ocean": 0,
-        "background": 0,
-        "room": 0,
-        "room_thermostat": 0,
-        "window": 0,
-        "vent": 0,
-        "controller_box": 0,
-        "controller_thermostat": 0,
-        "indicator": 0
+        "boat_in": 1,
+        "boat_out": 1,
+        "path_in": 1,
+        "path_out": 1,
+        "boat_in_label": 1,
+        "boat_out_label": 1,
+        "boat_in_position": 1,
+        "boat_out_position": 1,
+        "grid_numbers": 1,
+        "grid_lines": 1,
+        "ocean": 1,
+        "background": 1,
+        "room": 1,
+        "room_thermostat": 1,
+        "window": 1,
+        "vent": 1,
+        "controller_box": 1,
+        "controller_thermostat": 1,
+        "indicator": 1
     },
 
     "model_colors": {
@@ -41,15 +41,15 @@
     },
 
     "strip_chart_sprites": {
-        "grid_lines": 0,
-        "grid_axes": 0,
-        "grid_numbers": 0,
-        "head_in": 0,
-        "head_out": 0,
-        "path_in": 0,
-        "path_out": 0,
-        "head_in_label": 0,
-        "head_out_label": 0
+        "grid_lines": 1,
+        "grid_axes": 1,
+        "grid_numbers": 1,
+        "head_in": 1,
+        "head_out": 1,
+        "path_in": 1,
+        "path_out": 1,
+        "head_in_label": 1,
+        "head_out_label": 1
     },
 
     "strip_chart_colors": {
