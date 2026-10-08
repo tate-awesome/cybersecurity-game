@@ -34,6 +34,20 @@ class ImportantButton(QPushButton):
         pass
 
 
+class PanelButton(ImportantButton):
+    '''
+    A button that only works on one panel (PANEL - its KEY in widgets.PANELS)
+    - unavailable on pages whose panes don't include it. On pages that
+    build their panels in code (no "panes" config), it's left available.
+    '''
+    PANEL = ""
+
+    @classmethod
+    def is_available(cls, context: Context) -> bool:
+        panels = context.pages.page_panel_keys(context.router.current_page)
+        return panels is None or cls.PANEL in panels
+
+
 class ToggleButton(ImportantButton):
     '''
     A two-state button: each click calls start() or stop() and swaps its

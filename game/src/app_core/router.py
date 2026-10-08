@@ -108,8 +108,14 @@ class Router:
         if len(self.navigation_stack) == 0:
             self.navigation_stack.append(next_page)
 
-        # Handle deeper page (not refresh)
+        # Handle deeper page (not refresh) - leaving the current page the
+        # same way go_back does, so it's autosaved, its processes stop, and
+        # its animation/click callbacks don't outlive its widgets
         if not next_page == self.navigation_stack[-1]:
+            self.context.reset_page()
+            self.context.reset_build()
+            self.context.start_build()
+            self.context.start_page()
             self.navigation_stack.append(next_page)
 
         # Handle 404
@@ -182,8 +188,8 @@ class Router:
         '''
         Navigates backwards in the page history.
         '''
-        if len(self.navigation_stack) < 1:
-            return
+        if len(self.navigation_stack) < 2:
+            return  # nowhere to go back to
         self.context.reset_page()
         self.context.reset_build()
         self.context.start_build()

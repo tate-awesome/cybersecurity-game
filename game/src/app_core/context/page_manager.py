@@ -321,6 +321,33 @@ class PageManager:
         else:
             path.unlink(missing_ok=True)
 
+    def page_panel_keys(self, key: str | None) -> set[str] | None:
+        '''
+        Every panel key (see widgets.PANELS) the page's "panes" places,
+        whichever form the tree is written in - a key of its own or a
+        "widget" value. None if the page has no "panes" in its config (its
+        panels, if any, are built in code), so callers can't know.
+        '''
+        if key is None:
+            return None
+        panes = self.load_page_config(key).get("panes")
+        if not isinstance(panes, (dict, list)):
+            return None
+        found: set[str] = set()
+
+        def walk(node):
+            if isinstance(node, dict):
+                for name, value in node.items():
+                    found.add(name)
+                    if name == "widget" and isinstance(value, str):
+                        found.add(value)
+                    walk(value)
+            elif isinstance(node, list):
+                for item in node:
+                    walk(item)
+        walk(panes)
+        return found
+
     def has_saved_page(self, key: str) -> bool:
         '''Whether the given page has any autosaved page_data (see save_current_page).'''
         return (self.context.paths.user_pages / key / "config.json").is_file()

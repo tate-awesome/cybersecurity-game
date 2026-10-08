@@ -3,7 +3,7 @@
     "link_label": "title_buttons_main_menu",
     "build_type": "title",
     "title": "main_title",
-    "background": { "visual": "network_mesh", "blur": 6 },
+    "background": { "visual": "network_mesh" },
 
     "buttons": [
         { "action": "resume" },

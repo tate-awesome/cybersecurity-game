@@ -13,7 +13,7 @@ class NetworkMesh(Visual):
 
     Backbone - core routers spread across the area, each linked to its
     nearest neighbors (plus whatever links it takes to keep the backbone
-    connected), drifting slowly.
+    connected), each circling slowly around its own fixed spot.
     Subnets - every router has its own cluster of hosts orbiting it,
     each host linked only to its own router.
 
@@ -30,7 +30,10 @@ class NetworkMesh(Visual):
     '''
 
     KEY = "network_mesh"
-    ROUTER_SPEED = 6.0
+    # Routers circle their home spot: radius as a fraction of spacing, and
+    # angular speed in radians per second (direction picked at random)
+    ROUTER_ORBIT_RADIUS = (0.05, 0.12)
+    ROUTER_ORBIT_SPEED = (0.1, 0.4)
     HOST_ORBIT_SPEED = 0.08  # radians per second
     PACKET_SPEED = 240.0     # pixels per second
     PING_SECONDS = 0.9
@@ -38,11 +41,7 @@ class NetworkMesh(Visual):
     LINGER_START = 0.6          # seconds a new packet sits on its source, fading in, before it leaves
     LINGER_END = 0.9            # seconds a delivered packet sits on its destination, fading out
     WARMUP_SECONDS = 8.0
-    # Router spreading (see build and repel_routers)
     PLACEMENT_CANDIDATES = 20   # spots tried per router; more = more even
-    REPEL_RANGE = 0.85          # x spacing - closer than this, routers push apart
-    REPEL_STRENGTH = 40.0       # pixels/s^2 of push at point-blank range
-    SPEED_SETTLE = 0.5          # 1/s - how fast pushed routers return to ROUTER_SPEED
     HOLD_RATE = 8.0             # packets per second from the host under the cursor while the mouse is held
     PULL_SPEEDUP = 2.2          # pulled packets travel this many times faster
     # The network extends this fraction past every edge, so it reads as a
@@ -63,10 +62,13 @@ class NetworkMesh(Visual):
         if first or not hasattr(self, "routers") or not 0.6 < area_change < 1.6:
             self.build()
             return
+        stretch = math.sqrt(self.scale_x * self.scale_y)
         for router in self.routers:
-            router["x"] *= self.scale_x
-            router["y"] *= self.scale_y
-        self.spacing *= math.sqrt(self.scale_x * self.scale_y)
+            router["cx"] *= self.scale_x
+            router["cy"] *= self.scale_y
+            router["orbit"] *= stretch
+        self.spacing *= stretch
+        self.move_routers(0.0)
 
     def area_megapixels(self) -> float:
         span = 1 + 2 * self.OVERSCAN
@@ -90,16 +92,17 @@ class NetworkMesh(Visual):
             for _candidate in range(self.PLACEMENT_CANDIDATES):
                 x = self.rng.uniform(low, high) * self.width
                 y = self.rng.uniform(low, high) * self.height
-                nearest = min((math.hypot(x - r["x"], y - r["y"]) for r in self.routers), default=math.inf)
+                nearest = min((math.hypot(x - r["cx"], y - r["cy"]) for r in self.routers), default=math.inf)
                 if nearest > best_distance:
                     best, best_distance = (x, y), nearest
             x, y = best
-            heading = self.rng.uniform(0, math.tau)
             self.routers.append({
-                "x": x, "y": y,
-                "vx": math.cos(heading) * self.ROUTER_SPEED,
-                "vy": math.sin(heading) * self.ROUTER_SPEED,
+                "cx": x, "cy": y,
+                "orbit": self.rng.uniform(*self.ROUTER_ORBIT_RADIUS) * self.spacing,
+                "angle": self.rng.uniform(0, math.tau),
+                "spin": self.rng.choice((-1, 1)) * self.rng.uniform(*self.ROUTER_ORBIT_SPEED),
             })
+        self.move_routers(0.0)
 
         self.backbone = self.link_backbone()
         self.next_hop = self.route_all()
@@ -249,22 +252,8 @@ class NetworkMesh(Visual):
 
     # Simulation
     def update(self, dt: float):
-        self.repel_routers(dt)
-        low, high = -self.OVERSCAN, 1 + self.OVERSCAN
-        for router in self.routers:
-            router["x"] += router["vx"] * dt
-            router["y"] += router["vy"] * dt
-            # Point back inward (not just flip) so a router can't get stuck
-            # flipping every frame just outside the edge
-            if router["x"] < low * self.width:
-                router["vx"] = abs(router["vx"])
-            elif router["x"] > high * self.width:
-                router["vx"] = -abs(router["vx"])
-            if router["y"] < low * self.height:
-                router["vy"] = abs(router["vy"])
-            elif router["y"] > high * self.height:
-                router["vy"] = -abs(router["vy"])
-        # Hosts orbit and routers drift, so a host's room keeps changing.
+        self.move_routers(dt)
+        # Hosts orbit and routers circle, so a host's room keeps changing.
         # Recompute a slice of the targets each frame (all of them about
         # every half second) and ease each link's length toward its target.
         slice_size = max(1, len(self.hosts) * 2 * max(dt, 1 / 60))
@@ -318,39 +307,11 @@ class NetworkMesh(Visual):
             ping["age"] += dt
         self.pings = [p for p in self.pings if p["age"] < self.PING_SECONDS]
 
-    def repel_routers(self, dt: float):
-        '''
-        Antigravity: routers closer than REPEL_RANGE x spacing push each
-        other apart, harder the closer they are, so drifting can't bunch
-        subnets together. Each router's speed then eases back toward
-        ROUTER_SPEED, so pushes turn into course changes rather than
-        building up into ever-faster motion.
-        '''
-        reach = self.spacing * self.REPEL_RANGE
-        routers = self.routers
-        for i in range(len(routers)):
-            a = routers[i]
-            for j in range(i + 1, len(routers)):
-                b = routers[j]
-                dx, dy = b["x"] - a["x"], b["y"] - a["y"]
-                if abs(dx) > reach or abs(dy) > reach:
-                    continue
-                distance = math.hypot(dx, dy)
-                if distance >= reach or distance < 1e-6:
-                    continue
-                push = self.REPEL_STRENGTH * (1.0 - distance / reach) * dt / distance
-                a["vx"] -= dx * push
-                a["vy"] -= dy * push
-                b["vx"] += dx * push
-                b["vy"] += dy * push
-
-        settle = 1.0 - math.exp(-self.SPEED_SETTLE * dt)
-        for router in routers:
-            speed = math.hypot(router["vx"], router["vy"])
-            if speed > 1e-6:
-                scale = 1.0 + (self.ROUTER_SPEED / speed - 1.0) * settle
-                router["vx"] *= scale
-                router["vy"] *= scale
+    def move_routers(self, dt: float):
+        for router in self.routers:
+            router["angle"] += router["spin"] * dt
+            router["x"] = router["cx"] + math.cos(router["angle"]) * router["orbit"]
+            router["y"] = router["cy"] + math.sin(router["angle"]) * router["orbit"]
 
     def update_connections(self, dt: float):
         # Keep a few sessions open at once

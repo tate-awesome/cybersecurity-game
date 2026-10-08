@@ -39,7 +39,7 @@
             "sliders": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
-        "network_action_form_inputs": ["http://192.168.4.1"],
+        "network_action_form_inputs": {"ap_connect": ["http://192.168.4.1", 0]},
         "packet_columns": {
             "time_word": 1,
             "number": 1,

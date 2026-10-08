@@ -41,7 +41,7 @@
             "sliders": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
-        "network_action_form_inputs": ["http://192.168.4.1"]
+        "network_action_form_inputs": {"ap_connect": ["http://192.168.4.1", 0]}
     },
 
     "title": "defender_submarine_workspace",
