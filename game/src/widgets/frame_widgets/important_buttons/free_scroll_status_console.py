@@ -10,7 +10,7 @@ class FreeScrollStatusConsole(ToggleButton):
     LABEL = "menu_bar_buttons_free_scroll"
     ACTIVE_LABEL = "menu_bar_buttons_live_scroll"
 
-    def starts_active(self) -> bool:
+    def is_active(self) -> bool:
         return self.context.states.get("status_console", "scroll") == "free"
 
     def start(self):

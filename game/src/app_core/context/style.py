@@ -194,32 +194,29 @@ class Style:
             size = 10.0
         return int(size * self.ui_scale / 100.0)
 
+    # The color names color() resolves from the active palette - also the
+    # options the style editors offer (see important_buttons/settings_overlays)
+    THEME_COLOR_NAMES = (
+        "root",             # window background
+        "panel",            # panel background
+        "widget",           # nested/inner widget background
+        "accent",           # button/highlight color
+        "field",            # text field background
+        "field_text",       # text field text color
+        "text",             # general text color
+        "scrollbar",        # scrollbar handle color
+        "scrollbar_hover",  # scrollbar handle hover color
+    )
+
     def color(self, type: str) -> str:
         '''
-        Returns the input string OR a color from the active hand-rolled
-        palette (see PALETTES/apply_theme):
-        "root": window background
-        "panel": panel background
-        "widget": nested/inner widget background
-        "accent": button/highlight color
-        "field": text field background
-        "field_text": text field text color
-        "text": general text color
-        "scrollbar": scrollbar handle color
-        "scrollbar_hover": scrollbar handle hover color
+        Returns a color from the active hand-rolled palette (see
+        PALETTES/apply_theme) for one of THEME_COLOR_NAMES, or the input
+        string itself (e.g. "red" or a hex code) for anything else.
         '''
-        colors = {
-            "root": self._theme_colors["root"],
-            "panel": self._theme_colors["panel"],
-            "widget": self._theme_colors["widget"],
-            "accent": self._theme_colors["accent"],
-            "field": self._theme_colors["field"],
-            "field_text": self._theme_colors["field_text"],
-            "text": self._theme_colors["text"],
-            "scrollbar": self._theme_colors["scrollbar"],
-            "scrollbar_hover": self._theme_colors["scrollbar_hover"],
-        }
-        return colors.get(type, type)
+        if type in self.THEME_COLOR_NAMES:
+            return self._theme_colors[type]
+        return type
 
     def get_column_width(self, column_name):
         match column_name:

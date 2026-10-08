@@ -55,7 +55,7 @@ class StripChart(StripChartBase):
             self.draw.strip_chart_value_label(layout, text_color)
             self.draw.strip_chart_title(title_getter(), text_color)
 
-            line_colors = context.states.get("strip_chart_colors", "paths")
+            line_colors = [self.context.style.color(name) for name in context.states.get("strip_chart_colors", "paths")]
             for i, history in enumerate(histories.values()):
                 line_color = line_colors[i%len(line_colors)]
                 self.draw.strip_chart_path(history, layout, factor, line_color)

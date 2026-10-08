@@ -52,10 +52,31 @@ class LocalizationManager:
         print("set file path")
         print(file_path)
 
+    # Debug mode
+    def is_debug(self) -> bool:
+        '''
+        Whether labels resolve to their own keys instead of their text (see
+        get), so every widget shows which label key it uses. Kept in
+        preferences, so it lasts until switched off.
+        '''
+        return bool(self.context.preferences.get("debug_labels"))
+
+    def set_debug(self, enabled: bool):
+        self.context.preferences.set("debug_labels", enabled)
+
     # Control (readonly)
     def get(self, key: str) -> str:
         '''
-        Returns the label for the given flat key (e.g. "menu_bar_buttons_quit").
+        Returns the label for the given flat key (e.g. "menu_bar_buttons_quit")
+        - or the key itself in debug mode (see is_debug).
+        Raises a KeyError naming the key if there's no label for it.
+        '''
+        text = self.get_text(key)
+        return key if self.is_debug() else text
+
+    def get_text(self, key: str) -> str:
+        '''
+        Returns the label's text for the given flat key even in debug mode.
         Raises a KeyError naming the key if there's no label for it.
         '''
         if key not in self.data:
@@ -71,7 +92,8 @@ class LocalizationManager:
         labels one at a time.
         '''
         start = f"{prefix}_"
-        return {key[len(start):]: text for key, text in self.data.items() if key.startswith(start)}
+        debug = self.is_debug()
+        return {key[len(start):]: key if debug else text for key, text in self.data.items() if key.startswith(start)}
 
     # Editing the default labels file
     def add_default_label(self, key: str, text: str, after_prefix: str):

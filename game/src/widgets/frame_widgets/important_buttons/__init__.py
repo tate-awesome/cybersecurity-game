@@ -41,6 +41,13 @@ from .checkbox_overlay.choose_shown_packet_console_columns import ChooseShownPac
 from .edit_modbus_register_display.edit_modbus_register_display import EditModbusRegisterDisplay
 from .filter_packet_console.filter_packet_console import FilterPacketConsole
 
+from .clear_saved_workspace_inputs import ClearSavedWorkspaceInputs
+from .reset_saved_workspace_layout import ResetSavedWorkspaceLayout
+from .toggle_debug_labels import ToggleDebugLabels
+from .settings_overlays.edit_model_style import EditModelStyle
+from .settings_overlays.edit_strip_chart_style import EditStripChartStyle
+from .settings_overlays.edit_workspace_availability import EditWorkspaceAvailability
+
 # The names a page config's "menu_bar" list uses, in the standard
 # left-to-right order: preferences, data tools, page actions, then
 # navigation (back, quit) on the right. Leftmost buttons are squashed into
@@ -58,6 +65,12 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     "data_button": SaveCurrentInputsToPageData,
     "workspace_editor_button": OpenWorkspaceEditor,
     "delete_all_workspace_data_button": DeleteAllWorkspaceSavedData,
+    "model_style_button": EditModelStyle,
+    "strip_chart_style_button": EditStripChartStyle,
+    "debug_labels_button": ToggleDebugLabels,
+    "debug_availability_button": EditWorkspaceAvailability,
+    "clear_inputs_button": ClearSavedWorkspaceInputs,
+    "reset_layout_button": ResetSavedWorkspaceLayout,
     "refresh_button": RefreshCurrentPage,
     "reset_button": ResetCurrentPageToDefaults,
     "help_button": ShowHelpMessage,
@@ -68,7 +81,8 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
 # Every menu bar button a standard game page gets (see MenuBar.page_buttons)
 PAGE_BUTTONS: tuple[type[ImportantButton], ...] = tuple(
     button for button in MENU_BAR_BUTTONS.values()
-    if button not in (OpenWorkspaceEditor, DeleteAllWorkspaceSavedData)
+    if button not in (OpenWorkspaceEditor, DeleteAllWorkspaceSavedData, EditModelStyle, EditStripChartStyle,
+                      ToggleDebugLabels, EditWorkspaceAvailability, ClearSavedWorkspaceInputs, ResetSavedWorkspaceLayout)
 )
 
 # The names a title page config's {"action": ...} buttons use

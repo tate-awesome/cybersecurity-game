@@ -9,7 +9,7 @@ class PausePacketConsole(ToggleButton):
     LABEL = "menu_bar_buttons_pause"
     ACTIVE_LABEL = "menu_bar_buttons_unpause"
 
-    def starts_active(self) -> bool:
+    def is_active(self) -> bool:
         return self.context.states.get("packet_console", "mode") == "paused"
 
     def start(self):

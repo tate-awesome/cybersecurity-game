@@ -117,6 +117,23 @@ class Builder(Panel):
 
         self.menu_bar.minimize_button(self.body, master)
 
+        if self.labels_by_key:
+            self.context.animation_manager.add_callback(f"ModbusModelFollowStates_{id(self)}", self._follow_states)
+
+    def _follow_states(self):
+        '''
+        Follows modbus_model_auto_switch and modbus_model_selected when
+        something else changes them (see EditModelStyle) - polled every
+        frame. A pick that isn't available on this page is ignored.
+        '''
+        if self.auto_switch_checkbox is not None:
+            enabled = self.context.states.get("modbus_model_auto_switch") in (1, "1", True)
+            if self.auto_switch_checkbox.isChecked() != enabled:
+                self.auto_switch_checkbox.setChecked(enabled)  # -> _set_auto_switch
+        selected = self.context.states.get("modbus_model_selected")
+        if selected != self.model_key and selected in self.labels_by_key:
+            self.select_model(selected)
+
     def _set_auto_switch(self, enabled: bool):
         self.context.states.set("modbus_model_auto_switch", value=1 if enabled else 0)
         if enabled:

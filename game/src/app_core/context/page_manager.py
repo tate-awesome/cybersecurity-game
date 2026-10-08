@@ -305,6 +305,22 @@ class PageManager:
         path = self.context.paths.user_pages / key / "config.json"
         path.unlink(missing_ok=True)
 
+    def delete_saved_page_part(self, key: str, part: str):
+        '''
+        Deletes one part ("settings" or "panes") of the given page's
+        autosaved page_data (see save_current_page), keeping the other -
+        and the whole file if nothing's left in it.
+        '''
+        path = self.context.paths.user_pages / key / "config.json"
+        if not path.is_file():
+            return
+        saved = self.context.json.load(path)
+        saved.pop(part, None)
+        if saved:
+            self.context.json.save_to_file(saved, path)
+        else:
+            path.unlink(missing_ok=True)
+
     def has_saved_page(self, key: str) -> bool:
         '''Whether the given page has any autosaved page_data (see save_current_page).'''
         return (self.context.paths.user_pages / key / "config.json").is_file()

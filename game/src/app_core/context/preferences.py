@@ -12,6 +12,7 @@ class PreferencesData(TypedDict, total=False):
     labels_file: str
     page: str
     fullscreen: str
+    debug_labels: bool
 
 class Preferences:
     def __init__(self, context: "Context"):
@@ -58,7 +59,8 @@ class Preferences:
             "theme": "",            # autosaved in Style
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
-            "fullscreen": ""        # autosaved in KeyBinds
+            "fullscreen": "",       # autosaved in KeyBinds
+            "debug_labels": False   # toggled by ToggleDebugLabels (see LocalizationManager.is_debug)
         }
         self.save()
 
