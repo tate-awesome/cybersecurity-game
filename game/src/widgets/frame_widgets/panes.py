@@ -24,7 +24,7 @@ class _PaneContainer(QWidget):
 
 class Panes(QSplitter):
 
-    def __init__(self, master: QWidget, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] | None = None, pad_around = True, transparent = False):
+    def __init__(self, master: QWidget, context: Context, direction = "horizontal", child_count: int = 3, child_sizes: list[int] | None = None, pad_around = True, transparent = False, ids: list[str] | None = None):
         '''
         Args:
             child_sizes: pane size is (approximately) proportional to 1/child_size[i],

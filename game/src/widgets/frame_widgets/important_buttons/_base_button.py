@@ -38,7 +38,7 @@ class PanelButton(ImportantButton):
     '''
     A button that only works on one panel (PANEL - its KEY in widgets.PANELS)
     - unavailable on pages whose panes don't include it. On pages that
-    build their panels in code (no "panes" config), it's left available.
+    build their panels in code (no "layout_shape" config), it's left available.
     '''
     PANEL = ""
 

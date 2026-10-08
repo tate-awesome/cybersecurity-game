@@ -75,12 +75,39 @@
         "labels_button"
     ],
 
-    "panes": {
-        "h_panes": {
-            "weight": 1,
-            "v_panes_left": {"weight": 2, "network_action_panel": 2.3, "defender_modbus_panel": 2},
-            "v_panes_middle": {"weight": 3, "defender_console_panel": 3, "defender_flag_panel": 3, "status_panel": 3},
-            "v_panes_right": {"weight": 3, "modbus_model_panel": 2, "defender_stripchart_panel": 2}
-        }
+    "layout_shape": {
+        "h_panes_1": [
+            {
+                "v_panes_1": [
+                    "network_action_panel_1",
+                    "defender_modbus_panel_1"
+                ]
+            },
+            {
+                "v_panes_2": [
+                    "defender_console_panel_1",
+                    "defender_flag_panel_1",
+                    "status_panel_1"
+                ]
+            },
+            {
+                "v_panes_3": [
+                    "modbus_model_panel_1",
+                    "defender_stripchart_panel_1"
+                ]
+            }
+        ]
+    },
+    "layout_weights": {
+        "v_panes_1": 2,
+        "network_action_panel_1": 2.3,
+        "defender_modbus_panel_1": 2,
+        "v_panes_2": 3,
+        "defender_console_panel_1": 3,
+        "defender_flag_panel_1": 3,
+        "status_panel_1": 3,
+        "v_panes_3": 3,
+        "modbus_model_panel_1": 2,
+        "defender_stripchart_panel_1": 2
     }
 }

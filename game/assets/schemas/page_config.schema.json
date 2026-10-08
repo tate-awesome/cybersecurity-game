@@ -1,0 +1,531 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "page_config.schema.json",
+    "title": "Page config",
+    "description": "A page config under assets/pages: a folder's config.json or a loose <key>.json, read by PageManager. build_type picks the page class (Router.GENERIC_BUILD_TYPES). Keys starting with _ are comments. The enums mirror the code's registries (widgets.PANELS, MENU_BAR_BUTTONS, TITLE_ACTIONS, VISUALS, the default settings package) - update them when those change.",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "link_label"
+    ],
+    "properties": {
+        "schema_version": {
+            "const": 1,
+            "description": "PageManager.SCHEMA_VERSION."
+        },
+        "link_label": {
+            "type": "string",
+            "pattern": "^title_buttons_\\w+$",
+            "description": "Labels key for buttons that link to this page."
+        },
+        "build_type": {
+            "enum": [
+                "workspace",
+                "title",
+                "workspace_select"
+            ],
+            "description": "Omit for a hand-written page (Router.PAGES) that only needs a link label."
+        },
+        "title": {
+            "type": "string",
+            "pattern": "^\\w+$",
+            "description": "Labels key suffix: title_text_<title> on title pages, menu_bar_titles_<title> otherwise."
+        },
+        "_note": {
+            "description": "Markdown shown on the workspace select page: a string, or a list of strings joined with blank lines.",
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "_dev_note": {
+            "type": "string"
+        },
+        "background": {
+            "description": "Procedural visual behind the page (Page.add_background). false turns off a page type's default.",
+            "oneOf": [
+                {
+                    "const": false
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "visual"
+                    ],
+                    "properties": {
+                        "visual": {
+                            "enum": [
+                                "network_mesh",
+                                "kernel",
+                                "telemetry",
+                                "kalman",
+                                "cycle"
+                            ]
+                        },
+                        "blur": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "intensity": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        },
+                        "animate": {
+                            "type": "boolean"
+                        },
+                        "packets": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            ]
+        },
+        "menu_bar": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+                "enum": [
+                    "help_button",
+                    "labels_button",
+                    "page_button",
+                    "ap_config_button",
+                    "back_button",
+                    "workspaces_button",
+                    "title_button",
+                    "quit_button",
+                    "refresh_button",
+                    "clear_inputs_button",
+                    "reset_layout_button",
+                    "reset_button",
+                    "preset_button",
+                    "network_forms_button",
+                    "modbus_forms_button",
+                    "defender_forms_button",
+                    "packet_columns_button",
+                    "toggle_button",
+                    "theme_button",
+                    "model_style_button",
+                    "strip_chart_style_button",
+                    "pcap_button",
+                    "load_json_fast_button",
+                    "stream_pcap_button",
+                    "load_button",
+                    "save_button",
+                    "stream_button",
+                    "clear_status_button",
+                    "clear_packet_console_button",
+                    "clear_modbus_button",
+                    "clear_all_button",
+                    "registers_button",
+                    "register_preset_button",
+                    "model_view_button",
+                    "delete_all_user_data_button",
+                    "delete_all_workspace_data_button",
+                    "workspace_editor_button",
+                    "configure_workspace_button",
+                    "debug_availability_button",
+                    "debug_labels_button"
+                ]
+            },
+            "description": "Important buttons by MENU_BAR_BUTTONS name. MenuBar groups and orders them itself."
+        },
+        "buttons": {
+            "type": "array",
+            "items": {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "link"
+                        ],
+                        "properties": {
+                            "link": {
+                                "type": "string",
+                                "description": "A page key, e.g. title/select_workspace."
+                            }
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "action"
+                        ],
+                        "properties": {
+                            "action": {
+                                "enum": [
+                                    "back",
+                                    "quit",
+                                    "resume",
+                                    "open_ap_config",
+                                    "delete_user_data"
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "link_folder": {
+            "type": "string",
+            "description": "Folder under assets/pages whose pages the sections list."
+        },
+        "sections": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "label",
+                    "category"
+                ],
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "description": "Labels key suffix: title_buttons_<label>."
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Lists the workspaces with this category."
+                    },
+                    "numbered": {
+                        "type": "boolean"
+                    },
+                    "expanded": {
+                        "type": "boolean"
+                    }
+                }
+            }
+        },
+        "category": {
+            "type": "string",
+            "description": "The workspace select section that lists it (admin, attacker, defender)."
+        },
+        "include": {
+            "enum": [
+                0,
+                1
+            ],
+            "description": "1 lists it on the workspace select page."
+        },
+        "order": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "estimated_minutes": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "gradable": {
+            "type": "boolean"
+        },
+        "prerequisites": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+                "type": "string",
+                "pattern": "^workspaces/\\w+$"
+            }
+        },
+        "settings": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^_": {}
+            },
+            "description": "Merged over assets/settings/_packages/_default.json.",
+            "properties": {
+                "model_sprites": {
+                    "type": "object"
+                },
+                "model_colors": {
+                    "type": "object"
+                },
+                "strip_chart_sprites": {
+                    "type": "object"
+                },
+                "strip_chart_colors": {
+                    "type": "object"
+                },
+                "strip_chart_auto_fit": {
+                    "type": "number"
+                },
+                "strip_chart_auto_fit_max_seconds": {
+                    "type": "number"
+                },
+                "game_progress": {
+                    "type": "object"
+                },
+                "network_action_form_inputs": {
+                    "type": "object"
+                },
+                "network_action_forms_shown": {
+                    "type": "object"
+                },
+                "modbus_table_forms_shown": {
+                    "type": "object"
+                },
+                "modbus_packet_modify_enabled": {
+                    "type": "number"
+                },
+                "modbus_model_selected": {
+                    "type": "string"
+                },
+                "modbus_model_auto_switch": {
+                    "type": "number"
+                },
+                "modbus_registers": {
+                    "type": "object"
+                },
+                "packet_console": {
+                    "type": "object"
+                },
+                "requested_packet_treeview_clear": {
+                    "type": "number"
+                },
+                "requested_status_console_clear": {
+                    "type": "number"
+                },
+                "status_console": {
+                    "type": "object"
+                },
+                "packet_filter_categories": {
+                    "type": "object"
+                },
+                "packet_filter_checkboxes": {
+                    "type": "object"
+                },
+                "packet_filter_entries": {
+                    "type": "object"
+                },
+                "packet_columns": {
+                    "type": "object"
+                },
+                "available": {
+                    "type": "object"
+                },
+                "defender_modbus_forms_shown": {
+                    "type": "object"
+                }
+            }
+        },
+        "layout_shape": {
+            "$ref": "#/$defs/pane_group"
+        },
+        "layout_weights": {
+            "type": "object",
+            "description": "{layout id: share of the group it sits in}, default 1. The top group needs none.",
+            "propertyNames": {
+                "anyOf": [
+                    {
+                        "pattern": "^_"
+                    },
+                    {
+                        "pattern": "^[hv]_panes_[0-9]+$"
+                    },
+                    {
+                        "$ref": "#/$defs/panel_id"
+                    }
+                ]
+            },
+            "patternProperties": {
+                "^_": {}
+            },
+            "additionalProperties": {
+                "type": "number",
+                "exclusiveMinimum": 0
+            }
+        }
+    },
+    "patternProperties": {
+        "^_": {}
+    },
+    "additionalProperties": false,
+    "allOf": [
+        {
+            "if": {
+                "required": [
+                    "build_type"
+                ],
+                "properties": {
+                    "build_type": {
+                        "const": "title"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "title",
+                    "buttons"
+                ]
+            }
+        },
+        {
+            "if": {
+                "required": [
+                    "build_type"
+                ],
+                "properties": {
+                    "build_type": {
+                        "const": "workspace_select"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "title",
+                    "sections"
+                ]
+            }
+        },
+        {
+            "if": {
+                "required": [
+                    "build_type"
+                ],
+                "properties": {
+                    "build_type": {
+                        "const": "workspace"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "title",
+                    "category",
+                    "include",
+                    "order",
+                    "menu_bar",
+                    "layout_shape"
+                ]
+            },
+            "else": {
+                "not": {
+                    "anyOf": [
+                        {
+                            "required": [
+                                "settings"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "layout_shape"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "layout_weights"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "category"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "include"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "order"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "if": {
+                "not": {
+                    "required": [
+                        "build_type"
+                    ],
+                    "properties": {
+                        "build_type": {
+                            "const": "title"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "not": {
+                    "required": [
+                        "buttons"
+                    ]
+                }
+            }
+        },
+        {
+            "if": {
+                "not": {
+                    "required": [
+                        "build_type"
+                    ],
+                    "properties": {
+                        "build_type": {
+                            "const": "workspace_select"
+                        }
+                    }
+                }
+            },
+            "then": {
+                "not": {
+                    "anyOf": [
+                        {
+                            "required": [
+                                "sections"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "link_folder"
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "$defs": {
+        "panel_id": {
+            "type": "string",
+            "pattern": "^(network_action_panel|modbus_table_panel|packet_panel|network_graph_panel|status_panel|modbus_model_panel|sniffed_submarine_map_panel|sniffed_hvac_house_panel|ap_polled_submarine_map_panel|ap_polled_hvac_chart_panel|modbus_chart_panel|defender_modbus_panel|defender_stripchart_panel|defender_console_panel|defender_flag_panel)_[0-9]+$",
+            "description": "A panel type (widgets.PANELS) plus a number, so the same panel can appear more than once."
+        },
+        "pane_group": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": false,
+            "description": "{\"h_panes_<n>\": [...]} side by side, or {\"v_panes_<n>\": [...]} stacked, contents in order.",
+            "patternProperties": {
+                "^[hv]_panes_[0-9]+$": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/panel_id"
+                            },
+                            {
+                                "$ref": "#/$defs/pane_group"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

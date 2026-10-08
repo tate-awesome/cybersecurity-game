@@ -5,7 +5,7 @@ from ._base_button import ImportantButton
 
 class WorkspaceSaveResetButton(ImportantButton):
     '''
-    Shared by buttons that reset one part ("settings" or "panes") of the
+    Shared by buttons that reset one part ("settings" or "layout_weights") of the
     current workspace's autosave (see PageManager.save_current_page): asks
     for confirmation, autosaves first (so the other part keeps what's on
     screen right now), deletes PART, and rebuilds the page without

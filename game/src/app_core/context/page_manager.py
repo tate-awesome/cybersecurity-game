@@ -328,7 +328,7 @@ class PageManager:
 
     def delete_saved_page_part(self, key: str, part: str):
         '''
-        Deletes one part ("settings" or "panes") of the given page's
+        Deletes one part ("settings" or "layout_weights") of the given page's
         autosaved page_data (see save_current_page), keeping the other -
         and the whole file if nothing's left in it.
         '''
@@ -344,29 +344,24 @@ class PageManager:
 
     def page_panel_keys(self, key: str | None) -> set[str] | None:
         '''
-        Every panel key (see widgets.PANELS) the page's "panes" places,
-        whichever form the tree is written in - a key of its own or a
-        "widget" value. None if the page has no "panes" in its config (its
+        Every panel type (see widgets.PANELS) the page's "layout_shape"
+        places. None if the page has no "layout_shape" in its config (its
         panels, if any, are built in code), so callers can't know.
         '''
         if key is None:
             return None
-        panes = self.load_page_config(key).get("panes")
-        if not isinstance(panes, (dict, list)):
+        tree = self.layout_tree(self.load_page_config(key).get("layout_shape"))
+        if tree is None:
             return None
         found: set[str] = set()
 
-        def walk(node):
-            if isinstance(node, dict):
-                for name, value in node.items():
-                    found.add(name)
-                    if name == "widget" and isinstance(value, str):
-                        found.add(value)
-                    walk(value)
-            elif isinstance(node, list):
-                for item in node:
-                    walk(item)
-        walk(panes)
+        def walk(node: dict):
+            for child in node["children"]:
+                if "panes" in child:
+                    walk(child["panes"])
+                else:
+                    found.add(child["widget"])
+        walk(tree)
         return found
 
     def has_saved_page(self, key: str) -> bool:
