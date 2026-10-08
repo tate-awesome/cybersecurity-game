@@ -29,14 +29,16 @@ class APConnectForm(BaseForm):
         self.url_entry = entry
 
         # Slot 0 is the URL entry above (add_labeled_entry); slot 1 is
-        # whether the poller is switched on, which decides whether it
-        # auto-connects on startup.
+        # whether the poller is running, which decides whether it
+        # auto-connects on startup. _refresh_status keeps it synced to the
+        # process itself, so it also tracks stops/starts from outside this
+        # form (Stop All, DefenderV0). Page exit saves before abort_all, so
+        # the cleanup stop never clears it.
         self.save_slots = self.context.states.get("network_action_form_inputs", self.key)
         if len(self.save_slots) < 2:  # saves from before slot 1 existed
             self.save_slots.append(0)
 
         def do_connect():
-            self.save_slots[1] = 1
             url = self.url_entry.text().strip().rstrip("/")
             if url:
                 self.process.url = url
@@ -44,7 +46,6 @@ class APConnectForm(BaseForm):
                 self.process.start()
 
         def do_disconnect():
-            self.save_slots[1] = 0
             self.process.stop()
 
         self.add_process_row(do_connect, do_disconnect, self.process.is_running)
@@ -63,8 +64,10 @@ class APConnectForm(BaseForm):
         # double-starts or interrupts it.
         if self.save_slots[1] and not self.process.is_running():
             self.click_start()
+        self._refresh_status()
 
     def _refresh_status(self):
+        self.save_slots[1] = int(self.process.is_running())
         if self.process.is_running() and self.process.connected:
             self.conn_label.setText("⬤  Connected")
             self.conn_label.setStyleSheet("color: green;")
