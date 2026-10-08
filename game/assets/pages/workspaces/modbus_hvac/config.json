@@ -30,7 +30,7 @@
     "build_type": "workspace",
 
     "settings": {
-        "modbus_model_selected": "hvac",
+        "modbus_model_selected": "sniffed_hvac_house",
         "modbus_registers": {
             "hreg_6": {"show": 1.0, "nickname": "Heater", "factor": 0.01, "units": "State", "modify": 1},
             "hreg_10": {
@@ -41,7 +41,7 @@
                 "modify": 1
             }
         },
-        "available": {"hvac": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
+        "available": {"sniffed_hvac_house": 1, "wifi": 1, "arp": 1, "sniff": 1, "nfq": 1, "table": 1, "modify": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nfq": 1},
         "modbus_table_forms_shown": {"table": 1, "modify": 1},
         "model_sprites": {
@@ -95,12 +95,23 @@
         "labels_button"
     ],
 
-    "panes": {
-        "h_panes": {
-            "weight": 1,
-            "v_panes_left": {"weight": 2, "network_action_panel": 2.3, "modbus_table_panel": 2},
-            "v_panes_middle": {"weight": 3, "packet_panel": 3, "network_graph_panel": 3, "status_panel": 3},
-            "v_panes_right": {"weight": 3, "modbus_model_panel": 2, "modbus_chart_panel": 2}
-        }
+    "layout_shape": {
+        "h_panes_1": [
+            {"v_panes_1": ["network_action_panel_1", "modbus_table_panel_1"]},
+            {"v_panes_2": ["packet_panel_1", "network_graph_panel_1", "status_panel_1"]},
+            {"v_panes_3": ["modbus_model_panel_1", "modbus_chart_panel_1"]}
+        ]
+    },
+    "layout_weights": {
+        "v_panes_1": 2,
+        "network_action_panel_1": 2.3,
+        "modbus_table_panel_1": 2,
+        "v_panes_2": 3,
+        "packet_panel_1": 3,
+        "network_graph_panel_1": 3,
+        "status_panel_1": 3,
+        "v_panes_3": 3,
+        "modbus_model_panel_1": 2,
+        "modbus_chart_panel_1": 2
     }
 }

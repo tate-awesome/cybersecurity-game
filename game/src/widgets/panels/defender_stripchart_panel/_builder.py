@@ -64,9 +64,15 @@ class Builder(Panel):
                     for attribute, history in raw.items()
                 }
 
+            def get_now(k=key):
+                # The poller's own clock, not the packet one - so these
+                # scroll as soon as polling starts, sniffer or not.
+                return self.modbus.get_relative_now(k)
+
             strip_chart = StripChart(scrollable, context, (current_row, 0),
                                      get_title, get_units, get_factor,
-                                     get_histories, time_offset=time_offset)
+                                     get_histories, time_offset=time_offset,
+                                     now_getter=get_now)
             strip_chart.start_animation()
             self.strip_charts[key] = strip_chart
             current_row += 1

@@ -83,7 +83,7 @@ class Json:
         against - the directory of the file better_dict was itself loaded from.
 
         key_roots optionally redirects specific top-level keys of better_dict
-        (e.g. a page config's "settings"/"menu_bar"/"panes") to resolve their
+        (e.g. a page config's "settings"/"menu_bar"/"layout_shape") to resolve their
         own "_ref"s against a fixed directory instead of base_path, so a page
         can reference shared settings/layout data by a stable key without
         knowing how deep its own folder sits under assets/pages. It's only
@@ -121,7 +121,7 @@ class Json:
         '''
         Processes a JSON array for "_ref" splicing (see merge_from_file) and
         recurses into any dict/list elements it contains so refs nested
-        further down (e.g. a pane-tree list of {"weight": ..., "panes": {"_ref": ...}})
+        further down (e.g. a layout_shape group's list holding {"_ref": ...})
         are resolved too.
         '''
         resolved = []
@@ -189,7 +189,7 @@ class Json:
         return output
 
     # Page config keys that start a new blank-line-separated section (see format_config)
-    CONFIG_SECTIONS = {"_dev_note", "schema_version", "build_type", "settings", "title", "panes"}
+    CONFIG_SECTIONS = {"_dev_note", "schema_version", "build_type", "settings", "title", "layout_shape"}
 
     def format_config(self, config: dict) -> str:
         '''

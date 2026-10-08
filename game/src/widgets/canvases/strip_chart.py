@@ -9,12 +9,16 @@ class StripChart(StripChartBase):
     Canvas that displays a running value of the provided getter.
     The getter must return list[tuple[time: float, value: float]].
     Its time axis is synchronized with other strip charts in the same context.
+
+    now_getter returns "now" in the histories' own time coordinates - leave it
+    out for packet-derived histories, which use the packet clock.
     '''
 
     def __init__(self, master: QWidget, context: Context, grid_position: tuple[int, int],
                  title_getter, units_getter, factor_getter,
                  histories_getter: Callable[[], dict[str, list[tuple[float, float]]]],
-                 time_scale: list[float] | None = None, time_offset: list[float] | None = None):
+                 time_scale: list[float] | None = None, time_offset: list[float] | None = None,
+                 now_getter: Callable[[], float] | None = None):
 
         # Create the canvas widget
         super().__init__(master, context, grid_position, time_scale, time_offset)
@@ -39,7 +43,8 @@ class StripChart(StripChartBase):
 
             # Time scaling/offset are resolved first (the visible time window), then
             # the value axis autoscales to whatever data falls inside that window.
-            layout = self.draw.strip_chart_layout(list(histories.values()), factor)
+            now = None if now_getter is None else now_getter()
+            layout = self.draw.strip_chart_layout(list(histories.values()), factor, now)
 
             grid_color = color("grid_lines")
             axes_color = color("grid_axes")

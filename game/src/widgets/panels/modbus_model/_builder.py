@@ -9,25 +9,25 @@ from ..panel import Panel
 
 MODELS = {
     # Order matters as a fallback: a page whose "modbus_model_selected" isn't
-    # "hvac"/"submarine" (e.g. the "agnostic" default) starts on
+    # one of these keys (e.g. the "agnostic" default) starts on
     # whichever of these comes first.
-    "submarine": WorldMap,
-    "hvac": House,
-    "defender_submarine": DefenderWorldMap,
-    "defender_hvac": DefenderHVACChart,
+    "sniffed_submarine_map": WorldMap,
+    "sniffed_hvac_house": House,
+    "ap_polled_submarine_map": DefenderWorldMap,
+    "ap_polled_hvac_chart": DefenderHVACChart,
 }
 
-# Defender-flavored models are driven by the AP's own reported mode
+# Models read from the AP ("ap_polled_*") are driven by the AP's own reported mode
 # (context.buffer.defender_status.submarine_mode) instead of a manual
 # dropdown pick - see _auto_switch. Only a page whose "available" settings
 # group actually offers one of these (the defender lessons) ever exercises this.
-DEFENDER_MODELS = {"defender_submarine", "defender_hvac"}
+DEFENDER_MODELS = {"ap_polled_submarine_map", "ap_polled_hvac_chart"}
 
 class Builder(Panel):
     '''
-    Combines the old separate hvac_panel/submarine_panel into one panel
-    with a dropdown that swaps which model canvas is shown. Only one
-    model is ever built at a time - switching destroys the outgoing
+    Every ModBus model in one panel, with a dropdown that swaps which
+    model canvas is shown (see fixed_model for one model, hard coded).
+    Only one model is ever built at a time - switching destroys the outgoing
     canvas (after stopping its animation loop, since a live canvas
     calling into a destroyed widget every frame would raise forever) and
     builds the new one in its place.
@@ -144,7 +144,7 @@ class Builder(Panel):
 
     def _auto_switch(self):
         submarine_mode = bool(self.context.buffer.defender_status.get("submarine_mode", True))
-        key = "defender_submarine" if submarine_mode else "defender_hvac"
+        key = "ap_polled_submarine_map" if submarine_mode else "ap_polled_hvac_chart"
         if key in self.labels_by_key:
             self.select_model(key)
 

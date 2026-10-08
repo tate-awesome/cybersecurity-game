@@ -16,12 +16,35 @@ from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
 from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR, MENU_BAR_GROUPS
+from ...widgets.panels.modbus_model._builder import MODELS
+
+# The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
+BUTTON_ORDER = [
+    "toggle_button", "theme_button", "labels_button", "page_button",
+    "pcap_button", "save_button", "load_button", "stream_button", "preset_button", "data_button",
+    "workspace_editor_button", "delete_all_workspace_data_button", "refresh_button", "reset_button", "help_button",
+    "back_button", "quit_button",
+]
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
 
 # Numeric fields that are real numbers, not 0/1 on-off switches
 NUMBER_FIELDS = {"factor", "multiplier", "offset", "strip_chart_auto_fit_max_seconds"}
+
+# Settings the game itself sets from a dropdown, shown as the same choices here - by
+# path in _default.json. The model panel's dropdown sets modbus_model_selected
+# ("agnostic" is the default: start on the first available model).
+SETTING_DROPDOWNS = {
+    ("modbus_model_selected",): ["agnostic", *MODELS],
+}
+
+
+def menu_bar_buttons() -> list[str]:
+    '''Every MenuBar button a page config's "menu_bar" can name, in the standard order.'''
+    names = [name for name, method in inspect.getmembers(MenuBar, inspect.isfunction)
+             if name.endswith("_button") and list(inspect.signature(method).parameters) == ["self"]]
+    return sorted(names, key=lambda name: (BUTTON_ORDER.index(name) if name in BUTTON_ORDER else len(BUTTON_ORDER), name))
 
 
 def is_switch(key: str, default) -> bool:
@@ -61,7 +84,7 @@ class ConfigEditor(Page):
 
       - its own fields (name, section, order, description, ...)
       - its menu bar buttons, as checkboxes (saved in the standard order)
-      - its pane layout's weights (the layout itself can't be changed here)
+      - its pane layout's shape and weights (layout_shape, layout_weights)
       - every field in _default.json, holding the workspace's current value
 
     Every section has a plain-language explanation (from
@@ -272,7 +295,7 @@ class ConfigEditor(Page):
         self.build_description_tab()
         self.form = self.new_tab("Menu Bar")
         self.build_menu_bar_section()
-        self.layout_editor = LayoutEditor(self, self.config.get("panes"))
+        self.layout_editor = LayoutEditor(self, self.config.get("layout_shape"), self.config.get("layout_weights"))
         self.tabs.addTab(self.layout_editor.shape_tab, "Layout Shape")
         self.tabs.addTab(self.layout_editor.weights_tab, "Layout Weights")
         self.form = self.new_tab("Settings")
@@ -500,10 +523,32 @@ class ConfigEditor(Page):
     def add_setting_rows(self, rows: "Rows", path: tuple, default: dict, depth: int):
         for key, item_default in default.items():
             if isinstance(item_default, dict):
-                rows.heading(key, depth=depth)
+                description, details = self.key_notes(path + (key,))
+                rows.heading(key, depth=depth, tooltip=details, description=description)
                 self.add_setting_rows(rows, path + (key,), item_default, depth + 1)
             else:
                 self.add_setting_row(rows, path + (key,), item_default, depth)
+
+    def key_notes(self, path: tuple) -> tuple[str, str]:
+        '''
+        One settings key's (description, details) from _default_notes.json's
+        "settings_keys", nested like _default.json: the short description
+        for the Description column and the longer details for the key's
+        tooltip. A "*" entry covers any key without its own (every hreg_N),
+        and a nested object's "_note" explains its heading. A top-level key
+        with neither falls back to its "settings_fields" explanation as its
+        tooltip.
+        '''
+        node = self.notes.get("settings_keys", {})
+        for key in path:
+            node = node.get(key, node.get("*")) if isinstance(node, dict) else None
+        if isinstance(node, dict) and "description" not in node:
+            node = node.get("_note")
+        if isinstance(node, dict):
+            return str(node.get("description", "")), str(node.get("details", ""))
+        if len(path) == 1:
+            return "", self.notes.get("settings_fields", {}).get(path[0], "")
+        return "", ""
 
     def layout_panels(self) -> list[str]:
         '''The panel types in the layout being edited, in layout order, each once.'''
@@ -576,14 +621,19 @@ class ConfigEditor(Page):
         input; otherwise ("untouched") just an Edit button.
         '''
         touched, value = self.config_value(path)
-        widget, reader = self.leaf(path[-1], default, value if touched else default)
+        widget, reader = self.leaf(path, default, value if touched else default)
         cell = SettingCell(self, path, widget, reader, default, touched)
-        cell.label = rows.add(path[-1], cell, depth=depth, default_text=SettingCell.describe(path[-1], default))
+        description, details = self.key_notes(path)
+        cell.label = rows.add(path[-1], cell, depth=depth, tooltip=details, description=description,
+                              default_text=SettingCell.describe(path[-1], default))
         cell.show_state()
         self.setting_cells.append(cell)
 
     # Widgets, each paired with a reader that turns it back into a config value
-    def leaf(self, key: str, default, value) -> tuple[QWidget, Callable[[], Any]]:
+    def leaf(self, path: tuple, default, value) -> tuple[QWidget, Callable[[], Any]]:
+        key = path[-1]
+        if path in SETTING_DROPDOWNS:
+            return self.choice_dropdown(SETTING_DROPDOWNS[path], value)
         if is_switch(key, default):
             return self.checkbox(value, as_bool=isinstance(default, bool), as_float=isinstance(value, float))
         if isinstance(default, (int, float)):
@@ -604,6 +654,27 @@ class ConfigEditor(Page):
             return box, box.isChecked
         on, off = (1.0, 0.0) if as_float else (1, 0)
         return box, lambda: on if box.isChecked() else off
+
+    def choice_dropdown(self, options: list[str], value) -> tuple[QComboBox, Callable[[], str]]:
+        '''
+        A fixed set of choices, each explained by its tooltip (its "available"
+        description in _default_notes.json, when it has one). A value that
+        isn't one of them is kept as an extra choice, so loading and saving
+        never changes it.
+        '''
+        combo = QComboBox()
+        combo.setFont(self.style.get_font("default"))
+        choices = list(options) + ([str(value)] if str(value) not in options else [])
+        notes = self.notes.get("settings_keys", {}).get("available", {})
+        for index, choice in enumerate(choices):
+            combo.addItem(choice)
+            note = notes.get(choice)
+            if isinstance(note, dict):
+                combo.setItemData(index, note.get("details", ""), Qt.ItemDataRole.ToolTipRole)
+        combo.setCurrentText(str(value))
+        combo.setMaximumWidth(360)
+        combo.currentIndexChanged.connect(self.mark_dirty)
+        return combo, combo.currentText
 
     def text_entry(self, text: str) -> tuple[QLineEdit, Callable[[], str]]:
         entry = QLineEdit(text)
@@ -694,7 +765,8 @@ class ConfigEditor(Page):
 
         config["menu_bar"] = [name for name, box in self.button_boxes.items() if box.isChecked()]
 
-        config["panes"], layout_errors = self.layout_editor.authored()
+        config.pop("panes", None)
+        config["layout_shape"], config["layout_weights"], layout_errors = self.layout_editor.authored()
         errors += layout_errors
         return config, errors
 
@@ -715,38 +787,53 @@ class Rows:
         label.setToolTip(tooltip)
         return label
 
-    def heading(self, text: str, depth: int = 0, tooltip: str = ""):
+    def heading(self, text: str, depth: int = 0, tooltip: str = "", description: str = ""):
         self.grid.addWidget(self.label(text, depth, tooltip), self.row, 0)
+        if description:
+            self.grid.addWidget(self.description(description), self.row, 1)
         self.row += 1
 
+    def description(self, text: str) -> QLabel:
+        '''A settings key's short explanation, wrapping within the Description column.'''
+        label = QLabel(text)
+        label.setFont(self.page.style.get_font("small"))
+        label.setWordWrap(True)
+        label.setMinimumWidth(self.DESCRIPTION_WIDTH)
+        return label
+
     DEFAULT_WIDTH = 260
+    DESCRIPTION_WIDTH = 260
 
     def setting_header(self):
         '''
-        Column titles for a settings section: the key, its _default.json
-        value, the Edit/Clear buttons (untitled), and this workspace's value.
+        Column titles for a settings section: the key, what it does, its
+        _default.json value, the Edit/Clear buttons (untitled), and this
+        workspace's value.
         '''
-        self.grid.setColumnStretch(1, 0)
-        self.grid.setColumnStretch(3, 1)
-        self.grid.setColumnMinimumWidth(1, self.DEFAULT_WIDTH)
-        for column, text in ((1, "Default"), (3, "This workspace")):
+        self.grid.setColumnStretch(1, 1)
+        self.grid.setColumnStretch(4, 1)
+        self.grid.setColumnMinimumWidth(1, self.DESCRIPTION_WIDTH)
+        self.grid.setColumnMinimumWidth(2, self.DEFAULT_WIDTH)
+        for column, text in ((1, "Description"), (2, "Default"), (4, "This workspace")):
             label = QLabel(text)
             label.setFont(self.page.style.get_font("small"))
             self.grid.addWidget(label, self.row, column)
         self.row += 1
 
-    def add(self, text: str, widget: QWidget, depth: int = 0, tooltip: str = "", default_text: str | None = None) -> QLabel:
+    def add(self, text: str, widget: QWidget, depth: int = 0, tooltip: str = "", default_text: str | None = None,
+            description: str = "") -> QLabel:
         label = self.label(text, depth, tooltip)
         if default_text is not None:
-            # Settings rows: key and default centred on the row's buttons
+            # Settings rows: key, description and default centred on the row's buttons
             self.grid.addWidget(label, self.row, 0, Qt.AlignmentFlag.AlignVCenter)
+            self.grid.addWidget(self.description(description), self.row, 1, Qt.AlignmentFlag.AlignVCenter)
             default = QLabel(default_text)
             default.setFont(self.page.style.get_font("default"))
             default.setWordWrap(True)
             default.setMaximumWidth(self.DEFAULT_WIDTH)
-            self.grid.addWidget(default, self.row, 1, Qt.AlignmentFlag.AlignVCenter)
-            self.grid.addWidget(widget.touch_button, self.row, 2, Qt.AlignmentFlag.AlignVCenter)
-            self.grid.addWidget(widget, self.row, 3)
+            self.grid.addWidget(default, self.row, 2, Qt.AlignmentFlag.AlignVCenter)
+            self.grid.addWidget(widget.touch_button, self.row, 3, Qt.AlignmentFlag.AlignVCenter)
+            self.grid.addWidget(widget, self.row, 4)
             self.row += 1
             return label
         self.grid.addWidget(label, self.row, 0, Qt.AlignmentFlag.AlignTop)
@@ -759,8 +846,8 @@ class Rows:
 
 class SettingCell(QWidget):
     '''
-    A setting's value column, beside its key and default value. The row
-    reads key | default | button | this workspace, where the last column is
+    A setting's value column, beside its key, description and default value. The row
+    reads key | description | default | button | this workspace, where the last column is
     this widget and the button (touch_button) is placed before it by Rows:
 
       - untouched (only _default.json has this key): Edit | "Uses default"
@@ -848,6 +935,8 @@ class SettingCell(QWidget):
             widget.setChecked(default in (1, "1", True))
         elif isinstance(widget, QPlainTextEdit):
             widget.setPlainText("\n".join(str(item) for item in default))
+        elif isinstance(widget, QComboBox):
+            widget.setCurrentText(str(default))
         elif isinstance(widget, QLineEdit):
             widget.setText(f"{default:g}" if isinstance(default, float) else str(default))
         widget.blockSignals(False)

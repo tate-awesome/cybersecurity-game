@@ -72,7 +72,7 @@ class PageManager:
         (see the class docstring). Returns {} for a key with no config,
         like a hand-written page nothing needs to link to.
 
-        The "settings", "menu_bar" and "panes" keys are smart-unpacked: any
+        The "settings", "menu_bar", "layout_shape" and "layout_weights" keys are smart-unpacked: any
         "_ref" inside them resolves against their own known folder under
         assets/settings (see settings_roots), not the page's own folder.
         That lets a page config reference shared settings/layout data with a
@@ -83,58 +83,86 @@ class PageManager:
         path = self.config_paths.get(key)
         if path is None:
             return {}
-        config = self.context.json.load(path, self.settings_roots())
-        if "panes" in config:
-            config["panes"] = self.parse_panes(config["panes"])
-        return config
+        return self.context.json.load(path, self.settings_roots())
 
     # Pane layouts
     PANE_GROUPS = {"h_panes": "horizontal", "v_panes": "vertical"}
 
-    def parse_panes(self, layout: dict) -> dict | None:
+    def layout_tree(self, shape: dict | None, weights: dict | None = None) -> dict | None:
         '''
-        Converts an authored pane layout into the positional tree that
-        WorkspacePage.build_panes, Panes.get_weights and the autosave
-        helpers below work with:
-        {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": "<panel type>"}]}
+        Combines a page config's "layout_shape" and "layout_weights" into
+        the positional tree that WorkspacePage.build_panes, the layout
+        editor and the autosave helpers below work with:
+        {"id": ..., "orientation": ..., "children": [{"id": ..., "weight": ..., "panes": {...}} | {"id": ..., "weight": ..., "widget": "<panel type>"}]}
 
-        An authored layout is one group - a key starting with "h_panes"
-        (side by side) or "v_panes" (stacked) - whose contents are, in
-        order: "<panel type>": <weight> for a panel, or another group for
-        a nested set of panes, which gives its own size as its "weight".
-        Weights are proportional shares of the group they sit in. A group
-        only needs the prefix, so sibling groups can be told apart by name
-        ("v_panes_left", "v_panes_right"). Keys starting with "_" are notes.
+        "layout_shape" is one group: {"h_panes_1": [...]} (side by side)
+        or {"v_panes_1": [...]} (stacked), listing its contents in order -
+        a panel id string like "status_panel_1", or another group of the
+        same form. Every id is its type plus a number, so the same panel
+        type can appear any number of times as long as each copy's number
+        differs. "layout_weights" is a flat {id: weight}: each pane's
+        proportional share of the group it sits in (default 1). The top
+        group fills the page, so it needs no weight.
         '''
-        if not isinstance(layout, dict):
+        if not isinstance(shape, dict):
             return None
-        groups = [(key, value) for key, value in layout.items() if self.pane_group(key)]
+        groups = [(key, value) for key, value in shape.items() if self.pane_group(key)]
         if len(groups) != 1:
-            print(f"Pane layout should have exactly one h_panes/v_panes group at its top, found {len(groups)}")
+            print(f"layout_shape should have exactly one h_panes/v_panes group at its top, found {len(groups)}")
         if not groups:
             return None
-        return self.parse_pane_group(*groups[0])
+        weights = weights if isinstance(weights, dict) else {}
+        seen = set()
+        tree = self.parse_layout_group(*groups[0], weights, seen)
+        for unused in sorted(set(weights) - seen):
+            if not unused.startswith("_"):
+                print(f"layout_weights has {unused!r}, which isn't in layout_shape")
+        return tree
 
     def pane_group(self, key: str) -> str | None:
-        '''The orientation a key names if it's an h_panes/v_panes group, else None.'''
+        '''The orientation a key names if it's an h_panes/v_panes group id, else None.'''
         for prefix, orientation in self.PANE_GROUPS.items():
             if key.startswith(prefix):
                 return orientation
         return None
 
-    def parse_pane_group(self, key: str, group: dict) -> dict:
+    @staticmethod
+    def panel_type(panel_id: str) -> str:
+        '''The panel type a layout id names: "status_panel_2" -> "status_panel".'''
+        base, _, number = panel_id.rpartition("_")
+        return base if base and number.isdigit() else panel_id
+
+    def parse_layout_group(self, group_id: str, contents, weights: dict, seen: set) -> dict:
+        seen.add(group_id)
         children = []
-        for child_key, value in group.items():
-            if child_key == "weight" or child_key.startswith("_"):
-                continue
-            if self.pane_group(child_key):
-                if not isinstance(value, dict):
-                    print(f"Pane group {child_key!r} should be an object, skipping")
+        if not isinstance(contents, list):
+            print(f"Layout group {group_id!r} should be a list, skipping its contents")
+            contents = []
+        for item in contents:
+            if isinstance(item, str):
+                child_id, value = item, None
+            elif isinstance(item, dict) and len(item) == 1:
+                child_id, value = next(iter(item.items()))
+                if not self.pane_group(child_id):
+                    print(f"Layout group {child_id!r} should start with h_panes or v_panes, skipping")
                     continue
-                children.append({"weight": value.get("weight", 1), "panes": self.parse_pane_group(child_key, value)})
             else:
-                children.append({"weight": value, "widget": child_key})
-        return {"orientation": self.pane_group(key), "children": children}
+                print(f"Layout item {item!r} in {group_id!r} should be a panel id or a one-key group, skipping")
+                continue
+            if child_id in seen:
+                print(f"Layout id {child_id!r} is used more than once - give each copy its own number")
+            seen.add(child_id)
+            weight = weights.get(child_id, 1)
+            if not isinstance(weight, (int, float)) or isinstance(weight, bool) or weight <= 0:
+                print(f"layout_weights[{child_id!r}] should be a number above 0, using 1")
+                weight = 1
+            child = {"id": child_id, "weight": weight}
+            if value is None:
+                child["widget"] = self.panel_type(child_id)
+            else:
+                child["panes"] = self.parse_layout_group(child_id, value, weights, seen)
+            children.append(child)
+        return {"id": group_id, "orientation": self.pane_group(group_id), "children": children}
 
     def link_label(self, key: str) -> str:
         '''
@@ -164,7 +192,8 @@ class PageManager:
         return {
             "settings": settings,
             "menu_bar": settings / "menu_bar",
-            "panes": settings / "panes",
+            "layout_shape": settings / "layout_shape",
+            "layout_weights": settings / "layout_weights",
         }
 
     def get_build_type(self, key: str) -> str | None:
@@ -175,52 +204,46 @@ class PageManager:
         '''
         Loads the page's default config, then overlays anything a
         student previously autosaved for this exact page (see
-        save_current_page) on top of its "settings" and "panes" - only
-        the input/register values and pane weights they changed from
+        save_current_page) on top of its "settings" and "layout_weights" -
+        only the input/register values and pane weights they changed from
         those defaults - before pushing the merged settings into
         context.states (which puts them on top of _packages/_default.json)
         so the page's widgets have the right values to read as they build
-        themselves. Called by WorkspacePage, the only build type with
-        "settings"/"panes" to begin with.
+        themselves. Also adds "layout": the layout_tree built from the
+        page's shape and those merged weights. Called by WorkspacePage,
+        the only build type with "settings"/"layout_shape" to begin with.
         '''
         config = self.load_page_config(key)
         if not isinstance(config.get("settings"), dict):
             config["settings"] = {}
+        if not isinstance(config.get("layout_weights"), dict):
+            config["layout_weights"] = {}
 
         saved_path = self.context.paths.user_pages / key / "config.json"
         if saved_path.is_file():
             saved = self.context.json.load(saved_path)
             self.context.json.deep_merge(config["settings"], saved.get("settings"))
-            if isinstance(config.get("panes"), dict):
-                self.merge_pane_weights(config["panes"], saved.get("panes"))
+            saved_weights = saved.get("layout_weights")
+            if isinstance(saved_weights, dict):
+                # Matched by id, so a saved weight only lands on a pane that's still in the layout
+                tree = self.layout_tree(config.get("layout_shape"))
+                ids = self.layout_ids(tree) if tree else set()
+                for pane_id, weight in saved_weights.items():
+                    if pane_id in ids and isinstance(weight, (int, float)) and weight > 0:
+                        config["layout_weights"][pane_id] = weight
 
+        config["layout"] = self.layout_tree(config.get("layout_shape"), config["layout_weights"])
         self.context.states.load(config["settings"])
         return config
 
-    def merge_pane_weights(self, default: dict | None, saved: dict | None):
-        '''
-        Overlays "weight" values from a previously-saved pane tree onto
-        the page's own default pane tree, matched purely by position
-        within each "children" list - a saved tree always comes from
-        walking the live widgets built from this same default tree (see
-        Panes.get_weights), so the two line up index for index without
-        needing a "key" to match children by name. Everything else
-        about the default tree (widget defs, nested structure) is left
-        untouched. Mutates default in place.
-        '''
-        if not isinstance(default, dict) or not isinstance(saved, dict):
-            return
-        default_children = default.get("children")
-        saved_children = saved.get("children")
-        if not isinstance(default_children, list) or not isinstance(saved_children, list):
-            return
-        for default_child, saved_child in zip(default_children, saved_children):
-            if not isinstance(default_child, dict) or not isinstance(saved_child, dict):
-                continue
-            weight = saved_child.get("weight")
-            if isinstance(weight, (int, float)):
-                default_child["weight"] = weight
-            self.merge_pane_weights(default_child.get("panes"), saved_child.get("panes"))
+    def layout_ids(self, tree: dict) -> set[str]:
+        '''Every pane id below the top group of a layout_tree.'''
+        ids = set()
+        for child in tree.get("children", []):
+            ids.add(child["id"])
+            if "panes" in child:
+                ids |= self.layout_ids(child["panes"])
+        return ids
 
     def save_current_page(self):
         '''
@@ -234,13 +257,14 @@ class PageManager:
         Saves the diff of context.states (kept live by the widgets that
         read/write it as the student works) against the default
         "settings", and the live pane weights (read straight off the
-        Panes tree, since dragging a sash doesn't itself touch
-        context.states) only if their proportions differ from the
-        default "panes". If nothing differs, any old save is deleted
-        instead. Called by ContextManager on page exit/app close (and by
-        the Router before a refresh), while the page's widgets are still
-        alive to read from. A no-op for anything but a "workspace" page,
-        the only build type with "settings"/"panes" worth saving.
+        Panes tree as {id: size}, since dragging a sash doesn't itself
+        touch context.states) as "layout_weights" only if their
+        proportions differ from the default layout. If nothing differs,
+        any old save is deleted instead. Called by ContextManager on page
+        exit/app close (and by the Router before a refresh), while the
+        page's widgets are still alive to read from. A no-op for anything
+        but a "workspace" page, the only build type with
+        "settings"/"layout_shape" worth saving.
         '''
         key = self.context.router.current_page
         if key is None or self.get_build_type(key) != "workspace":
@@ -257,8 +281,9 @@ class PageManager:
         panes_root = getattr(self.context.router.current_frame, "panes_root", None)
         if panes_root is not None:
             weights = panes_root.get_weights()
-            if not self.pane_weights_match(default.get("panes"), weights):
-                saved["panes"] = weights
+            tree = self.layout_tree(default.get("layout_shape"), default.get("layout_weights"))
+            if not self.pane_weights_match(tree, weights):
+                saved["layout_weights"] = weights
 
         path = self.context.paths.user_pages / key / "config.json"
         if saved:
@@ -266,30 +291,26 @@ class PageManager:
         else:
             path.unlink(missing_ok=True)
 
-    def pane_weights_match(self, default: dict | None, live: dict | None, tolerance: float = 0.02) -> bool:
+    def pane_weights_match(self, default: dict | None, live: dict, tolerance: float = 0.02) -> bool:
         '''
-        Whether a live pane tree (see Panes.get_weights - pixel sizes)
-        splits every level in the same proportions as the default pane
-        tree's "weight"s, within tolerance (a fraction of the parent's
-        total) to absorb pixel rounding. Matched by position, same as
-        merge_pane_weights.
+        Whether live pane sizes (see Panes.get_weights - {id: pixel size})
+        split every group in the same proportions as the default
+        layout_tree's "weight"s, within tolerance (a fraction of the
+        group's total) to absorb pixel rounding.
         '''
-        if not isinstance(default, dict) or not isinstance(live, dict):
+        if not isinstance(default, dict):
             return True
-        default_children = default.get("children") or []
-        live_children = live.get("children") or []
-        if len(default_children) != len(live_children):
+        children = default.get("children") or []
+        if any(child["id"] not in live for child in children):
             return False
-        default_total = sum(child.get("weight", 1) for child in default_children)
-        live_total = sum(child.get("weight", 0) for child in live_children)
+        default_total = sum(child["weight"] for child in children)
+        live_total = sum(live[child["id"]] for child in children)
         if default_total <= 0 or live_total <= 0:
             return default_total == live_total
-        for default_child, live_child in zip(default_children, live_children):
-            default_share = default_child.get("weight", 1) / default_total
-            live_share = live_child.get("weight", 0) / live_total
-            if abs(default_share - live_share) > tolerance:
+        for child in children:
+            if abs(child["weight"] / default_total - live[child["id"]] / live_total) > tolerance:
                 return False
-            if not self.pane_weights_match(default_child.get("panes"), live_child.get("panes"), tolerance):
+            if not self.pane_weights_match(child.get("panes"), live, tolerance):
                 return False
         return True
 

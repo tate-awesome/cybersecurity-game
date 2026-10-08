@@ -56,6 +56,11 @@ class DefenderModbusBuffer:
             # clock (see _relative_time).
             self._first_time: dict[str, float] = {}
 
+            # Newest relative time put() per variable, and the wall-clock
+            # moment it arrived - lets get_relative_now() keep a strip
+            # chart's "now" sliding forward between polls (see there).
+            self._latest: dict[str, tuple[float, float]] = {}
+
             # HVAC pause tracking. Starts paused: nothing should count as
             # elapsed HVAC history before the HVAC model has ever actually
             # been shown once (see resume_hvac) - paused_at starts at None
@@ -148,6 +153,35 @@ class DefenderModbusBuffer:
                 history.append((relative_time - 0.0000001, previous_value))
             history.append((relative_time, value))
             self.singles[variable][attribute] = value
+            latest = self._latest.get(variable)
+            if latest is None or relative_time >= latest[0]:
+                self._latest[variable] = (relative_time, wall_time())
+
+    def get_relative_now(self, variable: str) -> float:
+        '''
+        "Now" for one variable, in the same relative time its history is
+        stored in - the defender-page analogue of PacketBuffer.get_relative_time(),
+        so strip charts of poll data scroll on the poller's own clock instead
+        of waiting for a sniffed packet to set first_packet_time.
+
+        Submarine variables are stamped on the AP's uptime clock, which can't
+        be read between polls - so "now" is their newest sample's time plus
+        however long ago (wall clock) that sample arrived. HVAC variables are
+        stamped on the wall clock already (see poll_unpacker._unpack_hvac),
+        so their "now" is exact, and stays frozen along with their history
+        while paused (see pause_hvac).
+        '''
+        with self.lock:
+            if variable in HVAC_VARIABLES:
+                if not self._hvac_active or variable not in self._first_time:
+                    return self._hvac_frozen_time
+                return wall_time() - self._first_time[variable] - self._hvac_paused_elapsed
+
+            latest = self._latest.get(variable)
+            if latest is None:
+                return 0.0
+            latest_time, received_at = latest
+            return latest_time + (wall_time() - received_at)
 
     def get_single(self, variable: str, attribute: str):
         '''Returns the latest value for (variable, attribute), or None if there is no data.'''

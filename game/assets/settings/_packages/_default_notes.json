@@ -1,5 +1,5 @@
 {
-    "_note": "Plain-language explanations of every field in a workspace config and in _default.json, shown by the Workspace Config Editor demo page. When you add a field to _default.json, explain it here too.",
+    "_note": "Plain-language explanations of every field in a workspace config and in _default.json, shown by the Workspace Config Editor demo page. When you add a field to _default.json, explain it here too - in settings_fields, and each of its keys in settings_keys.",
     "workspace_fields": {
         "_note": "Markdown shown on the workspace select page when this workspace is selected: summary, objectives, reading, videos. One string, or a list of blocks joined with blank lines. Images like screenshot.png load from the workspace's own folder.",
         "_dev_note": "Notes for developers. Never shown in the game - any field whose name starts with \"_\" is ignored.",
@@ -15,11 +15,12 @@
         "settings": "Only the settings this workspace changes from _default.json, where every option starts off (0). Turn on what the lesson needs: each form, model or column usually needs both its \"available\" entry and its *_shown entry set to 1. See the Settings Fields section below.",
         "title": "The menu bar title, as the labels key \"menu_bar_titles_<title>\" (e.g. \"arp_ip_workspace\").",
         "menu_bar": "The menu bar's buttons, left to right. Put the most important ones last: on a narrow window, buttons squash into the \"...\" menu from the left.",
-        "panes": "The panel layout: exactly one \"h_panes\" (side by side) or \"v_panes\" (stacked) group. Inside a group, \"<panel type>\": <weight> places a panel and a nested group places more panes; \"weight\" is the group's own share of its parent. Weights are proportional. Sibling groups need different names, like \"v_panes_left\" and \"v_panes_right\".",
+        "layout_shape": "The panel layout: exactly one group, {\"h_panes_1\": [...]} (side by side) or {\"v_panes_1\": [...]} (stacked), listing its contents in order. Each item is a panel id - its panel type plus a number, like \"status_panel_1\" - or another group of the same form. The same panel type can appear any number of times, as long as each copy has its own number (\"status_panel_1\", \"status_panel_2\"). Every id must be unique, groups included.",
+        "layout_weights": "Each panel or group id from layout_shape and its size: a proportional share of the group it sits in, so a weight-2 pane gets twice the room of a weight-1 neighbour. An id left out gets 1; the top group fills the page and needs none.",
         "background": "Optional. The moving background behind the panels, e.g. {\"visual\": \"network_mesh\", \"blur\": 6}. false turns it off; leave it out for the usual still network."
     },
     "settings_fields": {
-        "model_sprites": "Which parts of the model canvases are drawn (1 = drawn). Submarine map: boat_in through ocean. HVAC house: background through indicator. Turn these on in any workspace that shows those models.",
+        "model_sprites": "Which parts of the model canvases are drawn (1 = drawn). Submarine map: ocean, grid_lines, path_in and boat_in (the other submarine keys aren't used yet). HVAC house: background through indicator. Turn these on in any workspace that shows those models.",
         "model_colors": "Colors for the model canvases, as theme color names (\"field\", \"red\", ...) or hex codes. Submarine map: ocean through boat_out_outline. HVAC house: background through hotness.",
         "strip_chart_sprites": "Not used by the game yet.",
         "strip_chart_colors": "Colors for the strip charts: background and grid, one color per plotted line in \"paths\", and the live-value markers in \"heads\".",
@@ -28,10 +29,10 @@
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Show Forms. A form only appears if \"available\" also offers it.",
-        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: table, modify. Defender ModBus forms: mode, sliders. Models in the model panel: hvac, submarine, defender_hvac, defender_submarine - and auto_switch offers the checkbox that follows the AP's reported mode. A form also needs its *_forms_shown entry to start out showing.",
+        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: table, modify. Defender ModBus forms: mode, sliders. Models in the model panel: sniffed_hvac_house and sniffed_submarine_map (drawn from sniffed traffic), ap_polled_hvac_chart and ap_polled_submarine_map (drawn from what the AP reports) - and auto_switch offers the checkbox that follows the AP's reported mode. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"table\" (live register values) and \"modify\" (rewriting values in transit).",
         "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
-        "modbus_model_selected": "Which model the model panel starts on. If it isn't available here, the panel starts on the first one that is.",
+        "modbus_model_selected": "Which model the Model and Source Configurable Visualizers panel starts on, by its key in \"available\" (e.g. \"sniffed_submarine_map\"). If it isn't available here, the panel starts on the first one that is.",
         "modbus_model_auto_switch": "1 starts with the defender models following the AP's reported mode automatically.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
@@ -43,5 +44,681 @@
         "packet_filter_checkboxes": "Which packet filters start out ticked (1). Nothing ticked shows every packet.",
         "packet_filter_entries": "What starts out typed into the packet filter's text boxes, like an address to filter by.",
         "packet_columns": "Which packet console columns are shown (1). Students can change this with Show Columns."
+    },
+    "settings_keys": {
+        "_note": "Two explanations per key inside each settings field, shown by the Workspace Config Editor: \"description\" in the Description column beside the key, and the longer \"details\" as a tooltip on the key's name. Nested like _default.json; a \"*\" entry covers every key at that level that has no entry of its own (e.g. every hreg_N). A nested object's own \"_note\" explains its heading.",
+        "model_sprites": {
+            "boat_in": {
+                "description": "Submarine map: both vessels - where the submarine reports it is, and where it's commanded to be.",
+                "details": "Draws both vessels: the reported (incoming) one at the position the submarine itself sent, and the commanded (outgoing) one at the position forwarded on after any rewriting in transit. When nothing is tampering with traffic they sit on top of each other; in an attack lesson the gap shows what the spoofing did. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
+            },
+            "boat_out": {
+                "description": "Not used yet - meant for the commanded vessel.",
+                "details": "Meant to switch the commanded vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+            },
+            "path_in": {
+                "description": "Submarine map: both trails, behind the reported and the commanded vessel.",
+                "details": "Draws both trails of past positions: one behind the reported (incoming) vessel and one behind the commanded (outgoing) vessel. Where the two trails split is the visible footprint of a man-in-the-middle attack. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
+            },
+            "path_out": {
+                "description": "Not used yet - meant for the commanded vessel's trail.",
+                "details": "Meant to switch the commanded vessel's trail on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+            },
+            "boat_in_label": {
+                "description": "Not used yet - meant for a label beside the reported vessel.",
+                "details": "Meant to switch a label beside the reported vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+            },
+            "boat_out_label": {
+                "description": "Not used yet - meant for a label beside the commanded vessel.",
+                "details": "Meant to switch a label beside the commanded vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+            },
+            "boat_in_position": {
+                "description": "Not used yet - meant for a coordinate readout for the reported vessel.",
+                "details": "Meant to switch a coordinate readout for the reported vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+            },
+            "boat_out_position": {
+                "description": "Not used yet - meant for a coordinate readout for the commanded vessel.",
+                "details": "Meant to switch a coordinate readout for the commanded vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+            },
+            "grid_numbers": {
+                "description": "Not used yet - the grid numbers come with grid_lines.",
+                "details": "Meant to switch the numbers along the submarine map's grid on and off separately. Nothing reads this key yet, so it has no effect. For now grid_lines draws the grid, its axes and its numbers together."
+            },
+            "grid_lines": {
+                "description": "Submarine map: the coordinate grid, its center axes and its numbers.",
+                "details": "Draws the coordinate grid over the ocean, along with its two center axes and the coordinate numbers. It gives students a sense of scale and direction as the vessel moves. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
+            },
+            "ocean": {
+                "description": "Submarine map: the water background.",
+                "details": "Fills the map's background with the ocean color. With it off the map is drawn straight over the panel background. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
+            },
+            "background": {
+                "description": "HVAC house: the scene background.",
+                "details": "Fills the house canvas's background with its background color. With it off the house is drawn straight over the panel background. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "room": {
+                "description": "HVAC house: the room outline.",
+                "details": "Draws the outline of the room being heated or cooled - the space whose temperature the whole HVAC lesson is about. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "room_thermostat": {
+                "description": "HVAC house: the thermostat on the room wall, showing the room temperature.",
+                "details": "Draws the thermostat on the room's wall with the temperature the house actually sent. Compare it with the controller's thermostat to spot a spoofed temperature. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "window": {
+                "description": "HVAC house: the window.",
+                "details": "Draws the room's window. Purely decorative - it helps the drawing read as a house. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "vent": {
+                "description": "HVAC house: the vent, which shows heating or cooling airflow.",
+                "details": "Draws the vent, which shows whether heating or cooling air is coming in. It reflects the command the house actually received, so a rewritten command shows up here. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "controller_box": {
+                "description": "HVAC house: the controller box.",
+                "details": "Draws the HVAC controller's box - the device on the other side of the ModBus link that decides when to heat. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "controller_thermostat": {
+                "description": "HVAC house: the controller's own temperature readout.",
+                "details": "Draws the temperature reading the controller received, which may differ from the room's real temperature if it was altered in transit. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            },
+            "indicator": {
+                "description": "HVAC house: the heating/cooling indicator light.",
+                "details": "Draws the controller's heating/cooling indicator light, showing the command the controller sent. Compare it with the vent to spot a rewritten command. Part of the HVAC house canvas (the sniffed HVAC house in attacker lessons)."
+            }
+        },
+        "model_colors": {
+            "ocean": {
+                "description": "Submarine map: water color.",
+                "details": "The water color behind the submarine map. A theme color name like \"field\" follows light and dark mode automatically; a hex code like \"#003366\" stays fixed. Only the sniffed submarine map uses it."
+            },
+            "grid_lines": {
+                "description": "Submarine map: grid line color.",
+                "details": "Color of the submarine map's coordinate grid lines. Keep it subtle against the ocean color so the vessels stay the focus. Only the sniffed submarine map uses it."
+            },
+            "grid_axes": {
+                "description": "Submarine map: color of the two center axes.",
+                "details": "Color of the two center axes through the submarine map's origin, drawn over the grid so the zero lines stand out. Only the sniffed submarine map uses it."
+            },
+            "grid_numbers": {
+                "description": "Submarine map: grid number color.",
+                "details": "Color of the coordinate numbers along the submarine map's grid. It needs good contrast with the ocean color to stay readable. Only the sniffed submarine map uses it."
+            },
+            "path_in": {
+                "description": "Submarine map: trail color behind the reported (incoming) vessel.",
+                "details": "Trail color behind the reported (incoming) vessel. Usually matches boat_in_fill and boat_in_outline so the vessel and its trail read as one. Only the sniffed submarine map uses it."
+            },
+            "boat_in_fill": {
+                "description": "Submarine map: fill color of the reported vessel.",
+                "details": "Fill color of the reported (incoming) vessel. Usually matches path_in and boat_in_outline, and should differ clearly from the commanded vessel's color. Only the sniffed submarine map uses it."
+            },
+            "boat_in_outline": {
+                "description": "Submarine map: outline color of the reported vessel.",
+                "details": "Outline color of the reported (incoming) vessel. Usually the same as its fill; a contrasting color makes it stand out against the ocean. Only the sniffed submarine map uses it."
+            },
+            "path_out": {
+                "description": "Submarine map: trail color behind the commanded (outgoing) vessel.",
+                "details": "Trail color behind the commanded (outgoing) vessel. Usually matches boat_out_fill and boat_out_outline so the vessel and its trail read as one. Only the sniffed submarine map uses it."
+            },
+            "boat_out_fill": {
+                "description": "Submarine map: fill color of the commanded vessel.",
+                "details": "Fill color of the commanded (outgoing) vessel. Usually matches path_out and boat_out_outline, and should differ clearly from the reported vessel's color. Only the sniffed submarine map uses it."
+            },
+            "boat_out_outline": {
+                "description": "Submarine map: outline color of the commanded vessel.",
+                "details": "Outline color of the commanded (outgoing) vessel. Usually the same as its fill; a contrasting color makes it stand out against the ocean. Only the sniffed submarine map uses it."
+            },
+            "background": {
+                "description": "HVAC house: background color.",
+                "details": "Background color of the HVAC house canvas. A theme color name like \"field\" follows light and dark mode automatically. Only the sniffed HVAC house uses it."
+            },
+            "line_art": {
+                "description": "HVAC house: outline color for the drawing.",
+                "details": "Color of every outline in the HVAC house drawing - walls, window, vent and controller. It needs good contrast with the background. Only the sniffed HVAC house uses it."
+            },
+            "fill": {
+                "description": "HVAC house: fill color for walls and boxes.",
+                "details": "Fill color for the HVAC house's walls and the controller box, drawn inside the line_art outlines. Only the sniffed HVAC house uses it."
+            },
+            "text": {
+                "description": "HVAC house: text color.",
+                "details": "Color of the HVAC house's text, like the temperature readouts on both thermostats. Only the sniffed HVAC house uses it."
+            },
+            "coldness": {
+                "description": "HVAC house: color used for cooling and cold temperatures.",
+                "details": "Color the HVAC house uses for cooling and cold temperatures, such as the vent's airflow and cold readings. Blue reads as cold to most students. Only the sniffed HVAC house uses it."
+            },
+            "hotness": {
+                "description": "HVAC house: color used for heating and hot temperatures.",
+                "details": "Color the HVAC house uses for heating and hot temperatures, such as the vent's airflow and hot readings. Red reads as hot to most students. Only the sniffed HVAC house uses it."
+            }
+        },
+        "strip_chart_sprites": {
+            "*": {
+                "description": "Not used by the game yet.",
+                "details": "Meant to switch individual parts of the strip charts on and off, like model_sprites does for the model canvases. Nothing reads it yet, so changing it has no effect."
+            }
+        },
+        "strip_chart_colors": {
+            "background": {
+                "description": "Chart background color.",
+                "details": "Background color of every strip chart (ModBus Monitors, Defender Monitors and the network graph's rate chart). A theme color name follows light and dark mode."
+            },
+            "grid_lines": {
+                "description": "Grid line color.",
+                "details": "Color of the strip charts' background grid lines. Keep it faint so the plotted lines stand out."
+            },
+            "grid_axes": {
+                "description": "Axis line color.",
+                "details": "Color of the strip charts' axis lines, drawn over the grid."
+            },
+            "grid_numbers": {
+                "description": "Axis number color.",
+                "details": "Color of the time and value numbers along the strip charts' axes. It needs good contrast with the chart background."
+            },
+            "paths": {
+                "description": "One color per plotted line, used in order. One color per line in this box.",
+                "details": "One color per plotted line, used in order: the first line gets the first color, and so on. If a chart plots more lines than there are colors, the list starts over. One color per line in this box."
+            },
+            "heads": {
+                "description": "Colors of the live-value markers at the end of each line, used in order.",
+                "details": "Colors of the live-value markers drawn at the newest point of each line, used in order. They show where the latest reading sits on the chart."
+            }
+        },
+        "game_progress": {
+            "*": {
+                "description": "Set to 1 once the student starts this network action form. Recorded but not read by the game yet.",
+                "details": "Set to 1 the first time the student starts this network action form, as a record of which tools they've tried. Nothing in the game reads it yet - it's groundwork for tracking lesson progress - so a workspace has no reason to change it, and editing it here changes nothing a student sees."
+            }
+        },
+        "network_action_form_inputs": {
+            "wifi": {
+                "description": "Wi-Fi form: the \"Device Name\" box - the network to connect to.",
+                "details": "What starts out typed into the Wi-Fi form's \"Device Name\" box - the wireless network to connect to. Pre-fill it when every student uses the same lab network."
+            },
+            "arp": {
+                "description": "ARP spoofing form: the target IP, then the host IP to impersonate. One per line.",
+                "details": "What starts out typed into the ARP spoofing form's two boxes: first the target IP to poison, then the host IP to impersonate. One per line. Pre-fill these when the lab's addresses are fixed."
+            },
+            "sniff": {
+                "description": "Not used - the sniffing form has no text boxes.",
+                "details": "The sniffing form has no text boxes, so nothing reads these values. The entry exists only to keep this group in step with the other forms."
+            },
+            "dos": {
+                "description": "Denial of service form: its two \"Target IP:Port\" boxes, in order. One per line.",
+                "details": "What starts out typed into the denial of service form's two \"Target IP:Port\" boxes, in order. One per line. Pre-fill them when the lab's target is fixed."
+            },
+            "ap_connect": {
+                "description": "AP connect form: the access point's address, e.g. http://192.168.4.1.",
+                "details": "What starts out typed into the AP connect form: the access point's web address, e.g. http://192.168.4.1. Every defender lesson needs it, since the other defender forms talk through this connection."
+            },
+            "encryption": {
+                "description": "Encryption form: the starting encryption key.",
+                "details": "What starts out typed into the encryption form's key box. The key must be plain ASCII and not empty to turn encryption on; the box locks while encryption is on."
+            }
+        },
+        "network_action_forms_shown": {
+            "wifi": {
+                "description": "Wi-Fi form: connects this computer to a wireless network.",
+                "details": "Starts the Wi-Fi form shown. It connects this computer to a wireless network - usually the first step of an attack lesson. Also needs available.wifi."
+            },
+            "nmap": {
+                "description": "Nmap form: scans the network for devices.",
+                "details": "Starts the Nmap form shown. It scans the network for devices and their open ports, so students can find their targets. Also needs available.nmap."
+            },
+            "arp": {
+                "description": "ARP spoofing form: poisons ARP tables to put this computer in the middle of traffic.",
+                "details": "Starts the ARP spoofing form shown. It poisons the targets' ARP tables so their traffic flows through this computer - the classic man-in-the-middle setup. Also needs available.arp."
+            },
+            "dos": {
+                "description": "Denial of service form: floods a target with traffic.",
+                "details": "Starts the denial of service form shown. It floods a target with traffic until it can't keep up with real requests. Also needs available.dos."
+            },
+            "sniff": {
+                "description": "Sniffing form: captures packets into the packet console.",
+                "details": "Starts the sniffing form shown. It captures passing packets into the packet console and network graph without changing them. Also needs available.sniff."
+            },
+            "nfq": {
+                "description": "Packet interceptor form (NetFilterQueue): holds packets so they can be read or rewritten in transit.",
+                "details": "Starts the packet interceptor form shown. It holds packets in a NetFilterQueue so they can be read - and, with the ModBus modify form, rewritten - before being passed on. Also needs available.nfq."
+            },
+            "ap_connect": {
+                "description": "AP connect form: connects to the access point and shows whether it's connected. Every other defender form talks through this connection.",
+                "details": "Starts the AP connect form shown. It starts and stops the connection to the access point and shows a live connected/disconnected status. The other AP forms - encryption, AP tunnel and Kalman - the Defender Sliders panel's mode and sliders forms, and the Defender Flags panel's Kalman toggle send its commands through this one connection, so a defender lesson should almost always show it. Also needs available.ap_connect."
+            },
+            "encryption": {
+                "description": "Encryption form: turns AP-level encryption on or off with a key.",
+                "details": "Starts the encryption form shown. It turns AP-level encryption on with a key, or off again, so students can see what an attacker loses. Also needs available.encryption."
+            },
+            "ap_tunnel": {
+                "description": "AP tunnel form: routes device traffic only through the AP, so there's no directly attackable TCP/ModBus.",
+                "details": "Starts the AP tunnel form shown. Turned on, it routes the devices' traffic only through the access point, so there's no plain TCP/ModBus left on the network for an attacker to sniff or rewrite. Students can compare an attack before and after tunneling. Sends its command through the AP connect form's connection. Also needs available.ap_tunnel."
+            },
+            "kalman": {
+                "description": "Kalman filter form: turns the AP's Kalman filter on or off for its current mode. Usually left hidden - the Defender Flags panel has the same toggle.",
+                "details": "Starts the Kalman filter form shown. It turns the AP's Kalman filter on or off for whichever mode the AP is in - submarine and HVAC each keep their own setting on the AP. The filter smooths noisy sensor readings into a believable estimate. Usually left hidden, since the Defender Flags panel already has the same toggle and showing both is confusing. Also needs available.kalman."
+            }
+        },
+        "modbus_table_forms_shown": {
+            "table": {
+                "description": "The live register table.",
+                "details": "Starts the live register table shown in the ModBus table panel: each register's incoming and outgoing value and the last command. Also needs available.table."
+            },
+            "modify": {
+                "description": "The form for rewriting register values in transit.",
+                "details": "Starts the modify form shown in the ModBus table panel. Students use it to set each register's multiplier and offset for rewriting values in transit. Also needs available.modify."
+            }
+        },
+        "modbus_registers": {
+            "*": {
+                "_note": {
+                    "description": "Settings for this one holding register.",
+                    "details": "Settings for one ModBus holding register. Registers hreg_1 to hreg_15 all share these keys, and only registers with show on appear in the table and charts."
+                },
+                "label": {
+                    "description": "The labels key for this register's name.",
+                    "details": "The labels key (from assets/labels) for this register's name. It lets the register's name be translated along with the rest of the game."
+                },
+                "show": {
+                    "description": "1 shows this register in the ModBus table and charts.",
+                    "details": "1 puts this register in the ModBus table and strip charts. Turn on just the registers a lesson is about so students aren't distracted by the rest."
+                },
+                "nickname": {
+                    "description": "A short name shown instead of the register number, like \"heading\".",
+                    "details": "A short, meaningful name shown instead of the register number, like \"heading\" or \"temperature\". Students find \"heading\" far easier to follow than \"hreg_3\"."
+                },
+                "factor": {
+                    "description": "Raw values are multiplied by this for display, e.g. 0.1 to show 235 as 23.5.",
+                    "details": "Raw register values are multiplied by this before they're displayed, e.g. 0.1 shows a raw 235 as 23.5. It changes only what students see, never the value on the wire."
+                },
+                "units": {
+                    "description": "Units shown after the value, like \"deg\" or \"C\".",
+                    "details": "Units shown after this register's displayed value, like \"deg\" or \"C\". Leave it empty for unitless values."
+                },
+                "multiplier": {
+                    "description": "When modify is on, the interceptor multiplies this register's value by this in transit.",
+                    "details": "When modify is on, the packet interceptor multiplies this register's value by this number as the packet passes through - 2 doubles it, 0.5 halves it, -1 flips its sign, and 1 leaves it unchanged. It's applied before the offset. Students usually set it themselves from the modify form."
+                },
+                "offset": {
+                    "description": "When modify is on, the interceptor adds this to the value in transit, after the multiplier.",
+                    "details": "When modify is on, the packet interceptor adds this number to the register's value as the packet passes through, after the multiplier is applied - e.g. 10 adds ten, -5 subtracts five, and 0 leaves it unchanged. Students usually set it themselves from the modify form."
+                },
+                "modify": {
+                    "description": "1 lets the packet interceptor rewrite this register (needs modbus_packet_modify_enabled).",
+                    "details": "1 lets the packet interceptor rewrite this register in transit, using its multiplier and then its offset. It only takes effect while modbus_packet_modify_enabled is on too and the packet interceptor (nfq) is running. Registers left at 0 pass through untouched even while others are being rewritten."
+                }
+            }
+        },
+        "packet_console": {
+            "mode": {
+                "description": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph.",
+                "details": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph so students can study what's on screen. Students switch between the two themselves."
+            },
+            "summary": {
+                "description": "The plain-language description of the current packet filter, shown to the student.",
+                "details": "The plain-language description of the current packet filter, shown to the student. The filter overlay rewrites it whenever the filter changes, so there's rarely a reason to set it here."
+            },
+            "function": {
+                "description": "The packet filter as Python code, rebuilt by the filter overlay. Leave this alone.",
+                "details": "The current packet filter as Python code, rebuilt by the filter overlay from the checkboxes and address box. The game runs it as code, so leave it alone and set the filter through packet_filter_checkboxes instead."
+            },
+            "secret explanation for awful coding practice": {
+                "description": "A developer note, not a setting.",
+                "details": "A developer note explaining why the filter above is stored as code. It isn't a setting and nothing reads it."
+            }
+        },
+        "packet_filter_categories": {
+            "hack": {
+                "description": "Checkboxes in the \"which tool caught it\" group. One per line.",
+                "details": "The checkboxes in the filter overlay's \"which tool caught it\" group, one per line. Each name must also be a key in packet_filter_checkboxes."
+            },
+            "layers": {
+                "description": "Checkboxes in the protocol layer group. One per line.",
+                "details": "The checkboxes in the filter overlay's protocol layer group, one per line. Each name must also be a key in packet_filter_checkboxes."
+            },
+            "direction": {
+                "description": "Checkboxes in the direction group. One per line.",
+                "details": "The checkboxes in the filter overlay's direction group, one per line. Each name must also be a key in packet_filter_checkboxes."
+            }
+        },
+        "packet_filter_checkboxes": {
+            "nmap": {
+                "description": "Show packets from the Nmap scan.",
+                "details": "Ticked, the packet console shows packets caught by the Nmap scan. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "arp": {
+                "description": "Show packets caught by ARP spoofing.",
+                "details": "Ticked, the packet console shows packets caught by ARP spoofing. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "dos": {
+                "description": "Show packets from the denial of service attack.",
+                "details": "Ticked, the packet console shows packets caught by the denial of service attack. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "sniff": {
+                "description": "Show packets caught by sniffing.",
+                "details": "Ticked, the packet console shows packets caught by sniffing. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "nfq": {
+                "description": "Show packets caught by the packet interceptor.",
+                "details": "Ticked, the packet console shows packets caught by the packet interceptor. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "pcap": {
+                "description": "Show packets loaded from a capture file.",
+                "details": "Ticked, the packet console shows packets caught by a capture file loaded with the pcap button. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "TCP": {
+                "description": "Show TCP packets.",
+                "details": "Ticked, the packet console shows TCP packets - most ordinary traffic, including ModBus over TCP. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "ARP": {
+                "description": "Show ARP packets.",
+                "details": "Ticked, the packet console shows ARP packets - the address lookups that ARP spoofing abuses. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "UDP": {
+                "description": "Show UDP packets.",
+                "details": "Ticked, the packet console shows UDP packets - connectionless traffic such as DNS. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "DNS": {
+                "description": "Show DNS packets.",
+                "details": "Ticked, the packet console shows DNS packets - name lookups. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "misc": {
+                "description": "Not in any group in packet_filter_categories, so it has no checkbox and does nothing.",
+                "details": "Isn't listed in any group in packet_filter_categories, so the filter overlay never shows a checkbox for it and its value does nothing. Kept so the two settings stay in step."
+            },
+            "MODBUSADUREQUEST": {
+                "description": "Show ModBus requests.",
+                "details": "Ticked, the packet console shows every ModBus request. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "MODBUSADURESPONSE": {
+                "description": "Show ModBus responses.",
+                "details": "Ticked, the packet console shows every ModBus response. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "MODBUSPDU03READHOLDINGREGISTERSREQUEST": {
+                "description": "Show ModBus read holding registers requests.",
+                "details": "Ticked, the packet console shows ModBus read holding registers requests - a device asking for register values. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": {
+                "description": "Show ModBus read holding registers responses.",
+                "details": "Ticked, the packet console shows ModBus read holding registers responses - the register values coming back. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "MODBUSPDU06WRITESINGLEREGISTERREQUEST": {
+                "description": "Show ModBus write single register requests.",
+                "details": "Ticked, the packet console shows ModBus write single register requests - a device setting a value, the packets worth rewriting. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": {
+                "description": "Show ModBus write single register responses.",
+                "details": "Ticked, the packet console shows ModBus write single register responses - confirmations of a write. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
+            },
+            "out": {
+                "description": "Show packets this computer sent.",
+                "details": "Ticked, the packet console shows packets this computer sent. Ticked boxes in the same group widen the filter; boxes in different groups narrow it."
+            },
+            "in": {
+                "description": "Show packets this computer received.",
+                "details": "Ticked, the packet console shows packets this computer received. Ticked boxes in the same group widen the filter; boxes in different groups narrow it."
+            },
+            "other": {
+                "description": "Not in any group in packet_filter_categories, so it has no checkbox and does nothing.",
+                "details": "Isn't listed in any group in packet_filter_categories, so the filter overlay never shows a checkbox for it and its value does nothing. Kept so the two settings stay in step."
+            }
+        },
+        "packet_filter_entries": {
+            "address_filter": {
+                "description": "Only show packets to or from this address. Empty shows every address.",
+                "details": "Only packets whose source or destination IP or MAC address contains this text are shown; separate several addresses with |. Empty shows every packet. Pre-fill it to focus a lesson on one device's traffic."
+            }
+        },
+        "packet_columns": {
+            "time_word": {
+                "description": "Time the packet arrived, to 4 decimal places.",
+                "details": "Shows when each packet arrived, in seconds to 4 decimal places. Handy for spotting bursts, like a flood during a denial of service attack."
+            },
+            "number": {
+                "description": "The packet's number in the capture.",
+                "details": "Shows each packet's number in the capture, counting up from 1. It gives students a way to refer to a specific packet."
+            },
+            "length": {
+                "description": "Packet size in bytes.",
+                "details": "Shows each packet's size in bytes. Unusually large or uniform sizes can give away scans and floods."
+            },
+            "observer": {
+                "description": "What saw the packet: the tool's name, or which side of the interceptor (prerouting/postrouting nfq).",
+                "details": "Shows what saw each packet: the name of the tool that caught it, or for the packet interceptor which side it was caught on - prerouting nfq for the packet as it arrived, before any rewriting, and postrouting nfq for the packet as it left, after. Comparing the two shows exactly what a rewrite changed."
+            },
+            "hack": {
+                "description": "Which tool caught it: arp, sniff, dos, nfq or nmap.",
+                "details": "Shows which tool caught each packet: arp, sniff, dos, nfq or nmap. Useful when several tools are running at once."
+            },
+            "purpose": {
+                "description": "Why the tool recorded it.",
+                "details": "Shows why the tool recorded each packet, as the tool described it. Gives students context for packets the game itself sent."
+            },
+            "mac_src": {
+                "description": "Source MAC address.",
+                "details": "Shows each packet's source MAC address - the hardware address of the device that sent it on this network."
+            },
+            "mac_dst": {
+                "description": "Destination MAC address.",
+                "details": "Shows each packet's destination MAC address. During ARP spoofing it reveals traffic being redirected to the attacker's machine."
+            },
+            "ip_src": {
+                "description": "Source IP address.",
+                "details": "Shows each packet's source IP address, or \"-\" for packets without an IP layer like ARP."
+            },
+            "ip_dst": {
+                "description": "Destination IP address.",
+                "details": "Shows each packet's destination IP address, or \"-\" for packets without an IP layer like ARP."
+            },
+            "direction": {
+                "description": "\"in\", \"out\" or \"other\".",
+                "details": "Shows \"in\" for packets this computer received, \"out\" for packets it sent, or \"other\" for traffic between other devices."
+            },
+            "protocol": {
+                "description": "The packet's top protocol layer.",
+                "details": "Shows each packet's top protocol layer, like TCP, ARP or a ModBus layer - the most specific thing the packet is."
+            },
+            "layers_word": {
+                "description": "Every protocol layer, joined with \"/\".",
+                "details": "Shows every protocol layer in the packet, joined with \"/\", like Ether/IP/TCP. More detail than the protocol column."
+            },
+            "summary": {
+                "description": "Scapy's one-line summary of the packet.",
+                "details": "Shows Scapy's one-line summary of each packet - a compact technical description of the whole thing."
+            },
+            "mac_word": {
+                "description": "Source and destination MAC as \"source -> destination\".",
+                "details": "Shows source and destination MAC together as \"source -> destination\" in one column instead of two, or \"-\" for packets without an Ethernet layer. Saves room when students only need to follow who is talking to whom."
+            },
+            "ip_word": {
+                "description": "Source and destination IP as \"source -> destination\".",
+                "details": "Shows source and destination IP together as \"source -> destination\", using one column instead of two."
+            },
+            "variables": {
+                "description": "ModBus: the registers the packet touches.",
+                "details": "For ModBus packets, shows which registers the packet reads or writes. Empty for other packets."
+            },
+            "values": {
+                "description": "ModBus: the register values it carries.",
+                "details": "For ModBus packets, shows the register values the packet carries. Empty for other packets."
+            },
+            "command": {
+                "description": "ModBus: the full command name, like \"read holding registers response\".",
+                "details": "For ModBus packets, shows the full ModBus command name, like \"read holding registers response\" or \"write single register request\". Empty for packets that aren't ModBus. The command_word column shows a shorter version that's easier to scan."
+            },
+            "command_type": {
+                "description": "ModBus: \"Request\" or \"Response\".",
+                "details": "For ModBus packets, shows whether it's a \"Request\" or a \"Response\"."
+            },
+            "is_modbus": {
+                "description": "Whether the packet has a ModBus layer.",
+                "details": "Shows whether each packet has a ModBus layer. A quick way to separate ModBus traffic from everything else."
+            },
+            "is_useful": {
+                "description": "Whether the packet changes a register value.",
+                "details": "Shows whether each ModBus packet changes a register value. The packets worth attacking or defending are the useful ones."
+            },
+            "is_primary": {
+                "description": "Whether it's the first request or response of its ModBus transaction.",
+                "details": "Shows whether each packet is the first request or the first response of its ModBus transaction. Retries and duplicate copies - common when packets are being intercepted and forwarded - show false, so filtering on this keeps one packet per exchange."
+            },
+            "command_word": {
+                "description": "ModBus: the short command, like \"Write Request\".",
+                "details": "For ModBus packets, shows the short command, like \"Write Request\" or \"Read Response\". Easier to read than the full command column."
+            },
+            "modbus_word": {
+                "description": "ModBus: \"registers = values\" in one column.",
+                "details": "For ModBus packets, shows \"registers = values\" in one readable column, combining the variables and values columns."
+            }
+        },
+        "available": {
+            "wifi": {
+                "description": "Network action form: Wi-Fi.",
+                "details": "Offers the Wi-Fi network action form in this workspace. It still needs network_action_forms_shown.wifi to start out visible; otherwise students can show it with Show Forms."
+            },
+            "nmap": {
+                "description": "Network action form: Nmap scan.",
+                "details": "Offers the Nmap scan network action form in this workspace. It still needs network_action_forms_shown.nmap to start out visible."
+            },
+            "arp": {
+                "description": "Network action form: ARP spoofing.",
+                "details": "Offers the ARP spoofing network action form in this workspace. It still needs network_action_forms_shown.arp to start out visible."
+            },
+            "dos": {
+                "description": "Network action form: denial of service.",
+                "details": "Offers the denial of service network action form in this workspace. It still needs network_action_forms_shown.dos to start out visible."
+            },
+            "sniff": {
+                "description": "Network action form: sniffing.",
+                "details": "Offers the sniffing network action form in this workspace. It still needs network_action_forms_shown.sniff to start out visible."
+            },
+            "nfq": {
+                "description": "Network action form: packet interceptor.",
+                "details": "Offers the packet interceptor network action form in this workspace - needed for any lesson that rewrites ModBus values. It still needs network_action_forms_shown.nfq to start out visible."
+            },
+            "ap_connect": {
+                "description": "Network action form: AP connect.",
+                "details": "Offers the AP connect network action form in this workspace. Every defender lesson needs it, since the other defender forms work through its connection."
+            },
+            "encryption": {
+                "description": "Network action form: AP encryption.",
+                "details": "Offers the AP encryption network action form in this workspace. It still needs network_action_forms_shown.encryption to start out visible."
+            },
+            "ap_tunnel": {
+                "description": "Network action form: AP tunnel.",
+                "details": "Offers the AP tunnel network action form in this workspace. It still needs network_action_forms_shown.ap_tunnel to start out visible."
+            },
+            "kalman": {
+                "description": "Network action form: Kalman filter toggle.",
+                "details": "Offers the Kalman filter toggle as a network action form. Usually left off, since the Defender Flags panel already has the same toggle."
+            },
+            "table": {
+                "description": "ModBus table panel form: the live register table.",
+                "details": "Offers the ModBus table panel's live register table. It still needs modbus_table_forms_shown.table to start out visible."
+            },
+            "modify": {
+                "description": "ModBus table panel form: rewriting values in transit.",
+                "details": "Offers the ModBus table panel's modify form, for rewriting register values in transit. It still needs modbus_table_forms_shown.modify to start out visible."
+            },
+            "mode": {
+                "description": "Defender ModBus panel form: the AP's current mode.",
+                "details": "Offers the defender ModBus panel's mode display, which shows whether the AP is in submarine or HVAC mode. It still needs defender_modbus_forms_shown.mode."
+            },
+            "sliders": {
+                "description": "Defender ModBus panel form: filter-tuning sliders.",
+                "details": "Offers the defender ModBus panel's filter-tuning sliders for the AP's current mode. It still needs defender_modbus_forms_shown.sliders."
+            },
+            "sniffed_hvac_house": {
+                "description": "Model dropdown: the HVAC house, drawn from sniffed ModBus traffic.",
+                "details": "Offers the HVAC house in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. The fixed Sniffed HVAC House panel shows it whatever this says."
+            },
+            "sniffed_submarine_map": {
+                "description": "Model dropdown: the submarine map, drawn from sniffed ModBus traffic.",
+                "details": "Offers the submarine map in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. The fixed Sniffed Submarine Map panel shows it whatever this says."
+            },
+            "auto_switch": {
+                "description": "Model panel: the checkbox that switches models to follow the AP's reported mode.",
+                "details": "Offers the Model and Source Configurable Visualizers panel's Auto-Switch checkbox, which keeps the model matched to the AP's reported mode. It only appears when an ap_polled_* model is also offered."
+            },
+            "ap_polled_hvac_chart": {
+                "description": "Model dropdown: the HVAC chart, drawn from values the AP reports.",
+                "details": "Offers the HVAC chart in the Model and Source Configurable Visualizers panel's dropdown. It's drawn from values the access point reports (polled through AP connect), so it belongs in defender lessons. The fixed Polled HVAC Chart panel shows it whatever this says."
+            },
+            "ap_polled_submarine_map": {
+                "description": "Model dropdown: the submarine map, drawn from values the AP reports.",
+                "details": "Offers the submarine map in the Model and Source Configurable Visualizers panel's dropdown, drawn from values the access point reports (polled through AP connect) rather than sniffed traffic. It belongs in defender lessons. The fixed Polled Submarine Map panel shows it whatever this says."
+            }
+        },
+        "defender_modbus_forms_shown": {
+            "mode": {
+                "description": "The read-only display of the AP's current mode (submarine or HVAC).",
+                "details": "Starts the read-only mode display shown, which tells students whether the AP is currently in submarine or HVAC mode. Also needs available.mode."
+            },
+            "sliders": {
+                "description": "The filter-tuning sliders for the AP's current mode.",
+                "details": "Starts the filter-tuning sliders shown. They adjust the AP's filtering thresholds for whichever mode it's in, and switch groups automatically when the mode changes. Also needs available.sliders."
+            }
+        }
+    },
+    "panels": {
+        "_note": "Every panel a workspace layout can use, in the order the Layout Shape tab's dropdown lists them: its name, and details shown as the dropdown's tooltip - what it does, where its data comes from, and what it affects. When you add a panel to widgets.PANELS, add it here too.",
+        "network_action_panel": {
+            "name": "Network Actions",
+            "details": "What it does: The forms that run network tools: the attacker tools (Wi-Fi, Nmap, ARP spoofing, denial of service, sniffing, packet interceptor) and the defender's AP forms (AP connect, encryption, AP tunnel, Kalman filter). Students can show or hide forms with Show Forms.\n\nWhere its data comes from: What the student types into each form. The attacker tools run on this computer; the AP forms send commands to the access point.\n\nWhat it affects: Almost everything else. The attacker tools fill the packet buffer every Sniffed panel reads, and the packet interceptor rewrites ModBus values in transit. AP connect starts the polling every Polled panel reads, and encryption/AP tunnel change what an attacker can see. Every tool writes progress to the Status Message Textarea.\n\nSettings: available and network_action_forms_shown pick the forms; network_action_form_inputs pre-fills them; modbus_registers and modbus_packet_modify_enabled control what the interceptor rewrites."
+        },
+        "modbus_table_panel": {
+            "name": "Sniffed Modbus Table",
+            "details": "What it does: A live table of every shown ModBus register - its incoming value, outgoing value and last command - plus the modify form for setting each register's multiplier and offset.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: The modify form decides how the packet interceptor rewrites registers in transit, which changes what the device on the other end receives and what the Sniffed models and charts show for the outgoing side.\n\nSettings: available.table/modify and modbus_table_forms_shown pick the forms; modbus_registers sets each register's name, units, scaling and rewrite; modbus_packet_modify_enabled turns rewriting on."
+        },
+        "packet_panel": {
+            "name": "Sniffed Packet Treeview",
+            "details": "What it does: A scrolling table of every captured packet, one row each, with a filter overlay (by tool, protocol layer, direction and address), a column picker, a pause button and a button to clear the capture. While paused, selecting a row shows that packet in full in the Sniffed Host Network.\n\nWhere its data comes from: Packets captured by any attacker tool in Network Actions, or loaded from a capture file with the menu bar.\n\nWhat it affects: Pausing it also pauses the Sniffed Host Network, since both follow packet_console.mode, and the selected row decides which packet the Host Network shows in full. Filtering only changes what this panel shows - it never drops traffic.\n\nSettings: packet_columns, packet_console, packet_filter_categories, packet_filter_checkboxes and packet_filter_entries."
+        },
+        "network_graph_panel": {
+            "name": "Sniffed Host Network",
+            "details": "What it does: A graph of the hosts seen on the network and the traffic between them, beside a packets-per-second strip chart. While paused, the strip chart is replaced by a full dump of the packet selected in the Sniffed Packet Treeview.\n\nWhere its data comes from: Packets captured by any attacker tool in Network Actions, or loaded from a capture file with the menu bar.\n\nWhat it affects: Only what's shown here. It pauses and resumes with the Sniffed Packet Treeview.\n\nSettings: packet_console.mode pauses it; strip_chart_colors, strip_chart_auto_fit and strip_chart_auto_fit_max_seconds style its rate chart."
+        },
+        "status_panel": {
+            "name": "Status Message Textarea",
+            "details": "What it does: A read-only log of status messages, newest at the bottom, that scrolls itself as messages arrive.\n\nWhere its data comes from: Every running tool and connection: the Network Actions forms, the AP connection and the defender's AP commands report what they're doing and any errors here.\n\nWhat it affects: Nothing - it only reports. It's usually the first place to look when a tool doesn't seem to be working."
+        },
+        "modbus_model_panel": {
+            "name": "Model and Source Configurable Visualizers",
+            "details": "What it does: Any ModBus model in one panel, picked from a dropdown: the sniffed submarine map or HVAC house (drawn from captured traffic), or the polled submarine map or HVAC chart (drawn from what the AP reports). With an AP-polled model offered, an Auto-Switch checkbox can keep it matched to the AP's current mode. Use the fixed model panels instead to show one model with no dropdown, or several at once.\n\nWhere its data comes from: Depends on the model: the sniffed models read ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar; the polled models read values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing but itself - it's a visualizer. Picking a model saves it as modbus_model_selected.\n\nSettings: Turn each model on in available (sniffed_submarine_map, sniffed_hvac_house, ap_polled_submarine_map, ap_polled_hvac_chart) - only those appear in the dropdown. modbus_model_selected picks the starting model. For AP-polled models, available.auto_switch offers the Auto-Switch checkbox and modbus_model_auto_switch starts it checked. model_sprites and model_colors control how the sniffed models are drawn."
+        },
+        "sniffed_submarine_map_panel": {
+            "name": "Sniffed Submarine Map",
+            "details": "What it does: The submarine map, always - no dropdown. Draws the reported (incoming) vessel and the commanded (outgoing) vessel with their trails, so a rewritten position shows up as the two drifting apart.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: model_sprites (ocean, grid_lines, path_in, boat_in) and the submarine keys in model_colors."
+        },
+        "sniffed_hvac_house_panel": {
+            "name": "Sniffed HVAC House",
+            "details": "What it does: The HVAC house, always - no dropdown. Shows the room temperature the house sent beside the reading the controller received, and the heater command on both sides, so a rewritten value shows up as a mismatch.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: model_sprites (background through indicator) and the HVAC keys in model_colors."
+        },
+        "ap_polled_submarine_map_panel": {
+            "name": "Polled Submarine Map",
+            "details": "What it does: The defender's submarine map, always - no dropdown and no auto-switching. Draws the vessel's track and heading as the AP reports them.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions. It stays empty until AP connect is connected.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: None - it doesn't read model_sprites or model_colors."
+        },
+        "ap_polled_hvac_chart_panel": {
+            "name": "Polled HVAC Chart",
+            "details": "What it does: The defender's HVAC chart, always - no dropdown and no auto-switching. A rolling graph of room temperature against the target temperature, with the heater state.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions. It stays empty until AP connect is connected.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: None - its colors are fixed."
+        },
+        "modbus_chart_panel": {
+            "name": "Sniffed ModBus StripCharts",
+            "details": "What it does: One strip chart per shown ModBus register, plotting its incoming and outgoing values over time, so a rewrite in transit shows up as the two lines separating.\n\nWhere its data comes from: ModBus traffic this computer captured - from the Sniff, ARP spoofing or packet interceptor (nfq) forms in Network Actions, or a capture loaded from the menu bar.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: modbus_registers picks and names the registers (show, nickname, units, factor); strip_chart_colors, strip_chart_auto_fit and strip_chart_auto_fit_max_seconds style the charts."
+        },
+        "defender_modbus_panel": {
+            "name": "Defender Sliders",
+            "details": "What it does: The defender's AP controls, as forms students can show or hide with Show Forms: a read-only display of the AP's current mode (submarine or HVAC), and filter-tuning sliders for that mode, which switch groups automatically when the mode changes.\n\nWhere its data comes from: The mode and current filter settings the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: The sliders send new filtering thresholds to the AP, which changes when the Defender Flags light up and how the AP filters the readings every Polled panel shows.\n\nSettings: available.mode/sliders offer the forms; defender_modbus_forms_shown picks which start out shown."
+        },
+        "defender_stripchart_panel": {
+            "name": "Polled ModBus StripCharts",
+            "details": "What it does: One strip chart per value the AP reports, plotting every reading it has - client and server, clean and noisy, plus the target where there is one. It switches to the submarine or HVAC values to match the AP's current mode.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing but itself - it's a visualizer.\n\nSettings: strip_chart_colors, strip_chart_auto_fit and strip_chart_auto_fit_max_seconds."
+        },
+        "defender_console_panel": {
+            "name": "Polled Packets (Last 10)",
+            "details": "What it does: A table of the 10 newest readings the AP reported, newest first. In submarine mode it shows position, heading, speed and rudder for whichever side the CLIENT/SERVER dropdown picks; in HVAC mode, current and target temperature and the heater.\n\nWhere its data comes from: Values the access point reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: Nothing - the CLIENT/SERVER dropdown only changes which side this table shows."
+        },
+        "defender_flag_panel": {
+            "name": "Defender Flags",
+            "details": "What it does: The AP's error-detection flags for its current mode - lit when a reading crosses its filtering threshold - plus the Kalman filter's status and an on/off toggle for it.\n\nWhere its data comes from: Flags and filter status the AP reports, polled over the AP connect form's connection in Network Actions.\n\nWhat it affects: The Kalman toggle sends a command to the AP, changing how it filters the readings every Polled panel shows. Submarine and HVAC mode each keep their own Kalman setting on the AP."
+        }
     }
 }

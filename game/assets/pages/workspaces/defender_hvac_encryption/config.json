@@ -1,0 +1,79 @@
+{
+    "_note": [
+        "# Defender Lesson 3: HVAC System Encryption",
+        "## Summary",
+        "In any wireless communcation, the obfuscation of transfered data is paramount for private communication. There are many forms of encryption, this system utilizes a simple asymmetric cipher to change the data within the communication tunnel.",
+        "In this lesson you will learn how different forms of encryption generally work, and how this specific system takes in a key and is able to obfuscate data in the communication tunnel.",
+        "## Objectives",
+        "- Understand the difference between an asymmetric and symmetric cipher\n- Understand how an ASCII key is converted to a binary cipher key\n- Understand how an XOR cipher works\n- Understand how encrypting data changes what a bad actor sees\n- Understand what values are being encrypted for the HVAC system",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** TBD"
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_defender_hvac_encryption",
+    "include": 1,
+    "category": "defender",
+    "order": 3,
+    "prerequisites": [],
+    "estimated_minutes": 10,
+    "gradable": false,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1, "ap_connect": 1},
+        "available": {
+            "ap_polled_submarine_map": 1,
+            "ap_connect": 1,
+            "encryption": 1,
+            "arp": 1,
+            "sniff": 1,
+            "sniffed_submarine_map": 1,
+            "mode": 1,
+            "sliders": 1
+        },
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "modbus_model_selected": "ap_polled_submarine_map"
+    },
+
+    "title": "defender_hvac_encryption_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "layout_shape": {
+        "v_panes_1": [
+            {
+                "h_panes_1": [
+                    "network_action_panel_1",
+                    "defender_console_panel_1",
+                    "ap_polled_hvac_chart_panel_1"
+                ]
+            },
+            {"h_panes_2": ["defender_stripchart_panel_1", "sniffed_hvac_house_panel_1"]}
+        ]
+    },
+    "layout_weights": {
+        "h_panes_1": 65,
+        "network_action_panel_1": 25,
+        "defender_console_panel_1": 38,
+        "ap_polled_hvac_chart_panel_1": 36,
+        "h_panes_2": 35,
+        "defender_stripchart_panel_1": 64,
+        "sniffed_hvac_house_panel_1": 64
+    }
+}

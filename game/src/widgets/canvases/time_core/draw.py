@@ -118,19 +118,25 @@ class Draw:
 #                                                       STRIP CHART AXES
 # --------------------------------------------------------------------------------------------------------------------------
 
-    def strip_chart_layout(self, history_lists: list[list[tuple[float, float]]], factor: float) -> StripChartLayout:
+    def strip_chart_layout(self, history_lists: list[list[tuple[float, float]]], factor: float,
+                           wall_now: float | None = None) -> StripChartLayout:
         '''
         Computes the plot area, x (time) ticks, and y (value) ticks for this frame.
         Time scaling/offset are resolved first to find the visible time window, then
         the value axis is autoscaled to whatever data falls inside that window.
+
+        wall_now is "now" in the histories' own time coordinates - when not given,
+        the packet clock is used (seconds since the first captured packet).
         '''
         camera = self.camera
 
-        # History timestamps are seconds since the first captured packet (see
-        # MetaPacket), not wall-clock epoch time - convert "now" into that same
-        # coordinate space so it lines up with the data.
-        first_packet_time = self.context.buffer.packets.first_packet_time
-        wall_now = 0.0 if first_packet_time is None else time.time() - first_packet_time
+        # Packet histories are timestamped in seconds since the first captured
+        # packet (see MetaPacket), not wall-clock epoch time - convert "now" into
+        # that same coordinate space so it lines up with the data. Histories on
+        # another clock (e.g. AP polls) pass their own wall_now instead.
+        if wall_now is None:
+            first_packet_time = self.context.buffer.packets.first_packet_time
+            wall_now = 0.0 if first_packet_time is None else time.time() - first_packet_time
         # `now` is the geometry reference (where pixels come from) - normally the
         # same as wall_now, but fit mode freezes it to the latest sample's time so
         # the picture stops moving once data stops arriving. `wall_now` keeps

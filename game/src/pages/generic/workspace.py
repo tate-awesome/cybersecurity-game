@@ -8,8 +8,8 @@ class WorkspacePage(Page):
     '''
     Page constructor for build_type "workspace". Reads its own config.json
     (resolved by PageManager from the key it was navigated to) and builds a
-    MenuBar plus a tree of Panes/panels from the "menu_bar" and "panes"
-    sections, instead of hardcoding a specific page's layout.
+    MenuBar plus a tree of Panes/panels from the "menu_bar", "layout_shape"
+    and "layout_weights" sections, instead of hardcoding a specific page's layout.
     '''
 
     # Used when a page's config has no "background" of its own (set
@@ -30,15 +30,15 @@ class WorkspacePage(Page):
 
         self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 
-        panes_config = config.get("panes")
-        self.panes_root = self.build_panes(panes_config, self) if panes_config else None
+        layout = config.get("layout")
+        self.panes_root = self.build_panes(layout, self) if layout else None
 
     def build_panes(self, node: dict, master):
         '''
-        Recursively builds a widgets.Panes tree from a pane-tree node:
-        {"orientation": ..., "children": [{"weight": ..., "panes": {...}} | {"weight": ..., "widget": "<panel type>"}]}
-        (PageManager.parse_panes builds this from the h_panes/v_panes
-        layout a page config is written in). Each child's "weight" is its proportional share of its parent -
+        Recursively builds a widgets.Panes tree from a layout-tree node:
+        {"orientation": ..., "children": [{"id": ..., "weight": ..., "panes": {...}} | {"id": ..., "weight": ..., "widget": "<panel type>"}]}
+        (PageManager.layout_tree builds this from a page config's
+        layout_shape and layout_weights). Each child's "weight" is its proportional share of its parent -
         bigger weight, bigger pane - converted here into the divisors
         widgets.Panes actually expects (pane size = total size / divisor).
         Returns the Panes built at this node, so the caller can hang onto
@@ -54,7 +54,7 @@ class WorkspacePage(Page):
         divisors = [total_weight / weight for weight in weights]
 
         panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, False,
-                              transparent=self.transparent_panes)
+                              transparent=self.transparent_panes, ids=[child["id"] for child in children])
 
         for i, child in enumerate(children):
             pane = panes.pane(i)

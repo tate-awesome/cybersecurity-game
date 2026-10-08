@@ -35,6 +35,9 @@ class Panes(QSplitter):
             transparent: leave the gaps between panes (sash handles and the pane
             containers under each panel) unpainted instead of root-colored, so a
             page background shows through them - see WorkspacePage.
+            ids: each pane's layout id (see PageManager.layout_tree), which
+            get_weights reports its size under. Panes without ids (a panel's
+            own inner split, like NetworkDiagram's) aren't reported.
         '''
         if child_sizes is None:
             child_sizes = [4, 3, 2]
@@ -87,6 +90,7 @@ class Panes(QSplitter):
             # reads this back to compute a maximizing pane's target size,
             # independent of whatever the sashes have since been dragged to.
             pane.default_stretch = stretch
+            pane.pane_id = ids[i] if ids else None
             self.panels.append(pane)
 
         # setStretchFactor alone only governs how a *later* resize
@@ -102,21 +106,19 @@ class Panes(QSplitter):
 
     def get_weights(self) -> dict:
         '''
-        Reads this Panes' current sash-adjusted sizes back out as a
-        {"orientation", "children": [{"weight": ..., "panes": {...}}]}
-        tree in the same shape as a page's own pane-tree config, so it
-        can be saved and later merged back on top of that page's
-        defaults (matched by position, not by any "key" - see
-        PageManager.merge_pane_weights). Recurses into any pane whose
+        Reads this Panes' current sash-adjusted sizes back out as a flat
+        {pane id: size} - the same shape as a page config's
+        "layout_weights" - so it can be saved and later merged back on
+        top of that page's defaults by id (see
+        PageManager.prepare_page_config). Recurses into any pane whose
         sole child is itself a nested Panes, found from the live widget
         hierarchy rather than any separately tracked structure.
         '''
-        sizes = self.sizes()
-        children = []
-        for i, pane in enumerate(self.panels):
-            child = {"weight": sizes[i]}
+        weights = {}
+        for pane, size in zip(self.panels, self.sizes()):
+            if pane.pane_id is not None:
+                weights[pane.pane_id] = size
             nested = next(iter(pane.findChildren(Panes, options=Qt.FindChildOption.FindDirectChildrenOnly)), None)
             if nested is not None:
-                child["panes"] = nested.get_weights()
-            children.append(child)
-        return {"orientation": self.direction, "children": children}
+                weights.update(nested.get_weights())
+        return weights

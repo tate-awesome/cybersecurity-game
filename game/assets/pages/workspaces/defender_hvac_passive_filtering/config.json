@@ -1,0 +1,66 @@
+{
+    "_note": [
+        "# Defender Lesson 5: HVAC Passive Filtering",
+        "## Summary",
+        "A classic tool utilized by physics based models to verify the validity of communicated data is passive filtering. In the HVAC system, a one-dimensional kalman filter is used to predict the next step of the system before it happens. This prediction is compared to the sensor reads from the next step to judge wether there has been a spoofed input.",
+        "In this lesson you will learn how the HVAC system uses a one-dimensional kalman filter to threshold sensor values to verify the validity of data.",
+        "## Objectives",
+        "- Understand what passive filtering is\n- Understand what makes the filter a one-dimensional filter\n- Understand what each of the detection flags monitor\n- Understand how the prediction of noise in the filter changes the accuracy of the state flag\n- Understand how a kalman filter can be used for more than just thresholding error detection\n- Understand how removing filtering from a noisy system can affect its control loop",
+        "## Reading",
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
+        "- TBD",
+        "## Videos",
+        "- TBD",
+        "## Where This Fits",
+        "**Next:** TBD"
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_defender_hvac_passive_filtering",
+    "include": 1,
+    "category": "defender",
+    "order": 5,
+    "prerequisites": [],
+    "estimated_minutes": 10,
+    "gradable": false,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "available": {"ap_polled_submarine_map": 1, "kalman": 1, "sliders": 1, "ap_connect": 1},
+        "modbus_model_selected": "ap_polled_submarine_map",
+        "network_action_forms_shown": {"kalman": 1, "ap_connect": 1},
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
+    },
+
+    "title": "defender_hvac_passive_filtering_workspace",
+    "menu_bar": [
+        "toggle_button",
+        "theme_button",
+        "labels_button",
+        "page_button",
+        "refresh_button",
+        "reset_button",
+        "help_button",
+        "back_button",
+        "quit_button"
+    ],
+
+    "layout_shape": {
+        "v_panes_1": [
+            {
+                "h_panes_1": ["defender_modbus_panel_1", "defender_flag_panel_1", "ap_polled_hvac_chart_panel_1"]
+            },
+            {"h_panes_2": ["network_action_panel_1", "defender_console_panel_1"]}
+        ]
+    },
+    "layout_weights": {
+        "h_panes_1": 4,
+        "defender_modbus_panel_1": 36,
+        "defender_flag_panel_1": 31,
+        "ap_polled_hvac_chart_panel_1": 33.5,
+        "h_panes_2": 3,
+        "network_action_panel_1": 36,
+        "defender_console_panel_1": 64
+    }
+}

@@ -12,9 +12,8 @@ from .panels.panel import Panel as GenericPanel
 from .panels.network_action_panel._builder import Builder as HackingPanel
 from .panels.status_console._builder import Builder as StatusConsole
 from .panels.packet_console._builder import Builder as PacketConsole
-from .panels.boat_model._builder import Builder as BoatModel
-from .panels.hvac_model._builder import Builder as HVACModel
 from .panels.modbus_model._builder import Builder as ModbusModel
+from .panels.fixed_model._builder import SniffedSubmarineMap, SniffedHVACHouse, PolledSubmarineMap, PolledHVACChart
 from .panels.network_diagram._builder import Builder as NetworkDiagram
 from .panels.variable_monitor._builder import Builder as VariableMonitor
 from .panels.modbus_panel._builder import Builder as ModbusPanel
@@ -32,9 +31,11 @@ PANELS = {
     PacketConsole.KEY: PacketConsole,
     NetworkDiagram.KEY: NetworkDiagram,
     StatusConsole.KEY: StatusConsole,
-    BoatModel.KEY: BoatModel,
-    HVACModel.KEY: HVACModel,
     ModbusModel.KEY: ModbusModel,
+    SniffedSubmarineMap.KEY: SniffedSubmarineMap,
+    SniffedHVACHouse.KEY: SniffedHVACHouse,
+    PolledSubmarineMap.KEY: PolledSubmarineMap,
+    PolledHVACChart.KEY: PolledHVACChart,
     VariableMonitor.KEY: VariableMonitor,
     DefenderModbusPanel.KEY: DefenderModbusPanel,
     DefenderStripchartPanel.KEY: DefenderStripchartPanel,
