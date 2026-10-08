@@ -129,6 +129,8 @@
 
     "modbus_packet_modify_enabled": 0,
 
+    "model_panels": [],
+
     "modbus_model_selected": "agnostic",
 
     "modbus_model_auto_switch": 0,

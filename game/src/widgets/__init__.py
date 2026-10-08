@@ -1,3 +1,5 @@
+import inspect
+
 from PySide6.QtWidgets import QWidget
 from ..app_core import Context
 
@@ -13,7 +15,6 @@ from .panels.network_action_panel._builder import Builder as HackingPanel
 from .panels.status_console._builder import Builder as StatusConsole
 from .panels.packet_console._builder import Builder as PacketConsole
 from .panels.modbus_model._builder import Builder as ModbusModel
-from .panels.fixed_model._builder import SniffedSubmarineMap, SniffedHVACHouse, PolledSubmarineMap, PolledHVACChart
 from .panels.network_diagram._builder import Builder as NetworkDiagram
 from .panels.variable_monitor._builder import Builder as VariableMonitor
 from .panels.modbus_panel._builder import Builder as ModbusPanel
@@ -32,10 +33,6 @@ PANELS = {
     NetworkDiagram.KEY: NetworkDiagram,
     StatusConsole.KEY: StatusConsole,
     ModbusModel.KEY: ModbusModel,
-    SniffedSubmarineMap.KEY: SniffedSubmarineMap,
-    SniffedHVACHouse.KEY: SniffedHVACHouse,
-    PolledSubmarineMap.KEY: PolledSubmarineMap,
-    PolledHVACChart.KEY: PolledHVACChart,
     VariableMonitor.KEY: VariableMonitor,
     DefenderModbusPanel.KEY: DefenderModbusPanel,
     DefenderStripchartPanel.KEY: DefenderStripchartPanel,
@@ -43,17 +40,18 @@ PANELS = {
     DefenderFlagPanel.KEY: DefenderFlagPanel,
 }
 
-def panel(key: str, master: QWidget, context: Context):
+def panel(key: str, master: QWidget, context: Context, panel_id: str | None = None):
     '''
     Generic panel builder. Make panels by key instead of class name.
-    options, if given, is forwarded as keyword arguments to the panel's
-    builder (e.g. HackingPanel's available_forms) - a builder that doesn't
-    accept them falls back to building without them rather than failing the
-    whole page, since a pane-tree config may carry options meant for a
-    builder that hasn't been wired up to use them yet.
+    panel_id is the panel's id in the layout ("modbus_model_panel_2"),
+    passed on to builders that take one - so per-copy settings (see
+    ModbusModel and "model_panels") can tell the copies apart.
     '''
     if key not in PANELS:
         GenericPanel(master, context, f"err: no panel for this key: {key}")
         return
     builder = PANELS[key]
-    builder(master, context)
+    if "panel_id" in inspect.signature(builder).parameters:
+        builder(master, context, panel_id=panel_id)
+    else:
+        builder(master, context)

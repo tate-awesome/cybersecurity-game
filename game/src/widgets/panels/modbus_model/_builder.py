@@ -23,10 +23,14 @@ MODELS = {
 # group actually offers one of these (the defender lessons) ever exercises this.
 DEFENDER_MODELS = {"ap_polled_submarine_map", "ap_polled_hvac_chart"}
 
+# A "model_panels" entry meaning "not fixed to one model" - see fixed_model
+FLEXIBLE = ("", "agnostic")
+
 class Builder(Panel):
     '''
     Every ModBus model in one panel, with a dropdown that swaps which
-    model canvas is shown (see fixed_model for one model, hard coded).
+    model canvas is shown - or, fixed by its "model_panels" entry, exactly
+    one model with no dropdown and no auto-switching (see fixed_model).
     Only one model is ever built at a time - switching destroys the outgoing
     canvas (after stopping its animation loop, since a live canvas
     calling into a destroyed widget every frame would raise forever) and
@@ -39,6 +43,7 @@ class Builder(Panel):
     # the workspace editor lists it under each of them
     # Its hvac/submarine models draw with the house and submarine map canvases
     SETTINGS = (
+        "model_panels",
         "available",
         "modbus_model_selected",
         "modbus_model_auto_switch",
@@ -46,8 +51,37 @@ class Builder(Panel):
         "model_colors",
     )
 
-    def __init__(self, master, context: Context):
-        super().__init__(master, context, self.KEY)
+    def __init__(self, master, context: Context, panel_id: str | None = None, model: str | None = None):
+        '''
+        model fixes the panel to that model outright - for pages built in
+        code. Otherwise panel_id (its layout id, e.g. "modbus_model_panel_2")
+        picks its "model_panels" entry, which may fix it.
+        '''
+        fixed = model if model is not None else self.fixed_model(context, panel_id)
+        # A fixed panel is titled after its model, e.g. "Polled HVAC Chart"
+        super().__init__(master, context, f"{fixed}_panel" if fixed else self.KEY)
+        self.fixed = fixed
+
+        self.body = QWidget()
+        self.body.setLayout(QVBoxLayout())
+        self.body.layout().setContentsMargins(0, 0, 0, 0)
+        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
+        # trailing-filler interaction).
+        self.layout().addWidget(self.body, 1)
+
+        self.model = None
+        self.model_key = None
+        self.model_dropdown = None
+        self.auto_switch_checkbox = None
+
+        if self.fixed:
+            # None of the page-wide model settings apply - not available,
+            # modbus_model_selected or auto-switching - so any number of
+            # fixed panels can sit on one page without affecting each other.
+            self.labels_by_key = {self.fixed: self.context.labels.get(f"modbus_model_options_{self.fixed}")}
+            self.select_model(self.fixed)
+            self.menu_bar.minimize_button(self.body, master)
+            return
 
         available_models: dict[str, int] = self.context.states.get("available")
         if available_models is None:
@@ -60,17 +94,6 @@ class Builder(Panel):
                 continue
             self.labels_by_key[key] = self.context.labels.get(f"modbus_model_options_{key}")
         self.key_by_label = {label: key for key, label in self.labels_by_key.items()}
-
-        self.body = QWidget()
-        self.body.setLayout(QVBoxLayout())
-        self.body.layout().setContentsMargins(0, 0, 0, 0)
-        # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
-        # trailing-filler interaction).
-        self.layout().addWidget(self.body, 1)
-
-        self.model = None
-        self.model_key = None
-        self.model_dropdown = None
 
         if self.labels_by_key:
             preferred = self.context.states.get("modbus_model_selected")
@@ -95,7 +118,6 @@ class Builder(Panel):
         # select_model_by_label) removes _auto_switch from the animation
         # manager entirely rather than having it check a flag every tick
         # and no-op.
-        self.auto_switch_checkbox = None
         self._auto_switch_callback_name = f"ModbusModelAutoSwitch_{id(self)}"
         # available_models is the "available" settings group, which has an
         # "auto_switch" key too (see _packages/_default.json) unless it fell
@@ -119,6 +141,28 @@ class Builder(Panel):
 
         if self.labels_by_key:
             self.context.animation_manager.add_callback(f"ModbusModelFollowStates_{id(self)}", self._follow_states)
+
+    @staticmethod
+    def fixed_model(context: Context, panel_id: str | None) -> str | None:
+        '''
+        The model this panel's "model_panels" entry fixes it to, else None.
+        modbus_model_panel_N reads entry N-1; a missing entry, "" or
+        "agnostic" leaves it flexible (dropdown, available, auto-switch).
+        '''
+        if panel_id is None:
+            return None
+        number = panel_id.rpartition("_")[2]
+        entries = context.states.get("model_panels")
+        if not number.isdigit() or not isinstance(entries, list):
+            return None
+        index = int(number) - 1
+        entry = entries[index] if 0 <= index < len(entries) else ""
+        if entry in FLEXIBLE:
+            return None
+        if entry not in MODELS:
+            print(f"model_panels[{index}] is {entry!r}, not a model ({', '.join(MODELS)}) - leaving {panel_id} flexible")
+            return None
+        return entry
 
     def _follow_states(self):
         '''
@@ -175,7 +219,8 @@ class Builder(Panel):
 
         self.model = MODELS[key](self.body, self.context)
         self.model_key = key
-        self.context.states.set("modbus_model_selected", value=key)
+        if not self.fixed:
+            self.context.states.set("modbus_model_selected", value=key)
         self._sync_dropdown(key)
 
     def _sync_dropdown(self, key: str):

@@ -278,6 +278,12 @@
                 "modbus_packet_modify_enabled": {
                     "type": "number"
                 },
+                "model_panels": {
+                    "type": "array",
+                    "items": {
+                        "enum": ["", "agnostic", "sniffed_submarine_map", "sniffed_hvac_house", "ap_polled_submarine_map", "ap_polled_hvac_chart"]
+                    }
+                },
                 "modbus_model_selected": {
                     "type": "string"
                 },
@@ -501,7 +507,7 @@
     "$defs": {
         "panel_id": {
             "type": "string",
-            "pattern": "^(network_action_panel|modbus_table_panel|packet_panel|network_graph_panel|status_panel|modbus_model_panel|sniffed_submarine_map_panel|sniffed_hvac_house_panel|ap_polled_submarine_map_panel|ap_polled_hvac_chart_panel|modbus_chart_panel|defender_modbus_panel|defender_stripchart_panel|defender_console_panel|defender_flag_panel)_[0-9]+$",
+            "pattern": "^(network_action_panel|modbus_table_panel|packet_panel|network_graph_panel|status_panel|modbus_model_panel|modbus_chart_panel|defender_modbus_panel|defender_stripchart_panel|defender_console_panel|defender_flag_panel)_[0-9]+$",
             "description": "A panel type (widgets.PANELS) plus a number, so the same panel can appear more than once."
         },
         "pane_group": {

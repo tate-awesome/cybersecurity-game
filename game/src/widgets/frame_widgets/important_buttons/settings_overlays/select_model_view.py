@@ -7,7 +7,7 @@ class SelectModelView(SettingsOverlayButton):
     Opens a picker for which model the model panel shows (one button per
     model this workspace offers - see "available") and the Auto-Switch
     checkbox. Writes modbus_model_selected/modbus_model_auto_switch, which
-    the model panel follows.
+    every flexible model panel follows (one fixed by "model_panels" ignores them).
     '''
     LABEL = "menu_bar_buttons_model_view_button"
     TOOLTIP = "menu_bar_tooltips_model_view_button"

@@ -39,7 +39,8 @@
             "sliders": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
-        "modbus_model_selected": "ap_polled_submarine_map"
+        "modbus_model_selected": "ap_polled_submarine_map",
+        "model_panels": ["agnostic", "sniffed_submarine_map"]
     },
 
     "title": "defender_submarine_encryption_workspace",
@@ -60,7 +61,7 @@
             {
                 "h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]
             },
-            {"h_panes_2": ["defender_stripchart_panel_1", "sniffed_submarine_map_panel_1"]}
+            {"h_panes_2": ["defender_stripchart_panel_1", "modbus_model_panel_2"]}
         ]
     },
     "layout_weights": {
@@ -70,6 +71,6 @@
         "modbus_model_panel_1": 33,
         "h_panes_2": 35,
         "defender_stripchart_panel_1": 64,
-        "sniffed_submarine_map_panel_1": 36
+        "modbus_model_panel_2": 36
     }
 }

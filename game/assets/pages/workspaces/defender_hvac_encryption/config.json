@@ -39,7 +39,8 @@
             "sliders": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
-        "modbus_model_selected": "ap_polled_submarine_map"
+        "modbus_model_selected": "ap_polled_submarine_map",
+        "model_panels": ["ap_polled_hvac_chart", "sniffed_hvac_house"]
     },
 
     "title": "defender_hvac_encryption_workspace",
@@ -61,19 +62,19 @@
                 "h_panes_1": [
                     "network_action_panel_1",
                     "defender_console_panel_1",
-                    "ap_polled_hvac_chart_panel_1"
+                    "modbus_model_panel_1"
                 ]
             },
-            {"h_panes_2": ["defender_stripchart_panel_1", "sniffed_hvac_house_panel_1"]}
+            {"h_panes_2": ["defender_stripchart_panel_1", "modbus_model_panel_2"]}
         ]
     },
     "layout_weights": {
         "h_panes_1": 65,
         "network_action_panel_1": 25,
         "defender_console_panel_1": 38,
-        "ap_polled_hvac_chart_panel_1": 36,
+        "modbus_model_panel_1": 36,
         "h_panes_2": 35,
         "defender_stripchart_panel_1": 64,
-        "sniffed_hvac_house_panel_1": 64
+        "modbus_model_panel_2": 64
     }
 }

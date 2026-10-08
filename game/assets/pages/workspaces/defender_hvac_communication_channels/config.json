@@ -40,6 +40,7 @@
             "modify": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "model_panels": ["ap_polled_hvac_chart"],
         "modbus_model_selected": "ap_polled_submarine_map"
     },
 
@@ -62,7 +63,7 @@
                 "h_panes_1": [
                     "network_action_panel_1",
                     "defender_console_panel_1",
-                    "ap_polled_hvac_chart_panel_1"
+                    "modbus_model_panel_1"
                 ]
             },
             {"h_panes_2": ["modbus_table_panel_1", "defender_stripchart_panel_1"]}
@@ -72,7 +73,7 @@
         "h_panes_1": 65,
         "network_action_panel_1": 25,
         "defender_console_panel_1": 41,
-        "ap_polled_hvac_chart_panel_1": 33,
+        "modbus_model_panel_1": 33,
         "h_panes_2": 35,
         "modbus_table_panel_1": 68,
         "defender_stripchart_panel_1": 68
