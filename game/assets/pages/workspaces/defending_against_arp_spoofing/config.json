@@ -41,15 +41,14 @@
         "modbus_forms_button",
         "defender_forms_button",
         "packet_columns_button",
+        "help_button",
+        "labels_button",
         "page_button",
         "ap_config_button",
-        "back_button",
+        "settings_button",
         "workspaces_button",
         "title_button",
-        "settings_button",
-        "quit_button",
-        "help_button",
-        "labels_button"
+        "quit_button"
     ],
 
     "layout_shape": {

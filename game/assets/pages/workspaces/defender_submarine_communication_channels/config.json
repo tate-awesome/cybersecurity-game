@@ -50,12 +50,14 @@
         "theme_button",
         "background_button",
         "labels_button",
-        "page_button",
         "refresh_button",
         "reset_button",
         "help_button",
-        "back_button",
+        "page_button",
+        "ap_config_button",
         "settings_button",
+        "workspaces_button",
+        "title_button",
         "quit_button"
     ],
 

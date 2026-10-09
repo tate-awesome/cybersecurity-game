@@ -29,8 +29,9 @@
         "toggle_button",
         "theme_button",
         "background_button",
+        "help_button",
         "labels_button",
-        "page_button",
+        "title_button",
         "back_button",
         "settings_button",
         "quit_button"

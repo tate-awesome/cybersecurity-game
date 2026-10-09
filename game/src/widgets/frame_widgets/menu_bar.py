@@ -33,7 +33,9 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("show_hide", ["network_forms_button", "modbus_forms_button", "defender_forms_button", "packet_columns_button"]),
     ],
     "navigation_button_group": [
-        ("pages", ["page_button", "ap_config_button", "back_button", "workspaces_button", "title_button", "settings_button", "quit_button"]),
+        ("bookmark", ["page_button"]),
+        ("links", ["back_button", "ap_config_button", "settings_button", "workspaces_button"]),
+        ("quit", ["title_button", "quit_button"]),
     ],
     "help_button_group": [
         ("help_and_language", ["help_button", "labels_button"]),
@@ -57,7 +59,7 @@ DEVELOPER_BUTTON_NAMES: list[str] = group_button_names("debug_button_group")
 # What a standard game page gets (see MenuBar.page_buttons)
 PAGE_BUTTON_NAMES: list[str] = [
     "help_button", "labels_button",
-    "page_button", "back_button", "settings_button", "quit_button",
+    "page_button", "ap_config_button", "settings_button", "workspaces_button", "title_button", "quit_button",
     "refresh_button", "reset_button", "preset_button",
     "toggle_button", "theme_button", "background_button",
     "pcap_button", "load_button", "save_button", "stream_button",

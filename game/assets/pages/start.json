@@ -8,10 +8,7 @@
     "buttons": [
         { "action": "resume" },
         { "link": "title/select_workspace" },
-        { "link": "title/select_demo" },
-        { "action": "open_ap_config" },
         { "action": "settings" },
-        { "action": "delete_user_data" },
         { "action": "quit" }
     ]
 }

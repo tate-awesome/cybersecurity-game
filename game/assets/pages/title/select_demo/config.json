@@ -6,11 +6,10 @@
     "background": { "visual": "network_mesh", "blur": 6 },
 
     "buttons": [
+        { "link": "demo/visuals" },
         { "link": "demo/boat_motion" },
         { "link": "demo/sprites" },
         { "link": "demo/triangle" },
-        { "link": "demo/visuals" },
-        { "link": "demo/config_editor" },
         { "link": "404" },
         { "action": "back" },
         { "action": "quit" }
