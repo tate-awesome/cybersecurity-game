@@ -8,7 +8,8 @@ class Visuals(Page):
     '''
     Demo page for the procedural visuals (see widgets/visuals). A menu bar
     dropdown picks which one plays; "Background Preview" blurs it the way
-    the title pages do, to judge how it reads behind text.
+    the title pages do, to judge how it reads behind text; "Replay Startup"
+    plays its startup animation again.
     The theme buttons are here to check each visual in every palette.
     '''
 
@@ -44,6 +45,7 @@ class Visuals(Page):
         )
         self.names = names
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
+        menu_bar.add_button("replay_intro", self.background.replay_intro)
         menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
     def select(self, name: str):

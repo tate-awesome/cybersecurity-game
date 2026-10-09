@@ -125,6 +125,21 @@ class VisualBackground(QWidget):
         self.sync_size()
         self.invalidate()
 
+    def replay_intro(self):
+        '''
+        Starts the visual on screen over from scratch, with its startup
+        intro unlocked again (see Visual.claim_intro) - for the visuals
+        demo's "Replay Startup" button. In "cycle" mode it replays whichever
+        visual is showing, without moving the cycle on.
+        '''
+        current = self.visual
+        if current is None:
+            return
+        Visual.intros_played.discard(current.KEY)
+        self.visual = type(current)()
+        self.sync_size()
+        self.invalidate()
+
     def follow_preferences(self, page_animate: bool = True, page_detailed: bool = True):
         '''
         Makes this background follow the user's background preferences

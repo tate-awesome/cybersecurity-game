@@ -61,6 +61,8 @@ class NetworkMesh(Visual):
     # second, and open connections. Traffic scales with area rather than
     # router count, so adding nodes doesn't also flood the screen.
     ROUTER_DENSITY = 16
+    ROUTER_COUNT = (8, 40)      # fewest and most routers, whatever the area
+    HOSTS_PER_ROUTER = (5, 11)
     TRAFFIC_RATE = 2.0
     CONNECTION_DENSITY = 0.6
     # Startup spawn-in (see build/update_spawn)
@@ -69,9 +71,6 @@ class NetworkMesh(Visual):
                                 # then each second adds one more router than the last (see spawn_times)
     HOST_WINDOW = 1.0           # a router's hosts appear over this many seconds after it
     GROW_SECONDS = 0.5          # how long each node takes to fade/slide in
-    # Whether the app session's slow startup spawn has been claimed yet -
-    # only the very first network built plays it
-    startup_spawn_claimed = False
 
     def on_resize(self, first: bool):
         # Router count and subnet spacing depend on the area, so a big
@@ -96,7 +95,7 @@ class NetworkMesh(Visual):
     # Topology
     def build(self):
         area = self.area_megapixels() * 1_000_000
-        router_count = max(8, min(40, int(self.area_megapixels() * self.ROUTER_DENSITY)))
+        router_count = max(self.ROUTER_COUNT[0], min(self.ROUTER_COUNT[1], int(self.area_megapixels() * self.ROUTER_DENSITY)))
         self.routers = []
         # Typical distance between neighboring routers if spread evenly
         self.spacing = math.sqrt(area / router_count)
@@ -130,7 +129,7 @@ class NetworkMesh(Visual):
         self.max_reach = min_gap * 1.1
         self.hosts = []
         for index in range(router_count):
-            count = self.rng.randint(5, 11)
+            count = self.rng.randint(*self.HOSTS_PER_ROUTER)
             spin = self.rng.choice((-1, 1)) * self.HOST_ORBIT_SPEED * self.rng.uniform(0.5, 1.5)
             for i in range(count):
                 host = {
@@ -151,8 +150,7 @@ class NetworkMesh(Visual):
         self.pings = []
         self.landed = []
 
-        if not NetworkMesh.startup_spawn_claimed:
-            NetworkMesh.startup_spawn_claimed = True
+        if self.claim_intro():
             self.spawn_clock = 0.0
         # A rebuild partway through the spawn (e.g. the window's first real
         # layout) carries on from the same moment with the new topology
@@ -613,9 +611,11 @@ class NetworkMesh(Visual):
                 painter.drawEllipse(QPointF(*self.position(("host", index))), 2.6, 2.6)
         painter.setOpacity(1.0)
 
-        # Packets
-        if not show_packets:
-            return
+        if show_packets:
+            self.paint_packets(painter, palette)
+
+    def paint_packets(self, painter: QPainter, palette: VisualPalette):
+        '''Packets as glowing dots - in flight, and fading on the host they reached.'''
         for packet in self.packets:
             ax, ay = self.position(packet["path"][packet["hop"]])
             bx, by = self.position(packet["path"][packet["hop"] + 1])

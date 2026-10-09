@@ -79,6 +79,8 @@ class Visual:
     '''
 
     KEY = ""
+    # Visual KEYs whose startup intro has already played this session (see claim_intro)
+    intros_played: set[str] = set()
 
     def __init__(self, seed: int | None = None):
         self.rng = random.Random(seed)
@@ -115,6 +117,34 @@ class Visual:
 
     def update(self, dt: float):
         pass
+
+    @property
+    def detailed(self) -> bool:
+        '''
+        Whether to draw the detailed version - from the "packets" paint
+        option, which title pages always set and workspaces leave to the
+        "Detailed Background" preference (see VisualBackground.apply_preferences).
+        '''
+        return self.paint_options.get("packets", True)
+
+    def claim_intro(self) -> bool:
+        '''
+        True the first time a visual of this kind is built this session -
+        so its startup animation plays once, when it's first seen (at app
+        start, or when it's first picked as the background), and later
+        rebuilds (a resize, another page) appear straight away.
+        '''
+        if self.KEY in Visual.intros_played:
+            return False
+        Visual.intros_played.add(self.KEY)
+        return True
+
+    @staticmethod
+    def button_height() -> float:
+        '''Roughly how tall a standard button is (font height plus style.py's 6px padding), for sizing to the UI.'''
+        from PySide6.QtGui import QFontMetricsF
+        from PySide6.QtWidgets import QApplication
+        return QFontMetricsF(QApplication.font()).height() + 12
 
     def settle(self):
         '''

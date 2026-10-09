@@ -11,6 +11,7 @@ pydivert; sys_platform == 'win32'
 requests
 flask
 matplotlib
+numpy # also comes with matplotlib, but the procedural visuals (widgets/visuals) use it directly
 python-nmap # must have installed nmap separately on the system
 pyside6
 darkdetect
