@@ -23,9 +23,10 @@ class NetworkMesh(Visual):
     "connection" for a few seconds and trade bursts of packets back and
     forth, the way a request/response session looks on the wire.
 
-    The first network of the app session spawns in slowly: one router a
-    second, from the middle outward along the backbone, each one's hosts
-    sliding out of it over the following second. Traffic only flows
+    The first network of the app session spawns in: from the middle
+    outward along the backbone, one router a second at first, then faster
+    and faster (see spawn_times), each one's hosts sliding out of it over
+    the following second. Traffic only flows
     between nodes that have fully appeared. Later builds (a resize, the
     visuals demo) appear at once, already busy.
 
@@ -64,7 +65,8 @@ class NetworkMesh(Visual):
     CONNECTION_DENSITY = 0.6
     # Startup spawn-in (see build/update_spawn)
     SPAWN_DELAY = 0.4           # seconds before the first router appears
-    ROUTER_INTERVAL = 1.0       # seconds between routers appearing
+    SPAWN_SLOW_SECONDS = 3      # seconds at one router a second, before the pace picks up -
+                                # then each second adds one more router than the last (see spawn_times)
     HOST_WINDOW = 1.0           # a router's hosts appear over this many seconds after it
     GROW_SECONDS = 0.5          # how long each node takes to fade/slide in
     # Whether the app session's slow startup spawn has been claimed yet -
@@ -196,12 +198,28 @@ class NetworkMesh(Visual):
                 if neighbor not in seen:
                     seen.add(neighbor)
                     queue.append(neighbor)
-        for rank, index in enumerate(order):
-            self.routers[index]["born"] = self.SPAWN_DELAY + rank * self.ROUTER_INTERVAL
+        for index, born in zip(order, self.spawn_times(len(order))):
+            self.routers[index]["born"] = born
         for index, router in enumerate(self.routers):
             own = sorted((h for h in self.hosts if h["router"] == index), key=lambda h: h["angle"])
             for i, host in enumerate(own):
                 host["born"] = router["born"] + (i + 1) / len(own) * self.HOST_WINDOW
+
+    def spawn_times(self, count: int) -> list[float]:
+        '''
+        When each of `count` routers appears, in order: one a second for
+        SPAWN_SLOW_SECONDS, then 2 in the next second, 3 in the one after,
+        and so on - evenly spaced within each second - so the build starts
+        deliberate and snowballs.
+        '''
+        times = []
+        second = 0
+        while len(times) < count:
+            per_second = 1 if second < self.SPAWN_SLOW_SECONDS else second - self.SPAWN_SLOW_SECONDS + 2
+            for i in range(min(per_second, count - len(times))):
+                times.append(self.SPAWN_DELAY + second + i / per_second)
+            second += 1
+        return times
 
     def update_spawn(self, dt: float):
         '''
