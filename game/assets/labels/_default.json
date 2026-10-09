@@ -276,6 +276,7 @@
     "menu_bar_buttons_theme_button": "Select Theme",
     "menu_bar_buttons_toggle_button": "Toggle Theme",
     "menu_bar_buttons_help_button": "Help",
+    "menu_bar_buttons_back_arrow": "«",
     "menu_bar_buttons_back_button": "Back",
     "menu_bar_buttons_reset_button": "Reset Workspace",
     "menu_bar_buttons_refresh_button": "Refresh",

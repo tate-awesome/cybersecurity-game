@@ -150,6 +150,14 @@ class MenuBar(QFrame):
         self.row = QHBoxLayout(self)
         self.row.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
 
+        # A page's menu bar starts with a big « back arrow, whenever there's
+        # somewhere to go back to (not on panels' own menu bars)
+        from ...pages.page import Page
+        self.back_arrow = None
+        if isinstance(master, Page) and len(context.router.navigation_stack) >= 2:
+            self.back_arrow = self.build_back_arrow()
+            self.row.addWidget(self.back_arrow, 0, Qt.AlignmentFlag.AlignVCenter)
+
         self.game_label = QLabel(self.context.labels.get(f"menu_bar_titles_{title_label}"))
         self.game_label.setFont(self.style.get_font())
         # A title is a name, never markup - "<b>" in one should show as typed
@@ -170,6 +178,43 @@ class MenuBar(QFrame):
         self.the_overflow_button.hide()
         self.overflow_overlay = Overlay(self.context.root, self.context, self.the_overflow_button, self._populate_overflow_overlay,
                                         closed_text="»", open_text="×")
+
+    def build_back_arrow(self) -> QPushButton:
+        '''
+        The back button as a bare « - no background or border, just the
+        glyph in the text color (the accent on hover), a size up from the
+        page title beside it.
+        '''
+        from .important_buttons import GoBackToPreviousPage
+        arrow = GoBackToPreviousPage(self.context, "menu_bar_buttons_back_arrow")
+        font = self.style.get_font()
+        font = type(font)(font)
+        font.setPointSizeF(font.pointSizeF() * 1.6)
+        arrow.setFont(font)
+        arrow.setCursor(Qt.CursorShape.PointingHandCursor)
+        # Not a surface: never frosted or tinted (see app_core.context.backdrop)
+        arrow.setProperty("surface", "none")
+        # Line the glyph up with the title's lowercase letters: in the
+        # bigger font, « sits lower in its line than the title text's
+        # middle, so lift it by the difference (padding below the text
+        # raises it by half the padding)
+        from PySide6.QtGui import QFontMetricsF
+        arrow_metrics, title_metrics = QFontMetricsF(font), QFontMetricsF(self.style.get_font())
+        glyph = arrow_metrics.tightBoundingRect(arrow.text())
+        arrow_middle = (arrow_metrics.ascent() - arrow_metrics.descent()) / 2 + glyph.center().y()
+        title_middle = (title_metrics.ascent() - title_metrics.descent()) / 2 - title_metrics.xHeight() / 2
+        lift = max(0, round(2 * (arrow_middle - title_middle)))
+        name = f"_back_arrow_{id(arrow)}"
+        arrow.setObjectName(name)
+        arrow.setStyleSheet(self.style.themed(
+            f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px 6px {lift}px 0px;"
+            f" color: {self.style.color('text')}; }}"
+            f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; }}"
+            f" QPushButton#{name}:pressed {{ color: {self.style.color('text')}; }}"))
+        # ...at its natural height, so the padding moves the glyph rather
+        # than making the button (and so the whole menu bar row) taller
+        arrow.setFixedHeight(arrow.sizeHint().height() - lift)
+        return arrow
 
     def minimumSizeHint(self):
         '''
