@@ -31,6 +31,7 @@ class Proximity(Visual):
     INTRO_SECONDS = 2.2       # for the ring of arriving points to reach the corners
     GROW_SECONDS = 0.5        # each arriving point's fade-in
     ALPHA_LEVELS = 6
+    LINE_WIDTH = 2.2          # px - links, and the nodes too, so a node reads as the joint where its links meet
     MARGIN = 60.0             # px beyond the edges points can drift before wrapping
 
     def on_resize(self, first: bool):
@@ -100,7 +101,8 @@ class Proximity(Visual):
             pick = np.flatnonzero(levels == level)
             if not len(pick):
                 continue
-            pen = QPen(palette.color("foreground", 0.05 + 0.4 * (level + 1) / self.ALPHA_LEVELS), 1.0)
+            pen = QPen(palette.color("foreground", 0.05 + 0.4 * (level + 1) / self.ALPHA_LEVELS), self.LINE_WIDTH)
+            pen.setCapStyle(Qt.PenCapStyle.FlatCap)
             painter.setPen(pen)
             painter.drawLines([QLineF(x[i[k]], y[i[k]], x[j[k]], y[j[k]]) for k in pick])
 
@@ -111,18 +113,19 @@ class Proximity(Visual):
             mouse_reach = self.reach * self.MOUSE_REACH
             to_mouse = np.hypot(x - mx, y - my)
             near = to_mouse < mouse_reach
-            pen = QPen(palette.color("accent", 0.5), 1.0)
+            pen = QPen(palette.color("accent", 0.5), self.LINE_WIDTH)
+            pen.setCapStyle(Qt.PenCapStyle.FlatCap)
             painter.setPen(pen)
             painter.drawLines([QLineF(mx, my, x[k], y[k]) for k in np.flatnonzero(near)])
 
         # Points
         dim = [QPointF(x[k], y[k]) for k in np.flatnonzero(~near)]
-        node_pen = QPen(palette.color("foreground", 0.6), 3.0)
+        node_pen = QPen(palette.color("foreground", 0.6), self.LINE_WIDTH)
         node_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(node_pen)
         painter.drawPoints(dim)
         if near.any():
-            lit_pen = QPen(palette.color("accent", 0.95), 4.0)
+            lit_pen = QPen(palette.color("accent", 0.95), self.LINE_WIDTH)
             lit_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(lit_pen)
             painter.drawPoints([QPointF(x[k], y[k]) for k in np.flatnonzero(near)])

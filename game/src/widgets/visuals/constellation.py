@@ -15,7 +15,11 @@ class Constellation(Visual):
     ideal spots.
 
     Detailed: dense clusters with a little phase-noise wobble in each
-    center. Simple: sparser, steadier clusters.
+    center. Simple: sparser, wider, steadier clusters, without color.
+
+    While the clusters are dividing, points live only a fraction of a
+    second, so each split reads cleanly rather than smearing into the
+    next.
 
     Startup: points blink in around the middle of the screen - about half
     the screen's height across - faster and faster. Once that one cluster
@@ -25,8 +29,11 @@ class Constellation(Visual):
 
     KEY = "constellation"
     SPACING_BUTTONS = 4.0     # grid spacing between cluster centers, in button heights
-    SPREAD = 0.13             # each cluster's scatter (sigma), as a fraction of its cell
+    SPREAD = {"detailed": 0.13, "simple": 0.2}   # each cluster's scatter (sigma), as a fraction of its cell
     LIFE = (1.0, 2.2)         # s a point lives, blinking in and out
+    SPLIT_LIFE = (0.22, 0.45) # ...while the clusters are dividing - short, so each
+                              # split reads cleanly instead of smearing into the next
+    LIFE_RAMP = 4.0           # s to ease from SPLIT_LIFE back up to LIFE once the startup ends
     PER_CLUSTER = {"detailed": 26, "simple": 12}   # points alive per cluster, steady state
     WOBBLE = 0.07             # detailed: cluster centers drift by this fraction of a cell
     # Startup
@@ -34,8 +41,8 @@ class Constellation(Visual):
     GROWTH_START = 4.0        # births per second when the startup begins...
     GROWTH_DOUBLING = 0.45    # ...doubling every this many seconds
     FULL_HOLD = 0.5           # s the full single cluster holds before the first split
-    SPLIT_EVERY = 0.85        # s between splits
-    SPLIT_GLIDE = 0.7         # s a split takes to glide apart
+    SPLIT_EVERY = 1.3         # s between splits
+    SPLIT_GLIDE = 0.8         # s a split takes to glide apart
     ALPHA_LEVELS = 5
 
     def on_resize(self, first: bool):
@@ -79,9 +86,22 @@ class Constellation(Visual):
             cell["x"], cell["y"], cell["glide"] = cell["cx"], cell["cy"], 1.0
         return self.cells
 
+    def life_range(self) -> tuple[float, float]:
+        '''
+        The lifetimes new points get: SPLIT_LIFE while dividing, then easing
+        up to LIFE over LIFE_RAMP once the startup is over, so the clusters
+        thicken out gradually instead of all at once.
+        '''
+        if self.intro is not None and self.intro["stage"] == "split":
+            return self.SPLIT_LIFE
+        t = min(1.0, getattr(self, "life_ramp", 1.0))
+        eased = t * t * (3 - 2 * t)
+        return tuple(short + (long - short) * eased for short, long in zip(self.SPLIT_LIFE, self.LIFE))
+
     def settle(self):
         '''Straight to the finished grid, already populated.'''
         self.intro = None
+        self.life_ramp = 1.0
         self.final_cells()
         self.empty_points()
         # A full steady population, each point partway through its life
@@ -107,11 +127,11 @@ class Constellation(Visual):
         which = rng.integers(0, len(self.cells), count)
         cx = np.array([cell["x"] for cell in self.cells])[which]
         cy = np.array([cell["y"] for cell in self.cells])[which]
-        sigma = self.SPREAD * min(self.cells[0]["w"], self.cells[0]["h"])
+        sigma = self.SPREAD["detailed" if self.detailed else "simple"] * min(self.cells[0]["w"], self.cells[0]["h"])
         self.px = np.concatenate([self.px, cx + rng.normal(0, sigma, count)])
         self.py = np.concatenate([self.py, cy + rng.normal(0, sigma, count)])
         self.age = np.concatenate([self.age, np.zeros(count)])
-        self.life = np.concatenate([self.life, rng.uniform(*self.LIFE, count)])
+        self.life = np.concatenate([self.life, rng.uniform(*self.life_range(), count)])
 
     # Simulation
     def update(self, dt: float):
@@ -135,7 +155,9 @@ class Constellation(Visual):
             else:
                 cell["x"], cell["y"] = cell["cx"], cell["cy"]
 
-        mean_life = sum(self.LIFE) / 2
+        if self.intro is None:
+            self.life_ramp = getattr(self, "life_ramp", 1.0) + dt / self.LIFE_RAMP
+        mean_life = sum(self.life_range()) / 2
         if self.intro is None:
             rate = self.steady_target() / mean_life
         else:
@@ -160,6 +182,7 @@ class Constellation(Visual):
                 intro.update(stage="split", timer=0.0)
             else:
                 self.intro = None
+                self.life_ramp = 0.0
         return max(self.FIRST_CLUSTER, self.steady_target()) / mean_life
 
     # Drawing
@@ -179,7 +202,8 @@ class Constellation(Visual):
             index = np.flatnonzero(levels == level)
             if not len(index):
                 continue
-            pen = QPen(palette.color("accent", 0.25 + 0.75 * (level + 1) / self.ALPHA_LEVELS), 3.6)
+            tint = "accent" if self.detailed else "foreground"
+            pen = QPen(palette.color(tint, 0.25 + 0.75 * (level + 1) / self.ALPHA_LEVELS), 3.6)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
             painter.drawPoints([QPointF(self.px[i], self.py[i]) for i in index])

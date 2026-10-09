@@ -13,9 +13,16 @@ class WaveGrid(Visual):
     across it - rings that start at random points at random times and
     ripple outward in every direction.
 
+    Each wave grows from a single point: its ring starts tiny and widens as
+    it spreads, with its ripples trailing behind the front.
+
     Detailed: frequent, quick, tightly rippled waves that die away fast -
-    a puddle in a drizzle. Simple: about two broad waves at a time that
-    travel and fade slowly, so patterns drift across the screen.
+    a puddle in a drizzle. Any line a wave reaches steps up to a clearly
+    thicker, accent-colored minimum, so even a single wave reads as a
+    colored band rather than a stray line or two. Simple: broad waves,
+    starting at random times, that travel and fade slowly, so monochrome
+    patterns drift across the screen - thickness rising smoothly from the
+    dead grid.
 
     Startup: one very strong wave, which never fades, sweeps out from the
     center, and the grid's lines draw themselves in just behind its front
@@ -28,15 +35,21 @@ class WaveGrid(Visual):
 
     KEY = "wave_grid"
     CELL_BUTTONS = 0.75      # grid cell size, in button heights
-    LEVELS = 10              # thickness steps a line can be drawn at
+    LEVELS = 12              # thickness steps a line can be drawn at
+    DEAD_WIDTH = 0.6         # px - the grid where no wave is
+    PEAK_WIDTH = 14.0        # px - at a wave's peak
+    # Detailed: a wave stronger than ACTIVE lifts a line straight to
+    # ACTIVE_WIDTH (and the accent color), then on up to PEAK_WIDTH
+    ACTIVE = 0.12
+    ACTIVE_WIDTH = 2.6
     INTRO_SECONDS = 2.4      # for the startup wave to reach the corners
     # Wave settings by mode - speed px/s, decay 1/s (amplitude e-folds),
     # width px (of the ring's envelope), wavelength px (ripples within it,
     # 0 for none), spread px (distance over which it weakens as it widens)
     DETAILED = {"rate": 4.0, "speed": (120.0, 170.0), "decay": (0.9, 1.3), "width": 24.0, "wavelength": 26.0,
                 "amp": (0.8, 1.2), "spread": 260.0}
-    SIMPLE = {"concurrent": 2, "speed": (40.0, 60.0), "decay": (0.05, 0.08), "width": 340.0, "wavelength": 230.0,
-              "amp": (0.8, 1.0), "spread": 1500.0}
+    SIMPLE = {"rate": 1 / 6, "speed": (20.0, 30.0), "decay": (0.05, 0.08), "width": 340.0, "wavelength": 230.0,
+              "amp": (0.8, 1.0), "spread": 1500.0}   # rate: waves per second, at random times
 
     def on_resize(self, first: bool):
         if not first and hasattr(self, "waves"):
@@ -114,11 +127,10 @@ class WaveGrid(Visual):
             while self.spawn_due >= 1.0:
                 self.spawn_due -= 1.0
                 self.spawn(self.DETAILED)
-        else:
-            self.spawn_due = 0.0
-            live = sum(1 for wave in self.waves if wave["decay"] > 0)
-            if live < self.SIMPLE["concurrent"] and self.rng.random() < dt * 0.6:
-                self.spawn(self.SIMPLE)
+        elif self.rng.random() < dt * self.SIMPLE["rate"]:
+            # Random arrivals (a Poisson process), so sometimes one wave,
+            # sometimes several overlapping, never a fixed rhythm
+            self.spawn(self.SIMPLE)
 
         diagonal = math.hypot(self.width, self.height)
         self.waves = [wave for wave in self.waves
@@ -133,21 +145,50 @@ class WaveGrid(Visual):
     def heights(self) -> np.ndarray:
         '''How strongly the waves move each segment, about 0-1.'''
         height = np.zeros_like(self.mid_x)
+        sharp = self.cell * 0.6
         for wave in self.waves:
             strength = self.strength(wave)
+            radius = self.radius(wave)
             r = np.hypot(self.mid_x - wave["x"], self.mid_y - wave["y"])
-            u = r - self.radius(wave)
-            envelope = np.exp(-(u / wave["width"]) ** 2)
+            u = r - radius
+            # Growing from a point: the ring is only as wide as it is far
+            # out, up to its full width, and falls off sharply ahead of its
+            # front - the ripples trail behind it
+            width = max(sharp, min(wave["width"], radius * 0.6))
+            envelope = np.exp(-(np.where(u > 0, u / sharp, u / width)) ** 2)
             if wave["wavelength"]:
-                envelope *= 0.55 + 0.45 * np.cos(2 * math.pi * u / wave["wavelength"])
+                wavelength = max(self.cell, min(wave["wavelength"], radius * 0.5))
+                envelope *= 0.55 + 0.45 * np.cos(2 * math.pi * np.minimum(u, 0.0) / wavelength)
             if wave["spread"]:
                 envelope /= 1.0 + r / wave["spread"]
             height += strength * envelope
         return height
 
     # Drawing
+    def levels(self) -> np.ndarray:
+        '''Each segment's thickness level, 0 (dead grid) to LEVELS - 1 (peak).'''
+        height = np.clip(self.heights(), 0.0, 1.0)
+        top = self.LEVELS - 1
+        if not self.detailed:
+            return np.rint(height * top).astype(int)
+        # Detailed: a step up out of the dead grid - level 0 below ACTIVE,
+        # then 1 (ACTIVE_WIDTH) to top across the rest of the range
+        active = height >= self.ACTIVE
+        scaled = 1 + np.rint((height - self.ACTIVE) / (1.0 - self.ACTIVE) * (top - 1)).astype(int)
+        return np.where(active, np.clip(scaled, 1, top), 0)
+
+    def style(self, level: int, palette: VisualPalette) -> QPen:
+        top = self.LEVELS - 1
+        if level == 0:
+            return QPen(palette.color("foreground", 0.08), self.DEAD_WIDTH)
+        if self.detailed:
+            t = (level - 1) / (top - 1)
+            return QPen(palette.color("accent", 0.45 + 0.45 * t), self.ACTIVE_WIDTH + (self.PEAK_WIDTH - self.ACTIVE_WIDTH) * t)
+        t = level / top
+        return QPen(palette.color("foreground", 0.08 + 0.42 * t), self.DEAD_WIDTH + (self.PEAK_WIDTH - self.DEAD_WIDTH) * t)
+
     def paint(self, painter: QPainter, palette: VisualPalette):
-        levels = np.clip(np.rint(self.heights() * (self.LEVELS - 1)), 0, self.LEVELS - 1).astype(int)
+        levels = self.levels()
         buckets: list[list[QLineF]] = [[] for _ in range(self.LEVELS)]
 
         if self.intro is None:
@@ -172,9 +213,7 @@ class WaveGrid(Visual):
         for level, lines in enumerate(buckets):
             if not lines:
                 continue
-            t = level / (self.LEVELS - 1)
-            color = palette.color("accent" if t > 0.55 else "foreground", 0.08 + 0.6 * t)
-            pen = QPen(color, 0.6 + 3.8 * t)
+            pen = self.style(level, palette)
             pen.setCapStyle(Qt.PenCapStyle.SquareCap)
             painter.setPen(pen)
             painter.drawLines(lines)

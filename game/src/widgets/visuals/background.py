@@ -108,11 +108,21 @@ class VisualBackground(QWidget):
 
     # Control
     def set_visual(self, key: str):
+        '''
+        Plays the visual `key` (or "cycle"). Switching from another visual
+        starts it fresh, with its startup intro - only a background's first
+        visual picks up an already-running shared one (the same network
+        carrying on from page to page).
+        '''
         if key != "cycle" and key not in VISUALS:
             print(f"No visual named {key!r}, falling back to {next(iter(VISUALS))!r}")
             key = next(iter(VISUALS))
+        switching = self.visual_key is not None and key != self.visual_key
         self.cycling = key == "cycle"
         self.visual_key = key
+        if switching:
+            self.SHARED.pop(key, None)
+            Visual.intros_played.discard(next(iter(VISUALS)) if self.cycling else key)
 
         if self.shared and key in self.SHARED:
             # Pick up the already-running simulation where the last page left it
@@ -192,6 +202,8 @@ class VisualBackground(QWidget):
     def next_visual(self):
         keys = list(VISUALS)
         index = (keys.index(self.visual.KEY) + 1) % len(keys) if self.visual else 0
+        # Each visual in the cycle arrives with its startup intro
+        Visual.intros_played.discard(keys[index])
         self.visual = VISUALS[keys[index]]()
         self.sync_size()
 

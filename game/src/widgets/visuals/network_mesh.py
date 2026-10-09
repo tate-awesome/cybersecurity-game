@@ -1,7 +1,9 @@
 import math
 from collections import deque
 
-from PySide6.QtCore import QPointF, Qt
+import numpy as np
+
+from PySide6.QtCore import QLineF, QPointF, Qt
 from PySide6.QtGui import QPainter, QPen
 
 from .base import Visual, VisualPalette, draw_glow
@@ -63,12 +65,17 @@ class NetworkMesh(Visual):
     ROUTER_DENSITY = 16
     ROUTER_COUNT = (8, 40)      # fewest and most routers, whatever the area
     HOSTS_PER_ROUTER = (5, 11)
+    NEAREST_LINKS = 2           # each router links to this many nearest routers (plus a spanning tree)
+    BACKBONE_WIDTH = 2.2
+    BACKBONE_CAP = Qt.PenCapStyle.RoundCap   # flat is several times faster, for a dense mesh
+    SUBNET_WIDTH = 1.0
     TRAFFIC_RATE = 2.0
     CONNECTION_DENSITY = 0.6
     # Startup spawn-in (see build/update_spawn)
     SPAWN_DELAY = 0.4           # seconds before the first router appears
     SPAWN_SLOW_SECONDS = 3      # seconds at one router a second, before the pace picks up -
                                 # then each second adds one more router than the last (see spawn_times)
+    SPAWN_ACCELERATION = 1      # ...or this many more, for a dense network to build in reasonable time
     HOST_WINDOW = 1.0           # a router's hosts appear over this many seconds after it
     GROW_SECONDS = 0.5          # how long each node takes to fade/slide in
 
@@ -164,7 +171,7 @@ class NetworkMesh(Visual):
         for node in self.routers + self.hosts:
             node["born"] = -math.inf
         self.visible_hosts = list(range(len(self.hosts)))
-        self.next_hop = self.route_all()
+        self.set_routable()
         # Fast-forward to steady traffic, so a page opens on a network
         # that's already busy instead of one visibly filling up from empty -
         # with traffic on even if this rebuild happened behind a workspace
@@ -213,7 +220,7 @@ class NetworkMesh(Visual):
         times = []
         second = 0
         while len(times) < count:
-            per_second = 1 if second < self.SPAWN_SLOW_SECONDS else second - self.SPAWN_SLOW_SECONDS + 2
+            per_second = 1 if second < self.SPAWN_SLOW_SECONDS else 1 + (second - self.SPAWN_SLOW_SECONDS + 1) * self.SPAWN_ACCELERATION
             for i in range(min(per_second, count - len(times))):
                 times.append(self.SPAWN_DELAY + second + i / per_second)
             second += 1
@@ -234,7 +241,7 @@ class NetworkMesh(Visual):
                     if self.routers[index]["born"] > self.spawn_clock - dt:
                         self.pings.append({"node": ("router", index), "age": 0.0})
             self.visible_router_count = len(visible)
-            self.next_hop = self.route_all(visible)
+            self.set_routable(visible)
         self.visible_hosts = [i for i, host in enumerate(self.hosts) if self.growth(host) >= 1.0]
         if len(self.visible_hosts) == len(self.hosts):
             self.spawning = False
@@ -259,69 +266,74 @@ class NetworkMesh(Visual):
         perpendicular bisector between it and a neighbor: for a neighbor
         at offset d, the ray reaches the bisector at |d|^2 / (2 u.d).
         '''
-        router = self.routers[index]
-        ux, uy = math.cos(angle), math.sin(angle)
-        edge = self.max_reach
-        for other_index, other in enumerate(self.routers):
-            if other_index == index:
-                continue
-            dx, dy = other["x"] - router["x"], other["y"] - router["y"]
-            toward = ux * dx + uy * dy
-            if toward > 0:
-                edge = min(edge, (dx * dx + dy * dy) / (2 * toward))
-        return edge
+        dx = self.router_x - self.router_x[index]
+        dy = self.router_y - self.router_y[index]
+        toward = math.cos(angle) * dx + math.sin(angle) * dy
+        ahead = toward > 1e-9  # (the router itself is at 0, so never ahead)
+        if not ahead.any():
+            return self.max_reach
+        return min(self.max_reach, float(np.min((dx[ahead] ** 2 + dy[ahead] ** 2) / (2 * toward[ahead]))))
 
     def host_target(self, host: dict) -> float:
         return max(10.0, host["reach"] * self.cell_edge(host["router"], host["angle"]))
 
     def link_backbone(self) -> set[tuple[int, int]]:
-        '''Each router links to its 2 nearest, then a minimum spanning tree guarantees connectivity.'''
+        '''Each router links to its NEAREST_LINKS nearest, then a minimum spanning tree guarantees connectivity.'''
         n = len(self.routers)
-        def distance(a, b):
-            return math.hypot(self.routers[a]["x"] - self.routers[b]["x"], self.routers[a]["y"] - self.routers[b]["y"])
-
+        distance = np.hypot(self.router_x[:, None] - self.router_x[None, :], self.router_y[:, None] - self.router_y[None, :])
         links = set()
+        nearest = np.argsort(distance, axis=1)[:, 1:self.NEAREST_LINKS + 1]
         for a in range(n):
-            nearest = sorted((b for b in range(n) if b != a), key=lambda b: distance(a, b))[:2]
-            for b in nearest:
-                links.add((min(a, b), max(a, b)))
+            for b in nearest[a]:
+                links.add((min(a, int(b)), max(a, int(b))))
 
-        # Prim's MST over the full graph - cheap at this size
-        connected = {0}
-        while len(connected) < n:
-            a, b = min(
-                ((a, b) for a in connected for b in range(n) if b not in connected),
-                key=lambda pair: distance(*pair),
-            )
+        # Prim's MST, O(n^2): grow the tree one closest router at a time,
+        # tracking each outside router's nearest tree member
+        in_tree = np.zeros(n, dtype=bool)
+        in_tree[0] = True
+        best = distance[0].copy()
+        parent = np.zeros(n, dtype=int)
+        for _ in range(n - 1):
+            candidates = np.where(in_tree, np.inf, best)
+            b = int(np.argmin(candidates))
+            a = int(parent[b])
             links.add((min(a, b), max(a, b)))
-            connected.add(b)
+            in_tree[b] = True
+            closer = distance[b] < best
+            best = np.where(closer, distance[b], best)
+            parent = np.where(closer, b, parent)
         return links
 
-    def route_all(self, routers: set[int] | None = None) -> dict[tuple[int, int], int]:
+    def set_routable(self, routers: set[int] | None = None):
         '''
-        next_hop[(here, destination)] -> neighboring router, by BFS hop
-        count - over just `routers` if given (the ones spawned so far).
+        Routes from now on run over just `routers` (the ones spawned so
+        far), or all of them. Next hops are worked out lazily, one
+        destination at a time as packets need them (see next_hop), so a
+        dense network or a spawn adding routers every frame costs only the
+        routes actually used.
         '''
         routers = set(range(len(self.routers))) if routers is None else routers
-        neighbors = {i: [] for i in routers}
+        self.neighbors = {i: [] for i in routers}
         for a, b in self.backbone:
             if a in routers and b in routers:
-                neighbors[a].append(b)
-                neighbors[b].append(a)
-        table = {}
-        for destination in routers:
-            # BFS outward from the destination; each node's parent is its next hop toward it
+                self.neighbors[a].append(b)
+                self.neighbors[b].append(a)
+        self.routes: dict[int, dict[int, int]] = {}
+
+    def next_hop(self, here: int, destination: int) -> int:
+        '''The neighboring router on the fewest-hops path from here to destination.'''
+        if destination not in self.routes:
+            # BFS outward from the destination; each router's parent is its next hop toward it
             parent = {destination: destination}
             queue = deque([destination])
             while queue:
-                here = queue.popleft()
-                for neighbor in neighbors[here]:
+                node = queue.popleft()
+                for neighbor in self.neighbors[node]:
                     if neighbor not in parent:
-                        parent[neighbor] = here
+                        parent[neighbor] = node
                         queue.append(neighbor)
-            for here, hop in parent.items():
-                table[(here, destination)] = hop
-        return table
+            self.routes[destination] = parent
+        return self.routes[destination][here]
 
     def route(self, source_host: int, destination_host: int) -> list[tuple[str, int]]:
         '''Hop list of ("host"|"router", index) from one host to another.'''
@@ -330,7 +342,7 @@ class NetworkMesh(Visual):
         path = [("host", source_host), ("router", start)]
         here = start
         while here != end:
-            here = self.next_hop[(here, end)]
+            here = self.next_hop(here, end)
             path.append(("router", here))
         path.append(("host", destination_host))
         return path
@@ -351,7 +363,7 @@ class NetworkMesh(Visual):
         else:
             here = index
         while here != end:
-            here = self.next_hop[(here, end)]
+            here = self.next_hop(here, end)
             path.append(("router", here))
         path.append(("host", destination_host))
         return path
@@ -444,6 +456,9 @@ class NetworkMesh(Visual):
             router["angle"] += router["spin"] * dt
             router["x"] = router["cx"] + math.cos(router["angle"]) * router["orbit"]
             router["y"] = router["cy"] + math.sin(router["angle"]) * router["orbit"]
+        # The same positions as arrays, for the vectorized geometry (cell_edge, link_backbone)
+        self.router_x = np.array([router["x"] for router in self.routers])
+        self.router_y = np.array([router["y"] for router in self.routers])
 
     def update_connections(self, dt: float):
         # Keep a few sessions open at once
@@ -555,28 +570,31 @@ class NetworkMesh(Visual):
         # {"packets": False} draws just the mesh - no pings or packets
         show_packets = self.paint_options.get("packets", True)
 
-        # Backbone links
-        pen = QPen(palette.color("foreground", 0.28), 2.2)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        painter.setPen(pen)
+        # Backbone links - batched into one drawLines call (it matters on a
+        # dense mesh). While spawning, a link grows out from the router that
+        # was there first toward the one just appearing.
+        backbone = []
         for a, b in self.backbone:
-            # While spawning, a link grows out from the router that was
-            # there first toward the one just appearing
             if self.routers[a]["born"] > self.routers[b]["born"]:
                 a, b = b, a
             grown = self.growth(self.routers[b])
             if grown <= 0.0:
                 continue
-            ax, ay = self.position(("router", a))
-            bx, by = self.position(("router", b))
-            painter.drawLine(QPointF(ax, ay), QPointF(ax + (bx - ax) * grown, ay + (by - ay) * grown))
+            ax, ay = self.router_x[a], self.router_y[a]
+            bx, by = self.router_x[b], self.router_y[b]
+            backbone.append(QLineF(ax, ay, ax + (bx - ax) * grown, ay + (by - ay) * grown))
+        pen = QPen(palette.color("foreground", 0.28), self.BACKBONE_WIDTH)
+        pen.setCapStyle(self.BACKBONE_CAP)
+        painter.setPen(pen)
+        painter.drawLines(backbone)
 
         # Subnet links (a spawning host's link grows with it - see position)
-        painter.setPen(QPen(palette.color("foreground", 0.14), 1.0))
-        for index, host in enumerate(self.hosts):
-            if self.growth(host) <= 0.0:
-                continue
-            painter.drawLine(QPointF(*self.position(("router", host["router"]))), QPointF(*self.position(("host", index))))
+        host_points = [self.position(("host", index)) for index in range(len(self.hosts))]
+        growth = [self.growth(host) for host in self.hosts]
+        subnet = [QLineF(self.router_x[host["router"]], self.router_y[host["router"]], *host_points[index])
+                  for index, host in enumerate(self.hosts) if growth[index] > 0.0]
+        painter.setPen(QPen(palette.color("foreground", 0.14), self.SUBNET_WIDTH))
+        painter.drawLines(subnet)
 
         # Arrival pings
         painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -589,26 +607,29 @@ class NetworkMesh(Visual):
         # Nodes - spawning ones fade in, routers also swelling up to size
         painter.setPen(QPen(palette.color("foreground", 0.55), 1.6))
         painter.setBrush(palette.color("background", 1.0))
-        for index, router in enumerate(self.routers):
-            grown = self.growth(router)
+        router_growth = [self.growth(router) for router in self.routers]
+        for index, grown in enumerate(router_growth):
             if grown > 0.0:
                 painter.setOpacity(grown)
                 size = 1.0 - (1.0 - grown) ** 3
-                painter.drawEllipse(QPointF(*self.position(("router", index))), 7.0 * size, 7.0 * size)
+                painter.drawEllipse(QPointF(self.router_x[index], self.router_y[index]), 7.0 * size, 7.0 * size)
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(palette.color("foreground", 0.55))
-        for index, router in enumerate(self.routers):
-            grown = self.growth(router)
+        for index, grown in enumerate(router_growth):
             if grown > 0.0:
                 painter.setOpacity(grown)
                 size = 1.0 - (1.0 - grown) ** 3
-                painter.drawEllipse(QPointF(*self.position(("router", index))), 3.0 * size, 3.0 * size)
-        painter.setBrush(palette.color("foreground", 0.45))
-        for index, host in enumerate(self.hosts):
-            grown = self.growth(host)
-            if grown > 0.0:
+                painter.drawEllipse(QPointF(self.router_x[index], self.router_y[index]), 3.0 * size, 3.0 * size)
+        painter.setOpacity(1.0)
+        # Hosts: fully grown ones in one drawPoints call, spawning ones one by one at their own opacity
+        host_pen = QPen(palette.color("foreground", 0.45), 5.2)
+        host_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(host_pen)
+        painter.drawPoints([QPointF(*host_points[index]) for index, grown in enumerate(growth) if grown >= 1.0])
+        for index, grown in enumerate(growth):
+            if 0.0 < grown < 1.0:
                 painter.setOpacity(grown)
-                painter.drawEllipse(QPointF(*self.position(("host", index))), 2.6, 2.6)
+                painter.drawPoint(QPointF(*host_points[index]))
         painter.setOpacity(1.0)
 
         if show_packets:
