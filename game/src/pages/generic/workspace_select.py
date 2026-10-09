@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor, QImage, QTextDocument
 from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QPushButton, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget
 
 from ...app_core import Context
-from ...widgets import Scrollable, popup
+from ...widgets import Scrollable
 from ..page import Page
 
 
@@ -57,9 +57,12 @@ class WorkspaceSelectPage(Page):
     With nothing selected, the summary area shows this page's own "_note"
     straight on the background. Clicking a workspace shows that
     workspace's config.json "_note" (markdown) on an opaque box instead,
-    with Delete Saved Data and Open Workspace buttons pinned to the box's
-    bottom-right corner - they stay put while the summary scrolls under
-    them. Double-clicking a workspace opens it immediately.
+    with an Open Workspace button pinned to the box's bottom-right corner -
+    it stays put while the summary scrolls under it (with, in developer
+    mode, Edit This Workspace stacked above it, which opens it in the
+    workspace editor). Double-clicking a workspace opens it
+    immediately, and clicking any dead space - the background, empty
+    sidebar, the box's margins - deselects it, back to this page's note.
 
     A _note can be one string or a list of markdown blocks, joined with
     blank lines between them.
@@ -184,9 +187,9 @@ class WorkspaceSelectPage(Page):
     def build_summary(self, body: QHBoxLayout):
         '''
         The summary box: a frame holding the markdown browser, transparent
-        until a workspace is selected (see set_summary_opaque), plus a row
-        of action buttons (Delete Saved Data, Open Workspace) that isn't in
-        any layout - it's placed by hand in the box's bottom-right corner on
+        until a workspace is selected (see set_summary_opaque), plus a stack
+        of action buttons (Edit This Workspace in developer mode, above
+        Open Workspace) that isn't in any layout - it's placed by hand in the box's bottom-right corner on
         every resize (see eventFilter), so it floats over the browser and
         stays put while the summary scrolls.
         '''
@@ -204,14 +207,17 @@ class WorkspaceSelectPage(Page):
         box_layout.addWidget(self.browser)
 
         self.actions = QWidget(self.summary_box)
-        actions_layout = QHBoxLayout(self.actions)
+        # Stacked, the same width - the widest one's
+        actions_layout = QVBoxLayout(self.actions)
         actions_layout.setContentsMargins(0, 0, 0, 0)
         actions_layout.setSpacing(self.style.igap)
 
-        self.delete_button = QPushButton(self.labels.get("title_buttons_delete_workspace_data"))
-        self.delete_button.setFont(self.style.get_font("title_btn"))
-        self.delete_button.clicked.connect(lambda checked=False: self.delete_saved_data(self.selected_target))
-        actions_layout.addWidget(self.delete_button)
+        self.edit_button = None
+        if self.context.preferences.is_developer():
+            self.edit_button = QPushButton(self.labels.get("title_buttons_edit_workspace"))
+            self.edit_button.setFont(self.style.get_font("title_btn"))
+            self.edit_button.clicked.connect(lambda checked=False: self.edit(self.selected_target))
+            actions_layout.addWidget(self.edit_button)
 
         self.start_button = QPushButton(self.labels.get("title_buttons_open_workspace"))
         self.start_button.setFont(self.style.get_font("title_btn"))
@@ -253,8 +259,27 @@ class WorkspaceSelectPage(Page):
         self.selected_target = target
         config = self.context.pages.load_page_config(target)
         self.set_summary_opaque(True)
-        self.refresh_delete_button()
         self.show_note(self.join_note(config.get("_note", "")), self.context.paths.pages / target)
+
+    def deselect(self):
+        '''Back to nothing selected - this page's own note, on the bare background.'''
+        if self.selected_target is None:
+            return
+        self.selected_target = None
+        # An exclusive group won't let its checked button be unchecked directly
+        self.workspace_group.setExclusive(False)
+        for button in self.workspace_group.buttons():
+            button.setChecked(False)
+        self.workspace_group.setExclusive(True)
+        self.set_summary_opaque(False)
+        self.show_note(self.default_note, self.default_folder)
+
+    def mousePressEvent(self, event):
+        # Only clicks nothing else took reach the page: the background,
+        # empty sidebar and box margins, the menu bar's empty stretch
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.deselect()
+        super().mousePressEvent(event)
 
     def show_note(self, markdown: str, folder: Path):
         self.browser.setSearchPaths([str(folder)])
@@ -283,18 +308,11 @@ class WorkspaceSelectPage(Page):
         if target is not None:
             self.router.show(target)
 
-    # Saved data
-    def refresh_delete_button(self):
-        '''Only lets the selected workspace's saved data be deleted if it has any.'''
-        has_data = self.selected_target is not None and self.context.pages.has_saved_page(self.selected_target)
-        self.delete_button.setEnabled(has_data)
-        self.delete_button.setToolTip("" if has_data else "Nothing saved for this workspace yet")
-
-    def delete_saved_data(self, target: str | None):
+    def edit(self, target: str | None):
+        '''Opens the workspace editor on this workspace (developer mode only - see build_summary).'''
         if target is None:
             return
-        name = self.labels.get(self.context.pages.link_label(target))
-        def delete():
-            self.context.pages.delete_saved_page(target)
-            self.refresh_delete_button()
-        popup.delete_workspace_data_dialog(self, self.context, name, delete)
+        # Imported here: the editor's module imports this one
+        from ..demo.config_editor import ConfigEditor
+        ConfigEditor.selected_key = target
+        self.router.show("demo/config_editor")

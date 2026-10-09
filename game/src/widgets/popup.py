@@ -66,11 +66,6 @@ def confirm_dialog(master: QWidget, context: Context, message: str, confirm_text
         window.show()
         return window
 
-def delete_workspace_data_dialog(master: QWidget, context: Context, workspace_name: str, delete_func):
-        message = (f"Delete your saved data for \"{workspace_name}\"?\n"
-                   "Its form entries, toggles, register settings, and panel sizes go back to the workspace's defaults.")
-        return confirm_dialog(master, context, message, "Yes, delete", "No, cancel", delete_func)
-
 def quit_dialog(master: QWidget, context: Context, quit_func):
         message = "Are you sure you want to quit?\nNothing will be saved."
         return confirm_dialog(master, context, message, "Yes, quit", "No, continue", quit_func)
