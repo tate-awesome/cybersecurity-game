@@ -122,7 +122,7 @@ class ConfigEditor(Page):
     LABEL_WIDTH = 380
 
     # Kept on the class so it survives the page rebuild that the theme
-    # buttons trigger (see Style.toggle_mode/select_theme -> router.refresh)
+    # buttons trigger (see Style.toggle_mode/set_theme -> router.refresh)
     selected_key: str | None = None
     selected_tab: int = 0
     # Each settings tab with sub-tabs' last-picked sub-tab, by its title

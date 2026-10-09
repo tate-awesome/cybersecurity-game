@@ -20,7 +20,7 @@ class Visuals(Page):
     BACKGROUND_BLUR = 6.0
 
     # Kept on the class so they survive the page rebuild that the theme
-    # buttons trigger (see Style.toggle_mode/select_theme -> router.refresh).
+    # buttons trigger (see Style.toggle_mode/set_theme -> router.refresh).
     # The visual itself is the background preference, Style.background_visual.
     preview: bool = False
     detailed: bool = True

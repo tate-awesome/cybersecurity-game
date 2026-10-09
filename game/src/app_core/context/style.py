@@ -2,7 +2,7 @@ import re
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QApplication, QInputDialog
+from PySide6.QtWidgets import QApplication
 import darkdetect
 
 from typing import TYPE_CHECKING
@@ -363,7 +363,7 @@ class Style:
         are set once, inline, at construction time (see Panel/BaseForm/
         MenuBar etc.), so - unlike native widgets - they only pick up a new
         theme on their next rebuild; callers changing the theme after
-        startup (toggle_mode, select_theme) follow this with
+        startup (toggle_mode, set_theme) follow this with
         context.router.refresh().
         '''
         mode, _, family = theme_name.partition("_")
@@ -374,7 +374,7 @@ class Style:
         # Fusion is the style Qt's own docs recommend for full stylesheet
         # control, and what qt-material used under the hood for the same
         # reason. Only set it once: re-applying the same style on every theme
-        # change (toggle_mode/select_theme trigger this repeatedly in one
+        # change (toggle_mode/set_theme trigger this repeatedly in one
         # session) leaves QScrollArea-based panels (Scrollable) with a stale,
         # unrepainted viewport background from the previous theme.
         if app.style().objectName().lower() != "fusion":
@@ -854,23 +854,3 @@ class Style:
         current_mode, _, family = self.current_theme.partition("_")
         target_mode = "light" if current_mode == "dark" else "dark"
         self.set_theme(f"{target_mode}_{family}")
-
-    def select_theme(self):
-        '''
-        Opens a dialog for the user to pick a color family only - light vs.
-        dark is controlled solely by toggle_mode (the "Toggle Theme" button)
-        and stays whatever it currently is; picking a color here keeps the
-        current mode and just swaps the family (e.g. dark_teal -> dark_blue).
-        '''
-        families = list(PALETTES.keys())
-        labels = [family.title() for family in families]
-        current_mode, _, current_family = self.current_theme.partition("_")
-        current_index = families.index(current_family) if current_family in families else 0
-
-        label, ok = QInputDialog.getItem(
-            self.root, "Select a Theme", "Color:", labels, current_index, editable=False
-        )
-        if not ok:
-            return
-
-        self.set_theme(f"{current_mode}_{families[labels.index(label)]}")
