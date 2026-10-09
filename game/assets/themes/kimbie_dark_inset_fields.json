@@ -1,0 +1,34 @@
+{
+    "label": "Kimbie Dark, inset fields",
+    "kind": "copied",
+    "note": "Same Kimbie colors, but fields use its darker widget color (#131510) so inputs sit recessed. My variation.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#221a0f",
+        "panel": "#362712",
+        "widget": "#423523",
+        "field": "#131510",
+        "field_text": "#d3af86",
+        "text": "#d3af86",
+        "accent": "#a57a4c",
+        "accent_text": "#0d1417",
+        "border": "#51412c",
+        "scrollbar": "#51412c",
+        "scrollbar_hover": "#624e35"
+    },
+    "light": {
+        "root": "#faf9f8",
+        "panel": "#f6f5f3",
+        "widget": "#e9e6e2",
+        "field": "#ffffff",
+        "field_text": "#2e2419",
+        "text": "#2e2419",
+        "accent": "#a57a4c",
+        "accent_text": "#0d1417",
+        "border": "#dcd6d0",
+        "scrollbar": "#dcd6d0",
+        "scrollbar_hover": "#cfc7be"
+    }
+}

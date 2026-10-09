@@ -46,6 +46,8 @@ class SettingsPage(Page):
 
     # Kept on the class so it survives the rebuilds some settings trigger
     selected_tab: ClassVar[int] = 0
+    # The first tab built (see __init__) - the menu bar's theme button opens straight to it
+    APPEARANCE_TAB: ClassVar[int] = 0
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -79,14 +81,28 @@ class SettingsPage(Page):
 
         theme = self.section(tab, "theme")
         mode, _, family = style.current_theme.partition("_")
+        preset = style.is_preset()
         theme.row("settings_page_rows_mode", self.dropdown(
             {"dark": self.labels.get("settings_page_mode_dark"), "light": self.labels.get("settings_page_mode_light")},
             mode, lambda value: style.set_theme(f"{value}_{family}")), "settings_page_row_notes_mode")
-        theme.row("settings_page_rows_color", self.dropdown(
-            {name: name.title() for name in style.theme_families()},
-            family, lambda value: style.set_theme(f"{mode}_{value}")), "settings_page_row_notes_color")
+        # While a special theme is in use, these show that instead - so any pick switches back
+        in_use = {"": self.labels.get("settings_page_special_in_use")} if preset else {}
+        theme.row("settings_page_rows_accent", self.dropdown(
+            {**in_use, **{name: name.replace("_", " ").title() for name in style.accents}},
+            "" if preset else style.theme_accent, style.set_accent), "settings_page_row_notes_accent")
+        theme.row("settings_page_rows_hierarchy", self.dropdown(
+            {**in_use, **{name: name.replace("_", " ").title() for name in style.hierarchies}},
+            "" if preset else style.theme_hierarchy, style.set_hierarchy), "settings_page_row_notes_hierarchy")
+        theme.row("settings_page_rows_inset", self.checkbox(style.theme_inset, style.set_inset), "settings_page_row_notes_inset")
         theme.row("settings_labels_surface_invert_buttons", self.checkbox(style.invert_buttons, style.set_invert_buttons),
                   "settings_tooltips_surface_invert_buttons")
+
+        special = self.section(tab, "special_themes")
+        presets = style.preset_names()
+        special.row("settings_page_rows_special_theme", self.dropdown(
+            {"": self.labels.get("settings_page_no_special_theme"), **presets}, family if preset else "",
+            lambda value: style.set_family(value or f"{style.theme_accent}.{style.theme_hierarchy}"),
+            {name: style.preset_info[name].get("note", "") for name in presets}), "settings_page_row_notes_special_theme")
 
         translucency = self.section(tab, "translucency")
         translucency.row("settings_page_rows_translucent_surfaces",
@@ -257,14 +273,18 @@ class SettingsPage(Page):
         box.toggled.connect(changed)
         return box
 
-    def dropdown(self, options: dict[str, str], current: str, changed: Callable[[str], None]) -> QComboBox:
-        '''A choice between options (stored value -> shown text); changed gets the stored value.'''
+    def dropdown(self, options: dict[str, str], current: str, changed: Callable[[str], None],
+                 tips: dict[str, str] | None = None) -> QComboBox:
+        '''A choice between options (stored value -> shown text), each with an optional tooltip; changed gets the stored value.'''
         values = list(options)
         if current not in options:
             values.append(current)
         combo = QComboBox()
         combo.setFont(self.style.get_font())
         combo.addItems([options.get(value, str(value)) for value in values])
+        for index, value in enumerate(values):
+            if tips and tips.get(value):
+                combo.setItemData(index, tips[value], Qt.ItemDataRole.ToolTipRole)
         combo.setCurrentIndex(values.index(current))
         combo.currentIndexChanged.connect(lambda index: changed(values[index]))
         return combo

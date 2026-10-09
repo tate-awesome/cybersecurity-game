@@ -1,0 +1,34 @@
+{
+    "label": "Inspired by Instagram (community skin)",
+    "kind": "copied",
+    "note": "Values from a community dark skin for Instagram, not official. Pure black base, then #141414, #222, #333.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#000000",
+        "panel": "#141414",
+        "widget": "#222222",
+        "field": "#333333",
+        "field_text": "#ffffff",
+        "text": "#ffffff",
+        "accent": "#0f92ea",
+        "accent_text": "#0d1417",
+        "border": "#3d3d3d",
+        "scrollbar": "#3d3d3d",
+        "scrollbar_hover": "#4a4a4a"
+    },
+    "light": {
+        "root": "#f8f9fa",
+        "panel": "#f3f5f6",
+        "widget": "#e2e6e9",
+        "field": "#ffffff",
+        "field_text": "#19262e",
+        "text": "#19262e",
+        "accent": "#0f8fe5",
+        "accent_text": "#0d1417",
+        "border": "#d0d7dc",
+        "scrollbar": "#d0d7dc",
+        "scrollbar_hover": "#bec9cf"
+    }
+}

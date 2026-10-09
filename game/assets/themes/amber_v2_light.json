@@ -1,5 +1,5 @@
 {
-    "label": "Amber",
+    "label": "Amber (soft light)",
     "kind": "original",
     "dark": {
         "root": "#1c160f",
@@ -15,16 +15,16 @@
         "scrollbar_hover": "#4a4947"
     },
     "light": {
-        "root": "#f2e4c9",
-        "panel": "#fff7d9",
-        "widget": "#fdedd1",
+        "root": "#faf8f3",
+        "panel": "#f4f1e9",
+        "widget": "#e8e3d4",
         "field": "#ffffff",
         "field_text": "#33291a",
         "text": "#33291a",
         "accent": "#f59f00",
         "accent_text": "#241d16",
-        "border": "#f2e4c9",
-        "scrollbar": "#f2e4c9",
-        "scrollbar_hover": "#d5c9b1"
+        "border": "#d6cfbb",
+        "scrollbar": "#d6cfbb",
+        "scrollbar_hover": "#c2bba7"
     }
 }

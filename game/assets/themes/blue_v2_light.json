@@ -1,0 +1,30 @@
+{
+    "label": "Blue (soft light)",
+    "kind": "original",
+    "dark": {
+        "root": "#10141d",
+        "panel": "#151a24",
+        "widget": "#28303d",
+        "field": "#353e4d",
+        "field_text": "#e3eaf5",
+        "text": "#e3eaf5",
+        "accent": "#2979ff",
+        "accent_text": "#ffffff",
+        "border": "#2e3745",
+        "scrollbar": "#2e3745",
+        "scrollbar_hover": "#3e4755"
+    },
+    "light": {
+        "root": "#f6f8fc",
+        "panel": "#eef2f8",
+        "widget": "#dfe6f1",
+        "field": "#ffffff",
+        "field_text": "#1a2233",
+        "text": "#1a2233",
+        "accent": "#1e6fe0",
+        "accent_text": "#ffffff",
+        "border": "#cbd4e3",
+        "scrollbar": "#cbd4e3",
+        "scrollbar_hover": "#b7c1d2"
+    }
+}

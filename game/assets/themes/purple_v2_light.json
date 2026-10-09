@@ -1,5 +1,5 @@
 {
-    "label": "Purple",
+    "label": "Purple (soft light)",
     "kind": "original",
     "dark": {
         "root": "#16121f",
@@ -15,16 +15,16 @@
         "scrollbar_hover": "#444557"
     },
     "light": {
-        "root": "#e6daf3",
-        "panel": "#feedff",
-        "widget": "#f1e3fb",
+        "root": "#f8f6fb",
+        "panel": "#f1eef7",
+        "widget": "#e5dff0",
         "field": "#ffffff",
         "field_text": "#2a2233",
         "text": "#2a2233",
         "accent": "#8a3ffc",
         "accent_text": "#ffffff",
-        "border": "#e6daf3",
-        "scrollbar": "#e6daf3",
-        "scrollbar_hover": "#cac0d6"
+        "border": "#d3cbe0",
+        "scrollbar": "#d3cbe0",
+        "scrollbar_hover": "#bfb7cc"
     }
 }

@@ -1,0 +1,34 @@
+{
+    "label": "Kimbie Dark (VS Code)",
+    "kind": "copied",
+    "note": "Built into VS Code. root = editor, panel = side bar, widget = title and status bar, field = input box. Accent is its focus-border tan.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#221a0f",
+        "panel": "#362712",
+        "widget": "#423523",
+        "field": "#51412c",
+        "field_text": "#d3af86",
+        "text": "#d3af86",
+        "accent": "#a57a4c",
+        "accent_text": "#0d1417",
+        "border": "#131510",
+        "scrollbar": "#131510",
+        "scrollbar_hover": "#20231b"
+    },
+    "light": {
+        "root": "#faf9f8",
+        "panel": "#f6f5f3",
+        "widget": "#e9e6e2",
+        "field": "#ffffff",
+        "field_text": "#2e2419",
+        "text": "#2e2419",
+        "accent": "#a57a4c",
+        "accent_text": "#0d1417",
+        "border": "#dcd6d0",
+        "scrollbar": "#dcd6d0",
+        "scrollbar_hover": "#cfc7be"
+    }
+}

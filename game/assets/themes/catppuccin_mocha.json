@@ -1,0 +1,34 @@
+{
+    "label": "Catppuccin Mocha",
+    "kind": "copied",
+    "note": "Official palette: crust, base, surface0, surface1, with the mauve accent.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#11111b",
+        "panel": "#1e1e2e",
+        "widget": "#313244",
+        "field": "#45475a",
+        "field_text": "#cdd6f4",
+        "text": "#cdd6f4",
+        "accent": "#cba6f7",
+        "accent_text": "#0d1417",
+        "border": "#585b70",
+        "scrollbar": "#585b70",
+        "scrollbar_hover": "#63677e"
+    },
+    "light": {
+        "root": "#f9f8fa",
+        "panel": "#f5f3f6",
+        "widget": "#e5e2e9",
+        "field": "#ffffff",
+        "field_text": "#23192e",
+        "text": "#23192e",
+        "accent": "#a769f2",
+        "accent_text": "#0d1417",
+        "border": "#d6d0dc",
+        "scrollbar": "#d6d0dc",
+        "scrollbar_hover": "#c6becf"
+    }
+}

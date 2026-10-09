@@ -1,0 +1,31 @@
+{
+    "label": "Gruvbox",
+    "kind": "copied",
+    "note": "Official Gruvbox steps (bg0 hard, bg0, bg1, bg2) in dark, and the matching light set. Yellow accent.",
+    "dark": {
+        "root": "#1d2021",
+        "panel": "#282828",
+        "widget": "#3c3836",
+        "field": "#504945",
+        "field_text": "#ebdbb2",
+        "text": "#ebdbb2",
+        "accent": "#fabd2f",
+        "accent_text": "#0d1417",
+        "border": "#504945",
+        "scrollbar": "#504945",
+        "scrollbar_hover": "#5e5551"
+    },
+    "light": {
+        "root": "#fbf1c7",
+        "panel": "#f2e5bc",
+        "widget": "#ebdbb2",
+        "field": "#f9f5d7",
+        "field_text": "#3c3836",
+        "text": "#3c3836",
+        "accent": "#b57614",
+        "accent_text": "#0d1417",
+        "border": "#d5c4a1",
+        "scrollbar": "#d5c4a1",
+        "scrollbar_hover": "#ccb78c"
+    }
+}

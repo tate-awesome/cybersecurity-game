@@ -1,0 +1,34 @@
+{
+    "label": "Inspired by Pinterest",
+    "kind": "copied",
+    "note": "Light side from Pinterest's published design tokens (white, warm gray, red). It publishes no dark mode, so dark is derived from its red and warm gray.",
+    "derived": [
+        "dark"
+    ],
+    "dark": {
+        "root": "#171710",
+        "panel": "#1d1d14",
+        "widget": "#333324",
+        "field": "#42422e",
+        "field_text": "#f2f2e3",
+        "text": "#f2f2e3",
+        "accent": "#ff2445",
+        "accent_text": "#0d1417",
+        "border": "#393928",
+        "scrollbar": "#393928",
+        "scrollbar_hover": "#484832"
+    },
+    "light": {
+        "root": "#ffffff",
+        "panel": "#f6f6f3",
+        "widget": "#e5e5e0",
+        "field": "#ffffff",
+        "field_text": "#211922",
+        "text": "#211922",
+        "accent": "#e60023",
+        "accent_text": "#ffffff",
+        "border": "#c8c8c1",
+        "scrollbar": "#c8c8c1",
+        "scrollbar_hover": "#babab1"
+    }
+}

@@ -6,6 +6,8 @@ from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QApplication
 import darkdetect
 
+from . import palette_generator
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
@@ -15,8 +17,11 @@ if TYPE_CHECKING:
 # Style._build_stylesheet both read them directly with no fallback), so a
 # new family must define both variants with the full key set below.
 # Blue is built in so the app always has a theme, even without assets/;
-# every other family is a <family>.json in assets/themes with the same
-# shape (see Style._load_theme_files).
+# every other preset family is a <family>.json in assets/themes with the
+# same shape (see Style._load_theme_files) - one there named "blue"
+# replaces it. Beyond the presets, any accent can be paired with any
+# hierarchy (assets/themes/generator - see palette_generator): a family
+# named "<accent>.<hierarchy>", e.g. "cyan.whisper".
 PALETTES: dict[str, dict[str, dict[str, str]]] = {
     "blue": {
         # Dark mode: panel sits close to root (both near-black) so widget-
@@ -39,8 +44,14 @@ PALETTES: dict[str, dict[str, dict[str, str]]] = {
         },
     },
 }
+PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
 THEME_MODES = ("dark", "light")
 THEME_KEYS = frozenset(PALETTES["blue"]["dark"])
+# What the accent/hierarchy pickers start from while a preset is in use
+DEFAULT_ACCENT = "azure"
+DEFAULT_HIERARCHY = "baseline"
+# Whether dark themes' fields sit below root - recessed inputs (see palette_generator.inset)
+DEFAULT_THEME_INSET = False
 
 # Fallback themes when no preference is saved yet, or when toggle_mode's
 # target mode has no variant in the current color family.
@@ -158,7 +169,15 @@ class Style:
         # ContextManager.start_session) - this is just a system-appropriate
         # bootstrap default; load_preferred_theme() overrides it once
         # preferences are available.
-        self.palettes = {**PALETTES, **self._load_theme_files()}
+        self.palettes: dict[str, dict[str, dict[str, str]]] = dict(PALETTES)
+        self.preset_info: dict[str, dict] = dict(PRESET_INFO)
+        self.accents: dict[str, str] = {}
+        self.hierarchies: dict[str, dict[str, float]] = {}
+        self._load_theme_files()
+        self.theme_inset: bool = DEFAULT_THEME_INSET
+        # The last accent + hierarchy used, kept while a preset is shown
+        self.theme_accent: str = DEFAULT_ACCENT
+        self.theme_hierarchy: str = DEFAULT_HIERARCHY
         self._theme_colors: dict[str, str] = {}
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
@@ -319,7 +338,7 @@ class Style:
         '''
         mode, _, family = theme_name.partition("_")
         app = QApplication.instance()
-        self._theme_colors = self.palettes[family][mode]
+        self._theme_colors = self._palette(family, mode)
         # The native platform style (e.g. "windows11") largely ignores QSS
         # background-color/border-radius on QPushButton/QComboBox/QCheckBox -
         # Fusion is the style Qt's own docs recommend for full stylesheet
@@ -775,44 +794,90 @@ class Style:
             if updated != sheet:
                 widget.setStyleSheet(updated)
 
-    def _load_theme_files(self) -> dict[str, dict[str, dict[str, str]]]:
+    def _load_theme_files(self):
         '''
-        Reads every assets/themes/<family>.json (see PALETTES), skipping
-        any file that's unreadable or missing a variant or color key.
+        Reads every assets/themes/<family>.json preset (see PALETTES) - a
+        "label", a "kind" ("original" or "copied"), optionally a source
+        "note" and which sides are "derived" rather than copied, and the
+        "dark"/"light" colors - plus the generator's accents and
+        hierarchies. Anything unreadable or missing a variant or color
+        key is skipped.
         '''
-        palettes = {}
         for path in sorted(self.context.paths.themes.glob("*.json")):
-            if path.stem in PALETTES:
-                continue  # built-in families can't be overridden
             try:
                 with open(path, encoding="utf-8") as file:
-                    variants = json.load(file)
-                if all(THEME_KEYS <= set(variants[mode]) for mode in THEME_MODES):
-                    palettes[path.stem] = {mode: variants[mode] for mode in THEME_MODES}
+                    preset = json.load(file)
+                if all(THEME_KEYS <= set(preset[mode]) for mode in THEME_MODES):
+                    self.palettes[path.stem] = {mode: preset[mode] for mode in THEME_MODES}
+                    self.preset_info[path.stem] = {key: value for key, value in preset.items() if key not in THEME_MODES}
                 else:
                     print(f"Err: theme {path} is missing color keys - skipped.")
             except Exception as e:
                 print(f"Err: [{e}] while loading theme {path}.")
-        return palettes
+        generator = self.context.paths.themes / "generator"
+        try:
+            with open(generator / "accents.json", encoding="utf-8") as file:
+                self.accents = json.load(file)
+            with open(generator / "hierarchies.json", encoding="utf-8") as file:
+                self.hierarchies = json.load(file)
+        except Exception as e:
+            print(f"Err: [{e}] while loading the theme generator - only presets are available.")
+            self.accents, self.hierarchies = {}, {}
 
-    def _list_themes(self) -> list[str]:
-        return [f"{mode}_{family}" for family in self.palettes for mode in THEME_MODES]
+    def _palette(self, family: str, mode: str) -> dict[str, str]:
+        '''One mode of a preset or "<accent>.<hierarchy>" family, inset if theme_inset is on (dark only).'''
+        inset = self.theme_inset and mode == "dark"
+        if family in self.palettes:
+            colors = self.palettes[family][mode]
+            return palette_generator.inset(colors) if inset else colors
+        accent, _, hierarchy = family.partition(".")
+        profile = self.hierarchies[hierarchy]
+        self.theme_accent, self.theme_hierarchy = accent, hierarchy
+        return palette_generator.generate(self.accents[accent], profile, mode,
+                                          profile.get("inset", palette_generator.DEFAULT_INSET) if inset else None)
+
+    def is_theme(self, theme_name) -> bool:
+        if not isinstance(theme_name, str):
+            return False
+        mode, _, family = theme_name.partition("_")
+        accent, _, hierarchy = family.partition(".")
+        return mode in THEME_MODES and (family in self.palettes or (accent in self.accents and hierarchy in self.hierarchies))
+
+    def theme_family(self) -> str:
+        '''The current preset's name, or "<accent>.<hierarchy>".'''
+        return self.current_theme.partition("_")[2]
+
+    def preset_names(self) -> dict[str, str]:
+        '''Every preset family -> its shown name, originals first, then copied ones - noting a derived side.'''
+        names = {}
+        for kind in ("original", "copied"):
+            for name, info in self.preset_info.items():
+                if info.get("kind", "original") != kind:
+                    continue
+                label = info.get("label", name)
+                derived = [self.context.labels.get(f"settings_page_mode_{side}") for side in info.get("derived", [])]
+                if derived:
+                    label += self.context.labels.get("theme_picker_derived").replace("{sides}", ", ".join(derived))
+                names[name] = label
+        return names
+
+    def is_preset(self) -> bool:
+        return self.theme_family() in self.palettes
 
     def load_preferred_theme(self):
-        saved = self.context.preferences.data.get("theme")
-        if self.context.preferences.has("theme") and saved in self._list_themes():
+        self.theme_inset = self.context.preferences.get("theme_inset") is True
+        saved = self.context.preferences.get("theme")
+        if self.is_theme(saved):
             self.apply_theme(saved)
         else:
             self.load_default_theme()
 
     def load_default_theme(self):
+        self.theme_inset = DEFAULT_THEME_INSET
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
-    def theme_families(self) -> list[str]:
-        return list(self.palettes)
-
     def set_theme(self, theme_name: str):
-        '''Applies a theme ("<mode>_<family>", e.g. "dark_teal"), saves it, and rebuilds the page in it.'''
+        '''Applies a theme ("<mode>_<family>", e.g. "dark_teal" or "light_cyan.whisper"), saves it, and rebuilds the page in it.'''
         self.apply_theme(theme_name)
         self.context.preferences.set("theme", self.current_theme)
         self.context.router.refresh()
@@ -825,3 +890,23 @@ class Style:
         current_mode, _, family = self.current_theme.partition("_")
         target_mode = "light" if current_mode == "dark" else "dark"
         self.set_theme(f"{target_mode}_{family}")
+
+    def set_family(self, family: str):
+        '''Switches to a preset or "<accent>.<hierarchy>" family, keeping light or dark.'''
+        self.set_theme(f"{self.current_theme.partition('_')[0]}_{family}")
+
+    def set_accent(self, accent: str):
+        self.set_family(f"{accent}.{self.theme_hierarchy}")
+
+    def set_hierarchy(self, hierarchy: str):
+        '''Pairs the current accent with this hierarchy - turning inset fields on if it has its own (e.g. "inset", "slots").'''
+        if "inset" in self.hierarchies.get(hierarchy, {}):
+            self.theme_inset = True
+            self.context.preferences.set("theme_inset", True)
+        self.set_family(f"{self.theme_accent}.{hierarchy}")
+
+    def set_inset(self, on: bool):
+        '''Inset fields (see DEFAULT_THEME_INSET) on or off - saved, and the page rebuilt in it.'''
+        self.theme_inset = on
+        self.context.preferences.set("theme_inset", on)
+        self.set_theme(self.current_theme)

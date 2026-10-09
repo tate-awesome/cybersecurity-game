@@ -1,0 +1,34 @@
+{
+    "label": "Tokyo Night (VS Code)",
+    "kind": "copied",
+    "note": "Root and panel are its two chrome grays and field is its editor color, all from the theme file. Widget (#24283b) and the accent are from my memory of the palette, not the file.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#14141b",
+        "panel": "#16161e",
+        "widget": "#24283b",
+        "field": "#1a1b26",
+        "field_text": "#c0caf5",
+        "text": "#c0caf5",
+        "accent": "#7aa2f7",
+        "accent_text": "#0d1417",
+        "border": "#101014",
+        "scrollbar": "#101014",
+        "scrollbar_hover": "#1b1b22"
+    },
+    "light": {
+        "root": "#f8f8fa",
+        "panel": "#f3f4f6",
+        "widget": "#e2e4e9",
+        "field": "#ffffff",
+        "field_text": "#19202e",
+        "text": "#19202e",
+        "accent": "#5487f5",
+        "accent_text": "#0d1417",
+        "border": "#d0d4dc",
+        "scrollbar": "#d0d4dc",
+        "scrollbar_hover": "#bec4cf"
+    }
+}

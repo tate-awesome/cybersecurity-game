@@ -1,0 +1,34 @@
+{
+    "label": "Inspired by Facebook (tokens in same skin)",
+    "kind": "copied",
+    "note": "Card, wash, comment and divider colors found in that skin's Facebook-style variables. Text (#e4e6eb) and the blue are inferred, not copied.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#18191a",
+        "panel": "#242526",
+        "widget": "#323436",
+        "field": "#3a3b3c",
+        "field_text": "#e4e6eb",
+        "text": "#e4e6eb",
+        "accent": "#2d88ff",
+        "accent_text": "#0d1417",
+        "border": "#3e4042",
+        "scrollbar": "#3e4042",
+        "scrollbar_hover": "#4a4d4f"
+    },
+    "light": {
+        "root": "#f8f8fa",
+        "panel": "#f3f5f6",
+        "widget": "#e2e5e9",
+        "field": "#ffffff",
+        "field_text": "#19222e",
+        "text": "#19222e",
+        "accent": "#2d88ff",
+        "accent_text": "#0d1417",
+        "border": "#d0d5dc",
+        "scrollbar": "#d0d5dc",
+        "scrollbar_hover": "#bec6cf"
+    }
+}

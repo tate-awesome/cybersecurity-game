@@ -1,0 +1,34 @@
+{
+    "label": "Inspired by Discord",
+    "kind": "copied",
+    "note": "From a third-party summary of Discord's dark theme: rail, sidebar, chat, and input all share one set. Its input is recessed, same as the rail.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#1e1f22",
+        "panel": "#2b2d31",
+        "widget": "#313338",
+        "field": "#1e1f22",
+        "field_text": "#dbdee1",
+        "text": "#dbdee1",
+        "accent": "#5865f2",
+        "accent_text": "#ffffff",
+        "border": "#3f4147",
+        "scrollbar": "#3f4147",
+        "scrollbar_hover": "#4b4d55"
+    },
+    "light": {
+        "root": "#f8f8fa",
+        "panel": "#f3f4f6",
+        "widget": "#e2e2e9",
+        "field": "#ffffff",
+        "field_text": "#191b2e",
+        "text": "#191b2e",
+        "accent": "#5865f2",
+        "accent_text": "#ffffff",
+        "border": "#d0d1dc",
+        "scrollbar": "#d0d1dc",
+        "scrollbar_hover": "#bec0cf"
+    }
+}

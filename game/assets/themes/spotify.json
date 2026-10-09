@@ -1,0 +1,34 @@
+{
+    "label": "Inspired by Spotify",
+    "kind": "copied",
+    "note": "From a third-party summary of Spotify's palette: base, card, hover and highlight steps. No borders; elevation is lighter surfaces.",
+    "derived": [
+        "light"
+    ],
+    "dark": {
+        "root": "#121212",
+        "panel": "#181818",
+        "widget": "#282828",
+        "field": "#333333",
+        "field_text": "#ffffff",
+        "text": "#ffffff",
+        "accent": "#1ed760",
+        "accent_text": "#0d1417",
+        "border": "#282828",
+        "scrollbar": "#282828",
+        "scrollbar_hover": "#353535"
+    },
+    "light": {
+        "root": "#f8faf8",
+        "panel": "#f3f6f4",
+        "widget": "#e2e9e4",
+        "field": "#ffffff",
+        "field_text": "#192e21",
+        "text": "#192e21",
+        "accent": "#169d46",
+        "accent_text": "#0d1417",
+        "border": "#d0dcd4",
+        "scrollbar": "#d0dcd4",
+        "scrollbar_hover": "#becfc4"
+    }
+}

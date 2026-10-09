@@ -15,6 +15,7 @@ class PreferencesData(TypedDict, total=False):
     doesn't guarantee the shape at runtime (see Preferences.has()'s guard).
     '''
     theme: str
+    theme_inset: bool
     is_developer: int
     translucent_surfaces: bool
     surface_opacity: dict[str, float]
@@ -81,6 +82,7 @@ class Preferences:
         self.data.clear()
         self.data = {
             "theme": "",            # autosaved in Style
+            "theme_inset": False,   # toggled on the settings page (see Style.set_inset)
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
             "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
             "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY

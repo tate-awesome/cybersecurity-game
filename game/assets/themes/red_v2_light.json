@@ -1,5 +1,5 @@
 {
-    "label": "Red",
+    "label": "Red (soft light)",
     "kind": "original",
     "dark": {
         "root": "#1c1013",
@@ -15,16 +15,16 @@
         "scrollbar_hover": "#4a434b"
     },
     "light": {
-        "root": "#f2d8db",
-        "panel": "#ffebeb",
-        "widget": "#fde1e3",
+        "root": "#fbf7f7",
+        "panel": "#f6f0f0",
+        "widget": "#ebdfe0",
         "field": "#ffffff",
         "field_text": "#331a1d",
         "text": "#331a1d",
         "accent": "#e53935",
         "accent_text": "#ffffff",
-        "border": "#f2d8db",
-        "scrollbar": "#f2d8db",
-        "scrollbar_hover": "#d5bec1"
+        "border": "#dccbcd",
+        "scrollbar": "#dccbcd",
+        "scrollbar_hover": "#c8b7b9"
     }
 }

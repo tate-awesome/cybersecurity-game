@@ -1,5 +1,5 @@
 {
-    "label": "Teal",
+    "label": "Teal (soft light)",
     "kind": "original",
     "dark": {
         "root": "#12181a",
@@ -15,16 +15,16 @@
         "scrollbar_hover": "#404b52"
     },
     "light": {
-        "root": "#dbe9e8",
-        "panel": "#f3fcf8",
-        "widget": "#e6f2f0",
+        "root": "#f6f9f9",
+        "panel": "#eff4f4",
+        "widget": "#e0e8e8",
         "field": "#ffffff",
         "field_text": "#263238",
         "text": "#263238",
-        "accent": "#00acc1",
+        "accent": "#0097a7",
         "accent_text": "#ffffff",
-        "border": "#dbe9e8",
-        "scrollbar": "#dbe9e8",
-        "scrollbar_hover": "#c1cdcc"
+        "border": "#cdd8d8",
+        "scrollbar": "#cdd8d8",
+        "scrollbar_hover": "#b9c5c5"
     }
 }
