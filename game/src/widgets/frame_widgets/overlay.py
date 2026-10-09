@@ -136,7 +136,7 @@ class Overlay(QWidget):
         blend with. Skipped while the overlay surface is fully opaque.
         '''
         self._behind_levels = {}
-        if self.context.style.surface_opacity.get("overlay", 1.0) >= 1.0 or self.width() <= 0:
+        if self.context.style.opacity("overlay") >= 1.0 or self.width() <= 0:
             self._behind = None
             return
         root = self.context.root

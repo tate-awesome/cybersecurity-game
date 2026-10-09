@@ -79,7 +79,7 @@ class Backdrop(QObject):
 
     def active_kinds(self) -> set[str]:
         return {kind for kind, blur in self.style.surface_blur.items()
-                if blur > 0 and self.style.surface_opacity.get(kind, 1.0) < 1.0}
+                if blur > 0 and self.style.opacity(kind) < 1.0}
 
     def sync(self):
         '''Installs or removes the filter to match the settings, and repaints so changes show at once.'''
@@ -111,7 +111,7 @@ class Backdrop(QObject):
             return QColor(self.style.color(kind))
         if kind == "bar":
             color = QColor(self.style.color("widget", opaque=True))
-            color.setAlphaF(self.style.surface_opacity["bar"])
+            color.setAlphaF(self.style.opacity("bar"))
             return color
         return None
 

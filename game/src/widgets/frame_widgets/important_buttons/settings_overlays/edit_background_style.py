@@ -37,6 +37,7 @@ class EditBackgroundStyle(SettingsOverlayButton):
                            lambda fps: style.set_background(fps=fps))
 
         opacity = self.section("surface_opacity")
+        opacity.toggle(("surface_translucent",), style.translucent_surfaces, style.set_translucent_surfaces)
         opacity.toggle(("surface_invert_buttons",), style.invert_buttons, style.set_invert_buttons)
         for kind in SURFACE_KINDS:
             opacity.slider(("surface_opacity", kind), round(style.surface_opacity[kind] * 100), 0, 100,

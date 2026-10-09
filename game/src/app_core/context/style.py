@@ -113,7 +113,13 @@ DEFAULT_LIGHT_THEME = "light_teal"
 # instead (see Style.surface).
 SURFACE_KINDS = ("panel", "bar", "widget", "field", "button", "overlay")
 COLOR_SURFACES = ("panel", "widget", "field")
-DEFAULT_SURFACE_OPACITY: dict[str, float] = {kind: 1.0 for kind in SURFACE_KINDS}  # 0-1
+# Whether surfaces can be see-through at all. Off, none of the surface
+# machinery runs: every color is opaque and untagged, there's no backdrop
+# blur or overlay snapshot, and scroll areas paint their own background -
+# the app as it was before translucency.
+DEFAULT_TRANSLUCENT_SURFACES = True
+DEFAULT_SURFACE_OPACITY: dict[str, float] = {
+    "panel": 0.5, "bar": 1.0, "widget": 0.5, "field": 0.5, "button": 0.75, "overlay": 1.0}  # 0-1
 DEFAULT_SURFACE_BLUR: dict[str, float] = {kind: 0.0 for kind in SURFACE_KINDS}     # px
 SURFACE_BLUR_MAX = 40.0
 # The animated page background (see Page.add_background), each saved as a
@@ -174,6 +180,7 @@ class Style:
 
         # Surface settings (see SURFACE_KINDS) - load_preferred_surfaces()
         # replaces these defaults once preferences exist
+        self.translucent_surfaces: bool = DEFAULT_TRANSLUCENT_SURFACES
         self.surface_opacity: dict[str, float] = dict(DEFAULT_SURFACE_OPACITY)
         self.surface_blur: dict[str, float] = dict(DEFAULT_SURFACE_BLUR)
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
@@ -306,7 +313,7 @@ class Style:
         hex_color = self._theme_colors[type]
         if opaque or type not in COLOR_SURFACES:
             return hex_color
-        opacity = self.surface_opacity.get(type, 1.0)
+        opacity = self.opacity(type)
         if opacity >= 1.0:
             return hex_color
         return f"#{round(255 * opacity):02x}{hex_color.lstrip('#')}"
@@ -602,8 +609,26 @@ class Style:
         buttons) - panel/widget/field get theirs from color().
         '''
         qcolor = QColor(self.color(color))
-        alpha = round(255 * self.surface_opacity.get(kind, 1.0))
+        if not self.translucent_surfaces:
+            return qcolor.name()  # just the color - no translucency, nothing tagged
+        alpha = round(255 * self.opacity(kind))
         return f"rgba({qcolor.red()}, {qcolor.green()}, {qcolor.blue()}, {alpha}) /*s:{kind}:{qcolor.name()}*/"
+
+    def opacity(self, kind: str) -> float:
+        '''How solid a surface of this kind draws right now - always 1 with translucent_surfaces off.'''
+        return self.surface_opacity.get(kind, 1.0) if self.translucent_surfaces else 1.0
+
+    def set_translucent_surfaces(self, on: bool):
+        '''
+        Switches surface translucency on or off (see DEFAULT_TRANSLUCENT_SURFACES),
+        saves it, and rebuilds the page - it changes how every stylesheet is
+        built, not just its colors, so it can't be restyled in place.
+        '''
+        self.translucent_surfaces = on
+        self._rebuild_stylesheets()
+        self.backdrop.sync()
+        self.save_surfaces()
+        self.context.router.refresh()
 
     def surface_kind_of(self, declarations: str) -> str | None:
         '''
@@ -638,11 +663,14 @@ class Style:
                     values[kind] = min(high, max(low, float(value)))
         if isinstance(self.context.preferences.get("invert_buttons"), bool):
             self.invert_buttons = self.context.preferences.get("invert_buttons")
+        if isinstance(self.context.preferences.get("translucent_surfaces"), bool):
+            self.translucent_surfaces = self.context.preferences.get("translucent_surfaces")
         self._rebuild_stylesheets()
         self.backdrop.sync()
 
     def load_default_surfaces(self):
         '''Back to DEFAULT_SURFACE_OPACITY/BLUR, without saving - like load_default_theme.'''
+        self.translucent_surfaces = DEFAULT_TRANSLUCENT_SURFACES
         self.surface_opacity = dict(DEFAULT_SURFACE_OPACITY)
         self.surface_blur = dict(DEFAULT_SURFACE_BLUR)
         self.invert_buttons = DEFAULT_INVERT_BUTTONS
@@ -738,6 +766,7 @@ class Style:
         self.context.preferences.set("surface_opacity", dict(self.surface_opacity))
         self.context.preferences.set("surface_blur", dict(self.surface_blur))
         self.context.preferences.set("invert_buttons", self.invert_buttons)
+        self.context.preferences.set("translucent_surfaces", self.translucent_surfaces)
 
     def _rebuild_stylesheets(self):
         self._widget_qss = self._build_stylesheet(self._theme_colors)

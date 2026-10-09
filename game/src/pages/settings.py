@@ -88,6 +88,11 @@ class SettingsPage(Page):
         theme.row("settings_labels_surface_invert_buttons", self.checkbox(style.invert_buttons, style.set_invert_buttons),
                   "settings_tooltips_surface_invert_buttons")
 
+        translucency = self.section(tab, "translucency")
+        translucency.row("settings_page_rows_translucent_surfaces",
+                         self.checkbox(style.translucent_surfaces, style.set_translucent_surfaces),
+                         "settings_page_row_notes_translucent_surfaces")
+
         # The Background dropdown's two columns, each its own section
         opacity = self.section(tab, "surface_opacity")
         for kind in SURFACE_KINDS:

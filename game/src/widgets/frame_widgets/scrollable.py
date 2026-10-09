@@ -24,7 +24,7 @@ class Scrollable(QScrollArea):
         # Inside a panel, the panel already paints this background - a
         # second and third copy (this, and inner below) would stack up
         # whenever panels are see-through (see Style.surface_opacity)
-        background = "transparent" if master.property("surface") == "panel" else style.color("panel")
+        background = "transparent" if style.translucent_surfaces and master.property("surface") == "panel" else style.color("panel")
         self.setStyleSheet(f"QScrollArea {{ background-color: {background}; border: none; }}")
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, TypedDict
 from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_ENABLED,
-                    DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL)
+                    DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES)
 if TYPE_CHECKING:
     from .. import Context
 
@@ -16,6 +16,7 @@ class PreferencesData(TypedDict, total=False):
     '''
     theme: str
     is_developer: int
+    translucent_surfaces: bool
     surface_opacity: dict[str, float]
     surface_blur: dict[str, float]
     invert_buttons: bool
@@ -81,6 +82,7 @@ class Preferences:
         self.data = {
             "theme": "",            # autosaved in Style
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
+            "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
             "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY
             "surface_blur": {},     # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_BLUR
             "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
