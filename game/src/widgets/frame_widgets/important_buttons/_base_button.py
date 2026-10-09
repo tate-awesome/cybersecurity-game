@@ -1,6 +1,15 @@
 from PySide6.QtWidgets import QPushButton
 from ....app_core import Context
 
+# Marks everything only developers see (developer mode - preferences.json
+# "is_developer"): a squared key, for restricted access
+DEVELOPER_MARK = "\u26bf"
+
+
+def developer_text(text: str) -> str:
+    '''text with the developer-only mark in front (once).'''
+    return text if text.startswith(DEVELOPER_MARK) else f"{DEVELOPER_MARK} {text}"
+
 
 class ImportantButton(QPushButton):
     '''
@@ -18,6 +27,7 @@ class ImportantButton(QPushButton):
 
     def __init__(self, context: Context, label_key: str | None = None):
         super().__init__(context.labels.get(label_key or self.LABEL))
+        self.developer_only = False
         self.context = context
         self.setFont(context.style.get_font())
         if self.TOOLTIP is not None:
@@ -29,6 +39,23 @@ class ImportantButton(QPushButton):
     def is_available(cls, context: Context) -> bool:
         '''Whether this button makes sense right now - placements skip it if not.'''
         return True
+
+    def mark_developer_only(self):
+        '''
+        Shows the developer-only mark (DEVELOPER_MARK) in front of this
+        button's text from now on - kept through any later setText, e.g. a
+        ToggleButton's label swap or an overlay's ▾ marker.
+        '''
+        # The mark comes from a fallback font with a taller line than the UI
+        # font's, which would make this button taller than its neighbors -
+        # so it keeps the height it has without the mark (the glyph itself fits)
+        height = self.sizeHint().height()
+        self.developer_only = True
+        self.setText(self.text())
+        self.setFixedHeight(height)
+
+    def setText(self, text: str):
+        super().setText(developer_text(text) if getattr(self, "developer_only", False) else text)
 
     def on_click(self):
         pass

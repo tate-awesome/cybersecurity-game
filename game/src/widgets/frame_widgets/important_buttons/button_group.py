@@ -3,6 +3,9 @@ from ....app_core import Context
 from ..overlay import Overlay
 from ._base_button import ImportantButton
 
+# Groups shown only in developer mode - marked as developer-only, with every button in them
+DEVELOPER_GROUPS = {"debug_button_group"}
+
 # One titled block of a group: (header key - "menu_bar_headers_<key>", or None - , its buttons in order)
 Section = tuple[str | None, list[type[ImportantButton]]]
 
@@ -21,6 +24,9 @@ class ButtonGroup(ImportantButton):
         super().__init__(context, f"menu_bar_buttons_{group_key}")
         self.setToolTip(context.labels.get(f"menu_bar_tooltips_{group_key}"))
         self.sections = sections
+        self.developer_group = group_key in DEVELOPER_GROUPS
+        if self.developer_group:
+            self.mark_developer_only()  # before the overlay reads the text for its ▾
         Overlay(context.root, context, self, self.populate)
 
     def populate(self, overlay: Overlay):
@@ -31,6 +37,8 @@ class ButtonGroup(ImportantButton):
                 overlay.layout().addWidget(label)
             for button_class in button_classes:
                 button = button_class(self.context)
+                if self.developer_group:
+                    button.mark_developer_only()
                 if not button.property("opens_overlay"):
                     # Close first, then act - an action that opens a dialog or
                     # rebuilds the page shouldn't do it under an open popup

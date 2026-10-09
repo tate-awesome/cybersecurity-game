@@ -214,7 +214,8 @@ class WorkspaceSelectPage(Page):
 
         self.edit_button = None
         if self.context.preferences.is_developer():
-            self.edit_button = QPushButton(self.labels.get("title_buttons_edit_workspace"))
+            from ...widgets.frame_widgets.important_buttons import developer_text
+            self.edit_button = QPushButton(developer_text(self.labels.get("title_buttons_edit_workspace")))
             self.edit_button.setFont(self.style.get_font("title_btn"))
             self.edit_button.clicked.connect(lambda checked=False: self.edit(self.selected_target))
             actions_layout.addWidget(self.edit_button)

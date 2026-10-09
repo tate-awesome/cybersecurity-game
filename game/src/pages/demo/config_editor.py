@@ -146,6 +146,9 @@ class ConfigEditor(Page):
             ConfigEditor.selected_key = keys[0] if keys else None
 
         menu_bar = MenuBar(self, context, "config_editor_demo")
+        # A developer tool - marked as one (see important_buttons.DEVELOPER_MARK)
+        from ...widgets.frame_widgets.important_buttons import developer_text
+        menu_bar.game_label.setText(developer_text(menu_bar.game_label.text()))
         self.dropdown = None
         if keys:
             self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,

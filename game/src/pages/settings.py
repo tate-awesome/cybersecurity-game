@@ -11,7 +11,7 @@ from ..app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SUR
 from ..widgets import MenuBar, VISUALS
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
-                                                       OpenWorkspaceEditor)
+                                                       OpenWorkspaceEditor, developer_text)
 from .page import Page
 
 # This page's own menu bar - plain navigation; everything else is on the page
@@ -189,10 +189,13 @@ class SettingsPage(Page):
                  "settings_page_row_notes_is_developer")
         if not context.preferences.is_developer():
             return
-        tools = self.section(tab, "developer_tools")
+        # Developer-only, so marked as such (see important_buttons.DEVELOPER_MARK)
+        tools = self.section(tab, "developer_tools", developer=True)
         tools.row("settings_page_rows_debug_labels", self.checkbox(context.labels.is_debug(), self.set_debug_labels),
                   "settings_page_row_notes_debug_labels")
-        tools.row("settings_page_rows_workspace_editor", OpenWorkspaceEditor(context), "settings_page_row_notes_workspace_editor")
+        editor = OpenWorkspaceEditor(context)
+        editor.mark_developer_only()
+        tools.row("settings_page_rows_workspace_editor", editor, "settings_page_row_notes_workspace_editor")
 
     # Actions
     def reset_surfaces(self):
@@ -242,8 +245,8 @@ class SettingsPage(Page):
         self.tabs.addTab(scroll, self.labels.get(f"settings_page_tabs_{name}"))
         return column
 
-    def section(self, tab: QVBoxLayout, name: str) -> "SettingsSection":
-        section = SettingsSection(self, name)
+    def section(self, tab: QVBoxLayout, name: str, developer: bool = False) -> "SettingsSection":
+        section = SettingsSection(self, name, developer)
         tab.insertWidget(tab.count() - 1, section)  # above the trailing stretch
         return section
 
@@ -321,17 +324,23 @@ class SettingsSection(QFrame):
     it does.
     '''
 
-    def __init__(self, page: SettingsPage, name: str):
+    def __init__(self, page: SettingsPage, name: str, developer: bool = False):
         super().__init__()
         self.page = page
+        # A developer-only section marks its title and every row's name
+        self.developer = developer
         style = page.style
         labels = page.labels
         self.setStyleSheet(style.themed(
             f"QFrame {{ background-color: {style.color('panel')}; border-radius: {style.PANEL_RADIUS}px; }}", self))
         layout = QVBoxLayout(self)
         layout.setContentsMargins(style.igap * 2, style.igap, style.igap * 2, style.igap)
-        header = QLabel(labels.get(f"settings_page_sections_{name}"))
+        title = labels.get(f"settings_page_sections_{name}")
+        header = QLabel(developer_text(title) if developer else title)
         header.setFont(style.get_font("title_btn"))
+        if developer:
+            # The mark's fallback font has a taller line - keep the title's own
+            header.setFixedHeight(header.fontMetrics().height())
         layout.addWidget(header)
         explanation = QLabel(labels.get(f"settings_page_notes_{name}"))
         explanation.setFont(style.get_font("small"))
@@ -351,8 +360,10 @@ class SettingsSection(QFrame):
     def row(self, name: str, control: QWidget, note: str):
         '''A setting: its name (labels key), its control, and what it does (labels key).'''
         style, labels = self.page.style, self.page.labels
-        label = QLabel(labels.get(name))
+        label = QLabel(developer_text(labels.get(name)) if self.developer else labels.get(name))
         label.setFont(style.get_font())
+        if self.developer:
+            label.setFixedHeight(label.fontMetrics().height())  # (see the header's, in __init__)
         description = QLabel(labels.get(note))
         description.setFont(style.get_font("small"))
         description.setWordWrap(True)
