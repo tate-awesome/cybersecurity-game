@@ -25,7 +25,8 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
     ],
     "style_button_group": [
-        ("appearance", ["toggle_button", "theme_button", "background_button", "model_style_button", "strip_chart_style_button"]),
+        ("themes", ["toggle_button", "theme_button", "background_button"]),
+        ("model_display", ["model_style_button", "strip_chart_style_button"]),
     ],
     "workspace_button_group": [
         ("reload", ["refresh_button", "clear_inputs_button", "reset_layout_button", "reset_button"]),

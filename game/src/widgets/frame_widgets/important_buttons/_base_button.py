@@ -4,6 +4,9 @@ from ....app_core import Context
 # Marks everything only developers see (developer mode - preferences.json
 # "is_developer"): a squared key, for restricted access
 DEVELOPER_MARK = "\u26bf"
+# Marks buttons that open something outside the app's window - another
+# window or the browser (see ImportantButton.POPOUT): a north-east arrow
+POPOUT_MARK = "\u2197"
 
 
 def developer_text(text: str) -> str:
@@ -24,6 +27,8 @@ class ImportantButton(QPushButton):
     '''
     LABEL = "menu_bar_buttons__default"
     TOOLTIP: str | None = None
+    # Opens a separate window or the browser - shown with POPOUT_MARK after the label
+    POPOUT = False
 
     def __init__(self, context: Context, label_key: str | None = None):
         super().__init__(context.labels.get(label_key or self.LABEL))
@@ -32,6 +37,8 @@ class ImportantButton(QPushButton):
         self.setFont(context.style.get_font())
         if self.TOOLTIP is not None:
             self.setToolTip(context.labels.get(self.TOOLTIP))
+        if self.POPOUT:
+            self.setText(self.text())  # (the constructor's text skips setText - see below)
         # clicked emits a "checked" bool that on_click doesn't take
         self.clicked.connect(lambda checked=False: self.on_click())
 
@@ -55,6 +62,8 @@ class ImportantButton(QPushButton):
         self.setFixedHeight(height)
 
     def setText(self, text: str):
+        if self.POPOUT and not text.endswith(POPOUT_MARK):
+            text = f"{text} {POPOUT_MARK}"
         super().setText(developer_text(text) if getattr(self, "developer_only", False) else text)
 
     def on_click(self):
