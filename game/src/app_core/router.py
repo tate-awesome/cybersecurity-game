@@ -15,6 +15,9 @@ from ..pages.demo.config_editor import ConfigEditor
 from ..pages.attacker.attacker import AttackerV0
 from ..pages.defender.defender import DefenderV0
 
+# /settings
+from ..pages.settings import SettingsPage
+
 # /generic (data-driven pages, dispatched by each page's own config "build_type").
 # start and title/select_demo are build_type "title" pages
 # and title/select_workspace is "workspace_select", all discovered below - no
@@ -35,6 +38,7 @@ PAGES: dict[str, type] = {
         "demo/triangle": Triangle,
         "demo/visuals": Visuals,
         "demo/config_editor": ConfigEditor,
+        "settings": SettingsPage,
         "404": NotFound,
 }
 

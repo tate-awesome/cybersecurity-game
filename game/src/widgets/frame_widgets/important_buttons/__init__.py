@@ -19,6 +19,7 @@ from .open_title_page import OpenTitlePage
 from .quit_application import QuitApplication
 from .link_to_page import LinkToPage
 from .open_favorite_page import OpenFavoritePage
+from .open_settings_page import OpenSettingsPage
 
 # Workspace
 from .refresh_current_page import RefreshCurrentPage
@@ -81,6 +82,7 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     "back_button": GoBackToPreviousPage,
     "workspaces_button": OpenWorkspaceSelect,
     "title_button": OpenTitlePage,
+    "settings_button": OpenSettingsPage,
     "quit_button": QuitApplication,
     # Workspace
     "refresh_button": RefreshCurrentPage,
@@ -128,4 +130,5 @@ TITLE_ACTIONS: dict[str, type[ImportantButton]] = {
     "resume": OpenFavoritePage,
     "open_ap_config": OpenAccessPointConfigInBrowser,
     "delete_user_data": DeleteAllUserData,
+    "settings": OpenSettingsPage,
 }

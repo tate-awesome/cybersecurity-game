@@ -32,6 +32,7 @@
         "labels_button",
         "page_button",
         "back_button",
+        "settings_button",
         "quit_button"
     ]
 }

@@ -75,6 +75,7 @@
         "back_button",
         "workspaces_button",
         "title_button",
+        "settings_button",
         "quit_button",
         "help_button",
         "labels_button"

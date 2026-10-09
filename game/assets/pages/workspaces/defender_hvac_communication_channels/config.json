@@ -55,6 +55,7 @@
         "reset_button",
         "help_button",
         "back_button",
+        "settings_button",
         "quit_button"
     ],
 

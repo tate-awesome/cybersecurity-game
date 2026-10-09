@@ -808,6 +808,15 @@ class Style:
     def load_default_theme(self):
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
+    def theme_families(self) -> list[str]:
+        return list(PALETTES)
+
+    def set_theme(self, theme_name: str):
+        '''Applies a theme ("<mode>_<family>", e.g. "dark_teal"), saves it, and rebuilds the page in it.'''
+        self.apply_theme(theme_name)
+        self.context.preferences.set("theme", self.current_theme)
+        self.context.router.refresh()
+
     def toggle_mode(self):
         '''
         Toggles between the light and dark variant of the current theme's
@@ -815,9 +824,7 @@ class Style:
         '''
         current_mode, _, family = self.current_theme.partition("_")
         target_mode = "light" if current_mode == "dark" else "dark"
-        self.apply_theme(f"{target_mode}_{family}")
-        self.context.preferences.set("theme", self.current_theme)
-        self.context.router.refresh()
+        self.set_theme(f"{target_mode}_{family}")
 
     def select_theme(self):
         '''
@@ -837,6 +844,4 @@ class Style:
         if not ok:
             return
 
-        self.apply_theme(f"{current_mode}_{families[labels.index(label)]}")
-        self.context.preferences.set("theme", self.current_theme)
-        self.context.router.refresh()
+        self.set_theme(f"{current_mode}_{families[labels.index(label)]}")

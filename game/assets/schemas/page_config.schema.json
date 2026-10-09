@@ -101,6 +101,7 @@
                     "back_button",
                     "workspaces_button",
                     "title_button",
+                    "settings_button",
                     "quit_button",
                     "refresh_button",
                     "clear_inputs_button",
