@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
 from ..app_core import Context
 from ..app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS
 from ..widgets import MenuBar, VISUALS
-from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData,
+from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
                                                        OpenWorkspaceEditor)
 from .page import Page
@@ -131,6 +131,10 @@ class SettingsPage(Page):
         section.row("settings_labels_background_fps",
                     self.integer(style.background_fps, *BACKGROUND_FPS_RANGE, lambda fps: style.set_background(fps=fps)),
                     "settings_tooltips_background_fps")
+
+        preview = self.section(tab, "background_preview")
+        preview.row("settings_page_rows_visuals_demo", LinkToPage(self.context, "demo/visuals"),
+                    "settings_page_row_notes_visuals_demo")
 
         reset = self.section(tab, "background_reset")
         reset.row("settings_page_rows_reset_background", self.button(

@@ -7,7 +7,9 @@ from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR
 class Visuals(Page):
     '''
     Demo page for the procedural visuals (see widgets/visuals). A menu bar
-    dropdown picks which one plays; "Background Preview" blurs it the way
+    dropdown picks which one plays - and makes it the app's background, the
+    same preference as the settings page's Background Type (so it opens on
+    whichever that is); "Background Preview" blurs it the way
     the title pages do, to judge how it reads behind text; "Detailed"
     switches between the detailed and simple versions; "Replay Startup"
     plays its startup animation again.
@@ -18,8 +20,8 @@ class Visuals(Page):
     BACKGROUND_BLUR = 6.0
 
     # Kept on the class so they survive the page rebuild that the theme
-    # buttons trigger (see Style.toggle_mode/select_theme -> router.refresh)
-    selected_key: str | None = None
+    # buttons trigger (see Style.toggle_mode/select_theme -> router.refresh).
+    # The visual itself is the background preference, Style.background_visual.
     preview: bool = False
     detailed: bool = True
 
@@ -32,11 +34,10 @@ class Visuals(Page):
         # Display name -> visual key, in registry order, plus the cycle option
         keys = [*VISUALS, "cycle"]
         names = {labels.get(f"visual_names_{key}"): key for key in keys}
-        if Visuals.selected_key not in keys:
-            Visuals.selected_key = keys[0]
+        selected = self.style.background_visual if self.style.background_visual in keys else keys[0]
 
         self.background = VisualBackground(
-            self, context, Visuals.selected_key,
+            self, context, selected,
             blur=self.BACKGROUND_BLUR if Visuals.preview else 0.0,
             paint_options={"packets": Visuals.detailed},
         )
@@ -44,7 +45,7 @@ class Visuals(Page):
         menu_bar.add_dropdown(
             list(names),
             self.select,
-            default=labels.get(f"visual_names_{Visuals.selected_key}"),
+            default=labels.get(f"visual_names_{selected}"),
         )
         self.names = names
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
@@ -53,8 +54,10 @@ class Visuals(Page):
         menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
     def select(self, name: str):
-        Visuals.selected_key = self.names[name]
-        self.background.set_visual(Visuals.selected_key)
+        key = self.names[name]
+        self.background.set_visual(key)
+        # Also the app's background from now on (saved, like the settings page's Background Type)
+        self.style.set_background(visual=key)
 
     def set_detailed(self, on: bool):
         '''Detailed (as on title pages) or simple (as in workspaces, by default) - see Visual.detailed.'''
