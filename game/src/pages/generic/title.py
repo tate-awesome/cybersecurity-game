@@ -14,6 +14,11 @@ class TitlePage(Page):
       - {"action": "<name>"} - one of the important buttons in
         important_buttons.TITLE_ACTIONS.
 
+    Either can have "beside": another such entry, placed just to its
+    right - short, growing to its full text on hover (see
+    TitleMenu.add_beside) - e.g. the start page's "» Resume" beside
+    Workspaces, growing to "» Resume in <workspace>".
+
     An optional config["background"] plays a procedural visual behind the
     menu - see Page.add_background.
     '''
@@ -36,12 +41,22 @@ class TitlePage(Page):
         return self.menu.items
 
     def build_button(self, button: dict, panel: TitleMenu):
-        if "link" in button:
-            panel.add_important(LinkToPage, button["link"])
+        made = self.button_for(button)
+        if made is None:
             return
+        button_class, args = made
+        added = panel.add_important(button_class, *args)
+        # {"beside": {...}} - a second button just right of this one, growing to its full text on hover
+        beside = self.button_for(button["beside"]) if isinstance(button.get("beside"), dict) else None
+        if added is not None and beside is not None and beside[0].is_available(self.context):
+            panel.add_beside(added, beside[0](self.context, *beside[1]))
 
+    def button_for(self, button: dict) -> tuple[type, tuple] | None:
+        '''The button class (and its extra constructor args) a title button config entry asks for.'''
+        if "link" in button:
+            return LinkToPage, (button["link"],)
         action = button.get("action")
         if action not in TITLE_ACTIONS:
             print(f"Title button config {button!r} has no link and unknown action {action!r}, skipping")
-            return
-        panel.add_important(TITLE_ACTIONS[action])
+            return None
+        return TITLE_ACTIONS[action], ()

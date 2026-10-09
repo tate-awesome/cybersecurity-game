@@ -1,4 +1,5 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QRect, Qt, QTimer, QVariantAnimation
+from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QGridLayout, QLabel, QWidget
 from ...app_core import Context
 from .important_buttons import ImportantButton
@@ -74,3 +75,109 @@ class TitleMenu(QWidget):
         self.current_row = self.current_row + 1
         self.grid.setRowStretch(self.current_row, 1)
         return button
+
+    def add_beside(self, anchor: QWidget, button: QWidget) -> "GrowingButton":
+        '''Puts button just right of anchor (the row's button), growing to its full text on hover - see GrowingButton.'''
+        button.setFont(self.style.get_font("title_btn"))
+        beside = GrowingButton(self, anchor, button)
+        # Arrives with its row in the page's entrance
+        self.items.insert(self.items.index(anchor) + 1, button)
+        return beside
+
+
+class GrowingButton(QObject):
+    '''
+    Keeps a button just to the right of another one (its anchor) - short,
+    showing button.short_text - and grows it to the right, revealing its
+    full text, while the mouse is over the anchor, the button, or the gap
+    between them; it shrinks back when the mouse leaves. The text is
+    left-aligned, so growing reveals the rest of it rather than sliding
+    it around.
+    '''
+
+    GAP = 10           # px between the anchor and the button
+    GROW_MS = 300
+
+    def __init__(self, menu: QWidget, anchor: QWidget, button: QWidget):
+        super().__init__(menu)
+        self.menu = menu
+        self.anchor = anchor
+        self.button = button
+        self.short_text = getattr(button, "short_text", button.text())
+        self.full_text = button.text()
+        button.setParent(menu)
+        button.setStyleSheet(menu.style.themed("QPushButton { text-align: left; }"))
+        button.setText(self.short_text)
+        self.short_width = button.sizeHint().width()
+        button.setText(self.full_text)
+        self.full_width = button.sizeHint().width()
+        button.setText(self.short_text)
+        button.show()
+        self.amount = 0.0   # 0 short, 1 full
+        self.target = 0.0
+
+        self.animation = QVariantAnimation(self)
+        # Eases in and out - starts gently, speeds up, settles gently
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        self.animation.valueChanged.connect(self.set_amount)
+        self.animation.finished.connect(self.settle_text)
+
+        # Hover is judged from the cursor's position whenever it enters or
+        # leaves either button - a moment later, so crossing from one into
+        # the other (over the gap) doesn't count as leaving
+        self.hover_check = QTimer(self)
+        self.hover_check.setSingleShot(True)
+        self.hover_check.setInterval(30)
+        self.hover_check.timeout.connect(self.update_hover)
+        for watched in (anchor, button):
+            watched.installEventFilter(self)
+        self.place()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        kind = event.type()
+        if kind in (QEvent.Type.Enter, QEvent.Type.Leave):
+            self.hover_check.start()
+        elif watched is self.anchor and kind in (QEvent.Type.Move, QEvent.Type.Resize, QEvent.Type.Show):
+            self.place()
+        return False
+
+    def place(self):
+        anchor = self.anchor.geometry()
+        height = self.button.sizeHint().height()
+        width = round(self.short_width + (self.full_width - self.short_width) * self.amount)
+        self.button.setGeometry(anchor.right() + 1 + self.GAP, anchor.top() + (anchor.height() - height) // 2, width, height)
+
+    def set_amount(self, amount: float):
+        self.amount = amount
+        self.place()
+
+    def settle_text(self):
+        # Fully shrunk, the short text alone - the full one would peek into the padding
+        self.button.setText(self.full_text if self.amount > 0 else self.short_text)
+
+    def update_hover(self):
+        '''Grown while the cursor is over the anchor, the button, or the gap between them.'''
+        cursor = self.menu.mapFromGlobal(QCursor.pos())
+        anchor = self.anchor.geometry()
+        reach = QRect(anchor.left(), anchor.top(), self.button.geometry().right() - anchor.left() + 1, anchor.height())
+        self.grow(1.0 if reach.contains(cursor) or self.button.geometry().contains(cursor) else 0.0)
+
+    def grow(self, target: float):
+        if target == self.target:
+            return
+        self.target = target
+        if target > 0:
+            self.button.setText(self.full_text)
+        start = self.amount
+        duration = max(1, round(self.GROW_MS * abs(target - start)))
+        # Reconfiguring a finished animation makes it emit its stale end
+        # value straight away - which would snap amount to the target (and
+        # every grow after the first would be instant) - so set it up silently
+        self.animation.stop()
+        self.animation.blockSignals(True)
+        self.animation.setStartValue(start)
+        self.animation.setEndValue(target)
+        self.animation.setDuration(duration)
+        self.animation.setCurrentTime(0)
+        self.animation.blockSignals(False)
+        self.animation.start()

@@ -6,8 +6,7 @@
     "background": { "visual": "network_mesh" },
 
     "buttons": [
-        { "action": "resume" },
-        { "link": "title/select_workspace" },
+        { "link": "title/select_workspace", "beside": { "action": "resume" } },
         { "action": "settings" },
         { "action": "quit" }
     ]

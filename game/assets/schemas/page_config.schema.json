@@ -153,6 +153,10 @@
                             "link": {
                                 "type": "string",
                                 "description": "A page key, e.g. title/select_workspace."
+                            },
+                            "beside": {
+                                "$ref": "#/properties/buttons/items",
+                                "description": "Another title button, just to the right of this one - short, growing to its full text on hover."
                             }
                         }
                     },
@@ -169,8 +173,13 @@
                                     "quit",
                                     "resume",
                                     "open_ap_config",
-                                    "delete_user_data"
+                                    "delete_user_data",
+                                    "settings"
                                 ]
+                            },
+                            "beside": {
+                                "$ref": "#/properties/buttons/items",
+                                "description": "Another title button, just to the right of this one - short, growing to its full text on hover."
                             }
                         }
                     }
