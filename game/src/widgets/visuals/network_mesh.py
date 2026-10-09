@@ -224,6 +224,11 @@ class NetworkMesh(Visual):
             self.spawning = False
             self.spawn_clock = None
 
+    def settle(self):
+        if getattr(self, "spawning", False):
+            self.spawn_clock = math.inf
+            self.update_spawn(0.0)
+
     def growth(self, node: dict) -> float:
         '''0 before a node has spawned, rising to 1 once it has fully appeared.'''
         if not self.spawning:

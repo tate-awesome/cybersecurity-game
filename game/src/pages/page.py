@@ -61,14 +61,18 @@ class Page(QWidget):
         '''
         Plays a procedural visual behind this page's content if its config
         has a "background": {
-            "visual": <VISUALS key or "cycle">,
             "blur": <px, default 0>,
             "intensity": <0-1, default 1>,
-            "animate": <default true - false shows a still frame>,
-            "packets": <default true - false stops the network's traffic: no packets
-                        are sent, moved or drawn, while the nodes keep moving>,
-            "fps": <default 30 - animation frame rate>
-        }. With no "background" key, `default` is used instead (if given);
+            "animate": <default true - false always shows a still frame>,
+            "packets": <default true - always detailed (for the network, its
+                        traffic). false leaves detail to the user's "Detailed
+                        Background" preference, off by default - without it,
+                        no packets are sent, moved or drawn while the nodes
+                        keep moving>
+        }. Which visual plays, whether it's drawn at all or animated, and
+        its frame rate are the user's preferences (see Style.background_*) -
+        "animate" here can only rule animation out for this page. A
+        "visual" key is ignored. With no "background" key, `default` is used instead (if given);
         "background": false turns it off even when there's a default.
         Call it before adding content that should be drawn on top.
         Returns whether a background was added.
@@ -79,14 +83,17 @@ class Page(QWidget):
         from ..widgets import VisualBackground
         self.background = VisualBackground(
             self, self.context,
-            background.get("visual"),
+            self.style.background_visual,
             intensity=background.get("intensity", 1.0),
             in_layout=False,
             blur=background.get("blur", 0.0),
             # Same running network from page to page, not a fresh one each time
             shared=True,
-            animate=background.get("animate", True),
-            paint_options={"packets": background.get("packets", True)},
-            fps=background.get("fps", 30),
         )
+        # Which visual, whether it's drawn/animated and its frame rate are
+        # the user's preferences (Style.background_*, set in the Background
+        # dropdown). Detail is always on where the page allows it ("packets"),
+        # and otherwise up to the "Detailed Background" preference
+        self.background.follow_preferences(page_animate=background.get("animate", True),
+                                           page_detailed=background.get("packets", True))
         return True

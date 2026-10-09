@@ -70,8 +70,13 @@ class Overlay(QWidget):
         is parented to context.root and would otherwise outlive it.
         '''
         self.button = None
-        self.hide()
-        self.deleteLater()
+        try:
+            self.hide()
+            self.deleteLater()
+        except RuntimeError:
+            # The app is shutting down, and the root window (or this
+            # overlay's own parts) were already deleted ahead of the button
+            pass
 
     def _toggle(self):
         # Debounce: the same click that lands back on the trigger button

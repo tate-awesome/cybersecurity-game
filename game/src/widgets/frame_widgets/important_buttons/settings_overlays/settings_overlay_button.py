@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, QWidget
 from collections.abc import Callable
 from .....app_core import Context
@@ -131,6 +132,48 @@ class SettingsSection(QFrame):
         checkbox.toggled.connect(changed)
         self.add_row(path, checkbox)
         return checkbox
+
+    def choice(self, path: StatePath, options: dict[str, str], current: str, changed: Callable[[str], None]) -> QComboBox:
+        '''
+        A fixed choice (stored value -> shown text) for a setting that isn't
+        in context.states (e.g. a style preference) - path only names its
+        label/tooltip. changed gets the stored value.
+        '''
+        values = list(options)
+        if current not in options:
+            values.append(current)
+        combobox = QComboBox()
+        combobox.addItems([options.get(value, str(value)) for value in values])
+        combobox.setCurrentIndex(values.index(current))
+        combobox.currentIndexChanged.connect(lambda index: changed(values[index]))
+        self.add_row(path, combobox)
+        return combobox
+
+    def integer(self, path: StatePath, value: int, minimum: int, maximum: int, changed: Callable[[int], None]) -> QLineEdit:
+        '''
+        A text entry for a whole number in [minimum, maximum], for a setting
+        that isn't in context.states - path only names its label/tooltip.
+        Anything else is undone when editing finishes.
+        '''
+        entry = QLineEdit(str(value))
+        entry.setValidator(QIntValidator(minimum, maximum, entry))
+        current = [value]
+
+        def save():
+            try:
+                new_value = int(entry.text())
+            except ValueError:
+                new_value = None
+            if new_value is None or not minimum <= new_value <= maximum:
+                entry.setText(str(current[0]))
+                return
+            if new_value != current[0]:
+                current[0] = new_value
+                changed(new_value)
+
+        entry.editingFinished.connect(save)
+        self.add_row(path, entry)
+        return entry
 
     def slider(self, path: StatePath, value: int, minimum: int, maximum: int, changed: Callable[[int], None],
                suffix: str = "") -> QSlider:

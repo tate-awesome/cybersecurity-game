@@ -116,6 +116,14 @@ class Visual:
     def update(self, dt: float):
         pass
 
+    def settle(self):
+        '''
+        Skips straight to the visual's normal running state, past any
+        intro (e.g. the network's startup spawn-in) - for a background
+        that's shown still, which would otherwise freeze mid-intro.
+        '''
+        pass
+
     def paint(self, painter: QPainter, palette: VisualPalette):
         raise NotImplementedError
 

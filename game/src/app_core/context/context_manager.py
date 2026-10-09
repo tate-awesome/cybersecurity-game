@@ -52,6 +52,7 @@ class ContextManager:
         self.labels: LocalizationManager = LocalizationManager(self)
         self.buffer: Buffer = Buffer(self)
         self.style.load_preferred_surfaces()
+        self.style.load_preferred_background()
         self.style.load_preferred_theme()
 
     def reset_session(self):
@@ -62,6 +63,7 @@ class ContextManager:
         self.states.reset()
         self.labels.reset()
         self.style.load_default_surfaces()
+        self.style.load_default_background()
         self.style.load_default_theme()
 
     def start_page(self):

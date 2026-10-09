@@ -233,8 +233,8 @@ class PopupEntrance:
         if self.animation is None:
             return
         animation, self.animation = self.animation, None
-        animation.stop()
         try:
+            animation.stop()
             self.window.move(self.final.toPoint())
             if self.fade_window:
                 self.window.setWindowOpacity(1.0)

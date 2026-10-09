@@ -14,9 +14,10 @@ class WorkspacePage(Page):
 
     # Used when a page's config has no "background" of its own (set
     # "background": false to turn it off). Shares the title pages'
-    # network, still drifting but with its traffic stopped - and at a
-    # low frame rate, since every frame repaints the panels above it.
-    DEFAULT_BACKGROUND = {"visual": "network_mesh", "blur": 6, "packets": False, "fps": 10}
+    # network, still drifting - with its traffic stopped unless the user
+    # turns on "Detailed Background" (off by default: it's distracting
+    # behind the panels).
+    DEFAULT_BACKGROUND = {"blur": 6, "packets": False}
 
     def __init__(self, context: Context):
         super().__init__(context)

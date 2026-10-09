@@ -116,6 +116,19 @@ COLOR_SURFACES = ("panel", "widget", "field")
 DEFAULT_SURFACE_OPACITY: dict[str, float] = {kind: 1.0 for kind in SURFACE_KINDS}  # 0-1
 DEFAULT_SURFACE_BLUR: dict[str, float] = {kind: 0.0 for kind in SURFACE_KINDS}     # px
 SURFACE_BLUR_MAX = 40.0
+# The animated page background (see Page.add_background), each saved as a
+# preference like the theme: whether it's drawn at all, which visual plays
+# (a widgets.visuals.VISUALS key, or "cycle"), whether it moves, whether
+# it's detailed in workspaces (the network's packets - title and lesson
+# select pages always are; off by default since it's distracting behind
+# panels), and its frame rate
+DEFAULT_BACKGROUND_ENABLED = True
+DEFAULT_BACKGROUND_VISUAL = "network_mesh"
+DEFAULT_BACKGROUND_ANIMATE = True
+DEFAULT_BACKGROUND_DETAILED = False
+DEFAULT_BACKGROUND_FPS = 30
+BACKGROUND_FPS_RANGE = (1, 120)
+
 # Inverted buttons: text-colored labels on a background between panel and
 # root, with a clear border - instead of accent_text on solid accent
 DEFAULT_INVERT_BUTTONS = False
@@ -164,6 +177,13 @@ class Style:
         self.surface_opacity: dict[str, float] = dict(DEFAULT_SURFACE_OPACITY)
         self.surface_blur: dict[str, float] = dict(DEFAULT_SURFACE_BLUR)
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
+        # Background settings - load_preferred_background() replaces these
+        # defaults once preferences exist
+        self.background_enabled: bool = DEFAULT_BACKGROUND_ENABLED
+        self.background_visual: str = DEFAULT_BACKGROUND_VISUAL
+        self.background_animate: bool = DEFAULT_BACKGROUND_ANIMATE
+        self.background_detailed: bool = DEFAULT_BACKGROUND_DETAILED
+        self.background_fps: int = DEFAULT_BACKGROUND_FPS
         # Slider drags change these many times a second - restyling and
         # saving are each coalesced onto a short timer
         self._restyle_timer = QTimer()
@@ -642,6 +662,64 @@ class Style:
             self.surface_blur[kind] = min(SURFACE_BLUR_MAX, max(0.0, blur))
         self.backdrop.sync()
         self._save_timer.start()
+
+    # Background
+    BACKGROUND_PREFERENCES = {
+        # attribute: (preference key, type)
+        "background_enabled": ("background_enabled", bool),
+        "background_visual": ("background_visual", str),
+        "background_animate": ("background_animate", bool),
+        "background_detailed": ("background_detailed", bool),
+        "background_fps": ("background_fps", int),
+    }
+
+    def load_preferred_background(self):
+        '''Reads the saved background settings, keeping the default for anything missing or invalid.'''
+        for attribute, (key, kind) in self.BACKGROUND_PREFERENCES.items():
+            value = self.context.preferences.get(key)
+            if kind is int and isinstance(value, (int, float)) and not isinstance(value, bool):
+                value = int(value)
+            if isinstance(value, kind) and not (kind is str and not value):
+                setattr(self, attribute, value)
+        self.background_fps = min(BACKGROUND_FPS_RANGE[1], max(BACKGROUND_FPS_RANGE[0], self.background_fps))
+        self.apply_background()
+
+    def load_default_background(self):
+        '''Back to the DEFAULT_BACKGROUND_* values, without saving - like load_default_theme.'''
+        self.background_enabled = DEFAULT_BACKGROUND_ENABLED
+        self.background_visual = DEFAULT_BACKGROUND_VISUAL
+        self.background_animate = DEFAULT_BACKGROUND_ANIMATE
+        self.background_detailed = DEFAULT_BACKGROUND_DETAILED
+        self.background_fps = DEFAULT_BACKGROUND_FPS
+        self.apply_background()
+
+    def set_background(self, enabled: bool | None = None, visual: str | None = None, animate: bool | None = None,
+                       detailed: bool | None = None, fps: int | None = None):
+        '''Changes background settings - applied to the page on screen at once, and saved.'''
+        if enabled is not None:
+            self.background_enabled = enabled
+        if visual is not None:
+            self.background_visual = visual
+        if animate is not None:
+            self.background_animate = animate
+        if detailed is not None:
+            self.background_detailed = detailed
+        if fps is not None:
+            self.background_fps = min(BACKGROUND_FPS_RANGE[1], max(BACKGROUND_FPS_RANGE[0], int(fps)))
+        self.apply_background()
+        for attribute, (key, _kind) in self.BACKGROUND_PREFERENCES.items():
+            self.context.preferences.set(key, getattr(self, attribute))
+
+    def apply_background(self):
+        '''
+        Hands the current settings to every page background that follows
+        them (see Page.add_background / VisualBackground.apply_preferences),
+        so a change shows up without rebuilding the page.
+        '''
+        for widget in QApplication.allWidgets():
+            apply = getattr(widget, "apply_preferences", None)
+            if apply is not None and getattr(widget, "follows_preferences", False):
+                apply()
 
     def set_invert_buttons(self, invert: bool):
         '''Switches inverted buttons (see DEFAULT_INVERT_BUTTONS) on or off - live, and saved.'''

@@ -70,6 +70,11 @@ class VisualBackground(QWidget):
         # repaints the panels above
         self.frame_ms = max(1, round(1000 / max(1.0, fps)))
         self.paint_options = paint_options or {}
+        # Set by follow_preferences - see apply_preferences
+        self.follows_preferences = False
+        self.page_animate = animate
+        self.page_detailed = True
+        self.visual_key: str | None = None
         self.frame: QImage | None = None
         # Per-frame caches for frosted-glass surfaces (see backdrop)
         self.half_frame: QImage | None = None
@@ -107,6 +112,7 @@ class VisualBackground(QWidget):
             print(f"No visual named {key!r}, falling back to {next(iter(VISUALS))!r}")
             key = next(iter(VISUALS))
         self.cycling = key == "cycle"
+        self.visual_key = key
 
         if self.shared and key in self.SHARED:
             # Pick up the already-running simulation where the last page left it
@@ -117,6 +123,42 @@ class VisualBackground(QWidget):
             if self.shared:
                 self.SHARED[key] = self.state
         self.sync_size()
+        self.invalidate()
+
+    def follow_preferences(self, page_animate: bool = True, page_detailed: bool = True):
+        '''
+        Makes this background follow the user's background preferences
+        (Style.background_*) from now on - a page background, as opposed to
+        e.g. the visuals demo's preview. page_animate is whether the page
+        allows animation at all (the preference can still turn it off).
+        page_detailed=True makes the page always detailed (title and lesson
+        select pages); False leaves it to the "Detailed Background"
+        preference (workspaces, where detail is off by default since it's
+        distracting behind the panels).
+        '''
+        self.follows_preferences = True
+        self.page_animate = page_animate
+        self.page_detailed = page_detailed
+        self.apply_preferences()
+
+    def apply_preferences(self):
+        '''Brings this background in line with Style.background_* - called again whenever they change.'''
+        style = self.style
+        if style.background_visual != self.visual_key:
+            self.set_visual(style.background_visual)
+        self.paint_options = {**self.paint_options, "packets": self.page_detailed or style.background_detailed}
+        self.animate = self.page_animate and style.background_animate
+        self.frame_ms = max(1, round(1000 / style.background_fps))
+        if not self.animate and self.visual is not None:
+            # A still frame should show the finished picture, not one
+            # caught partway through an intro (see Visual.settle)
+            self.visual.settle()
+        self.setVisible(style.background_enabled)
+        if self.animate and self.isVisible():
+            self.last_tick = time.perf_counter()
+            self.timer.start(self.frame_ms)
+        else:
+            self.timer.stop()
         self.invalidate()
 
     def set_intensity(self, intensity: float):

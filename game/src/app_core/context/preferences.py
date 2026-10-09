@@ -1,4 +1,6 @@
 from typing import TYPE_CHECKING, TypedDict
+from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_ENABLED,
+                    DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL)
 if TYPE_CHECKING:
     from .. import Context
 
@@ -12,6 +14,11 @@ class PreferencesData(TypedDict, total=False):
     surface_opacity: dict[str, float]
     surface_blur: dict[str, float]
     invert_buttons: bool
+    background_enabled: bool
+    background_visual: str
+    background_animate: bool
+    background_detailed: bool
+    background_fps: int
     labels_file: str
     page: str
     fullscreen: str
@@ -63,6 +70,12 @@ class Preferences:
             "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY
             "surface_blur": {},     # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_BLUR
             "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
+            # Set in the Background dropdown (see Style.set_background)
+            "background_enabled": DEFAULT_BACKGROUND_ENABLED,
+            "background_visual": DEFAULT_BACKGROUND_VISUAL,
+            "background_animate": DEFAULT_BACKGROUND_ANIMATE,
+            "background_detailed": DEFAULT_BACKGROUND_DETAILED,
+            "background_fps": DEFAULT_BACKGROUND_FPS,
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
             "fullscreen": "",       # autosaved in KeyBinds
