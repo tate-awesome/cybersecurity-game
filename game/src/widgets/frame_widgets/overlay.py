@@ -1,8 +1,9 @@
 import time
-from PySide6.QtCore import QPoint, QPointF, Qt
-from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer
+from PySide6.QtGui import QImage, QMouseEvent, QPainter
+from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
 from ...app_core import Context
+from ...app_core.context.backdrop import blur_levels, pyramid_blur
 from ...app_core.transitions import PopupEntrance, PopupExit
 from collections.abc import Callable
 
@@ -22,6 +23,9 @@ class Overlay(QWidget):
     '''
     CLOSED_MARKER = "▾"
     OPEN_MARKER = "▴"
+    # How often the frosted snapshot of what's behind is retaken while open
+    # (see capture_behind) - the page underneath keeps animating
+    BEHIND_REFRESH_MS = 100
 
     def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south",
                  closed_text: str | None = None, open_text: str | None = None):
@@ -37,10 +41,20 @@ class Overlay(QWidget):
         self._last_hidden_at = 0.0
         self._parent_overlay: Overlay | None = None
         self._entrance: PopupEntrance | None = None
+        # Frosted glass (see capture_behind/paintEvent): a snapshot of what's
+        # behind this overlay, where on screen it was taken, and blurred
+        # copies of it by pyramid level
+        self._behind: QImage | None = None
+        self._behind_origin = QPoint()
+        self._behind_levels: dict[int, QImage] = {}
+        self._behind_timer = QTimer(self)
+        self._behind_timer.setInterval(self.BEHIND_REFRESH_MS)
+        self._behind_timer.timeout.connect(self._refresh_behind)
         # Side of the trigger button this overlay opened out of (see _away_from)
         self._away = (0.0, 1.0)
 
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('panel')}; border: 2px solid {self.style.color('accent')};", self))
+        # Its own "overlay" surface - see paintEvent for what shows through it
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('overlay', 'panel')}; border: 2px solid {self.style.color('accent')};", self))
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
 
@@ -103,7 +117,85 @@ class Overlay(QWidget):
             self._entrance.stop()
         self._away = self._away_from(target)
         self._entrance = PopupEntrance(self, self._away)
+        self.capture_behind()
         self.show()
+        self._behind_timer.start()
+
+    # Frosted glass
+    def capture_behind(self):
+        '''
+        Snapshots what's on screen behind this overlay - the main window,
+        plus any overlays it was opened from (see _lineage) - so paintEvent
+        can show it through the overlay's see-through "overlay" surface.
+        A popup is its own window, so Qt itself has nothing behind it to
+        blend with. Skipped while the overlay surface is fully opaque.
+        '''
+        self._behind_levels = {}
+        if self.context.style.surface_opacity.get("overlay", 1.0) >= 1.0 or self.width() <= 0:
+            self._behind = None
+            return
+        root = self.context.root
+        origin = self.pos()
+        ratio = self.devicePixelRatioF()
+        image = QImage(self.size() * ratio, QImage.Format.Format_RGB32)
+        image.setDevicePixelRatio(ratio)
+        image.fill(self.context.style.color("root", opaque=True))
+        painter = QPainter(image)
+        area = QRect(root.mapFromGlobal(origin), self.size()).intersected(root.rect())
+        if not area.isEmpty():
+            painter.drawPixmap(root.mapToGlobal(area.topLeft()) - origin, root.grab(area))
+        ancestors = []
+        node = self._parent_overlay
+        while node is not None and node is not self and node not in ancestors:
+            ancestors.append(node)
+            node = node._parent_overlay
+        for overlay in reversed(ancestors):
+            if overlay.isVisible():
+                painter.drawPixmap(overlay.pos() - origin, overlay.grab())
+        painter.end()
+        self._behind = image
+        self._behind_origin = origin
+
+    def _refresh_behind(self):
+        if not self.isVisible():
+            self._behind_timer.stop()
+            return
+        had_snapshot = self._behind is not None
+        self.capture_behind()
+        if had_snapshot or self._behind is not None:
+            self.update()
+
+    def _behind_level(self, level: int) -> QImage:
+        if level not in self._behind_levels:
+            half = self._behind.scaled(max(1, self._behind.width() // 2), max(1, self._behind.height() // 2),
+                                       Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            self._behind_levels[level] = pyramid_blur(half, level)
+        return self._behind_levels[level]
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        if self._behind is not None:
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+            # Where the snapshot sits now - the window may have glided since
+            # (see PopupEntrance) - covering the overlay at full size
+            target = QRectF(QPointF(self._behind_origin - self.pos()), QRectF(self.rect()).size())
+            blur = self.context.style.surface_blur.get("overlay", 0.0)
+            if blur > 0:
+                for level, opacity in blur_levels(blur):
+                    painter.setOpacity(opacity)
+                    painter.drawImage(target, self._behind_level(level))
+            else:
+                painter.drawImage(target, self._behind)
+            painter.setOpacity(1.0)
+        # The stylesheet's tint and accent border, drawn here: as a plain
+        # top-level QWidget, Qt only fills this window with the stylesheet's
+        # background color and never draws its border - and with a snapshot
+        # behind, the tint has to go on top of it anyway
+        option = QStyleOption()
+        option.initFrom(self)
+        # QWidget.style - self.style is the app's Style, not Qt's
+        QWidget.style(self).drawPrimitive(QStyle.PrimitiveElement.PE_Widget, option, painter, self)
+        painter.end()
 
     def _away_from(self, target: QWidget) -> tuple[float, float]:
         '''
@@ -173,6 +265,7 @@ class Overlay(QWidget):
         if self._entrance is not None:
             self._entrance.stop()
             self._entrance = None
+        self._behind_timer.stop()
         # Fade out a picture of it - taken before _clear_contents empties it.
         # Not for a spontaneous hide (the OS minimizing the window, etc.)
         if not event.spontaneous():
@@ -233,13 +326,18 @@ class Overlay(QWidget):
         else:
             super().keyPressEvent(event)
 
-    def _clear_contents(self):
-        layout = self.layout()
+    def _clear_contents(self, layout=None):
+        # Recursive - settings overlays nest their sections in a row
+        # layout, whose widgets would otherwise outlive every close
+        layout = self.layout() if layout is None else layout
         while layout.count():
             item = layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
+            elif item.layout() is not None:
+                self._clear_contents(item.layout())
+                item.layout().deleteLater()
 
     def calculate_placement(self, anchor: str, target: QWidget) -> QPoint:
         '''Where to put this overlay so it sits on the given side of target.'''

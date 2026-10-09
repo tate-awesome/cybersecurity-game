@@ -9,6 +9,9 @@ class PreferencesData(TypedDict, total=False):
     doesn't guarantee the shape at runtime (see Preferences.has()'s guard).
     '''
     theme: str
+    surface_opacity: dict[str, float]
+    surface_blur: dict[str, float]
+    invert_buttons: bool
     labels_file: str
     page: str
     fullscreen: str
@@ -57,6 +60,9 @@ class Preferences:
         self.data.clear()
         self.data = {
             "theme": "",            # autosaved in Style
+            "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY
+            "surface_blur": {},     # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_BLUR
+            "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
             "fullscreen": "",       # autosaved in KeyBinds

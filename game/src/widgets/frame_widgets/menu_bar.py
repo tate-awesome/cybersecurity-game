@@ -25,7 +25,7 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
     ],
     "style_button_group": [
-        ("appearance", ["toggle_button", "theme_button", "model_style_button", "strip_chart_style_button"]),
+        ("appearance", ["toggle_button", "theme_button", "background_button", "model_style_button", "strip_chart_style_button"]),
     ],
     "workspace_button_group": [
         ("reload", ["refresh_button", "clear_inputs_button", "reset_layout_button", "reset_button"]),
@@ -54,13 +54,13 @@ PAGE_BUTTON_NAMES: list[str] = group_button_names("debug_button_group") + [
     "help_button", "labels_button",
     "page_button", "back_button", "quit_button",
     "refresh_button", "reset_button", "preset_button",
-    "toggle_button", "theme_button",
+    "toggle_button", "theme_button", "background_button",
     "pcap_button", "load_button", "save_button", "stream_button",
 ]
 
 # What the demo pages get
 DEMO_MENU_BAR: list[str] = group_button_names("debug_button_group") + ["help_button", "labels_button", "page_button", "back_button", "quit_button",
-                            "toggle_button", "theme_button"]
+                            "toggle_button", "theme_button", "background_button"]
 
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
@@ -130,7 +130,7 @@ class MenuBar(QFrame):
         self.style = context.style
 
         master.layout().addWidget(self)
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('bar', 'widget')};", self))
         self.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
         # Qt widgets default to a vertical size policy that's willing to
         # grow into whatever leftover space its layout has - the old

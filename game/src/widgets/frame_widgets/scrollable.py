@@ -21,7 +21,11 @@ class Scrollable(QScrollArea):
         # relative stretch factor, so without this a same-stretch (0) filler
         # can end up winning space this should have gotten instead.
         master.layout().addWidget(self, 1)
-        self.setStyleSheet(f"QScrollArea {{ background-color: {style.color('panel')}; border: none; }}")
+        # Inside a panel, the panel already paints this background - a
+        # second and third copy (this, and inner below) would stack up
+        # whenever panels are see-through (see Style.surface_opacity)
+        background = "transparent" if master.property("surface") == "panel" else style.color("panel")
+        self.setStyleSheet(f"QScrollArea {{ background-color: {background}; border: none; }}")
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
@@ -30,7 +34,7 @@ class Scrollable(QScrollArea):
         # default (unlike QFrame/QScrollArea, which do) - see Panel/
         # BaseForm for the same fix and the full explanation.
         self.inner.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.inner.setStyleSheet(style.themed(f"background-color: {style.color('panel')};", self.inner))
+        self.inner.setStyleSheet(style.themed(f"background-color: {background};", self.inner))
         self.grid_layout = QGridLayout(self.inner)
         # Without explicit values here, stacked rows (forms, strip charts,
         # etc.) fall back to Qt's default layout spacing, which is roughly

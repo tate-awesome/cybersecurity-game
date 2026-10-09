@@ -6,6 +6,7 @@ from PySide6.QtGui import QCursor, QImage, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ...app_core import Context
+from ...app_core.context.backdrop import blur_levels, pyramid_blur
 from .base import Visual, VisualPalette
 # The package __init__ defines VISUALS before importing this module
 from . import VISUALS
@@ -70,6 +71,9 @@ class VisualBackground(QWidget):
         self.frame_ms = max(1, round(1000 / max(1.0, fps)))
         self.paint_options = paint_options or {}
         self.frame: QImage | None = None
+        # Per-frame caches for frosted-glass surfaces (see backdrop)
+        self.half_frame: QImage | None = None
+        self.backdrops: dict[int, QImage] = {}
         self.set_blur(blur)
         self.state: dict = {"visual": None, "cycle_elapsed": 0.0}
         self.cycling = False
@@ -124,6 +128,7 @@ class VisualBackground(QWidget):
         Blurs the whole visual by roughly radius pixels (0 = sharp). No
         visual needs to know it's being blurred - see render_blurred.
         '''
+        self.blur_radius = max(0.0, radius)
         self.blur_levels = 0 if radius <= 0 else max(1, round(math.log2(radius)) - 1)
         self.invalidate()
 
@@ -136,6 +141,8 @@ class VisualBackground(QWidget):
     def invalidate(self):
         '''Drops the cached frame so the next paint renders a fresh one.'''
         self.frame = None
+        self.half_frame = None
+        self.backdrops = {}
         self.update()
 
     # Loop
@@ -204,23 +211,40 @@ class VisualBackground(QWidget):
         drawn shape's bounding box. Returns half size - the final doubling
         happens in paintEvent.
         '''
-        width, height = max(1, self.width() // 2), max(1, self.height() // 2)
-        image = QImage(width, height, QImage.Format.Format_RGB32)
-        image.fill(palette.background)
-        painter = QPainter(image)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.scale(width / self.width(), height / self.height())
-        self.visual.paint(painter, palette)
-        painter.end()
+        return pyramid_blur(self.render_half(palette), self.blur_levels)
 
-        sizes = [image.size()]
-        for _ in range(self.blur_levels):
-            image = image.scaled(max(1, image.width() // 2), max(1, image.height() // 2),
-                                 Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            sizes.append(image.size())
-        for size in reversed(sizes[:-1]):
-            image = image.scaled(size, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
-        return image
+    def render_half(self, palette: VisualPalette) -> QImage:
+        '''The visual drawn sharp at half size - cached for the frame, since backdrops reuse it.'''
+        if self.half_frame is None:
+            width, height = max(1, self.width() // 2), max(1, self.height() // 2)
+            image = QImage(width, height, QImage.Format.Format_RGB32)
+            image.fill(palette.background)
+            painter = QPainter(image)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.scale(width / self.width(), height / self.height())
+            self.visual.paint_options = self.paint_options
+            self.visual.paint(painter, palette)
+            painter.end()
+            self.half_frame = image
+        return self.half_frame
+
+    def backdrop(self, blur: float) -> list[tuple[QImage, float]]:
+        '''
+        This background blurred by an extra `blur` px on top of its own,
+        for a frosted-glass surface to paint under itself (see
+        app_core.context.backdrop) - as images covering this widget at
+        half size, with the opacity to draw each at. Blur levels come in
+        doublings, so an in-between amount blends the two nearest levels,
+        which keeps a blur slider smooth.
+        '''
+        if self.visual is None or self.visual.width <= 0:
+            return []
+        return [(self.backdrop_level(level), opacity) for level, opacity in blur_levels(math.hypot(self.blur_radius, blur))]
+
+    def backdrop_level(self, levels: int) -> QImage:
+        if levels not in self.backdrops:
+            self.backdrops[levels] = pyramid_blur(self.render_half(self.palette_for_theme()), levels)
+        return self.backdrops[levels]
 
     # Qt events
     def paintEvent(self, event):

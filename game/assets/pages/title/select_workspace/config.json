@@ -34,6 +34,7 @@
         "debug_labels_button",
         "toggle_button",
         "theme_button",
+        "background_button",
         "labels_button",
         "page_button",
         "back_button",

@@ -36,7 +36,8 @@ class CheckboxOverlay:
 
         # Create box filter widgets
         category_frame = QFrame()
-        category_frame.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", category_frame))
+        # Part of the overlay's background - follows the "overlay" surface, not "widget"
+        category_frame.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('overlay', 'widget')};", category_frame))
         category_layout = QVBoxLayout(category_frame)
         category_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         category_layout.setSpacing(self.style.cgap * 2)

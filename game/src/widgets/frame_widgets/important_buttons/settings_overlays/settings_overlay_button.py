@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, QWidget
 from collections.abc import Callable
 from .....app_core import Context
 from .....app_core.context.style import Style
@@ -37,7 +37,8 @@ class SettingsSection(QFrame):
         super().__init__()
         self.context = context
         self.style = context.style
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
+        # Part of the overlay's background - follows the "overlay" surface, not "widget"
+        self.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('overlay', 'widget')};", self))
         self.grid = QGridLayout(self)
         self.grid.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         self.grid.setVerticalSpacing(self.style.cgap * 2)
@@ -118,6 +119,49 @@ class SettingsSection(QFrame):
         combobox.currentIndexChanged.connect(lambda index: self.set(path, values[index]))
         self.add_row(path, combobox)
         return combobox
+
+    def toggle(self, path: StatePath, checked: bool, changed: Callable[[bool], None]) -> QCheckBox:
+        '''
+        A checkbox for a setting that isn't in context.states (e.g. a style
+        preference) - path only names its label/tooltip.
+        '''
+        checkbox = QCheckBox()
+        # Load before connecting, so restoring it doesn't itself trigger a save
+        checkbox.setChecked(checked)
+        checkbox.toggled.connect(changed)
+        self.add_row(path, checkbox)
+        return checkbox
+
+    def slider(self, path: StatePath, value: int, minimum: int, maximum: int, changed: Callable[[int], None],
+               suffix: str = "") -> QSlider:
+        '''
+        A slider for a setting that isn't in context.states (e.g. a style
+        preference) - path only names its label/tooltip. changed runs on
+        every move, so the setting can apply live. The current value is
+        shown beside it, followed by suffix.
+        '''
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(minimum, maximum)
+        slider.setValue(value)
+        slider.setMinimumWidth(160)
+        readout = QLabel(f"{value}{suffix}")
+        readout.setFont(self.style.get_font())
+        # Wide enough for the longest value, so the slider doesn't shift as it changes
+        readout.setMinimumWidth(readout.fontMetrics().horizontalAdvance(f"{maximum}{suffix}") + 4)
+        readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(slider, 1)
+        layout.addWidget(readout)
+
+        def on_change(new_value: int):
+            readout.setText(f"{new_value}{suffix}")
+            changed(new_value)
+
+        slider.valueChanged.connect(on_change)
+        self.add_row(path, row)
+        return slider
 
     def number(self, *path: str | int) -> QLineEdit:
         '''A text entry for a positive number - anything else is undone when editing finishes.'''

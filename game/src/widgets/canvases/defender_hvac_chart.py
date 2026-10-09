@@ -34,6 +34,7 @@ class DefenderHVACChart(QWidget):
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master)
         self.setStyleSheet(f"background-color: {context.style.color('field')};")
+        self.setProperty("surface", "field")  # see app_core.context.backdrop
         # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
         # trailing-filler interaction, harmless when master isn't a Panel).
         master.layout().addWidget(self, 1)

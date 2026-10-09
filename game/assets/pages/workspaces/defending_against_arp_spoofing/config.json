@@ -35,6 +35,7 @@
         "debug_labels_button",
         "toggle_button",
         "theme_button",
+        "background_button",
         "model_style_button",
         "strip_chart_style_button",
         "refresh_button",

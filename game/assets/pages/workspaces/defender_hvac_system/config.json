@@ -39,6 +39,7 @@
     "menu_bar": [
         "toggle_button",
         "theme_button",
+        "background_button",
         "labels_button",
         "page_button",
         "refresh_button",

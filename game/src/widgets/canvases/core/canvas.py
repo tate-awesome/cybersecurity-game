@@ -31,6 +31,8 @@ class Canvas(QWidget):
         '''
         super().__init__()
         self.context = context
+        # A field surface - see style.SURFACE_KINDS and app_core.context.backdrop
+        self.setProperty("surface", "field")
         # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
         # trailing-filler interaction, harmless when master isn't a Panel).
         master.layout().addWidget(self, 1)
