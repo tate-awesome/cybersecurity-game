@@ -547,6 +547,8 @@
     "settings_page_row_notes_accent": "The color of buttons and highlights. The backgrounds take a hint of it too.",
     "settings_page_rows_hierarchy": "Hierarchy",
     "settings_page_row_notes_hierarchy": "How far apart the layers sit: the page, the panels on it, the cards in them, and text boxes.",
+    "settings_page_rows_tint": "Accent Tint",
+    "settings_page_row_notes_tint": "How much of the accent color shows in the page, panels, cards and text boxes. 0% is plain gray; 100% is the hierarchy as designed. Not for special themes.",
     "settings_page_rows_inset": "Inset Text Boxes",
     "settings_page_row_notes_inset": "In dark mode, text boxes sit darker than the page instead of lighter, like they're cut into it. Works with every theme.",
     "settings_page_special_in_use": "(special theme in use)",

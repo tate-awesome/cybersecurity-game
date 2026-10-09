@@ -9,6 +9,8 @@ import colorsys
 #   light: lr = root's lightness, then l1/l2 = the step down to panel and
 #          widget, l3 = widget to border (field is always white); ls = saturation
 #   inset (optional): how far below root an inset field sits - see inset()
+# tint scales ds/ls - how much the accent bleeds into the surfaces (0 = gray,
+# 1 = as the hierarchy has it)
 # Plain colorsys, no Qt, so it can be checked without the app running.
 
 DEFAULT_INSET = 0.045
@@ -40,11 +42,12 @@ def contrast(a: str, b: str) -> float:
     return (high + 0.05) / (low + 0.05)
 
 
-def generate(accent: str, hierarchy: dict[str, float], mode: str, inset: float | None = None) -> dict[str, str]:
+def generate(accent: str, hierarchy: dict[str, float], mode: str, inset: float | None = None,
+             tint: float = 1.0) -> dict[str, str]:
     '''The palette for one mode ("dark"/"light") of accent + hierarchy, with an inset field (dark only) if inset is given.'''
     h, accent_l, accent_s = _hls(accent)
     if mode == "dark":
-        s = hierarchy["ds"]
+        s = min(1.0, hierarchy["ds"] * tint)
         root = hierarchy["dr"]
         steps = [root, root + hierarchy["d1"]]
         steps += [steps[1] + hierarchy["d2"], steps[1] + hierarchy["d2"] + hierarchy["d3"]]
@@ -54,7 +57,7 @@ def generate(accent: str, hierarchy: dict[str, float], mode: str, inset: float |
             steps[3] = root - inset
         text = _hex(h, 0.92, 0.4)
     else:
-        s = hierarchy["ls"]
+        s = min(1.0, hierarchy["ls"] * tint)
         steps = [hierarchy["lr"], hierarchy["lr"] - hierarchy["l1"]]
         steps += [steps[1] - hierarchy["l2"], 1.0]
         border = steps[2] - hierarchy["l3"]

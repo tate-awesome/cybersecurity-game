@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
                                QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
 
 from ..app_core import Context
-from ..app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS
+from ..app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS, THEME_TINT_MAX
 from ..widgets import MenuBar, VISUALS
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
@@ -93,6 +93,12 @@ class SettingsPage(Page):
         theme.row("settings_page_rows_hierarchy", self.dropdown(
             {**in_use, **{name: name.replace("_", " ").title() for name in style.hierarchies}},
             "" if preset else style.theme_hierarchy, style.set_hierarchy), "settings_page_row_notes_hierarchy")
+        # Rebuilds the page, so only on release - not every step of a drag.
+        # Special themes have their own colors, so it does nothing for them
+        tint = self.slider(round(style.theme_tint * 100), 0, round(THEME_TINT_MAX * 100), "%",
+                           lambda value: style.set_tint(value / 100), live=False)
+        tint.setEnabled(not preset)
+        theme.row("settings_page_rows_tint", tint, "settings_page_row_notes_tint")
         theme.row("settings_page_rows_inset", self.checkbox(style.theme_inset, style.set_inset), "settings_page_row_notes_inset")
         theme.row("settings_labels_surface_invert_buttons", self.checkbox(style.invert_buttons, style.set_invert_buttons),
                   "settings_tooltips_surface_invert_buttons")
@@ -289,13 +295,16 @@ class SettingsPage(Page):
         combo.currentIndexChanged.connect(lambda index: changed(values[index]))
         return combo
 
-    def slider(self, value: int, minimum: int, maximum: int, suffix: str, changed: Callable[[int], None]) -> QWidget:
+    def slider(self, value: int, minimum: int, maximum: int, suffix: str, changed: Callable[[int], None],
+               live: bool = True) -> QWidget:
+        '''live=False only calls changed once a drag is let go - for settings that rebuild the page.'''
         row = QWidget()
         layout = QHBoxLayout(row)
         layout.setContentsMargins(0, 0, 0, 0)
         slider = QSlider(Qt.Orientation.Horizontal)
         slider.setRange(minimum, maximum)
         slider.setValue(value)
+        slider.setTracking(live)
         readout = QLabel(f"{value}{suffix}")
         readout.setFont(self.style.get_font())
         readout.setMinimumWidth(readout.fontMetrics().horizontalAdvance(f"{maximum}{suffix}") + 4)
@@ -307,6 +316,7 @@ class SettingsPage(Page):
             readout.setText(f"{new_value}{suffix}")
             changed(new_value)
         slider.valueChanged.connect(on_change)
+        slider.sliderMoved.connect(lambda new_value: readout.setText(f"{new_value}{suffix}"))
         return row
 
     def integer(self, value: int, minimum: int, maximum: int, changed: Callable[[int], None]) -> QLineEdit:

@@ -52,6 +52,10 @@ DEFAULT_ACCENT = "azure"
 DEFAULT_HIERARCHY = "baseline"
 # Whether dark themes' fields sit below root - recessed inputs (see palette_generator.inset)
 DEFAULT_THEME_INSET = False
+# How much the accent bleeds into accent + hierarchy themes' surfaces - a
+# multiple of the hierarchy's own tint (see palette_generator.generate)
+DEFAULT_THEME_TINT = 1.0
+THEME_TINT_MAX = 3.0
 
 # Fallback themes when no preference is saved yet, or when toggle_mode's
 # target mode has no variant in the current color family.
@@ -175,6 +179,7 @@ class Style:
         self.hierarchies: dict[str, dict[str, float]] = {}
         self._load_theme_files()
         self.theme_inset: bool = DEFAULT_THEME_INSET
+        self.theme_tint: float = DEFAULT_THEME_TINT
         # The last accent + hierarchy used, kept while a preset is shown
         self.theme_accent: str = DEFAULT_ACCENT
         self.theme_hierarchy: str = DEFAULT_HIERARCHY
@@ -834,7 +839,8 @@ class Style:
         profile = self.hierarchies[hierarchy]
         self.theme_accent, self.theme_hierarchy = accent, hierarchy
         return palette_generator.generate(self.accents[accent], profile, mode,
-                                          profile.get("inset", palette_generator.DEFAULT_INSET) if inset else None)
+                                          profile.get("inset", palette_generator.DEFAULT_INSET) if inset else None,
+                                          self.theme_tint)
 
     def is_theme(self, theme_name) -> bool:
         if not isinstance(theme_name, str):
@@ -866,6 +872,9 @@ class Style:
 
     def load_preferred_theme(self):
         self.theme_inset = self.context.preferences.get("theme_inset") is True
+        tint = self.context.preferences.get("theme_tint")
+        if isinstance(tint, (int, float)) and not isinstance(tint, bool):
+            self.theme_tint = min(THEME_TINT_MAX, max(0.0, float(tint)))
         saved = self.context.preferences.get("theme")
         if self.is_theme(saved):
             self.apply_theme(saved)
@@ -874,6 +883,7 @@ class Style:
 
     def load_default_theme(self):
         self.theme_inset = DEFAULT_THEME_INSET
+        self.theme_tint = DEFAULT_THEME_TINT
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
     def set_theme(self, theme_name: str):
@@ -904,6 +914,12 @@ class Style:
             self.theme_inset = True
             self.context.preferences.set("theme_inset", True)
         self.set_family(f"{self.theme_accent}.{hierarchy}")
+
+    def set_tint(self, tint: float):
+        '''How much the accent bleeds into the surfaces (see DEFAULT_THEME_TINT) - saved, and the page rebuilt in it.'''
+        self.theme_tint = min(THEME_TINT_MAX, max(0.0, tint))
+        self.context.preferences.set("theme_tint", self.theme_tint)
+        self.set_theme(self.current_theme)
 
     def set_inset(self, on: bool):
         '''Inset fields (see DEFAULT_THEME_INSET) on or off - saved, and the page rebuilt in it.'''
