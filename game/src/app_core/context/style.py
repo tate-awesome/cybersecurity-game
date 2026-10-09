@@ -1,3 +1,4 @@
+import json
 import re
 
 from PySide6.QtCore import Qt, QTimer
@@ -13,28 +14,17 @@ if TYPE_CHECKING:
 # dark and light variant; every color key here is required (color() and
 # Style._build_stylesheet both read them directly with no fallback), so a
 # new family must define both variants with the full key set below.
+# Blue is built in so the app always has a theme, even without assets/;
+# every other family is a <family>.json in assets/themes with the same
+# shape (see Style._load_theme_files).
 PALETTES: dict[str, dict[str, dict[str, str]]] = {
-    "teal": {
+    "blue": {
         # Dark mode: panel sits close to root (both near-black) so widget-
         # colored cards clearly pop above the recessed backdrop. Light mode
         # flips that - panel sits close to field (both near-white) so
         # widget-colored cards read as the slightly-toned layer between
         # them. Either way, widget is always the mode's biggest single step,
         # which is what actually keeps stacked forms from blending together.
-        "dark": {
-            "root": "#12181a", "panel": "#171e21", "widget": "#2a343a",
-            "field": "#37424a", "field_text": "#e0f2f1", "text": "#e0f2f1",
-            "accent": "#00bcd4", "accent_text": "#062024", "border": "#303b42",
-            "scrollbar": "#303b42", "scrollbar_hover": "#404b52",
-        },
-        "light": {
-            "root": "#dbe9e8", "panel": "#f3fcf8", "widget": "#e6f2f0",
-            "field": "#ffffff", "field_text": "#263238", "text": "#263238",
-            "accent": "#00acc1", "accent_text": "#ffffff", "border": "#dbe9e8",
-            "scrollbar": "#dbe9e8", "scrollbar_hover": "#c1cdcc",
-        },
-    },
-    "blue": {
         "dark": {
             "root": "#10141d", "panel": "#151a24", "widget": "#28303d",
             "field": "#353e4d", "field_text": "#e3eaf5", "text": "#e3eaf5",
@@ -48,54 +38,14 @@ PALETTES: dict[str, dict[str, dict[str, str]]] = {
             "scrollbar": "#d9e2f5", "scrollbar_hover": "#bfc7d8",
         },
     },
-    "purple": {
-        "dark": {
-            "root": "#16121f", "panel": "#1b1826", "widget": "#2e2e3f",
-            "field": "#3b3c4f", "field_text": "#ede6f5", "text": "#ede6f5",
-            "accent": "#9c5fff", "accent_text": "#ffffff", "border": "#343547",
-            "scrollbar": "#343547", "scrollbar_hover": "#444557",
-        },
-        "light": {
-            "root": "#e6daf3", "panel": "#feedff", "widget": "#f1e3fb",
-            "field": "#ffffff", "field_text": "#2a2233", "text": "#2a2233",
-            "accent": "#8a3ffc", "accent_text": "#ffffff", "border": "#e6daf3",
-            "scrollbar": "#e6daf3", "scrollbar_hover": "#cac0d6",
-        },
-    },
-    "amber": {
-        "dark": {
-            "root": "#1c160f", "panel": "#211c16", "widget": "#34322f",
-            "field": "#41403f", "field_text": "#f5e9d8", "text": "#f5e9d8",
-            "accent": "#ffb300", "accent_text": "#241d16", "border": "#3a3937",
-            "scrollbar": "#3a3937", "scrollbar_hover": "#4a4947",
-        },
-        "light": {
-            "root": "#f2e4c9", "panel": "#fff7d9", "widget": "#fdedd1",
-            "field": "#ffffff", "field_text": "#33291a", "text": "#33291a",
-            "accent": "#f59f00", "accent_text": "#241d16", "border": "#f2e4c9",
-            "scrollbar": "#f2e4c9", "scrollbar_hover": "#d5c9b1",
-        },
-    },
-    "red": {
-        "dark": {
-            "root": "#1c1013", "panel": "#21161a", "widget": "#342c33",
-            "field": "#413a43", "field_text": "#f5dde0", "text": "#f5dde0",
-            "accent": "#ff5252", "accent_text": "#ffffff", "border": "#3a333b",
-            "scrollbar": "#3a333b", "scrollbar_hover": "#4a434b",
-        },
-        "light": {
-            "root": "#f2d8db", "panel": "#ffebeb", "widget": "#fde1e3",
-            "field": "#ffffff", "field_text": "#331a1d", "text": "#331a1d",
-            "accent": "#e53935", "accent_text": "#ffffff", "border": "#f2d8db",
-            "scrollbar": "#f2d8db", "scrollbar_hover": "#d5bec1",
-        },
-    },
 }
+THEME_MODES = ("dark", "light")
+THEME_KEYS = frozenset(PALETTES["blue"]["dark"])
 
 # Fallback themes when no preference is saved yet, or when toggle_mode's
 # target mode has no variant in the current color family.
-DEFAULT_DARK_THEME = "dark_teal"
-DEFAULT_LIGHT_THEME = "light_teal"
+DEFAULT_DARK_THEME = "dark_blue"
+DEFAULT_LIGHT_THEME = "light_blue"
 
 # Surfaces - the kinds of backgrounds whose opacity and backdrop blur the
 # user can tune (the "Background" style dropdown), each saved as a
@@ -208,6 +158,7 @@ class Style:
         # ContextManager.start_session) - this is just a system-appropriate
         # bootstrap default; load_preferred_theme() overrides it once
         # preferences are available.
+        self.palettes = {**PALETTES, **self._load_theme_files()}
         self._theme_colors: dict[str, str] = {}
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
@@ -299,7 +250,7 @@ class Style:
     def color(self, type: str, opaque: bool = False) -> str:
         '''
         Returns a color from the active hand-rolled palette (see
-        PALETTES/apply_theme) for one of THEME_COLOR_NAMES, or the input
+        palettes/apply_theme) for one of THEME_COLOR_NAMES, or the input
         string itself (e.g. "red" or a hex code) for anything else.
 
         "panel", "widget" and "field" come back at their surface opacity
@@ -368,7 +319,7 @@ class Style:
         '''
         mode, _, family = theme_name.partition("_")
         app = QApplication.instance()
-        self._theme_colors = PALETTES[family][mode]
+        self._theme_colors = self.palettes[family][mode]
         # The native platform style (e.g. "windows11") largely ignores QSS
         # background-color/border-radius on QPushButton/QComboBox/QCheckBox -
         # Fusion is the style Qt's own docs recommend for full stylesheet
@@ -824,8 +775,28 @@ class Style:
             if updated != sheet:
                 widget.setStyleSheet(updated)
 
+    def _load_theme_files(self) -> dict[str, dict[str, dict[str, str]]]:
+        '''
+        Reads every assets/themes/<family>.json (see PALETTES), skipping
+        any file that's unreadable or missing a variant or color key.
+        '''
+        palettes = {}
+        for path in sorted(self.context.paths.themes.glob("*.json")):
+            if path.stem in PALETTES:
+                continue  # built-in families can't be overridden
+            try:
+                with open(path, encoding="utf-8") as file:
+                    variants = json.load(file)
+                if all(THEME_KEYS <= set(variants[mode]) for mode in THEME_MODES):
+                    palettes[path.stem] = {mode: variants[mode] for mode in THEME_MODES}
+                else:
+                    print(f"Err: theme {path} is missing color keys - skipped.")
+            except Exception as e:
+                print(f"Err: [{e}] while loading theme {path}.")
+        return palettes
+
     def _list_themes(self) -> list[str]:
-        return [f"{mode}_{family}" for family in PALETTES for mode in ("dark", "light")]
+        return [f"{mode}_{family}" for family in self.palettes for mode in THEME_MODES]
 
     def load_preferred_theme(self):
         saved = self.context.preferences.data.get("theme")
@@ -838,7 +809,7 @@ class Style:
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
     def theme_families(self) -> list[str]:
-        return list(PALETTES)
+        return list(self.palettes)
 
     def set_theme(self, theme_name: str):
         '''Applies a theme ("<mode>_<family>", e.g. "dark_teal"), saves it, and rebuilds the page in it.'''

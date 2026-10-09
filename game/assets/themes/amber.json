@@ -1,0 +1,28 @@
+{
+    "dark": {
+        "root": "#1c160f",
+        "panel": "#211c16",
+        "widget": "#34322f",
+        "field": "#41403f",
+        "field_text": "#f5e9d8",
+        "text": "#f5e9d8",
+        "accent": "#ffb300",
+        "accent_text": "#241d16",
+        "border": "#3a3937",
+        "scrollbar": "#3a3937",
+        "scrollbar_hover": "#4a4947"
+    },
+    "light": {
+        "root": "#f2e4c9",
+        "panel": "#fff7d9",
+        "widget": "#fdedd1",
+        "field": "#ffffff",
+        "field_text": "#33291a",
+        "text": "#33291a",
+        "accent": "#f59f00",
+        "accent_text": "#241d16",
+        "border": "#f2e4c9",
+        "scrollbar": "#f2e4c9",
+        "scrollbar_hover": "#d5c9b1"
+    }
+}
