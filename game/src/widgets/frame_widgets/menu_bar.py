@@ -49,8 +49,13 @@ def group_button_names(group_key: str) -> list[str]:
     return [name for _, names in MENU_BAR_GROUPS[group_key] for name in names]
 
 
+# The debug tools - added to every page's menu bar in developer mode
+# (preferences.json "is_developer"), never listed by pages themselves (see
+# MenuBar.add_config_buttons)
+DEVELOPER_BUTTON_NAMES: list[str] = group_button_names("debug_button_group")
+
 # What a standard game page gets (see MenuBar.page_buttons)
-PAGE_BUTTON_NAMES: list[str] = group_button_names("debug_button_group") + [
+PAGE_BUTTON_NAMES: list[str] = [
     "help_button", "labels_button",
     "page_button", "back_button", "quit_button",
     "refresh_button", "reset_button", "preset_button",
@@ -59,7 +64,7 @@ PAGE_BUTTON_NAMES: list[str] = group_button_names("debug_button_group") + [
 ]
 
 # What the demo pages get
-DEMO_MENU_BAR: list[str] = group_button_names("debug_button_group") + ["help_button", "labels_button", "page_button", "back_button", "quit_button",
+DEMO_MENU_BAR: list[str] = ["help_button", "labels_button", "page_button", "back_button", "quit_button",
                             "toggle_button", "theme_button", "background_button"]
 
 
@@ -572,7 +577,13 @@ class MenuBar(QFrame):
         important_buttons.MENU_BAR_BUTTONS), grouped and ordered by
         MENU_BAR_GROUPS rather than by names' own order. Buttons that aren't
         available right now (see is_available) don't count toward a group.
+
+        In developer mode (Preferences.is_developer) the debug tools
+        (DEVELOPER_BUTTON_NAMES) are added too - every page builds its
+        menu bar through here, so none of them list the debug tools.
         '''
+        if self.context.preferences.is_developer():
+            names = [*names, *(name for name in DEVELOPER_BUTTON_NAMES if name not in names)]
         for name in names:
             if name not in MENU_BAR_BUTTONS:
                 print(f"MenuBar has no button named {name!r}, skipping")

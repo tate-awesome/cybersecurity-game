@@ -4,6 +4,10 @@ from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEF
 if TYPE_CHECKING:
     from .. import Context
 
+# Developer mode: whether pages get the debug menu bar group (see
+# MenuBar.add_config_buttons). 1 or 0 in preferences.json.
+DEFAULT_IS_DEVELOPER = 1
+
 class PreferencesData(TypedDict, total=False):
     '''
     Documents the shape preferences.json is expected to have after a fresh
@@ -11,6 +15,7 @@ class PreferencesData(TypedDict, total=False):
     doesn't guarantee the shape at runtime (see Preferences.has()'s guard).
     '''
     theme: str
+    is_developer: int
     surface_opacity: dict[str, float]
     surface_blur: dict[str, float]
     invert_buttons: bool
@@ -42,6 +47,10 @@ class Preferences:
         
         for key, value in data.items():
             self.data[key] = value
+        # Written out if missing, so it's there to find and flip in the file
+        if "is_developer" not in self.data:
+            self.data["is_developer"] = DEFAULT_IS_DEVELOPER
+            self.save()
 
     def save(self):
         path = self.context.paths.user_data / "preferences.json"
@@ -59,6 +68,10 @@ class Preferences:
     def get(self, key: str):
         return self.data.get(key)
 
+    def is_developer(self) -> bool:
+        '''Developer mode (preferences.json "is_developer": 1/0) - adds the debug tools to every page's menu bar.'''
+        return self.data.get("is_developer", DEFAULT_IS_DEVELOPER) in (1, "1", True)
+
     def set(self, key: str, value):
         self.data[key] = value
         self.save()
@@ -67,6 +80,7 @@ class Preferences:
         self.data.clear()
         self.data = {
             "theme": "",            # autosaved in Style
+            "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
             "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY
             "surface_blur": {},     # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_BLUR
             "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)

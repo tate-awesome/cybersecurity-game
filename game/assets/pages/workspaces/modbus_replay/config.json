@@ -53,12 +53,6 @@
 
     "title": "modbus_replay_workspace",
     "menu_bar": [
-        "delete_all_user_data_button",
-        "delete_all_workspace_data_button",
-        "workspace_editor_button",
-        "configure_workspace_button",
-        "debug_availability_button",
-        "debug_labels_button",
         "load_button",
         "save_button",
         "stream_button",
