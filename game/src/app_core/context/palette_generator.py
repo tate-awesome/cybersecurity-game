@@ -2,18 +2,30 @@ import colorsys
 
 # Builds a full palette (the same 11 keys as style.PALETTES) from an accent
 # color and a "hierarchy" - how far apart the surface layers sit. Hierarchies
-# live in assets/themes/generator/hierarchies.json, each a set of HSL
-# lightness steps for both modes:
-#   dark:  dr = root's lightness, then d1/d2/d3 = the step up to panel,
-#          widget and field; ds = how much of the accent's hue the surfaces carry
-#   light: lr = root's lightness, then l1/l2 = the step down to panel and
-#          widget, l3 = widget to border (field is always white); ls = saturation
+# live in assets/themes/generator/hierarchies.json, each with a block per mode.
+# Lightness is CIE L* (0 black - 100 white): perceptual, so a step of the same
+# size looks the same in both modes, at any height, and for every accent hue.
+#   dark:  root = root's L*, then panel/widget/field = the step up to each
+#   light: root = root's L*, then panel/widget = the step down to each
+#          (field is always white)
+#   tint:  saturation the surfaces take from the accent's hue (0 = gray)
 #   inset (optional): how far below root an inset field sits - see inset()
-# tint scales ds/ls - how much the accent bleeds into the surfaces (0 = gray,
-# 1 = as the hierarchy has it)
+# The rest are the user's adjustments (see Style.theme_adjust):
+#   tint   - scales the hierarchy's tint (0 = gray, 1 = as the hierarchy has it)
+#   steps  - scales every step (0 = flat, 1 = as the hierarchy has it)
+#   height - moves root, and everything stacked on it, by this much L*
+# Borders aren't part of a hierarchy - see borders().
 # Plain colorsys, no Qt, so it can be checked without the app running.
 
-DEFAULT_INSET = 0.045
+# How far below root an inset field sits, for themes without their own amount (L*)
+DEFAULT_INSET = 3.7
+# How far a border sits beyond the surfaces it separates, at border strength
+# 1 (L*): lighter than the lightest in dark mode, darker than the darkest in
+# light mode. Light mode needs more - a thin dark line between bright areas
+# gets washed out by the light the eye scatters into it
+BORDER_CONTRAST = {"dark": 6.0, "light": 12.0}
+# How much further a hovered scrollbar handle goes (L*)
+SCROLLBAR_HOVER_STEP = 6.0
 # Dark accents are lightened until they stand out this much from the panel;
 # light accents are darkened until they stand out this much from white
 DARK_ACCENT_CONTRAST = 4.5
@@ -36,53 +48,90 @@ def _luminance(hex_color: str) -> float:
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
 
 
+def lightness(hex_color: str) -> float:
+    '''A color's CIE L* - perceived lightness, 0 (black) to 100 (white).'''
+    y = _luminance(hex_color)
+    return 116 * y ** (1 / 3) - 16 if y > 216 / 24389 else y * 24389 / 27
+
+
+def _at_lightness(h: float, s: float, target: float) -> str:
+    '''The color of this HSL hue and saturation whose L* is closest to target.'''
+    target = min(100.0, max(0.0, target))
+    low, high = 0.0, 1.0
+    for _ in range(24):  # lightness() only grows with HSL lightness, so bisect
+        middle = (low + high) / 2
+        if lightness(_hex(h, middle, s)) < target:
+            low = middle
+        else:
+            high = middle
+    return _hex(h, (low + high) / 2, s)
+
+
 def contrast(a: str, b: str) -> float:
     '''WCAG contrast ratio between two "#rrggbb" colors (1 to 21).'''
     high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
     return (high + 0.05) / (low + 0.05)
 
 
-def generate(accent: str, hierarchy: dict[str, float], mode: str, inset: float | None = None,
-             tint: float = 1.0) -> dict[str, str]:
-    '''The palette for one mode ("dark"/"light") of accent + hierarchy, with an inset field (dark only) if inset is given.'''
+def generate(accent: str, hierarchy: dict, mode: str, inset: float | None = None, tint: float = 1.0,
+             steps: float = 1.0, height: float = 0.0, border: float = 1.0) -> dict[str, str]:
+    '''
+    The palette for one mode ("dark"/"light") of accent + hierarchy, with
+    an inset field (dark only) if inset (L*) is given, and borders at the
+    given strength (see borders).
+    '''
     h, accent_l, accent_s = _hls(accent)
+    layers = hierarchy[mode]
+    s = min(1.0, layers["tint"] * tint)
+    root = layers["root"] + height
     if mode == "dark":
-        s = min(1.0, hierarchy["ds"] * tint)
-        root = hierarchy["dr"]
-        steps = [root, root + hierarchy["d1"]]
-        steps += [steps[1] + hierarchy["d2"], steps[1] + hierarchy["d2"] + hierarchy["d3"]]
-        border = steps[2] + 0.4 * hierarchy["d3"]
-        hover = border + 0.05
-        if inset is not None:
-            steps[3] = root - inset
+        panel = root + layers["panel"] * steps
+        widget = panel + layers["widget"] * steps
+        field = root - inset if inset is not None else widget + layers["field"] * steps
         text = _hex(h, 0.92, 0.4)
     else:
-        s = min(1.0, hierarchy["ls"] * tint)
-        steps = [hierarchy["lr"], hierarchy["lr"] - hierarchy["l1"]]
-        steps += [steps[1] - hierarchy["l2"], 1.0]
-        border = steps[2] - hierarchy["l3"]
-        hover = border - 0.06
+        panel = root - layers["panel"] * steps
+        widget = panel - layers["widget"] * steps
+        field = 100.0
         text = _hex(h, 0.14, 0.3)
-    colors = {key: _hex(h, l, s) for key, l in zip(("root", "panel", "widget", "field"), steps)}
+    colors = {key: _at_lightness(h, s, value) for key, value in
+              (("root", root), ("panel", panel), ("widget", widget), ("field", field))}
 
-    lightness = accent_l
+    shade = accent_l
     if mode == "dark":
-        while contrast(accent, colors["panel"]) < DARK_ACCENT_CONTRAST and lightness < 1.0:
-            lightness += 0.01
-            accent = _hex(h, lightness, accent_s)
+        while contrast(accent, colors["panel"]) < DARK_ACCENT_CONTRAST and shade < 1.0:
+            shade += 0.01
+            accent = _hex(h, shade, accent_s)
     else:
-        while contrast(accent, "#ffffff") < LIGHT_ACCENT_CONTRAST and lightness > 0.0:
-            lightness -= 0.01
-            accent = _hex(h, lightness, accent_s)
+        while contrast(accent, "#ffffff") < LIGHT_ACCENT_CONTRAST and shade > 0.0:
+            shade -= 0.01
+            accent = _hex(h, shade, accent_s)
     accent_text = ACCENT_TEXT_DARK if contrast(accent, ACCENT_TEXT_DARK) >= contrast(accent, "#ffffff") else "#ffffff"
 
-    border_color = _hex(h, border, s)
-    colors.update(field_text=text, text=text, accent=accent, accent_text=accent_text,
-                  border=border_color, scrollbar=border_color, scrollbar_hover=_hex(h, hover, s))
-    return colors
+    colors.update(field_text=text, text=text, accent=accent, accent_text=accent_text, border=_hex(h, 0.5, s))
+    return borders(colors, mode, border, scrollbars=True)
+
+
+def borders(colors: dict[str, str], mode: str, strength: float = 1.0, scrollbars: bool = False) -> dict[str, str]:
+    '''
+    A copy of a palette whose border sits BORDER_CONTRAST * strength beyond
+    the surfaces it separates (panel, widget, field) - keeping the border's
+    own hue and saturation, so a theme's borders stay its own color. With
+    scrollbars, the scrollbar handle matches the border, and goes further
+    still when hovered.
+    '''
+    surfaces = [lightness(colors[key]) for key in ("panel", "widget", "field")]
+    direction = 1 if mode == "dark" else -1
+    target = (max(surfaces) if mode == "dark" else min(surfaces)) + direction * BORDER_CONTRAST[mode] * strength
+    h, _, s = _hls(colors["border"])
+    result = {**colors, "border": _at_lightness(h, s, target)}
+    if scrollbars:
+        result["scrollbar"] = result["border"]
+        result["scrollbar_hover"] = _at_lightness(h, s, target + direction * SCROLLBAR_HOVER_STEP)
+    return result
 
 
 def inset(colors: dict[str, str], amount: float = DEFAULT_INSET) -> dict[str, str]:
-    '''A copy of a (dark) palette whose field sits below root instead of above it - recessed inputs.'''
-    h, l, s = _hls(colors["root"])
-    return {**colors, "field": _hex(h, l - amount, s)}
+    '''A copy of a (dark) palette whose field sits amount L* below root instead of above it - recessed inputs.'''
+    h, _, s = _hls(colors["root"])
+    return {**colors, "field": _at_lightness(h, s, lightness(colors["root"]) - amount)}

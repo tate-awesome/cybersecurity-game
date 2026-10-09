@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
                                QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
 
 from ..app_core import Context
-from ..app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS, THEME_TINT_MAX
+from ..app_core.context.style import (BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS, THEME_ADJUST_RANGE,
+                                      THEME_TINT_MAX)
 from ..widgets import MenuBar, VISUALS
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
@@ -102,6 +103,20 @@ class SettingsPage(Page):
         theme.row("settings_page_rows_inset", self.checkbox(style.theme_inset, style.set_inset), "settings_page_row_notes_inset")
         theme.row("settings_labels_surface_invert_buttons", self.checkbox(style.invert_buttons, style.set_invert_buttons),
                   "settings_tooltips_surface_invert_buttons")
+
+        # Per mode: step size and height shape accent + hierarchy themes; border contrast is for every theme
+        layers = self.section(tab, "layers_and_borders")
+        for theme_mode in ("dark", "light"):
+            for key in THEME_ADJUST_RANGE:
+                low, high = THEME_ADJUST_RANGE[key]
+                percent = key != "height"  # height is in L* steps, the others are multipliers
+                scale = 100 if percent else 1
+                control = self.slider(round(style.theme_adjust[theme_mode][key] * scale), round(low * scale), round(high * scale),
+                                      "%" if percent else "",
+                                      lambda value, theme_mode=theme_mode, key=key, scale=scale: style.set_adjust(theme_mode, key, value / scale),
+                                      live=False)
+                control.setEnabled(key == "border" or not preset)
+                layers.row(f"settings_page_rows_{theme_mode}_{key}", control, f"settings_page_row_notes_adjust_{key}")
 
         special = self.section(tab, "special_themes")
         presets = style.preset_names()

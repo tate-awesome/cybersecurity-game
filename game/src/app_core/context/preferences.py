@@ -17,6 +17,7 @@ class PreferencesData(TypedDict, total=False):
     theme: str
     theme_inset: bool
     theme_tint: float
+    theme_adjust: dict[str, dict[str, float]]
     is_developer: int
     translucent_surfaces: bool
     surface_opacity: dict[str, float]
@@ -85,6 +86,7 @@ class Preferences:
             "theme": "",            # autosaved in Style
             "theme_inset": False,   # toggled on the settings page (see Style.set_inset)
             "theme_tint": 1.0,      # set on the settings page (see Style.set_tint)
+            "theme_adjust": {},     # set on the settings page (see Style.set_adjust) - empty means style.DEFAULT_THEME_ADJUST
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
             "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
             "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY

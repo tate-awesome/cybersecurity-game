@@ -3,7 +3,7 @@ from collections.abc import Callable
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QGridLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
 
-from ....app_core.context.style import THEME_TINT_MAX
+from ....app_core.context.style import THEME_ADJUST_RANGE, THEME_TINT_MAX
 from ._base_button import ImportantButton
 
 
@@ -105,20 +105,29 @@ class ThemeWindow(QDialog):
             {name: name.replace("_", " ").title() for name in style.hierarchies},
             style.theme_hierarchy, style.set_hierarchy)).setEnabled(not preset)
 
-        # Applies on release - every step of a drag would rebuild the page
-        tint = QSlider(Qt.Orientation.Horizontal)
-        tint.setRange(0, round(THEME_TINT_MAX * 100))
-        tint.setValue(round(style.theme_tint * 100))
-        tint.setTracking(False)
-        tint.setEnabled(not preset)
-        readout = QLabel(f"{tint.value()}%")
-        readout.setFont(style.get_font())
-        readout.setMinimumWidth(readout.fontMetrics().horizontalAdvance(f"{tint.maximum()}%") + 4)
-        readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        tint.sliderMoved.connect(lambda value: readout.setText(f"{value}%"))
-        tint.valueChanged.connect(lambda value: self.changed(lambda: style.set_tint(value / 100)))
-        row("settings_page_rows_tint", "settings_page_row_notes_tint", tint)
-        grid.addWidget(readout, grid.rowCount() - 1, 2)
+        def slider(name: str, note: str, value: float, low: float, high: float, percent: bool,
+                   apply: Callable[[float], None], enabled: bool = True):
+            '''A slider row with its value beside it - percent shows value as a %, otherwise as a whole number.'''
+            scale = 100 if percent else 1
+            suffix = "%" if percent else ""
+            control = QSlider(Qt.Orientation.Horizontal)
+            control.setRange(round(low * scale), round(high * scale))
+            control.setValue(round(value * scale))
+            # Applies on release - every step of a drag would rebuild the page
+            control.setTracking(False)
+            control.setEnabled(enabled)
+            readout = QLabel(f"{control.value()}{suffix}")
+            readout.setFont(style.get_font())
+            readout.setMinimumWidth(max(readout.fontMetrics().horizontalAdvance(f"{bound}{suffix}")
+                                        for bound in (control.minimum(), control.maximum())) + 4)
+            readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            control.sliderMoved.connect(lambda moved: readout.setText(f"{moved}{suffix}"))
+            control.valueChanged.connect(lambda changed: self.changed(lambda: apply(changed / scale)))
+            row(name, note, control)
+            grid.addWidget(readout, grid.rowCount() - 1, 2)
+
+        slider("settings_page_rows_tint", "settings_page_row_notes_tint", style.theme_tint, 0, THEME_TINT_MAX, True,
+               style.set_tint, not preset)
 
         row("settings_page_rows_inset", "settings_page_row_notes_inset", checkbox(style.theme_inset, style.set_inset))
         row("settings_labels_surface_invert_buttons", "settings_tooltips_surface_invert_buttons", checkbox(
@@ -130,6 +139,17 @@ class ThemeWindow(QDialog):
             note = style.preset_info[special.itemData(index)].get("note")
             if note:
                 special.setItemData(index, note, Qt.ItemDataRole.ToolTipRole)
+
+        # Layers & Borders, per mode - like the settings page's section of that name
+        for theme_mode in ("dark", "light"):
+            header = QLabel(labels.get(f"settings_page_mode_{theme_mode}"))
+            header.setFont(style.get_font("small"))
+            grid.addWidget(header, grid.rowCount(), 0, 1, 3)
+            for key, (low, high) in THEME_ADJUST_RANGE.items():
+                slider(f"settings_page_rows_{theme_mode}_{key}", f"settings_page_row_notes_adjust_{key}",
+                       style.theme_adjust[theme_mode][key], low, high, key != "height",
+                       lambda value, theme_mode=theme_mode, key=key: style.set_adjust(theme_mode, key, value),
+                       key == "border" or not preset)
 
         more = QPushButton(labels.get("theme_picker_settings"))
         more.setFont(style.get_font())

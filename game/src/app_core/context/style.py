@@ -56,6 +56,14 @@ DEFAULT_THEME_INSET = False
 # multiple of the hierarchy's own tint (see palette_generator.generate)
 DEFAULT_THEME_TINT = 1.0
 THEME_TINT_MAX = 3.0
+# Per-mode adjustments (see palette_generator.generate/borders):
+#   steps  - multiplies accent + hierarchy themes' layer steps
+#   height - moves their root (and everything on it) up or down, in L*
+#   border - multiplies how far borders sit from the surfaces around them -
+#            for every theme, special ones too, since borders are about
+#            being able to see where things end
+DEFAULT_THEME_ADJUST: dict[str, dict[str, float]] = {mode: {"steps": 1.0, "height": 0.0, "border": 1.0} for mode in ("dark", "light")}
+THEME_ADJUST_RANGE: dict[str, tuple[float, float]] = {"steps": (0.0, 3.0), "height": (-20.0, 20.0), "border": (0.0, 3.0)}
 
 # Fallback themes when no preference is saved yet, or when toggle_mode's
 # target mode has no variant in the current color family.
@@ -180,6 +188,7 @@ class Style:
         self._load_theme_files()
         self.theme_inset: bool = DEFAULT_THEME_INSET
         self.theme_tint: float = DEFAULT_THEME_TINT
+        self.theme_adjust: dict[str, dict[str, float]] = {mode: dict(values) for mode, values in DEFAULT_THEME_ADJUST.items()}
         # The last accent + hierarchy used, kept while a preset is shown
         self.theme_accent: str = DEFAULT_ACCENT
         self.theme_hierarchy: str = DEFAULT_HIERARCHY
@@ -832,15 +841,18 @@ class Style:
     def _palette(self, family: str, mode: str) -> dict[str, str]:
         '''One mode of a preset or "<accent>.<hierarchy>" family, inset if theme_inset is on (dark only).'''
         inset = self.theme_inset and mode == "dark"
+        adjust = self.theme_adjust[mode]
         if family in self.palettes:
             colors = self.palettes[family][mode]
-            return palette_generator.inset(colors) if inset else colors
+            if inset:
+                colors = palette_generator.inset(colors)
+            return palette_generator.borders(colors, mode, adjust["border"])
         accent, _, hierarchy = family.partition(".")
         profile = self.hierarchies[hierarchy]
         self.theme_accent, self.theme_hierarchy = accent, hierarchy
         return palette_generator.generate(self.accents[accent], profile, mode,
                                           profile.get("inset", palette_generator.DEFAULT_INSET) if inset else None,
-                                          self.theme_tint)
+                                          self.theme_tint, adjust["steps"], adjust["height"], adjust["border"])
 
     def is_theme(self, theme_name) -> bool:
         if not isinstance(theme_name, str):
@@ -875,6 +887,13 @@ class Style:
         tint = self.context.preferences.get("theme_tint")
         if isinstance(tint, (int, float)) and not isinstance(tint, bool):
             self.theme_tint = min(THEME_TINT_MAX, max(0.0, float(tint)))
+        saved_adjust = self.context.preferences.get("theme_adjust")
+        for mode, values in self.theme_adjust.items():
+            saved_values = saved_adjust.get(mode) if isinstance(saved_adjust, dict) else None
+            for key, (low, high) in THEME_ADJUST_RANGE.items():
+                value = saved_values.get(key) if isinstance(saved_values, dict) else None
+                values[key] = min(high, max(low, float(value))) if isinstance(value, (int, float)) and not isinstance(value, bool) \
+                    else DEFAULT_THEME_ADJUST[mode][key]
         saved = self.context.preferences.get("theme")
         if self.is_theme(saved):
             self.apply_theme(saved)
@@ -884,6 +903,7 @@ class Style:
     def load_default_theme(self):
         self.theme_inset = DEFAULT_THEME_INSET
         self.theme_tint = DEFAULT_THEME_TINT
+        self.theme_adjust = {mode: dict(values) for mode, values in DEFAULT_THEME_ADJUST.items()}
         self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
 
     def set_theme(self, theme_name: str):
@@ -919,6 +939,13 @@ class Style:
         '''How much the accent bleeds into the surfaces (see DEFAULT_THEME_TINT) - saved, and the page rebuilt in it.'''
         self.theme_tint = min(THEME_TINT_MAX, max(0.0, tint))
         self.context.preferences.set("theme_tint", self.theme_tint)
+        self.set_theme(self.current_theme)
+
+    def set_adjust(self, mode: str, key: str, value: float):
+        '''One of a mode's adjustments (see DEFAULT_THEME_ADJUST) - saved, and the page rebuilt in it.'''
+        low, high = THEME_ADJUST_RANGE[key]
+        self.theme_adjust[mode][key] = min(high, max(low, value))
+        self.context.preferences.set("theme_adjust", {mode: dict(values) for mode, values in self.theme_adjust.items()})
         self.set_theme(self.current_theme)
 
     def set_inset(self, on: bool):
