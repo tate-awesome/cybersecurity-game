@@ -9,7 +9,7 @@ import colorsys
 #   light: root = root's L*, then panel/widget = the step down to each
 #          (field is always white)
 #   tint:  saturation the surfaces take from the accent's hue (0 = gray)
-#   inset (optional): how far below root an inset field sits - see inset()
+#   inset (optional): how far below the darkest layer an inset field sits - see inset()
 # The rest are the user's adjustments (see Style.theme_adjust):
 #   tint   - scales the hierarchy's tint (0 = gray, 1 = as the hierarchy has it)
 #   steps  - scales every step (0 = flat, 1 = as the hierarchy has it)
@@ -17,7 +17,7 @@ import colorsys
 # Borders aren't part of a hierarchy - see borders().
 # Plain colorsys, no Qt, so it can be checked without the app running.
 
-# How far below root an inset field sits, for themes without their own amount (L*)
+# How far below the darkest layer an inset field sits, for themes without their own amount (L*)
 DEFAULT_INSET = 3.7
 # How far a border sits beyond the surfaces it separates, at border strength
 # 1 (L*): lighter than the lightest in dark mode, darker than the darkest in
@@ -77,7 +77,7 @@ def generate(accent: str, hierarchy: dict, mode: str, inset: float | None = None
              steps: float = 1.0, height: float = 0.0, border: float = 1.0) -> dict[str, str]:
     '''
     The palette for one mode ("dark"/"light") of accent + hierarchy, with
-    an inset field (dark only) if inset (L*) is given, and borders at the
+    an inset field (see inset()) if inset (L*) is given, and borders at the
     given strength (see borders).
     '''
     h, accent_l, accent_s = _hls(accent)
@@ -87,13 +87,15 @@ def generate(accent: str, hierarchy: dict, mode: str, inset: float | None = None
     if mode == "dark":
         panel = root + layers["panel"] * steps
         widget = panel + layers["widget"] * steps
-        field = root - inset if inset is not None else widget + layers["field"] * steps
+        field = widget + layers["field"] * steps
         text = _hex(h, 0.92, 0.4)
     else:
         panel = root - layers["panel"] * steps
         widget = panel - layers["widget"] * steps
         field = 100.0
         text = _hex(h, 0.14, 0.3)
+    if inset is not None:
+        field = min(root, panel, widget) - inset
     colors = {key: _at_lightness(h, s, value) for key, value in
               (("root", root), ("panel", panel), ("widget", widget), ("field", field))}
 
@@ -132,6 +134,12 @@ def borders(colors: dict[str, str], mode: str, strength: float = 1.0, scrollbars
 
 
 def inset(colors: dict[str, str], amount: float = DEFAULT_INSET) -> dict[str, str]:
-    '''A copy of a (dark) palette whose field sits amount L* below root instead of above it - recessed inputs.'''
-    h, _, s = _hls(colors["root"])
-    return {**colors, "field": _at_lightness(h, s, lightness(colors["root"]) - amount)}
+    '''
+    A copy of a palette whose field sits amount L* below its darkest layer
+    (root, panel or widget) - recessed inputs, cut into whatever they're on.
+    In dark mode that's below the page; in light mode, a gray well below the
+    cards instead of white.
+    '''
+    darkest = min(("root", "panel", "widget"), key=lambda key: lightness(colors[key]))
+    h, _, s = _hls(colors[darkest])
+    return {**colors, "field": _at_lightness(h, s, lightness(colors[darkest]) - amount)}

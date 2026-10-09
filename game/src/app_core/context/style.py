@@ -50,7 +50,7 @@ THEME_KEYS = frozenset(PALETTES["blue"]["dark"])
 # What the accent/hierarchy pickers start from while a preset is in use
 DEFAULT_ACCENT = "azure"
 DEFAULT_HIERARCHY = "baseline"
-# Whether dark themes' fields sit below root - recessed inputs (see palette_generator.inset)
+# Whether fields sit below the darkest layer - recessed inputs (see palette_generator.inset)
 DEFAULT_THEME_INSET = False
 # How much the accent bleeds into accent + hierarchy themes' surfaces - a
 # multiple of the hierarchy's own tint (see palette_generator.generate)
@@ -839,8 +839,8 @@ class Style:
             self.accents, self.hierarchies = {}, {}
 
     def _palette(self, family: str, mode: str) -> dict[str, str]:
-        '''One mode of a preset or "<accent>.<hierarchy>" family, inset if theme_inset is on (dark only).'''
-        inset = self.theme_inset and mode == "dark"
+        '''One mode of a preset or "<accent>.<hierarchy>" family, inset if theme_inset is on.'''
+        inset = self.theme_inset
         adjust = self.theme_adjust[mode]
         if family in self.palettes:
             colors = self.palettes[family][mode]
