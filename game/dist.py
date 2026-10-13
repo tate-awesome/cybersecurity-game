@@ -1,4 +1,4 @@
-import platform, shutil, subprocess, sys, sysconfig
+import datetime, json, platform, shutil, subprocess, sys, sysconfig
 from pathlib import Path
 
 '''
@@ -46,6 +46,26 @@ def build_name() -> str:
     return f"{NAME}_{tag}_{arch}"
 
 
+def write_build_info(path: Path):
+    '''
+    The commit and branch this build came from, for the footer (see
+    src/app_core/version.py) - a build has no git checkout to ask.
+    '''
+    def git(*args: str) -> str | None:
+        result = subprocess.run(["git", *args], cwd=GAME_DIR, capture_output=True, text=True)
+        return result.stdout.strip() if result.returncode == 0 else None
+
+    commit = git("rev-parse", "--short", "HEAD")
+    if commit is not None and git("status", "--porcelain", "--untracked-files=no"):
+        commit += "-dirty"
+    info = {
+        "commit": commit,
+        "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
+        "built": datetime.date.today().isoformat(),
+    }
+    path.write_text(json.dumps(info, indent=4) + "\n", encoding="utf-8")
+
+
 def main():
     name = build_name()
 
@@ -74,6 +94,7 @@ def main():
 
     print("Copying assets...")
     shutil.copytree(GAME_DIR / "assets", DIST_DIR / "assets")
+    write_build_info(DIST_DIR / "assets" / "build.json")
 
     print(f"Done. Built {name} in {DIST_DIR}")
 

@@ -97,6 +97,9 @@ class Performance:
         self.page_build_ms: float | None = None
         self.page_ready_ms: float | None = None
         self.startup_ms: float | None = None
+        # Every AnimationManager pass, measuring or not - just a count, so
+        # the footer's framerate costs nothing (see Footer)
+        self.ticks: int = 0
         self.overlay: QLabel | None = None
         self._overlay_timer = QTimer()
         self._overlay_timer.setInterval(500)

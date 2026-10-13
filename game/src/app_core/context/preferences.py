@@ -35,6 +35,7 @@ class PreferencesData(TypedDict, total=False):
     page_transitions: bool
     performance_overlay: bool
     performance_log: bool
+    footer_transparent: bool
     labels_file: str
     page: str
     fullscreen: str
@@ -111,6 +112,7 @@ class Preferences:
             "page_transitions": DEFAULT_PAGE_TRANSITIONS,
             "performance_overlay": DEFAULT_PERFORMANCE_OVERLAY,  # also F3 (see KeyBinds)
             "performance_log": DEFAULT_PERFORMANCE_LOG,
+            "footer_transparent": False,  # toggled on the settings page (see Footer.set_transparent)
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
             "fullscreen": "",       # autosaved in KeyBinds

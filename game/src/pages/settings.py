@@ -225,6 +225,9 @@ class SettingsPage(Page):
         display = self.section(tab, "display")
         display.row("settings_page_rows_fullscreen",
                     self.checkbox(context.root.isFullScreen(), self.set_fullscreen), "settings_page_row_notes_fullscreen")
+        footer = context.router.footer
+        display.row("settings_page_rows_footer_transparent",
+                    self.checkbox(footer.transparent, footer.set_transparent), "settings_page_row_notes_footer_transparent")
 
         language = self.section(tab, "language")
         current = preferences.get("labels_file") if preferences.has("labels_file") else None
