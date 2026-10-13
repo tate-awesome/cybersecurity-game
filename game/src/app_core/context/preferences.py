@@ -19,6 +19,11 @@ DEFAULT_NETWORK_HELPER = False
 # switched (the keybind or the settings page's checkbox, see KeyBinds).
 DEFAULT_FULLSCREEN = True
 
+# Fading the window in on startup and out on quit (see FadeIn/FadeOut in
+# app_core.transitions). Toggled on the settings page's General tab.
+DEFAULT_FADE_IN = True
+DEFAULT_FADE_OUT = False
+
 class PreferencesData(TypedDict, total=False):
     '''
     Documents the shape preferences.json is expected to have after a fresh
@@ -50,6 +55,8 @@ class PreferencesData(TypedDict, total=False):
     page: str
     fullscreen: bool
     keybinds: dict[str, str]
+    fade_in: bool
+    fade_out: bool
     debug_labels: bool
 
 class Preferences:
@@ -102,6 +109,16 @@ class Preferences:
             value = {"True": True, "False": False}.get(value)
         return DEFAULT_FULLSCREEN if value is None else bool(value)
 
+    def is_fade_in(self) -> bool:
+        '''Whether the window fades in on startup (preferences.json "fade_in").'''
+        value = self.data.get("fade_in")
+        return value if isinstance(value, bool) else DEFAULT_FADE_IN
+
+    def is_fade_out(self) -> bool:
+        '''Whether the window fades out on quit (preferences.json "fade_out").'''
+        value = self.data.get("fade_out")
+        return value if isinstance(value, bool) else DEFAULT_FADE_OUT
+
     def set(self, key: str, value):
         self.data[key] = value
         self.save()
@@ -135,6 +152,8 @@ class Preferences:
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
             "fullscreen": DEFAULT_FULLSCREEN,  # autosaved in KeyBinds
+            "fade_in": DEFAULT_FADE_IN,    # toggled on the General tab (see App)
+            "fade_out": DEFAULT_FADE_OUT,  # toggled on the General tab (see Router.quit)
             "keybinds": {},         # set on the settings page (see KeyBinds.rebind) - empty means keybinds.DEFAULT_KEYBINDS
             "debug_labels": False   # toggled by ToggleDebugLabels (see LocalizationManager.is_debug)
         }

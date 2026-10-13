@@ -5,7 +5,6 @@ import threading
 
 from scapy.all import Ether, IP
 
-from PySide6.QtWidgets import QFileDialog
 
 from ..process import Process
 
@@ -301,12 +300,9 @@ class Replay(Process):
 
         directory = self.context.paths.mcaptures
 
-        file_path, _ = QFileDialog.getSaveFileName(
-            None,
-            "Save JSON replay",
-            str(directory),
-            "JSON Lines (*.jsonl);;JSON (*.json);;All files (*.*)"
-        )
+        from ...app_core.context.paths import file_dialog  # here - app_core imports the network package
+        file_path = file_dialog("Save JSON replay", directory,
+                                "JSON Lines (*.jsonl);;JSON (*.json);;All files (*.*)", save=True) or ""
 
         # Qt doesn't auto-append the filter's extension the way tkinter's
         # defaultextension did, so add it back when the user typed a bare

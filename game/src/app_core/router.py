@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
 from . import Context
-from .transitions import PageTransition
+from .transitions import FadeOut, PageTransition
 
 # Import page builder objects here
 # /demo
@@ -66,13 +66,13 @@ NOT_FOUND_PAGE = "404"
 class Router:
     '''
     Handles page navigation by calling page builder functions. (Pages can't import each other because of circular imports)
-    Builds the first page on startup
+    Builds the first page on startup (see start)
     '''
     
-    def __init__(self, root: QMainWindow, start_page: str | None = None):
+    def __init__(self, root: QMainWindow):
         '''
-        Creates the app's Context object and shows the first page.
-        If start_page isn't given, it's START_PAGE.
+        Creates the app's Context object. The first page is built by
+        start(), so App can decide when the window shows (see App).
         '''
         self.context: Context = Context(root, self)
         self.style = self.context.style
@@ -82,13 +82,15 @@ class Router:
         # The page key the 404 page reports as missing
         self.missing_page: str | None = None
         self.transition: PageTransition | None = None
+        # Set once quitting, so a second quit (during FadeOut) doesn't start another
+        self.quitting = False
         self.footer = Footer(root, self.context)
 
         self.register_discovered_pages()
 
-        if start_page is None:
-            start_page = START_PAGE
-        self.show(start_page)
+    def start(self, start_page: str | None = None):
+        '''Builds the first page - START_PAGE if start_page isn't given. Called once by App.'''
+        self.show(start_page or START_PAGE)
 
     def register_discovered_pages(self):
         '''
@@ -203,19 +205,31 @@ class Router:
         self.context.start_build()
         self.show(self.navigation_stack[-1], direction=0)
 
-    def quit(self):
+    def quit(self) -> bool:
         '''
         Deletes all ongoing processes and quits the app.
         Called on Close event (see MainWindow.closeEvent in app.py, wired
-        up by KeyBinds) or by the Quit button.
+        up by KeyBinds) or by the Quit button. Returns whether the window
+        should stay open for now - only while FadeOut plays, which quits
+        once it's done.
         '''
+        if self.quitting:
+            return False  # already on the way out - quit() closing the window, say
+        self.quitting = True
         self.context.reset_page()
         self.context.reset_build()
         # Stop the privileged helper last, so it restores any system state
         # and exits with the app rather than being orphaned.
         if hasattr(self.context, "helper"):
             self.context.helper.stop()
+        root = self.context.root
+        if self.context.preferences.is_fade_out() and root.isVisible() and not root.isMinimized():
+            # Kept referenced - a window with no parent and no reference is deleted by Python mid-fade
+            self.fade_out = FadeOut(root)
+            self.fade_out.play(root, QApplication.instance().quit)
+            return True
         QApplication.instance().quit()
+        return False
 
     def go_back(self):
         '''

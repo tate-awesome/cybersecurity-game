@@ -1,3 +1,4 @@
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
 
@@ -50,8 +51,11 @@ def confirm_dialog(master: QWidget, context: Context, message: str, confirm_text
         layout.addLayout(buttons_row)
 
         def confirm():
-            confirm_func()
+            # Closed (and the main window unblocked) before the action runs -
+            # an action that rebuilds the page, changes the window or raises
+            # can't leave this modal dialog blocking the app
             window.accept()
+            QTimer.singleShot(0, confirm_func)
 
         confirm_button = QPushButton(confirm_text)
         confirm_button.setFont(style.get_font())

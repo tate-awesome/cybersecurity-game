@@ -61,6 +61,33 @@ class ContextManager:
         self.style.load_preferred_background()
         self.style.load_preferred_theme()
 
+    def reload_preferences(self):
+        '''
+        Brings everything that outlives a page back in line with
+        preferences, in place - after they've been wiped (see
+        DeleteAllUserData), so the running app matches a fresh start
+        without being rebuilt. The page itself is rebuilt by the caller.
+        Defaults first, so anything preferences no longer mention goes back
+        to its default rather than keeping its old value.
+        '''
+        style = self.style
+        style.load_default_surfaces()
+        style.load_preferred_surfaces()
+        style.load_default_background()
+        style.load_preferred_background()
+        style.load_preferred_theme()
+        self.performance.load_defaults()
+        self.performance.load()
+        self.performance.apply()
+        self.labels.reset()
+        self.keybinds.load()
+        self.keybinds.set_fullscreen(self.preferences.is_fullscreen())
+        self.router.footer.load_preferences()
+        if self.helper.enabled:
+            self.helper.start()
+        else:
+            self.helper.stop()
+
     def reset_session(self):
         '''
         Resets members in a session

@@ -42,6 +42,11 @@ class VisualBackground(QWidget):
     choppy for continuous motion. The timer pauses while hidden, so a
     background on a page that's been navigated away from costs nothing.
 
+    hold() shows just the theme's background color, with the visual
+    paused before its first frame, until release() - so on startup the
+    animation (and its intro) only starts once the first page has come in
+    (see App.start_first_page).
+
     The special key "cycle" rotates through every visual, CYCLE_SECONDS each.
 
     shared=True makes every shared VisualBackground playing the same key
@@ -70,6 +75,7 @@ class VisualBackground(QWidget):
         # repaints the panels above
         self.frame_ms = max(1, round(1000 / max(1.0, fps)))
         self.paint_options = paint_options or {}
+        self.held = False  # see hold
         # Set by follow_preferences - see apply_preferences
         self.follows_preferences = False
         self.page_animate = animate
@@ -181,7 +187,7 @@ class VisualBackground(QWidget):
             # caught partway through an intro (see Visual.settle)
             self.visual.settle()
         self.setVisible(style.background_enabled)
-        if self.animate and self.isVisible():
+        if self.animate and self.isVisible() and not self.held:
             self.last_tick = time.perf_counter()
             self.timer.start(self.frame_ms)
         else:
@@ -208,6 +214,18 @@ class VisualBackground(QWidget):
         Visual.intros_played.discard(keys[index])
         self.visual = VISUALS[keys[index]]()
         self.sync_size()
+
+    def hold(self):
+        self.held = True
+        self.timer.stop()
+        self.invalidate()
+
+    def release(self):
+        self.held = False
+        self.last_tick = time.perf_counter()
+        if self.animate and self.isVisible():
+            self.timer.start(self.frame_ms)
+        self.invalidate()
 
     def invalidate(self):
         '''Drops the cached frame so the next paint renders a fresh one.'''
@@ -314,7 +332,7 @@ class VisualBackground(QWidget):
         doublings, so an in-between amount blends the two nearest levels,
         which keeps a blur slider smooth.
         '''
-        if self.visual is None or self.visual.width <= 0:
+        if self.held or self.visual is None or self.visual.width <= 0:
             return []
         return [(self.backdrop_level(level), opacity) for level, opacity in blur_levels(math.hypot(self.blur_radius, blur))]
 
@@ -328,7 +346,7 @@ class VisualBackground(QWidget):
         palette = self.palette_for_theme()
         painter = QPainter(self)
         try:
-            if self.visual is None or self.visual.width <= 0:
+            if self.held or self.visual is None or self.visual.width <= 0:
                 painter.fillRect(self.rect(), palette.background)
                 return
             if self.frame is None:
@@ -364,7 +382,7 @@ class VisualBackground(QWidget):
 
     def showEvent(self, event):
         self.last_tick = time.perf_counter()
-        if self.animate:
+        if self.animate and not self.held:
             self.timer.start(self.frame_ms)
         super().showEvent(event)
         self.sync_size()

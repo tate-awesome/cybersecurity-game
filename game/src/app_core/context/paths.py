@@ -1,7 +1,32 @@
 from pathlib import Path
 import os, sys
 
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QWidget
+
+
+def file_dialog(prompt: str, directory: str | os.PathLike[str], qt_filter: str, save: bool = False) -> str | None:
+    '''
+    Asks for a file to open (or, with save, to save to) - None if cancelled.
+
+    Qt's own dialog, not the operating system's: the native Windows one is
+    a separate window Qt doesn't manage, which could open behind the
+    fullscreen game - invisible, but still blocking every click until it
+    was closed. This one is a PySide6 window owned by the game's window,
+    so it always opens over it and is themed like the rest of the app.
+    '''
+    ask = QFileDialog.getSaveFileName if save else QFileDialog.getOpenFileName
+    file_path, _ = ask(_dialog_parent(), prompt, str(directory), qt_filter,
+                       options=QFileDialog.Option.DontUseNativeDialog)
+    return file_path if isinstance(file_path, str) and file_path else None
+
+
+def _dialog_parent() -> QWidget | None:
+    '''The game's main window, for a dialog to open over.'''
+    active = QApplication.activeWindow()
+    if active is not None:
+        return active
+    return next((w for w in QApplication.topLevelWidgets() if isinstance(w, QMainWindow) and w.isVisible()), None)
+
 
 class Paths:
     def __init__(self):
@@ -54,16 +79,7 @@ class Paths:
         if filetypes is None:
             filetypes = [("json", "*.json")]
         try:
-            file_path, _ = QFileDialog.getOpenFileName(
-                None,
-                prompt,
-                str(directory),
-                self._to_qt_filter(filetypes)
-            )
-            if file_path == "" or not isinstance(file_path, str):
-                return None
-            else:
-                return file_path
+            return file_dialog(prompt, directory, self._to_qt_filter(filetypes))
         except Exception:
             return None
 

@@ -80,8 +80,8 @@ class Footer(QFrame):
         self.row = QHBoxLayout(self)
         self.row.setContentsMargins(0, 0, 0, 0)
         self.row.setSpacing(0)
-        transparent = context.preferences.get("footer_transparent")
-        self.transparent = transparent if isinstance(transparent, bool) else DEFAULT_FOOTER_TRANSPARENT
+        self.transparent = self.preferred_transparent()
+        self.held = False  # see hold
         self._placer = _FollowResize(root, self.place)
 
         self.build = BuildInfo(context.paths.assets)
@@ -130,9 +130,20 @@ class Footer(QFrame):
         '''Along the bottom of the window, above the page.'''
         height = self.sizeHint().height()
         self.setGeometry(0, self.root.height() - height, self.root.width(), height)
-        # Made after the window was shown, so it starts hidden
-        self.show()
-        self.raise_()
+        # Made after the window was shown, so it starts hidden - and not
+        # shown before the first page, which it comes in with (see App)
+        if self.context.router.current_frame is not None and not self.held:
+            self.show()
+            self.raise_()
+
+    def hold(self):
+        '''Hidden until release() - while the first page waits to come in (see App.hold_first_page).'''
+        self.held = True
+        self.hide()
+
+    def release(self):
+        self.held = False
+        self.place()
 
     def pad_page(self):
         '''
@@ -147,6 +158,15 @@ class Footer(QFrame):
         page.setContentsMargins(margins.left(), margins.top(), margins.right(),
                                 margins.bottom() + self.sizeHint().height())
         page.setProperty("footer_padded", True)
+
+    def preferred_transparent(self) -> bool:
+        transparent = self.context.preferences.get("footer_transparent")
+        return transparent if isinstance(transparent, bool) else DEFAULT_FOOTER_TRANSPARENT
+
+    def load_preferences(self):
+        '''Back in line with preferences (see Context.reload_preferences).'''
+        self.transparent = self.preferred_transparent()
+        self.restyle()
 
     def set_transparent(self, transparent: bool):
         '''Drops (or brings back) the footer's background - applied at once, and saved.'''

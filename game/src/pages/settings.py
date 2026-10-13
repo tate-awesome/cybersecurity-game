@@ -229,11 +229,19 @@ class SettingsPage(Page):
         tab = self.new_tab("general")
 
         display = self.section(tab, "display")
-        display.row("settings_page_rows_fullscreen",
-                    self.checkbox(context.root.isFullScreen(), self.set_fullscreen), "settings_page_row_notes_fullscreen")
+        fullscreen = self.checkbox(context.root.isFullScreen(), self.set_fullscreen)
+        # Follows F11 too - a slot on the checkbox, so it's dropped with this page
+        context.root.fullscreen_changed.connect(fullscreen.setChecked)
+        display.row("settings_page_rows_fullscreen", fullscreen, "settings_page_row_notes_fullscreen")
         footer = context.router.footer
         display.row("settings_page_rows_footer_transparent",
                     self.checkbox(footer.transparent, footer.set_transparent), "settings_page_row_notes_footer_transparent")
+        display.row("settings_page_rows_fade_in",
+                    self.checkbox(preferences.is_fade_in(), lambda on: preferences.set("fade_in", on)),
+                    "settings_page_row_notes_fade_in")
+        display.row("settings_page_rows_fade_out",
+                    self.checkbox(preferences.is_fade_out(), lambda on: preferences.set("fade_out", on)),
+                    "settings_page_row_notes_fade_out")
 
         keybinds = self.section(tab, "keybinds")
         for action in DEFAULT_KEYBINDS:

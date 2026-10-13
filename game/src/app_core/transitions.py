@@ -1,5 +1,7 @@
-from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRectF, Qt, QTimer, QVariantAnimation
-from PySide6.QtGui import QGuiApplication, QPainter, QPixmap, QRegion
+from collections.abc import Callable
+
+from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRect, QRectF, Qt, QTimer, QVariantAnimation
+from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPixmap, QRegion
 from PySide6.QtWidgets import QGraphicsEffect, QWidget
 
 
@@ -330,3 +332,107 @@ class WindowReveal:
         animation.finished.connect(lambda: window.setWindowOpacity(1.0))
         animation.finished.connect(animation.deleteLater)
         QTimer.singleShot(cls.DELAY_MS, animation.start)
+
+
+class DesktopFade(QWidget):
+    '''
+    A borderless, click-through window over where the main window is (or
+    will be), fading something in or out straight on the desktop - for
+    FadeIn and FadeOut. It's see-through per pixel from the start
+    (WA_TranslucentBackground) and paints its own opacity, rather than
+    using window opacity: switching a window in and out of opacity mode
+    redraws it on Windows, which flashes the desktop.
+    '''
+
+    def __init__(self, area: QRect):
+        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
+                         | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        self.setGeometry(area)
+        self.opacity = 0.0
+
+    def fade(self, duration: int, start: float, end: float, curve: QEasingCurve.Type, finished: Callable[[], None]):
+        self.opacity = start
+        animation = QVariantAnimation(self)
+        animation.setStartValue(start)
+        animation.setEndValue(end)
+        animation.setDuration(duration)
+        animation.setEasingCurve(curve)
+        animation.valueChanged.connect(self.set_opacity)
+        animation.finished.connect(finished)
+        animation.finished.connect(animation.deleteLater)
+        animation.start()
+
+    def set_opacity(self, opacity: float):
+        self.opacity = opacity
+        self.update()
+
+
+class FadeIn(DesktopFade):
+    '''
+    Startup with the "fade_in" preference: the theme's background color
+    fades in on the desktop where the window will be, then the window
+    shows underneath it (just that color) and this goes - see App.
+    '''
+
+    DURATION_MS = 900
+    # Time for the window to paint under this before it's uncovered
+    WINDOW_PAINT_MS = 50
+
+    def __init__(self, area: QRect, color: str):
+        super().__init__(area)
+        self.color = QColor(color)
+
+    def play(self, show_window: Callable[[], None], done: Callable[[], None]):
+        '''Fades in, calls show_window, and once that's painted closes and calls done.'''
+        self.show()
+
+        def covered():
+            show_window()
+            QTimer.singleShot(self.WINDOW_PAINT_MS, uncovered)
+
+        def uncovered():
+            self.close()
+            done()
+        self.fade(self.DURATION_MS, 0.0, 1.0, QEasingCurve.Type.InOutCubic, covered)
+
+    def paintEvent(self, event):
+        color = QColor(self.color)
+        color.setAlphaF(max(0.0, min(1.0, self.opacity)))
+        painter = QPainter(self)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(self.rect(), color)
+        painter.end()
+
+
+class FadeOut(DesktopFade):
+    '''
+    Quitting with the "fade_out" preference: a screenshot of the window
+    takes its place on the desktop and fades out, then the app quits - see
+    Router.quit.
+    '''
+
+    DURATION_MS = 350
+
+    def __init__(self, window: QWidget):
+        super().__init__(window.geometry())
+        self.screenshot = window.grab()
+        self.opacity = 1.0
+
+    def play(self, window: QWidget, done: Callable[[], None]):
+        '''Covers window with its screenshot, hides it, fades out, and calls done.'''
+        self.show()
+        # Once this has painted over it, so the desktop never shows between them
+        QTimer.singleShot(30, window.hide)
+        self.fade(self.DURATION_MS, 1.0, 0.0, QEasingCurve.Type.InCubic, done)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        painter.setOpacity(max(0.0, min(1.0, self.opacity)))
+        painter.drawPixmap(self.rect(), self.screenshot)
+        painter.end()

@@ -1,5 +1,4 @@
 import shutil
-from ....app_core.context.style import Style
 from ...popup import confirm_dialog
 from ._base_button import ImportantButton
 
@@ -23,9 +22,9 @@ class DeleteAllUserData(ImportantButton):
     def delete(self):
         context = self.context
         shutil.rmtree(context.paths.user_data, ignore_errors=True)
-        context.style = Style(context)  # reset style to default
         context.paths.create_user_dirs()
         context.preferences.clear()
-        context.keybinds.reset()
+        # Everything running goes back to the defaults now, not on the next start
+        context.reload_preferences()
         # save=False so nothing gets written back into the folder that was just wiped
         context.router.refresh(save=False)

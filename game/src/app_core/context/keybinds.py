@@ -47,10 +47,7 @@ class KeyBinds:
             "fullscreen": self.toggle_fullscreen,
         }
         self.shortcuts: dict[str, list[QShortcut]] = {action: [] for action in DEFAULT_KEYBINDS}
-        saved = self.context.preferences.get("keybinds")
-        saved = saved if isinstance(saved, dict) else {}
-        for action, default in DEFAULT_KEYBINDS.items():
-            self.bind(action, saved.get(action, default))
+        self.load()
 
         # Performance overlay (see Performance)
         self._shortcut("F3", context.performance.toggle_overlay)
@@ -59,10 +56,7 @@ class KeyBinds:
         # instead of exposing a Qt virtual method to override here.
         self.root.on_close = self.quit
 
-        # Right away - App has just shown the window maximized, and the event
-        # loop hasn't started, so it never shows un-fullscreened
-        if self.context.preferences.is_fullscreen():
-            self.set_fullscreen(True)
+        # Whether the window starts fullscreen is App's to apply (see App.show_window)
 
     def _shortcut(self, sequence: str, handler) -> QShortcut:
         shortcut = QShortcut(QKeySequence(sequence), self.root)
@@ -99,6 +93,14 @@ class KeyBinds:
         self.bind(action, sequence)
         self.save()
         return taken
+
+    def load(self):
+        '''Binds every action to its saved keys - its default where none are saved.'''
+        saved = self.context.preferences.get("keybinds")
+        saved = saved if isinstance(saved, dict) else {}
+        for action, default in DEFAULT_KEYBINDS.items():
+            sequence = saved.get(action, default)
+            self.bind(action, sequence if isinstance(sequence, str) else default)
 
     def reset(self):
         for action, default in DEFAULT_KEYBINDS.items():

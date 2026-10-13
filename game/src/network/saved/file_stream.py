@@ -5,7 +5,6 @@ import queue
 import threading
 from pathlib import Path
 
-from PySide6.QtWidgets import QFileDialog
 
 from ..buffer.meta_packet import MetaPacket
 from ..process import Process
@@ -116,12 +115,9 @@ class FileStream(Process):
 
         directory = self.context.paths.mcaptures
 
-        file_path, _ = QFileDialog.getSaveFileName(
-            None,
-            "Choose where to stream JSON replay data",
-            str(directory),
-            "JSON Lines (*.jsonl);;JSON (*.json);;All files (*.*)"
-        )
+        from ...app_core.context.paths import file_dialog  # here - app_core imports the network package
+        file_path = file_dialog("Choose where to stream JSON replay data", directory,
+                                "JSON Lines (*.jsonl);;JSON (*.json);;All files (*.*)", save=True) or ""
 
         # Qt doesn't auto-append the filter's extension the way tkinter's
         # defaultextension did, so add it back when the user typed a bare
