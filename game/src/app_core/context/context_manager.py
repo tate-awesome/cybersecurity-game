@@ -48,7 +48,7 @@ class ContextManager:
         '''
         self.preferences: Preferences = Preferences(self)
         self.performance: Performance = Performance(self)
-        KeyBinds(self)
+        self.keybinds: KeyBinds = KeyBinds(self)
         self.pages: PageManager = PageManager(self)
         self.states: InputManager = InputManager(self)
         self.labels: LocalizationManager = LocalizationManager(self)

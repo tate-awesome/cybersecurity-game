@@ -299,8 +299,9 @@ class Footer(QFrame):
         if self.context.root.isFullScreen():
             text += f" · {self.label('fullscreen')}"
         set_text(self.zoom, text)
-        if not self.zoom.toolTip():
-            self.zoom.setToolTip(tooltip([self.label("tooltips_keybinds"), *self.labels.group("footer_keybinds").values()]))
+        # Rebuilt each time, since keybinds can be changed on the settings page
+        lines = [f"{keys}    {self.label(f'keybinds_{action}')}" for keys, action in self.context.keybinds.describe()]
+        self.zoom.setToolTip(tooltip([self.label("tooltips_keybinds"), *lines]))
 
     # Session time
     def update_session(self):

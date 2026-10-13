@@ -10,8 +10,8 @@ from ...app_core import Context
 class FindField(QLineEdit):
     '''
     The find bar's text box. Claims Enter, Shift+Enter and Escape for itself
-    while it has focus - otherwise the window-wide Escape shortcut (exit
-    fullscreen, see KeyBinds) would take Escape before it got here.
+    while it has focus - otherwise a window-wide shortcut on one of those keys
+    (keybinds can be set to anything, see KeyBinds) would take it first.
     '''
 
     def __init__(self, bar: "FindBar"):

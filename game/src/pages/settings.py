@@ -2,11 +2,12 @@ from collections.abc import Callable
 from typing import ClassVar
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-                               QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtGui import QIntValidator, QKeySequence
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QKeySequenceEdit, QLabel, QLineEdit,
+                               QPushButton, QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
 
 from ..app_core import Context
+from ..app_core.context.keybinds import DEFAULT_KEYBINDS
 from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
 from ..app_core.context.style import (BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS, THEME_ADJUST_RANGE,
                                       THEME_TINT_MAX)
@@ -30,7 +31,7 @@ class SettingsPage(Page):
     workspace or panel (the theme buttons, the Background dropdown, the
     labels file, the favorite page, the data and debug tools) into plain
     rows, and adds the preferences that had no button at all (fullscreen,
-    developer mode). Everything applies as soon as it's changed and is
+    keybinds, developer mode). Everything applies as soon as it's changed and is
     saved like any other preference - there's no Save button. Changes that
     need the page rebuilt (theme, language, developer mode) rebuild it in
     place, on the same tab.
@@ -234,6 +235,12 @@ class SettingsPage(Page):
         display.row("settings_page_rows_footer_transparent",
                     self.checkbox(footer.transparent, footer.set_transparent), "settings_page_row_notes_footer_transparent")
 
+        keybinds = self.section(tab, "keybinds")
+        for action in DEFAULT_KEYBINDS:
+            keybinds.row(f"settings_page_rows_keybind_{action}", self.keybind(action), f"settings_page_row_notes_keybind_{action}")
+        keybinds.row("settings_page_rows_reset_keybinds", self.button(
+            "settings_page_buttons_reset", self.reset_keybinds), "settings_page_row_notes_reset_keybinds")
+
         language = self.section(tab, "language")
         current = preferences.get("labels_file") if preferences.has("labels_file") else None
         file_name = QLabel(str(current).replace("\\", "/").rsplit("/", 1)[-1] if current
@@ -302,12 +309,16 @@ class SettingsPage(Page):
         self.router.refresh()
 
     def set_fullscreen(self, on: bool):
-        # Stored as a string, like KeyBinds (F11) does
-        self.context.preferences.set("fullscreen", str(on))
-        if on:
-            self.context.root.showFullScreen()
-        else:
-            self.context.root.showNormal()
+        self.context.keybinds.set_fullscreen(on, save=True)
+
+    def set_keybind(self, action: str, sequence: str):
+        # Keys taken from another action unbind it - rebuilt so its box shows that
+        if self.context.keybinds.rebind(action, sequence):
+            self.router.refresh()
+
+    def reset_keybinds(self):
+        self.context.keybinds.reset()
+        self.router.refresh()
 
     def use_default_labels(self):
         self.context.preferences.set("labels_file", "")
@@ -411,6 +422,15 @@ class SettingsPage(Page):
                 changed(new_value)
         entry.editingFinished.connect(save)
         return entry
+
+    def keybind(self, action: str) -> QKeySequenceEdit:
+        '''Click and press keys to bind the action; the clear button unbinds it.'''
+        edit = QKeySequenceEdit(QKeySequence(self.context.keybinds.sequence(action)))
+        edit.setFont(self.style.get_font())
+        edit.setMaximumSequenceLength(1)  # one key combination, not a chord of several
+        edit.setClearButtonEnabled(True)
+        edit.keySequenceChanged.connect(lambda sequence: self.set_keybind(action, sequence.toString()))
+        return edit
 
     def button(self, label: str, clicked: Callable[[], None]) -> QPushButton:
         button = QPushButton(self.labels.get(label))

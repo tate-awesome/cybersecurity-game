@@ -26,5 +26,6 @@ class DeleteAllUserData(ImportantButton):
         context.style = Style(context)  # reset style to default
         context.paths.create_user_dirs()
         context.preferences.clear()
+        context.keybinds.reset()
         # save=False so nothing gets written back into the folder that was just wiped
         context.router.refresh(save=False)

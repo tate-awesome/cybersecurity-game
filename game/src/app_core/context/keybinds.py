@@ -6,12 +6,30 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
+# Rebindable actions -> their default key sequence ("" = unbound). Set on the
+# settings page's General tab, saved in preferences.json as "keybinds".
+DEFAULT_KEYBINDS = {
+    "zoom_in": "Ctrl++",
+    "zoom_out": "Ctrl+-",
+    "zoom_reset": "",
+    "fullscreen": "F11",
+}
+
+# Extra sequences bound alongside one - Ctrl + is Shift = on most keyboards,
+# so Ctrl = (no Shift) works too
+ALIASES = {"Ctrl++": ["Ctrl+="]}
+
+
 class KeyBinds:
     '''
     Adds global keybinds and event handlers to the app.
-    Includes zoom controls (Ctrl +, Ctrl -, Ctrl 0), fullscreen toggle (F11), exit fullscreen (Escape),
-    and the performance overlay (F3).
+    Includes the rebindable zoom controls and fullscreen toggle (see
+    DEFAULT_KEYBINDS), and the performance overlay (F3).
     Also runs Router.quit() when the window is closed.
+
+    Kept on the context (context.keybinds) - PySide drops a connection to a
+    bound method once its object is garbage collected, so an unreferenced
+    KeyBinds would leave every shortcut dead.
     '''
 
     def __init__(self, context: "Context"):
@@ -20,70 +38,112 @@ class KeyBinds:
         '''
         self.context = context
         self.root = context.root
-        self.style = context.style
         self.refresh = context.router.refresh
         self.quit = context.router.quit
 
-        # Page zoom control
-        self._shortcut("Ctrl++", self.zoom_in)
-        self._shortcut("Ctrl+=", self.zoom_in)  # (linux) Ctrl = also works as Ctrl +
-        self._shortcut("Ctrl+-", self.zoom_out)
-        self._shortcut("Ctrl+0", self.zoom_default)
-
-        # Fullscreen control
-        self._shortcut("F11", self.toggle_fullscreen)
+        self.handlers = {
+            "zoom_in": self.zoom_in,
+            "zoom_out": self.zoom_out,
+            "zoom_reset": self.zoom_reset,
+            "fullscreen": self.toggle_fullscreen,
+        }
+        self.shortcuts: dict[str, list[QShortcut]] = {action: [] for action in DEFAULT_KEYBINDS}
+        saved = self.context.preferences.get("keybinds")
+        saved = saved if isinstance(saved, dict) else {}
+        for action, default in DEFAULT_KEYBINDS.items():
+            self.bind(action, saved.get(action, default))
 
         # Performance overlay (see Performance)
         self._shortcut("F3", context.performance.toggle_overlay)
-        self._shortcut("Esc", self.exit_fullscreen)
 
         # On close event - MainWindow (see app.py) calls root.on_close
         # instead of exposing a Qt virtual method to override here.
         self.root.on_close = self.quit
 
-        # Stored as a string ("True"/"False") like the rest of preferences.json.
-        if self.context.preferences.get("fullscreen") == "True":
+        if self.context.preferences.is_fullscreen():
             QTimer.singleShot(50, lambda: self.set_fullscreen(True))
 
-    def _shortcut(self, sequence: str, handler):
+    def _shortcut(self, sequence: str, handler) -> QShortcut:
         shortcut = QShortcut(QKeySequence(sequence), self.root)
         shortcut.activated.connect(handler)
+        return shortcut
 
-    def set_fullscreen(self, enabled: bool):
+    # Rebinding
+    def sequence(self, action: str) -> str:
+        '''The action's key sequence, in portable text ("" when unbound).'''
+        shortcuts = self.shortcuts[action]
+        return shortcuts[0].key().toString() if shortcuts else ""
+
+    def bind(self, action: str, sequence: str):
+        for shortcut in self.shortcuts[action]:
+            shortcut.setParent(None)
+            shortcut.deleteLater()
+        self.shortcuts[action] = []
+        sequence = QKeySequence(sequence).toString()  # normalized, so the same keys always compare equal
+        if not sequence:
+            return
+        for keys in [sequence, *ALIASES.get(sequence, [])]:
+            self.shortcuts[action].append(self._shortcut(keys, self.handlers[action]))
+
+    def rebind(self, action: str, sequence: str) -> list[str]:
+        '''
+        Binds and saves the action's keys. Any other action already on those
+        keys is unbound (two shortcuts on one key would both stop working) -
+        returns those actions.
+        '''
+        sequence = QKeySequence(sequence).toString()
+        taken = [other for other in DEFAULT_KEYBINDS if other != action and sequence and self.sequence(other) == sequence]
+        for other in taken:
+            self.bind(other, "")
+        self.bind(action, sequence)
+        self.save()
+        return taken
+
+    def reset(self):
+        for action, default in DEFAULT_KEYBINDS.items():
+            self.bind(action, default)
+        self.save()
+
+    def save(self):
+        self.context.preferences.set("keybinds", {action: self.sequence(action) for action in DEFAULT_KEYBINDS})
+
+    def describe(self) -> list[tuple[str, str]]:
+        '''(keys as shown to the player, action) for every bound action, then F3.'''
+        bound = [(QKeySequence(self.sequence(action)).toString(QKeySequence.SequenceFormat.NativeText), action)
+                 for action in DEFAULT_KEYBINDS if self.sequence(action)]
+        return [*bound, ("F3", "performance")]
+
+    # Fullscreen
+    def set_fullscreen(self, enabled: bool, save: bool = False):
+        if save:
+            self.context.preferences.set("fullscreen", enabled)
         if enabled:
             self.root.showFullScreen()
         else:
             self.root.showNormal()
 
     def toggle_fullscreen(self):
-        switch_fullscreen = not self.root.isFullScreen()
-        self.context.preferences.set("fullscreen", str(switch_fullscreen))
-        self.set_fullscreen(switch_fullscreen)
+        self.set_fullscreen(not self.root.isFullScreen(), save=True)
 
-    def exit_fullscreen(self):
-        self.set_fullscreen(False)
-
-
+    # Zoom - context.style, not a copy, since deleting user data replaces it
     def zoom_in(self, event=None):
-        next_index = self.style.ui_scales.index(int(self.style.ui_scale)) + 1
-        if next_index >= len(self.style.ui_scales):
+        style = self.context.style
+        next_index = style.ui_scales.index(int(style.ui_scale)) + 1
+        if next_index >= len(style.ui_scales):
             return
-        self.style.ui_scale = float(self.style.ui_scales[next_index])
+        style.ui_scale = float(style.ui_scales[next_index])
         self.refresh()
 
 
     def zoom_out(self, event=None):
-        next_index = self.style.ui_scales.index(int(self.style.ui_scale)) - 1
+        style = self.context.style
+        next_index = style.ui_scales.index(int(style.ui_scale)) - 1
         if next_index < 0:
             return
-        self.style.ui_scale = float(self.style.ui_scales[next_index])
+        style.ui_scale = float(style.ui_scales[next_index])
         self.refresh()
 
 
-    def zoom_default(self, event=None):
-        self.style.ui_scale = 100.0
+    def zoom_reset(self, event=None):
+        self.context.style.ui_scale = 100.0
         self.refresh()
-
-    
-    def print_key(self, e):
-        print(e.keysym, e.state)

@@ -15,6 +15,10 @@ DEFAULT_IS_DEVELOPER = 1
 # exactly as before. Toggled on the settings page's Performance tab.
 DEFAULT_NETWORK_HELPER = False
 
+# Fullscreen: whether the window starts fullscreen. Saved whenever it's
+# switched (the keybind or the settings page's checkbox, see KeyBinds).
+DEFAULT_FULLSCREEN = True
+
 class PreferencesData(TypedDict, total=False):
     '''
     Documents the shape preferences.json is expected to have after a fresh
@@ -44,7 +48,8 @@ class PreferencesData(TypedDict, total=False):
     network_helper: bool
     labels_file: str
     page: str
-    fullscreen: str
+    fullscreen: bool
+    keybinds: dict[str, str]
     debug_labels: bool
 
 class Preferences:
@@ -90,6 +95,13 @@ class Preferences:
         '''Developer mode (preferences.json "is_developer": 1/0) - adds the debug tools to every page's menu bar.'''
         return self.data.get("is_developer", DEFAULT_IS_DEVELOPER) in (1, "1", True)
 
+    def is_fullscreen(self) -> bool:
+        '''Whether the window starts fullscreen (preferences.json "fullscreen") - see DEFAULT_FULLSCREEN.'''
+        value = self.data.get("fullscreen")
+        if isinstance(value, str):  # older files saved it as "True"/"False" ("" for unset)
+            value = {"True": True, "False": False}.get(value)
+        return DEFAULT_FULLSCREEN if value is None else bool(value)
+
     def set(self, key: str, value):
         self.data[key] = value
         self.save()
@@ -122,7 +134,8 @@ class Preferences:
             "network_helper": DEFAULT_NETWORK_HELPER,  # toggled on the Performance tab (see PrivilegedHelper)
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
-            "fullscreen": "",       # autosaved in KeyBinds
+            "fullscreen": DEFAULT_FULLSCREEN,  # autosaved in KeyBinds
+            "keybinds": {},         # set on the settings page (see KeyBinds.rebind) - empty means keybinds.DEFAULT_KEYBINDS
             "debug_labels": False   # toggled by ToggleDebugLabels (see LocalizationManager.is_debug)
         }
         self.save()
