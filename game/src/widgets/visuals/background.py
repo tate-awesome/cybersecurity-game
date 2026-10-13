@@ -93,6 +93,8 @@ class VisualBackground(QWidget):
             self.lower()
 
         self.timer = QTimer(self)
+        # Precise, like AnimationManager's - a coarse timer made 30 fps ~21 on Windows
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.tick)
         self.last_tick = time.perf_counter()
 
@@ -257,15 +259,21 @@ class VisualBackground(QWidget):
         visual for just this render, since a shared visual may be on screen
         with different options elsewhere.
         '''
+        performance = self.context.performance
+        started = time.perf_counter()
         self.visual.paint_options = self.paint_options
         if self.blur_levels > 0:
-            return self.render_blurred(palette)
-        image = QImage(self.width(), self.height(), QImage.Format.Format_RGB32)
-        image.fill(palette.background)
-        painter = QPainter(image)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.visual.paint(painter, palette)
-        painter.end()
+            image = self.render_blurred(palette)
+        else:
+            image = QImage(self.width(), self.height(), QImage.Format.Format_RGB32)
+            image.fill(palette.background)
+            painter = QPainter(image)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, performance.antialiasing)
+            self.visual.paint(painter, palette)
+            painter.end()
+        # Only page backgrounds - the visuals demo's preview would otherwise mix in
+        if performance.measuring and self.follows_preferences:
+            performance.record("background", started)
         return image
 
     def render_blurred(self, palette: VisualPalette) -> QImage:
@@ -289,7 +297,7 @@ class VisualBackground(QWidget):
             image = QImage(width, height, QImage.Format.Format_RGB32)
             image.fill(palette.background)
             painter = QPainter(image)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, self.context.performance.antialiasing)
             painter.scale(width / self.width(), height / self.height())
             self.visual.paint_options = self.paint_options
             self.visual.paint(painter, palette)

@@ -26,15 +26,18 @@ class _MapCanvas(QWidget):
         self.setMouseTracking(True)
 
     def paintEvent(self, event):
+        performance = self._owner.context.performance
+        started = time.perf_counter()
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        performance.apply_render_hints(painter)
         self.painter = painter
         try:
             self._owner.run_frame()
         finally:
             painter.end()
             self.painter = None
+        if performance.measuring:
+            performance.record("paint:Map", started)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

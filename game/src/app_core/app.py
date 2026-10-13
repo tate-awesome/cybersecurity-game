@@ -45,7 +45,9 @@ class App:
         self.root.show()
 
         # Create the router, which will handle page navigation
-        Router(self.root, start_page)
+        router = Router(self.root, start_page)
+        # Once the first page is up and the event loop has come round
+        QTimer.singleShot(0, router.context.performance.app_started)
 
         # Start the main loop
         sys.exit(self.app.exec())

@@ -1,4 +1,6 @@
 from typing import TYPE_CHECKING, TypedDict
+from .performance import (DEFAULT_ANTIALIASING, DEFAULT_PAGE_TRANSITIONS, DEFAULT_PERFORMANCE_LOG,
+                          DEFAULT_PERFORMANCE_OVERLAY, DEFAULT_UI_FPS)
 from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_ENABLED,
                     DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES)
 if TYPE_CHECKING:
@@ -28,6 +30,11 @@ class PreferencesData(TypedDict, total=False):
     background_animate: bool
     background_detailed: bool
     background_fps: int
+    ui_fps: int
+    antialiasing: bool
+    page_transitions: bool
+    performance_overlay: bool
+    performance_log: bool
     labels_file: str
     page: str
     fullscreen: str
@@ -98,6 +105,12 @@ class Preferences:
             "background_animate": DEFAULT_BACKGROUND_ANIMATE,
             "background_detailed": DEFAULT_BACKGROUND_DETAILED,
             "background_fps": DEFAULT_BACKGROUND_FPS,
+            # Set on the settings page's Performance tab (see Performance.set)
+            "ui_fps": DEFAULT_UI_FPS,
+            "antialiasing": DEFAULT_ANTIALIASING,
+            "page_transitions": DEFAULT_PAGE_TRANSITIONS,
+            "performance_overlay": DEFAULT_PERFORMANCE_OVERLAY,  # also F3 (see KeyBinds)
+            "performance_log": DEFAULT_PERFORMANCE_LOG,
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
             "fullscreen": "",       # autosaved in KeyBinds

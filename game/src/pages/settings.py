@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
                                QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
 
 from ..app_core import Context
+from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
 from ..app_core.context.style import (BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS, THEME_ADJUST_RANGE,
                                       THEME_TINT_MAX)
 from ..widgets import MenuBar, VISUALS
@@ -65,6 +66,7 @@ class SettingsPage(Page):
 
         self.build_appearance_tab()
         self.build_background_tab()
+        self.build_performance_tab()
         self.build_general_tab()
         self.build_data_tab()
         self.build_developer_tab()
@@ -177,6 +179,44 @@ class SettingsPage(Page):
         reset.row("settings_page_rows_reset_background", self.button(
             "settings_page_buttons_reset", self.reset_background), "settings_page_row_notes_reset_background")
 
+    def build_performance_tab(self):
+        performance = self.context.performance
+        tab = self.new_tab("performance")
+
+        # A preset changes rows on this tab and the background tab - rebuilt so they show it
+        presets = self.section(tab, "performance_preset")
+        options = {"": self.labels.get("settings_page_performance_presets_custom")}
+        options.update({name: self.labels.get(f"settings_page_performance_presets_{name}") for name in QUALITY_PRESETS})
+        presets.row("settings_page_rows_performance_preset", self.dropdown(
+            options, performance.current_preset(), self.apply_performance_preset,
+            {name: self.labels.get(f"settings_page_performance_preset_notes_{name}") for name in QUALITY_PRESETS}),
+            "settings_page_row_notes_performance_preset")
+
+        rates = self.section(tab, "frame_rate")
+        rates.row("settings_page_rows_ui_fps",
+                  self.integer(performance.ui_fps, *UI_FPS_RANGE, lambda fps: performance.set(ui_fps=fps)),
+                  "settings_page_row_notes_ui_fps")
+
+        rendering = self.section(tab, "rendering")
+        rendering.row("settings_page_rows_antialiasing",
+                      self.checkbox(performance.antialiasing, lambda on: performance.set(antialiasing=on)),
+                      "settings_page_row_notes_antialiasing")
+        rendering.row("settings_page_rows_page_transitions",
+                      self.checkbox(performance.page_transitions, lambda on: performance.set(page_transitions=on)),
+                      "settings_page_row_notes_page_transitions")
+
+        monitoring = self.section(tab, "monitoring")
+        monitoring.row("settings_page_rows_performance_overlay",
+                       self.checkbox(performance.overlay_enabled, lambda on: performance.set(overlay=on)),
+                       "settings_page_row_notes_performance_overlay")
+        monitoring.row("settings_page_rows_performance_log",
+                       self.checkbox(performance.log_enabled, lambda on: performance.set(log=on)),
+                       "settings_page_row_notes_performance_log")
+
+        reset = self.section(tab, "performance_reset")
+        reset.row("settings_page_rows_reset_performance", self.button(
+            "settings_page_buttons_reset", self.reset_performance), "settings_page_row_notes_reset_performance")
+
     def build_general_tab(self):
         context = self.context
         preferences = context.preferences
@@ -242,6 +282,15 @@ class SettingsPage(Page):
     def reset_background(self):
         self.style.load_default_background()
         self.style.set_background()  # saves the defaults
+        self.router.refresh()
+
+    def apply_performance_preset(self, name: str):
+        if name:  # "" (Custom) just means the settings below don't match a preset
+            self.context.performance.apply_preset(name)
+            self.router.refresh()
+
+    def reset_performance(self):
+        self.context.performance.reset()
         self.router.refresh()
 
     def set_fullscreen(self, on: bool):

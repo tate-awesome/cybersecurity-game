@@ -1,3 +1,4 @@
+import time
 from collections.abc import Callable
 
 
@@ -35,20 +36,25 @@ class CallbackRegistry:
             del self.callbacks[name]
             print(f"{self._tag} {self._remove} {name}")
 
-    def dispatch(self, *args):
+    def dispatch(self, *args, timed: Callable[[str, float], None] | None = None):
         '''
         Runs every registered callback once, in isolation - a raising
         callback is logged and skipped, not allowed to break the rest.
+        timed, if given, is called after each callback with its name and
+        the time.perf_counter() it started at (see AnimationManager.do_loop).
         '''
-        # Iterate over a copy of the values to prevent runtime errors
+        # Iterate over a copy of the items to prevent runtime errors
         # if a callback removes a callback mid-execution.
-        active_callbacks = list(self.callbacks.values())
+        active_callbacks = list(self.callbacks.items())
 
-        for callback in active_callbacks:
+        for name, callback in active_callbacks:
+            started = time.perf_counter() if timed is not None else 0.0
             # try:
             callback(*args)
             # except Exception as e:
             #     print(f"{self._tag} {self._error} {e}")
+            if timed is not None:
+                timed(name, started)
 
     def delete(self):
         self.callbacks.clear()

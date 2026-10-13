@@ -134,20 +134,26 @@ class Router:
             next_page = NOT_FOUND_PAGE
 
         # Picture the page being left before it's torn down, for the transition
+        # (skipped with transitions off - grabbing the page isn't free either)
         if self.transition is not None:
             self.transition.stop()
             self.transition = None
-        snapshot = PageTransition.snapshot(self.context.root.centralWidget(), direction)
+        performance = self.context.performance
+        animate = performance.page_transitions
+        snapshot = PageTransition.snapshot(self.context.root.centralWidget(), direction) if animate else None
 
         # Clear the window
         self._clear_central_widget()
 
         # Call the page builder
         self.current_page = next_page
+        started = performance.page_started()
         try:
             self.current_frame = PAGES[next_page](self.context)
             self.context.root.setCentralWidget(self.current_frame)
-            self.transition = PageTransition(self.current_frame, snapshot, direction)
+            performance.page_built(next_page, started)
+            if animate:
+                self.transition = PageTransition(self.current_frame, snapshot, direction)
         except Exception as e:
             self.context.reset_build()
             self._clear_central_widget()

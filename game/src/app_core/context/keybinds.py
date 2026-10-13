@@ -9,7 +9,8 @@ if TYPE_CHECKING:
 class KeyBinds:
     '''
     Adds global keybinds and event handlers to the app.
-    Includes zoom controls (Ctrl +, Ctrl -, Ctrl 0), fullscreen toggle (F11), and exit fullscreen (Escape).
+    Includes zoom controls (Ctrl +, Ctrl -, Ctrl 0), fullscreen toggle (F11), exit fullscreen (Escape),
+    and the performance overlay (F3).
     Also runs Router.quit() when the window is closed.
     '''
 
@@ -31,6 +32,9 @@ class KeyBinds:
 
         # Fullscreen control
         self._shortcut("F11", self.toggle_fullscreen)
+
+        # Performance overlay (see Performance)
+        self._shortcut("F3", context.performance.toggle_overlay)
         self._shortcut("Esc", self.exit_fullscreen)
 
         # On close event - MainWindow (see app.py) calls root.on_close

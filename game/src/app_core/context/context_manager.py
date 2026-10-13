@@ -4,6 +4,7 @@ from ...network.buffer import Buffer
 from .click_manager import ClickManager
 from .animation_manager import AnimationManager
 from .preferences import Preferences
+from .performance import Performance
 from .keybinds import KeyBinds
 from .input_manager import InputManager
 from .localization_manager import LocalizationManager
@@ -46,6 +47,7 @@ class ContextManager:
         Often saved by the user for the next session.
         '''
         self.preferences: Preferences = Preferences(self)
+        self.performance: Performance = Performance(self)
         KeyBinds(self)
         self.pages: PageManager = PageManager(self)
         self.states: InputManager = InputManager(self)
@@ -98,7 +100,7 @@ class ContextManager:
         Reset on refresh and page exit.
         '''
         self.click_manager: ClickManager = ClickManager(self.root)
-        self.animation_manager: AnimationManager = AnimationManager(self.root)
+        self.animation_manager: AnimationManager = AnimationManager(self.root, self.performance.ui_frame_ms(), self.performance)
 
     def reset_build(self):
         '''

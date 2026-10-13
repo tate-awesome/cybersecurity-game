@@ -1,3 +1,5 @@
+import time
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QWidget
@@ -73,15 +75,18 @@ class Canvas(QWidget):
         self.frame_callback()
 
     def paintEvent(self, event):
+        performance = self.context.performance
+        started = time.perf_counter()
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        performance.apply_render_hints(painter)
         self.painter = painter
         try:
             self.run_frame()
         finally:
             painter.end()
             self.painter = None
+        if performance.measuring:
+            performance.record(f"paint:{type(self).__name__}", started)
 
     def start_animation(self, framerate_ms: float = 50):
         self.framerate_ms = framerate_ms

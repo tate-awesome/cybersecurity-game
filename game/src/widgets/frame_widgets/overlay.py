@@ -121,7 +121,8 @@ class Overlay(QWidget):
         if self._entrance is not None:
             self._entrance.stop()
         self._away = self._away_from(target)
-        self._entrance = PopupEntrance(self, self._away)
+        # Animations off (see Performance.page_transitions) just shows it in place
+        self._entrance = PopupEntrance(self, self._away) if self.context.performance.page_transitions else None
         self.capture_behind()
         self.show()
         self._behind_timer.start()
