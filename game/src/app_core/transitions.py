@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRectF, Qt, QVariantAnimation
+from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRectF, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QGuiApplication, QPainter, QPixmap, QRegion
 from PySide6.QtWidgets import QGraphicsEffect, QWidget
 
@@ -293,3 +293,40 @@ class PopupExit(QWidget):
         painter = QPainter(self)
         painter.drawPixmap(0, 0, self.pixmap)
         painter.end()
+
+
+class WindowReveal:
+    '''
+    Fades the main window in at startup. Windows shows a new window as a
+    blank white surface until Qt paints its first frame - a flash on a dark
+    theme - so the window is shown fully transparent (hide(), before it's
+    shown) and fades in once the first page has had time to paint
+    (reveal(), once the event loop is running).
+
+    Only where window opacity works (see PopupEntrance) - elsewhere the
+    window just appears as it would without this.
+    '''
+
+    DELAY_MS = 50
+    DURATION_MS = 180
+
+    @staticmethod
+    def hide(window: QWidget):
+        if PopupEntrance.supports_fade():
+            window.setWindowOpacity(0.0)
+
+    @classmethod
+    def reveal(cls, window: QWidget):
+        if not PopupEntrance.supports_fade():
+            return
+        # Parented to the window, so it lives as long as it needs to
+        animation = QVariantAnimation(window)
+        animation.setStartValue(0.0)
+        animation.setEndValue(1.0)
+        animation.setDuration(cls.DURATION_MS)
+        animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        animation.valueChanged.connect(window.setWindowOpacity)
+        # Exactly 1.0 at the end - Qt then drops the layered window opacity needs
+        animation.finished.connect(lambda: window.setWindowOpacity(1.0))
+        animation.finished.connect(animation.deleteLater)
+        QTimer.singleShot(cls.DELAY_MS, animation.start)

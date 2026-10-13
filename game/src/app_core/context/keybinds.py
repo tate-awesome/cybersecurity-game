@@ -1,4 +1,3 @@
-from PySide6.QtCore import QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 
 
@@ -60,8 +59,10 @@ class KeyBinds:
         # instead of exposing a Qt virtual method to override here.
         self.root.on_close = self.quit
 
+        # Right away - App has just shown the window maximized, and the event
+        # loop hasn't started, so it never shows un-fullscreened
         if self.context.preferences.is_fullscreen():
-            QTimer.singleShot(50, lambda: self.set_fullscreen(True))
+            self.set_fullscreen(True)
 
     def _shortcut(self, sequence: str, handler) -> QShortcut:
         shortcut = QShortcut(QKeySequence(sequence), self.root)
