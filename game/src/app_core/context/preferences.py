@@ -10,6 +10,11 @@ if TYPE_CHECKING:
 # MenuBar.add_config_buttons). 1 or 0 in preferences.json.
 DEFAULT_IS_DEVELOPER = 1
 
+# Privileged network helper: whether network capture runs in a separate
+# elevated process (see network/helper). Off keeps everything in-process,
+# exactly as before. Toggled on the settings page's Performance tab.
+DEFAULT_NETWORK_HELPER = False
+
 class PreferencesData(TypedDict, total=False):
     '''
     Documents the shape preferences.json is expected to have after a fresh
@@ -35,6 +40,7 @@ class PreferencesData(TypedDict, total=False):
     page_transitions: bool
     performance_overlay: bool
     performance_log: bool
+    network_helper: bool
     labels_file: str
     page: str
     fullscreen: str
@@ -111,6 +117,7 @@ class Preferences:
             "page_transitions": DEFAULT_PAGE_TRANSITIONS,
             "performance_overlay": DEFAULT_PERFORMANCE_OVERLAY,  # also F3 (see KeyBinds)
             "performance_log": DEFAULT_PERFORMANCE_LOG,
+            "network_helper": DEFAULT_NETWORK_HELPER,  # toggled on the Performance tab (see PrivilegedHelper)
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
             "fullscreen": "",       # autosaved in KeyBinds

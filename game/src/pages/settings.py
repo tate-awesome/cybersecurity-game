@@ -213,6 +213,11 @@ class SettingsPage(Page):
                        self.checkbox(performance.log_enabled, lambda on: performance.set(log=on)),
                        "settings_page_row_notes_performance_log")
 
+        helper = self.section(tab, "network_helper")
+        helper.row("settings_page_rows_network_helper",
+                   self.checkbox(self.context.helper.enabled, self.context.helper.set_enabled),
+                   "settings_page_row_notes_network_helper")
+
         reset = self.section(tab, "performance_reset")
         reset.row("settings_page_rows_reset_performance", self.button(
             "settings_page_buttons_reset", self.reset_performance), "settings_page_row_notes_reset_performance")

@@ -204,6 +204,10 @@ class Router:
         '''
         self.context.reset_page()
         self.context.reset_build()
+        # Stop the privileged helper last, so it restores any system state
+        # and exits with the app rather than being orphaned.
+        if hasattr(self.context, "helper"):
+            self.context.helper.stop()
         QApplication.instance().quit()
 
     def go_back(self):

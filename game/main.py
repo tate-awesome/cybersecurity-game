@@ -1,5 +1,14 @@
 import os, subprocess, sys, platform, ctypes
 
+# The privileged helper runs this same program with "--helper" (see
+# network/helper). It's launched already elevated by the GUI, so it must not
+# fall into the whole-app elevation/relaunch below, and must not import the
+# GUI (App pulls in Qt) - handle it first and exit.
+if "--helper" in sys.argv:
+    from src.network.helper.server import run_from_argv
+    run_from_argv(sys.argv)
+    sys.exit()
+
 from src import App
 
 '''

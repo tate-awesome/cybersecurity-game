@@ -110,6 +110,12 @@ class PacketBuffer:
             self.first_packet_time = pkt.time
         return self.first_packet_time
 
+    def note_first_time(self, abs_time: float) -> float:
+        '''Like get_first_packet_time, but for a bare timestamp carried in a helper payload (see Buffer.put_payload).'''
+        if self.first_packet_time is None:
+            self.first_packet_time = abs_time
+        return self.first_packet_time
+
     def get_relative_time(self):
         if self.first_packet_time:
             return time.time() - self.first_packet_time

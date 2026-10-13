@@ -70,6 +70,12 @@ class MetaPacket:
     hack: str, purpose: str, dir: str | None):
 
         self.data = dict()
+        # Lazy-dissection fields, only used by ones rebuilt from a helper
+        # payload (see from_payload) - the live-packet path below keeps the
+        # scapy packet in self.data["pkt"] and never touches these.
+        self._raw: bytes | None = None
+        self._link: str = "ether"
+        self._abs_time: float | None = None
 
         time = pkt.time - first_packet_time
         # Given information
@@ -138,8 +144,53 @@ class MetaPacket:
     def get(self, key: str) -> Any:
         if key not in self.KEYS:
             return None
-        else:
-            return self.data[key]
+        # Rebuilt-from-payload packets carry only raw bytes - dissect the
+        # scapy packet the first time something actually asks for it (the
+        # modbus transaction key, the file stream), never on the hot path
+        # of filling the packet console's columns.
+        if key == "pkt" and "pkt" not in self.data:
+            self.data["pkt"] = self._dissect()
+        return self.data.get(key)
+
+    def _dissect(self) -> Packet | None:
+        if self._raw is None:
+            return None
+        pkt = (IP if self._raw[0] >> 4 == 4 else Ether)(self._raw) if self._link == "ip" else Ether(self._raw)
+        if self._abs_time is not None:
+            pkt.time = self._abs_time  # scapy stamps "now" otherwise - keep the capture time
+        return pkt
+
+    def to_payload(self, link: str = "ether") -> dict:
+        '''
+        A picklable snapshot for sending across the helper connection (see
+        network/helper): every computed field, the raw bytes, and the
+        absolute capture time - everything except the live scapy packet,
+        which the receiving side dissects only on demand (see from_payload).
+        '''
+        pkt = self.data.get("pkt")
+        raw = self._raw if self._raw is not None else (bytes(pkt) if pkt is not None else b"")
+        abs_time = self._abs_time if self._abs_time is not None else (float(pkt.time) if pkt is not None else 0.0)
+        data = {key: value for key, value in self.data.items() if key != "pkt"}
+        return {"d": data, "raw": raw, "t": abs_time, "link": link}
+
+    @classmethod
+    def from_payload(cls, payload: dict, first_packet_time: float, number: int) -> "MetaPacket":
+        '''
+        Rebuilds a MetaPacket from a to_payload() snapshot without
+        re-dissecting: the fields come straight across, the scapy packet
+        stays lazy (see get), and "time" is recomputed relative to this
+        buffer's own first packet so charts and rates line up.
+        '''
+        self = cls.__new__(cls)
+        self.data = dict(payload["d"])
+        self._raw = payload["raw"]
+        self._link = payload.get("link", "ether")
+        self._abs_time = float(payload["t"])
+        relative = self._abs_time - (first_packet_time or 0.0)
+        self.data["time"] = relative
+        self.data["time_word"] = f"{relative:.4f}"
+        self.data["number"] = number
+        return self
 
     def get_column_value(self, column_name: str):
         output = self.get(column_name)

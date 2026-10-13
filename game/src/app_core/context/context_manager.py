@@ -53,6 +53,10 @@ class ContextManager:
         self.states: InputManager = InputManager(self)
         self.labels: LocalizationManager = LocalizationManager(self)
         self.buffer: Buffer = Buffer(self)
+        # Starts the elevated capture helper now if its preference is on
+        # (see network/helper). Created after the buffer, which it feeds.
+        from ...network.helper import PrivilegedHelper
+        self.helper: PrivilegedHelper = PrivilegedHelper(self)
         self.style.load_preferred_surfaces()
         self.style.load_preferred_background()
         self.style.load_preferred_theme()

@@ -128,7 +128,27 @@ class Buffer:
                 self.put_queue.append((source, purpose, output, direction))
 
         return output
-    
+
+    def put_payload(self, source: str, purpose: str, payload: dict, direction: str | None = None) -> None:
+        '''
+        The payload counterpart of put(): takes a MetaPacket.to_payload()
+        snapshot from the privileged helper (see network/helper) instead of
+        a live scapy packet, rebuilds the MetaPacket here without
+        re-dissecting (see MetaPacket.from_payload), and queues it exactly
+        like put() does. The helper already did the per-packet dissection
+        off this process's GIL, so the worker just distributes it.
+        '''
+        if not self.accept_puts:
+            return
+        first = self.packets.note_first_time(payload["t"])
+        mpkt = MetaPacket.from_payload(payload, first, 0)
+        # Modbus transaction enrichment stays here - it needs the shared
+        # TransactionManager, which lives with the buffers, not the helper.
+        if mpkt.get("is_modbus"):
+            self.transaction_manager.enrich(mpkt)
+        with self.put_lock:
+            self.put_queue.append((source, purpose, mpkt, direction))
+
     def worker(self):
         while not self.stop_event.is_set():
             items_to_put = []

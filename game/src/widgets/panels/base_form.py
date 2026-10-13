@@ -113,7 +113,8 @@ class BaseForm(QWidget):
             layout.addStretch()
         return wrapper
 
-    def get_process(self, process_class: type[Process], *args, tags: list[str] | None = None, **kwargs) -> Process:
+    def get_process(self, process_class: type[Process], *args, capability: str | None = None,
+                    tags: list[str] | None = None, **kwargs) -> Process:
         '''
         Retrieves this form's process from context.process_manager, creating
         and registering it under `key` on first visit. Since forms are
@@ -123,11 +124,19 @@ class BaseForm(QWidget):
         tags is passed through to ProcessManager.add_process on first visit
         (e.g. "stop_last") - ignored on later visits, since the process is
         already registered by then.
+
+        capability, if given and currently hosted by the privileged helper
+        (see network/helper), makes this a proxy to the helper's copy
+        instead of an in-process instance - decided on first visit, so a
+        still-running process keeps its home until the page is rebuilt.
         '''
         assert self.key is not None, "get_process() requires key to be set"
         process = self.context.process_manager.get_process(self.key)
         if process is None:
-            process = process_class(self.context.buffer, self.context, *args, **kwargs)
+            if capability is not None and self.context.helper.hosts(capability):
+                process = self.context.helper.proxy(capability)
+            else:
+                process = process_class(self.context.buffer, self.context, *args, **kwargs)
             self.context.process_manager.add_process(self.key, process, tags)
         return process
 
