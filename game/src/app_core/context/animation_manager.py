@@ -42,6 +42,8 @@ class AnimationManager(CallbackRegistry):
         functions in a single pass.
         """
         performance = self.performance
+        if performance is not None:
+            performance.ticks += 1
         if performance is None or not performance.measuring:
             self.last_tick = None
             self.dispatch()

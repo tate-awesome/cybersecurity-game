@@ -27,6 +27,9 @@ from ..pages.generic import WorkspacePage, TitlePage, WorkspaceSelectPage
 # Hard-coded 404 page - needs nothing from assets/, so it still works without it
 from ..pages.not_found import NotFound
 
+# The bar along the bottom of the window - outlives every page
+from ..widgets.frame_widgets.footer import Footer
+
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
 # All page builder functions should take a Context object as an argument and build the page as the root window's central widget.
@@ -79,6 +82,7 @@ class Router:
         # The page key the 404 page reports as missing
         self.missing_page: str | None = None
         self.transition: PageTransition | None = None
+        self.footer = Footer(root, self.context)
 
         self.register_discovered_pages()
 
@@ -169,6 +173,9 @@ class Router:
             else:
                 print(f"Error building page '{next_page}': {e}. Redirecting to the start page.")
                 self.show(START_PAGE)
+
+        # The new page's location, and any theme/zoom/label change it was rebuilt for
+        self.footer.page_changed()
 
     def _clear_central_widget(self):
         '''

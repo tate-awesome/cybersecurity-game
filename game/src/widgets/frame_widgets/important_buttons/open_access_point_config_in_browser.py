@@ -1,5 +1,4 @@
-import os, subprocess, webbrowser
-from ._base_button import ImportantButton
+from ._base_button import ImportantButton, open_in_browser
 
 
 class OpenAccessPointConfigInBrowser(ImportantButton):
@@ -10,10 +9,4 @@ class OpenAccessPointConfigInBrowser(ImportantButton):
     POPOUT = True
 
     def on_click(self):
-        sudo_user = os.environ.get("SUDO_USER")
-        if sudo_user:
-            # Open browser as not sudo
-            subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", self.URL])
-        else:
-            # Fallback when not running under sudo
-            webbrowser.open(self.URL)
+        open_in_browser(self.URL)

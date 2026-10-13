@@ -1,5 +1,6 @@
 from ...app_core import Context
 from ...widgets import TitleMenu
+from ...widgets.frame_widgets.title_footer import TitleFooter
 from ...widgets.frame_widgets.important_buttons import LinkToPage, TITLE_ACTIONS
 from ..page import Page
 
@@ -35,10 +36,11 @@ class TitlePage(Page):
         for button in config.get("buttons", []):
             self.build_button(button, panel)
         self.menu = panel
+        self.footer = TitleFooter(self, context)
 
     def appear_targets(self):
-        # The title and each button arrive one by one, not the menu as a block
-        return self.menu.items
+        # The title and each button arrive one by one, not the menu as a block - then the footer line
+        return [*self.menu.items, self.footer]
 
     def build_button(self, button: dict, panel: TitleMenu):
         made = self.button_for(button)

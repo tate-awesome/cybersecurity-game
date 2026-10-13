@@ -1,3 +1,5 @@
+import os, subprocess, webbrowser
+
 from PySide6.QtWidgets import QPushButton
 from ....app_core import Context
 
@@ -12,6 +14,17 @@ POPOUT_MARK = "\u2197"
 def developer_text(text: str) -> str:
     '''text with the developer-only mark in front (once).'''
     return text if text.startswith(DEVELOPER_MARK) else f"{DEVELOPER_MARK} {text}"
+
+
+def open_in_browser(url: str):
+    '''Opens url in the user's browser - as the user, not root, when the app runs under sudo.'''
+    sudo_user = os.environ.get("SUDO_USER")
+    if sudo_user:
+        # Open browser as not sudo
+        subprocess.Popen(["sudo", "-u", sudo_user, "xdg-open", url])
+    else:
+        # Fallback when not running under sudo
+        webbrowser.open(url)
 
 
 class ImportantButton(QPushButton):
