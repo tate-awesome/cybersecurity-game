@@ -51,6 +51,9 @@ class KeyBinds:
 
         # Performance overlay (see Performance)
         self._shortcut("F3", context.performance.toggle_overlay)
+        # The pause menu (see PauseMenu) - context.router's, since deleting
+        # user data replaces the context's other parts but not the router
+        self._shortcut("Esc", lambda: context.router.pause_menu.toggle())
 
         # On close event - MainWindow (see app.py) calls root.on_close
         # instead of exposing a Qt virtual method to override here.

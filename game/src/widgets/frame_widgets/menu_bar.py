@@ -1,23 +1,30 @@
 from ...app_core import Context
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QSize, Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from .important_buttons import ButtonGroup, ImportantButton, MENU_BAR_BUTTONS
+from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
 from .window_chrome import WindowControls, WindowDrag
 from collections.abc import Callable
 
-# The page menu bar's layout, left to right: each group key ("menu_bar_buttons_<key>" labels
+# A page's menu bar has three zones (see MenuBar.build_page_zones):
+#   left   - home (the pause menu), back, forward, the page's title and its bookmark
+#   center - the page's own tools: the buttons its config's "menu_bar" names
+#   right  - the same on every page: Debug (developer mode), Appearance,
+#            Settings, Help and the window controls
+# The left and right zones never change from page to page, so their buttons
+# are always in the same place - a page config only chooses the center.
+
+# The center zone, left to right: each group key ("menu_bar_buttons_<key>" labels
 # its button) maps to its sections, top to bottom - (header key or None, button names).
 # A page config's "menu_bar" only says which buttons a page gets (see MenuBar.add_config_buttons):
 # a group with none of them is left out, and a group with just one shows that button
-# in the group's place instead.
+# in the group's place instead. PAUSE_MENU_GROUPS go in the pause menu rather than
+# the bar (see PauseMenu).
 MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
-    "debug_button_group": [
-        ("debug_tools", ["delete_all_user_data_button", "delete_all_workspace_data_button", "workspace_editor_button",
-                         "configure_workspace_button", "debug_availability_button", "debug_labels_button"]),
-    ],
-    "modbus_button_group": [
-        ("registers_and_models", ["registers_button", "register_preset_button"]),
+    "refresh_button_group": [
+        ("refresh", ["refresh_button"]),
     ],
     "captures_button_group": [
         ("load_fast", ["pcap_button", "load_json_fast_button"]),
@@ -25,52 +32,66 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("save", ["save_button", "stream_button"]),
         ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
     ],
-    "style_button_group": [
-        ("themes", ["toggle_button", "theme_button", "appearance_settings_button"]),
-        ("background", ["background_button"]),
+    "modbus_button_group": [
+        ("registers_and_models", ["registers_button", "register_preset_button"]),
+    ],
+    "view_button_group": [
         ("model_display", ["model_style_button", "strip_chart_style_button"]),
     ],
     "workspace_button_group": [
-        ("reload", ["refresh_button", "clear_inputs_button", "reset_layout_button", "reset_button"]),
+        ("reload", ["clear_inputs_button", "reset_layout_button", "reset_button"]),
         ("customize", ["preset_button"]),
         ("show_hide", ["network_forms_button", "modbus_forms_button", "defender_forms_button", "packet_columns_button"]),
     ],
-    "navigation_button_group": [
-        ("bookmark", ["page_button"]),
-        ("links", ["back_button", "ap_config_button", "settings_button", "workspaces_button"]),
-        ("quit", ["title_button", "quit_button"]),
+    "links_button_group": [
+        ("links", ["ap_config_button"]),
     ],
-    "help_button_group": [
-        ("help_and_language", ["help_button", "labels_button"]),
+}
+PAUSE_MENU_GROUPS = {"links_button_group"}
+
+# The right zone's dropdowns, the same on every page - Debug only in developer
+# mode (preferences.json "is_developer")
+RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
+    "debug_button_group": [
+        ("debug_tools", ["delete_all_user_data_button", "delete_all_workspace_data_button", "workspace_editor_button",
+                         "configure_workspace_button", "debug_availability_button", "debug_labels_button"]),
+    ],
+    "style_button_group": [
+        ("themes", ["toggle_button", "theme_button", "appearance_settings_button"]),
+        ("background", ["background_button"]),
     ],
 }
 
-# Every menu bar button name in layout order - the order the workspace editor lists them in
+# Buttons with a fixed place of their own - the left and right zones' solo
+# buttons and the pause menu's rows. A page config naming one changes nothing.
+FIXED_BUTTON_NAMES: list[str] = ["back_button", "page_button", "settings_button", "help_button", "labels_button",
+                                 "workspaces_button", "title_button", "quit_button"]
+
+# Every center zone button name in layout order - the order the workspace editor lists them in
 MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
-assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu bar button needs exactly one place in MENU_BAR_GROUPS"
+assert sorted([*MENU_BAR_BUTTON_ORDER, *FIXED_BUTTON_NAMES,
+               *(name for sections in RIGHT_ZONE_GROUPS.values() for _, names in sections for name in names)]) == sorted(MENU_BAR_BUTTONS),     "every menu bar button needs exactly one place: MENU_BAR_GROUPS, RIGHT_ZONE_GROUPS or FIXED_BUTTON_NAMES"
+
+# Center zone buttons shown as a bare symbol when they're by themselves
+# (see MenuBar.icon_button) - button class -> the labels key of its symbol
+ICON_LABELS: dict[type[ImportantButton], str] = {
+    MENU_BAR_BUTTONS["refresh_button"]: "menu_bar_buttons_refresh_icon",
+}
 
 def group_button_names(group_key: str) -> list[str]:
-    '''Every button name in one of MENU_BAR_GROUPS, in order.'''
-    return [name for _, names in MENU_BAR_GROUPS[group_key] for name in names]
+    '''Every button name in one of MENU_BAR_GROUPS or RIGHT_ZONE_GROUPS, in order.'''
+    groups = MENU_BAR_GROUPS if group_key in MENU_BAR_GROUPS else RIGHT_ZONE_GROUPS
+    return [name for _, names in groups[group_key] for name in names]
 
-
-# The debug tools - added to every page's menu bar in developer mode
-# (preferences.json "is_developer"), never listed by pages themselves (see
-# MenuBar.add_config_buttons)
-DEVELOPER_BUTTON_NAMES: list[str] = group_button_names("debug_button_group")
 
 # What a standard game page gets (see MenuBar.page_buttons)
 PAGE_BUTTON_NAMES: list[str] = [
-    "help_button", "labels_button",
-    "page_button", "ap_config_button", "settings_button", "workspaces_button", "title_button", "quit_button",
-    "refresh_button", "reset_button", "preset_button",
-    "toggle_button", "theme_button", "appearance_settings_button", "background_button",
+    "ap_config_button", "refresh_button", "reset_button", "preset_button",
     "pcap_button", "load_button", "save_button", "stream_button",
 ]
 
-# What the demo pages get
-DEMO_MENU_BAR: list[str] = ["help_button", "labels_button", "page_button", "back_button", "settings_button", "quit_button",
-                            "toggle_button", "theme_button", "appearance_settings_button", "background_button"]
+# What the demo pages get - just the zones every page has
+DEMO_MENU_BAR: list[str] = []
 
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
@@ -127,21 +148,42 @@ def _drain_evenly(sizes: list[float], floors: list[float], amount: float) -> lis
     return sizes
 
 
+class _FollowResize(QObject):
+    '''Calls back whenever a widget resizes - a page's menu bar isn't in its layout, so it places itself.'''
+    def __init__(self, widget: QWidget, callback):
+        super().__init__(widget)
+        self.callback = callback
+        widget.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.Resize:
+            self.callback()
+        return False
+
+
 class MenuBar(QFrame):
     '''
     The main Widget for the menu bar.
     Comes with a label and has a button maker.
     Inherits QFrame.
+
+    A page's menu bar (master is a Page) is also the window's title bar -
+    the window is borderless (see MainWindow). It runs edge to edge along
+    the top of the window, floating over the page like the Footer does
+    along the bottom, and has three zones (see MENU_BAR_GROUPS): the left
+    and right ones the same on every page, the center the page's own
+    buttons (add_button, add_config_buttons...). Its empty space moves the
+    window. A panel's menu bar is just its title and its buttons.
     '''
 
     def __init__(self, master: QWidget, context: Context, title_label: str = "_default"):
         super().__init__(master)
         self.context = context
         self.style = context.style
+        from ...pages.page import Page
+        self.page_bar = isinstance(master, Page)
 
-        master.layout().addWidget(self)
         self.style.set_material(self, "menu_bar")
-        self.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
         # Qt widgets default to a vertical size policy that's willing to
         # grow into whatever leftover space its layout has - the old
         # CTkFrame only ever got fill="x" (not expand=True), so it never
@@ -149,23 +191,44 @@ class MenuBar(QFrame):
         # Maximum reproduces that: this frame can shrink but never grow
         # past its own sizeHint.
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
-
         self.row = QHBoxLayout(self)
-        self.row.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
+        if self.page_bar:
+            # Flush with the window's edges - the window controls fill the
+            # top right corner, so that's where a mouse flung there lands
+            self.setContentsMargins(0, 0, 0, 0)
+            self.row.setContentsMargins(self.style.igap // 2, 0, 0, 0)
+            # Left out of page transitions (see Page.appear_targets) - it's
+            # the same from page to page, so it stays put
+            self.setProperty("page_bar", True)
+        else:
+            master.layout().addWidget(self)
+            self.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
+            self.row.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
 
-        # A page's menu bar starts with a big « back arrow, whenever there's
-        # somewhere to go back to (not on panels' own menu bars)
-        from ...pages.page import Page
+        # Everything in the row that isn't an entry - room squashing never takes (see _update_squashing)
+        self._fixed: list[QWidget] = []
         self.back_arrow = None
-        if isinstance(master, Page) and len(context.router.navigation_stack) >= 2:
-            self.back_arrow = self.build_back_arrow()
-            self.row.addWidget(self.back_arrow, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.window_controls = None
+        # The page's links, for the pause menu (see add_config_buttons, PauseMenu)
+        self.page_links: list[type[ImportantButton]] = []
+
+        if self.page_bar:
+            self.left_zone = self.build_left_zone()
+            self.row.addWidget(self.left_zone, 0, Qt.AlignmentFlag.AlignVCenter)
+            self._fixed.append(self.left_zone)
 
         self.game_label = QLabel(self.context.labels.get(f"menu_bar_titles_{title_label}"))
-        self.game_label.setFont(self.style.get_font())
+        self.game_label.setFont(self.style.get_font("page_title" if self.page_bar else "default"))
         # A title is a name, never markup - "<b>" in one should show as typed
         self.game_label.setTextFormat(Qt.TextFormat.PlainText)
         self.row.addWidget(self.game_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        self._fixed.append(self.game_label)
+
+        if self.page_bar:
+            from .important_buttons import ToggleBookmark
+            self.bookmark = self.icon_button(ToggleBookmark(context))
+            self.row.addWidget(self.bookmark, 0, Qt.AlignmentFlag.AlignVCenter)
+            self._fixed.append(self.bookmark)
         self.row.addStretch()
 
         # Button overflow overlay - see update_squashing/_populate_overflow_overlay.
@@ -182,15 +245,120 @@ class MenuBar(QFrame):
         self.overflow_overlay = Overlay(self.context.root, self.context, self.the_overflow_button, self._populate_overflow_overlay,
                                         closed_text="»", open_text="×")
 
-        # A page's menu bar is the window's title bar too (the window is
-        # borderless - see MainWindow): its empty space moves the window,
-        # and the window controls end it, after every entry (see _insert_entry)
-        self.window_controls = None
-        if isinstance(master, Page):
+        if self.page_bar:
+            # The center zone's entries go between the two stretches (see _insert_entry)
+            self.row.addStretch()
+            self.right_zone = self.build_right_zone()
+            self.row.addWidget(self.right_zone)
+            self._fixed.append(self.right_zone)
             WindowDrag(self, context.root)
-            self.window_controls = WindowControls(context, self)
-            self.row.addWidget(self.window_controls, 0, Qt.AlignmentFlag.AlignVCenter)
             context.root.fullscreen_changed.connect(self._on_fullscreen_changed)
+            self._top_padding: int | None = None
+            _FollowResize(master, self.place)
+            self.place()
+
+    # Page menu bar zones
+
+    def build_left_zone(self) -> QWidget:
+        '''Home (the pause menu), back and forward - back's and forward's tooltips name where they go.'''
+        from .important_buttons import GoBackToPreviousPage, GoForwardToNextPage, OpenPauseMenu
+        zone = QWidget()
+        row = QHBoxLayout(zone)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(0)
+        router = self.context.router
+        self.home = self.icon_button(OpenPauseMenu(self.context))
+        self.back_arrow = self.icon_button(GoBackToPreviousPage(self.context, "menu_bar_buttons_back_arrow"))
+        self.forward_arrow = self.icon_button(GoForwardToNextPage(self.context, "menu_bar_buttons_forward_arrow"))
+        stack = router.navigation_stack
+        self.where_to(self.back_arrow, stack[-2] if len(stack) >= 2 else None, "back_to")
+        self.where_to(self.forward_arrow, router.forward_stack[-1] if router.forward_stack else None, "forward_to")
+        for button in (self.home, self.back_arrow, self.forward_arrow):
+            row.addWidget(button, 0, Qt.AlignmentFlag.AlignVCenter)
+        return zone
+
+    def where_to(self, button: QPushButton, key: str | None, label: str):
+        '''
+        Names the page a back/forward button leads to in its tooltip - or,
+        with nowhere to go, disables it (kept in place, so the buttons
+        after it never move).
+        '''
+        if key is None:
+            button.setEnabled(False)
+            return
+        name = self.context.router.page_name(key)
+        button.setToolTip(self.context.labels.get(f"menu_bar_tooltips_{label}").replace("{page}", name))
+
+    def build_right_zone(self) -> QWidget:
+        '''Debug (developer mode only), Appearance, Settings, Help, and the window controls.'''
+        from .important_buttons import OpenSettingsPage, ShowHelpMessage
+        zone = QWidget()
+        row = QHBoxLayout(zone)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(self.row.spacing())
+        for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
+            if group_key in DEVELOPER_GROUPS and not self.context.preferences.is_developer():
+                continue
+            sections = [(header, [MENU_BAR_BUTTONS[name] for name in names if MENU_BAR_BUTTONS[name].is_available(self.context)])
+                        for header, names in group_sections]
+            group = ButtonGroup(self.context, group_key, [section for section in sections if section[1]])
+            row.addWidget(group, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.settings_button = self.icon_button(OpenSettingsPage(self.context, "menu_bar_buttons_settings_icon"))
+        self.help_button = self.icon_button(ShowHelpMessage(self.context, "menu_bar_buttons_help_icon"))
+        row.addWidget(self.settings_button, 0, Qt.AlignmentFlag.AlignVCenter)
+        row.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
+        # The whole height of the bar, up into the window's top right corner
+        self.window_controls = WindowControls(self.context)
+        row.addWidget(self.window_controls)
+        return zone
+
+    def icon_button(self, button: QPushButton) -> QPushButton:
+        '''
+        Styles a solo button as a bare symbol - no background or border,
+        just the glyph in the text color (the accent on hover), a size up
+        from the bar's other buttons. Faint while disabled.
+        '''
+        font = self.style.get_font()
+        font = type(font)(font)
+        font.setPointSizeF(font.pointSizeF() * 1.3)
+        button.setFont(font)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        name = f"_icon_button_{id(button)}"
+        button.setObjectName(name)
+
+        def sheet() -> str:
+            faint = QColor(self.style.color("text"))
+            faint.setAlpha(80)
+            return (f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px {self.style.igap // 2}px;"
+                    f" color: {self.style.color('text')}; }}"
+                    f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; }}"
+                    f" QPushButton#{name}:pressed {{ color: {self.style.color('text')}; }}"
+                    f" QPushButton#{name}:disabled {{ color: {faint.name(QColor.NameFormat.HexArgb)}; }}")
+        self.style.live_style(button, sheet)
+        return button
+
+    def bar_height(self) -> int:
+        '''A page menu bar's height: its tallest item, with a little room above and below.'''
+        return self.sizeHint().height() + 4 * self.style.cgap
+
+    def place(self):
+        '''
+        A page menu bar: along the top of the page, over it - and the page
+        given that much more top margin, so nothing of its own is covered.
+        '''
+        try:
+            page = self.parentWidget()
+            height = self.bar_height()
+            self.setGeometry(0, 0, page.width(), height)
+            self.raise_()
+            if self._top_padding != height:
+                margins = page.contentsMargins()
+                top = margins.top() - (self._top_padding or 0) + height
+                page.setContentsMargins(margins.left(), top, margins.right(), margins.bottom())
+                self._top_padding = height
+        except RuntimeError:
+            pass  # deleted with its page, with the resize still queued
 
     def _on_fullscreen_changed(self, *args):
         try:
@@ -198,46 +366,13 @@ class MenuBar(QFrame):
         except RuntimeError:
             pass  # deleted with its page, with the signal still connected
 
-    def window_controls_width(self) -> int:
-        '''Room the window controls take at the end of the row - none while they're hidden (fullscreen).'''
-        if self.window_controls is None or self.context.root.isFullScreen():
-            return 0
-        return self.window_controls.sizeHint().width() + self.row.spacing()
-
-    def build_back_arrow(self) -> QPushButton:
-        '''
-        The back button as a bare « - no background or border, just the
-        glyph in the text color (the accent on hover), a size up from the
-        page title beside it.
-        '''
-        from .important_buttons import GoBackToPreviousPage
-        arrow = GoBackToPreviousPage(self.context, "menu_bar_buttons_back_arrow")
-        font = self.style.get_font()
-        font = type(font)(font)
-        font.setPointSizeF(font.pointSizeF() * 1.6)
-        arrow.setFont(font)
-        arrow.setCursor(Qt.CursorShape.PointingHandCursor)
-        # Line the glyph up with the title's lowercase letters: in the
-        # bigger font, « sits lower in its line than the title text's
-        # middle, so lift it by the difference (padding below the text
-        # raises it by half the padding)
-        from PySide6.QtGui import QFontMetricsF
-        arrow_metrics, title_metrics = QFontMetricsF(font), QFontMetricsF(self.style.get_font())
-        glyph = arrow_metrics.tightBoundingRect(arrow.text())
-        arrow_middle = (arrow_metrics.ascent() - arrow_metrics.descent()) / 2 + glyph.center().y()
-        title_middle = (title_metrics.ascent() - title_metrics.descent()) / 2 - title_metrics.xHeight() / 2
-        lift = max(0, round(2 * (arrow_middle - title_middle)))
-        name = f"_back_arrow_{id(arrow)}"
-        arrow.setObjectName(name)
-        self.style.live_style(arrow, lambda: (
-            f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px 6px {lift}px 0px;"
-            f" color: {self.style.color('text')}; }}"
-            f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; }}"
-            f" QPushButton#{name}:pressed {{ color: {self.style.color('text')}; }}"))
-        # ...at its natural height, so the padding moves the glyph rather
-        # than making the button (and so the whole menu bar row) taller
-        arrow.setFixedHeight(arrow.sizeHint().height() - lift)
-        return arrow
+    def fixed_width(self) -> int:
+        '''Room the row's fixed items take (see _fixed) - none for the window controls while they're hidden (fullscreen).'''
+        spacing = self.row.spacing()
+        width = sum(widget.sizeHint().width() + spacing for widget in self._fixed)
+        if self.window_controls is not None and self.context.root.isFullScreen():
+            width -= self.window_controls.sizeHint().width() + spacing
+        return width
 
     def minimumSizeHint(self):
         '''
@@ -250,8 +385,8 @@ class MenuBar(QFrame):
         minimum locks in near that width, since nothing ever gets narrow
         enough again to trigger _update_squashing back down - a bar (and
         the whole window containing it) that was ever wide can never
-        become narrow again. Reporting the true floor instead - the label
-        plus every dropdown (neither ever squashes) plus the overflow
+        become narrow again. Reporting the true floor instead - the fixed
+        items plus every dropdown (neither ever squashes) plus the overflow
         button alone - keeps that floor constant regardless of history, so
         the window/pane can always still be shrunk down to it, which is
         what actually lets squashing kick back in.
@@ -259,12 +394,11 @@ class MenuBar(QFrame):
         margins = self.row.contentsMargins()
         spacing = self.row.spacing()
         width = margins.left() + margins.right()
-        width += self.game_label.sizeHint().width()
+        width += self.fixed_width()
         for entry in self._entries:
             if entry["kind"] in ("dropdown", "checkbox"):
                 width += spacing + entry["widget"].sizeHint().width()
         width += spacing + self.the_overflow_button.sizeHint().width()
-        width += self.window_controls_width()
         return QSize(width, self.sizeHint().height())
 
     def add_tooltip(self, widget, key: str):
@@ -331,9 +465,10 @@ class MenuBar(QFrame):
     # overflow ("»") button appears with clones of them in a popup.
 
     def _insert_entry(self, widget: QWidget, kind: str):
-        # Entries fill in left to right after the overflow button, and before the window controls
-        if self.window_controls is not None:
-            self.row.insertWidget(self.row.indexOf(self.window_controls), widget)
+        # Entries fill in left to right after the overflow button - on a
+        # page's menu bar, before the stretch that ends the center zone
+        if self.page_bar:
+            self.row.insertWidget(self.row.count() - 2, widget)
         else:
             self.row.addWidget(widget)
         self._entries.append({"widget": widget, "kind": kind})
@@ -348,8 +483,7 @@ class MenuBar(QFrame):
             margins = self.row.contentsMargins()
             spacing = self.row.spacing()
             available_width = self.width() - margins.left() - margins.right()
-            available_width -= self.game_label.sizeHint().width() + spacing
-            available_width -= self.window_controls_width()
+            available_width -= self.fixed_width()
 
             # Fit buttons in from the right, so the leftmost ones squash
             # first - a bar's most important buttons (back, quit, a panel's
@@ -653,12 +787,11 @@ class MenuBar(QFrame):
         MENU_BAR_GROUPS rather than by names' own order. Buttons that aren't
         available right now (see is_available) don't count toward a group.
 
-        In developer mode (Preferences.is_developer) the debug tools
-        (DEVELOPER_BUTTON_NAMES) are added too - every page builds its
-        menu bar through here, so none of them list the debug tools.
+        Names with a fixed place (FIXED_BUTTON_NAMES, RIGHT_ZONE_GROUPS) are
+        skipped - a page's menu bar always has them, in their own zones.
+        PAUSE_MENU_GROUPS' buttons are kept for the pause menu (page_links)
+        rather than added to the bar.
         '''
-        if self.context.preferences.is_developer():
-            names = [*names, *(name for name in DEVELOPER_BUTTON_NAMES if name not in names)]
         for name in names:
             if name not in MENU_BAR_BUTTONS:
                 print(f"MenuBar has no button named {name!r}, skipping")
@@ -671,8 +804,14 @@ class MenuBar(QFrame):
                 if button_classes:
                     present.append((header, button_classes))
             button_classes = [button_class for _, section in present for button_class in section]
-            if len(button_classes) == 1:
-                self.add_important(button_classes[0])
+            if group_key in PAUSE_MENU_GROUPS:
+                self.page_links += button_classes
+            elif len(button_classes) == 1:
+                button = self.add_important(button_classes[0])
+                icon = ICON_LABELS.get(button_classes[0])
+                if button is not None and icon is not None and self.page_bar:
+                    button.setText(self.context.labels.get(icon))
+                    self.icon_button(button)
             elif button_classes:
                 self.add_important(ButtonGroup, group_key, present)
 

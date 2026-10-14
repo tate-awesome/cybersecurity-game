@@ -313,9 +313,12 @@ class Style:
         # A plain QWidget only paints a stylesheet background with this
         widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         if widget.testAttribute(Qt.WidgetAttribute.WA_WState_Polished):
-            # Property selectors are only matched when a widget is polished
-            widget.style().unpolish(widget)
-            widget.style().polish(widget)
+            # Property selectors are only matched when a widget is polished.
+            # QWidget.style, not widget.style - widgets that keep this Style
+            # as their own .style (MenuBar, say) hide Qt's method
+            qt_style = QWidget.style(widget)
+            qt_style.unpolish(widget)
+            qt_style.polish(widget)
             widget.update()
 
     def live_style(self, widget: QWidget, build: Callable[[], str]):

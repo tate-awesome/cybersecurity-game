@@ -32,6 +32,8 @@ from ..pages.not_found import NotFound
 from ..widgets.frame_widgets.footer import Footer
 # The window controls for pages without a menu bar - outlive every page too
 from ..widgets.frame_widgets.window_chrome import CornerControls
+# What Esc opens on a page with a menu bar
+from ..widgets.frame_widgets.pause_menu import PauseMenu
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
@@ -93,6 +95,7 @@ class Router:
         self.quitting = False
         self.footer = Footer(root, self.context)
         self.corner_controls = CornerControls(self.context)
+        self.pause_menu = PauseMenu(self.context)
 
         self.register_discovered_pages()
 
@@ -160,7 +163,8 @@ class Router:
         animate = performance.page_transitions
         snapshot = PageTransition.snapshot(self.context.root.centralWidget(), direction) if animate else None
 
-        # Clear the window
+        # Clear the window - and the pause menu, which was for the page being left
+        self.pause_menu.close()
         self._clear_central_widget()
 
         # Call the page builder

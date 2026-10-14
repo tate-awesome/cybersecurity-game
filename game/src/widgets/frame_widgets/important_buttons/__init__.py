@@ -11,10 +11,12 @@ from .show_help_message import ShowHelpMessage
 from .load_localization_labels_file import LoadLocalizationLabelsFile
 
 # Navigation
-from .set_current_page_as_favorite import SetCurrentPageAsFavorite
+from .set_current_page_as_favorite import SetCurrentPageAsFavorite, ToggleBookmark
 from .open_access_point_config_in_browser import OpenAccessPointConfigInBrowser
 from .open_project_links import OpenProjectRepository, ReportAnIssue
 from .go_back_to_previous_page import GoBackToPreviousPage
+from .go_forward_to_next_page import GoForwardToNextPage
+from .open_pause_menu import OpenPauseMenu
 from .open_workspace_select import OpenWorkspaceSelect
 from .open_title_page import OpenTitlePage
 from .quit_application import QuitApplication

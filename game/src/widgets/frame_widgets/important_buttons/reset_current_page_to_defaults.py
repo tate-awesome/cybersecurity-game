@@ -1,3 +1,4 @@
+from ...popup import confirm_dialog
 from ._base_button import ImportantButton
 
 
@@ -12,8 +13,14 @@ class ResetCurrentPageToDefaults(ImportantButton):
     '''
     LABEL = "menu_bar_buttons_reset_button"
     TOOLTIP = "menu_bar_tooltips_reset_button"
+    MESSAGE = ("Reset this page to its defaults?\n"
+               "Everything you changed here - inputs, layout, settings - goes back to how it started.")
 
     def on_click(self):
+        '''Asks first - there's no undoing it.'''
+        confirm_dialog(self.window(), self.context, self.MESSAGE, "Yes, reset", "No, cancel", self.reset)
+
+    def reset(self):
         context = self.context
         if context.router.current_page is not None:
             context.pages.delete_saved_page(context.router.current_page)

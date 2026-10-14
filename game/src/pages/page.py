@@ -32,12 +32,14 @@ class Page(QWidget):
         '''
         The widgets that fade/slide in one after another when this page
         opens, and that slide out when it's left (see PageTransition).
-        By default the page's top-level content - e.g. its MenuBar, then
-        its Panes - in the order they were added.
+        By default the page's top-level content - e.g. its Panes - in the
+        order they were added. Not its menu bar, which is the same from page
+        to page (see MenuBar), so it stays put.
         '''
         return [
             child for child in self.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly)
             if child is not self.background and not child.isHidden() and not child.isWindow()
+            and not child.property("page_bar")
         ]
 
     def build_menu_bar(self, title: str, buttons: list[str]):

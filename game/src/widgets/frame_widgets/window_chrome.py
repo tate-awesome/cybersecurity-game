@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
 from PySide6.QtGui import QCursor, QMouseEvent
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QWidget
 
 from ...app_core import Context
 
@@ -285,6 +285,8 @@ class WindowControls(QWidget):
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         button.setToolTip(self.label(f"tooltips_{name}"))
+        # As tall as whatever holds them - in a menu bar, its whole height
+        button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         button.clicked.connect(lambda checked=False: action())
         return button
 
