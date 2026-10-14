@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel,
 from .important_buttons import ButtonGroup, ImportantButton, MENU_BAR_BUTTONS
 from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
-from .window_chrome import WindowControls, WindowDrag, window_bar_height
+from .window_chrome import WindowControls, WindowDrag, draw_window_bar_line, window_bar_has_line, window_bar_height
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -480,6 +480,12 @@ class MenuBar(QFrame):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self._update_squashing()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        # A page's menu bar is underlined, except on workspaces (see window_bar_has_line)
+        if self.page_bar and window_bar_has_line(self.context):
+            draw_window_bar_line(self, self.context)
 
     def _update_squashing(self):
         try:

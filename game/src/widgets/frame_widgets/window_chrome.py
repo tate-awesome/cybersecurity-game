@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
-from PySide6.QtGui import QCursor, QMouseEvent
+from PySide6.QtGui import QColor, QCursor, QMouseEvent, QPainter
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QWidget
 
 from ...app_core import Context
@@ -252,6 +252,38 @@ def window_bar_height(context: Context) -> int:
     return height + 4 * style.cgap
 
 
+def window_bar_has_line(context: Context) -> bool:
+    '''
+    Whether the window bar is underlined on the current page (see
+    draw_window_bar_line) - everywhere but workspaces, whose panels already
+    start their own row below it.
+    '''
+    return context.pages.get_build_type(context.router.current_page) != "workspace"
+
+
+def draw_window_bar_line(widget: QWidget, context: Context):
+    '''Underlines the window bar along widget's bottom edge, in the footer's divider color (the text, faint).'''
+    line = QColor(context.style.color("text"))
+    line.setAlpha(70)
+    painter = QPainter(widget)
+    painter.setPen(line)
+    painter.drawLine(0, widget.height() - 1, widget.width(), widget.height() - 1)
+    painter.end()
+
+
+class _Strip(QWidget):
+    '''CornerControls' strip across the top of the window - see-through, but underlined where the window bar is (see window_bar_has_line).'''
+
+    def __init__(self, context: Context):
+        super().__init__(context.root)
+        self.context = context
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+
+    def paintEvent(self, event):
+        if window_bar_has_line(self.context):
+            draw_window_bar_line(self, self.context)
+
+
 def toggle_maximized(root: QWidget):
     '''Maximizes the window, or restores it if it already is - never while fullscreen.'''
     if root.isFullScreen():
@@ -347,8 +379,7 @@ class CornerControls(WindowControls):
 
     def __init__(self, context: Context):
         super().__init__(context, context.root)
-        self.strip = QWidget(context.root)
-        self.strip.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.strip = _Strip(context)
         WindowDrag(self.strip, context.root)
         context.root.installEventFilter(self)
         self.page_changed()
@@ -378,7 +409,9 @@ class CornerControls(WindowControls):
             width = self.sizeHint().width()
             height = window_bar_height(self.context)
             self.setGeometry(self.root.width() - width, 0, width, height)
-            self.strip.setGeometry(0, 0, self.root.width() - width, height)
+            # The whole width, under the controls too, so its line runs to the edge
+            self.strip.setGeometry(0, 0, self.root.width(), height)
+            self.strip.update()
             self.setVisible(wanted)
             self.strip.setVisible(wanted)
             if wanted:
