@@ -1,4 +1,4 @@
-from .....app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS
+from .....app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_KINDS
 from ....visuals import VISUALS
 from ...overlay import Overlay
 from .settings_overlay_button import SettingsOverlayButton
@@ -7,9 +7,8 @@ from .settings_overlay_button import SettingsOverlayButton
 class EditBackgroundStyle(SettingsOverlayButton):
     '''
     Opens sliders for how see-through each kind of surface is (panels,
-    menu bars, widgets, fields, buttons) and how much the background
-    behind it is blurred - frosted glass (see style.SURFACE_KINDS and
-    app_core.context.backdrop) - plus whether buttons are inverted (see
+    menu bars, widgets, fields, buttons - see style.SURFACE_KINDS) - plus
+    whether buttons are inverted (see
     style.DEFAULT_INVERT_BUTTONS) - and for the animated background behind
     pages: whether it's drawn, which visual, whether it animates, whether
     it's detailed, and its frame rate (see Style.background_*). Changes
@@ -41,13 +40,8 @@ class EditBackgroundStyle(SettingsOverlayButton):
         opacity.toggle(("surface_invert_buttons",), style.invert_buttons, style.set_invert_buttons)
         for kind in SURFACE_KINDS:
             opacity.slider(("surface_opacity", kind), round(style.surface_opacity[kind] * 100), 0, 100,
-                           lambda value, kind=kind: style.set_surface(kind, opacity=value / 100), suffix="%")
-
-        blur = self.section("surface_blur")
-        for kind in SURFACE_KINDS:
-            blur.slider(("surface_blur", kind), round(style.surface_blur[kind]), 0, int(SURFACE_BLUR_MAX),
-                        lambda value, kind=kind: style.set_surface(kind, blur=value), suffix=" px")
-        blur.button(self.context.labels.get("settings_labels_surface_reset"), self.reset,
+                           lambda value, kind=kind: style.set_surface(kind, value / 100), suffix="%")
+        opacity.button(self.context.labels.get("settings_labels_surface_reset"), self.reset,
                     self.context.labels.get("settings_tooltips_surface_reset"))
 
     def reset(self):

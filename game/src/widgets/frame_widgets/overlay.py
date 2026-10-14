@@ -2,7 +2,6 @@ from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer
 from PySide6.QtGui import QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
 from ...app_core import Context
-from ...app_core.context.backdrop import blur_levels, pyramid_blur
 from ...app_core.transitions import PopupEntrance
 from collections.abc import Callable
 
@@ -42,12 +41,10 @@ class Overlay(QWidget):
         # standing in for it in a menu bar's overflow overlay (see click_open)
         self._opened_from: QWidget | None = None
         self._entrance: PopupEntrance | None = None
-        # Frosted glass (see capture_behind/paintEvent): a snapshot of what's
-        # behind this overlay, where on screen it was taken, and blurred
-        # copies of it by pyramid level
+        # See-through (see capture_behind/paintEvent): a snapshot of what's
+        # behind this overlay, and where on screen it was taken
         self._behind: QImage | None = None
         self._behind_origin = QPoint()
-        self._behind_levels: dict[int, QImage] = {}
         self._behind_timer = QTimer(self)
         self._behind_timer.setInterval(self.BEHIND_REFRESH_MS)
         self._behind_timer.timeout.connect(self._refresh_behind)
@@ -129,7 +126,7 @@ class Overlay(QWidget):
         self.show()
         self._behind_timer.start()
 
-    # Frosted glass
+    # See-through
     def capture_behind(self):
         '''
         Snapshots what's on screen behind this overlay - the main window,
@@ -138,7 +135,6 @@ class Overlay(QWidget):
         A popup is its own window, so Qt itself has nothing behind it to
         blend with. Skipped while the overlay surface is fully opaque.
         '''
-        self._behind_levels = {}
         if self.context.style.opacity("overlay") >= 1.0 or self.width() <= 0:
             self._behind = None
             return
@@ -173,13 +169,6 @@ class Overlay(QWidget):
         if had_snapshot or self._behind is not None:
             self.update()
 
-    def _behind_level(self, level: int) -> QImage:
-        if level not in self._behind_levels:
-            half = self._behind.scaled(max(1, self._behind.width() // 2), max(1, self._behind.height() // 2),
-                                       Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            self._behind_levels[level] = pyramid_blur(half, level)
-        return self._behind_levels[level]
-
     def paintEvent(self, event):
         painter = QPainter(self)
         if self._behind is not None:
@@ -187,14 +176,7 @@ class Overlay(QWidget):
             # Where the snapshot sits now - the window may have glided since
             # (see PopupEntrance) - covering the overlay at full size
             target = QRectF(QPointF(self._behind_origin - self.pos()), QRectF(self.rect()).size())
-            blur = self.context.style.surface_blur.get("overlay", 0.0)
-            if blur > 0:
-                for level, opacity in blur_levels(blur):
-                    painter.setOpacity(opacity)
-                    painter.drawImage(target, self._behind_level(level))
-            else:
-                painter.drawImage(target, self._behind)
-            painter.setOpacity(1.0)
+            painter.drawImage(target, self._behind)
         # The stylesheet's tint and accent border, drawn here: as a plain
         # top-level QWidget, Qt only fills this window with the stylesheet's
         # background color and never draws its border - and with a snapshot

@@ -76,7 +76,7 @@ CURATED_THEMES: list[str] = ["blue_v2_light"]
 # replace a bundled preset of the same name
 IMPORTED_PREFIX = "imported."
 
-# Surfaces - the kinds of backgrounds whose opacity and backdrop blur the
+# Surfaces - the kinds of backgrounds whose opacity the
 # user can tune (the "Background" style dropdown), each saved as a
 # preference like the theme:
 #   panel  - the "panel" color: panel bodies and borders
@@ -93,14 +93,12 @@ IMPORTED_PREFIX = "imported."
 SURFACE_KINDS = ("panel", "bar", "widget", "field", "button", "overlay")
 COLOR_SURFACES = ("panel", "widget", "field")
 # Whether surfaces can be see-through at all. Off, none of the surface
-# machinery runs: every color is opaque and untagged, there's no backdrop
-# blur or overlay snapshot, and scroll areas paint their own background -
-# the app as it was before translucency.
+# machinery runs: every color is opaque and untagged, there's no overlay
+# snapshot, and scroll areas paint their own background - the app as it
+# was before translucency.
 DEFAULT_TRANSLUCENT_SURFACES = True
 DEFAULT_SURFACE_OPACITY: dict[str, float] = {
     "panel": 0.5, "bar": 1.0, "widget": 0.5, "field": 0.5, "button": 0.75, "overlay": 1.0}  # 0-1
-DEFAULT_SURFACE_BLUR: dict[str, float] = {kind: 0.0 for kind in SURFACE_KINDS}     # px
-SURFACE_BLUR_MAX = 40.0
 # The animated page background (see Page.add_background), each saved as a
 # preference like the theme: whether it's drawn at all, which visual plays
 # (a widgets.visuals.VISUALS key, or "cycle"), whether it moves, whether
@@ -161,7 +159,6 @@ class Style:
         # replaces these defaults once preferences exist
         self.translucent_surfaces: bool = DEFAULT_TRANSLUCENT_SURFACES
         self.surface_opacity: dict[str, float] = dict(DEFAULT_SURFACE_OPACITY)
-        self.surface_blur: dict[str, float] = dict(DEFAULT_SURFACE_BLUR)
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
         # Background settings - load_preferred_background() replaces these
         # defaults once preferences exist
@@ -180,8 +177,6 @@ class Style:
         self._save_timer.setSingleShot(True)
         self._save_timer.setInterval(400)
         self._save_timer.timeout.connect(self.save_surfaces)
-        from .backdrop import Backdrop
-        self.backdrop = Backdrop(self)
 
         # Preferences don't exist yet at this point in startup (see
         # ContextManager.start_session) - this is just a system-appropriate
@@ -412,8 +407,7 @@ class Style:
         assert widget is not None, "themed() needs `widget` to scope a bare declaration list"
         name = f"_themed_{id(widget)}"
         widget.setObjectName(name)
-        # A widget whose own background is a surface is marked with its
-        # kind, so the backdrop blur knows to paint under it (see Backdrop)
+        # A widget whose own background is a surface is marked with its kind
         kind = self.surface_kind_of(extra)
         if kind is not None:
             widget.setProperty("surface", kind)
@@ -616,7 +610,6 @@ class Style:
         '''
         self.translucent_surfaces = on
         self._rebuild_stylesheets()
-        self.backdrop.sync()
         self.save_surfaces()
         self.context.router.refresh()
 
@@ -642,43 +635,33 @@ class Style:
 
     def load_preferred_surfaces(self):
         '''Reads the saved surface settings, keeping the default for anything missing or invalid.'''
-        for key, values, low, high in (("surface_opacity", self.surface_opacity, 0.0, 1.0),
-                                       ("surface_blur", self.surface_blur, 0.0, SURFACE_BLUR_MAX)):
-            saved = self.context.preferences.get(key)
-            if not isinstance(saved, dict):
-                continue
+        saved = self.context.preferences.get("surface_opacity")
+        if isinstance(saved, dict):
             for kind in SURFACE_KINDS:
                 value = saved.get(kind)
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
-                    values[kind] = min(high, max(low, float(value)))
+                    self.surface_opacity[kind] = min(1.0, max(0.0, float(value)))
         if isinstance(self.context.preferences.get("invert_buttons"), bool):
             self.invert_buttons = self.context.preferences.get("invert_buttons")
         if isinstance(self.context.preferences.get("translucent_surfaces"), bool):
             self.translucent_surfaces = self.context.preferences.get("translucent_surfaces")
         self._rebuild_stylesheets()
-        self.backdrop.sync()
 
     def load_default_surfaces(self):
-        '''Back to DEFAULT_SURFACE_OPACITY/BLUR, without saving - like load_default_theme.'''
+        '''Back to DEFAULT_SURFACE_OPACITY, without saving - like load_default_theme.'''
         self.translucent_surfaces = DEFAULT_TRANSLUCENT_SURFACES
         self.surface_opacity = dict(DEFAULT_SURFACE_OPACITY)
-        self.surface_blur = dict(DEFAULT_SURFACE_BLUR)
         self.invert_buttons = DEFAULT_INVERT_BUTTONS
         self.restyle_surfaces()
-        self.backdrop.sync()
 
-    def set_surface(self, kind: str, opacity: float | None = None, blur: float | None = None):
+    def set_surface(self, kind: str, opacity: float):
         '''
-        Changes one surface kind's opacity (0-1) and/or blur (px). Takes
-        effect right away on the current page - no rebuild - and is saved
-        to preferences shortly after the last change.
+        Changes one surface kind's opacity (0-1). Takes effect right away on
+        the current page - no rebuild - and is saved to preferences shortly
+        after the last change.
         '''
-        if opacity is not None:
-            self.surface_opacity[kind] = min(1.0, max(0.0, opacity))
-            self._restyle_timer.start()
-        if blur is not None:
-            self.surface_blur[kind] = min(SURFACE_BLUR_MAX, max(0.0, blur))
-        self.backdrop.sync()
+        self.surface_opacity[kind] = min(1.0, max(0.0, opacity))
+        self._restyle_timer.start()
         self._save_timer.start()
 
     # Background
@@ -743,7 +726,6 @@ class Style:
         '''Switches inverted buttons (see DEFAULT_INVERT_BUTTONS) on or off - live, and saved.'''
         self.invert_buttons = invert
         self.restyle_surfaces()
-        self.backdrop.sync()
         self.save_surfaces()
 
     def reset_surfaces(self):
@@ -754,7 +736,6 @@ class Style:
     def save_surfaces(self):
         self._save_timer.stop()
         self.context.preferences.set("surface_opacity", dict(self.surface_opacity))
-        self.context.preferences.set("surface_blur", dict(self.surface_blur))
         self.context.preferences.set("invert_buttons", self.invert_buttons)
         self.context.preferences.set("translucent_surfaces", self.translucent_surfaces)
 

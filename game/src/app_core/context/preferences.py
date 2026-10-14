@@ -24,6 +24,11 @@ DEFAULT_FULLSCREEN = True
 DEFAULT_FADE_IN = True
 DEFAULT_FADE_OUT = False
 
+# Preferences from older versions, removed from preferences.json on load
+RETIRED_KEYS = (
+    "surface_blur",  # surfaces' frosted-glass blur, removed
+)
+
 class PreferencesData(TypedDict, total=False):
     '''
     Documents the shape preferences.json is expected to have after a fresh
@@ -37,7 +42,6 @@ class PreferencesData(TypedDict, total=False):
     is_developer: int
     translucent_surfaces: bool
     surface_opacity: dict[str, float]
-    surface_blur: dict[str, float]
     invert_buttons: bool
     background_enabled: bool
     background_visual: str
@@ -77,6 +81,12 @@ class Preferences:
         
         for key, value in data.items():
             self.data[key] = value
+        # Settings the app no longer has - dropped, so the file only holds live ones
+        retired = [key for key in RETIRED_KEYS if key in self.data]
+        for key in retired:
+            del self.data[key]
+        if retired:
+            self.save()
         # Written out if missing, so it's there to find and flip in the file
         if "is_developer" not in self.data:
             self.data["is_developer"] = DEFAULT_IS_DEVELOPER
@@ -133,7 +143,6 @@ class Preferences:
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
             "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
             "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY
-            "surface_blur": {},     # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_BLUR
             "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
             # Set in the Background dropdown (see Style.set_background)
             "background_enabled": DEFAULT_BACKGROUND_ENABLED,

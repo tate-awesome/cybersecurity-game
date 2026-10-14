@@ -36,7 +36,7 @@ class TitleFooter(QWidget):
             link = link_class(context)
             link.setFont(font)
             link.setCursor(Qt.CursorShape.PointingHandCursor)
-            # Not a surface: never frosted or tinted (see app_core.context.backdrop)
+            # Not a surface: never tinted (see style.SURFACE_KINDS)
             link.setProperty("surface", "none")
             name = f"_title_link_{id(link)}"
             link.setObjectName(name)

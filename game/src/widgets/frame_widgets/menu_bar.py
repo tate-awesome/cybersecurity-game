@@ -195,7 +195,7 @@ class MenuBar(QFrame):
         font.setPointSizeF(font.pointSizeF() * 1.6)
         arrow.setFont(font)
         arrow.setCursor(Qt.CursorShape.PointingHandCursor)
-        # Not a surface: never frosted or tinted (see app_core.context.backdrop)
+        # Not a surface: never tinted (see style.SURFACE_KINDS)
         arrow.setProperty("surface", "none")
         # Line the glyph up with the title's lowercase letters: in the
         # bigger font, « sits lower in its line than the title text's

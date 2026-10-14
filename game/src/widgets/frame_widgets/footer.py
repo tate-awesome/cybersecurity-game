@@ -76,7 +76,7 @@ class Footer(QFrame):
         self.style = context.style
         self.labels = context.labels
         self.setObjectName(f"_footer_{id(self)}")
-        # Not a surface: never frosted or tinted (see app_core.context.backdrop)
+        # Not a surface: never tinted (see style.SURFACE_KINDS)
         self.setProperty("surface", "none")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.row = QHBoxLayout(self)

@@ -33,7 +33,7 @@ class StripChartBase(QWidget):
 
         super().__init__()
         self.context = context
-        # A field surface - see style.SURFACE_KINDS and app_core.context.backdrop
+        # A field surface - see style.SURFACE_KINDS
         self.setProperty("surface", "field")
         master.grid_layout.addWidget(self, grid_position[0], grid_position[1])
 
