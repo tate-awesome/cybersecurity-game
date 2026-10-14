@@ -18,20 +18,75 @@ class MainWindow(QMainWindow):
 
     fullscreen_changed is emitted with whether it's fullscreen now, however
     that changed (F11, the settings checkbox, deleting user data) - for
-    controls that show it.
+    controls that show it. window_state_changed is emitted on any change
+    of state (maximized, minimized, fullscreen, normal).
+
+    The window is borderless in and out of fullscreen, so pages meet the
+    top of the window the same way in both: the app draws its own window
+    controls and title bar dragging (see window_chrome), and WindowEdges
+    gives back resizing by the edges.
     '''
 
     fullscreen_changed = Signal(bool)
+    window_state_changed = Signal()
+
+    # Frameless, but still with a system menu and minimize/maximize boxes -
+    # on Windows those are what let clicking the taskbar button minimize it
+    WINDOW_FLAGS = (Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowSystemMenuHint
+                    | Qt.WindowType.WindowMinimizeButtonHint | Qt.WindowType.WindowMaximizeButtonHint)
 
     def __init__(self):
         super().__init__()
         self.on_close = None
+        self.setWindowFlags(self.WINDOW_FLAGS)
+        # Where leaving fullscreen goes back to (see set_fullscreen) - maximized,
+        # unless it was a normal window when fullscreen came on
+        self.maximized_before_fullscreen = True
+        self.edges = None  # WindowEdges, once the native window exists (see showEvent)
+        from ..widgets.frame_widgets.window_chrome import NativeFrame
+        self.native_frame = NativeFrame.make()
+
+    def showEvent(self, event):
+        if self.edges is None:
+            from ..widgets.frame_widgets.window_chrome import WindowEdges
+            self.edges = WindowEdges(self)
+        self.apply_native_frame()
+        super().showEvent(event)
+
+    def apply_native_frame(self):
+        '''
+        Gives back the native frame (see NativeFrame) - again after leaving
+        fullscreen, which restores the window style from before it.
+        '''
+        if self.native_frame is not None and not self.isFullScreen():
+            self.native_frame.apply(self)
+
+    def nativeEvent(self, event_type, message):
+        if self.native_frame is not None:
+            handled = self.native_frame.native_event(message)
+            if handled is not None:
+                return handled
+        return super().nativeEvent(event_type, message)
+
+    def set_fullscreen(self, enabled: bool):
+        '''Fullscreen, or back to however the window was before it - maximized or not.'''
+        if enabled:
+            if not self.isFullScreen():
+                self.maximized_before_fullscreen = self.isMaximized()
+            self.showFullScreen()
+        elif self.maximized_before_fullscreen:
+            self.showMaximized()
+        else:
+            self.showNormal()
 
     def changeEvent(self, event):
         if event.type() == QEvent.Type.WindowStateChange:
             fullscreen = self.isFullScreen()
             if fullscreen != bool(event.oldState() & Qt.WindowState.WindowFullScreen):
                 self.fullscreen_changed.emit(fullscreen)
+            self.window_state_changed.emit()
+            # Once the state change is done with the window style
+            QTimer.singleShot(0, self.apply_native_frame)
         super().changeEvent(event)
 
     def closeEvent(self, event):

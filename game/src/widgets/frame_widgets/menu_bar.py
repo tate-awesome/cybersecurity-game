@@ -3,6 +3,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from .important_buttons import ButtonGroup, ImportantButton, MENU_BAR_BUTTONS
 from .overlay import Overlay
+from .window_chrome import WindowControls, WindowDrag
 from collections.abc import Callable
 
 # The page menu bar's layout, left to right: each group key ("menu_bar_buttons_<key>" labels
@@ -181,6 +182,28 @@ class MenuBar(QFrame):
         self.overflow_overlay = Overlay(self.context.root, self.context, self.the_overflow_button, self._populate_overflow_overlay,
                                         closed_text="»", open_text="×")
 
+        # A page's menu bar is the window's title bar too (the window is
+        # borderless - see MainWindow): its empty space moves the window,
+        # and the window controls end it, after every entry (see _insert_entry)
+        self.window_controls = None
+        if isinstance(master, Page):
+            WindowDrag(self, context.root)
+            self.window_controls = WindowControls(context, self)
+            self.row.addWidget(self.window_controls, 0, Qt.AlignmentFlag.AlignVCenter)
+            context.root.fullscreen_changed.connect(self._on_fullscreen_changed)
+
+    def _on_fullscreen_changed(self, *args):
+        try:
+            self._update_squashing()
+        except RuntimeError:
+            pass  # deleted with its page, with the signal still connected
+
+    def window_controls_width(self) -> int:
+        '''Room the window controls take at the end of the row - none while they're hidden (fullscreen).'''
+        if self.window_controls is None or self.context.root.isFullScreen():
+            return 0
+        return self.window_controls.sizeHint().width() + self.row.spacing()
+
     def build_back_arrow(self) -> QPushButton:
         '''
         The back button as a bare « - no background or border, just the
@@ -241,6 +264,7 @@ class MenuBar(QFrame):
             if entry["kind"] in ("dropdown", "checkbox"):
                 width += spacing + entry["widget"].sizeHint().width()
         width += spacing + self.the_overflow_button.sizeHint().width()
+        width += self.window_controls_width()
         return QSize(width, self.sizeHint().height())
 
     def add_tooltip(self, widget, key: str):
@@ -307,8 +331,11 @@ class MenuBar(QFrame):
     # overflow ("»") button appears with clones of them in a popup.
 
     def _insert_entry(self, widget: QWidget, kind: str):
-        # Entries fill in left to right after the overflow button
-        self.row.addWidget(widget)
+        # Entries fill in left to right after the overflow button, and before the window controls
+        if self.window_controls is not None:
+            self.row.insertWidget(self.row.indexOf(self.window_controls), widget)
+        else:
+            self.row.addWidget(widget)
         self._entries.append({"widget": widget, "kind": kind})
         self._update_squashing()
 
@@ -322,6 +349,7 @@ class MenuBar(QFrame):
             spacing = self.row.spacing()
             available_width = self.width() - margins.left() - margins.right()
             available_width -= self.game_label.sizeHint().width() + spacing
+            available_width -= self.window_controls_width()
 
             # Fit buttons in from the right, so the leftmost ones squash
             # first - a bar's most important buttons (back, quit, a panel's

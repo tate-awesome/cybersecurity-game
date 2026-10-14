@@ -234,13 +234,7 @@ class Footer(QFrame):
 
     # Location
     def page_name(self, key: str) -> str:
-        '''A page's name as its links show it, or its own footer label, or just its key.'''
-        config = self.context.pages.load_page_config(key)
-        label_key = config.get("link_label") if isinstance(config.get("link_label"), str) else f"footer_pages_{key}"
-        try:
-            return self.labels.get(label_key)
-        except KeyError:
-            return key
+        return self.context.router.page_name(key)
 
     def update_location(self):
         router = self.context.router

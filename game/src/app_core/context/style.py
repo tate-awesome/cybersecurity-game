@@ -182,6 +182,9 @@ class Style:
             elif name == "title":
                 font = QFont("Arial", self.get_font_size("title"))
                 font.setBold(True)
+            elif name == "page_title":
+                font = QFont("Arial", self.get_font_size("page_title"))
+                font.setBold(True)
             elif name == "chart_title":
                 font = QFont("Arial", self.get_font_size("chart_title"))
                 font.setBold(True)
@@ -201,6 +204,8 @@ class Style:
             size = 20.0
         elif name == "title":
             size = 72
+        elif name == "page_title":
+            size = 21.0
         elif name == "small":
             size = 15.0
         elif name == "chart_title":

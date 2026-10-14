@@ -120,10 +120,7 @@ class KeyBinds:
     def set_fullscreen(self, enabled: bool, save: bool = False):
         if save:
             self.context.preferences.set("fullscreen", enabled)
-        if enabled:
-            self.root.showFullScreen()
-        else:
-            self.root.showNormal()
+        self.root.set_fullscreen(enabled)
 
     def toggle_fullscreen(self):
         self.set_fullscreen(not self.root.isFullScreen(), save=True)

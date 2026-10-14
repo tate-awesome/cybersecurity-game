@@ -30,6 +30,8 @@ from ..pages.not_found import NotFound
 
 # The bar along the bottom of the window - outlives every page
 from ..widgets.frame_widgets.footer import Footer
+# The window controls for pages without a menu bar - outlive every page too
+from ..widgets.frame_widgets.window_chrome import CornerControls
 
 # Dict mapping page names to page builder functions.
 # Add new pages here to make them accessible by the router.
@@ -79,6 +81,9 @@ class Router:
         self.context: Context = Context(root, self)
         self.style = self.context.style
         self.navigation_stack: list[str] = []
+        # Pages gone back from, most recent last - go_forward returns to them.
+        # Going anywhere else clears it, as in a browser
+        self.forward_stack: list[str] = []
         self.current_frame: QWidget | None = None
         self.current_page: str | None = None
         # The page key the 404 page reports as missing
@@ -87,6 +92,7 @@ class Router:
         # Set once quitting, so a second quit (during FadeOut) doesn't start another
         self.quitting = False
         self.footer = Footer(root, self.context)
+        self.corner_controls = CornerControls(self.context)
 
         self.register_discovered_pages()
 
@@ -111,7 +117,7 @@ class Router:
             if key not in PAGES and build_type in GENERIC_BUILD_TYPES:
                 PAGES[key] = GENERIC_BUILD_TYPES[build_type]
 
-    def show(self, next_page: str, direction: int = 1):
+    def show(self, next_page: str, direction: int = 1, forward: bool = False):
         '''
         Displays the specified page, which should be a key in the PAGES dict. Clears the current page first.
         A key that isn't in PAGES (even START_PAGE, e.g. when assets/ is
@@ -120,6 +126,8 @@ class Router:
 
         direction is which way the change animates (see PageTransition):
         1 going deeper, -1 going back, 0 a refresh of the same page.
+        forward=True keeps the forward history (see go_forward) - any other
+        new page clears it.
         '''
         # Handle first page ever (usually the start page or a reset)
         if len(self.navigation_stack) == 0:
@@ -134,6 +142,8 @@ class Router:
             self.context.start_build()
             self.context.start_page()
             self.navigation_stack.append(next_page)
+            if not forward:
+                self.forward_stack.clear()
 
         # Handle 404
         self.missing_page = next_page
@@ -167,6 +177,7 @@ class Router:
             self._clear_central_widget()
             self.context.start_build()
             self.navigation_stack = []
+            self.forward_stack.clear()
             if next_page == START_PAGE:
                 # Nowhere left to fall back to - most likely broken assets
                 print(f"Error building the start page: {e}. Showing the 404 page.")
@@ -180,6 +191,7 @@ class Router:
 
         # The new page's location, and any theme/zoom/label change it was rebuilt for
         self.footer.page_changed()
+        self.corner_controls.page_changed()
 
     def _clear_central_widget(self):
         '''
@@ -243,5 +255,22 @@ class Router:
         self.context.reset_build()
         self.context.start_build()
         self.context.start_page()
-        self.navigation_stack.pop()
+        self.forward_stack.append(self.navigation_stack.pop())
         self.show(self.navigation_stack[-1], direction=-1)
+
+    def go_forward(self):
+        '''
+        Navigates forwards again, to the page last gone back from.
+        '''
+        if not self.forward_stack:
+            return  # nowhere to go forward to
+        self.show(self.forward_stack.pop(), forward=True)
+
+    def page_name(self, key: str) -> str:
+        '''A page's name as its links show it, or its own footer label, or just its key.'''
+        config = self.context.pages.load_page_config(key)
+        label_key = config.get("link_label") if isinstance(config.get("link_label"), str) else f"footer_pages_{key}"
+        try:
+            return self.context.labels.get(label_key)
+        except KeyError:
+            return key

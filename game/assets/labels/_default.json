@@ -869,5 +869,13 @@
     "theme_editor_rows_dark_mode": "Edit Dark Mode",
     "theme_editor_row_notes_dark_mode": "Every theme has a dark and a light mode. Checked, you're editing (and seeing) the dark one; unchecked, the light one.",
     "theme_editor_rows_transparency": "Allows Transparency",
-    "theme_editor_row_notes_transparency": "Lets the theme's materials be see-through. Off, the theme is always solid, whatever their opacity."
+    "theme_editor_row_notes_transparency": "Lets the theme's materials be see-through. Off, the theme is always solid, whatever their opacity.",
+    "window_controls_minimize": "min",
+    "window_controls_maximize": "max",
+    "window_controls_restore": "restore",
+    "window_controls_close": "close",
+    "window_controls_tooltips_minimize": "Minimize",
+    "window_controls_tooltips_maximize": "Maximize",
+    "window_controls_tooltips_restore": "Restore Down",
+    "window_controls_tooltips_close": "Quit"
 }
