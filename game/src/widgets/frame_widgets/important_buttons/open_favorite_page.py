@@ -1,5 +1,9 @@
 from ....app_core import Context
+from ....app_core.context.style import Style
 from ._base_button import ImportantButton
+
+# In front of the label
+RESUME_MARK = Style.icon("player-play")
 
 
 class OpenFavoritePage(ImportantButton):
@@ -17,9 +21,9 @@ class OpenFavoritePage(ImportantButton):
     def __init__(self, context: Context):
         super().__init__(context)
         name = context.labels.get(context.pages.link_label(context.preferences.get("page")))
-        self.setText(context.labels.get("title_buttons_resume_in").replace("{workspace}", name))
+        self.setText(f"{RESUME_MARK} " + context.labels.get("title_buttons_resume_in").replace("{workspace}", name))
         # What it shows until hovered, beside another button (see GrowingButton)
-        self.short_text = context.labels.get("title_buttons_resume")
+        self.short_text = f"{RESUME_MARK} " + context.labels.get("title_buttons_resume")
 
     def on_click(self):
         self.context.router.show(self.context.preferences.get("page"))

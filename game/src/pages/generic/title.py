@@ -17,8 +17,8 @@ class TitlePage(Page):
 
     Either can have "beside": another such entry, placed just to its
     right - short, growing to its full text on hover (see
-    TitleMenu.add_beside) - e.g. the start page's "» Resume" beside
-    Workspaces, growing to "» Resume in <workspace>".
+    TitleMenu.add_beside) - e.g. the start page's Resume beside
+    Workspaces, growing to "Resume in <workspace>".
 
     An optional config["background"] plays a procedural visual behind the
     menu - see Page.add_background.

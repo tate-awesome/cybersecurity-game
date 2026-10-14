@@ -6,6 +6,7 @@ class ConfigureThisWorkspace(ImportantButton):
     '''Opens the workspace editor on the workspace currently showing (Back returns here).'''
     LABEL = "menu_bar_buttons_configure_workspace_button"
     TOOLTIP = "menu_bar_tooltips_configure_workspace_button"
+    OPENS = "page"
 
     @classmethod
     def is_available(cls, context: Context) -> bool:

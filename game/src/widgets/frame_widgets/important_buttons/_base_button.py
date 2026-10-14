@@ -2,13 +2,19 @@ import os, subprocess, webbrowser
 
 from PySide6.QtWidgets import QPushButton
 from ....app_core import Context
+from ....app_core.context.style import Style
 
+# Marks are icons in the text (see Style._load_icon_font).
 # Marks everything only developers see (developer mode - preferences.json
-# "is_developer"): a squared key, for restricted access
-DEVELOPER_MARK = "\u26bf"
-# Marks buttons that open something outside the app's window - another
-# window or the browser (see ImportantButton.POPOUT): a north-east arrow
-POPOUT_MARK = "\u2197"
+# "is_developer"): a bug, like the Debug dropdown's
+DEVELOPER_MARK = Style.icon("bug")
+# After a button's label, where clicking it takes you (see ImportantButton.OPENS):
+# another page in the app, a popup window (a message, a confirmation, a file
+# picker), or somewhere outside the app (the browser, a folder)
+PAGE_MARK = Style.icon("arrow-bar-right")
+POPUP_MARK = Style.icon("layers-subtract")
+POPOUT_MARK = Style.icon("external-link")
+OPENS_MARKS = {"page": PAGE_MARK, "popup": POPUP_MARK, "outside": POPOUT_MARK}
 
 
 def developer_text(text: str) -> str:
@@ -40,8 +46,9 @@ class ImportantButton(QPushButton):
     '''
     LABEL = "menu_bar_buttons__default"
     TOOLTIP: str | None = None
-    # Opens a separate window or the browser - shown with POPOUT_MARK after the label
-    POPOUT = False
+    # Where clicking it takes you - "page", "popup" or "outside", shown with
+    # that one of OPENS_MARKS after the label (see opens) - or None
+    OPENS: str | None = None
 
     def __init__(self, context: Context, label_key: str | None = None):
         super().__init__(context.labels.get(label_key or self.LABEL))
@@ -52,7 +59,7 @@ class ImportantButton(QPushButton):
         self.setFont(context.style.get_font())
         if self.TOOLTIP is not None:
             self.setToolTip(context.labels.get(self.TOOLTIP))
-        if self.POPOUT:
+        if self.opens():
             self.setText(self.text())  # (the constructor's text skips setText - see below)
         # clicked emits a "checked" bool that on_click doesn't take
         self.clicked.connect(lambda checked=False: self.on_click())
@@ -66,7 +73,7 @@ class ImportantButton(QPushButton):
         '''
         Shows the developer-only mark (DEVELOPER_MARK) in front of this
         button's text from now on - kept through any later setText, e.g. a
-        ToggleButton's label swap or an overlay's ▾ marker.
+        ToggleButton's label swap or an overlay's dropdown marker.
         '''
         # The mark comes from a fallback font with a taller line than the UI
         # font's, which would make this button taller than its neighbors -
@@ -93,10 +100,18 @@ class ImportantButton(QPushButton):
         if self.icons is not None:
             self.setText(self.context.style.icon(self.icons[0]))
 
+    def opens(self) -> str | None:
+        '''Where clicking it takes you right now (see OPENS) - by default, always the same.'''
+        return self.OPENS
+
     def setText(self, text: str):
-        if self.POPOUT and not text.endswith(POPOUT_MARK):
-            text = f"{text} {POPOUT_MARK}"
-        super().setText(developer_text(text) if getattr(self, "developer_only", False) else text)
+        if getattr(self, "icons", None) is None:  # a bare icon (see show_icon) gets no marks
+            mark = OPENS_MARKS.get(self.opens())
+            if mark is not None and not text.endswith(mark):
+                text = f"{text} {mark}"
+            if getattr(self, "developer_only", False):
+                text = developer_text(text)
+        super().setText(text)
 
     def on_click(self):
         pass

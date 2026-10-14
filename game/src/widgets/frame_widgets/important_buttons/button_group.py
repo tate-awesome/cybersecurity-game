@@ -29,7 +29,7 @@ class ButtonGroup(ImportantButton):
         self.sections = sections
         self.developer_group = group_key in DEVELOPER_GROUPS
         if self.developer_group:
-            self.mark_developer_only()  # before the overlay reads the text for its ▾
+            self.mark_developer_only()  # before the overlay reads the text for its marker
         self.overlay = Overlay(context.root, context, self, self.populate)
 
     def show_icon(self, icon: str, active_icon: str | None = None):

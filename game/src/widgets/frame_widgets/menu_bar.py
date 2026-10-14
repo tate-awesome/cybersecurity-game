@@ -1,4 +1,5 @@
 from ...app_core import Context
+from ...app_core.context.style import Style
 from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
@@ -77,6 +78,10 @@ FIXED_BUTTON_NAMES: list[str] = ["back_button", "page_button", "settings_button"
 MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
 assert sorted([*MENU_BAR_BUTTON_ORDER, *FIXED_BUTTON_NAMES,
                *(name for sections in RIGHT_ZONE_GROUPS.values() for _, names in sections for name in names)]) == sorted(MENU_BAR_BUTTONS),     "every menu bar button needs exactly one place: MENU_BAR_GROUPS, RIGHT_ZONE_GROUPS or FIXED_BUTTON_NAMES"
+
+# The overflow button's text, closed and open (see MenuBar._update_squashing)
+OVERFLOW_CLOSED = Style.icon("chevrons-right")
+OVERFLOW_OPEN = Style.icon("x")
 
 # Center zone buttons shown as a bare symbol when they're by themselves
 # (see MenuBar.icon_button) - button class -> its icon (see style.ICONS)
@@ -256,7 +261,7 @@ class MenuBar(QFrame):
         self.row.addWidget(self.the_overflow_button)
         self.the_overflow_button.hide()
         self.overflow_overlay = Overlay(self.context.root, self.context, self.the_overflow_button, self._populate_overflow_overlay,
-                                        closed_text="»", open_text="×")
+                                        closed_text=OVERFLOW_CLOSED, open_text=OVERFLOW_OPEN)
 
         if self.page_bar:
             # The center zone's entries go between the two stretches (see _insert_entry)

@@ -16,6 +16,7 @@ from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
 from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
@@ -158,7 +159,8 @@ class ConfigEditor(Page):
             menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
         menu_bar.add_button("save_config", self.save)
         if keys:
-            menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
+            opener = menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
+            opener.setText(f"{opener.text()} {PAGE_MARK}")
         menu_bar.add_config_buttons(EDITOR_MENU_BAR)
 
         self.tabs = QTabWidget()

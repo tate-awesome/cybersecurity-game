@@ -2,6 +2,7 @@ from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer
 from PySide6.QtGui import QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
 from ...app_core import Context
+from ...app_core.context.style import Style
 from ...app_core.transitions import PopupEntrance
 from collections.abc import Callable
 
@@ -14,13 +15,13 @@ class Overlay(QWidget):
     parent chain, a manual Escape binding) the customtkinter version needed
     since CTkFrame has no such built-in.
 
-    The trigger button keeps its own text with a triangle appended - ▾
-    while closed, ▴ while open - so every overlay button reads as one at a
+    The trigger button keeps its own text with a caret appended - down
+    while closed, up while open - so every overlay button reads as one at a
     glance, and shows which overlay is open. closed_text/open_text replace
-    those whole texts instead (e.g. MenuBar's overflow button: » and ×).
+    those whole texts instead (e.g. MenuBar's overflow button).
     '''
-    CLOSED_MARKER = "▾"
-    OPEN_MARKER = "▴"
+    CLOSED_MARKER = Style.icon("caret-down")
+    OPEN_MARKER = Style.icon("caret-up")
     # How often the frosted snapshot of what's behind is retaken while open
     # (see capture_behind) - the page underneath keeps animating
     BEHIND_REFRESH_MS = 100

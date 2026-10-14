@@ -101,6 +101,17 @@ ICONS: dict[str, int] = {
     "power": 0xeb0d,
     "bug": 0xea48,
     "palette": 0xeb01,
+    # Marks in text (see _load_icon_font) - dropdowns, overflow, where a button goes
+    "caret-down": 0xeb5d,
+    "caret-up": 0xeb60,
+    "chevrons-right": 0xea65,
+    "x": 0xeb55,
+    "external-link": 0xea99,
+    "arrow-bar-right": 0xea0f,
+    "layers-subtract": 0xeaca,
+    "player-play": 0xed46,
+    "chevron-right": 0xea61,
+    "chevron-down": 0xea5f,
 }
 
 
@@ -226,11 +237,21 @@ class Style:
 
     @staticmethod
     def _load_icon_font(path: Path) -> str | None:
+        '''
+        Loads the icon font, and has it stand in for the text fonts' missing
+        glyphs (QFont.insertSubstitution) - icons live in the private use
+        area no text font covers, so an icon in a label's text ("Captures"
+        and a dropdown caret, say) is drawn from the icon font, in the
+        text's own color and size. Returns its family.
+        '''
         font_id = QFontDatabase.addApplicationFont(str(path))
         families = QFontDatabase.applicationFontFamilies(font_id) if font_id >= 0 else []
         if not families:
             print(f"Couldn't load the icon font {path} - icons will show as blanks")
             return None
+        # Every family text is drawn in - the fonts get_font names, and Qt's default
+        for family in {"Arial", "Consolas", QApplication.font().family()}:
+            QFont.insertSubstitution(family, families[0])
         return families[0]
 
     def icon_css(self) -> str:

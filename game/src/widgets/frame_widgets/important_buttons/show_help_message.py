@@ -6,6 +6,7 @@ class ShowHelpMessage(ImportantButton):
     '''Shows a help popup for the current page.'''
     LABEL = "menu_bar_buttons_help_button"
     TOOLTIP = "menu_bar_tooltips_help_button"
+    OPENS = "popup"
 
     def on_click(self):
         message(self.window(), self.context, self.help_message())

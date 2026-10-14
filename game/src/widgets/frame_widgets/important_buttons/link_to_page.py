@@ -8,6 +8,7 @@ class LinkToPage(ImportantButton):
     "link_label" (see PageManager.link_label), so every link to a page
     reads the same.
     '''
+    OPENS = "page"
 
     def __init__(self, context: Context, target: str):
         super().__init__(context, context.pages.link_label(target))

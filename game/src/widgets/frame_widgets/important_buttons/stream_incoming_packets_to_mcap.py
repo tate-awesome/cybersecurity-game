@@ -7,6 +7,10 @@ class StreamIncomingPacketsToMcap(ToggleButton):
     ACTIVE_LABEL = "menu_bar_buttons_stream_button_active"
     TOOLTIP = "menu_bar_tooltips_stream_button"
 
+    def opens(self) -> str | None:
+        '''Starting asks where to stream to - stopping just stops.'''
+        return None if getattr(self, "active", False) else "popup"
+
     def start(self):
         self.context.buffer.file_stream.start()
 

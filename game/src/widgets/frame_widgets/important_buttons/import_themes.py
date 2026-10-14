@@ -9,7 +9,7 @@ class ImportThemes(ImportantButton):
     '''
     LABEL = "menu_bar_buttons_import_themes_button"
     TOOLTIP = "menu_bar_tooltips_import_themes_button"
-    POPOUT = True
+    OPENS = "outside"
 
     def on_click(self):
         folder = self.context.paths.user_themes

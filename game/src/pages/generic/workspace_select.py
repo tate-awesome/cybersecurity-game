@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QPushButton, QS
 
 from ...app_core import Context
 from ...widgets import Scrollable
-from ...widgets.frame_widgets.important_buttons import POPOUT_MARK
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPOUT_MARK
 from ..page import Page
 
 
@@ -177,7 +177,7 @@ class WorkspaceSelectPage(Page):
             content_layout.addWidget(button)
 
         def update(expanded: bool, title=title, header=header, content=content):
-            header.setText(f"{'▼' if expanded else '▶'}  {title}")
+            header.setText(f"{self.style.icon('chevron-down' if expanded else 'chevron-right')}  {title}")
             content.setVisible(expanded)
         header.toggled.connect(update)
         update(header.isChecked())
@@ -229,12 +229,12 @@ class WorkspaceSelectPage(Page):
         self.edit_button = None
         if self.context.preferences.is_developer():
             from ...widgets.frame_widgets.important_buttons import developer_text
-            self.edit_button = QPushButton(developer_text(self.labels.get("title_buttons_edit_workspace")))
+            self.edit_button = QPushButton(developer_text(f"{self.labels.get('title_buttons_edit_workspace')} {PAGE_MARK}"))
             self.edit_button.setFont(self.style.get_font("title_btn"))
             self.edit_button.clicked.connect(lambda checked=False: self.edit(self.selected_target))
             actions_layout.addWidget(self.edit_button)
 
-        self.start_button = QPushButton(self.labels.get("title_buttons_open_workspace"))
+        self.start_button = QPushButton(f"{self.labels.get('title_buttons_open_workspace')} {PAGE_MARK}")
         self.start_button.setFont(self.style.get_font("title_btn"))
         self.start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
         actions_layout.addWidget(self.start_button)
