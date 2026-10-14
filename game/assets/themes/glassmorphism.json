@@ -22,6 +22,18 @@
     },
     "scrollbar_inset": 3,
     "panel_frame": 10,
+    "aurora": {
+        "dark": [
+            "#3dffb0",
+            "#6f6bff",
+            "#ff6ad5"
+        ],
+        "light": [
+            "#2fd59a",
+            "#8a6cff",
+            "#ff7ccf"
+        ]
+    },
     "materials": {
         "window": {
             "dark": {

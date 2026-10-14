@@ -2,7 +2,7 @@ import math
 import time
 
 from PySide6.QtCore import QEvent, QObject, QRectF, Qt, QTimer
-from PySide6.QtGui import QCursor, QImage, QPainter
+from PySide6.QtGui import QColor, QCursor, QImage, QLinearGradient, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ...app_core import Context
@@ -26,6 +26,57 @@ def pyramid_blur(image: QImage, levels: int) -> QImage:
     for size in reversed(sizes[:-1]):
         image = image.scaled(size, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
     return image
+
+
+# How many columns wide the northern lights are drawn, whatever the window's
+# size - soft shapes lose nothing scaled up, and it keeps them cheap enough for every frame
+AURORA_COLUMNS = 120
+
+
+def paint_aurora(painter: QPainter, width: int, height: int, colors: list[str], t: float, glow: bool = True):
+    '''
+    Northern lights across the top of a width x height area: a curtain of
+    light per color, each a band with a wavy lower edge that fades upward,
+    swaying slowly and shimmering in vertical rays as t (seconds) passes.
+    glow adds the light (on a dark sky); otherwise it's laid over (a light one).
+    '''
+    if width <= 0 or height <= 0:
+        return
+    w = AURORA_COLUMNS
+    h = max(8, round(w * height / width))
+    image = QImage(w, h, QImage.Format.Format_ARGB32_Premultiplied)
+    image.fill(Qt.GlobalColor.transparent)
+    p = QPainter(image)
+    p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus if glow else QPainter.CompositionMode.CompositionMode_SourceOver)
+    strength = 0.55 if glow else 0.32
+    for i, hex_color in enumerate(colors):
+        # One curtain's light, top to bottom of each column it's drawn in -
+        # faint at the top, brightest just above its lower edge
+        gradient = QLinearGradient(0, 0, 0, 1)
+        gradient.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectMode)
+        for stop, a in ((0.0, 0.0), (0.7, 0.55), (0.93, 1.0), (1.0, 0.0)):
+            c = QColor(hex_color)
+            c.setAlphaF(a)
+            gradient.setColorAt(stop, c)
+        phase = i * 2.1
+        base = 0.22 + 0.13 * i  # each curtain a little lower down the sky
+        for x in range(w):
+            u = x / w
+            # The lower edge sways, and the curtain's height breathes along it
+            edge = base + 0.07 * math.sin(u * 5.3 + t * 0.21 + phase) + 0.035 * math.sin(u * 11.7 - t * 0.37 + phase * 1.7)
+            reach = 0.16 + 0.07 * math.sin(u * 3.1 + t * 0.15 + phase)
+            # Rays: brightness rippling sideways along the curtain
+            ray = 0.45 + 0.55 * math.sin(u * 37.0 + t * 0.9 + phase + math.sin(t * 0.3 + u * 7)) ** 2
+            # Fading out toward the sides, so no curtain ends at an edge
+            ends = min(1.0, 4 * u, 4 * (1 - u))
+            top = (edge - reach * 1.5) * h
+            p.setOpacity(min(1.0, strength * ray * ends))
+            p.fillRect(QRectF(x, top, 1, edge * h + 2 - top), gradient)
+    p.end()
+    painter.save()
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+    painter.drawImage(QRectF(0, 0, width, height), image)
+    painter.restore()
 
 
 class VisualBackground(QWidget):
@@ -350,12 +401,20 @@ class VisualBackground(QWidget):
         return self.half_frame
 
     def fill_base(self, painter: QPainter, width: int, height: int):
-        '''What the visual is drawn over: the theme's window color - or its gradient, if it has one (see Style.brush).'''
+        '''
+        What the visual is drawn over: the theme's window color - or its
+        gradient, if it has one (see Style.brush) - and its northern lights,
+        if it has those (see paint_aurora).
+        '''
         rect = QRectF(0, 0, width, height)
         brush = self.style.brush("window", rect)
         if brush.gradient() is not None:
             painter.fillRect(rect, self.style.color("root", opaque=True))
         painter.fillRect(rect, brush)
+        aurora = self.style.setting("aurora")
+        if aurora:
+            mode = self.style.current_theme.partition("_")[0]
+            paint_aurora(painter, width, height, aurora[mode], time.perf_counter(), glow=mode == "dark")
 
     # Qt events
     def paintEvent(self, event):
