@@ -131,10 +131,21 @@ class Router:
         1 going deeper, -1 going back, 0 a refresh of the same page.
         forward=True keeps the forward history (see go_forward) - any other
         new page clears it.
+
+        Going to a page (direction 1) never piles up the history: the page
+        you're already on does nothing, and a page already in the history
+        goes back to it (see go_back_to) - Title from deep in a workspace
+        returns to the start rather than stacking another start on top.
         '''
         # Handle first page ever (usually the start page or a reset)
         if len(self.navigation_stack) == 0:
             self.navigation_stack.append(next_page)
+        elif direction == 1 and not forward:
+            if next_page == self.navigation_stack[-1]:
+                return  # already here
+            if next_page in self.navigation_stack:
+                self.go_back_to(next_page)
+                return
 
         # Handle deeper page (not refresh) - leaving the current page the
         # same way go_back does, so it's autosaved, its processes stop, and
@@ -261,6 +272,24 @@ class Router:
         self.context.start_page()
         self.forward_stack.append(self.navigation_stack.pop())
         self.show(self.navigation_stack[-1], direction=-1)
+
+    def go_back_to(self, key: str):
+        '''
+        Navigates back to the last time key is in the page history, as if
+        Back were pressed until it showed - the pages gone back over are
+        Forward's to return to, nearest first.
+        '''
+        stack = self.navigation_stack
+        if key not in stack[:-1]:
+            return
+        index = len(stack) - 1 - stack[::-1].index(key)
+        self.context.reset_page()
+        self.context.reset_build()
+        self.context.start_build()
+        self.context.start_page()
+        self.forward_stack.extend(reversed(stack[index + 1:]))
+        del stack[index + 1:]
+        self.show(key, direction=-1)
 
     def go_forward(self):
         '''

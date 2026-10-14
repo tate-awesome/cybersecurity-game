@@ -10,4 +10,9 @@ class OpenAppearanceSettings(ImportantButton):
         # Imported here - pages import widgets, so not at the top
         from ....pages.settings import SettingsPage
         SettingsPage.selected_tab = SettingsPage.APPEARANCE_TAB
+        page = self.context.router.current_frame
+        if isinstance(page, SettingsPage) and type(page) is SettingsPage:
+            # Already here - going to it does nothing (see Router.show), so just switch tabs
+            page.tabs.setCurrentIndex(SettingsPage.APPEARANCE_TAB)
+            return
         self.context.router.show("settings")
