@@ -763,7 +763,7 @@ class DefenderV0(Page):
 
         for r_idx, packet in enumerate(rows):
             row_labels = []
-            material = "field" if r_idx % 2 == 0 else "alternate_row"
+            material = "card" if r_idx % 2 == 0 else "alternate_row"
             for c_idx, key in enumerate(cols):
                 raw = packet.get(key, "—")
                 if key == "received_at":

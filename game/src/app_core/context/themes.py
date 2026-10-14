@@ -19,6 +19,15 @@ each kind of button's corner radius in px ("button_radius" and
 "kind" ("original" or "copied") and which modes are "derived" rather
 than copied (see Style.preset_name).
 
+Panels are made of three materials, from the top down (and any page
+can use them the same way):
+    "panel"  the drawer - a panel's menu bar and the frame around its
+             contents, all one piece (see "panel_frame")
+    "card"   the contents, just inside the drawer - cards, consoles,
+             charts and canvases, the rows of tables and trees
+    "field"  the deepest - text boxes, and what shows between cards and
+             between rows
+
 Each kind of button has its own materials: its background, its
 background on hover, its outline, its text and its text on hover. An
 opacity of 0 leaves out a background or an outline - a ghost button, or
@@ -38,6 +47,9 @@ as it did before they existed (see STYLE_DEFAULTS):
     "background_blur"  px to blur the page background by (frosted glass),
                        on pages that blur it at all - instead of their own
     "panel_radius"     panels' corner radius in px
+    "panel_frame"      px of the panel material around a panel's contents
+                       (left, right and below - its menu bar is above) -
+                       its scrollbar lives in it, at this width
     "panel_shadow"     a shadow around each panel: {"x", "y", "blur" (px),
                        "dark": {"color", "opacity"}, "light": {...}} -
                        blur 0 is a hard shadow, x = y = 0 a glow
@@ -89,11 +101,10 @@ FALLBACK_PALETTE = {
 MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     # Surfaces - backgrounds, which can be see-through
     "window": ("root", 1.0),             # the window and page background
-    "panel": ("panel", 0.5),             # panel bodies
+    "panel": ("panel", 0.5),             # panels' drawer: their menu bar and the frame around their contents
     "panel_border": ("widget", 0.5),     # panel outlines
-    "menu_bar": ("widget", 1.0),         # menu bars
-    "card": ("widget", 0.5),             # forms and cards on panels
-    "field": ("field", 0.5),             # text boxes, consoles, trees, canvases
+    "card": ("widget", 0.5),             # what's in the drawer: cards, consoles, charts, rows
+    "field": ("field", 0.5),             # the deepest: text boxes, and between cards and rows
     "button": ("accent", 0.75),          # buttons
     "button_hover": ("accent", 0.75),    # buttons under the mouse
     "button_border": ("accent", 0.0),    # buttons' outlines
@@ -105,7 +116,7 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "tab": ("widget", 0.5),              # tabs
     "tab_selected": ("accent", 1.0),     # the selected tab
     "table_header": ("widget", 0.5),     # table and tree headers
-    "alternate_row": ("widget", 0.5),    # every other row of tables and trees
+    "alternate_row": ("widget", 0.5),    # every other row of tables and trees - a shade of "card"
     "selection": ("accent", 1.0),        # selected rows and items
     "scrollbar": ("scrollbar", 1.0),     # scrollbar handles
     "scrollbar_track": ("panel", 0.5),   # what scrollbar handles slide in
@@ -173,6 +184,7 @@ STYLE_DEFAULTS: dict = {
     "background": True,
     "background_blur": None,
     "panel_radius": 10,
+    "panel_frame": 6,
     "panel_shadow": None,
     "line_width": 1,
     "bevel": False,
@@ -184,6 +196,7 @@ STYLE_DEFAULTS: dict = {
     "scrollbar_outline": False,
 }
 MAX_PANEL_RADIUS = 24
+MAX_PANEL_FRAME = 16
 MAX_BACKGROUND_BLUR = 64
 
 HEX_PATTERN = re.compile(r"#[0-9a-fA-F]{6}")
@@ -258,6 +271,7 @@ def style_setting(info: dict, key: str):
     if value is None or not isinstance(value, (int, float)) or isinstance(value, bool):
         return default
     limits = {"background_blur": (0, MAX_BACKGROUND_BLUR), "panel_radius": (0, MAX_PANEL_RADIUS),
+              "panel_frame": (0, MAX_PANEL_FRAME),
               "line_width": (1, 4), "button_shadow": (0, 8), "scrollbar_radius": (0, 12), "scrollbar_inset": (0, 4)}[key]
     return int(min(limits[1], max(limits[0], value)))
 

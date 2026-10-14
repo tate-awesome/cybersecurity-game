@@ -10,6 +10,7 @@
     "panel_radius": 0,
     "font_family": "Microsoft Sans Serif",
     "scrollbar_radius": 0,
+    "panel_frame": 6,
     "materials": {
         "window": {
             "dark": {
@@ -22,26 +23,6 @@
             }
         },
         "panel": {
-            "dark": {
-                "color": "#000000",
-                "opacity": 1.0
-            },
-            "light": {
-                "color": "#c0c0c0",
-                "opacity": 1.0
-            }
-        },
-        "panel_border": {
-            "dark": {
-                "color": "#808080",
-                "opacity": 1.0
-            },
-            "light": {
-                "color": "#c0c0c0",
-                "opacity": 1.0
-            }
-        },
-        "menu_bar": {
             "dark": {
                 "color": "#800080",
                 "opacity": 1.0,
@@ -62,32 +43,27 @@
                 }
             },
             "light": {
-                "color": "#000080",
-                "opacity": 1.0,
-                "gradient": {
-                    "angle": 90,
-                    "stops": [
-                        [
-                            0,
-                            "#000080",
-                            1
-                        ],
-                        [
-                            1,
-                            "#1084d0",
-                            1
-                        ]
-                    ]
-                }
+                "color": "#c0c0c0",
+                "opacity": 1.0
             }
         },
-        "card": {
+        "panel_border": {
             "dark": {
-                "color": "#202020",
+                "color": "#808080",
                 "opacity": 1.0
             },
             "light": {
                 "color": "#c0c0c0",
+                "opacity": 1.0
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "#0d0d1a",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
                 "opacity": 1.0
             }
         },
@@ -97,7 +73,7 @@
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ffffff",
+                "color": "#dfdfdf",
                 "opacity": 1.0
             }
         },
@@ -213,7 +189,7 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#0a0a1a",
+                "color": "#14142a",
                 "opacity": 1.0
             },
             "light": {
@@ -292,7 +268,7 @@
                 "color": "#ffff00"
             },
             "light": {
-                "color": "#ffffff"
+                "color": "#000000"
             }
         },
         "accent_text": {

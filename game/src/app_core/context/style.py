@@ -41,11 +41,10 @@ IMPORTED_PREFIX = "imported."
 # stylesheet (see Style._build_stylesheet) gives every material its color
 # and opacity from the theme - so a theme change restyles every widget in
 # place, without rebuilding the page. Besides the materials, "material"
-# can be "none" (see-through, no border) or "panel_fill" (scroll areas in
-# panels: see-through, since the panel already paints itself, unless
-# surfaces are solid). Shape is its own property: "rounded" rounds the
-# corners like a panel's, "outlined" adds a panel's border.
-SPECIAL_MATERIALS = ("none", "panel_fill")
+# can be "none" (see-through, no border). Shape is its own property:
+# "rounded" rounds the corners like a panel's, "outlined" adds a panel's
+# border.
+SPECIAL_MATERIALS = ("none",)
 PANEL_BORDER_WIDTH = 2
 # The color names (see themes.COLOR_NAMES) color() hands back see-through,
 # at their material's opacity - so canvases and other hand-drawn widgets
@@ -583,9 +582,6 @@ class Style:
             QPushButton:disabled {{ background-color: {at_opacity("widget", "button")}; color: {c["border"]};
                                     border-color: transparent; }}'''
 
-        # With surfaces solid, a scroll area in a panel paints the panel's color itself
-        panel_fill = m("panel") if not self.translucent_surfaces else "transparent"
-
         # The theme's outlines (see themes.STYLE_DEFAULTS): bevelled, or lines line_width thick
         bevel = self.setting("bevel")
         line = self.setting("line_width")
@@ -605,6 +601,13 @@ class Style:
             handle_border = f"{line}px solid {c['border']}"
         else:
             handle_border = "none"
+        # A panel's own scrollbar lives in its frame (see Panel.fit_frame) - as wide as it, on the drawer
+        frame = self.setting("panel_frame")
+        frame_inset = min(inset, max(0, (frame - 2) // 2))
+        frame_thickness = max(2, frame - 2 * frame_inset)
+        frame_radius = frame_thickness // 2 if radius is None else min(radius, frame_thickness // 2)
+        # Between rows of trees and tables, the deepest material shows (see themes' module docstring)
+        row_gap = max(1, line)
         left, top, right, bottom = self.panel_margins()
         font = self.setting("font_family")
         extras = []
@@ -615,7 +618,12 @@ class Style:
         if self.setting("bold_buttons"):
             extras.append("QPushButton, QTabBar { font-weight: bold; }")
         if self.color("menu_bar_text") != c["text"]:
-            extras.append(f'*[material="menu_bar"] QLabel, *[material="menu_bar"] QCheckBox {{ color: {self.color("menu_bar_text")}; }}')
+            # Text on a panel's drawer - its menu bar, and anything straight on
+            # its frame - but not on what's inside it (see themes' module docstring)
+            extras.append(f'*[material="panel"] QLabel, *[material="panel"] QCheckBox {{ color: {self.color("menu_bar_text")}; }}')
+            inside = ", ".join(f'*[material="{name}"] QLabel, *[material="{name}"] QCheckBox'
+                               for name in ("card", "field", "alternate_row", "table_header", "overlay", "overlay_card"))
+            extras.append(f'{inside} {{ color: {c["text"]}; }}')
 
         return f'''
             QWidget {{ color: {c["text"]}; }}
@@ -645,6 +653,7 @@ class Style:
                 border-radius: {0 if bevel else 4}px;
                 padding: 4px;
             }}
+            QPlainTextEdit, QTextEdit {{ background-color: {m("card")}; }}
             QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border-color: {c["accent"]}; }}
             QComboBox QAbstractItemView {{
                 background-color: {c["field"]};
@@ -663,7 +672,7 @@ class Style:
                 background-color: {c["accent"]};
                 border-color: {c["accent"]};
             }}
-            QHeaderView {{ background-color: {m("field")}; }}
+            QHeaderView {{ background-color: transparent; }}
             QHeaderView::section {{
                 background-color: {m("table_header")};
                 color: {c["text"]};
@@ -675,7 +684,16 @@ class Style:
                 alternate-background-color: {m("alternate_row")};
                 color: {c["text"]};
                 border: {outline};
+                gridline-color: {c["field"]};
             }}
+            QTreeView::item, QTableView::item {{
+                background-color: {m("card")};
+                border: none;
+                border-bottom: {row_gap}px solid transparent;
+                background-clip: padding;
+            }}
+            QTreeView::item:alternate, QTableView::item:alternate {{ background-color: {m("alternate_row")}; }}
+            QTreeView::branch {{ background-color: transparent; }}
             QTreeWidget::item:selected, QTreeView::item:selected, QTableWidget::item:selected, QTableView::item:selected {{
                 background-color: {m("selection")};
                 color: {c["accent_text"]};
@@ -723,10 +741,15 @@ class Style:
             QScrollBar::handle:horizontal:hover {{ background: {c["scrollbar_hover"]}; }}
             QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
             QAbstractScrollArea::corner {{ background: {m("scrollbar_track")}; border: none; }}
+            QScrollBar[framed="true"] {{ background: transparent; }}
+            QScrollBar[framed="true"]:vertical {{ width: {frame}px; }}
+            QScrollBar[framed="true"]:horizontal {{ height: {frame}px; }}
+            QScrollBar[framed="true"]::handle {{ margin: {frame_inset}px; border-radius: {frame_radius}px; }}
+            *[material="panel"] QAbstractScrollArea {{ border: none; border-radius: 0px; }}
+            *[material="panel"] QAbstractScrollArea::corner {{ background: transparent; }}
             {self._material_rules()}
             *[material="overlay"] {{ border: 2px solid {c["accent"]}; }}
             *[material="none"] {{ background-color: transparent; border: none; }}
-            *[material="panel_fill"] {{ background-color: {panel_fill}; border: none; }}
             *[rounded="true"] {{ border-radius: {self.PANEL_RADIUS}px; }}
             *[outlined="true"] {{ border: {panel_border}; }}
             *[shadowed="true"] {{ margin: {top}px {right}px {bottom}px {left}px; }}

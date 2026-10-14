@@ -22,7 +22,7 @@
     },
 
     "model_colors": {
-        "ocean": "field",
+        "ocean": "widget",
         "grid_lines": "field_text",
         "grid_axes": "red",
         "grid_numbers": "field_text",
@@ -32,9 +32,9 @@
         "path_out": "orange",
         "boat_out_fill": "orange",
         "boat_out_outline": "orange",
-        "background": "field",
+        "background": "widget",
         "line_art": "field_text",
-        "fill": "widget",
+        "fill": "field",
         "text": "field_text",
         "coldness": "blue",
         "hotness": "red"
@@ -53,7 +53,7 @@
     },
 
     "strip_chart_colors": {
-        "background": "field",
+        "background": "widget",
         "grid_lines": "black",
         "grid_axes": "accent",
         "grid_numbers": "field_text",

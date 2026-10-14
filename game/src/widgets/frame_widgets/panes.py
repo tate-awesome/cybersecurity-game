@@ -65,10 +65,15 @@ class Panes(QSplitter):
         margin = style.igap if pad_around else 0
         master.layout().setContentsMargins(margin, margin, margin, margin)
 
+        # A panel's own split (e.g. NetworkDiagram's) is divided by the
+        # panel's drawer, as thick as its frame (see Panel.fit_frame)
+        in_panel = master.property("material") == "panel"
         self.setHandleWidth(style.igap)
         def sheet():
-            color = "transparent" if transparent else style.css("window")
-            return f"QSplitter::handle {{ background-color: {color}; }} QSplitter > QWidget {{ background-color: {color}; }}"
+            color = "transparent" if transparent or in_panel else style.css("window")
+            width = f" width: {style.setting('panel_frame')}px; height: {style.setting('panel_frame')}px;" if in_panel else ""
+            return (f"QSplitter::handle {{ background-color: {color};{width} }}"
+                    f" QSplitter > QWidget {{ background-color: {color}; }}")
         style.live_style(self, sheet)
 
         min_size = style.PANE_MIN_WIDTH if direction == "horizontal" else style.PANE_MIN_HEIGHT

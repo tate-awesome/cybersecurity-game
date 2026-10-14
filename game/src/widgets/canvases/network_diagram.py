@@ -35,7 +35,7 @@ class NetworkDiagramCanvas(Canvas):
             )
 
         def frame_callback():
-            self.draw.background(context.style.color("field"))
+            self.draw.background(context.style.color("widget"))
 
             positions = self.network.get_host_positions()
             for mac, point in positions.items():

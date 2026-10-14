@@ -21,6 +21,7 @@
     },
     "scrollbar_radius": 0,
     "scrollbar_inset": 2,
+    "panel_frame": 6,
     "materials": {
         "window": {
             "dark": {
@@ -60,11 +61,46 @@
         "panel": {
             "dark": {
                 "color": "#02060b",
-                "opacity": 0.82
+                "opacity": 0.85,
+                "gradient": {
+                    "angle": 90,
+                    "stops": [
+                        [
+                            0,
+                            "#06303a",
+                            0.9
+                        ],
+                        [
+                            0.6,
+                            "#02060b",
+                            0.85
+                        ],
+                        [
+                            1,
+                            "#1c0424",
+                            0.9
+                        ]
+                    ]
+                }
             },
             "light": {
-                "color": "#f4f7fa",
-                "opacity": 0.85
+                "color": "#e9eef3",
+                "opacity": 0.92,
+                "gradient": {
+                    "angle": 90,
+                    "stops": [
+                        [
+                            0,
+                            "#f7fafc",
+                            0.95
+                        ],
+                        [
+                            1,
+                            "#dde4ec",
+                            0.95
+                        ]
+                    ]
+                }
             }
         },
         "panel_border": {
@@ -77,79 +113,24 @@
                 "opacity": 0.95
             }
         },
-        "menu_bar": {
-            "dark": {
-                "color": "#00f0ff",
-                "opacity": 0.12,
-                "gradient": {
-                    "angle": 90,
-                    "stops": [
-                        [
-                            0,
-                            "#00f0ff",
-                            0.2
-                        ],
-                        [
-                            0.6,
-                            "#00f0ff",
-                            0.04
-                        ],
-                        [
-                            1,
-                            "#ff2bd6",
-                            0.12
-                        ]
-                    ]
-                }
-            },
-            "light": {
-                "color": "#e6ecf2",
-                "opacity": 1.0,
-                "gradient": {
-                    "angle": 0,
-                    "stops": [
-                        [
-                            0,
-                            "#ffffff",
-                            1
-                        ],
-                        [
-                            0.5,
-                            "#d3dce5",
-                            1
-                        ],
-                        [
-                            0.52,
-                            "#c3cdd8",
-                            1
-                        ],
-                        [
-                            1,
-                            "#eef3f7",
-                            1
-                        ]
-                    ]
-                }
-            }
-        },
         "card": {
             "dark": {
-                "color": "#00f0ff",
-                "opacity": 0.05
+                "color": "#000000",
+                "opacity": 0.5
             },
             "light": {
-                "color": "#0066ff",
-                "opacity": 0.05
+                "color": "#c9d3de",
+                "opacity": 0.55
             }
         },
         "field": {
             "dark": {
                 "color": "#000000",
-                "opacity": 0.75
+                "opacity": 0.85
             },
             "light": {
-                "color": "#ffffff",
-                "opacity": 0.9
+                "color": "#b3c0ce",
+                "opacity": 0.7
             }
         },
         "button": {
@@ -259,17 +240,17 @@
             },
             "light": {
                 "color": "#0066ff",
-                "opacity": 0.08
+                "opacity": 0.1
             }
         },
         "alternate_row": {
             "dark": {
-                "color": "#00f0ff",
-                "opacity": 0.03
+                "color": "#001418",
+                "opacity": 0.55
             },
             "light": {
-                "color": "#0066ff",
-                "opacity": 0.03
+                "color": "#c0cbd7",
+                "opacity": 0.6
             }
         },
         "selection": {

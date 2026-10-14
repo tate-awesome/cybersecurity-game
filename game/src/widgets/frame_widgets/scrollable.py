@@ -21,22 +21,25 @@ class Scrollable(QScrollArea):
         # relative stretch factor, so without this a same-stretch (0) filler
         # can end up winning space this should have gotten instead.
         master.layout().addWidget(self, 1)
-        # Inside a panel, the panel already paints this background - a
-        # second and third copy (this, and inner below) would stack up
-        # whenever panels are see-through (see style.SPECIAL_MATERIALS)
-        material = "panel_fill" if master.property("material") == "panel" else "panel"
-        style.set_material(self, material)
+        # In a panel's drawer, its cards sit edge to edge with the drawer's
+        # frame, on the deepest material, which shows only between them
+        # (see themes' module docstring) - and just the content has it, not
+        # this scroll area, so the scrollbar sits on the drawer itself (see
+        # Panel.fit_frame). Elsewhere, it's a panel of its own.
+        self.in_panel = master.property("material") == "panel"
+        style.set_material(self, "none" if self.in_panel else "panel")
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.inner = QWidget()
-        style.set_material(self.inner, material)
+        style.set_material(self.inner, "field" if self.in_panel else "panel")
         self.grid_layout = QGridLayout(self.inner)
         # Without explicit values here, stacked rows (forms, strip charts,
         # etc.) fall back to Qt's default layout spacing, which is roughly
         # zero once each row is its own full-width widget - they end up
-        # welded edge-to-edge with no panel-colored gap to separate them.
-        self.grid_layout.setContentsMargins(style.igap, style.igap, style.igap, style.igap)
+        # welded edge-to-edge with no gap to separate them.
+        margin = 0 if self.in_panel else style.igap
+        self.grid_layout.setContentsMargins(margin, margin, margin, margin)
         self.grid_layout.setVerticalSpacing(style.igap)
         self.grid_layout.setHorizontalSpacing(style.igap)
         self.setWidget(self.inner)
@@ -58,6 +61,8 @@ class Scrollable(QScrollArea):
             self.setFixedHeight(height)
 
     def _update_right_margin(self, min_value: int, max_value: int):
+        if self.in_panel:
+            return  # Edge to edge - the scrollbar is in the panel's frame, not on the content
         margins = self.grid_layout.contentsMargins()
         right = 0 if max_value > min_value else self.style.igap
         self.grid_layout.setContentsMargins(margins.left(), margins.top(), right, margins.bottom())

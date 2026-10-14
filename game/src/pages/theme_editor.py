@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBo
                                QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
 from ..app_core.context.themes import (BUTTON_KINDS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
-                                      MAX_PANEL_RADIUS)
+                                      MAX_PANEL_FRAME, MAX_PANEL_RADIUS)
 from ..widgets import MenuBar, popup
 from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
@@ -227,6 +227,9 @@ class ThemeEditorPage(SettingsPage):
         corners = self.slider(style.PANEL_RADIUS, 0, MAX_PANEL_RADIUS, "px", lambda value: style.set_setting("panel_radius", value))
         corners.setEnabled(editable)
         section.row("theme_editor_rows_panel_radius", corners, "theme_editor_row_notes_panel_radius")
+        frame = self.slider(style.setting("panel_frame"), 0, MAX_PANEL_FRAME, "px", lambda value: style.set_setting("panel_frame", value))
+        frame.setEnabled(editable)
+        section.row("theme_editor_rows_panel_frame", frame, "theme_editor_row_notes_panel_frame")
 
     def build_materials_tab(self):
         '''

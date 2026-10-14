@@ -26,6 +26,7 @@
     },
     "scrollbar_radius": 3,
     "scrollbar_outline": true,
+    "panel_frame": 8,
     "materials": {
         "window": {
             "dark": {
@@ -39,11 +40,11 @@
         },
         "panel": {
             "dark": {
-                "color": "#3b3b4c",
+                "color": "#ffd23f",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ffffff",
+                "color": "#ffd23f",
                 "opacity": 1.0
             }
         },
@@ -57,23 +58,13 @@
                 "opacity": 1.0
             }
         },
-        "menu_bar": {
-            "dark": {
-                "color": "#ffd23f",
-                "opacity": 1.0
-            },
-            "light": {
-                "color": "#ffd23f",
-                "opacity": 1.0
-            }
-        },
         "card": {
             "dark": {
-                "color": "#47475a",
+                "color": "#3b3b4c",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#fff7e6",
+                "color": "#ffffff",
                 "opacity": 1.0
             }
         },
@@ -83,7 +74,7 @@
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ffffff",
+                "color": "#f3e3c3",
                 "opacity": 1.0
             }
         },
@@ -203,7 +194,7 @@
                 "opacity": 1.0
             },
             "light": {
-                "color": "#fffaf0",
+                "color": "#fff7e6",
                 "opacity": 1.0
             }
         },
@@ -219,11 +210,11 @@
         },
         "scrollbar": {
             "dark": {
-                "color": "#ffd23f",
+                "color": "#000000",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ff6b9d",
+                "color": "#000000",
                 "opacity": 1.0
             }
         },
@@ -339,10 +330,10 @@
         },
         "scrollbar_hover": {
             "dark": {
-                "color": "#ffe27a"
+                "color": "#3b3b4c"
             },
             "light": {
-                "color": "#ff8fb4"
+                "color": "#333333"
             }
         }
     }

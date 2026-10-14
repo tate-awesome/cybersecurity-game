@@ -43,12 +43,17 @@ class Builder(Panel):
 
         self.scrollable = Scrollable(self, context)
         grid = self.scrollable.grid_layout
+        # A table: cells on the drawer's contents material, with just a
+        # sliver of the deepest one between them (see themes' module docstring)
+        grid.setVerticalSpacing(2)
+        grid.setHorizontalSpacing(2)
 
         self.headers: list[QLabel] = []
         for c in range(COLUMN_COUNT):
             label = QLabel("")
             label.setFont(self.style.get_font("small"))
             label.setStyleSheet("color: gray;")
+            self.style.set_material(label, "table_header")
             grid.addWidget(label, 0, c)
             self.headers.append(label)
 
@@ -56,7 +61,7 @@ class Builder(Panel):
         # rebuilt like the original's _render_log.
         self.cells: list[list[QLabel]] = []
         for r in range(ROW_COUNT):
-            material = "field" if r % 2 == 0 else "alternate_row"
+            material = "card" if r % 2 == 0 else "alternate_row"
             row = []
             for c in range(COLUMN_COUNT):
                 cell = QLabel("")

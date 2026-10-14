@@ -10,6 +10,7 @@
     "font_family": "Segoe UI",
     "bold_buttons": true,
     "scrollbar_inset": 2,
+    "panel_frame": 8,
     "materials": {
         "window": {
             "dark": {
@@ -41,33 +42,23 @@
                 "opacity": 1.0
             }
         },
-        "menu_bar": {
-            "dark": {
-                "color": "#22313f",
-                "opacity": 1.0
-            },
-            "light": {
-                "color": "#2c3e50",
-                "opacity": 1.0
-            }
-        },
         "card": {
             "dark": {
-                "color": "#34495e",
+                "color": "#253544",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ecf0f1",
+                "color": "#f4f6f7",
                 "opacity": 1.0
             }
         },
         "field": {
             "dark": {
-                "color": "#22313f",
+                "color": "#1c2833",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ecf0f1",
+                "color": "#e5e9eb",
                 "opacity": 1.0
             }
         },
@@ -173,7 +164,7 @@
         },
         "table_header": {
             "dark": {
-                "color": "#34495e",
+                "color": "#2c3e50",
                 "opacity": 1.0
             },
             "light": {
@@ -183,11 +174,11 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#31465b",
+                "color": "#2a3b4e",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#f7f9f9",
+                "color": "#eef1f2",
                 "opacity": 1.0
             }
         },
@@ -262,7 +253,7 @@
                 "color": "#ecf0f1"
             },
             "light": {
-                "color": "#ecf0f1"
+                "color": "#2c3e50"
             }
         },
         "accent_text": {

@@ -240,9 +240,11 @@ class MenuBar(QFrame):
         from ...pages.page import Page
         self.page_bar = isinstance(master, Page)
 
-        # A page's menu bar has no background of its own - the page (and
-        # its background visual) shows through, up to the window's edge
-        self.style.set_material(self, "none" if self.page_bar else "menu_bar")
+        # No background of its own: a page's shows the page (and its
+        # background visual) up to the window's edge, and a panel's is
+        # part of the panel's drawer - one material with the frame around
+        # its contents (see themes' module docstring)
+        self.style.set_material(self, "none")
         # Qt widgets default to a vertical size policy that's willing to
         # grow into whatever leftover space its layout has - the old
         # CTkFrame only ever got fill="x" (not expand=True), so it never
