@@ -5,7 +5,7 @@ class LoadSettingsPresetFile(ImportantButton):
     '''Asks for a settings JSON file and merges it over the current settings.'''
     LABEL = "menu_bar_buttons_preset_button"
     TOOLTIP = "menu_bar_tooltips_preset_button"
-    OPENS = "popup"
+    OPENS = "file"
 
     def on_click(self):
         self.context.states.select()

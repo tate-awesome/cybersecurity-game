@@ -14,7 +14,7 @@ class WorkspaceSaveResetButton(ImportantButton):
     '''
     PART = ""
     MESSAGE = ""
-    OPENS = "popup"  # it asks first
+    OPENS = "warning"  # it asks first
 
     @classmethod
     def is_available(cls, context: Context) -> bool:

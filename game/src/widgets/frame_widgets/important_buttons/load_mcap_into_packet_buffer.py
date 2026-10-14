@@ -5,7 +5,7 @@ class LoadMcapIntoPacketBuffer(ImportantButton):
     '''Asks for a replay file from mcaptures and loads it into the packet buffer as fast as it takes packets.'''
     LABEL = "menu_bar_buttons_load_json_fast_button"
     TOOLTIP = "menu_bar_tooltips_load_json_fast_button"
-    OPENS = "popup"
+    OPENS = "file"
 
     def on_click(self):
         self.context.buffer.replay.load_json(realtime=False)

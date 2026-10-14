@@ -13,7 +13,7 @@ class DeleteAllUserData(ImportantButton):
     '''
     LABEL = "title_buttons_delete_user_data"
     TOOLTIP = "menu_bar_tooltips_delete_user_data_button"
-    OPENS = "popup"
+    OPENS = "warning"
 
     def on_click(self):
         message = ("Are you sure you want to delete all user data?\n"

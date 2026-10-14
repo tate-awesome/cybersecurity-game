@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBo
 
 from ..app_core.context.themes import INK_MATERIALS, MATERIALS
 from ..widgets import MenuBar, popup
-from ..widgets.frame_widgets.important_buttons import developer_text
+from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
 
@@ -57,6 +57,7 @@ class ThemeEditorPage(SettingsPage):
         # activated - only the user's picks, not refresh_menu_bar refilling it
         self.selector.activated.connect(lambda index: self.select_theme(self.selector.itemData(index)))
         self.new_button = menu_bar.add_button("theme_editor_new", self.new_theme)
+        self.new_button.setText(f"{self.new_button.text()} {POPUP_MARK}")
         self.new_button.setToolTip(labels.get("menu_bar_tooltips_theme_editor_new"))
         self.built_in_button = None
         if self.context.preferences.is_developer():
@@ -185,7 +186,7 @@ class ThemeEditorPage(SettingsPage):
         tab = self.new_tab("general")
         section = self.section(tab, "theme_general")
         if not editable:
-            new = QPushButton(self.labels.get("menu_bar_buttons_theme_editor_new"))
+            new = QPushButton(f"{self.labels.get('menu_bar_buttons_theme_editor_new')} {POPUP_MARK}")
             new.setFont(style.get_font())
             new.clicked.connect(lambda checked=False: self.new_theme())
             section.row("theme_editor_rows_built_in", new, "theme_editor_row_notes_built_in")

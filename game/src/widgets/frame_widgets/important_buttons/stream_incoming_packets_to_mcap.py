@@ -9,7 +9,7 @@ class StreamIncomingPacketsToMcap(ToggleButton):
 
     def opens(self) -> str | None:
         '''Starting asks where to stream to - stopping just stops.'''
-        return None if getattr(self, "active", False) else "popup"
+        return None if getattr(self, "active", False) else "file"
 
     def start(self):
         self.context.buffer.file_stream.start()

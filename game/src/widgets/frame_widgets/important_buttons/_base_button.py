@@ -9,12 +9,16 @@ from ....app_core.context.style import Style
 # "is_developer"): a bug, like the Debug dropdown's
 DEVELOPER_MARK = Style.icon("bug")
 # After a button's label, where clicking it takes you (see ImportantButton.OPENS):
-# another page in the app, a popup window (a message, a confirmation, a file
-# picker), or somewhere outside the app (the browser, a folder)
+# another page in the app, a file or folder (a file picker, or the folder
+# itself), a warning that asks before doing something that can't be undone,
+# a popup made for the purpose (help, a new workspace's details), or
+# somewhere outside the app (the browser)
 PAGE_MARK = Style.icon("arrow-right")
+FILE_MARK = Style.icon("folder")
+WARNING_MARK = Style.icon("alert-triangle")
 POPUP_MARK = Style.icon("layers-subtract")
 POPOUT_MARK = Style.icon("external-link")
-OPENS_MARKS = {"page": PAGE_MARK, "popup": POPUP_MARK, "outside": POPOUT_MARK}
+OPENS_MARKS = {"page": PAGE_MARK, "file": FILE_MARK, "warning": WARNING_MARK, "popup": POPUP_MARK, "outside": POPOUT_MARK}
 
 
 def developer_text(text: str) -> str:
@@ -46,8 +50,9 @@ class ImportantButton(QPushButton):
     '''
     LABEL = "menu_bar_buttons__default"
     TOOLTIP: str | None = None
-    # Where clicking it takes you - "page", "popup" or "outside", shown with
-    # that one of OPENS_MARKS after the label (see opens) - or None
+    # Where clicking it takes you - "page", "file", "warning", "popup" or
+    # "outside", shown with that one of OPENS_MARKS after the label (see
+    # opens) - or None
     OPENS: str | None = None
     # Its symbol, one of style.ICONS - shown alone where it's an icon button
     # (show_icon, e.g. on the menu bar), or before its label elsewhere

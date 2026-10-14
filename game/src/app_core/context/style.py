@@ -108,6 +108,8 @@ ICONS: dict[str, int] = {
     "x": 0xeb55,
     "external-link": 0xea99,
     "layers-subtract": 0xeaca,
+    "folder": 0xeaad,
+    "alert-triangle": 0xea06,
     "player-play": 0xed46,
     "chevron-right": 0xea61,
     "chevron-down": 0xea5f,

@@ -10,7 +10,7 @@ class DeleteAllWorkspaceSavedData(ImportantButton):
     '''
     LABEL = "menu_bar_buttons_delete_all_workspace_data_button"
     TOOLTIP = "menu_bar_tooltips_delete_all_workspace_data_button"
-    OPENS = "popup"
+    OPENS = "warning"
 
     def on_click(self):
         message = ("Delete your saved data for every workspace?\n"

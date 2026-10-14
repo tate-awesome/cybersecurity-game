@@ -13,7 +13,7 @@ class ResetCurrentPageToDefaults(ImportantButton):
     '''
     LABEL = "menu_bar_buttons_reset_button"
     TOOLTIP = "menu_bar_tooltips_reset_button"
-    OPENS = "popup"
+    OPENS = "warning"
     MESSAGE = ("Reset this page to its defaults?\n"
                "Everything you changed here - inputs, layout, settings - goes back to how it started.")
 

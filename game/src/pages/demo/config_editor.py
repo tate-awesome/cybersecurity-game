@@ -16,7 +16,7 @@ from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
 from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
-from ...widgets.frame_widgets.important_buttons import PAGE_MARK
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
@@ -154,9 +154,11 @@ class ConfigEditor(Page):
         if keys:
             self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
                                                   default=self.workspace_name(ConfigEditor.selected_key))
-        menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
+        new = menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
+        new.setText(f"{new.text()} {POPUP_MARK}")
         if keys:
-            menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
+            delete = menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
+            delete.setText(f"{delete.text()} {WARNING_MARK}")
         menu_bar.add_button("save_config", self.save)
         if keys:
             opener = menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
