@@ -153,6 +153,58 @@ def _drain_evenly(sizes: list[float], floors: list[float], amount: float) -> lis
     return sizes
 
 
+def icon_button(context: Context, button: ImportantButton, icon: str | None = None,
+                active_icon: str | None = None) -> ImportantButton:
+    '''
+    Shows a solo button as a bare symbol - its own ICON unless told
+    otherwise (see ImportantButton.show_icon) - no background or border,
+    just the icon in the text color (the accent on hover), its label as its
+    tooltip. Faint while disabled.
+    '''
+    style = context.style
+    button.show_icon(icon, active_icon)
+    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    name = f"_icon_button_{id(button)}"
+    button.setObjectName(name)
+
+    def sheet() -> str:
+        faint = QColor(style.color("text"))
+        faint.setAlpha(80)
+        return (f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px {style.igap // 2}px;"
+                f" {style.icon_css()}"
+                f" color: {style.color('text')}; }}"
+                f" QPushButton#{name}:hover {{ color: {style.color('accent')}; }}"
+                f" QPushButton#{name}:pressed {{ color: {style.color('text')}; }}"
+                f" QPushButton#{name}:disabled {{ color: {faint.name(QColor.NameFormat.HexArgb)}; }}")
+    style.live_style(button, sheet)
+    return button
+
+
+def global_buttons(context: Context, spacing: int) -> QWidget:
+    '''
+    The buttons at the top right of every page, left of the window
+    controls: Debug (developer mode only) and Appearance, then Settings and
+    Help - a page's menu bar has them (see MenuBar.build_right_zone), and so
+    do the title pages, which have none (see CornerControls).
+    '''
+    from .important_buttons import OpenSettingsPage, ShowHelpMessage
+    holder = QWidget()
+    row = QHBoxLayout(holder)
+    row.setContentsMargins(0, 0, 0, 0)
+    row.setSpacing(spacing)
+    for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
+        if group_key in DEVELOPER_GROUPS and not context.preferences.is_developer():
+            continue
+        sections = [(header, [MENU_BAR_BUTTONS[name] for name in names if MENU_BAR_BUTTONS[name].is_available(context)])
+                    for header, names in group_sections]
+        group = ButtonGroup(context, group_key, [section for section in sections if section[1]])
+        row.addWidget(icon_button(context, group, RIGHT_ZONE_ICONS[group_key]), 0, Qt.AlignmentFlag.AlignVCenter)
+    for button_class in (OpenSettingsPage, ShowHelpMessage):
+        row.addWidget(icon_button(context, button_class(context)), 0, Qt.AlignmentFlag.AlignVCenter)
+    return holder
+
+
 class _FollowResize(QObject):
     '''Calls back whenever a widget resizes - a page's menu bar isn't in its layout, so it places itself.'''
     def __init__(self, widget: QWidget, callback):
@@ -302,52 +354,20 @@ class MenuBar(QFrame):
         button.setToolTip(self.context.labels.get(f"menu_bar_tooltips_{label}").replace("{page}", name))
 
     def build_right_zone(self) -> QWidget:
-        '''Debug (developer mode only), Appearance, Settings, Help, and the window controls.'''
-        from .important_buttons import OpenSettingsPage, ShowHelpMessage
+        '''The buttons every page has at its top right (see global_buttons), then the window controls.'''
         zone = QWidget()
         row = QHBoxLayout(zone)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(self.row.spacing())
-        for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
-            if group_key in DEVELOPER_GROUPS and not self.context.preferences.is_developer():
-                continue
-            sections = [(header, [MENU_BAR_BUTTONS[name] for name in names if MENU_BAR_BUTTONS[name].is_available(self.context)])
-                        for header, names in group_sections]
-            group = ButtonGroup(self.context, group_key, [section for section in sections if section[1]])
-            self.icon_button(group, RIGHT_ZONE_ICONS[group_key])
-            row.addWidget(group, 0, Qt.AlignmentFlag.AlignVCenter)
-        self.settings_button = self.icon_button(OpenSettingsPage(self.context))
-        self.help_button = self.icon_button(ShowHelpMessage(self.context))
-        row.addWidget(self.settings_button, 0, Qt.AlignmentFlag.AlignVCenter)
-        row.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
+        row.addWidget(global_buttons(self.context, self.row.spacing()), 0, Qt.AlignmentFlag.AlignVCenter)
         # The whole height of the bar, up into the window's top right corner
         self.window_controls = WindowControls(self.context, zone)
         row.addWidget(self.window_controls)
         return zone
 
     def icon_button(self, button: ImportantButton, icon: str | None = None, active_icon: str | None = None) -> ImportantButton:
-        '''
-        Shows a solo button as a bare symbol - its own ICON unless told otherwise (see ImportantButton.show_icon)
-        - no background or border, just the icon in the text color (the
-        accent on hover), its label as its tooltip. Faint while disabled.
-        '''
-        button.show_icon(icon, active_icon)
-        button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        name = f"_icon_button_{id(button)}"
-        button.setObjectName(name)
-
-        def sheet() -> str:
-            faint = QColor(self.style.color("text"))
-            faint.setAlpha(80)
-            return (f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px {self.style.igap // 2}px;"
-                    f" {self.style.icon_css()}"
-                    f" color: {self.style.color('text')}; }}"
-                    f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; }}"
-                    f" QPushButton#{name}:pressed {{ color: {self.style.color('text')}; }}"
-                    f" QPushButton#{name}:disabled {{ color: {faint.name(QColor.NameFormat.HexArgb)}; }}")
-        self.style.live_style(button, sheet)
-        return button
+        '''A solo button as a bare symbol - see icon_button.'''
+        return icon_button(self.context, button, icon, active_icon)
 
     def bar_height(self) -> int:
         '''

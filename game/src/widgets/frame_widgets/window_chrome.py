@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, Qt
 from PySide6.QtGui import QColor, QCursor, QMouseEvent, QPainter
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QWidget
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QStyle, QWidget
 
 from ...app_core import Context
 
@@ -401,16 +401,21 @@ class WindowControls(QWidget):
 class CornerControls(WindowControls):
     '''
     WindowControls floating over the top right of the window, for pages
-    without a menu bar to hold them (the title pages) - the strip across
-    the top of the window around them moves it, as a title bar would.
-    Belongs to the window, like the Footer: Router calls page_changed after
-    each page is built.
+    without a menu bar to hold them (the title pages) - with the buttons
+    every page has beside them (see menu_bar.global_buttons), and the strip
+    across the top of the window around them moving it, as a title bar
+    would. Belongs to the window, like the Footer: Router calls
+    page_changed after each page is built.
     '''
 
     def __init__(self, context: Context):
         super().__init__(context, context.root)
         self.strip = _Strip(context)
         WindowDrag(self.strip, context.root)
+        # Debug, Appearance, Settings and Help - built afresh for each page
+        # without a menu bar (see page_changed), so they follow the theme,
+        # zoom, labels and developer mode like a menu bar's do
+        self.buttons: QWidget | None = None
         context.root.installEventFilter(self)
         self.page_changed()
 
@@ -426,26 +431,53 @@ class CornerControls(WindowControls):
         from .menu_bar import MenuBar
         return any(isinstance(child, MenuBar) for child in page.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly))
 
+    @staticmethod
+    def spacing() -> int:
+        '''The space between these buttons - a menu bar row's (the style's), so they sit just where a menu bar's do.'''
+        return QApplication.style().pixelMetric(QStyle.PixelMetric.PM_LayoutHorizontalSpacing)
+
+    def wanted(self) -> bool:
+        '''Whether the page showing has no menu bar of its own, so these stand in for one.'''
+        return self.root.centralWidget() is not None and not self.page_has_menu_bar()
+
     def page_changed(self):
+        if self.buttons is not None:
+            self.buttons.hide()
+            self.buttons.deleteLater()
+            self.buttons = None
+        if self.wanted():
+            from .menu_bar import global_buttons
+            self.buttons = global_buttons(self.context, self.spacing())
+            self.buttons.setParent(self.root)
         self.place()
 
     def place(self):
         '''
         Across the top of the window, over the page, as tall as a menu bar
-        (see window_bar_height) - unless the page's own menu bar has the controls.
+        (see window_bar_height) - unless the page's own menu bar has these.
+        The window controls hide while fullscreen, like a menu bar's; the
+        other buttons and the strip stay.
         '''
         try:
-            wanted = not self.page_has_menu_bar() and not self.root.isFullScreen() and self.root.centralWidget() is not None
-            width = self.sizeHint().width()
+            wanted = self.wanted()
+            controls = wanted and not self.root.isFullScreen()
+            width = self.sizeHint().width() if controls else 0
             height = window_bar_height(self.context)
             self.setGeometry(self.root.width() - width, 0, width, height)
             # The whole width, under the controls too, so its line runs to the edge
             self.strip.setGeometry(0, 0, self.root.width(), height)
             self.strip.update()
-            self.setVisible(wanted)
+            self.setVisible(controls)
             self.strip.setVisible(wanted)
+            if self.buttons is not None:
+                buttons_width = self.buttons.sizeHint().width()
+                gap = self.spacing() if controls else 0
+                self.buttons.setGeometry(self.root.width() - width - gap - buttons_width, 0, buttons_width, height)
+                self.buttons.setVisible(wanted)
             if wanted:
                 self.strip.raise_()
+                if self.buttons is not None:
+                    self.buttons.raise_()
                 self.raise_()
         except RuntimeError:
             pass
