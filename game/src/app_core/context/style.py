@@ -1,13 +1,15 @@
+import copy
 import json
 from collections.abc import Callable
+from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QApplication, QWidget
 import darkdetect
 
 from . import palette_generator
-from .themes import MATERIALS, PALETTE_KEYS, THEME_MODES, read_theme, resolve_materials
+from .themes import MATERIALS, PALETTE_KEYS, THEME_MODES, is_color, read_theme, resolve_materials, theme_file
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -73,6 +75,9 @@ CURATED_THEMES: list[str] = ["blue_v2_light"]
 # as assets/themes' - are named "imported.<file name>", so one can never
 # replace a bundled preset of the same name
 IMPORTED_PREFIX = "imported."
+# Themes made in the theme editor (see Style.customize) - user_data/themes
+# files named "custom.json", "custom_2.json", ...
+CUSTOM_THEME_STEM = "custom"
 
 # How widgets are styled: each one names its material (see themes.MATERIALS)
 # in a "material" property (see Style.set_material), and the app's one
@@ -145,6 +150,17 @@ class Style:
         # Widgets with colors in their own stylesheet, rebuilt on every theme
         # change (see live_style): id -> (widget, builder)
         self._live_sheets: dict[int, tuple[QWidget, Callable[[], str]]] = {}
+        # Material edits come many times a second during a slider drag (see
+        # set_material_value) - restyling and saving each wait for a pause
+        self._restyle_timer = QTimer()
+        self._restyle_timer.setSingleShot(True)
+        self._restyle_timer.setInterval(30)
+        self._restyle_timer.timeout.connect(lambda: self.restyle(notify=False))
+        self._save_timer = QTimer()
+        self._save_timer.setSingleShot(True)
+        self._save_timer.setInterval(400)
+        self._save_timer.timeout.connect(self.save_theme)
+        self._editing: str | None = None  # the family set_material_value last changed
 
         # Surface settings (see materials) - load_preferred_surfaces()
         # replaces these defaults once preferences exist
@@ -381,20 +397,23 @@ class Style:
     def _css(color: QColor) -> str:
         return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
 
-    def restyle(self):
+    def restyle(self, notify: bool = True):
         '''
         Rebuilds the app stylesheet (Qt restyles every widget from it) and
         every live_style sheet, then lets everything else know (see
-        StyleSignals.changed). After any change to the theme, translucency
-        or button style.
+        StyleSignals.changed) - unless notify is False, for edits whose
+        controls already show them (see set_material_value). After any
+        change to the theme, translucency or button style.
         '''
+        self._restyle_timer.stop()
         QApplication.instance().setStyleSheet(self._build_stylesheet())
         for key, (widget, build) in list(self._live_sheets.items()):
             try:
                 widget.setStyleSheet(build())
             except RuntimeError:  # already deleted on the C++ side
                 self._live_sheets.pop(key, None)
-        self.signals.changed.emit()
+        if notify:
+            self.signals.changed.emit()
 
     @staticmethod
     def _shade(hex_color: str, amount: float) -> str:
@@ -741,6 +760,8 @@ class Style:
         in while the app is open show up the next time the selector opens,
         and deleted ones disappear.
         '''
+        if self._save_timer.isActive():
+            self.save_theme()  # an edit still waiting to be saved would be read back without it
         for family in [name for name in self.palettes if name.startswith(IMPORTED_PREFIX)]:
             del self.palettes[family]
             del self.materials[family]
@@ -749,6 +770,97 @@ class Style:
             family = IMPORTED_PREFIX + path.stem
             if self._load_preset(path, family, "imported"):
                 self.preset_info[family].setdefault("label", path.stem.replace("_", " ").title())
+
+    # Editing themes
+    def is_editable(self) -> bool:
+        '''Whether the current theme is one of the user's own (in user_data/themes) - the only ones the theme editor changes.'''
+        return self.theme_family().startswith(IMPORTED_PREFIX)
+
+    def theme_path(self, family: str) -> Path:
+        '''Where one of the user's own themes is saved.'''
+        return self.context.paths.user_themes / f"{family[len(IMPORTED_PREFIX):]}.json"
+
+    def customize(self):
+        '''
+        Copies the current theme - its palette and materials - into a new
+        file in user_data/themes ("custom.json", "custom_2.json", ...) and
+        switches to it, so its materials can be changed (see
+        set_material_value). The file is the theme: it can be shared, and
+        shows up in the theme selector like any imported theme.
+        '''
+        family = self.theme_family()
+        folder = self.context.paths.user_themes
+        self.context.paths.generate_path(folder)
+        number = 1
+        while (folder / self._custom_file(number)).exists():
+            number += 1
+        path = folder / self._custom_file(number)
+        source = self.preset_name(family) if family in self.preset_info else family.replace(".", " ").replace("_", " ").title()
+        self._write_theme(path, {
+            "info": {"label": "Custom" if number == 1 else f"Custom {number}",
+                     "note": f"Made in the theme editor from {source}."},
+            "palette": {mode: self._base_palette(family, mode) for mode in THEME_MODES},
+            "materials": copy.deepcopy(self.theme_materials()),
+        })
+        self.load_imported_themes()
+        self.set_family(IMPORTED_PREFIX + path.stem)
+
+    @staticmethod
+    def _custom_file(number: int) -> str:
+        return f"{CUSTOM_THEME_STEM}.json" if number == 1 else f"{CUSTOM_THEME_STEM}_{number}.json"
+
+    def _base_palette(self, family: str, mode: str) -> dict[str, str]:
+        '''
+        A family's palette before the inset fields and border contrast that
+        _palette adds on top - what a copy of it stores, since _palette adds
+        them to the copy too. Accent + hierarchy themes come with the tint,
+        step size and height they have now.
+        '''
+        if family in self.palettes:
+            return dict(self.palettes[family][mode])
+        accent, _, hierarchy = family.partition(".")
+        adjust = self.theme_adjust[mode]
+        return palette_generator.generate(self.accents[accent], self.hierarchies[hierarchy], mode, None,
+                                          self.theme_tint, adjust["steps"], adjust["height"], 1.0)
+
+    def set_material_value(self, name: str, color: str | None = None, opacity: float | None = None):
+        '''
+        Changes one of the current theme's materials in the current mode -
+        its color (a palette key or hex code) and/or opacity (0-1). Shows at
+        once and is saved to the theme's file shortly after. Only the
+        user's own themes change (see is_editable).
+        '''
+        if not self.is_editable():
+            return
+        family = self.theme_family()
+        if self._editing not in (None, family) and self._save_timer.isActive():
+            self.save_theme()
+        entry = self.materials[family][name][self.current_theme.partition("_")[0]]
+        if color is not None and is_color(color):
+            entry["color"] = color
+        if opacity is not None:
+            entry["opacity"] = min(1.0, max(0.0, float(opacity)))
+        self._editing = family
+        self._restyle_timer.start()
+        self._save_timer.start()
+
+    def save_theme(self):
+        '''Writes the theme set_material_value last changed back to its file.'''
+        self._save_timer.stop()
+        family, self._editing = self._editing, None
+        if family is None or family not in self.palettes:
+            return
+        # "kind" is "imported" for every theme read from there (see load_imported_themes) - not part of the file
+        info = {key: value for key, value in self.preset_info[family].items() if key != "kind"}
+        self._write_theme(self.theme_path(family), {"info": info, "palette": self.palettes[family],
+                                                    "materials": self.materials[family]})
+
+    def _write_theme(self, path: Path, theme: dict):
+        try:
+            with open(path, "w", encoding="utf-8") as file:
+                json.dump(theme_file(theme), file, indent=4, ensure_ascii=False)
+        except OSError as e:
+            print(f"Err: [{e}] while saving theme {path}.")
 
     def _palette(self, family: str, mode: str) -> dict[str, str]:
         '''One mode of a preset or "<accent>.<hierarchy>" family, inset if theme_inset is on.'''

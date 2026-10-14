@@ -1,9 +1,10 @@
 from typing import ClassVar
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from ..app_core.context.style import THEME_ADJUST_RANGE, THEME_TINT_MAX
+from ..app_core.context.themes import MATERIALS, PALETTE_KEYS, is_color
 from ..widgets.frame_widgets.important_buttons import ResetTheme
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
@@ -20,15 +21,17 @@ class ThemeEditorPage(SettingsPage):
     '''
     Every theme setting beyond the few on the settings page and in the
     menu bar's Themes section (see SettingsPage.theme_rows) - accents and
-    hierarchies, every special theme, tint and layer fine-tuning, and the
-    surfaces' translucency - in tabs on the left. On the
+    hierarchies, every special theme, tint and layer fine-tuning - and
+    the theme's materials (see themes.py), in tabs on the left. Bundled
+    themes' materials are read-only: Customize copies the theme into the
+    user's own file (see Style.customize), whose materials change live. On the
     right, a scrolling grid of example panels (see widgets.panels.examples) -
     every kind of panel body with made-up data - so each change shows on
     everything it touches.
     '''
 
     LABEL_WIDTH = 190
-    CONTROL_WIDTH = 230
+    CONTROL_WIDTH = 300  # room for a material's color and opacity side by side
     SHOW_NOTES = False  # no room beside the gallery - rows explain themselves in tooltips
     TITLE = "theme_editor"
     MENU_BAR_BUTTONS = THEME_EDITOR_MENU_BAR
@@ -45,7 +48,7 @@ class ThemeEditorPage(SettingsPage):
 
     def build_tabs(self):
         self.build_colors_tab()
-        self.build_surfaces_tab()
+        self.build_materials_tab()
         # As wide as the widest tab's rows need (their names' length depends on the
         # language and font), plus the scrollbar - the gallery gets the rest
         content = max(self.tabs.widget(index).widget().sizeHint().width() for index in range(self.tabs.count()))
@@ -104,9 +107,22 @@ class ThemeEditorPage(SettingsPage):
         reset = self.section(tab, "theme_reset")
         reset.row("settings_page_rows_reset_theme", ResetTheme(self.context), "settings_page_row_notes_reset_theme")
 
-    def build_surfaces_tab(self):
+    def build_materials_tab(self):
         style = self.style
-        tab = self.new_tab("surfaces")
+        tab = self.new_tab("materials")
+
+        materials = self.section(tab, "materials")
+        editable = style.is_editable()
+        if not editable:
+            materials.row("settings_page_rows_customize_theme", self.button(
+                "settings_page_buttons_customize_theme", style.customize), "settings_page_row_notes_customize_theme")
+        mode = style.current_theme.partition("_")[0]
+        for name in MATERIALS:
+            control = self.material_control(name, style.theme_materials()[name][mode])
+            control.setEnabled(editable)
+            materials.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
+            # Only once placed - placing an editable box resets the font it was given
+            control.findChild(QComboBox).setFont(style.get_font())
 
         translucency = self.section(tab, "translucency")
         translucency.row("settings_page_rows_translucent_surfaces",
@@ -119,6 +135,24 @@ class ThemeEditorPage(SettingsPage):
 
     def reset_surfaces(self):
         self.style.reset_surfaces()
+
+    def material_control(self, name: str, entry: dict) -> QWidget:
+        '''A material's color - a palette key, or type a hex code - and its opacity, side by side.'''
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        color = QComboBox()
+        color.setEditable(True)
+        color.addItems(PALETTE_KEYS)
+        color.setCurrentText(entry["color"])  # before connecting, so loading it isn't an edit
+        color.setMinimumContentsLength(9)
+        color.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        # Typing a hex code passes through partial ones - only whole colors apply
+        color.currentTextChanged.connect(lambda text: is_color(text) and self.style.set_material_value(name, color=text))
+        layout.addWidget(color)
+        layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
+                                     lambda value: self.style.set_material_value(name, opacity=value / 100)), 1)
+        return row
 
     # Gallery
     def build_gallery(self) -> QScrollArea:
