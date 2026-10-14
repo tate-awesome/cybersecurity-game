@@ -251,6 +251,13 @@ class PopupExit(QWidget):
     takes its place, showing a picture of it, and fades out while gliding
     SLIDE px back toward the trigger button, then deletes itself.
 
+    Played before the popup hides (see Overlay.setVisible), and painted
+    straight away, so it's already on screen when the popup goes - shown
+    after, there was a frame with neither, and the picture blinked back in.
+    See-through per pixel from the start, fading by painting with less
+    opacity rather than by window opacity, whose switch in and out of a
+    layered window redraws it on Windows (see DesktopFade).
+
     Only played where window opacity works (see PopupEntrance) - elsewhere
     the popup just vanishes, as it would without this.
     '''
@@ -259,16 +266,36 @@ class PopupExit(QWidget):
     SLIDE = 6.0
 
     @classmethod
-    def play(cls, popup: QWidget, away: tuple[float, float]):
-        if not PopupEntrance.supports_fade() or popup.width() <= 0:
+    def play(cls, popups: list[QWidget], away: tuple[float, float]):
+        '''
+        Fades out popups (bottom first - a popup and those opened from it)
+        as one picture of them as they were stacked on screen. Separate
+        pictures fading together would let the lower ones show through
+        the upper ones halfway.
+        '''
+        popups = [popup for popup in popups if popup.width() > 0]
+        if not PopupEntrance.supports_fade() or not popups:
             return
-        cls(popup.parentWidget(), popup.grab(), popup.pos(), away)
+        area = popups[0].geometry()
+        for popup in popups[1:]:
+            area = area.united(popup.geometry())
+        ratio = popups[0].devicePixelRatioF()
+        pixmap = QPixmap(area.size() * ratio)
+        pixmap.setDevicePixelRatio(ratio)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        for popup in popups:
+            painter.drawPixmap(popup.pos() - area.topLeft(), popup.grab())
+        painter.end()
+        cls(popups[0].parentWidget(), pixmap, area.topLeft(), away)
 
     def __init__(self, parent: QWidget | None, pixmap: QPixmap, pos: QPoint, away: tuple[float, float]):
         super().__init__(parent, Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.pixmap = pixmap
+        self.opacity = 1.0
         self.start = QPointF(pos)
         self.away = away
         self.curve = QEasingCurve(QEasingCurve.Type.InCubic)
@@ -283,16 +310,22 @@ class PopupExit(QWidget):
         self.animation.finished.connect(self.deleteLater)
         self.step(0.0)
         self.show()
+        self.repaint()  # on screen now, before the popup it replaces hides
         self.animation.start()
 
     def step(self, progress: float):
         eased = self.curve.valueForProgress(progress)
-        self.setWindowOpacity(1.0 - eased)
+        self.opacity = 1.0 - eased
         offset = eased * self.SLIDE
         self.move((self.start - QPointF(self.away[0] * offset, self.away[1] * offset)).toPoint())
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        painter.setOpacity(self.opacity)
         painter.drawPixmap(0, 0, self.pixmap)
         painter.end()
 

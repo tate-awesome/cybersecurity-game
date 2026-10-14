@@ -1,4 +1,3 @@
-import time
 from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer
 from PySide6.QtGui import QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
@@ -38,8 +37,13 @@ class Overlay(QWidget):
         self.open_text = open_text or f"{button.text()} {self.OPEN_MARKER}"
         button.setText(self.closed_text)
         self.populate_func = populate_func
-        self._last_hidden_at = 0.0
         self._parent_overlay: Overlay | None = None
+        # The widget this was last opened from - the button, or the proxy
+        # standing in for it in a menu bar's overflow overlay (see click_open)
+        self._opened_from: QWidget | None = None
+        # Set while an overlay this was opened from closes it along with
+        # itself - that one's fade-out picture already shows this one too
+        self._fades_with_parent = False
         self._entrance: PopupEntrance | None = None
         # Frosted glass (see capture_behind/paintEvent): a snapshot of what's
         # behind this overlay, where on screen it was taken, and blurred
@@ -79,13 +83,9 @@ class Overlay(QWidget):
             pass
 
     def _toggle(self):
-        # Debounce: the same click that lands back on the trigger button
-        # while this popup is open is also an "outside click" as far as
-        # Qt's popup grab is concerned, so it auto-hides this widget before
-        # the button's own clicked signal fires - without this guard that
-        # click would immediately reopen what it was meant to close.
-        if time.monotonic() - self._last_hidden_at < 0.15:
-            return
+        # A press on the trigger button while this is open closes it in
+        # mousePressEvent and never reaches the button (see there), so this
+        # only runs for a click that should open it
         if self.isVisible():
             self.hide()
         else:
@@ -108,6 +108,7 @@ class Overlay(QWidget):
 
         self._close_unrelated_overlays()
         self.populate_func(self)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoMouseReplay, False)  # see mousePressEvent
         self.button.setText(self.open_text)
         self.adjustSize()
         # A click replayed from a menu bar overflow proxy (see
@@ -115,6 +116,10 @@ class Overlay(QWidget):
         # squashed, so it has no real on-screen position - anchor to the
         # proxy that was actually clicked instead.
         target = getattr(self.button, "click_proxy", None) or self.button
+        # Kept, since click_proxy is only set for the moment of the click -
+        # a later press on that proxy has to be recognised as this overlay's
+        # own trigger too (see mousePressEvent)
+        self._opened_from = target
         self.move(self.calculate_placement(self.anchor, target))
         # Started before show() so the very first frame is already in the
         # entrance pose rather than flashing in at its final spot
@@ -262,20 +267,50 @@ class Overlay(QWidget):
     def click_close(self):
         self.hide()  # triggers hideEvent below, which does the actual cleanup
 
+    def setVisible(self, visible: bool):
+        # Every hide - hide(), and Qt closing this popup itself (outside
+        # click, Escape) - comes through here first, while it's still on
+        # screen: the fade-out picture goes up over it before the window
+        # goes, so there's no frame with neither. (An OS-level hide, like
+        # minimizing, doesn't come through here, and doesn't fade.)
+        if not visible and self.isVisible():
+            # It closes the overlays opened from inside it too (see
+            # hideEvent) - all of them fade out as one picture, taken now
+            # while they're all still up
+            stack = [self, *self._open_descendants()]
+            for overlay in stack:
+                if overlay._entrance is not None:
+                    overlay._entrance.stop()  # the picture shows it at rest, not mid-glide
+                    overlay._entrance = None
+            if not self._fades_with_parent:
+                PopupExit.play(stack, self._away)
+            for overlay in stack[1:]:
+                overlay._fades_with_parent = True
+                overlay.hide()
+                overlay._fades_with_parent = False
+        super().setVisible(visible)
+
+    def _open_descendants(self) -> list["Overlay"]:
+        '''Overlays opened from this one, and from those, that are still open - in the order they stack (lowest first).'''
+        found = []
+        frontier = [self]
+        while frontier:
+            parent = frontier.pop(0)
+            for overlay in self.context.root.findChildren(Overlay):
+                if overlay._parent_overlay is parent and overlay is not parent and overlay.isVisible() and overlay not in found:
+                    found.append(overlay)
+                    frontier.append(overlay)
+        return found
+
     def hideEvent(self, event):
         # Also runs when Qt closes this popup itself (outside click,
         # Escape) - not just when click_close() is called directly - so
         # this is the one place that resets the trigger button and clears
         # stale contents regardless of how the overlay got closed.
-        self._last_hidden_at = time.monotonic()
         if self._entrance is not None:
             self._entrance.stop()
             self._entrance = None
         self._behind_timer.stop()
-        # Fade out a picture of it - taken before _clear_contents empties it.
-        # Not for a spontaneous hide (the OS minimizing the window, etc.)
-        if not event.spontaneous():
-            PopupExit.play(self, self._away)
         if self.button is not None:
             self.button.setText(self.closed_text)
         self._clear_contents()
@@ -306,13 +341,28 @@ class Overlay(QWidget):
             target = None
 
         keep = target._lineage() if target is not None else set()
-        for overlay in self.context.root.findChildren(Overlay):
-            if overlay not in keep and overlay.isVisible():
+        closing = [overlay for overlay in self.context.root.findChildren(Overlay) if overlay not in keep and overlay.isVisible()]
+        # A press on the button (or the menu bar overflow proxy) that opened
+        # one of these only closes it - passed on, the button would count a click on
+        # release and open it again. WA_NoMouseReplay stops Qt replaying
+        # the press once the last popup closes; set on all of them, since
+        # Qt checks whichever closes last
+        on_trigger = under_mouse is not None and any(
+            trigger is not None and (under_mouse is trigger or trigger.isAncestorOf(under_mouse))
+            for overlay in closing for trigger in (overlay.button, overlay._opened_from))
+        for overlay in closing:
+            if on_trigger:
+                overlay.setAttribute(Qt.WidgetAttribute.WA_NoMouseReplay, True)
+        # Only the bottom of each closing stack - it takes the ones opened
+        # from it down too, fading as one picture (see setVisible)
+        for overlay in closing:
+            if overlay._parent_overlay not in closing and overlay.isVisible():
                 overlay.hide()
 
-        if target is None:
+        if target is None or on_trigger:
             # No popups left open, so Qt replays this press onto whatever
-            # main-window widget is under the mouse, same as for a lone popup
+            # main-window widget is under the mouse, same as for a lone popup -
+            # unless it was a trigger button (see above), which gets nothing
             return
         # Qt only replays a press once no popups are left at all - deliver
         # it to the surviving overlay's widget by hand, so a click that
