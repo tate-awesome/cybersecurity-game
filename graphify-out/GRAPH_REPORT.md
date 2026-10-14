@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-14)
 
 ## Corpus Check
-- 311 files · ~232,266 words
+- 311 files · ~232,264 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7f0a56df`
+- Built from commit: `903a0815`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -502,7 +502,7 @@ Nodes (3): CallbackRegistry, ClickManager, PreferencesData
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `settings_overlay_button.py`, `.apply_theme`, `host.py`, `widgets/__init__.py`, `PageManager`, `CheckboxOverlay`, `hvac_view.py`, `open_favorite_page.py`, `GoForwardToNextPage`, `buffer_manager.py`, `Scrollable`, `LinkToPage`, `pause_menu.py`, `Style`, `Performance`, `LocalizationManager`, `examples.py`, `.save_current_page`, `FilterOverlay`, `Canvas`, `AnimationManager`, `InputManager`, `Json`, `KeyBinds`, `context_manager.py`, `threading`, `Router`, `PrivilegedHelper`, `Preferences`, `.start_session`, `ProcessManager`?**
-  _High betweenness centrality (0.244) - this node is a cross-community bridge._
+  _High betweenness centrality (0.241) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `ModBus Man-in-the-Middle Attack Exercise`, `Three-column Minimizable Panel Layout`, `Status Log Panel` to the rest of the system?**

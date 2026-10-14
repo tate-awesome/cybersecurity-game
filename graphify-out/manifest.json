@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1791986470.262614,
-    "seen": 1791986554.147086,
-    "ast_hash": "f9a26152812a2296ac70962bcd4a54d3",
+    "mtime": 1791986564.9698217,
+    "seen": 1791986592.9648342,
+    "ast_hash": "23661223edb1d07f6a9d09a8d1b18959",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -1518,9 +1518,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
-    "mtime": 1791986470.2636158,
-    "seen": 1791986554.161678,
-    "ast_hash": "15d02287e309d1817c5db9adc56f5c20",
+    "mtime": 1791986564.9688077,
+    "seen": 1791986592.9781306,
+    "ast_hash": "d505985f016c268023c7bbedfc42f171",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_workspace_save_button.py": {
