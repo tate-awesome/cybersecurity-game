@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, Qt, QUrl, Signal
@@ -6,6 +7,7 @@ from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QPushButton, QS
 
 from ...app_core import Context
 from ...widgets import Scrollable
+from ...widgets.frame_widgets.important_buttons import POPOUT_MARK
 from ..page import Page
 
 
@@ -15,7 +17,21 @@ class NoteBrowser(QTextBrowser):
     (e.g. "screenshot.png") resolve against the workspace's own folder via
     searchPaths, and images are scaled down to fit the viewport so a
     full-size screenshot doesn't force horizontal scrolling.
+
+    Links that open the browser (http/https) get the POPOUT_MARK after
+    their text, like every other way out of the app.
     '''
+
+    # A markdown link to the web - not an image (![...](...))
+    WEB_LINK = re.compile(r"(?<!!)\[([^\]]+)\]\((https?://[^)\s]+)\)")
+
+    def setMarkdown(self, markdown: str):
+        def mark(match: re.Match) -> str:
+            text = match.group(1)
+            if not text.rstrip().endswith(POPOUT_MARK):
+                text = f"{text} {POPOUT_MARK}"
+            return f"[{text}]({match.group(2)})"
+        super().setMarkdown(self.WEB_LINK.sub(mark, markdown))
 
     def loadResource(self, type: int, name: QUrl):
         resource = super().loadResource(type, name)
