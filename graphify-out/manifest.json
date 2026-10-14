@@ -120,9 +120,9 @@
     "semantic_hash": "893299ec169957cc49ccc6c17bcf8490"
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1791975231.0633657,
-    "seen": 1791975403.1807995,
-    "ast_hash": "79e93c6fe75462218be2850d9567f1d7",
+    "mtime": 1791976296.3282776,
+    "seen": 1791976407.6315782,
+    "ast_hash": "840af9833918d7c93b9aded38b832191",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1791975304.3158646,
-    "seen": 1791975403.1945539,
-    "ast_hash": "077d994468b00dea18fc40e7183945b4",
+    "mtime": 1791976240.7357204,
+    "seen": 1791976407.6412923,
+    "ast_hash": "f447e16ba5594084ad0b647801131579",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -1314,39 +1314,39 @@
     "semantic_hash": "1b3850ba3626d4945fac6a173684497c"
   },
   "game/assets/themes/amber.json": {
-    "mtime": 1791969774.1227987,
-    "seen": 1791970889.4849093,
-    "ast_hash": "e47bd19a29c27817f5c213b0310c4694",
+    "mtime": 1791976253.9502666,
+    "seen": 1791976407.6381173,
+    "ast_hash": "12df193fa2bf4d8eec5c45f118bf50b7",
     "semantic_hash": ""
   },
   "game/assets/themes/amber_v2_light.json": {
-    "mtime": 1791969774.1227987,
-    "seen": 1791970889.484912,
-    "ast_hash": "3c1c0c7dcd663e63fdeb57be0f460793",
+    "mtime": 1791976253.9512782,
+    "seen": 1791976407.6381197,
+    "ast_hash": "73333810af1d6188b2081ab18f19abd4",
     "semantic_hash": ""
   },
   "game/assets/themes/blue_v2_light.json": {
-    "mtime": 1791969774.1238143,
-    "seen": 1791970889.4849133,
-    "ast_hash": "6b3d10ed882caf3f6d698b2c3a24a165",
+    "mtime": 1791976253.952291,
+    "seen": 1791976407.6381214,
+    "ast_hash": "8fb6fe3b309d4f543b7232b2ecef67ab",
     "semantic_hash": ""
   },
   "game/assets/themes/catppuccin_mocha.json": {
-    "mtime": 1791969774.1238143,
-    "seen": 1791970889.4849153,
-    "ast_hash": "a1f8fe511189d880287309c47bc988be",
+    "mtime": 1791976253.9533057,
+    "seen": 1791976407.638123,
+    "ast_hash": "3c5043ff87d19eec1dbc655263e1f4b0",
     "semantic_hash": ""
   },
   "game/assets/themes/discord.json": {
-    "mtime": 1791969774.1253276,
-    "seen": 1791970889.4849164,
-    "ast_hash": "a9ce5c4f02ed093d97ee58c502fca2a4",
+    "mtime": 1791976253.9543219,
+    "seen": 1791976407.6381242,
+    "ast_hash": "8c648ca8d348dd19f5e0d3442657ff4e",
     "semantic_hash": ""
   },
   "game/assets/themes/facebook_tokens_in_same_skin.json": {
-    "mtime": 1791969774.1263459,
-    "seen": 1791970889.4849184,
-    "ast_hash": "5560d7b660c7f266369b3f34958f4772",
+    "mtime": 1791976253.95534,
+    "seen": 1791976407.6381266,
+    "ast_hash": "f6987c912becfb867dbee6674f4c8e1a",
     "semantic_hash": ""
   },
   "game/assets/themes/generator/accents.json": {
@@ -1362,87 +1362,87 @@
     "semantic_hash": "2f4bb182a4c4b8fb27c7afc304e6f2d2"
   },
   "game/assets/themes/gruvbox.json": {
-    "mtime": 1791969774.127368,
-    "seen": 1791970889.4852185,
-    "ast_hash": "9f33185eaa742a53c0574bddde77ca73",
+    "mtime": 1791976253.9563725,
+    "seen": 1791976407.6384459,
+    "ast_hash": "fb400400ede219f42f32e9245f10c5ee",
     "semantic_hash": ""
   },
   "game/assets/themes/instagram_community_skin.json": {
-    "mtime": 1791969774.1289053,
-    "seen": 1791970889.485221,
-    "ast_hash": "344e034b598da475712acc21bf0a137e",
+    "mtime": 1791976253.9573915,
+    "seen": 1791976407.6384478,
+    "ast_hash": "124cf706aaf0c44c188393f1ccf18538",
     "semantic_hash": ""
   },
   "game/assets/themes/kimbie_dark_inset_fields.json": {
-    "mtime": 1791969774.1299243,
-    "seen": 1791970889.4852223,
-    "ast_hash": "8e0ed45d0aaac2b19c949ae198537c34",
+    "mtime": 1791976253.9584079,
+    "seen": 1791976407.6384494,
+    "ast_hash": "e2ae0ffff792bd258a2a0b438b5c4490",
     "semantic_hash": ""
   },
   "game/assets/themes/kimbie_dark_vs_code.json": {
-    "mtime": 1791969774.1309364,
-    "seen": 1791970889.485224,
-    "ast_hash": "7ac4df90cb972e6e4ab2fa29fa8e99ff",
+    "mtime": 1791976253.9594264,
+    "seen": 1791976407.638451,
+    "ast_hash": "2c50bdd7a9b2c1293a03e7a55f4f4fee",
     "semantic_hash": ""
   },
   "game/assets/themes/one_dark_pro_vs_code.json": {
-    "mtime": 1791969774.1309364,
-    "seen": 1791970889.4852252,
-    "ast_hash": "938e4a9e703866addbb5a6621a5df78f",
+    "mtime": 1791976253.9604425,
+    "seen": 1791976407.6384525,
+    "ast_hash": "f97ed10ce78b5da5f5280ae47cdda818",
     "semantic_hash": ""
   },
   "game/assets/themes/pinterest.json": {
-    "mtime": 1791969774.1319506,
-    "seen": 1791970889.485227,
-    "ast_hash": "10eab525b79056edff64a517d4a6919e",
+    "mtime": 1791976253.9614544,
+    "seen": 1791976407.638454,
+    "ast_hash": "671e31e6429d94dbe4f15d1acc734f99",
     "semantic_hash": ""
   },
   "game/assets/themes/purple.json": {
-    "mtime": 1791969774.1329656,
-    "seen": 1791970889.485228,
-    "ast_hash": "30fe81c700c994525971dcf4d2fadfe8",
+    "mtime": 1791976253.9624698,
+    "seen": 1791976407.6384554,
+    "ast_hash": "751b90a98181d1cdd8846f4ddfac467f",
     "semantic_hash": ""
   },
   "game/assets/themes/purple_v2_light.json": {
-    "mtime": 1791969774.134002,
-    "seen": 1791970889.4852295,
-    "ast_hash": "aac63f0b0a77cdd9e94e58537899fc75",
+    "mtime": 1791976253.9634833,
+    "seen": 1791976407.638457,
+    "ast_hash": "134cca5e2926708902902fdb2a63411a",
     "semantic_hash": ""
   },
   "game/assets/themes/red.json": {
-    "mtime": 1791969774.13551,
-    "seen": 1791970889.4852312,
-    "ast_hash": "0befe0544ea5f15513801bbcf3672db0",
+    "mtime": 1791976253.9644969,
+    "seen": 1791976407.6384587,
+    "ast_hash": "faa3d55d3eccba93fb311f96a93a3fd5",
     "semantic_hash": ""
   },
   "game/assets/themes/red_v2_light.json": {
-    "mtime": 1791969774.13551,
-    "seen": 1791970889.4852324,
-    "ast_hash": "1807b17fec1f224d4745301f1440a38f",
+    "mtime": 1791976253.9655137,
+    "seen": 1791976407.6384602,
+    "ast_hash": "d0110ee3308efb017e913322e3ed7789",
     "semantic_hash": ""
   },
   "game/assets/themes/spotify.json": {
-    "mtime": 1791969774.1365292,
-    "seen": 1791970889.4852345,
-    "ast_hash": "c50321cccf8c88f230dc0a9ae7bb96c8",
+    "mtime": 1791976253.9665153,
+    "seen": 1791976407.6384616,
+    "ast_hash": "d53f92c2453d7bb834b297a6c1bb5820",
     "semantic_hash": ""
   },
   "game/assets/themes/teal.json": {
-    "mtime": 1791969774.1375484,
-    "seen": 1791970889.485236,
-    "ast_hash": "c3bf6409e1225f3bd6e90cde9e7121d2",
+    "mtime": 1791976253.967756,
+    "seen": 1791976407.638463,
+    "ast_hash": "c471cba0a3cb00ce62069078512dbf37",
     "semantic_hash": ""
   },
   "game/assets/themes/teal_v2_light.json": {
-    "mtime": 1791969774.138564,
-    "seen": 1791970889.4852374,
-    "ast_hash": "c7bbded0490d291a1785cb7beb3a2d21",
+    "mtime": 1791976253.967756,
+    "seen": 1791976407.6384642,
+    "ast_hash": "62b323a340f1455f892354668e58caec",
     "semantic_hash": ""
   },
   "game/assets/themes/tokyo_night_vs_code.json": {
-    "mtime": 1791969774.139578,
-    "seen": 1791970889.4852388,
-    "ast_hash": "b28be502718514a3d3c349ce1016c802",
+    "mtime": 1791976253.9687731,
+    "seen": 1791976407.6384656,
+    "ast_hash": "2187151b499dcbd1dc1873650ed669ac",
     "semantic_hash": ""
   },
   "game/src/app_core/context/palette_generator.py": {
@@ -1890,9 +1890,9 @@
     "semantic_hash": "4691829cf22c167bab0bf0228f60d974"
   },
   "game/src/pages/theme_editor.py": {
-    "mtime": 1791975193.4269943,
-    "seen": 1791975403.2044055,
-    "ast_hash": "b4c8f9641fbd753674d6456b51356f94",
+    "mtime": 1791976296.3262384,
+    "seen": 1791976407.6510034,
+    "ast_hash": "87d90699c916657485b9b4e864a713b6",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/import_themes.py": {
@@ -1920,9 +1920,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/themes.py": {
-    "mtime": 1791975081.699364,
-    "seen": 1791975403.194557,
-    "ast_hash": "553c7f78fc0e1c50518e9caeb9a1bd2a",
+    "mtime": 1791976175.2396576,
+    "seen": 1791976407.6412957,
+    "ast_hash": "2e919dd6c1537057fd0940c2cf28e2ea",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/examples.py": {
