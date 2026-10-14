@@ -1,17 +1,17 @@
 # Graph Report - cybersecurity-game  (2026-10-14)
 
 ## Corpus Check
-- 311 files · ~232,507 words
+- 311 files · ~232,567 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
 ## Summary
-- 3693 nodes · 7770 edges · 186 communities (65 shown, 121 thin omitted)
+- 3693 nodes · 7770 edges · 187 communities (65 shown, 122 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 454 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `38018dc4`
+- Built from commit: `fd06c675`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -231,7 +231,7 @@
 - **ModBus process observation panels** — game_assets_pages_workspaces_dos_attack_screenshot_modbus_data_panel, game_assets_pages_workspaces_dos_attack_screenshot_modbus_model_panel, game_assets_pages_workspaces_dos_attack_screenshot_modbus_monitors_panel [INFERRED 0.85]
 - **MITM attack workflow: WiFi connect, network mapping, ARP spoofing** — game_assets_pages_workspaces_modbus_mitm_screenshot_wifi_connection, game_assets_pages_workspaces_modbus_mitm_screenshot_nmapping, game_assets_pages_workspaces_modbus_mitm_screenshot_arp_spoofing, game_assets_pages_workspaces_modbus_mitm_screenshot_modbus_mitm_attack [INFERRED 0.85]
 
-## Communities (186 total, 121 thin omitted)
+## Communities (187 total, 122 thin omitted)
 
 ### Community 0 - "important_buttons/__init__.py"
 Cohesion: 0.03
@@ -450,7 +450,7 @@ Cohesion: 0.14
 Nodes (13): ap_tunnel_enabled(), ap_tunnel_key(), hvac_kalman_enabled(), _hvac_send(), kalman_enabled(), push_hvac_settings(), read_hvac_state(), set_ap_tunnel() (+5 more)
 
 ### Community 142 - "menu_bar.py"
-Cohesion: 0.06
+Cohesion: 0.05
 Nodes (8): ButtonGroup, GoBackToPreviousPage, GoForwardToNextPage, OpenPauseMenu, ToggleBookmark, _FollowResize, group_button_names(), _pane_is_minimized()
 
 ### Community 143 - "._scan_for_networks"
@@ -496,19 +496,19 @@ Nodes (4): Canvas, DefenderWorldMap, NetworkDiagramCanvas, TriangleCanvas
 ## Knowledge Gaps
 - **43 isolated node(s):** `ModBus Man-in-the-Middle Attack Exercise`, `Three-column Minimizable Panel Layout`, `Status Log Panel`, `Top Toolbar (Quit, Back to Title, Refresh, Reset Page, Help, Toggle Theme, Select Theme, Favorite Page, Load Labels)`, `ARP Spoofing Form` (+38 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1431 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **121 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **122 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `Footer`, `.apply_theme`, `host.py`, `channels/__init__.py`, `pyside6_qtcore`, `PageManager`, `menu_bar.py`, `Visual`, `Overlay`, `CheckboxOverlay`, `hvac_view.py`, `.setText`, `WorkspaceSaveResetButton`, `LinkToPage`, `widgets/__init__.py`, `Style`, `Performance`, `LocalizationManager`, `examples.py`, `configure_this_workspace.py`, `edit_modbus_register_display.py`, `_base_button.py`, `Canvas`, `AnimationManager`, `InputManager`, `Json`, `KeyBinds`, `threading`, `Router`, `PrivilegedHelper`, `Preferences`, `.start_session`, `ProcessManager`?**
-  _High betweenness centrality (0.245) - this node is a cross-community bridge._
+  _High betweenness centrality (0.244) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `ModBus Man-in-the-Middle Attack Exercise`, `Three-column Minimizable Panel Layout`, `Status Log Panel` to the rest of the system?**
   _43 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `important_buttons/__init__.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.03494949494949495 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03342046303211352 - nodes in this community are weakly interconnected._
 - **Why does `ConfigEditor` connect `ConfigEditor` to `LayoutEditor`, `.collect`, `WorkspaceSelectPage`, `NoteBrowser`, `.new_tab`, `pyside6_qtcore`, `.create_workspace`, `.build_workspace_section`, `configure_this_workspace.py`, `.leaf`, `.sort_settings`, `.add_setting_row`, `SettingCell`, `FindBar`, `NewWorkspaceDialog`, `.__init__`?**
   _High betweenness centrality (0.078) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `Style` (e.g. with `ContextManager` and `SettingsSection`) actually correct?**
