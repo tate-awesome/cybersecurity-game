@@ -23,11 +23,11 @@
         },
         "panel": {
             "dark": {
-                "color": "#362712",
+                "color": "#362714",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#fbecd6",
+                "color": "#fcefdd",
                 "opacity": 1.0
             }
         },
@@ -43,21 +43,21 @@
         },
         "card": {
             "dark": {
-                "color": "#221a0f",
+                "color": "#221a11",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#f5dfc0",
+                "color": "#f5dfc2",
                 "opacity": 1.0
             }
         },
         "field": {
             "dark": {
-                "color": "#17110a",
+                "color": "#120d09",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ead2ae",
+                "color": "#e3ccaa",
                 "opacity": 1.0
             }
         },
@@ -173,11 +173,11 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#17110a",
+                "color": "#17120f",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#ead2ae",
+                "color": "#e6d1b3",
                 "opacity": 1.0
             }
         },

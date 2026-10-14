@@ -94,19 +94,19 @@
                 }
             },
             "light": {
-                "color": "#ffffff",
+                "color": "#fdfdfd",
                 "opacity": 0.32,
                 "gradient": {
                     "angle": 135,
                     "stops": [
                         [
                             0,
-                            "#ffffff",
+                            "#fdfdfd",
                             0.5
                         ],
                         [
                             1,
-                            "#ffffff",
+                            "#fdfdfd",
                             0.22
                         ]
                     ]
@@ -160,21 +160,21 @@
         },
         "card": {
             "dark": {
-                "color": "#0a0420",
+                "color": "#000000",
                 "opacity": 0.18
             },
             "light": {
-                "color": "#5b3a99",
+                "color": "#000000",
                 "opacity": 0.06
             }
         },
         "field": {
             "dark": {
-                "color": "#0a0420",
+                "color": "#000000",
                 "opacity": 0.38
             },
             "light": {
-                "color": "#5b3a99",
+                "color": "#000000",
                 "opacity": 0.14
             }
         },
@@ -380,12 +380,12 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#0a0420",
-                "opacity": 0.22
+                "color": "#171717",
+                "opacity": 0.38
             },
             "light": {
-                "color": "#5b3a99",
-                "opacity": 0.08
+                "color": "#696969",
+                "opacity": 0.14
             }
         },
         "selection": {

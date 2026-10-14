@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
 from ..app_core import Context
 from ..app_core.context.keybinds import DEFAULT_KEYBINDS
 from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
-from ..app_core.context.style import BACKGROUND_FPS_RANGE
+from ..app_core.context.style import BACKGROUND_FPS_RANGE, PANEL_BORDER_WIDTH
 from ..widgets import MenuBar, VISUALS
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
@@ -442,9 +442,11 @@ class SettingsPage(Page):
 
 class SettingsSection(QFrame):
     '''
-    One titled card of settings, like a workspace editor section: its
+    One titled section of settings, like a workspace editor section: its
     title, an explanation, then a row per setting - name | control | what
-    it does.
+    it does. Built like a panel (see themes' module docstring): a drawer
+    with the title and explanation along its top, where a panel's menu bar
+    is, and the rows on one card inside the drawer's frame.
     '''
 
     def __init__(self, page: SettingsPage, name: str, developer: bool = False):
@@ -454,30 +456,49 @@ class SettingsSection(QFrame):
         self.developer = developer
         style = page.style
         labels = page.labels
-        style.set_material(self, "panel", rounded=True)
+        style.set_material(self, "panel", rounded=True, outlined=True)
+        self.style = style
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(style.igap * 2, style.igap, style.igap * 2, style.igap)
+        layout.setSpacing(0)
+        self.drawer_layout = layout
+
+        # Along the drawer's top
+        top = QVBoxLayout()
+        top.setContentsMargins(style.igap * 2 - PANEL_BORDER_WIDTH, style.igap, style.igap * 2, style.igap)
+        top.setSpacing(2)
+        layout.addLayout(top)
         title = labels.get(f"settings_page_sections_{name}")
         header = QLabel(developer_text(title) if developer else title)
         header.setFont(style.get_font("title_btn"))
         if developer:
             # The mark's fallback font has a taller line - keep the title's own
             header.setFixedHeight(header.fontMetrics().height())
-        layout.addWidget(header)
+        top.addWidget(header)
         explanation = QLabel(labels.get(f"settings_page_notes_{name}"))
         explanation.setFont(style.get_font("small"))
         explanation.setWordWrap(True)
-        layout.addWidget(explanation)
+        top.addWidget(explanation)
 
-        self.grid = QGridLayout()
+        # Inside the drawer
+        card = QWidget()
+        style.set_material(card, "card")
+        layout.addWidget(card)
+        self.grid = QGridLayout(card)
+        self.grid.setContentsMargins(style.igap * 2, style.igap, style.igap * 2, style.igap)
         self.grid.setHorizontalSpacing(style.igap * 2)
         self.grid.setVerticalSpacing(style.igap)
         # Same column widths in every section, so controls line up down the page
         self.grid.setColumnMinimumWidth(0, page.LABEL_WIDTH)
         self.grid.setColumnMinimumWidth(1, page.CONTROL_WIDTH)
         self.grid.setColumnStretch(2 if page.SHOW_NOTES else 1, 1)
-        layout.addLayout(self.grid)
         self.count = 0
+        self.fit_frame()
+        style.signals.changed.connect(self.fit_frame)
+
+    def fit_frame(self):
+        '''The drawer's frame around the card - the theme's "panel_frame" px left, right and below (see Panel.fit_frame).'''
+        frame = self.style.setting("panel_frame") + PANEL_BORDER_WIDTH
+        self.drawer_layout.setContentsMargins(frame, PANEL_BORDER_WIDTH, frame, frame)
 
     def row(self, name: str, control: QWidget, note: str):
         '''A setting: its name (labels key), its control, and what it does (labels key).'''

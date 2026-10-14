@@ -59,7 +59,7 @@
         },
         "card": {
             "dark": {
-                "color": "#0d0d1a",
+                "color": "#1a1a26",
                 "opacity": 1.0
             },
             "light": {
@@ -73,7 +73,7 @@
                 "opacity": 1.0
             },
             "light": {
-                "color": "#dfdfdf",
+                "color": "#d7d7d7",
                 "opacity": 1.0
             }
         },
@@ -189,11 +189,11 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#000000",
+                "color": "#070707",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#dfdfdf",
+                "color": "#dcdcdc",
                 "opacity": 1.0
             }
         },

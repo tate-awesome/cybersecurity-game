@@ -60,24 +60,24 @@
         },
         "panel": {
             "dark": {
-                "color": "#02060b",
+                "color": "#181c20",
                 "opacity": 0.85,
                 "gradient": {
                     "angle": 90,
                     "stops": [
                         [
                             0,
-                            "#06303a",
+                            "#1c424a",
                             0.9
                         ],
                         [
                             0.6,
-                            "#02060b",
+                            "#181c20",
                             0.85
                         ],
                         [
                             1,
-                            "#1c0424",
+                            "#301a37",
                             0.9
                         ]
                     ]
@@ -91,7 +91,7 @@
                     "stops": [
                         [
                             0,
-                            "#f7fafc",
+                            "#f7fafa",
                             0.95
                         ],
                         [
@@ -115,21 +115,21 @@
         },
         "card": {
             "dark": {
-                "color": "#000000",
+                "color": "#0b0b0b",
                 "opacity": 0.5
             },
             "light": {
-                "color": "#c9d3de",
+                "color": "#c7d0da",
                 "opacity": 0.55
             }
         },
         "field": {
             "dark": {
-                "color": "#000000",
+                "color": "#020202",
                 "opacity": 0.85
             },
             "light": {
-                "color": "#b3c0ce",
+                "color": "#aebbc8",
                 "opacity": 0.7
             }
         },
@@ -245,12 +245,12 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#000000",
-                "opacity": 0.45
+                "color": "#0d0d0d",
+                "opacity": 0.85
             },
             "light": {
-                "color": "#b3c0ce",
-                "opacity": 0.4
+                "color": "#c0cad4",
+                "opacity": 0.7
             }
         },
         "selection": {
