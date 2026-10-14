@@ -204,8 +204,10 @@ class WindowDrag(QObject):
     Makes a widget's empty space move the window, like a title bar: drag
     to move it (the system's own move, so Windows' snapping works),
     double-click to maximize or restore it. Presses on its buttons stay
-    theirs - only presses the widget itself gets (its own empty space,
-    and labels, which pass presses on) start a move.
+    theirs - only presses the widget itself gets (its own empty space, and
+    children that let the mouse through) start a move. A label has to be
+    made transparent for mouse events: it passes a press on, but keeps the
+    moves after it.
 
     Dragging a maximized window restores it first, keeping the same part
     of the bar under the cursor. Nothing moves while fullscreen.

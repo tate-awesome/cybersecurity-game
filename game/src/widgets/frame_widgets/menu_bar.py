@@ -229,6 +229,11 @@ class MenuBar(QFrame):
         self.game_label.setFont(self.style.get_font("page_title" if self.page_bar else "default"))
         # A title is a name, never markup - "<b>" in one should show as typed
         self.game_label.setTextFormat(Qt.TextFormat.PlainText)
+        if self.page_bar:
+            # Dragging the title moves the window, like the bar's empty space
+            # (see WindowDrag) - a QLabel keeps the mouse moves after a press
+            # to itself, so the bar never saw the drag
+            self.game_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.row.addWidget(self.game_label, 0, Qt.AlignmentFlag.AlignVCenter)
         self._fixed.append(self.game_label)
 
