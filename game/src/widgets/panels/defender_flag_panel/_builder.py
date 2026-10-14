@@ -70,7 +70,7 @@ class Builder(Panel):
 
             dot = QLabel("●")
             dot.setFont(self.style.get_font("small"))
-            dot.setStyleSheet("color: gray;")
+            self.style.set_tone(dot, "muted")
             row_layout.addWidget(dot)
 
             label = QLabel(text)
@@ -103,8 +103,8 @@ class Builder(Panel):
 
         for key, dot in (self.submarine_dots | self.hvac_dots).items():
             raised = bool(buffer.defender_status.get(key, False))
-            dot.setStyleSheet(f"color: {'red' if raised else 'gray'};")
+            self.style.set_tone(dot, "bad" if raised else "muted")
 
         on = ap_commands.kalman_enabled(buffer)
         self.kalman_label.setText("Status: ON" if on else "Status: OFF")
-        self.kalman_label.setStyleSheet(f"color: {'green' if on else 'gray'};")
+        self.style.set_tone(self.kalman_label, "good" if on else "muted")

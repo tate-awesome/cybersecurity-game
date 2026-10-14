@@ -52,7 +52,6 @@ class Builder(Panel):
         for c in range(COLUMN_COUNT):
             label = QLabel("")
             label.setFont(self.style.get_font("small"))
-            label.setStyleSheet("color: gray;")
             self.style.set_material(label, "table_header")
             grid.addWidget(label, 0, c)
             self.headers.append(label)

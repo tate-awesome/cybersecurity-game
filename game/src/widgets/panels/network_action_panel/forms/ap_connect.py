@@ -52,7 +52,7 @@ class APConnectForm(BaseForm):
 
         self.conn_label = QLabel("")
         self.conn_label.setFont(self.style.get_font("small"))
-        self.conn_label.setStyleSheet("color: gray;")
+        self.style.set_tone(self.conn_label, "muted")
         self.conn_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.grid_layout.addWidget(self.conn_label, self.current_row, 1, 1, 2)
         self.current_row += 1
@@ -70,9 +70,9 @@ class APConnectForm(BaseForm):
         self.save_slots[1] = int(self.process.is_running())
         if self.process.is_running() and self.process.connected:
             self.conn_label.setText("⬤  Connected")
-            self.conn_label.setStyleSheet("color: green;")
+            self.style.set_tone(self.conn_label, "good")
         elif self.process.is_running():
             self.conn_label.setText("⬤  Waiting for response...")
-            self.conn_label.setStyleSheet("color: orange;")
+            self.style.set_tone(self.conn_label, "warning")
         else:
             self.conn_label.setText("")

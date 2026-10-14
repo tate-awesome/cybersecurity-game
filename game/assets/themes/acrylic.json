@@ -379,6 +379,134 @@
             "light": {
                 "color": "#5f6b80"
             }
+        },
+        "chart_1": {
+            "dark": {
+                "color": "#1271de"
+            },
+            "light": {
+                "color": "#1377ea"
+            }
+        },
+        "chart_2": {
+            "dark": {
+                "color": "#d46c11"
+            },
+            "light": {
+                "color": "#bd600f"
+            }
+        },
+        "chart_3": {
+            "dark": {
+                "color": "#11d462"
+            },
+            "light": {
+                "color": "#0b8b41"
+            }
+        },
+        "chart_4": {
+            "dark": {
+                "color": "#de1278"
+            },
+            "light": {
+                "color": "#ea137e"
+            }
+        },
+        "chart_5": {
+            "dark": {
+                "color": "#d4ad11"
+            },
+            "light": {
+                "color": "#92770c"
+            }
+        },
+        "chart_6": {
+            "dark": {
+                "color": "#8f49f0"
+            },
+            "light": {
+                "color": "#7c2bee"
+            }
+        },
+        "chart_7": {
+            "dark": {
+                "color": "#11d4c4"
+            },
+            "light": {
+                "color": "#0b897e"
+            }
+        },
+        "chart_8": {
+            "dark": {
+                "color": "#e51313"
+            },
+            "light": {
+                "color": "#ed2424"
+            }
+        },
+        "good": {
+            "dark": {
+                "color": "#0bda50"
+            },
+            "light": {
+                "color": "#06772c"
+            }
+        },
+        "warning": {
+            "dark": {
+                "color": "#da8e0b"
+            },
+            "light": {
+                "color": "#8d5c07"
+            }
+        },
+        "bad": {
+            "dark": {
+                "color": "#f54640"
+            },
+            "light": {
+                "color": "#ce110b"
+            }
+        },
+        "hot": {
+            "dark": {
+                "color": "#da350b"
+            },
+            "light": {
+                "color": "#e4370c"
+            }
+        },
+        "cold": {
+            "dark": {
+                "color": "#0b84da"
+            },
+            "light": {
+                "color": "#0b7dce"
+            }
+        },
+        "incoming": {
+            "dark": {
+                "color": "#1271de"
+            },
+            "light": {
+                "color": "#1377ea"
+            }
+        },
+        "outgoing": {
+            "dark": {
+                "color": "#d46c11"
+            },
+            "light": {
+                "color": "#bd600f"
+            }
+        },
+        "muted_text": {
+            "dark": {
+                "color": "#828892"
+            },
+            "light": {
+                "color": "#5f6673"
+            }
         }
     }
 }

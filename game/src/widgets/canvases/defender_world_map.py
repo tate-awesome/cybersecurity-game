@@ -19,17 +19,19 @@ class DefenderWorldMap(Canvas):
         self.modbus = context.buffer.defender_modbus
 
         def frame_callback():
-            self.draw.grid_lines()
+            color = context.style.color
+            self.draw.background(color("widget"))
+            self.draw.grid_lines(color("border"), color("accent"), color("muted_text"))
 
             positions = self.map_buffer.get_path("client_clean")
             if len(positions) < 1:
                 return
-            self.draw.line(positions, "red")
+            self.draw.line(positions, color("incoming"))
 
             bearing = self.modbus.get_single("theta", "client_clean")
             if bearing is None:
                 return
-            self.draw.boat(positions[-1], bearing, "white", "black")
+            self.draw.boat(positions[-1], bearing, color("incoming"), color("text"))
 
         self.set_frame_callback(frame_callback)
         self.start_animation()

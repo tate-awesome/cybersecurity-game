@@ -16,17 +16,12 @@ matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from ...widgets import popup, ShiftWheelSlider
+from ...widgets.canvases.figure_theme import follow_theme
 from ...network.hardware import ap_commands
 
 # Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette.
 # Not pulled from the app's Style object on purpose — CTk colors can be
 # light/dark-mode tuples, and matplotlib needs a single concrete color string.
-_FIG_BG      = "#16213e"
-_AXES_BG     = "#0a0a1a"
-_GRID        = "#0f3460"
-_TEXT        = "#e0e0e0"
-_ROOM_LINE   = "#4caf50"   # green
-_TARGET_LINE = "#e94560"   # accent pink/red, matches the AP's accent color
 
 # QSlider only steps through integers - each slider's own float min/max is
 # mapped onto this many integer positions (see _to_slider_pos/_from_slider_pos).
@@ -128,13 +123,13 @@ class HVACView:
 
         self._enc_label = QLabel("Status: OFF")
         self._enc_label.setFont(self.style.get_font())
-        self._enc_label.setStyleSheet("color: gray;")
+        self.style.set_tone(self._enc_label, "muted")
         section.layout().addWidget(self._enc_label)
 
         # Key entry
         key_label = QLabel("Encryption Key")
         key_label.setFont(self.style.get_font("small"))
-        key_label.setStyleSheet("color: gray;")
+        self.style.set_tone(key_label, "muted")
         section.layout().addWidget(key_label)
 
         self._enc_key_entry = QLineEdit()
@@ -180,7 +175,7 @@ class HVACView:
 
         self._filter_label = QLabel("Status: OFF")
         self._filter_label.setFont(self.style.get_font())
-        self._filter_label.setStyleSheet("color: gray;")
+        self.style.set_tone(self._filter_label, "muted")
         section.layout().addWidget(self._filter_label)
 
         self._filter_button = QPushButton("Enable Communication Through AP")
@@ -199,7 +194,7 @@ class HVACView:
 
         self._hvac_kalman_label = QLabel("Status: ON")
         self._hvac_kalman_label.setFont(self.style.get_font())
-        self._hvac_kalman_label.setStyleSheet("color: green;")
+        self.style.set_tone(self._hvac_kalman_label, "good")
         section.layout().addWidget(self._hvac_kalman_label)
 
         self._hvac_kalman_button = QPushButton("Toggle Kalman Filter")
@@ -218,32 +213,32 @@ class HVACView:
     def _refresh_encryption_ui(self):
         if ap_commands.encryption_enabled(self._context.buffer):
             self._enc_label.setText("Status: ON")
-            self._enc_label.setStyleSheet("color: green;")
+            self.style.set_tone(self._enc_label, "good")
             self._enc_button.setText("Disable Encryption")
             self._enc_key_entry.setEnabled(False)
         else:
             self._enc_label.setText("Status: OFF")
-            self._enc_label.setStyleSheet("color: gray;")
+            self.style.set_tone(self._enc_label, "muted")
             self._enc_button.setText("Enable Encryption")
             self._enc_key_entry.setEnabled(True)
 
     def _refresh_AP_communication_ui(self):
         if ap_commands.ap_tunnel_enabled(self._context.buffer):
             self._filter_label.setText("Status: ON")
-            self._filter_label.setStyleSheet("color: green;")
+            self.style.set_tone(self._filter_label, "good")
             self._filter_button.setText("Disable Communication Through AP")
         else:
             self._filter_label.setText("Status: OFF")
-            self._filter_label.setStyleSheet("color: gray;")
+            self.style.set_tone(self._filter_label, "muted")
             self._filter_button.setText("Enable Communication Through AP")
 
     def _refresh_hvac_kalman_ui(self):
         if ap_commands.hvac_kalman_enabled(self._context.buffer):
             self._hvac_kalman_label.setText("Status: ON")
-            self._hvac_kalman_label.setStyleSheet("color: green;")
+            self.style.set_tone(self._hvac_kalman_label, "good")
         else:
             self._hvac_kalman_label.setText("Status: OFF")
-            self._hvac_kalman_label.setStyleSheet("color: gray;")
+            self.style.set_tone(self._hvac_kalman_label, "muted")
 
     def _refresh_hvac_controls_ui(self):
         self._refresh_encryption_ui()
@@ -294,7 +289,7 @@ class HVACView:
 
             value_label = QLabel(f"{default:.{decimals}f}")
             value_label.setFont(self.style.get_font("small"))
-            value_label.setStyleSheet("color: gray;")
+            self.style.set_tone(value_label, "muted")
             header_layout.addWidget(value_label)
 
             slider = ShiftWheelSlider(Qt.Orientation.Horizontal)
@@ -329,7 +324,7 @@ class HVACView:
 
         label = QLabel(f"{label_text}:")
         label.setFont(self.style.get_font("small"))
-        label.setStyleSheet("color: gray;")
+        self.style.set_tone(label, "muted")
         row_layout.addWidget(label)
         row_layout.addStretch()
 
@@ -345,33 +340,24 @@ class HVACView:
         self._graph_root.layout().setContentsMargins(8, 8, 8, 8)
         parent.layout().addWidget(self._graph_root)
 
+        # Colored by the theme - see follow_theme, below
         fig = Figure(figsize=(5, 4), dpi=100)
-        fig.patch.set_facecolor(_FIG_BG)
         ax = fig.add_subplot(111)
-        ax.set_facecolor(_AXES_BG)
-        ax.set_title("Temperature Trajectory Over Time", color=_TEXT, fontsize=11)
-        ax.set_xlabel("Time (s)", color=_TEXT)
-        ax.set_ylabel("Temperature (°F)", color=_TEXT)
-        ax.tick_params(colors=_TEXT)
-        ax.grid(True, color=_GRID, linewidth=0.6)
+        ax.set_title("Temperature Trajectory Over Time", fontsize=11)
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Temperature (°F)")
         ax.margins(0,0.2)
-        for spine in ax.spines.values():
-            spine.set_color(_GRID)
 
-        (self._room_line,) = ax.plot([], [], color=_ROOM_LINE, linewidth=1.8,
-                                      label="Room Temp")
-        (self._target_line,) = ax.plot([], [], color=_TARGET_LINE, linewidth=1.8,
-                                        linestyle="--", label="Target Setpoint")
-        legend = ax.legend(loc="upper left", facecolor=_FIG_BG, edgecolor=_GRID,
-                           fontsize=8)
-        for text in legend.get_texts():
-            text.set_color(_TEXT)
+        (self._room_line,) = ax.plot([], [], linewidth=1.8, label="Room Temp")
+        (self._target_line,) = ax.plot([], [], linewidth=1.8, linestyle="--", label="Target Setpoint")
+        legend = ax.legend(loc="upper left", fontsize=8)
         fig.tight_layout()
 
         self._fig = fig
         self._ax  = ax
         self._canvas = FigureCanvasQTAgg(fig)
         self._graph_root.layout().addWidget(self._canvas)
+        follow_theme(self.style, self._canvas, [ax], {self._room_line: "chart_1", self._target_line: "chart_2"}, legend)
         self._canvas.draw()
 
     def _sync_hvac_sliders(self):
@@ -513,7 +499,7 @@ class HVACView:
         if heater_on is not None:
             on = bool(heater_on)
             self._heater_label.setText("ON" if on else "OFF")
-            self._heater_label.setStyleSheet(f"color: {'green' if on else 'gray'};")
+            self.style.set_tone(self._heater_label, "good" if on else "muted")
 
         if current_temp is None and target_temp is None:
             return  # nothing worth plotting yet

@@ -85,12 +85,20 @@ FALLBACK_PALETTE = {
         "field": "#353e4d", "field_text": "#e3eaf5", "text": "#e3eaf5",
         "accent": "#2979ff", "accent_text": "#ffffff", "border": "#2e3745",
         "scrollbar": "#2e3745", "scrollbar_hover": "#3e4755",
+        "muted_text": "#8b95a7", "good": "#4ade80", "warning": "#fbbf24", "bad": "#f87171",
+        "incoming": "#60a5fa", "outgoing": "#fb923c", "hot": "#f87171", "cold": "#60a5fa",
+        "chart_1": "#60a5fa", "chart_2": "#fb923c", "chart_3": "#4ade80", "chart_4": "#f472b6",
+        "chart_5": "#facc15", "chart_6": "#a78bfa", "chart_7": "#2dd4bf", "chart_8": "#f87171",
     },
     "light": {
         "root": "#d9e2f5", "panel": "#f1f5ff", "widget": "#e4ebfd",
         "field": "#ffffff", "field_text": "#1a2233", "text": "#1a2233",
         "accent": "#1e6fe0", "accent_text": "#ffffff", "border": "#d9e2f5",
         "scrollbar": "#d9e2f5", "scrollbar_hover": "#bfc7d8",
+        "muted_text": "#5b6577", "good": "#15803d", "warning": "#b45309", "bad": "#b91c1c",
+        "incoming": "#1d4ed8", "outgoing": "#c2410c", "hot": "#b91c1c", "cold": "#1d4ed8",
+        "chart_1": "#1d4ed8", "chart_2": "#c2410c", "chart_3": "#15803d", "chart_4": "#be185d",
+        "chart_5": "#a16207", "chart_6": "#6d28d9", "chart_7": "#0f766e", "chart_8": "#b91c1c",
     },
 }
 
@@ -133,9 +141,24 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "accent": ("accent", 1.0),                    # highlights: focus outlines, checked boxes, slider handles, overlay outlines
     "border": ("border", 1.0),                    # outlines of fields, tables and tabs
     "scrollbar_hover": ("scrollbar_hover", 1.0),  # hovered scrollbar handles
+    # Data colors - also always solid (see DATA_MATERIALS)
+    "muted_text": ("muted_text", 1.0),  # quieter text: column headers, hints, things that are off
+    "good": ("good", 1.0),              # status that's fine: on, connected, running
+    "warning": ("warning", 1.0),        # status worth a look: off, waiting
+    "bad": ("bad", 1.0),                # status that's wrong: errors, disconnected
+    "incoming": ("incoming", 1.0),      # what comes in: received paths and boats, the other hosts
+    "outgoing": ("outgoing", 1.0),      # what goes out: sent paths and boats, this host
+    "hot": ("hot", 1.0),                # heat: hotness, heaters
+    "cold": ("cold", 1.0),              # cold: coldness
+    **{f"chart_{i}": (f"chart_{i}", 1.0) for i in range(1, 9)},  # strip chart lines, in order
 }
+# The colors data is drawn in - text states, models and charts - kept
+# apart on canvases and the card they sit on, in every theme and mode.
+# Charts cycle through chart_1-8, so their lines stay apart from each other too.
+CHART_COLORS = tuple(f"chart_{i}" for i in range(1, 9))
+DATA_MATERIALS = ("muted_text", "good", "warning", "bad", "incoming", "outgoing", "hot", "cold") + CHART_COLORS
 INK_MATERIALS = ("text", "field_text", "menu_bar_text", "accent_text", "accent", "border", "scrollbar_hover",
-                 "button_text", "button_hover_text", "menu_button_text", "menu_button_hover_text")
+                 "button_text", "button_hover_text", "menu_button_text", "menu_button_hover_text") + DATA_MATERIALS
 
 # The kinds of button a theme styles separately - each "<kind>" material is
 # its background, with "<kind>_hover", "<kind>_border", "<kind>_text" and

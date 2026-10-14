@@ -40,9 +40,9 @@ class NetworkDiagramCanvas(Canvas):
             positions = self.network.get_host_positions()
             for mac, point in positions.items():
                 if mac == self.mac_address:
-                    draw_host(mac, point, "red")
+                    draw_host(mac, point, "outgoing")
                 else:
-                    draw_host(mac, point, "accent")
+                    draw_host(mac, point, "incoming")
 
             mode = context.states.get("packet_console", "mode")
 

@@ -23,21 +23,21 @@
 
     "model_colors": {
         "ocean": "widget",
-        "grid_lines": "field_text",
-        "grid_axes": "red",
-        "grid_numbers": "field_text",
-        "path_in": "red",
-        "boat_in_fill": "red",
-        "boat_in_outline": "red",
-        "path_out": "orange",
-        "boat_out_fill": "orange",
-        "boat_out_outline": "orange",
+        "grid_lines": "border",
+        "grid_axes": "accent",
+        "grid_numbers": "muted_text",
+        "path_in": "incoming",
+        "boat_in_fill": "incoming",
+        "boat_in_outline": "text",
+        "path_out": "outgoing",
+        "boat_out_fill": "outgoing",
+        "boat_out_outline": "text",
         "background": "widget",
         "line_art": "field_text",
         "fill": "field",
         "text": "field_text",
-        "coldness": "blue",
-        "hotness": "red"
+        "coldness": "cold",
+        "hotness": "hot"
     },
 
     "strip_chart_sprites": {
@@ -54,20 +54,22 @@
 
     "strip_chart_colors": {
         "background": "widget",
-        "grid_lines": "black",
+        "grid_lines": "border",
         "grid_axes": "accent",
-        "grid_numbers": "field_text",
+        "grid_numbers": "muted_text",
         "paths": [
-            "red",
-            "orange",
-            "yellow",
-            "green",
-            "blue",
-            "purple"
+            "chart_1",
+            "chart_2",
+            "chart_3",
+            "chart_4",
+            "chart_5",
+            "chart_6",
+            "chart_7",
+            "chart_8"
         ],
         "heads": [
-            "blue",
-            "green"
+            "incoming",
+            "outgoing"
         ]
     },
 

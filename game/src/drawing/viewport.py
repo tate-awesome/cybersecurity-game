@@ -145,7 +145,7 @@ class ViewPort:
         points = t.zoom_and_pan(points, self.scale, self.offset)
         self._draw_line(points, line_color, 2)
 
-    def grid_lines(self):
+    def grid_lines(self, lines_color="white", axes_color="red", numbers_color="#3a6070"):
         font = QFont("Courier", 7)
         for i in range(0, 210, 10):
             h_line = [(0, i), (200, i)]
@@ -154,9 +154,9 @@ class ViewPort:
             v_line = t.padded_fit_uniform(v_line, self.input_range[0], self.input_range[1], self.canvas, self.padding)
             h_line = t.zoom_and_pan(h_line, self.scale, self.offset)
             v_line = t.zoom_and_pan(v_line, self.scale, self.offset)
-            color = "white"
+            color = lines_color
             if i == 0:
-                color = "red"
+                color = axes_color
             self._draw_line(h_line, color, 0.5)
             self._draw_line(v_line, color, 0.5)
 
@@ -168,9 +168,9 @@ class ViewPort:
                 y_pixel = h_line[0][1]   # y position of horizontal line = Y axis label position
 
                 # X axis label — sits above the top of each vertical line
-                self._draw_text(x_pixel, v_line[0][1] + 10, str(i), font, "#3a6070")
+                self._draw_text(x_pixel, v_line[0][1] + 10, str(i), font, numbers_color)
                 # Y axis label — sits to the left of each horizontal line
-                self._draw_text(h_line[0][0] - 16, y_pixel, str(i), font, "#3a6070")
+                self._draw_text(h_line[0][0] - 16, y_pixel, str(i), font, numbers_color)
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
         the_boat = [

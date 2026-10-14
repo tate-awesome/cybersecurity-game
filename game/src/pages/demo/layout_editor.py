@@ -216,7 +216,7 @@ class LayoutEditor:
         panel = self.panel_type.currentData()
         panel_id = self.next_id(panel)
         if panel_id is None:
-            self.editor.set_status(f"A layout can only hold {PANELS[panel].MAX_COPIES} of {self.panel_name(panel)}.", "red")
+            self.editor.set_status(f"A layout can only hold {PANELS[panel].MAX_COPIES} of {self.panel_name(panel)}.", "bad")
             return
         self.add({"id": panel_id, "widget": panel})
 
@@ -226,7 +226,7 @@ class LayoutEditor:
 
     def remove(self):
         if self.selected == ():
-            self.editor.set_status("The top group can't be removed.", "red")
+            self.editor.set_status("The top group can't be removed.", "bad")
             return
         parent_path, index = self.selected[:-1], self.selected[-1]
         del self.entry(parent_path)["panes"]["children"][index]
@@ -309,7 +309,7 @@ class LayoutEditor:
         except ValueError:
             weight = 0
         if weight <= 0:
-            self.editor.set_status(f'A weight must be a number above 0, not "{entry_box.text()}".', "red")
+            self.editor.set_status(f'A weight must be a number above 0, not "{entry_box.text()}".', "bad")
             entry_box.setText(f"{entry['weight']:g}")
             return
         weight = int(weight) if weight == int(weight) else weight
@@ -368,7 +368,7 @@ class LayoutEditor:
             empty = QLabel(f"Empty {ORIENTATION_NAMES[group['orientation']].lower()} group - add a panel to it")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setWordWrap(True)
-            empty.setStyleSheet(f"color: {self.style.color('red')};")
+            empty.setStyleSheet(f"color: {self.style.color('bad')};")
             splitter.addWidget(empty)
             return splitter
         for index in range(len(children)):

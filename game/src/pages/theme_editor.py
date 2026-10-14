@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
-from ..app_core.context.themes import (BUTTON_KINDS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
+from ..app_core.context.themes import (BUTTON_KINDS, DATA_MATERIALS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
                                       MAX_PANEL_FRAME, MAX_PANEL_RADIUS)
 from ..widgets import MenuBar, popup
 from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
@@ -247,7 +247,9 @@ class ThemeEditorPage(SettingsPage):
             radius.setEnabled(editable)
             section.row("theme_editor_rows_button_radius", radius, "theme_editor_row_notes_button_radius")
             self.material_rows(section, names)
-        self.material_rows(self.section(tab, "ink_materials"), [name for name in INK_MATERIALS if name not in in_kinds])
+        self.material_rows(self.section(tab, "ink_materials"),
+                           [name for name in INK_MATERIALS if name not in in_kinds and name not in DATA_MATERIALS])
+        self.material_rows(self.section(tab, "data_materials"), list(DATA_MATERIALS))
 
     def material_rows(self, section: "SettingsSection", names: list[str]):
         '''A row in section for each named material, in the mode being edited.'''

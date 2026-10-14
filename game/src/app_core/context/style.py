@@ -4,12 +4,12 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QLinearGradient
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QStyledItemDelegate, QWidget
 import darkdetect
 
-from .themes import (BUTTON_KINDS, COLOR_NAMES, INK_MATERIALS, MATERIALS, STYLE_DEFAULTS, THEME_MODES, button_radius,
+from .themes import (BUTTON_KINDS, COLOR_NAMES, DATA_MATERIALS, INK_MATERIALS, MATERIALS, STYLE_DEFAULTS, THEME_MODES, button_radius,
                      gradient_points, is_hex, read_theme, resolve_materials, style_setting, theme_file)
 
 from typing import TYPE_CHECKING
@@ -45,6 +45,8 @@ IMPORTED_PREFIX = "imported."
 # "rounded" rounds the corners like a panel's, "outlined" adds a panel's
 # border.
 SPECIAL_MATERIALS = ("none",)
+# A label's tone (see Style.set_tone) -> the theme's data color for it
+TONES = {"muted": "muted_text", "good": "good", "warning": "warning", "bad": "bad"}
 PANEL_BORDER_WIDTH = 2
 # The color names (see themes.COLOR_NAMES) color() hands back see-through,
 # at their material's opacity - so canvases and other hand-drawn widgets
@@ -115,6 +117,21 @@ ICONS: dict[str, int] = {
     "chevron-right": 0xea61,
     "chevron-down": 0xea5f,
 }
+
+
+class _StyledComboItems(QObject):
+    '''
+    Gives every combobox the item painter that follows the stylesheet
+    (QStyledItemDelegate) as it's first styled - its own one paints its
+    open list's items in the combobox's colors instead, whatever the
+    stylesheet says (see Style._build_stylesheet).
+    '''
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.Polish and isinstance(watched, QComboBox) and not watched.property("styled_items"):
+            watched.setProperty("styled_items", True)
+            watched.setItemDelegate(QStyledItemDelegate(watched))
+        return False
 
 
 class Style:
@@ -298,7 +315,7 @@ class Style:
 
     # The color names color() resolves (see themes.COLOR_NAMES) - also the
     # options the style editors offer (see important_buttons/settings_overlays)
-    THEME_COLOR_NAMES = tuple(COLOR_NAMES)
+    THEME_COLOR_NAMES = tuple(COLOR_NAMES) + DATA_MATERIALS
 
     def color(self, type: str, opaque: bool = False) -> str:
         '''
@@ -476,6 +493,9 @@ class Style:
         '''
         self._restyle_timer.stop()
         app = QApplication.instance()
+        if not hasattr(self, "_combo_items"):
+            self._combo_items = _StyledComboItems(app)
+            app.installEventFilter(self._combo_items)
         app.setStyleSheet(self._build_stylesheet())
         # Links in text (workspace summaries, notes) - stylesheets can't color them
         palette = app.palette()
@@ -505,6 +525,27 @@ class Style:
         amount = abs(amount)
         r, g, b = (int(v + (target - v) * amount) for v in (r, g, b))
         return f"#{r:02x}{g:02x}{b:02x}"
+
+    def on_card(self, material: str) -> str:
+        '''What material looks like where it's used, inside a panel: over the card, over the drawer (see themes' module docstring) - "#rrggbb".'''
+        color = QColor(self.color("panel", opaque=True))
+        for layer in ("card", material):
+            top = self.material(layer)
+            a = top.alphaF()
+            color = QColor.fromRgbF(top.redF() * a + color.redF() * (1 - a), top.greenF() * a + color.greenF() * (1 - a),
+                                    top.blueF() * a + color.blueF() * (1 - a))
+        return color.name()
+
+    def readable_on(self, background: str) -> str:
+        '''
+        Text for a background "#rrggbb": the theme's own text colors, in
+        order, until one reads on it (WCAG's 4.5:1) - else whichever of
+        black or white reads best.
+        '''
+        for name in ("text", "menu_bar_text", "field_text", "accent_text"):
+            if self._contrast(self.color(name), background) >= 4.5:
+                return self.color(name)
+        return max(("#000000", "#ffffff"), key=lambda color: self._contrast(color, background))
 
     @staticmethod
     def _contrast(hex_a: str, hex_b: str) -> float:
@@ -608,6 +649,11 @@ class Style:
             # Not consoles, trees and tables - their monospace font is part of what they show
             extras.append(f'QPushButton, QLabel, QCheckBox, QRadioButton, QTabBar, QComboBox, QLineEdit, QHeaderView, QToolTip,'
                           f' QSpinBox {{ font-family: "{font}"; }}')
+        # A label's tone (see set_tone) - after the rules above, so it wins over them
+        extras_after = [f'QLabel[tone="{tone}"] {{ color: {self.color(name)}; }}' for tone, name in TONES.items()]
+        # Column headers: text that reads on the header's own color, whatever the theme makes it
+        header_text = self.readable_on(self.on_card("table_header"))
+        extras_after.append(f'QLabel[material="table_header"] {{ color: {header_text}; }}')
         if self.setting("bold_buttons"):
             extras.append("QPushButton, QTabBar { font-weight: bold; }")
         if self.color("menu_bar_text") != c["text"]:
@@ -649,10 +695,23 @@ class Style:
             QPlainTextEdit, QTextEdit {{ background-color: {m("card")}; }}
             QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border-color: {c["accent"]}; }}
             QComboBox QAbstractItemView {{
-                background-color: {c["field"]};
-                color: {c["field_text"]};
-                selection-background-color: {m("selection")};
-                selection-color: {c["accent_text"]};
+                background-color: {self.color("overlay")};
+                border: none;
+                outline: 0px;
+                padding: 2px;
+            }}
+            QComboBox QAbstractItemView::item {{
+                color: {self.readable_on(self.color("overlay"))};
+                padding: 4px 8px;
+                border: none;
+            }}
+            QComboBox QAbstractItemView::item:selected, QComboBox QAbstractItemView::item:hover {{
+                background-color: {m("selection")};
+                color: {c["accent_text"]};
+            }}
+            QComboBoxPrivateContainer {{
+                background-color: {self.color("overlay")};
+                border: {line}px solid {c["border"]};
             }}
             QCheckBox::indicator {{
                 width: 16px;
@@ -668,7 +727,7 @@ class Style:
             QHeaderView {{ background-color: transparent; }}
             QHeaderView::section {{
                 background-color: {m("table_header")};
-                color: {c["text"]};
+                color: {header_text};
                 border: {header_border};
                 padding: 4px;
             }}
@@ -734,6 +793,7 @@ class Style:
             *[outlined="true"] {{ border: {panel_border}; }}
             *[shadowed="true"] {{ margin: {top}px {right}px {bottom}px {left}px; }}
             {" ".join(extras)}
+            {" ".join(extras_after)}
         '''
 
     def _button_rules(self, kind: str, shaded: Callable[[str, float], str]) -> str:
@@ -790,6 +850,20 @@ class Style:
         light, dark = self._shade(color, 0.85), self._shade(color, -0.55)
         top, bottom = (light, dark) if raised else (dark, light)
         return f"2px solid; border-color: {top} {bottom} {bottom} {top}"
+
+    def set_tone(self, label: QWidget, tone: str | None):
+        '''
+        Colors label's text by what it says (see TONES) - "muted", "good",
+        "warning" or "bad" - from the theme, following every theme change.
+        None goes back to the plain text color.
+        '''
+        if label.property("tone") == (tone or ""):
+            return  # Callers often set it every frame - restyling is only for a change
+        label.setProperty("tone", tone or "")
+        if label.testAttribute(Qt.WidgetAttribute.WA_WState_Polished):
+            qt_style = QWidget.style(label)
+            qt_style.unpolish(label)
+            qt_style.polish(label)
 
     @staticmethod
     def mark_menu_button(button: QWidget):

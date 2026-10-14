@@ -101,7 +101,7 @@ class SlidersForm(BaseForm):
 
             value_label = QLabel(f"{default:.{decimals}f}")
             value_label.setFont(self.style.get_font("small"))
-            value_label.setStyleSheet("color: gray;")
+            self.style.set_tone(value_label, "muted")
             header_layout.addWidget(value_label)
 
             slider = ShiftWheelSlider(Qt.Orientation.Horizontal)

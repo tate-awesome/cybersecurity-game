@@ -311,7 +311,7 @@ class ConfigEditor(Page):
             self.config = json.loads(self.pages.config_paths[key].read_text(encoding="utf-8"))
         except json.JSONDecodeError as error:
             self.config = None
-            self.set_status(f"This workspace's config.json isn't valid JSON (line {error.lineno}): {error.msg}", "red")
+            self.set_status(f"This workspace's config.json isn't valid JSON (line {error.lineno}): {error.msg}", "bad")
             return
 
         self.form = self.new_tab("Workspace")
@@ -855,12 +855,12 @@ class ConfigEditor(Page):
         config, errors = self.collect()
         if errors:
             shown = errors[:6] + ([f"...and {len(errors) - 6} more"] if len(errors) > 6 else [])
-            self.set_status("Can't save yet:\n" + "\n".join(f"- {error}" for error in shown), "red")
+            self.set_status("Can't save yet:\n" + "\n".join(f"- {error}" for error in shown), "bad")
             return
         self.pages.config_paths[key].write_text(self.json.format_config(config), encoding="utf-8")
         self.config = config
         self.dirty = False
-        self.set_status(f"Saved {self.pages.config_paths[key]}", "green")
+        self.set_status(f"Saved {self.pages.config_paths[key]}", "good")
 
     def collect(self) -> tuple[dict, list[str]]:
         '''The workspace's config rebuilt from the form, keeping its fields in their original order, plus any problems.'''
@@ -1124,7 +1124,7 @@ class NewWorkspaceDialog(QDialog):
         self.error = QLabel()
         self.error.setFont(style.get_font("small"))
         self.error.setWordWrap(True)
-        self.error.setStyleSheet(f"color: {style.color('red')};")
+        self.error.setStyleSheet(f"color: {style.color('bad')};")
         layout.addWidget(self.error)
         layout.addStretch(1)
 

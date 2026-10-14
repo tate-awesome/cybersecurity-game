@@ -29,10 +29,10 @@ class ModeForm(BaseForm):
         submarine_mode = self.context.buffer.defender_status.get("submarine_mode")
         if submarine_mode is None:
             self.mode_label.setText("Mode: —")
-            self.mode_label.setStyleSheet("color: gray;")
+            self.style.set_tone(self.mode_label, "muted")
         elif submarine_mode:
             self.mode_label.setText("Mode: SUBMARINE")
-            self.mode_label.setStyleSheet("color: green;")
+            self.style.set_tone(self.mode_label, "good")
         else:
             self.mode_label.setText("Mode: HVAC")
-            self.mode_label.setStyleSheet("color: orange;")
+            self.style.set_tone(self.mode_label, "warning")

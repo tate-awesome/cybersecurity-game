@@ -127,7 +127,7 @@ class DefenderV0(Page):
 
         self._submarine_kalman_label = QLabel("Status: ON")
         self._submarine_kalman_label.setFont(self.style.get_font())
-        self._submarine_kalman_label.setStyleSheet("color: green;")
+        self.style.set_tone(self._submarine_kalman_label, "good")
         kalman_section.layout().addWidget(self._submarine_kalman_label)
 
         self._submarine_kalman_button = QPushButton("Toggle Kalman Filter")
@@ -165,16 +165,17 @@ class DefenderV0(Page):
 
         def draw_defender_map(canvas, draw_lock, scale, offset):
             draw = ViewPort(canvas, scale, offset)
+            color = self.style.color
             with draw_lock:
-                draw.grid_lines()
+                draw.grid_lines(color("border"), color("accent"), color("muted_text"))
                 positions = self.context.buffer.defender_map.get_path("client_clean")
                 if len(positions) < 1:
                     return
-                draw.line(positions, "red")
+                draw.line(positions, color("incoming"))
                 bearing = self.context.buffer.defender_modbus.get_single("theta", "client_clean")
                 if bearing is None:
                     return
-                draw.boat(positions[-1], bearing, "white", "black")
+                draw.boat(positions[-1], bearing, color("incoming"), color("text"))
 
         self._map = Map(self._map_container, context, draw_defender_map,
                         framerate_ms=self.POLL_INTERVAL_MS, padding=20)
@@ -245,7 +246,7 @@ class DefenderV0(Page):
 
         self._conn_status = QLabel("⬤  Not connected")
         self._conn_status.setFont(self.style.get_font())
-        self._conn_status.setStyleSheet("color: gray;")
+        self.style.set_tone(self._conn_status, "muted")
         section.layout().addWidget(self._conn_status)
 
     def _build_encryption_block(self, parent: QWidget):
@@ -253,12 +254,12 @@ class DefenderV0(Page):
 
         self._enc_label = QLabel("Status: OFF")
         self._enc_label.setFont(self.style.get_font())
-        self._enc_label.setStyleSheet("color: gray;")
+        self.style.set_tone(self._enc_label, "muted")
         section.layout().addWidget(self._enc_label)
 
         key_label = QLabel("Encryption Key")
         key_label.setFont(self.style.get_font("small"))
-        key_label.setStyleSheet("color: gray;")
+        self.style.set_tone(key_label, "muted")
         section.layout().addWidget(key_label)
 
         self._enc_key_entry = QLineEdit()
@@ -298,7 +299,7 @@ class DefenderV0(Page):
 
         self._filter_label = QLabel("Status: OFF")
         self._filter_label.setFont(self.style.get_font())
-        self._filter_label.setStyleSheet("color: gray;")
+        self.style.set_tone(self._filter_label, "muted")
         section.layout().addWidget(self._filter_label)
 
         self._filter_button = QPushButton("Enable Communication Through AP")
@@ -313,7 +314,7 @@ class DefenderV0(Page):
         # is currently reporting. Mode is changed on the AP itself, not here.
         self._mode_label = QLabel("Mode: SUBMARINE")
         self._mode_label.setFont(self.style.get_font())
-        self._mode_label.setStyleSheet("color: green;")
+        self.style.set_tone(self._mode_label, "good")
         section.layout().addWidget(self._mode_label)
 
     def _refresh_mode_ui(self):
@@ -322,7 +323,7 @@ class DefenderV0(Page):
         try:
             if self._submarine_mode:
                 self._mode_label.setText("Mode: SUBMARINE")
-                self._mode_label.setStyleSheet("color: green;")
+                self.style.set_tone(self._mode_label, "good")
                 self._hvac_middle.hide()
 
                 self._submarine_left.show()
@@ -330,7 +331,7 @@ class DefenderV0(Page):
                 self._map_container.show()
             else:
                 self._mode_label.setText("Mode: HVAC")
-                self._mode_label.setStyleSheet("color: orange;")
+                self.style.set_tone(self._mode_label, "warning")
                 self._submarine_left.hide()
                 self._submarine_middle.hide()
                 self._map_container.hide()
@@ -368,7 +369,7 @@ class DefenderV0(Page):
 
                 field_label = QLabel(f"{field} =")
                 field_label.setFont(self.style.get_font("small"))
-                field_label.setStyleSheet("color: gray;")
+                self.style.set_tone(field_label, "muted")
                 row_layout.addWidget(field_label)
 
                 lbl = QLabel("—")
@@ -409,7 +410,7 @@ class DefenderV0(Page):
         for i, col in enumerate(cols):
             col_label = QLabel(col)
             col_label.setFont(self.style.get_font("small"))
-            col_label.setStyleSheet("color: gray;")
+            self.style.set_tone(col_label, "muted")
             col_layout.addWidget(col_label, 0, i)
             col_layout.setColumnStretch(i, 1)
 
@@ -431,7 +432,7 @@ class DefenderV0(Page):
 
             dot = QLabel("●")
             dot.setFont(self.style.get_font("small"))
-            dot.setStyleSheet("color: gray;")
+            self.style.set_tone(dot, "muted")
             row_layout.addWidget(dot)
 
             text_label = QLabel(label_text)
@@ -468,7 +469,7 @@ class DefenderV0(Page):
 
             value_label = QLabel(f"{default:.{decimals}f}")
             value_label.setFont(self.style.get_font("small"))
-            value_label.setStyleSheet("color: gray;")
+            self.style.set_tone(value_label, "muted")
             header_layout.addWidget(value_label)
 
             slider = ShiftWheelSlider(Qt.Orientation.Horizontal)
@@ -632,11 +633,11 @@ class DefenderV0(Page):
         try:
             if ap_commands.ap_tunnel_enabled(self.context.buffer):
                 self._filter_label.setText("Status: ON")
-                self._filter_label.setStyleSheet("color: green;")
+                self.style.set_tone(self._filter_label, "good")
                 self._filter_button.setText("Disable Communication Through AP")
             else:
                 self._filter_label.setText("Status: OFF")
-                self._filter_label.setStyleSheet("color: gray;")
+                self.style.set_tone(self._filter_label, "muted")
                 self._filter_button.setText("Enable Communication Through AP")
         except Exception as e:
             print("refresh_AP_communication_ui:", e)
@@ -669,10 +670,10 @@ class DefenderV0(Page):
         '''
         if ap_commands.submarine_kalman_enabled(self.context.buffer):
             self._submarine_kalman_label.setText("Status: ON")
-            self._submarine_kalman_label.setStyleSheet("color: green;")
+            self.style.set_tone(self._submarine_kalman_label, "good")
         else:
             self._submarine_kalman_label.setText("Status: OFF")
-            self._submarine_kalman_label.setStyleSheet("color: gray;")
+            self.style.set_tone(self._submarine_kalman_label, "muted")
 
     # ════════════════════════════════════════════════════════════════════════
     #  UI update helpers
@@ -690,10 +691,10 @@ class DefenderV0(Page):
 
         if self._ap_poller.connected:
             self._conn_status.setText("⬤  Connected")
-            self._conn_status.setStyleSheet("color: green;")
+            self.style.set_tone(self._conn_status, "good")
         else:
             self._conn_status.setText("⬤  Disconnected")
-            self._conn_status.setStyleSheet("color: red;")
+            self.style.set_tone(self._conn_status, "bad")
 
         self._refresh_encryption_ui()
         self._refresh_AP_communication_ui()
@@ -789,12 +790,12 @@ class DefenderV0(Page):
         try:
             if ap_commands.encryption_enabled(self.context.buffer):
                 self._enc_label.setText("Status: ON")
-                self._enc_label.setStyleSheet("color: green;")
+                self.style.set_tone(self._enc_label, "good")
                 self._enc_button.setText("Disable Encryption")
                 self._enc_key_entry.setEnabled(False)
             else:
                 self._enc_label.setText("Status: OFF")
-                self._enc_label.setStyleSheet("color: gray;")
+                self.style.set_tone(self._enc_label, "muted")
                 self._enc_button.setText("Enable Encryption")
                 self._enc_key_entry.setEnabled(True)
         except Exception as e:
@@ -813,4 +814,4 @@ class DefenderV0(Page):
             (getattr(self, "_hvac_flag_labels", {}), hvac_flags),
         ):
             for key, dot in labels.items():
-                dot.setStyleSheet(f"color: {'red' if flags.get(key, False) else 'gray'};")
+                self.style.set_tone(dot, "bad" if flags.get(key, False) else "muted")

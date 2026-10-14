@@ -6,16 +6,7 @@ matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-# Hardcoded dark-theme colors matching AP_ESP32.ino's config page palette -
-# ported as-is from the old HVACView._build_graph, see its comment: not
-# pulled from Style on purpose, matplotlib needs a single concrete color
-_FIG_BG      = "#16213e"
-_AXES_BG     = "#0a0a1a"
-_GRID        = "#0f3460"
-_TEXT        = "#e0e0e0"
-_ROOM_LINE   = "#4caf50"
-_TARGET_LINE = "#e94560"
-_HEATER_LINE = "#f5a623"
+from .figure_theme import follow_theme
 
 
 class DefenderHVACChart(QWidget):
@@ -44,39 +35,29 @@ class DefenderHVACChart(QWidget):
         self.context = context
         self.modbus = context.buffer.defender_modbus
 
+        # Colored by the theme - see follow_theme, below
         fig = Figure(figsize=(5, 4), dpi=100)
-        fig.patch.set_facecolor(_FIG_BG)
         ax = fig.add_subplot(111)
-        ax.set_facecolor(_AXES_BG)
-        ax.set_title("Temperature Trajectory Over Time", color=_TEXT, fontsize=11)
-        ax.set_xlabel("Time (s)", color=_TEXT)
-        ax.set_ylabel("Temperature (°F)", color=_TEXT)
-        ax.tick_params(colors=_TEXT)
-        ax.grid(True, color=_GRID, linewidth=0.6)
+        ax.set_title("Temperature Trajectory Over Time", fontsize=11)
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Temperature (°F)")
         ax.margins(0, 0.2)
-        for spine in ax.spines.values():
-            spine.set_color(_GRID)
 
-        (self._room_line,) = ax.plot([], [], color=_ROOM_LINE, linewidth=1.8, label="Room Temp")
-        (self._target_line,) = ax.plot([], [], color=_TARGET_LINE, linewidth=1.8, linestyle="--", label="Target Setpoint")
+        (self._room_line,) = ax.plot([], [], linewidth=1.8, label="Room Temp")
+        (self._target_line,) = ax.plot([], [], linewidth=1.8, linestyle="--", label="Target Setpoint")
 
         # Heater state is a 0/1 history, not a temperature - its own axis
         # (sharing the same x/time axis via twinx) keeps it from squashing
         # flat against the bottom of the temperature range.
         heater_ax = ax.twinx()
-        heater_ax.set_ylabel("Heater", color=_TEXT)
+        heater_ax.set_ylabel("Heater")
         heater_ax.set_ylim(-0.1, 1.1)
         heater_ax.set_yticks([0, 1])
         heater_ax.set_yticklabels(["OFF", "ON"])
-        heater_ax.tick_params(colors=_TEXT)
-        for spine in heater_ax.spines.values():
-            spine.set_color(_GRID)
-        (self._heater_line,) = heater_ax.step([], [], where="post", color=_HEATER_LINE, linewidth=1.2, alpha=0.7, label="Heater")
+        (self._heater_line,) = heater_ax.step([], [], where="post", linewidth=1.2, alpha=0.7, label="Heater")
 
         lines = [self._room_line, self._target_line, self._heater_line]
-        legend = ax.legend(lines, [line.get_label() for line in lines], loc="upper left", facecolor=_FIG_BG, edgecolor=_GRID, fontsize=8)
-        for text in legend.get_texts():
-            text.set_color(_TEXT)
+        legend = ax.legend(lines, [line.get_label() for line in lines], loc="upper left", fontsize=8)
         fig.tight_layout()
 
         self._fig = fig
@@ -87,6 +68,8 @@ class DefenderHVACChart(QWidget):
         # it goes straight into the layout.
         self._figure_canvas = FigureCanvasQTAgg(fig)
         self.layout().addWidget(self._figure_canvas)
+        follow_theme(context.style, self._figure_canvas, [ax, heater_ax],
+                     {self._room_line: "chart_1", self._target_line: "chart_2", self._heater_line: "hot"}, legend)
         self._figure_canvas.draw()
 
         self.start_animation()

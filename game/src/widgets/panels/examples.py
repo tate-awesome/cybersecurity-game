@@ -273,10 +273,10 @@ class FlagsExample(Panel):
         super().__init__(master, context, "example_flags")
         scrollable = Scrollable(self, context)
         cards = [
-            ("Error Detection", [("● State threshold surpassed", "red"), ("● Speed threshold surpassed", "text"),
+            ("Error Detection", [("● State threshold surpassed", "bad"), ("● Speed threshold surpassed", "text"),
                                  ("● Rudder threshold surpassed", "text")]),
-            ("Kalman Filter", [("Status: ON", "green")]),
-            ("Encryption", [("Status: OFF", "orange"), ("Key: (none)", "text")]),
+            ("Kalman Filter", [("Status: ON", "good")]),
+            ("Encryption", [("Status: OFF", "warning"), ("Key: (none)", "text")]),
         ]
         for row, (title, lines) in enumerate(cards):
             card = BaseForm(None, context)
