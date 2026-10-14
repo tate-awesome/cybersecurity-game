@@ -1,6 +1,32 @@
 from ...app_core import Context
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QPainter, QRegion
 from PySide6.QtWidgets import QGridLayout, QScrollArea, QWidget
+
+
+class _Gaps(QWidget):
+    '''
+    A scroll area's content in a panel's drawer: the deepest material
+    ("field") only where nothing is - between and around its cards - so
+    the cards sit straight on the drawer like any other content, rather
+    than on top of it, where a see-through card would come out deeper
+    than the gaps (see themes' module docstring).
+    '''
+
+    def __init__(self, style):
+        super().__init__()
+        self.style = style
+        style.signals.changed.connect(self.update)
+
+    def paintEvent(self, event):
+        gaps = QRegion(self.rect())
+        for child in self.children():
+            if isinstance(child, QWidget) and child.isVisible():
+                gaps = gaps.subtracted(QRegion(child.geometry()))
+        painter = QPainter(self)
+        painter.setClipRegion(gaps)
+        painter.fillRect(self.rect(), self.style.brush("field", QRectF(self.rect())))
+        painter.end()
 
 class Scrollable(QScrollArea):
     '''
@@ -22,17 +48,15 @@ class Scrollable(QScrollArea):
         # can end up winning space this should have gotten instead.
         master.layout().addWidget(self, 1)
         # In a panel's drawer, its cards sit edge to edge with the drawer's
-        # frame, on the deepest material, which shows only between them
-        # (see themes' module docstring) - and just the content has it, not
-        # this scroll area, so the scrollbar sits on the drawer itself (see
-        # Panel.fit_frame). Elsewhere, it's a panel of its own.
+        # frame, with the deepest material only between them (see _Gaps).
+        # Elsewhere, it's a panel of its own.
         self.in_panel = master.property("material") == "panel"
         style.set_material(self, "none" if self.in_panel else "panel")
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self.inner = QWidget()
-        style.set_material(self.inner, "field" if self.in_panel else "panel")
+        self.inner = _Gaps(style) if self.in_panel else QWidget()
+        style.set_material(self.inner, "none" if self.in_panel else "panel")
         self.grid_layout = QGridLayout(self.inner)
         # Without explicit values here, stacked rows (forms, strip charts,
         # etc.) fall back to Qt's default layout spacing, which is roughly
@@ -61,8 +85,6 @@ class Scrollable(QScrollArea):
             self.setFixedHeight(height)
 
     def _update_right_margin(self, min_value: int, max_value: int):
-        if self.in_panel:
-            return  # Edge to edge - the scrollbar is in the panel's frame, not on the content
         margins = self.grid_layout.contentsMargins()
         right = 0 if max_value > min_value else self.style.igap
         self.grid_layout.setContentsMargins(margins.left(), margins.top(), right, margins.bottom())

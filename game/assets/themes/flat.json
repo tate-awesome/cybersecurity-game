@@ -174,11 +174,11 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#2a3b4e",
+                "color": "#1c2833",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#eef1f2",
+                "color": "#e5e9eb",
                 "opacity": 1.0
             }
         },
@@ -199,16 +199,6 @@
             },
             "light": {
                 "color": "#bdc3c7",
-                "opacity": 1.0
-            }
-        },
-        "scrollbar_track": {
-            "dark": {
-                "color": "#22313f",
-                "opacity": 1.0
-            },
-            "light": {
-                "color": "#ecf0f1",
                 "opacity": 1.0
             }
         },

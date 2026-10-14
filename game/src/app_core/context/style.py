@@ -601,13 +601,6 @@ class Style:
             handle_border = f"{line}px solid {c['border']}"
         else:
             handle_border = "none"
-        # A panel's own scrollbar lives in its frame (see Panel.fit_frame) - as wide as it, on the drawer
-        frame = self.setting("panel_frame")
-        frame_inset = min(inset, max(0, (frame - 2) // 2))
-        frame_thickness = max(2, frame - 2 * frame_inset)
-        frame_radius = frame_thickness // 2 if radius is None else min(radius, frame_thickness // 2)
-        # Between rows of trees and tables, the deepest material shows (see themes' module docstring)
-        row_gap = max(1, line)
         left, top, right, bottom = self.panel_margins()
         font = self.setting("font_family")
         extras = []
@@ -680,20 +673,12 @@ class Style:
                 padding: 4px;
             }}
             QTreeWidget, QTreeView, QTableWidget, QTableView {{
-                background-color: {m("field")};
+                background-color: {m("card")};
                 alternate-background-color: {m("alternate_row")};
                 color: {c["text"]};
                 border: {outline};
                 gridline-color: {c["field"]};
             }}
-            QTreeView::item, QTableView::item {{
-                background-color: {m("card")};
-                border: none;
-                border-bottom: {row_gap}px solid transparent;
-                background-clip: padding;
-            }}
-            QTreeView::item:alternate, QTableView::item:alternate {{ background-color: {m("alternate_row")}; }}
-            QTreeView::branch {{ background-color: transparent; }}
             QTreeWidget::item:selected, QTreeView::item:selected, QTableWidget::item:selected, QTableView::item:selected {{
                 background-color: {m("selection")};
                 color: {c["accent_text"]};
@@ -710,7 +695,7 @@ class Style:
                 border-radius: 7px;
             }}
             QScrollBar:vertical {{
-                background: {m("scrollbar_track")};
+                background: {m("field")};
                 width: {scroll_w}px;
                 margin: 0px;
                 border: none;
@@ -726,7 +711,7 @@ class Style:
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
             QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
             QScrollBar:horizontal {{
-                background: {m("scrollbar_track")};
+                background: {m("field")};
                 height: {scroll_w}px;
                 margin: 0px;
                 border: none;
@@ -740,13 +725,8 @@ class Style:
             }}
             QScrollBar::handle:horizontal:hover {{ background: {c["scrollbar_hover"]}; }}
             QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
-            QAbstractScrollArea::corner {{ background: {m("scrollbar_track")}; border: none; }}
-            QScrollBar[framed="true"] {{ background: transparent; }}
-            QScrollBar[framed="true"]:vertical {{ width: {frame}px; }}
-            QScrollBar[framed="true"]:horizontal {{ height: {frame}px; }}
-            QScrollBar[framed="true"]::handle {{ margin: {frame_inset}px; border-radius: {frame_radius}px; }}
+            QAbstractScrollArea::corner {{ background: {m("field")}; border: none; }}
             *[material="panel"] QAbstractScrollArea {{ border: none; border-radius: 0px; }}
-            *[material="panel"] QAbstractScrollArea::corner {{ background: transparent; }}
             {self._material_rules()}
             *[material="overlay"] {{ border: 2px solid {c["accent"]}; }}
             *[material="none"] {{ background-color: transparent; border: none; }}

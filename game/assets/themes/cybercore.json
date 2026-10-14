@@ -245,12 +245,12 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#001418",
-                "opacity": 0.55
+                "color": "#000000",
+                "opacity": 0.45
             },
             "light": {
-                "color": "#c0cbd7",
-                "opacity": 0.6
+                "color": "#b3c0ce",
+                "opacity": 0.4
             }
         },
         "selection": {
@@ -271,16 +271,6 @@
             "light": {
                 "color": "#0066ff",
                 "opacity": 0.55
-            }
-        },
-        "scrollbar_track": {
-            "dark": {
-                "color": "#00f0ff",
-                "opacity": 0.08
-            },
-            "light": {
-                "color": "#0066ff",
-                "opacity": 0.08
             }
         },
         "tooltip": {

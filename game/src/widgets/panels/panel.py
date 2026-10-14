@@ -1,8 +1,8 @@
 import math
 
-from PySide6.QtCore import QEvent, QRectF, Qt
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QRegion
-from PySide6.QtWidgets import QAbstractScrollArea, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from ...app_core import Context
 from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .. import MenuBar
@@ -70,13 +70,10 @@ class _DrawerLayout(QVBoxLayout):
     reaches (see Panel.layout). Its margins are the panel's frame (see
     Panel.fit_frame), which body constructors can't clobber: e.g.
     Panes.__init__ sets master.layout()'s margins on whatever it's given.
-    Tells the panel about a scroll area body, whose scrollbar the frame
-    then holds.
     '''
 
-    def __init__(self, on_scroll_area):
+    def __init__(self):
         super().__init__()
-        self.on_scroll_area = on_scroll_area
         super().setContentsMargins(0, 0, 0, 0)
         self.setSpacing(0)
 
@@ -85,11 +82,6 @@ class _DrawerLayout(QVBoxLayout):
 
     def frame(self, left: int, top: int, right: int, bottom: int):
         super().setContentsMargins(left, top, right, bottom)
-
-    def addWidget(self, widget, *args, **kwargs):
-        super().addWidget(widget, *args, **kwargs)
-        if isinstance(widget, QAbstractScrollArea):
-            self.on_scroll_area(widget)
 
 
 class Panel(QWidget):
@@ -100,8 +92,7 @@ class Panel(QWidget):
 
     A panel is a drawer (see themes' module docstring): its menu bar and a
     frame around its body - "panel_frame" px left, right and below - are
-    all the panel material, one piece. A scroll area body's scrollbars sit
-    in that frame (see fit_frame).
+    all the panel material, one piece.
     '''
     KEY = "base_panel"
     # Settings keys (from _packages/_default.json) this panel reads or writes.
@@ -138,7 +129,6 @@ class Panel(QWidget):
         real_layout = super().layout()  # not self.layout() - that's overridden below, and self._content_layout doesn't exist yet
         real_layout.setSpacing(0)
         self._body_layout = None
-        self._framed_area = None
         self.fit_shadow()
         self.style.signals.changed.connect(self.fit_shadow)
 
@@ -154,7 +144,7 @@ class Panel(QWidget):
         # Everything added from here on is the body, in the drawer's frame
         # (see layout and fit_frame). Hidden (a minimized panel), it's
         # empty, and takes no room - frame and all.
-        self._body_layout = _DrawerLayout(self._frame_scroll_area)
+        self._body_layout = _DrawerLayout()
         self._content_layout.addLayout(self._body_layout, 1)
         self.fit_frame()
 
@@ -200,49 +190,12 @@ class Panel(QWidget):
         '''
         return self._body_layout if self._body_layout is not None else self._content_layout
 
-    def _frame_scroll_area(self, area: QAbstractScrollArea):
-        '''A scroll area body: its scrollbars go in the frame (see fit_frame) - the first one's, if there are several.'''
-        if self._framed_area is not None:
-            return
-        self._framed_area = area
-        for bar in (area.verticalScrollBar(), area.horizontalScrollBar()):
-            # The scroll area shows and hides the container a bar sits in, not the bar
-            bar.installEventFilter(self)
-            if bar.parentWidget() is not None:
-                bar.parentWidget().installEventFilter(self)
-        self.fit_frame()
-
-    def eventFilter(self, watched, event):
-        if event.type() in (QEvent.Type.Show, QEvent.Type.Hide):
-            self.fit_frame()
-        return False
-
     def fit_frame(self):
-        '''
-        The drawer's frame around the body - the theme's "panel_frame" px
-        left, right and below. A scroll area body's scrollbar takes the
-        frame's place on its side while it's showing, as wide as the frame,
-        over the drawer itself (see Style._build_stylesheet) - so the
-        body's edge never moves.
-        '''
+        '''The drawer's frame around the body - the theme's "panel_frame" px left, right and below.'''
         if self._body_layout is None:
             return
         frame = self.style.setting("panel_frame")
-        right = bottom = frame
-        area = self._framed_area
-        if area is not None:
-            for bar in (area.verticalScrollBar(), area.horizontalScrollBar()):
-                if bar.property("framed") != (frame > 0):
-                    bar.setProperty("framed", frame > 0)
-                    QWidget.style(bar).unpolish(bar)
-                    QWidget.style(bar).polish(bar)
-                    bar.updateGeometry()
-            if frame > 0:
-                if area.verticalScrollBar().isVisibleTo(area):
-                    right = 0
-                if area.horizontalScrollBar().isVisibleTo(area):
-                    bottom = 0
-        self._body_layout.frame(frame, 0, right, bottom)
+        self._body_layout.frame(frame, 0, frame, frame)
 
     def body_rect(self) -> QRectF:
         '''Where the panel itself is drawn - inside the room for its shadow (see Style.panel_margins).'''

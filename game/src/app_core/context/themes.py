@@ -23,10 +23,11 @@ Panels are made of three materials, from the top down (and any page
 can use them the same way):
     "panel"  the drawer - a panel's menu bar and the frame around its
              contents, all one piece (see "panel_frame")
-    "card"   the contents, just inside the drawer - cards, consoles,
-             charts and canvases, the rows of tables and trees
-    "field"  the deepest - text boxes, and what shows between cards and
-             between rows
+    "card"   the contents, just inside the drawer - what takes up most of
+             it: cards, consoles, charts and canvases, tables and trees
+    "field"  the deepest, and smaller - text boxes, the gaps between
+             cards, every other row of a table or tree (see
+             "alternate_row"), scrollbar troughs
 
 Each kind of button has its own materials: its background, its
 background on hover, its outline, its text and its text on hover. An
@@ -48,8 +49,7 @@ as it did before they existed (see STYLE_DEFAULTS):
                        on pages that blur it at all - instead of their own
     "panel_radius"     panels' corner radius in px
     "panel_frame"      px of the panel material around a panel's contents
-                       (left, right and below - its menu bar is above) -
-                       its scrollbar lives in it, at this width
+                       (left, right and below - its menu bar is above)
     "panel_shadow"     a shadow around each panel: {"x", "y", "blur" (px),
                        "dark": {"color", "opacity"}, "light": {...}} -
                        blur 0 is a hard shadow, x = y = 0 a glow
@@ -104,7 +104,7 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "panel": ("panel", 0.5),             # panels' drawer: their menu bar and the frame around their contents
     "panel_border": ("widget", 0.5),     # panel outlines
     "card": ("widget", 0.5),             # what's in the drawer: cards, consoles, charts, rows
-    "field": ("field", 0.5),             # the deepest: text boxes, and between cards and rows
+    "field": ("field", 0.5),             # the deepest: text boxes, gaps between cards, scrollbar troughs
     "button": ("accent", 0.75),          # buttons
     "button_hover": ("accent", 0.75),    # buttons under the mouse
     "button_border": ("accent", 0.0),    # buttons' outlines
@@ -116,10 +116,9 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "tab": ("widget", 0.5),              # tabs
     "tab_selected": ("accent", 1.0),     # the selected tab
     "table_header": ("widget", 0.5),     # table and tree headers
-    "alternate_row": ("widget", 0.5),    # every other row of tables and trees - a shade of "card"
+    "alternate_row": ("widget", 0.5),    # every other row of tables and trees - like "field"
     "selection": ("accent", 1.0),        # selected rows and items
     "scrollbar": ("scrollbar", 1.0),     # scrollbar handles
-    "scrollbar_track": ("panel", 0.5),   # what scrollbar handles slide in
     "tooltip": ("panel", 1.0),           # tooltips
     "footer": ("widget", 1.0),           # the bar along the bottom of the window
     # Text and lines - always solid (see INK_MATERIALS)

@@ -190,11 +190,11 @@
         },
         "alternate_row": {
             "dark": {
-                "color": "#34343f",
+                "color": "#25252f",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#fff7e6",
+                "color": "#f3e3c3",
                 "opacity": 1.0
             }
         },
@@ -210,21 +210,11 @@
         },
         "scrollbar": {
             "dark": {
-                "color": "#000000",
+                "color": "#ffd23f",
                 "opacity": 1.0
             },
             "light": {
-                "color": "#000000",
-                "opacity": 1.0
-            }
-        },
-        "scrollbar_track": {
-            "dark": {
-                "color": "#25252f",
-                "opacity": 1.0
-            },
-            "light": {
-                "color": "#fff7e6",
+                "color": "#ffd23f",
                 "opacity": 1.0
             }
         },
@@ -330,10 +320,10 @@
         },
         "scrollbar_hover": {
             "dark": {
-                "color": "#3b3b4c"
+                "color": "#ffe27a"
             },
             "light": {
-                "color": "#333333"
+                "color": "#ffe27a"
             }
         }
     }
