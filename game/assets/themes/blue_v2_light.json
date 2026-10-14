@@ -1,213 +1,233 @@
 {
     "label": "Blue (soft light)",
     "kind": "original",
-    "palette": {
-        "dark": {
-            "root": "#10141d",
-            "panel": "#151a24",
-            "widget": "#28303d",
-            "field": "#353e4d",
-            "field_text": "#e3eaf5",
-            "text": "#e3eaf5",
-            "accent": "#2979ff",
-            "accent_text": "#ffffff",
-            "border": "#2e3745",
-            "scrollbar": "#2e3745",
-            "scrollbar_hover": "#3e4755"
-        },
-        "light": {
-            "root": "#f6f8fc",
-            "panel": "#eef2f8",
-            "widget": "#dfe6f1",
-            "field": "#ffffff",
-            "field_text": "#1a2233",
-            "text": "#1a2233",
-            "accent": "#1e6fe0",
-            "accent_text": "#ffffff",
-            "border": "#cbd4e3",
-            "scrollbar": "#cbd4e3",
-            "scrollbar_hover": "#b7c1d2"
-        }
-    },
     "materials": {
         "window": {
             "dark": {
-                "color": "root",
+                "color": "#10141d",
                 "opacity": 1.0
             },
             "light": {
-                "color": "root",
+                "color": "#f6f8fc",
                 "opacity": 1.0
             }
         },
         "panel": {
             "dark": {
-                "color": "panel",
+                "color": "#151a24",
                 "opacity": 0.5
             },
             "light": {
-                "color": "panel",
+                "color": "#eef2f8",
                 "opacity": 0.5
             }
         },
         "panel_border": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 0.5
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 0.5
             }
         },
         "menu_bar": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 1.0
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 1.0
             }
         },
         "card": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 0.5
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 0.5
             }
         },
         "field": {
             "dark": {
-                "color": "field",
+                "color": "#353e4d",
                 "opacity": 0.5
             },
             "light": {
-                "color": "field",
+                "color": "#ffffff",
                 "opacity": 0.5
             }
         },
         "button": {
             "dark": {
-                "color": "accent",
+                "color": "#2979ff",
                 "opacity": 0.75
             },
             "light": {
-                "color": "accent",
+                "color": "#1e6fe0",
                 "opacity": 0.75
             }
         },
         "overlay": {
             "dark": {
-                "color": "panel",
+                "color": "#151a24",
                 "opacity": 1.0
             },
             "light": {
-                "color": "panel",
+                "color": "#eef2f8",
                 "opacity": 1.0
             }
         },
         "overlay_card": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 1.0
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 1.0
             }
         },
         "tab": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 0.5
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 0.5
             }
         },
         "tab_selected": {
             "dark": {
-                "color": "accent",
+                "color": "#2979ff",
                 "opacity": 1.0
             },
             "light": {
-                "color": "accent",
+                "color": "#1e6fe0",
                 "opacity": 1.0
             }
         },
         "table_header": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 0.5
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 0.5
             }
         },
         "alternate_row": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 0.5
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 0.5
             }
         },
         "selection": {
             "dark": {
-                "color": "accent",
+                "color": "#2979ff",
                 "opacity": 1.0
             },
             "light": {
-                "color": "accent",
+                "color": "#1e6fe0",
                 "opacity": 1.0
             }
         },
         "scrollbar": {
             "dark": {
-                "color": "scrollbar",
+                "color": "#2e3745",
                 "opacity": 1.0
             },
             "light": {
-                "color": "scrollbar",
+                "color": "#cbd4e3",
                 "opacity": 1.0
             }
         },
         "scrollbar_track": {
             "dark": {
-                "color": "panel",
+                "color": "#151a24",
                 "opacity": 0.5
             },
             "light": {
-                "color": "panel",
+                "color": "#eef2f8",
                 "opacity": 0.5
             }
         },
         "tooltip": {
             "dark": {
-                "color": "panel",
+                "color": "#151a24",
                 "opacity": 1.0
             },
             "light": {
-                "color": "panel",
+                "color": "#eef2f8",
                 "opacity": 1.0
             }
         },
         "footer": {
             "dark": {
-                "color": "widget",
+                "color": "#28303d",
                 "opacity": 1.0
             },
             "light": {
-                "color": "widget",
+                "color": "#dfe6f1",
                 "opacity": 1.0
+            }
+        },
+        "text": {
+            "dark": {
+                "color": "#e3eaf5"
+            },
+            "light": {
+                "color": "#1a2233"
+            }
+        },
+        "field_text": {
+            "dark": {
+                "color": "#e3eaf5"
+            },
+            "light": {
+                "color": "#1a2233"
+            }
+        },
+        "accent_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "accent": {
+            "dark": {
+                "color": "#2979ff"
+            },
+            "light": {
+                "color": "#1e6fe0"
+            }
+        },
+        "border": {
+            "dark": {
+                "color": "#2e3745"
+            },
+            "light": {
+                "color": "#cbd4e3"
+            }
+        },
+        "scrollbar_hover": {
+            "dark": {
+                "color": "#3e4755"
+            },
+            "light": {
+                "color": "#b7c1d2"
             }
         }
     }

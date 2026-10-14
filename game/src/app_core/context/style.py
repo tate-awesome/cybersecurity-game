@@ -9,41 +9,18 @@ from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QApplication, QWidget
 import darkdetect
 
-from .themes import MATERIALS, PALETTE_KEYS, THEME_MODES, is_color, is_hex, is_palette_name, read_theme, resolve_materials, theme_file
+from .themes import COLOR_NAMES, INK_MATERIALS, MATERIALS, THEME_MODES, is_hex, read_theme, resolve_materials, theme_file
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
-# Hand-rolled replacement for qt-material's theme presets. Each family has a
-# dark and light palette with every one of themes.PALETTE_KEYS, and a
-# material list (see themes.py) - defaults, for the built-in one.
-# Blue is built in so the app always has a theme, even without assets/;
-# every other preset family is a <family>.json in assets/themes (see
-# themes.py and Style._load_theme_files) - one there named "blue"
-# replaces it. Every theme is drawn exactly as its file says.
-PALETTES: dict[str, dict[str, dict[str, str]]] = {
-    "blue": {
-        # Dark mode: panel sits close to root (both near-black) so widget-
-        # colored cards clearly pop above the recessed backdrop. Light mode
-        # flips that - panel sits close to field (both near-white) so
-        # widget-colored cards read as the slightly-toned layer between
-        # them. Either way, widget is always the mode's biggest single step,
-        # which is what actually keeps stacked forms from blending together.
-        "dark": {
-            "root": "#10141d", "panel": "#151a24", "widget": "#28303d",
-            "field": "#353e4d", "field_text": "#e3eaf5", "text": "#e3eaf5",
-            "accent": "#2979ff", "accent_text": "#ffffff", "border": "#2e3745",
-            "scrollbar": "#2e3745", "scrollbar_hover": "#3e4755",
-        },
-        "light": {
-            "root": "#d9e2f5", "panel": "#f1f5ff", "widget": "#e4ebfd",
-            "field": "#ffffff", "field_text": "#1a2233", "text": "#1a2233",
-            "accent": "#1e6fe0", "accent_text": "#ffffff", "border": "#d9e2f5",
-            "scrollbar": "#d9e2f5", "scrollbar_hover": "#bfc7d8",
-        },
-    },
-}
+# Hand-rolled replacement for qt-material's theme presets. Each theme is a
+# list of materials - what each kind of widget is made of, in dark and light
+# mode (see themes.py). Blue is built in so the app always has a theme, even
+# without assets/ - it's themes.MATERIALS' defaults. Every other theme is a
+# <family>.json in assets/themes (see Style._load_theme_files) - one there
+# named "blue" replaces it. Every theme is drawn exactly as its file says.
 PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
 # The default themes - the hand-picked families the theme selector offers
 # everyone (most combinations of the theme editor's settings don't look
@@ -56,8 +33,6 @@ CURATED_THEMES: list[str] = ["blue_v2_light"]
 # Style.new_theme) - are named "imported.<file name>", so one can never
 # replace a bundled preset of the same name. Only these can be edited.
 IMPORTED_PREFIX = "imported."
-# A color the theme editor adds to a palette starts as this (see Style.add_palette_color)
-NEW_PALETTE_COLOR = "#808080"
 
 # How widgets are styled: each one names its material (see themes.MATERIALS)
 # in a "material" property (see Style.set_material), and the app's one
@@ -70,10 +45,10 @@ NEW_PALETTE_COLOR = "#808080"
 # corners like a panel's, "outlined" adds a panel's border.
 SPECIAL_MATERIALS = ("none", "panel_fill")
 PANEL_BORDER_WIDTH = 2
-# The palette colors color() hands back as materials, see-through - so
-# canvases and other hand-drawn widgets naming them follow the theme's
-# opacity (e.g. a "field" chart background is the field material)
-COLOR_MATERIALS = {"panel": "panel", "widget": "card", "field": "field"}
+# The color names (see themes.COLOR_NAMES) color() hands back see-through,
+# at their material's opacity - so canvases and other hand-drawn widgets
+# naming them follow the theme (e.g. a "field" chart background)
+SEE_THROUGH_COLORS = ("panel", "widget", "field")
 # Whether surfaces can be see-through at all. Off, none of the surface
 # machinery runs: every color is opaque and untagged, there's no overlay
 # snapshot, and scroll areas paint their own background - the app as it
@@ -157,12 +132,12 @@ class Style:
         # ContextManager.start_session) - this is just a system-appropriate
         # bootstrap default; load_preferred_theme() overrides it once
         # preferences are available.
-        self.palettes: dict[str, dict[str, dict[str, str]]] = dict(PALETTES)
         # Each theme's materials (see themes.py)
-        self.materials: dict[str, dict[str, dict[str, dict]]] = {name: resolve_materials(None) for name in PALETTES}
+        self.materials: dict[str, dict[str, dict[str, dict]]] = {name: resolve_materials(None) for name in PRESET_INFO}
         self.preset_info: dict[str, dict] = dict(PRESET_INFO)
         self._load_theme_files()
-        self._theme_colors: dict[str, str] = {}
+        # The current theme's materials' colors in the current mode, name -> "#rrggbb" (see _resolve_colors)
+        self._colors: dict[str, str] = {}
         self.apply_theme(self.default_theme())
 
     def packing(self, type = "default"):
@@ -236,36 +211,28 @@ class Style:
             size = 10.0
         return int(size * self.ui_scale / 100.0)
 
-    # The color names color() resolves from the active palette - also the
+    # The color names color() resolves (see themes.COLOR_NAMES) - also the
     # options the style editors offer (see important_buttons/settings_overlays)
-    THEME_COLOR_NAMES = (
-        "root",             # window background
-        "panel",            # panel background
-        "widget",           # nested/inner widget background
-        "accent",           # button/highlight color
-        "field",            # text field background
-        "field_text",       # text field text color
-        "text",             # general text color
-        "scrollbar",        # scrollbar handle color
-        "scrollbar_hover",  # scrollbar handle hover color
-    )
+    THEME_COLOR_NAMES = tuple(COLOR_NAMES)
 
     def color(self, type: str, opaque: bool = False) -> str:
         '''
-        A palette color (see themes.PALETTE_KEYS) for one of
-        THEME_COLOR_NAMES, or the input string itself (e.g. "red" or a hex
-        code) for anything else - for hand-drawn widgets and the few
-        stylesheet rules that aren't backgrounds (text, borders).
+        A theme color for hand-drawn widgets and the few stylesheet rules
+        that aren't backgrounds (text, borders): one of THEME_COLOR_NAMES or
+        a material's name gives that material's color now, and anything
+        else (e.g. "red" or a hex code) comes back as it is.
 
-        "panel", "widget" and "field" come back as their materials (see
-        COLOR_MATERIALS) - "#AARRGGBB" when see-through, which both
-        stylesheets and QColor understand. opaque=True gives the plain
-        palette color instead. Backgrounds should name their material
-        instead (see set_material).
+        "panel", "widget" and "field" come back at their material's opacity
+        (see SEE_THROUGH_COLORS) - "#AARRGGBB" when see-through, which both
+        stylesheets and QColor understand. opaque=True gives them solid.
+        Backgrounds should name their material instead (see set_material).
         '''
-        if type in COLOR_MATERIALS and not opaque:
-            return self.material(COLOR_MATERIALS[type]).name(QColor.NameFormat.HexArgb)
-        return self._theme_colors.get(type, type)
+        material = COLOR_NAMES.get(type, type)
+        if material not in self._colors:
+            return type
+        if type in SEE_THROUGH_COLORS and not opaque:
+            return self.material(material).name(QColor.NameFormat.HexArgb)
+        return self._colors[material]
 
     def get_column_width(self, column_name):
         match column_name:
@@ -314,7 +281,7 @@ class Style:
         # First - the materials (see material) are the current theme's
         self.current_theme = theme_name
         self.mode = "Dark" if mode == "dark" else "Light"
-        self._theme_colors = self._palette(family, mode)
+        self._resolve_colors()
         # The native platform style (e.g. "windows11") largely ignores QSS
         # background-color/border-radius on QPushButton/QComboBox/QCheckBox -
         # Fusion is the style Qt's own docs recommend for full stylesheet
@@ -389,8 +356,8 @@ class Style:
         '''
         Blends hex_color toward white (amount > 0) or black (amount < 0) by
         the given fraction - used to derive button/slider hover and pressed
-        shades from a palette's single accent color, instead of hand-authoring
-        extra keys per palette per mode.
+        shades from a theme's single button color, instead of hand-authoring
+        extra materials per theme per mode.
         '''
         hex_color = hex_color.lstrip("#")
         r, g, b = (int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
@@ -411,9 +378,10 @@ class Style:
         Hand-rolled replacement for qt-material's generated QSS: the native
         widgets this app uses (buttons, text boxes, checkboxes, combo boxes,
         tabs, trees, scrollbars, sliders, tooltips) and every material's
-        rule (see set_material), all from the current palette and materials.
+        rule (see set_material), all from the current theme's materials.
         '''
-        c = self._theme_colors
+        # By the names the rules were written with (see themes.COLOR_NAMES), solid
+        c = {name: self.color(name, opaque=True) for name in COLOR_NAMES}
         m = self.css
         scroll_w = int(self.get_scrollbar_size())
 
@@ -425,7 +393,7 @@ class Style:
             return self._css(shade)
 
         def at_opacity(color: str, material: str) -> str:
-            '''A palette color (or hex code) at a material's opacity.'''
+            '''A theme color (see color) or hex code at a material's opacity.'''
             qcolor = QColor(c.get(color, color))
             qcolor.setAlpha(self.material(material).alpha())
             return self._css(qcolor)
@@ -576,21 +544,25 @@ class Style:
         return self.materials.get(self.theme_family()) or resolve_materials(None)
 
     def material_entry(self, name: str) -> dict:
-        '''One material in the current mode: {"color": <palette key or hex>, "opacity": 0-1}.'''
+        '''One material in the current mode: {"color": "#rrggbb", "opacity": 0-1}.'''
         return self.theme_materials()[name][self.current_theme.partition("_")[0]]
 
     def material(self, name: str) -> QColor:
         '''
         What a material (see themes.MATERIALS) looks like right now: its
-        color, resolved from the palette if it names one, at its opacity -
-        or solid, with translucent_surfaces off or in a theme that doesn't
-        allow transparency.
+        color at its opacity - or solid, with translucent_surfaces off, in a
+        theme that doesn't allow transparency, or for text and lines (see
+        themes.INK_MATERIALS).
         '''
         entry = self.material_entry(name)
-        color = QColor(self._theme_colors.get(entry["color"], entry["color"]))
-        if self.translucent_surfaces and self.allows_transparency():
+        color = QColor(entry["color"])
+        if self.translucent_surfaces and self.allows_transparency() and name not in INK_MATERIALS:
             color.setAlphaF(entry["opacity"])
         return color
+
+    def _resolve_colors(self):
+        mode = self.current_theme.partition("_")[0]
+        self._colors = {name: modes[mode]["color"] for name, modes in self.theme_materials().items()}
 
     def allows_transparency(self, family: str | None = None) -> bool:
         '''Whether a theme (the current one, by default) lets surfaces be see-through at all ("transparency" - see themes.py).'''
@@ -693,7 +665,7 @@ class Style:
     def _load_theme_files(self):
         '''
         Reads every assets/themes/<family>.json preset (see themes.py), then
-        the user's own. Anything unreadable or with an incomplete palette
+        the user's own. Anything unreadable or without materials
         is skipped.
         '''
         for path in sorted(self.context.paths.themes.glob("*.json")):
@@ -706,9 +678,8 @@ class Style:
             with open(path, encoding="utf-8") as file:
                 theme = read_theme(json.load(file))
             if theme is None:
-                print(f"Err: theme {path} has an incomplete palette - skipped.")
+                print(f"Err: theme {path} has no materials - skipped.")
                 return False
-            self.palettes[family] = theme["palette"]
             self.materials[family] = theme["materials"]
             info = theme["info"]
             if kind is not None:
@@ -726,8 +697,7 @@ class Style:
         and deleted ones disappear. Themes with unsaved edits are kept as
         they are (see unsaved).
         '''
-        for family in [name for name in self.palettes if name.startswith(IMPORTED_PREFIX) and name not in self.unsaved]:
-            del self.palettes[family]
+        for family in [name for name in self.materials if name.startswith(IMPORTED_PREFIX) and name not in self.unsaved]:
             del self.materials[family]
             del self.preset_info[family]
         for path in sorted(self.context.paths.user_themes.glob("*.json")):
@@ -766,23 +736,21 @@ class Style:
 
     def new_theme(self, source: str) -> str:
         '''
-        Copies a theme - its palette, materials, description and
-        transparency - into a new file of the user's own, named after it
+        Copies a theme - its materials, description and transparency - into a new file of the user's own, named after it
         ("<name> copy"), and switches to it. Returns its family.
         '''
         folder = self.context.paths.user_themes
         self.context.paths.generate_path(folder)
         label = self.context.labels.get("theme_editor_copy_name").replace("{name}", self.preset_info[source].get("label", source))
         stem, number = self._file_stem(label), 1
-        while (folder / f"{stem}.json").exists() or IMPORTED_PREFIX + stem in self.palettes:
+        while (folder / f"{stem}.json").exists() or IMPORTED_PREFIX + stem in self.materials:
             number += 1
             stem = f"{self._file_stem(label)}_{number}"
         info = {"label": label if number == 1 else f"{label} {number}"}
         for key in ("note", "transparency"):
             if key in self.preset_info[source]:
                 info[key] = self.preset_info[source][key]
-        self._write_theme(folder / f"{stem}.json", {"info": info, "palette": copy.deepcopy(self.palettes[source]),
-                                                   "materials": copy.deepcopy(self.materials[source])})
+        self._write_theme(folder / f"{stem}.json", {"info": info, "materials": copy.deepcopy(self.materials[source])})
         self.load_imported_themes()
         family = IMPORTED_PREFIX + stem
         self.set_family(family)
@@ -792,7 +760,7 @@ class Style:
         '''After any edit to family: it's unsaved, and shows - restyled shortly, or at once and announced with notify.'''
         self.unsaved.add(family)
         if family == self.theme_family():
-            self._theme_colors = self._palette(family, self.current_theme.partition("_")[0])
+            self._resolve_colors()
             if notify:
                 self.restyle()
             else:
@@ -821,78 +789,19 @@ class Style:
         self.preset_info[self.theme_family()]["transparency"] = on
         self._edited(self.theme_family(), notify=True)
 
-    def set_palette_color(self, name: str, color: str):
-        '''One of the current theme's palette colors ("#rrggbb"), in the current mode.'''
-        family = self.theme_family()
-        if not self.is_editable() or not is_hex(color) or name not in self.palettes[family]["dark"]:
-            return
-        self.palettes[family][self.current_theme.partition("_")[0]][name] = color.lower()
-        self._edited(family)
-
-    def add_palette_color(self) -> str | None:
-        '''Adds a color of the theme's own to its palette ("color", "color_2", ...) in both modes - returns its name.'''
-        if not self.is_editable():
-            return None
-        palette = self.palettes[self.theme_family()]
-        name, number = "color", 1
-        while name in palette["dark"]:
-            number += 1
-            name = f"color_{number}"
-        for mode in THEME_MODES:
-            palette[mode][name] = NEW_PALETTE_COLOR
-        self._edited(self.theme_family(), notify=True)
-        return name
-
-    def rename_palette_color(self, old: str, new: str) -> bool:
-        '''
-        Renames one of the theme's own palette colors - and every material
-        using it. False if new isn't a valid, unused name (see
-        themes.is_palette_name) or old is one of the app's own.
-        '''
-        family = self.theme_family()
-        palette = self.palettes[family]
-        if not self.is_editable() or old in PALETTE_KEYS or old not in palette["dark"]:
-            return False
-        if new == old:
-            return True
-        if not is_palette_name(new) or new in palette["dark"]:
-            return False
-        for mode in THEME_MODES:
-            palette[mode] = {(new if key == old else key): value for key, value in palette[mode].items()}
-        for modes in self.materials[family].values():
-            for entry in modes.values():
-                if entry["color"] == old:
-                    entry["color"] = new
-        self._edited(family, notify=True)
-        return True
-
-    def remove_palette_color(self, name: str):
-        '''Removes one of the theme's own palette colors - materials using it go back to their default color.'''
-        family = self.theme_family()
-        palette = self.palettes[family]
-        if not self.is_editable() or name in PALETTE_KEYS or name not in palette["dark"]:
-            return
-        for mode in THEME_MODES:
-            del palette[mode][name]
-        for material, modes in self.materials[family].items():
-            for mode, entry in modes.items():
-                if entry["color"] == name:
-                    entry["color"] = MATERIALS[material][mode]["color"]
-        self._edited(family, notify=True)
-
     def set_material_value(self, name: str, color: str | None = None, opacity: float | None = None):
         '''
         Changes one of the current theme's materials in the current mode -
-        its color (one of the palette's names, or a hex code) and/or opacity
-        (0-1).
+        its color ("#rrggbb") and/or opacity (0-1, not for text and lines -
+        see themes.INK_MATERIALS).
         '''
         if not self.is_editable():
             return
         family = self.theme_family()
         entry = self.materials[family][name][self.current_theme.partition("_")[0]]
-        if color is not None and is_color(color, tuple(self.palettes[family]["dark"])):
-            entry["color"] = color
-        if opacity is not None:
+        if color is not None and is_hex(color):
+            entry["color"] = color.lower()
+        if opacity is not None and name not in INK_MATERIALS:
             entry["opacity"] = min(1.0, max(0.0, float(opacity)))
         self._edited(family)
 
@@ -901,12 +810,12 @@ class Style:
         info = {key: value for key, value in self.preset_info[family].items() if key != "kind"}
         if kind is not None:
             info = {"label": info.pop("label", family), "kind": kind, **info}
-        return {"info": info, "palette": self.palettes[family], "materials": self.materials[family]}
+        return {"info": info, "materials": self.materials[family]}
 
     def save_theme(self, family: str | None = None):
         '''Writes one of the user's themes (the current one, by default) to its file.'''
         family = family or self.theme_family()
-        if not self.is_user_theme(family) or family not in self.palettes:
+        if not self.is_user_theme(family) or family not in self.materials:
             return
         if self._write_theme(self.theme_path(family), self._theme_contents(family)):
             self.unsaved.discard(family)
@@ -919,7 +828,7 @@ class Style:
         self.unsaved.discard(family)
         self.load_imported_themes()
         if family == self.theme_family():
-            self.apply_theme(self.current_theme if family in self.palettes else self.default_theme(self.current_theme.partition("_")[0]))
+            self.apply_theme(self.current_theme if family in self.materials else self.default_theme(self.current_theme.partition("_")[0]))
         self.signals.edited.emit()
 
     def built_in_path(self, family: str) -> Path:
@@ -951,15 +860,11 @@ class Style:
             print(f"Err: [{e}] while saving theme {path}.")
             return False
 
-    def _palette(self, family: str, mode: str) -> dict[str, str]:
-        '''One mode of a theme's palette.'''
-        return dict(self.palettes[family][mode])
-
     def is_theme(self, theme_name) -> bool:
         if not isinstance(theme_name, str):
             return False
         mode, _, family = theme_name.partition("_")
-        return mode in THEME_MODES and family in self.palettes
+        return mode in THEME_MODES and family in self.materials
 
     def theme_family(self) -> str:
         '''The current theme's family - its file's name (see IMPORTED_PREFIX for the user's own).'''
@@ -982,15 +887,15 @@ class Style:
     def theme_choices(self) -> dict[str, str]:
         '''What the theme selector offers - the default themes (see CURATED_THEMES), then imported ones - family -> shown name.'''
         self.load_imported_themes()
-        curated = [name for name in CURATED_THEMES if name in self.palettes]
-        imported = [name for name in self.palettes if name.startswith(IMPORTED_PREFIX)]
+        curated = [name for name in CURATED_THEMES if name in self.materials]
+        imported = [name for name in self.materials if name.startswith(IMPORTED_PREFIX)]
         return {name: self.preset_name(name) for name in curated + imported}
 
     def default_theme(self, mode: str | None = None) -> str:
         '''The first default theme (or built-in blue, if assets/themes is missing it) - in mode, or the system's.'''
         if mode is None:
             mode = "dark" if darkdetect.isDark() else "light"
-        family = next((name for name in CURATED_THEMES if name in self.palettes), "blue")
+        family = next((name for name in CURATED_THEMES if name in self.materials), "blue")
         return f"{mode}_{family}"
 
     def load_preferred_theme(self):

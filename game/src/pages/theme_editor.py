@@ -6,11 +6,11 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
-from ..app_core.context.themes import MATERIALS, PALETTE_KEYS
+from ..app_core.context.themes import INK_MATERIALS, MATERIALS
 from ..widgets import MenuBar, popup
 from ..widgets.frame_widgets.important_buttons import developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
-from .settings import SettingsPage, SettingsSection
+from .settings import SettingsPage
 
 # The theme editor's own menu bar, after its theme controls (see add_menu_bar_entries) - navigation
 THEME_EDITOR_MENU_BAR = ["help_button", "back_button", "settings_button", "workspaces_button", "title_button", "quit_button"]
@@ -30,9 +30,9 @@ class ThemeEditorPage(SettingsPage):
     but only the user's own can be changed.
 
     On the left, tabs: General (name, description, which mode is being
-    edited, and whether the theme allows transparency), Palette (its named
-    colors, for the mode being edited - the app's own, plus any it adds)
-    and Materials (each kind of widget's palette color and opacity). Edits
+    edited, and whether the theme allows transparency) and Materials (each
+    kind of widget's color, and its opacity if the theme allows
+    transparency - for the mode being edited). Edits
     show at once, everywhere; Save writes them to the theme's file. On the
     right, a scrolling grid of example panels (see widgets.panels.examples)
     - every kind of panel body with made-up data - so each change shows on
@@ -170,7 +170,6 @@ class ThemeEditorPage(SettingsPage):
 
     def build_tabs(self):
         self.build_general_tab()
-        self.build_palette_tab()
         self.build_materials_tab()
         # As wide as the widest tab's rows need (their names' length depends on the
         # language and font), plus the scrollbar - the gallery gets the rest
@@ -215,122 +214,59 @@ class ThemeEditorPage(SettingsPage):
         transparency.setEnabled(editable)
         section.row("theme_editor_rows_transparency", transparency, "theme_editor_row_notes_transparency")
 
-    def build_palette_tab(self):
+    def build_materials_tab(self):
+        '''Every material for the mode being edited: surfaces with their opacity (if the theme allows transparency), then text and lines.'''
         style = self.style
-        family = style.theme_family()
-        palette = style.palettes[family][style.current_theme.partition("_")[0]]
+        mode = style.current_theme.partition("_")[0]
         editable = style.is_editable()
-        tab = self.new_tab("palette")
-        section = self.section(tab, "theme_palette")
-        for name, color in palette.items():
-            self.palette_row(section, name, color, editable)
-        add = QPushButton(self.labels.get("theme_editor_add_color"))
-        add.setFont(style.get_font())
-        add.clicked.connect(lambda checked=False: style.add_palette_color())
-        add.setEnabled(editable)
-        section.grid.addWidget(add, section.count, 0, Qt.AlignmentFlag.AlignLeft)
-        section.count += 1
+        transparency = style.allows_transparency()
+        tab = self.new_tab("materials")
+        for section_name, names in (("materials", [name for name in MATERIALS if name not in INK_MATERIALS]),
+                                    ("ink_materials", INK_MATERIALS)):
+            section = self.section(tab, section_name)
+            for name in names:
+                with_opacity = transparency and name not in INK_MATERIALS
+                control = self.material_control(name, style.theme_materials()[name][mode], with_opacity)
+                control.setEnabled(editable)
+                section.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
 
-    def palette_row(self, section: SettingsSection, name: str, color: str, editable: bool):
-        '''
-        One palette color: its name - the app's own are fixed, the theme's
-        own can be renamed - then its color (click to pick one) and, for the
-        theme's own, a button to remove it.
-        '''
-        style = self.style
-        own = name not in PALETTE_KEYS
-        if own:
-            title = QLineEdit(name)
-            title.editingFinished.connect(lambda: self.rename_color(name, title))
-        else:
-            title = QLabel(name)
-            title.setToolTip(self.labels.get(f"theme_palette_notes_{name}"))
-        title.setFont(style.get_font())
-        title.setEnabled(editable or not own)
-
-        controls = QWidget()
-        layout = QHBoxLayout(controls)
+    def material_control(self, name: str, entry: dict, with_opacity: bool) -> QWidget:
+        '''A material's color - click it to pick another - and, with_opacity, how solid it is.'''
+        row = QWidget()
+        layout = QHBoxLayout(row)
         layout.setContentsMargins(0, 0, 0, 0)
         swatch = QPushButton()
-        swatch.setFont(style.get_font("mono"))
+        swatch.setFont(self.style.get_font("mono"))
         swatch.setObjectName(f"_swatch_{id(swatch)}")
-        self.paint_swatch(swatch, color)
+        self.paint_swatch(swatch, entry["color"])
         swatch.clicked.connect(lambda checked=False: self.pick_color(name, swatch))
-        swatch.setEnabled(editable)
         layout.addWidget(swatch, 1)
-        if own:
-            remove = QPushButton("✕")
-            remove.setFont(style.get_font())
-            remove.setToolTip(self.labels.get("theme_editor_remove_color"))
-            remove.clicked.connect(lambda checked=False: style.remove_palette_color(name))
-            remove.setEnabled(editable)
-            layout.addWidget(remove)
-        controls.setMaximumWidth(self.CONTROL_WIDTH)
-
-        section.grid.addWidget(title, section.count, 0, Qt.AlignmentFlag.AlignVCenter)
-        section.grid.addWidget(controls, section.count, 1)
-        section.count += 1
+        if with_opacity:
+            layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
+                                         lambda value: self.style.set_material_value(name, opacity=value / 100)), 1)
+        return row
 
     @staticmethod
     def paint_swatch(swatch: QPushButton, color: str):
-        '''The button showing a palette color: filled with it, its hex code on it in black or white, whichever reads.'''
+        '''The button showing a material's color: filled with it, its hex code on it in black or white, whichever reads.'''
         text = "#000000" if QColor(color).lightnessF() > 0.55 else "#ffffff"
         swatch.setText(color)
         swatch.setStyleSheet(f"QPushButton#{swatch.objectName()} {{ background-color: {color}; color: {text};"
                              f" border: 1px solid {text}; }}")
 
     def pick_color(self, name: str, swatch: QPushButton):
-        '''Picks a palette color - shown everywhere while picking, and put back if cancelled.'''
-        style = self.style
+        '''Picks a material's color - shown everywhere while picking, and put back if cancelled.'''
         original = swatch.text()
         dialog = QColorDialog(QColor(original), self)
 
         def preview(color: QColor):
-            style.set_palette_color(name, color.name())
+            self.style.set_material_value(name, color=color.name())
             self.paint_swatch(swatch, color.name())
         dialog.currentColorChanged.connect(preview)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             preview(dialog.selectedColor())
         else:
             preview(QColor(original))
-
-    def rename_color(self, old: str, title: QLineEdit):
-        new = title.text().strip()
-        if new != old and not self.style.rename_palette_color(old, new):
-            title.setText(old)
-            popup.message(self, self.context, self.labels.get("theme_editor_invalid_name"))
-
-    def build_materials_tab(self):
-        style = self.style
-        family = style.theme_family()
-        mode = style.current_theme.partition("_")[0]
-        names = list(style.palettes[family][mode])
-        editable = style.is_editable()
-        transparency = style.allows_transparency()
-        tab = self.new_tab("materials")
-        section = self.section(tab, "materials")
-        for name in MATERIALS:
-            control = self.material_control(name, style.theme_materials()[name][mode], names, transparency)
-            control.setEnabled(editable)
-            section.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
-
-    def material_control(self, name: str, entry: dict, names: list[str], transparency: bool) -> QWidget:
-        '''A material's color - one of the palette's - and, if the theme allows transparency, its opacity.'''
-        row = QWidget()
-        layout = QHBoxLayout(row)
-        layout.setContentsMargins(0, 0, 0, 0)
-        color = QComboBox()
-        color.setFont(self.style.get_font())
-        color.addItems(names)
-        if entry["color"] not in names:  # a hex code of its own, from the file
-            color.addItem(entry["color"])
-        color.setCurrentText(entry["color"])  # before connecting, so loading it isn't an edit
-        color.currentTextChanged.connect(lambda text: self.style.set_material_value(name, color=text))
-        layout.addWidget(color, 1)
-        if transparency:
-            layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
-                                         lambda value: self.style.set_material_value(name, opacity=value / 100)), 1)
-        return row
 
     # Gallery
     def build_gallery(self) -> QScrollArea:
