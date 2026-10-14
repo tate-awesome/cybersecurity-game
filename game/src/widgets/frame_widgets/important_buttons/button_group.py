@@ -3,6 +3,9 @@ from ....app_core import Context
 from ..overlay import Overlay
 from ._base_button import ImportantButton
 
+# Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
+QWIDGETSIZE_MAX = (1 << 24) - 1
+
 # Groups shown only in developer mode - marked as developer-only, with every button in them
 DEVELOPER_GROUPS = {"debug_button_group"}
 
@@ -27,7 +30,21 @@ class ButtonGroup(ImportantButton):
         self.developer_group = group_key in DEVELOPER_GROUPS
         if self.developer_group:
             self.mark_developer_only()  # before the overlay reads the text for its ▾
-        Overlay(context.root, context, self, self.populate)
+        self.overlay = Overlay(context.root, context, self, self.populate)
+
+    def show_icon(self, icon: str, active_icon: str | None = None):
+        '''
+        Shows the group as just its icon - the overlay's ▾/▴ and the
+        developer-only mark aren't in the icon font, so open or closed it
+        keeps the icon, and Debug's bug says developer-only by itself.
+        '''
+        if self.developer_group:
+            self.developer_only = False
+            # (mark_developer_only fixed its height to the text's)
+            self.setMinimumHeight(0)
+            self.setMaximumHeight(QWIDGETSIZE_MAX)
+        super().show_icon(icon, active_icon)
+        self.overlay.closed_text = self.overlay.open_text = self.text()
 
     def populate(self, overlay: Overlay):
         for header, button_classes in self.sections:

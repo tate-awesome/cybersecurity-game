@@ -99,6 +99,8 @@ ICONS: dict[str, int] = {
     "square": 0xeb2c,
     "copy": 0xea7a,
     "power": 0xeb0d,
+    "bug": 0xea48,
+    "palette": 0xeb01,
 }
 
 

@@ -62,6 +62,12 @@ RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
     ],
 }
 
+# The right zone's dropdowns show as just an icon (see MenuBar.icon_button) - group key -> its icon
+RIGHT_ZONE_ICONS: dict[str, str] = {
+    "debug_button_group": "bug",
+    "style_button_group": "palette",
+}
+
 # Buttons with a fixed place of their own - the left and right zones' solo
 # buttons and the pause menu's rows. A page config naming one changes nothing.
 FIXED_BUTTON_NAMES: list[str] = ["back_button", "page_button", "settings_button", "help_button", "labels_button",
@@ -304,6 +310,7 @@ class MenuBar(QFrame):
             sections = [(header, [MENU_BAR_BUTTONS[name] for name in names if MENU_BAR_BUTTONS[name].is_available(self.context)])
                         for header, names in group_sections]
             group = ButtonGroup(self.context, group_key, [section for section in sections if section[1]])
+            self.icon_button(group, RIGHT_ZONE_ICONS[group_key])
             row.addWidget(group, 0, Qt.AlignmentFlag.AlignVCenter)
         self.settings_button = self.icon_button(OpenSettingsPage(self.context), "settings")
         self.help_button = self.icon_button(ShowHelpMessage(self.context), "info-circle")
