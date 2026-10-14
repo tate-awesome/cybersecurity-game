@@ -1956,9 +1956,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/window_chrome.py": {
-    "mtime": 1791990152.0090828,
-    "seen": 1791990192.4584587,
-    "ast_hash": "83c9a3e359cf1c30572a0960538cc5a3",
+    "mtime": 1791990234.229271,
+    "seen": 1791990264.3890443,
+    "ast_hash": "a7a5ae129e375cfc7f7d6a7818228a9b",
     "semantic_hash": ""
   },
   "game/assets/fonts/LICENSE-tabler-icons.txt": {
