@@ -83,8 +83,7 @@ class WorkspaceSelectPage(Page):
 
         self.add_background(config)
 
-        menu_bar = self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
-        self.style.set_material(menu_bar, "none")
+        self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 
         body = QHBoxLayout()
         body.setSpacing(self.style.igap)
