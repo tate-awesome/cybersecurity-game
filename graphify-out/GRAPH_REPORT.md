@@ -1,17 +1,17 @@
 # Graph Report - cybersecurity-game  (2026-10-14)
 
 ## Corpus Check
-- 301 files · ~238,782 words
+- 301 files · ~238,850 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
 ## Summary
-- 3831 nodes · 8062 edges · 199 communities (65 shown, 134 thin omitted)
+- 3833 nodes · 8067 edges · 178 communities (68 shown, 110 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 458 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fc1bbf6c`
+- Built from commit: `fb78253d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,19 +20,19 @@
 - MetaPacket
 - Builder
 - Footer
-- Overlay
 - LayoutEditor
+- SettingsSection
 - PauseMenu
 - VisualBackground
-- Buffer
-- SettingsPage
+- buffer_manager.py
+- .new_tab
 - ._build_stylesheet
 - PageManager
-- .__init__
+- SettingsPage
 - DefenderV0
 - ToggleButton
 - pyside6_qtcore
-- overlay.py
+- Overlay
 - ThemeEditorPage
 - CheckboxOverlay
 - NetworkMesh
@@ -40,8 +40,8 @@
 - DefenderModbusBuffer
 - FindBar
 - Canvas
-- .add_background
-- CornerControls
+- Page
+- VectorField
 - PacketTreeview
 - Wifi
 - .__init__
@@ -50,23 +50,23 @@
 - HVACView
 - Wifi
 - Draw
-- Panel
+- widgets/__init__.py
 - WorkspaceSelectPage
 - Camera
-- ArpSpoofer
-- server.py
+- APPoller
+- os
 - LocalizationManager
-- pyside6_qtwidgets
-- .setText
+- ContextManager
+- WaveGrid
 - GrowingButton
 - Runtime Requirements
 - examples.py
 - StatusBuffer
-- Loader
+- Dev/Host_API.py
 - ConfigEditor
-- Kernel
+- VisualPalette
 - SlidersForm
-- AnimationManager
+- time
 - InputManager
 - .minimize_button
 - MapBuffer
@@ -74,38 +74,40 @@
 - KeyBinds
 - WifiBaseClass
 - Modify
-- _base_button.py
+- WorkspaceSaveResetButton
 - Router
 - threading
 - DefenderStatusBuffer
 - Replay
 - StripChartBase
-- Dev/Host_API.py
+- Prod/Host_API.py
 - palette_generator.py
 - wifi_windows.py
 - App
 - PrivilegedHelper
 - Constellation
 - Preferences
-- DefenderHVACChart
+- _PollUnpacker
 - Draw
 - VariableOverlay
+- .__init__
 - .leaf
-- sys
+- .build_preview
+- Proximity
 - ModBus MITM Workspace Screenshot
 - ProcessManager
 - .add_setting_row
 - Rows
 - .__init__
 - ModBus Submarine Exercise Screenshot
-- FadeIn
+- app.py
 - NewWorkspaceDialog
 - .strip_chart_layout
 - Network Actions Panel (Forms, Stop All)
 - Full Attacker Exercise Workspace Screenshot
 - DoS Attack Workspace Screenshot
 - QWidget
-- launch.py
+- sys
 - MitmTable
 - _Dim
 - Style
@@ -113,74 +115,66 @@
 - Network Actions Panel
 - .__init__
 - _MapCanvas
-- TopLayout
+- .new_tab
 - Builder
 - Builder
 - Defender Full Suite Exercise Screenshot
 - Meter
-- hvac_view.py
+- defender.py
 - Camera
-- .populate_filter_overlay
+- packet_console/_builder.py
 - WindowEdges
-- WindowDrag
+- Attack
 - ModBus Basics Workspace Screenshot
 - MainWindow
-- .load_page_config
-- PopupEntrance
+- ArpSpoofer
+- .entry
 - Map
-- developer_text
-- WindowControls
-- .material_control
+- SettingsSection
+- window_chrome.py
+- .slider
 - Denier
 - Master
 - AppearEffect
-- NativeFrame
 - Slave
-- PacketBuffer
+- Buffer
 - NMapper
 - menu_bar.py
-- ViewPort
+- router.py
 - .restyle
 - .collect
 - _Proxy
 - .build_description_tab
 - style.py
 - PooledCanvasMixin
-- channels/__init__.py
+- affine
 - .__init__
 - ap_commands.py
 - LinkToPage
 - ._scan_for_networks
-- Paths
-- confirm_dialog
-- ModeForm
-- Builder
-- version.py
+- paths.py
+- popup.py
+- .all_ids
+- NotFound
+- .arrow
 - Kalman
 - _DrawerLayout
+- Telemetry
 - .build_tabs
 - DenseMesh
-- ToggleBookmark
-- draw_window_bar_line
+- on_notification
 - Utah Smart Energy Lab
 - Utah Smart Energy Lab (U-SMART)
 - PreferencesData
 - Skull Hacker Image (skull.png)
 - Dev Requirements (pyright)
-- PopupWindow
-- ContextManager
+- map.py
 - MenuBar
 - CLAUDE.md
 - frame_callback
-- _Gaps
-- APPoller
-- FilterOverlay
-- SelectRegisterPreset
-- ConfigureThisWorkspace
+- scrollable.py
+- .__init__
 - SampleSubmarine
-- GoForwardToNextPage
-- SelectColorTheme
-- RefreshAndCloseOverlay
 - Visualizer.py
 - frame_callback
 
@@ -236,54 +230,50 @@
 - **ModBus process observation panels** — game_assets_pages_workspaces_dos_attack_screenshot_modbus_data_panel, game_assets_pages_workspaces_dos_attack_screenshot_modbus_model_panel, game_assets_pages_workspaces_dos_attack_screenshot_modbus_monitors_panel [INFERRED 0.85]
 - **MITM attack workflow: WiFi connect, network mapping, ARP spoofing** — game_assets_pages_workspaces_modbus_mitm_screenshot_wifi_connection, game_assets_pages_workspaces_modbus_mitm_screenshot_nmapping, game_assets_pages_workspaces_modbus_mitm_screenshot_arp_spoofing, game_assets_pages_workspaces_modbus_mitm_screenshot_modbus_mitm_attack [INFERRED 0.85]
 
-## Communities (199 total, 134 thin omitted)
+## Communities (178 total, 110 thin omitted)
 
 ### Community 0 - "important_buttons/__init__.py"
 Cohesion: 0.03
-Nodes (26): AbortAllNetworkActions, ImportantButton, ClearAllCapturedBufferData, ClearModbusAndModelData, ClearPacketConsole, ClearSavedWorkspaceInputs, ClearStatusConsole, EditModbusRegisterDisplay (+18 more)
+Nodes (29): AbortAllNetworkActions, ImportantButton, open_in_browser(), ClearAllCapturedBufferData, ClearModbusAndModelData, ClearPacketConsole, ClearStatusConsole, ImportThemes (+21 more)
 
 ### Community 1 - "MetaPacket"
 Cohesion: 0.07
 Nodes (4): Channel, Transaction, TransactionManager, MetaPacket
 
 ### Community 2 - "Builder"
-Cohesion: 0.16
+Cohesion: 0.14
 Nodes (3): Builder, Builder, Builder
 
 ### Community 3 - "Footer"
-Cohesion: 0.08
-Nodes (7): _FollowResize, Footer, on_off(), on_off(), _Quiet, set_text(), tooltip()
+Cohesion: 0.06
+Nodes (8): BuildInfo, _FollowResize, Footer, on_off(), on_off(), _Quiet, set_text(), tooltip()
 
-### Community 5 - "LayoutEditor"
-Cohesion: 0.05
-Nodes (10): LayoutEditor, add(), add(), on_change(), checked_value(), is_checked(), SettingsSection, save() (+2 more)
+### Community 5 - "SettingsSection"
+Cohesion: 0.10
+Nodes (6): checked_value(), is_checked(), SettingsSection, save(), save(), on_change()
 
 ### Community 7 - "VisualBackground"
-Cohesion: 0.06
-Nodes (4): Visuals, paint_aurora(), pyramid_blur(), VisualBackground
-
-### Community 8 - "Buffer"
-Cohesion: 0.09
-Nodes (3): Buffer, HouseBuffer, ModbusBuffer
-
-### Community 9 - "SettingsPage"
 Cohesion: 0.07
-Nodes (3): SettingsPage, save(), OpenAppearanceSettings
+Nodes (3): paint_aurora(), pyramid_blur(), VisualBackground
+
+### Community 8 - "buffer_manager.py"
+Cohesion: 0.09
+Nodes (3): HouseBuffer, ModbusBuffer, _resolve_local_mac()
 
 ### Community 15 - "ToggleButton"
-Cohesion: 0.06
-Nodes (6): ToggleButton, FreeScrollStatusConsole, PausePacketConsole, StreamIncomingPacketsToMcap, ToggleDebugLabels, ToggleStripChartAutoFit
+Cohesion: 0.05
+Nodes (8): ToggleButton, FreeScrollStatusConsole, PausePacketConsole, SetCurrentPageAsFavorite, ToggleBookmark, StreamIncomingPacketsToMcap, ToggleDebugLabels, ToggleStripChartAutoFit
 
 ### Community 16 - "pyside6_qtcore"
-Cohesion: 0.08
-Nodes (6): random_spline_path(), draw_glow(), Visual, VisualPalette, Telemetry, VectorField
+Cohesion: 0.12
+Nodes (4): nice_number(), nice_ticks(), developer_text(), Visual
 
-### Community 17 - "overlay.py"
-Cohesion: 0.16
-Nodes (5): EditBackgroundStyle, EditModelStyle, EditStripChartStyle, EditWorkspaceAvailability, SettingsOverlayButton
+### Community 17 - "Overlay"
+Cohesion: 0.05
+Nodes (10): RefreshCurrentPage, SelectColorTheme, EditBackgroundStyle, EditModelStyle, EditStripChartStyle, EditWorkspaceAvailability, RefreshAndCloseOverlay, SelectRegisterPreset (+2 more)
 
 ### Community 20 - "CheckboxOverlay"
-Cohesion: 0.11
+Cohesion: 0.09
 Nodes (6): PanelButton, CheckboxOverlay, ChooseShownDefenderModbusForms, ChooseShownModbusTableForms, ChooseShownNetworkActionForms, ChooseShownPacketConsoleColumns
 
 ### Community 24 - "FindBar"
@@ -291,32 +281,40 @@ Cohesion: 0.09
 Nodes (3): FindBar, walk(), FindField
 
 ### Community 25 - "Canvas"
+Cohesion: 0.13
+Nodes (5): Canvas, DefenderWorldMap, House, NetworkDiagramCanvas, TriangleCanvas
+
+### Community 26 - "Page"
 Cohesion: 0.15
-Nodes (3): Canvas, DefenderWorldMap, WorldMap
+Nodes (3): Visuals, WorkspacePage, Page
 
 ### Community 30 - "Wifi"
 Cohesion: 0.11
 Nodes (6): Wifi, finish(), on_activated(), on_state_changed(), on_timeout(), cached()
 
 ### Community 35 - "Wifi"
-Cohesion: 0.11
-Nodes (6): _list_item(), Wifi, finish(), on_notification(), on_notification(), WLAN_CONNECTION_PARAMETERS
+Cohesion: 0.14
+Nodes (3): _list_item(), Wifi, on_notification()
 
-### Community 37 - "Panel"
+### Community 37 - "widgets/__init__.py"
 Cohesion: 0.06
-Nodes (8): NetworkDiagramCanvas, StripChart, Builder, Builder, paint_panel(), Panel, surface_shadow(), Builder
+Nodes (9): StripChart, Panes, panel(), Builder, Builder, Builder, Panel, Builder (+1 more)
 
 ### Community 38 - "WorkspaceSelectPage"
-Cohesion: 0.06
-Nodes (6): fade_in(), NoteBrowser, SummaryCard, WorkspaceButton, WorkspaceSelectPage, update()
+Cohesion: 0.05
+Nodes (8): fade_in(), NoteBrowser, SummaryCard, WorkspaceButton, WorkspaceSelectPage, update(), paint_panel(), surface_shadow()
 
-### Community 41 - "server.py"
-Cohesion: 0.10
-Nodes (10): build_capability(), _Echo, _BufferShim, _ContextStub, _dispatch(), run(), flusher(), run_from_argv() (+2 more)
+### Community 40 - "APPoller"
+Cohesion: 0.08
+Nodes (3): APPoller, Sniffer, Loader
 
-### Community 43 - "pyside6_qtwidgets"
-Cohesion: 0.14
-Nodes (11): BaseForm, APConnectForm, APTunnelForm, ArpForm, DosForm, EncryptionForm, KalmanForm, NFQForm (+3 more)
+### Community 41 - "os"
+Cohesion: 0.07
+Nodes (13): flush(), flush_all(), run(), build_capability(), _Echo, _BufferShim, _ContextStub, _dispatch() (+5 more)
+
+### Community 43 - "ContextManager"
+Cohesion: 0.11
+Nodes (12): ContextManager, BaseForm, ModeForm, APTunnelForm, ArpForm, DosForm, EncryptionForm, KalmanForm (+4 more)
 
 ### Community 45 - "GrowingButton"
 Cohesion: 0.08
@@ -328,35 +326,43 @@ Nodes (17): Game Architecture Outline, Modbus Master, Modbus Register/Frame Prot
 
 ### Community 47 - "examples.py"
 Cohesion: 0.04
-Nodes (19): House, Scrollable, ChartsExample, ControlsExample, FlagsExample, HouseExample, MapExample, NetworkExample (+11 more)
+Nodes (19): WorldMap, Scrollable, ChartsExample, ControlsExample, FlagsExample, HouseExample, MapExample, NetworkExample (+11 more)
+
+### Community 49 - "Dev/Host_API.py"
+Cohesion: 0.22
+Nodes (8): api_data(), dashboard(), _parse_packet(), receive_data(), send_command(), set_encryption(), set_target(), status()
+
+### Community 50 - "ConfigEditor"
+Cohesion: 0.11
+Nodes (3): ConfigEditor, walk(), discard()
+
+### Community 51 - "VisualPalette"
+Cohesion: 0.09
+Nodes (3): draw_glow(), VisualPalette, Kernel
 
 ### Community 52 - "SlidersForm"
 Cohesion: 0.15
 Nodes (4): push_submarine_settings(), submarine_settings_synced(), SlidersForm, slider_callback()
 
-### Community 53 - "AnimationManager"
-Cohesion: 0.08
-Nodes (4): AnimationManager, CallbackRegistry, ClickManager, _GlobalClickFilter
+### Community 53 - "time"
+Cohesion: 0.05
+Nodes (5): AnimationManager, CallbackRegistry, ClickManager, _GlobalClickFilter, random_spline_path()
 
 ### Community 55 - ".minimize_button"
-Cohesion: 0.21
+Cohesion: 0.17
 Nodes (8): _drain_evenly(), click_maximize(), click_minimize(), grow_pane(), on_sash_moved(), restore_floor(), shrink_pane(), unminimize()
 
-### Community 62 - "_base_button.py"
-Cohesion: 0.15
-Nodes (5): open_in_browser(), ImportThemes, OpenAccessPointConfigInBrowser, OpenProjectRepository, ReportAnIssue
+### Community 62 - "WorkspaceSaveResetButton"
+Cohesion: 0.21
+Nodes (3): ClearSavedWorkspaceInputs, ResetSavedWorkspaceLayout, WorkspaceSaveResetButton
 
 ### Community 64 - "threading"
-Cohesion: 0.05
-Nodes (6): flush(), flush_all(), run(), NetFilterQueueBaseClass, Process, FileStream
+Cohesion: 0.08
+Nodes (3): NetFilterQueueBaseClass, Process, FileStream
 
-### Community 65 - "DefenderStatusBuffer"
-Cohesion: 0.09
-Nodes (3): APCommand, DefenderStatusBuffer, _PollUnpacker
-
-### Community 69 - "Dev/Host_API.py"
-Cohesion: 0.07
-Nodes (19): api_data(), dashboard(), _parse_packet(), receive_data(), send_command(), set_encryption(), set_target(), status() (+11 more)
+### Community 69 - "Prod/Host_API.py"
+Cohesion: 0.15
+Nodes (12): api_data(), dashboard(), _parse_packet(), receive_data(), send_command(), set_encryption(), status(), encryption_enabled() (+4 more)
 
 ### Community 70 - "palette_generator.py"
 Cohesion: 0.24
@@ -364,43 +370,31 @@ Nodes (9): _at_lightness(), borders(), contrast(), generate(), _hex(), _hls(), i
 
 ### Community 71 - "wifi_windows.py"
 Cohesion: 0.12
-Nodes (16): DOT11_SSID, GUID, _guid_bytes(), WLAN_ASSOCIATION_ATTRIBUTES, WLAN_AVAILABLE_NETWORK, WLAN_AVAILABLE_NETWORK_LIST, WLAN_CONNECTION_ATTRIBUTES, WLAN_CONNECTION_NOTIFICATION_DATA (+8 more)
-
-### Community 74 - "Constellation"
-Cohesion: 0.05
-Nodes (3): Constellation, Proximity, WaveGrid
+Nodes (17): DOT11_SSID, GUID, _guid_bytes(), WLAN_ASSOCIATION_ATTRIBUTES, WLAN_AVAILABLE_NETWORK, WLAN_AVAILABLE_NETWORK_LIST, WLAN_CONNECTION_ATTRIBUTES, WLAN_CONNECTION_NOTIFICATION_DATA (+9 more)
 
 ### Community 78 - "VariableOverlay"
-Cohesion: 0.20
-Nodes (3): VariableOverlay, autosave(), reset_all()
+Cohesion: 0.16
+Nodes (4): EditModbusRegisterDisplay, VariableOverlay, autosave(), reset_all()
 
 ### Community 80 - ".leaf"
 Cohesion: 0.13
 Nodes (3): add(), click(), sync()
 
-### Community 82 - "sys"
-Cohesion: 0.26
-Nodes (3): build_name(), main(), write_build_info()
-
 ### Community 83 - "ModBus MITM Workspace Screenshot"
 Cohesion: 0.17
 Nodes (16): ARP Spoofing Form (Target IP, Host IP), ModBus Holding Registers (HReg), ModBus Data Panel (Variables, Forms), ModBus Man-in-the-Middle Attack, ModBus Monitors Panel (HReg 1-4 time plots), ModBus Readings Table (HReg Received/Sent/Command), Network Actions Panel, Network Graph Panel with Packets per Second Plot (+8 more)
-
-### Community 87 - ".__init__"
-Cohesion: 0.26
-Nodes (6): encryption_enabled(), set_encryption(), enc_button(), enc_button(), start_encryption(), stop_encryption()
 
 ### Community 88 - "ModBus Submarine Exercise Screenshot"
 Cohesion: 0.16
 Nodes (14): ModBus Submarine Exercise Screenshot, ARP Spoofing Form (Target IP, Host IP), ModBus Man-in-the-Middle Attack Exercise, ModBus Data Panel (Readings and Modifiers), ModBus Model Panel (Submarine position grid), ModBus Monitors Panel (Speed/Rudder time series), Network Actions Panel (WiFi Connection, NMapping, ARP Spoofing), Network Graph Panel (Packets per Second) (+6 more)
 
-### Community 89 - "FadeIn"
-Cohesion: 0.12
-Nodes (5): DesktopFade, FadeIn, covered(), uncovered(), FadeOut
+### Community 89 - "app.py"
+Cohesion: 0.11
+Nodes (6): DesktopFade, FadeIn, covered(), uncovered(), FadeOut, WindowReveal
 
 ### Community 91 - ".strip_chart_layout"
-Cohesion: 0.18
-Nodes (6): choose_time_step(), decimals_for_step(), format_max_decimals(), format_tick(), nice_number(), nice_ticks()
+Cohesion: 0.20
+Nodes (4): choose_time_step(), decimals_for_step(), format_max_decimals(), format_tick()
 
 ### Community 92 - "Network Actions Panel (Forms, Stop All)"
 Cohesion: 0.19
@@ -414,9 +408,13 @@ Nodes (14): Full Attacker Exercise Workspace Screenshot, ARP Spoofing Form (Targ
 Cohesion: 0.20
 Nodes (13): DoS Attack Workspace Screenshot, ARP Spoofing Form (Target/Host IP), Denial-of-Service Exercise, ModBus Data Panel (HReg Readings), ModBus Model Panel (Submarine), ModBus Monitors Panel (HReg time-series), Network Actions Panel, Network Graph Panel (Packets per Second) (+5 more)
 
-### Community 96 - "launch.py"
-Cohesion: 0.18
-Nodes (7): HelperHandle, _PopenHandle, spawn(), _spawn_linux(), _spawn_mac(), _spawn_windows(), _WindowsHandle
+### Community 95 - "QWidget"
+Cohesion: 0.13
+Nodes (3): PageTransition, PopupEntrance, SnapshotOverlay
+
+### Community 96 - "sys"
+Cohesion: 0.07
+Nodes (11): build_name(), main(), write_build_info(), git(), HelperHandle, _PopenHandle, spawn(), _spawn_linux() (+3 more)
 
 ### Community 100 - "ModBus HVAC Exercise Screenshot"
 Cohesion: 0.19
@@ -430,33 +428,49 @@ Nodes (13): Network Recon Exercise Screenshot, AP Connection Form, ARP Spoofing 
 Cohesion: 0.24
 Nodes (11): Defender Full Suite Exercise Screenshot, Defender Data Panel (Operation Mode, Submarine Settings sliders), Defender Flags Panel (Submarine Error Detection Flags, Kalman Filter status), Defender Monitors (X/Y Position vs Time plots), Kalman Filter Anomaly Detection, ModBus Model Map (Defender Map, Auto-Switch), Network Access Panel (WiFi Connection, NMapping, Packet Sniffing, AP Connection), Packet Log Panel (last 10; Time, X, Y, Theta, Speed, Rudder) (+3 more)
 
-### Community 111 - ".populate_filter_overlay"
-Cohesion: 0.20
-Nodes (4): _checkbox_value(), packet_filter(), activate(), save_filter_summary()
+### Community 109 - "defender.py"
+Cohesion: 0.12
+Nodes (3): DefenderHVACChart, follow_theme(), ShiftWheelSlider
+
+### Community 111 - "packet_console/_builder.py"
+Cohesion: 0.13
+Nodes (7): _checkbox_value(), compile_packet_filter(), packet_filter(), FilterOverlay, activate(), save_filter_summary(), FilterPacketConsole
+
+### Community 113 - "Attack"
+Cohesion: 0.18
+Nodes (3): Attack, PreAttack, toggle_IP_Forward
 
 ### Community 114 - "ModBus Basics Workspace Screenshot"
 Cohesion: 0.25
 Nodes (11): ModBus Basics Workspace Screenshot, ARP Spoofing Form (Target IP, Host IP), Modbus Holding Registers (HReg), ModBus Data Panel (ModBus Readings table: HReg Received/Sent/Command), ModBus Monitors Panel (HReg 1-4 time-series plots), Network Actions Panel (WiFi Connection, NMapping, ARP Spoofing), Network Graph Panel (Packets per Second chart), Packets Panel (Time, No., Observer, Direction, Protocol, ModBus Info) (+3 more)
+
+### Community 120 - "window_chrome.py"
+Cohesion: 0.07
+Nodes (11): CornerControls, draw_window_bar_line(), SquareButtons, _Strip, toggle_maximized(), window_bar_button_height(), window_bar_has_line(), window_bar_height() (+3 more)
+
+### Community 128 - "Buffer"
+Cohesion: 0.06
+Nodes (4): Buffer, DefenderMapBuffer, NetworkGraph, PacketBuffer
 
 ### Community 129 - "NMapper"
 Cohesion: 0.14
 Nodes (4): NetFilterQueue, NMapper, InterfaceManager, job()
 
 ### Community 131 - "menu_bar.py"
-Cohesion: 0.04
-Nodes (14): ButtonGroup, DeleteAllUserData, DeleteAllWorkspaceSavedData, GoBackToPreviousPage, OpenPauseMenu, OpenWorkspaceEditor, ToggleLightDarkMode, _FollowResize (+6 more)
-
-### Community 132 - "ViewPort"
 Cohesion: 0.05
-Nodes (18): canvas_fit(), padded_fit(), padded_fit_uniform(), zoom_and_pan(), ViewPort, affine(), apply_scale_about(), get_arc_points() (+10 more)
+Nodes (9): ButtonGroup, ConfigureThisWorkspace, GoBackToPreviousPage, GoForwardToNextPage, OpenPauseMenu, _FollowResize, global_buttons(), _pane_is_minimized() (+1 more)
 
-### Community 134 - ".collect"
-Cohesion: 0.17
-Nodes (3): remove_nested(), set_nested(), group()
+### Community 132 - "router.py"
+Cohesion: 0.11
+Nodes (6): padded_fit_uniform(), zoom_and_pan(), ViewPort, draw_defender_map(), BoatMotion, Sprites
 
 ### Community 137 - "style.py"
 Cohesion: 0.14
 Nodes (10): button_radius(), gradient_points(), is_hex(), _old_palette(), read_gradient(), read_theme(), resolve_materials(), shade() (+2 more)
+
+### Community 139 - "affine"
+Cohesion: 0.33
+Nodes (3): canvas_fit(), padded_fit(), affine()
 
 ### Community 141 - "ap_commands.py"
 Cohesion: 0.14
@@ -466,17 +480,9 @@ Nodes (13): ap_tunnel_enabled(), ap_tunnel_key(), hvac_kalman_enabled(), _hvac_s
 Cohesion: 0.53
 Nodes (4): finish(), on_last_scan_changed(), on_scanned(), on_timeout()
 
-### Community 144 - "Paths"
-Cohesion: 0.14
-Nodes (3): _dialog_parent(), file_dialog(), Paths
-
-### Community 145 - "confirm_dialog"
-Cohesion: 0.16
-Nodes (4): make(), confirm_dialog(), message(), quit_dialog()
-
-### Community 158 - "draw_window_bar_line"
-Cohesion: 0.25
-Nodes (3): draw_window_bar_line(), _Strip, window_bar_has_line()
+### Community 145 - "popup.py"
+Cohesion: 0.06
+Nodes (9): make(), DeleteAllUserData, DeleteAllWorkspaceSavedData, ResetCurrentPageToDefaults, ShowHelpMessage, confirm_dialog(), message(), PopupWindow (+1 more)
 
 ### Community 159 - "Utah Smart Energy Lab"
 Cohesion: 0.67
@@ -486,9 +492,9 @@ Nodes (4): Smart_Energy2.jpg (Utah SMART Energy Lab logo), Power Grid / Transmis
 Cohesion: 0.67
 Nodes (4): Utah Smart Energy Lab Logo, Power Grid / Transmission Infrastructure, University of Utah, Utah Smart Energy Lab (U-SMART)
 
-### Community 169 - "ContextManager"
-Cohesion: 0.10
-Nodes (11): ContextManager, AttackerV0, BoatMotion, Sprites, Triangle, WorkspacePage, NotFound, Page (+3 more)
+### Community 169 - "map.py"
+Cohesion: 0.09
+Nodes (10): apply_scale_about(), get_arc_points(), get_bearing(), rotate(), scale(), translate(), padded_fit_uniform(), padded_fit_uniform_reverse() (+2 more)
 
 ### Community 173 - "frame_callback"
 Cohesion: 0.67
@@ -500,23 +506,23 @@ Nodes (3): frame_callback(), sprite(), sprite_enabled()
 
 ## Knowledge Gaps
 - **43 isolated node(s):** `ModBus Man-in-the-Middle Attack Exercise`, `Three-column Minimizable Panel Layout`, `Status Log Panel`, `Top Toolbar (Quit, Back to Title, Refresh, Reset Page, Help, Toggle Theme, Select Theme, Favorite Page, Load Labels)`, `ARP Spoofing Form` (+38 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1499 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **134 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1500 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **110 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `menu_bar.py`, `style.py`, `PageManager`, `channels/__init__.py`, `LinkToPage`, `Paths`, `pyside6_qtcore`, `overlay.py`, `CheckboxOverlay`, `Canvas`, `Performance`, `Panel`, `LocalizationManager`, `pyside6_qtwidgets`, `.setText`, `examples.py`, `.save_current_page`, `AnimationManager`, `InputManager`, `ConfigureThisWorkspace`, `FilterOverlay`, `host.py`, `Json`, `KeyBinds`, `GoForwardToNextPage`, `_base_button.py`, `Router`, `threading`, `PrivilegedHelper`, `Preferences`, `VariableOverlay`, `ProcessManager`, `Style`, `hvac_view.py`, `.start_session`?**
+- **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `menu_bar.py`, `router.py`, `buffer_manager.py`, `style.py`, `PageManager`, `pyside6_qtcore`, `Overlay`, `popup.py`, `CheckboxOverlay`, `Canvas`, `Performance`, `widgets/__init__.py`, `os`, `LocalizationManager`, `map.py`, `scrollable.py`, `examples.py`, `time`, `InputManager`, `Json`, `KeyBinds`, `WorkspaceSaveResetButton`, `Router`, `threading`, `PrivilegedHelper`, `Preferences`, `ProcessManager`, `Style`, `defender.py`, `packet_console/_builder.py`, `window_chrome.py`, `.start_session`?**
   _High betweenness centrality (0.258) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `ModBus Man-in-the-Middle Attack Exercise`, `Three-column Minimizable Panel Layout`, `Status Log Panel` to the rest of the system?**
   _43 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `important_buttons/__init__.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.03306379155435759 - nodes in this community are weakly interconnected._
-- **Why does `Style` connect `Style` to `menu_bar.py`, `Overlay`, `.restyle`, `LayoutEditor`, `ContextManager`, `style.py`, `._build_stylesheet`, `.set_theme`, `.theme_family`, `.setText`, `overlay.py`, `.discard_changes`, `.link_color`, `.start_session`, `_base_button.py`?**
+  _Cohesion score 0.027821855495609858 - nodes in this community are weakly interconnected._
+- **Why does `Style` connect `Style` to `important_buttons/__init__.py`, `menu_bar.py`, `.restyle`, `SettingsSection`, `style.py`, `._build_stylesheet`, `ContextManager`, `.set_theme`, `.theme_family`, `Overlay`, `.discard_changes`, `.link_color`, `.start_session`?**
   _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `Style` (e.g. with `ContextManager` and `SettingsSection`) actually correct?**
   _`Style` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `MetaPacket` be split into smaller, more focused modules?**
-  _Cohesion score 0.07058001397624039 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06883116883116883 - nodes in this community are weakly interconnected._

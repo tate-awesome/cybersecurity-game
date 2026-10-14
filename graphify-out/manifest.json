@@ -858,9 +858,9 @@
     "semantic_hash": "63cf3865a0a1063696d5776a644d594f"
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1792004223.2163208,
-    "seen": 1792004275.7055964,
-    "ast_hash": "7b1a3232fe066f0a3e14b4bd34137115",
+    "mtime": 1792004307.546987,
+    "seen": 1792004385.0249395,
+    "ast_hash": "ed61a7f771aa810b0b2ffa22ed29ffc9",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -1836,9 +1836,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/window_chrome.py": {
-    "mtime": 1792004223.2153037,
-    "seen": 1792004275.7067833,
-    "ast_hash": "47985029df13b1da2554f8e078388539",
+    "mtime": 1792004356.8451388,
+    "seen": 1792004385.0260813,
+    "ast_hash": "60f57f01487703be415819d780a5c066",
     "semantic_hash": ""
   },
   "game/assets/fonts/LICENSE-tabler-icons.txt": {
