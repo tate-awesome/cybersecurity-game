@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
-from ..app_core.context.themes import INK_MATERIALS, MATERIALS
+from ..app_core.context.themes import BUTTON_KINDS, INK_MATERIALS, MATERIALS, MAX_BUTTON_RADIUS
 from ..widgets import MenuBar, popup
 from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
@@ -216,20 +216,35 @@ class ThemeEditorPage(SettingsPage):
         section.row("theme_editor_rows_transparency", transparency, "theme_editor_row_notes_transparency")
 
     def build_materials_tab(self):
-        '''Every material for the mode being edited: surfaces with their opacity (if the theme allows transparency), then text and lines.'''
+        '''
+        Every material for the mode being edited: surfaces with their
+        opacity (if the theme allows transparency), each kind of button -
+        its corners and its own materials - then text and lines.
+        '''
+        style = self.style
+        editable = style.is_editable()
+        tab = self.new_tab("materials")
+        kinds = {kind: [kind, f"{kind}_hover", f"{kind}_border", f"{kind}_text", f"{kind}_hover_text"] for kind in BUTTON_KINDS}
+        in_kinds = {name for names in kinds.values() for name in names}
+        self.material_rows(self.section(tab, "materials"), [name for name in MATERIALS if name not in INK_MATERIALS and name not in in_kinds])
+        for kind, names in kinds.items():
+            section = self.section(tab, f"{kind}s")
+            radius = self.slider(style.button_radius(kind), 0, MAX_BUTTON_RADIUS, "px",
+                                 lambda value, kind=kind: style.set_button_radius(kind, value))
+            radius.setEnabled(editable)
+            section.row("theme_editor_rows_button_radius", radius, "theme_editor_row_notes_button_radius")
+            self.material_rows(section, names)
+        self.material_rows(self.section(tab, "ink_materials"), [name for name in INK_MATERIALS if name not in in_kinds])
+
+    def material_rows(self, section: "SettingsSection", names: list[str]):
+        '''A row in section for each named material, in the mode being edited.'''
         style = self.style
         mode = style.current_theme.partition("_")[0]
-        editable = style.is_editable()
-        transparency = style.allows_transparency()
-        tab = self.new_tab("materials")
-        for section_name, names in (("materials", [name for name in MATERIALS if name not in INK_MATERIALS]),
-                                    ("ink_materials", INK_MATERIALS)):
-            section = self.section(tab, section_name)
-            for name in names:
-                with_opacity = transparency and name not in INK_MATERIALS
-                control = self.material_control(name, style.theme_materials()[name][mode], with_opacity)
-                control.setEnabled(editable)
-                section.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
+        for name in names:
+            with_opacity = style.allows_transparency() and name not in INK_MATERIALS
+            control = self.material_control(name, style.theme_materials()[name][mode], with_opacity)
+            control.setEnabled(style.is_editable())
+            section.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
 
     def material_control(self, name: str, entry: dict, with_opacity: bool) -> QWidget:
         '''A material's color - click it to pick another - and, with_opacity, how solid it is.'''

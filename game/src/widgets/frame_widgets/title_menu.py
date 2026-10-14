@@ -63,6 +63,7 @@ class TitleMenu(QWidget):
             return None
         button = button_class(self.context, *args)
         button.setFont(self.style.get_font("title_btn"))
+        self.style.mark_menu_button(button)
         # No alignment flag here means "fill" - QGridLayout stretches the
         # button to the column's width, and since the title label shares
         # that same column, every button ends up as wide as the title text.
@@ -79,6 +80,7 @@ class TitleMenu(QWidget):
     def add_beside(self, anchor: QWidget, button: QWidget) -> "GrowingButton":
         '''Puts button just right of anchor (the row's button), growing to its full text on hover - see GrowingButton.'''
         button.setFont(self.style.get_font("title_btn"))
+        self.style.mark_menu_button(button)
         beside = GrowingButton(self, anchor, button)
         # Arrives with its row in the page's entrance
         self.items.insert(self.items.index(anchor) + 1, button)

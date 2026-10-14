@@ -9,7 +9,8 @@ from PySide6.QtGui import QColor, QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication, QWidget
 import darkdetect
 
-from .themes import COLOR_NAMES, INK_MATERIALS, MATERIALS, THEME_MODES, is_hex, read_theme, resolve_materials, theme_file
+from .themes import (BUTTON_KINDS, COLOR_NAMES, INK_MATERIALS, MATERIALS, THEME_MODES, button_radius, is_hex, read_theme,
+                     resolve_materials, theme_file)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -495,17 +496,11 @@ class Style:
             QPushButton:pressed {{ background-color: {at_opacity("root", "button")}; border-color: {c["accent"]}; }}
             QPushButton:disabled {{ background-color: {button_bg}; color: {c["border"]}; border-color: {c["border"]}; }}'''
         else:
-            buttons = f'''
-            QPushButton {{
-                background-color: {m("button")};
-                color: {c["accent_text"]};
-                border: none;
-                border-radius: 4px;
-                padding: 6px 12px;
-            }}
-            QPushButton:hover {{ background-color: {shaded("button", 0.15)}; }}
-            QPushButton:pressed {{ background-color: {shaded("button", -0.15)}; }}
-            QPushButton:disabled {{ background-color: {at_opacity("widget", "button")}; color: {c["border"]}; }}'''
+            buttons = "".join(self._button_rules(kind, shaded) for kind in BUTTON_KINDS)
+            # Disabled buttons of every kind look alike - faint, whatever the theme
+            buttons += f'''
+            QPushButton:disabled {{ background-color: {at_opacity("widget", "button")}; color: {c["border"]};
+                                    border-color: transparent; }}'''
 
         # With surfaces solid, a scroll area in a panel paints the panel's color itself
         panel_fill = m("panel") if not self.translucent_surfaces else "transparent"
@@ -614,6 +609,33 @@ class Style:
             *[outlined="true"] {{ border: {PANEL_BORDER_WIDTH}px solid {m("panel_border")}; }}
         '''
 
+    def _button_rules(self, kind: str, shaded: Callable[[str, float], str]) -> str:
+        '''
+        The stylesheet rules for one of themes.BUTTON_KINDS, from its
+        materials. Plain buttons are every QPushButton; a menu button is
+        one with the "button_kind" property "menu" (see mark_menu_button) -
+        and checked, it looks hovered (the selected workspace). Its outline
+        is always there, if see-through, so a theme's choice of outline
+        never changes a button's size.
+        '''
+        selector = "QPushButton" if kind == "button" else 'QPushButton[button_kind="menu"]'
+        checked = f", {selector}:checked" if kind != "button" else ""
+        return f'''
+            {selector} {{
+                background-color: {self.css(kind)};
+                color: {self.color(f"{kind}_text")};
+                border: 1px solid {self.css(f"{kind}_border")};
+                border-radius: {self.button_radius(kind)}px;
+                padding: 5px 11px;
+            }}
+            {selector}:hover{checked} {{ background-color: {self.css(f"{kind}_hover")}; color: {self.color(f"{kind}_hover_text")}; }}
+            {selector}:pressed {{ background-color: {shaded(f"{kind}_hover", -0.1)}; color: {self.color(f"{kind}_hover_text")}; }}'''
+
+    @staticmethod
+    def mark_menu_button(button: QWidget):
+        '''Styles button as a menu button (see themes.BUTTON_KINDS) - the title menu's and the workspace list's.'''
+        button.setProperty("button_kind", "menu")
+
     def _material_rules(self) -> str:
         '''Each material's background, for widgets set_material gave it.'''
         return "\n".join(f'*[material="{name}"] {{ background-color: {self.css(name)}; }}' for name in MATERIALS)
@@ -633,12 +655,46 @@ class Style:
         color at its opacity - or solid, with translucent_surfaces off, in a
         theme that doesn't allow transparency, or for text and lines (see
         themes.INK_MATERIALS).
+
+        Buttons' see-through parts are part of their design, though, not
+        just a look through to what's behind - solid, a button's (fully)
+        transparent background or outline stays that way, and its hover
+        keeps its own opacity over a transparent background (a ghost
+        button's tint) - see button_opacity.
         '''
         entry = self.material_entry(name)
         color = QColor(entry["color"])
-        if self.translucent_surfaces and self.allows_transparency() and name not in INK_MATERIALS:
+        if name in INK_MATERIALS:
+            return color
+        if self.translucent_surfaces and self.allows_transparency():
             color.setAlphaF(entry["opacity"])
+        else:
+            opacity = self.button_opacity(name, entry["opacity"])
+            if opacity is not None:
+                color.setAlphaF(opacity)
         return color
+
+    def button_opacity(self, name: str, opacity: float) -> float | None:
+        '''A button material's opacity while surfaces are solid (see material) - None for any other material.'''
+        kind = next((kind for kind in BUTTON_KINDS if name in (kind, f"{kind}_hover", f"{kind}_border")), None)
+        if kind is None:
+            return None
+        if name == f"{kind}_border":
+            return opacity
+        if name == f"{kind}_hover" and self.material_entry(kind)["opacity"] == 0:
+            return opacity
+        return 0.0 if opacity == 0 else 1.0
+
+    def button_radius(self, kind: str = "button") -> int:
+        '''The current theme's corner radius for one of themes.BUTTON_KINDS, in px.'''
+        return button_radius(self.preset_info.get(self.theme_family(), {}), kind)
+
+    def set_button_radius(self, kind: str, radius: int):
+        '''The current theme's corner radius for one of themes.BUTTON_KINDS.'''
+        if not self.is_editable() or radius == self.button_radius(kind):
+            return
+        self.preset_info[self.theme_family()][f"{kind}_radius"] = int(radius)
+        self._edited(self.theme_family())
 
     def _resolve_colors(self):
         mode = self.current_theme.partition("_")[0]

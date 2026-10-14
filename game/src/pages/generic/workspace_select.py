@@ -167,10 +167,9 @@ class WorkspaceSelectPage(Page):
             # Let long titles clip inside the sidebar instead of widening it past its fixed width
             button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
             button.setFont(self.style.get_font("default"))
-            self.style.live_style(button, lambda: (
-                f"QPushButton {{ text-align: left; }}"
-                f"QPushButton:checked {{ border: 2px solid {self.style.color('field_text')}; }}"
-            ))
+            # A menu button - the selected one (checked) looks hovered (see Style.mark_menu_button)
+            self.style.mark_menu_button(button)
+            button.setStyleSheet("QPushButton { text-align: left; }")
             button.clicked.connect(lambda checked=False, target=target: self.select(target))
             button.doubleClicked.connect(lambda target=target: self.start(target))
             self.workspace_group.addButton(button)
