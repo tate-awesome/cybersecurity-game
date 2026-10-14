@@ -64,6 +64,7 @@ class SettingsPage(Page):
         self.add_background({"background": {"blur": 6}})
 
         menu_bar = MenuBar(self, context, self.TITLE)
+        self.add_menu_bar_entries(menu_bar)
         menu_bar.add_config_buttons(self.MENU_BAR_BUTTONS)
 
         self.tabs = QTabWidget()
@@ -100,6 +101,9 @@ class SettingsPage(Page):
             for i, value in enumerate(scrolled[:self.tabs.count()]):
                 self.tabs.widget(i).verticalScrollBar().setValue(value)
         QTimer.singleShot(0, self.tabs, scroll_back)
+
+    def add_menu_bar_entries(self, menu_bar: MenuBar):
+        '''Anything a subclass's menu bar has before the MENU_BAR_BUTTONS (see ThemeEditorPage).'''
 
     def place_tabs(self):
         '''Puts self.tabs on the page - filling it, below the menu bar.'''

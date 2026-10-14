@@ -4,17 +4,22 @@ user_data/themes. Each theme has:
 
     "palette":   the theme's key colors, named, for each mode -
                  {"dark": {"root": "#10141d", ...}, "light": {...}}
-                 with every one of PALETTE_KEYS
+                 with every one of PALETTE_KEYS (the app's own), and any
+                 more the theme names itself (see is_palette_name) - in
+                 both modes, as "#rrggbb"
     "materials": what each kind of widget is made of, for each mode -
                  {"panel": {"dark": {"color": "panel", "opacity": 0.5},
                             "light": {"color": "panel", "opacity": 0.6}}, ...}
-                 "color" is a palette key or a hex code; "opacity" is 0-1
-                 (1 = solid). Any material or mode left out gets
-                 MATERIALS' default, so a theme only lists what it changes.
+                 "color" is one of the palette's names or a hex code;
+                 "opacity" is 0-1 (1 = solid). Any material or mode left out
+                 gets MATERIALS' default, so a theme only lists what it
+                 changes.
 
-plus a "label", a "kind" ("original" or "copied"), and optionally a source
-"note" and which modes are "derived" rather than copied (see
-Style.preset_name).
+plus a "label" (its name), optionally a "note" (its description - for
+copied themes, where it came from), "transparency" (false for a theme
+that's always solid - see Style.allows_transparency), and for bundled
+themes a "kind" ("original" or "copied") and which modes are "derived"
+rather than copied (see Style.preset_name).
 
 Older files had no materials and kept the palette's modes at the top level
 ({"dark": {...}, "light": {...}}) - read_theme still reads those.
@@ -22,6 +27,7 @@ Older files had no materials and kept the palette's modes at the top level
 No Qt here, so scripts can read and write themes too.
 '''
 import copy
+import re
 
 THEME_MODES = ("dark", "light")
 
@@ -71,17 +77,30 @@ MATERIALS: dict[str, dict[str, dict]] = {
 }
 
 
-def is_color(value) -> bool:
-    '''A palette key or a "#rrggbb" hex code.'''
-    if not isinstance(value, str):
-        return False
-    if value in PALETTE_KEYS:
-        return True
-    return len(value) == 7 and value.startswith("#") and all(c in "0123456789abcdefABCDEF" for c in value[1:])
+NAME_PATTERN = re.compile(r"[a-z][a-z0-9_]{0,31}")
+HEX_PATTERN = re.compile(r"#[0-9a-fA-F]{6}")
 
 
-def resolve_materials(overrides) -> dict[str, dict[str, dict]]:
-    '''MATERIALS' defaults with a theme's own materials on top - anything invalid is skipped.'''
+def is_palette_name(value) -> bool:
+    '''A name a theme can give a color of its own: lowercase letters, digits and "_", starting with a letter.'''
+    return isinstance(value, str) and NAME_PATTERN.fullmatch(value) is not None
+
+
+def is_hex(value) -> bool:
+    return isinstance(value, str) and HEX_PATTERN.fullmatch(value) is not None
+
+
+def is_color(value, names=PALETTE_KEYS) -> bool:
+    '''One of a palette's names (PALETTE_KEYS, unless given the theme's own) or a "#rrggbb" hex code.'''
+    return is_hex(value) or (isinstance(value, str) and value in names)
+
+
+def resolve_materials(overrides, names=PALETTE_KEYS) -> dict[str, dict[str, dict]]:
+    '''
+    MATERIALS' defaults with a theme's own materials on top - anything
+    invalid is skipped. names are the theme's palette names, which its
+    materials' colors can be.
+    '''
     materials = copy.deepcopy(MATERIALS)
     if not isinstance(overrides, dict):
         return materials
@@ -92,7 +111,7 @@ def resolve_materials(overrides) -> dict[str, dict[str, dict]]:
             entry = modes.get(mode)
             if not isinstance(entry, dict):
                 continue
-            if is_color(entry.get("color")):
+            if is_color(entry.get("color"), names):
                 materials[name][mode]["color"] = entry["color"]
             opacity = entry.get("opacity")
             if isinstance(opacity, (int, float)) and not isinstance(opacity, bool):
@@ -118,10 +137,20 @@ def read_theme(data) -> dict | None:
         colors = palette.get(mode)
         if not isinstance(colors, dict) or not all(isinstance(colors.get(key), str) for key in PALETTE_KEYS):
             return None
+    # The theme's own colors, in the order it lists them - one only in one mode is used for both
+    own = [key for mode in THEME_MODES for key, value in palette[mode].items()
+           if key not in PALETTE_KEYS and is_palette_name(key) and is_hex(value)]
+    own = list(dict.fromkeys(own))
+    resolved = {}
+    for mode in THEME_MODES:
+        other = palette[THEME_MODES[1 - THEME_MODES.index(mode)]]
+        resolved[mode] = {key: palette[mode][key] for key in PALETTE_KEYS}
+        for key in own:
+            resolved[mode][key] = palette[mode][key] if is_hex(palette[mode].get(key)) else other[key]
     return {
         "info": {key: value for key, value in data.items() if key not in ("palette", "materials", *THEME_MODES)},
-        "palette": {mode: {key: palette[mode][key] for key in PALETTE_KEYS} for mode in THEME_MODES},
-        "materials": resolve_materials(data.get("materials")),
+        "palette": resolved,
+        "materials": resolve_materials(data.get("materials"), (*PALETTE_KEYS, *own)),
     }
 
 
