@@ -1,6 +1,6 @@
 import sys
 
-from PySide6.QtCore import QEvent, QObject, QPoint, Qt
+from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, Qt
 from PySide6.QtGui import QColor, QCursor, QMouseEvent, QPainter
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QWidget
 
@@ -100,7 +100,17 @@ class WindowEdges(QObject):
 
     Watches the window itself rather than its widgets: the window sees
     every mouse move, where a widget only does with mouse tracking on.
+
+    Also pulls the mouse back onto the window's last pixel at its right
+    and bottom edges (see clamped). At a fractional display scale (150%,
+    say) the screen's last physical pixel is a fraction past the window's
+    last logical one - 2559.33 in a 2560-wide window - and Qt hands
+    widgets nothing there, so the close button, which runs to the corner,
+    stopped being hovered or clickable right at the screen's edge.
     '''
+
+    MOUSE_EVENTS = (QEvent.Type.MouseMove, QEvent.Type.MouseButtonPress,
+                    QEvent.Type.MouseButtonRelease, QEvent.Type.MouseButtonDblClick)
 
     def __init__(self, root: QWidget):
         super().__init__(root)
@@ -154,8 +164,26 @@ class WindowEdges(QObject):
             QApplication.setOverrideCursor(QCursor(shape))
             self.cursor_shown = True
 
+    def clamped(self, event: QMouseEvent) -> QMouseEvent | None:
+        '''
+        The event moved onto the window's last whole pixel if it's past it
+        (but still in the window - see above), None if it doesn't need to be.
+        '''
+        pos = event.position()
+        right, bottom = self.root.width() - 1, self.root.height() - 1
+        if not (right < pos.x() < right + 1 or bottom < pos.y() < bottom + 1):
+            return None
+        pos = QPointF(min(pos.x(), right), min(pos.y(), bottom))
+        return QMouseEvent(event.type(), pos, event.globalPosition(), event.button(), event.buttons(),
+                           event.modifiers(), event.pointingDevice())
+
     def eventFilter(self, watched, event):
         kind = event.type()
+        if kind in self.MOUSE_EVENTS and isinstance(event, QMouseEvent):
+            clamped = self.clamped(event)
+            if clamped is not None:
+                QApplication.sendEvent(watched, clamped)
+                return True
         if kind == QEvent.Type.MouseMove and isinstance(event, QMouseEvent):
             if event.buttons() == Qt.MouseButton.NoButton:
                 self.show_cursor(self.cursor_for(self.edges_at(event.position().toPoint())))
