@@ -133,6 +133,7 @@ class PauseMenu:
         # The bookmark stays open on click - it's a toggle, not somewhere to go
         bookmark = ToggleBookmark(context)
         bookmark.LABEL, bookmark.ACTIVE_LABEL = "pause_menu_bookmark_off", "pause_menu_bookmark_on"
+        bookmark.lead_with_icon()
         bookmark.show_state()
         bookmark.setFont(style.get_font())
         rows.addWidget(bookmark)
@@ -146,8 +147,12 @@ class PauseMenu:
         return card
 
     def row_button(self, button: ImportantButton, rows: QVBoxLayout) -> ImportantButton:
-        '''A row of the menu - which closes the menu first, then does what it does.'''
+        '''
+        A row of the menu - which closes the menu first, then does what it
+        does. Led by the same icon as its menu bar button, if it has one.
+        '''
         button.setFont(self.context.style.get_font())
+        button.lead_with_icon()
         button.clicked.disconnect()
         button.clicked.connect(lambda checked=False: (self.close(), button.on_click()))
         rows.addWidget(button)

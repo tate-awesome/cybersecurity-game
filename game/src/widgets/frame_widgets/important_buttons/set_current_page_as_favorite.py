@@ -19,6 +19,8 @@ class ToggleBookmark(ToggleButton):
     LABEL = "menu_bar_buttons_bookmark_off"
     ACTIVE_LABEL = "menu_bar_buttons_bookmark_on"
     TOOLTIP = "menu_bar_tooltips_page_button"
+    ICON = "bookmark"
+    ACTIVE_ICON = "bookmark-filled"
 
     def is_active(self) -> bool:
         preferences = self.context.preferences

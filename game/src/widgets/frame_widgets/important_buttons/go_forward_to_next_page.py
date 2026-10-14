@@ -6,6 +6,7 @@ class GoForwardToNextPage(ImportantButton):
     '''Navigates forward again, to the page last gone back from (see Router.go_forward).'''
     LABEL = "menu_bar_buttons_forward_button"
     TOOLTIP = "menu_bar_tooltips_forward_button"
+    ICON = "arrow-right"
 
     @classmethod
     def is_available(cls, context: Context) -> bool:

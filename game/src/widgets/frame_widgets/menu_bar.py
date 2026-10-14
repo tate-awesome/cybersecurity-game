@@ -83,12 +83,6 @@ assert sorted([*MENU_BAR_BUTTON_ORDER, *FIXED_BUTTON_NAMES,
 OVERFLOW_CLOSED = Style.icon("chevrons-right")
 OVERFLOW_OPEN = Style.icon("x")
 
-# Center zone buttons shown as a bare symbol when they're by themselves
-# (see MenuBar.icon_button) - button class -> its icon (see style.ICONS)
-CENTER_ICONS: dict[type[ImportantButton], str] = {
-    MENU_BAR_BUTTONS["refresh_button"]: "reload",
-}
-
 def group_button_names(group_key: str) -> list[str]:
     '''Every button name in one of MENU_BAR_GROUPS or RIGHT_ZONE_GROUPS, in order.'''
     groups = MENU_BAR_GROUPS if group_key in MENU_BAR_GROUPS else RIGHT_ZONE_GROUPS
@@ -244,7 +238,7 @@ class MenuBar(QFrame):
 
         if self.page_bar:
             from .important_buttons import ToggleBookmark
-            self.bookmark = self.icon_button(ToggleBookmark(context), "bookmark", "bookmark-filled")
+            self.bookmark = self.icon_button(ToggleBookmark(context))
             self.row.addWidget(self.bookmark, 0, Qt.AlignmentFlag.AlignVCenter)
             self._fixed.append(self.bookmark)
         self.row.addStretch()
@@ -285,9 +279,9 @@ class MenuBar(QFrame):
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
         router = self.context.router
-        self.home = self.icon_button(OpenPauseMenu(self.context), "menu-2")
-        self.back_arrow = self.icon_button(GoBackToPreviousPage(self.context), "arrow-left")
-        self.forward_arrow = self.icon_button(GoForwardToNextPage(self.context), "arrow-right")
+        self.home = self.icon_button(OpenPauseMenu(self.context))
+        self.back_arrow = self.icon_button(GoBackToPreviousPage(self.context))
+        self.forward_arrow = self.icon_button(GoForwardToNextPage(self.context))
         stack = router.navigation_stack
         self.where_to(self.back_arrow, stack[-2] if len(stack) >= 2 else None, "back_to")
         self.where_to(self.forward_arrow, router.forward_stack[-1] if router.forward_stack else None, "forward_to")
@@ -322,8 +316,8 @@ class MenuBar(QFrame):
             group = ButtonGroup(self.context, group_key, [section for section in sections if section[1]])
             self.icon_button(group, RIGHT_ZONE_ICONS[group_key])
             row.addWidget(group, 0, Qt.AlignmentFlag.AlignVCenter)
-        self.settings_button = self.icon_button(OpenSettingsPage(self.context), "settings")
-        self.help_button = self.icon_button(ShowHelpMessage(self.context), "info-circle")
+        self.settings_button = self.icon_button(OpenSettingsPage(self.context))
+        self.help_button = self.icon_button(ShowHelpMessage(self.context))
         row.addWidget(self.settings_button, 0, Qt.AlignmentFlag.AlignVCenter)
         row.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
         # The whole height of the bar, up into the window's top right corner
@@ -331,9 +325,9 @@ class MenuBar(QFrame):
         row.addWidget(self.window_controls)
         return zone
 
-    def icon_button(self, button: ImportantButton, icon: str, active_icon: str | None = None) -> ImportantButton:
+    def icon_button(self, button: ImportantButton, icon: str | None = None, active_icon: str | None = None) -> ImportantButton:
         '''
-        Shows a solo button as a bare symbol (see ImportantButton.show_icon)
+        Shows a solo button as a bare symbol - its own ICON unless told otherwise (see ImportantButton.show_icon)
         - no background or border, just the icon in the text color (the
         accent on hover), its label as its tooltip. Faint while disabled.
         '''
@@ -834,9 +828,9 @@ class MenuBar(QFrame):
                 self.page_links += button_classes
             elif len(button_classes) == 1:
                 button = self.add_important(button_classes[0])
-                icon = CENTER_ICONS.get(button_classes[0])
-                if button is not None and icon is not None and self.page_bar:
-                    self.icon_button(button, icon)
+                # By itself, a button with an icon of its own (refresh) is just that icon
+                if button is not None and button.ICON is not None and self.page_bar:
+                    self.icon_button(button)
             elif button_classes:
                 self.add_important(ButtonGroup, group_key, present)
 

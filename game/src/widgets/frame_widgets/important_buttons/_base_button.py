@@ -49,12 +49,18 @@ class ImportantButton(QPushButton):
     # Where clicking it takes you - "page", "popup" or "outside", shown with
     # that one of OPENS_MARKS after the label (see opens) - or None
     OPENS: str | None = None
+    # Its symbol, one of style.ICONS - shown alone where it's an icon button
+    # (show_icon, e.g. on the menu bar), or before its label elsewhere
+    # (lead_with_icon, e.g. in the pause menu), so it reads the same in both
+    ICON: str | None = None
 
     def __init__(self, context: Context, label_key: str | None = None):
         super().__init__(context.labels.get(label_key or self.LABEL))
         self.developer_only = False
         # (inactive, active) icon names while shown as a symbol - see show_icon
         self.icons: tuple[str, str] | None = None
+        # Whether ICON goes before the label - see lead_with_icon
+        self.leading_icon = False
         self.context = context
         self.setFont(context.style.get_font())
         if self.TOOLTIP is not None:
@@ -83,15 +89,21 @@ class ImportantButton(QPushButton):
         self.setText(self.text())
         self.setFixedHeight(height)
 
-    def show_icon(self, icon: str, active_icon: str | None = None):
+    def icon_names(self) -> tuple[str, str] | None:
+        '''Its (inactive, active) ICON names - the same twice but for a ToggleButton (see ACTIVE_ICON).'''
+        return (self.ICON, self.ICON) if self.ICON is not None else None
+
+    def show_icon(self, icon: str | None = None, active_icon: str | None = None):
         '''
         Shows one of style.ICONS in place of the label (which becomes the
-        tooltip, if there isn't one) - for a ToggleButton, active_icon while
-        it's active.
+        tooltip, if there isn't one) - its own ICON unless told otherwise,
+        and for a ToggleButton, active_icon while it's active.
         '''
         if not self.toolTip():
             self.setToolTip(self.text())
-        self.icons = (icon, active_icon or icon)
+        own = self.icon_names() or (None, None)
+        icon = icon or own[0]
+        self.icons = (icon, active_icon or (own[1] if icon == own[0] else None) or icon)
         self.setFont(self.context.style.get_font("icon"))
         self.show_state()
 
@@ -99,6 +111,12 @@ class ImportantButton(QPushButton):
         '''Puts the button's current look in place - its icon, if it has one (see show_icon).'''
         if self.icons is not None:
             self.setText(self.context.style.icon(self.icons[0]))
+
+    def lead_with_icon(self):
+        '''Puts its ICON (if it has one) before its label from now on, as on the menu bar.'''
+        if self.icon_names() is not None:
+            self.leading_icon = True
+            self.setText(self.text())
 
     def opens(self) -> str | None:
         '''Where clicking it takes you right now (see OPENS) - by default, always the same.'''
@@ -109,6 +127,11 @@ class ImportantButton(QPushButton):
             mark = OPENS_MARKS.get(self.opens())
             if mark is not None and not text.endswith(mark):
                 text = f"{text} {mark}"
+            names = self.icon_names() if getattr(self, "leading_icon", False) else None
+            if names is not None:
+                lead = self.context.style.icon(names[1] if getattr(self, "active", False) else names[0])
+                if not text.startswith(lead):
+                    text = f"{lead} {text}"
             if getattr(self, "developer_only", False):
                 text = developer_text(text)
         super().setText(text)
@@ -142,6 +165,8 @@ class ToggleButton(ImportantButton):
     frame, so it follows changes made by other widgets too.
     '''
     ACTIVE_LABEL = "menu_bar_buttons__default"
+    # ICON while active (see ImportantButton.ICON) - ICON if None
+    ACTIVE_ICON: str | None = None
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -176,6 +201,11 @@ class ToggleButton(ImportantButton):
             self.start()
         self.active = not self.active
         self.show_state()
+
+    def icon_names(self) -> tuple[str, str] | None:
+        if self.ICON is None:
+            return None
+        return self.ICON, self.ACTIVE_ICON or self.ICON
 
     def show_state(self):
         if self.icons is not None:
