@@ -265,13 +265,24 @@ class WindowDrag(QObject):
         root.windowHandle().startSystemMove()
 
 
+def window_bar_top(context: Context) -> int:
+    '''
+    The extra room along the top of the window bar, above everything in it.
+    The buttons at its right (the window controls, and the ones every page
+    has - see menu_bar.global_buttons) reach up through it to the window's
+    top edge, so a mouse flung up there still lands on one - their icons
+    padded down by it, in line with the rest.
+    '''
+    return context.style.igap // 2 + context.style.cgap
+
+
 def window_bar_height(context: Context) -> int:
     '''
     The height of the bar along the top of the window - a page's menu bar
     (see MenuBar.bar_height), or the strip around CornerControls on a page
     without one - so it's the same on every page: a menu bar button's
     height (the tallest thing a bar always has - its dropdowns), with a
-    little room above and below.
+    little room above and below, and window_bar_top's more above.
     '''
     style = context.style
     sample = QPushButton("Ag")
@@ -279,7 +290,7 @@ def window_bar_height(context: Context) -> int:
     sample.ensurePolished()
     height = sample.sizeHint().height()
     sample.deleteLater()
-    return height + 4 * style.cgap
+    return height + 4 * style.cgap + window_bar_top(context)
 
 
 def window_bar_has_line(context: Context) -> bool:
@@ -385,7 +396,7 @@ class WindowControls(QWidget):
         name = self.objectName()
         text = self.style.color("text")
         return (f"QWidget#{name} QPushButton {{ background: transparent; border: none; color: {text}; {self.style.icon_css()}"
-                f" padding: 0px {self.style.igap}px; }}"
+                f" padding: {window_bar_top(self.context)}px {self.style.igap}px 0px {self.style.igap}px; }}"
                 f" QWidget#{name} QPushButton:hover {{ background: {self.style.css('card')}; color: {self.style.color('accent')}; }}"
                 f" QWidget#{name} QPushButton[close=\"true\"]:hover {{ background: {CLOSE_HOVER}; color: white; }}"
                 f" QWidget#{name} QPushButton:pressed {{ color: {text}; }}")

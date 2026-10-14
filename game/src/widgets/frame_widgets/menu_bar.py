@@ -9,7 +9,8 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 ToggleDebugLabels, ToggleLightDarkMode)
 from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
-from .window_chrome import WindowControls, WindowDrag, draw_window_bar_line, window_bar_has_line, window_bar_height
+from .window_chrome import (WindowControls, WindowDrag, draw_window_bar_line, window_bar_has_line, window_bar_height,
+                            window_bar_top)
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -139,12 +140,14 @@ def _drain_evenly(sizes: list[float], floors: list[float], amount: float) -> lis
 
 
 def icon_button(context: Context, button: ImportantButton, icon: str | None = None,
-                active_icon: str | None = None) -> ImportantButton:
+                active_icon: str | None = None, to_window_top: bool = False) -> ImportantButton:
     '''
     Shows a solo button as a bare symbol - its own ICON unless told
     otherwise (see ImportantButton.show_icon) - no background or border,
     just the icon in the text color (the accent on hover), its label as its
-    tooltip. Faint while disabled.
+    tooltip. Faint while disabled. to_window_top: as tall as what holds it,
+    up to the window's top edge, its icon padded down in line with the
+    window bar's others (see window_bar_top).
     '''
     style = context.style
     button.show_icon(icon, active_icon)
@@ -156,7 +159,8 @@ def icon_button(context: Context, button: ImportantButton, icon: str | None = No
     def sheet() -> str:
         faint = QColor(style.color("text"))
         faint.setAlpha(80)
-        return (f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px {style.igap // 2}px;"
+        top = window_bar_top(context) if to_window_top else 0
+        return (f"QPushButton#{name} {{ background: transparent; border: none; padding: {top}px {style.igap // 2}px 0px {style.igap // 2}px;"
                 f" {style.icon_css()}"
                 f" color: {style.color('text')}; }}"
                 f" QPushButton#{name}:hover {{ color: {style.color('accent')}; }}"
@@ -184,10 +188,49 @@ def global_buttons(context: Context, spacing: int) -> QWidget:
         sections = [(header, [button_class for button_class in button_classes if button_class.is_available(context)])
                     for header, button_classes in group_sections]
         group = ButtonGroup(context, group_key, [section for section in sections if section[1]])
-        row.addWidget(icon_button(context, group, RIGHT_ZONE_ICONS[group_key]), 0, Qt.AlignmentFlag.AlignVCenter)
+        row.addWidget(icon_button(context, group, RIGHT_ZONE_ICONS[group_key], to_window_top=True))
     for button_class in (OpenSettingsPage, ShowHelpMessage):
-        row.addWidget(icon_button(context, button_class(context)), 0, Qt.AlignmentFlag.AlignVCenter)
+        row.addWidget(icon_button(context, button_class(context), to_window_top=True))
+    for button in holder.findChildren(QPushButton):
+        button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
     return holder
+
+
+class _RightZoneRoom(QWidget):
+    '''
+    A page menu bar's right zone's place in its row - holding the zone's
+    width there, while the zone itself (a child of the bar, not of this)
+    spans the bar's whole height, up through the room above the row (see
+    window_bar_top) to the window's top edge.
+    '''
+
+    def __init__(self, bar: QWidget, zone: QWidget):
+        super().__init__()
+        self.bar = bar
+        self.zone = zone
+        zone.setParent(bar)
+        zone.installEventFilter(self)
+
+    def sizeHint(self):
+        return QSize(self.zone.sizeHint().width(), 0)
+
+    def minimumSizeHint(self):
+        return QSize(self.zone.minimumSizeHint().width(), 0)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.LayoutRequest:
+            self.updateGeometry()  # The zone's width changed (e.g. the window controls hid for fullscreen)
+        return False
+
+    def place_zone(self):
+        self.zone.setGeometry(self.x(), 0, self.width(), self.bar.height())
+        self.zone.raise_()
+
+    def moveEvent(self, event):
+        self.place_zone()
+
+    def resizeEvent(self, event):
+        self.place_zone()
 
 
 class _FollowResize(QObject):
@@ -242,7 +285,8 @@ class MenuBar(QFrame):
             # Flush with the window's edges - the window controls fill the
             # top right corner, so that's where a mouse flung there lands
             self.setContentsMargins(0, 0, 0, 0)
-            self.row.setContentsMargins(self.style.igap // 2, 0, 0, 0)
+            # Room above all but the right zone, which reaches up to the window's top edge (see _RightZoneRoom)
+            self.row.setContentsMargins(self.style.igap // 2, window_bar_top(context), 0, 0)
             # Left out of page transitions (see Page.appear_targets) - it's
             # the same from page to page, so it stays put
             self.setProperty("page_bar", True)
@@ -302,7 +346,7 @@ class MenuBar(QFrame):
             # The center zone's entries go between the two stretches (see _insert_entry)
             self.row.addStretch()
             self.right_zone = self.build_right_zone()
-            self.row.addWidget(self.right_zone)
+            self.row.addWidget(_RightZoneRoom(self, self.right_zone))
             self._fixed.append(self.right_zone)
             WindowDrag(self, context.root)
             context.root.fullscreen_changed.connect(self._on_fullscreen_changed)
@@ -348,7 +392,7 @@ class MenuBar(QFrame):
         row = QHBoxLayout(zone)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(self.row.spacing())
-        row.addWidget(global_buttons(self.context, self.row.spacing()), 0, Qt.AlignmentFlag.AlignVCenter)
+        row.addWidget(global_buttons(self.context, self.row.spacing()))
         # The whole height of the bar, up into the window's top right corner
         self.window_controls = WindowControls(self.context, zone)
         row.addWidget(self.window_controls)
