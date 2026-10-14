@@ -120,9 +120,9 @@
     "semantic_hash": "893299ec169957cc49ccc6c17bcf8490"
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1791978323.8392196,
-    "seen": 1791978381.435827,
-    "ast_hash": "8eaa72f60c2df84c833fa08129c6304e",
+    "mtime": 1791979415.2772686,
+    "seen": 1791979577.8584538,
+    "ast_hash": "3712ab4ade8c5f294dd6afef4fc87202",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -384,9 +384,9 @@
     "semantic_hash": "3784af739bf54f97f1b07ce4f4f2e6dd"
   },
   "game/src/app_core/context/paths.py": {
-    "mtime": 1791962190.5486796,
-    "seen": 1791962935.710545,
-    "ast_hash": "2d8f7b34d0a32842a4c15bf570455d79",
+    "mtime": 1791979389.3813581,
+    "seen": 1791979577.8710217,
+    "ast_hash": "11d4ffd724929421c120dbafbade9166",
     "semantic_hash": ""
   },
   "game/src/app_core/context/preferences.py": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1791978211.6268158,
-    "seen": 1791978381.4479373,
-    "ast_hash": "0948cace390f6f238b5baff07c487500",
+    "mtime": 1791979536.8774693,
+    "seen": 1791979577.8713229,
+    "ast_hash": "66940ff3815a708f0fe72ea70326f2b0",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -858,9 +858,9 @@
     "semantic_hash": "63cf3865a0a1063696d5776a644d594f"
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1791978323.8382099,
-    "seen": 1791978381.4690683,
-    "ast_hash": "c63ddbb162a98112188ebe42fc4e0dee",
+    "mtime": 1791979536.878973,
+    "seen": 1791979577.8951576,
+    "ast_hash": "0e7101d46c5223f49eeb7584a742b608",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -1518,10 +1518,10 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
-    "mtime": 1791885915.2132974,
-    "seen": 1791960483.9659412,
-    "ast_hash": "1dadbf2dbdd08420cbd064ab5caaa346",
-    "semantic_hash": "1dadbf2dbdd08420cbd064ab5caaa346"
+    "mtime": 1791979389.3833897,
+    "seen": 1791979577.8853571,
+    "ast_hash": "0dd3acd3936b15e64bd2329d60958300",
+    "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_workspace_save_button.py": {
     "mtime": 1791876696.185948,
@@ -1956,9 +1956,15 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/window_chrome.py": {
-    "mtime": 1791978256.0334814,
-    "seen": 1791978381.4699569,
-    "ast_hash": "a420bf8df085b6f513c435bb629491b1",
+    "mtime": 1791979536.878973,
+    "seen": 1791979577.8962116,
+    "ast_hash": "173dc3dfc2be2a530b54d188cb8f1d92",
+    "semantic_hash": ""
+  },
+  "game/assets/fonts/LICENSE-tabler-icons.txt": {
+    "mtime": 1791979359.1999695,
+    "seen": 1791979577.9042273,
+    "ast_hash": "fe40a17b47fce4ec8b78b333f70f734c",
     "semantic_hash": ""
   }
 }
