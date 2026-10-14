@@ -1,4 +1,4 @@
-from .....app_core.context.style import BACKGROUND_FPS_RANGE, SURFACE_KINDS
+from .....app_core.context.style import BACKGROUND_FPS_RANGE
 from ....visuals import VISUALS
 from ...overlay import Overlay
 from .settings_overlay_button import SettingsOverlayButton
@@ -6,9 +6,8 @@ from .settings_overlay_button import SettingsOverlayButton
 
 class EditBackgroundStyle(SettingsOverlayButton):
     '''
-    Opens sliders for how see-through each kind of surface is (panels,
-    menu bars, widgets, fields, buttons - see style.SURFACE_KINDS) - plus
-    whether buttons are inverted (see
+    Opens whether surfaces can be see-through (how much is each theme's
+    materials - see themes.py), whether buttons are inverted (see
     style.DEFAULT_INVERT_BUTTONS) - and for the animated background behind
     pages: whether it's drawn, which visual, whether it animates, whether
     it's detailed, and its frame rate (see Style.background_*). Changes
@@ -38,9 +37,6 @@ class EditBackgroundStyle(SettingsOverlayButton):
         opacity = self.section("surface_opacity")
         opacity.toggle(("surface_translucent",), style.translucent_surfaces, style.set_translucent_surfaces)
         opacity.toggle(("surface_invert_buttons",), style.invert_buttons, style.set_invert_buttons)
-        for kind in SURFACE_KINDS:
-            opacity.slider(("surface_opacity", kind), round(style.surface_opacity[kind] * 100), 0, 100,
-                           lambda value, kind=kind: style.set_surface(kind, value / 100), suffix="%")
         opacity.button(self.context.labels.get("settings_labels_surface_reset"), self.reset,
                     self.context.labels.get("settings_tooltips_surface_reset"))
 

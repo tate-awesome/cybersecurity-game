@@ -27,6 +27,7 @@ DEFAULT_FADE_OUT = False
 # Preferences from older versions, removed from preferences.json on load
 RETIRED_KEYS = (
     "surface_blur",  # surfaces' frosted-glass blur, removed
+    "surface_opacity",  # surfaces' opacity, now each theme's materials (see themes.py)
 )
 
 class PreferencesData(TypedDict, total=False):
@@ -41,7 +42,6 @@ class PreferencesData(TypedDict, total=False):
     theme_adjust: dict[str, dict[str, float]]
     is_developer: int
     translucent_surfaces: bool
-    surface_opacity: dict[str, float]
     invert_buttons: bool
     background_enabled: bool
     background_visual: str
@@ -142,7 +142,6 @@ class Preferences:
             "theme_adjust": {},     # set on the settings page (see Style.set_adjust) - empty means style.DEFAULT_THEME_ADJUST
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
             "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
-            "surface_opacity": {},  # autosaved in Style.set_surface - empty means style.DEFAULT_SURFACE_OPACITY
             "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
             # Set in the Background dropdown (see Style.set_background)
             "background_enabled": DEFAULT_BACKGROUND_ENABLED,

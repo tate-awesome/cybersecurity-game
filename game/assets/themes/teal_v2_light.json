@@ -1,30 +1,214 @@
 {
     "label": "Teal (soft light)",
     "kind": "original",
-    "dark": {
-        "root": "#12181a",
-        "panel": "#171e21",
-        "widget": "#2a343a",
-        "field": "#37424a",
-        "field_text": "#e0f2f1",
-        "text": "#e0f2f1",
-        "accent": "#00bcd4",
-        "accent_text": "#062024",
-        "border": "#303b42",
-        "scrollbar": "#303b42",
-        "scrollbar_hover": "#404b52"
+    "palette": {
+        "dark": {
+            "root": "#12181a",
+            "panel": "#171e21",
+            "widget": "#2a343a",
+            "field": "#37424a",
+            "field_text": "#e0f2f1",
+            "text": "#e0f2f1",
+            "accent": "#00bcd4",
+            "accent_text": "#062024",
+            "border": "#303b42",
+            "scrollbar": "#303b42",
+            "scrollbar_hover": "#404b52"
+        },
+        "light": {
+            "root": "#f6f9f9",
+            "panel": "#eff4f4",
+            "widget": "#e0e8e8",
+            "field": "#ffffff",
+            "field_text": "#263238",
+            "text": "#263238",
+            "accent": "#0097a7",
+            "accent_text": "#ffffff",
+            "border": "#cdd8d8",
+            "scrollbar": "#cdd8d8",
+            "scrollbar_hover": "#b9c5c5"
+        }
     },
-    "light": {
-        "root": "#f6f9f9",
-        "panel": "#eff4f4",
-        "widget": "#e0e8e8",
-        "field": "#ffffff",
-        "field_text": "#263238",
-        "text": "#263238",
-        "accent": "#0097a7",
-        "accent_text": "#ffffff",
-        "border": "#cdd8d8",
-        "scrollbar": "#cdd8d8",
-        "scrollbar_hover": "#b9c5c5"
+    "materials": {
+        "window": {
+            "dark": {
+                "color": "root",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "root",
+                "opacity": 1.0
+            }
+        },
+        "panel": {
+            "dark": {
+                "color": "panel",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 0.5
+            }
+        },
+        "panel_border": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "menu_bar": {
+            "dark": {
+                "color": "widget",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 1.0
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "field": {
+            "dark": {
+                "color": "field",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "field",
+                "opacity": 0.5
+            }
+        },
+        "button": {
+            "dark": {
+                "color": "accent",
+                "opacity": 0.75
+            },
+            "light": {
+                "color": "accent",
+                "opacity": 0.75
+            }
+        },
+        "overlay": {
+            "dark": {
+                "color": "panel",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 1.0
+            }
+        },
+        "overlay_card": {
+            "dark": {
+                "color": "widget",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 1.0
+            }
+        },
+        "tab": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "tab_selected": {
+            "dark": {
+                "color": "accent",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "accent",
+                "opacity": 1.0
+            }
+        },
+        "table_header": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "alternate_row": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "selection": {
+            "dark": {
+                "color": "accent",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "accent",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar": {
+            "dark": {
+                "color": "scrollbar",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "scrollbar",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar_track": {
+            "dark": {
+                "color": "panel",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 0.5
+            }
+        },
+        "tooltip": {
+            "dark": {
+                "color": "panel",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 1.0
+            }
+        },
+        "footer": {
+            "dark": {
+                "color": "widget",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 1.0
+            }
+        }
     }
 }

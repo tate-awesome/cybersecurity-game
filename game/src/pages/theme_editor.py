@@ -3,7 +3,7 @@ from typing import ClassVar
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from ..app_core.context.style import SURFACE_KINDS, THEME_ADJUST_RANGE, THEME_TINT_MAX
+from ..app_core.context.style import THEME_ADJUST_RANGE, THEME_TINT_MAX
 from ..widgets.frame_widgets.important_buttons import ResetTheme
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
@@ -21,7 +21,7 @@ class ThemeEditorPage(SettingsPage):
     Every theme setting beyond the few on the settings page and in the
     menu bar's Themes section (see SettingsPage.theme_rows) - accents and
     hierarchies, every special theme, tint and layer fine-tuning, and the
-    surfaces' translucency and opacity - in tabs on the left. On the
+    surfaces' translucency - in tabs on the left. On the
     right, a scrolling grid of example panels (see widgets.panels.examples) -
     every kind of panel body with made-up data - so each change shows on
     everything it touches.
@@ -112,13 +112,6 @@ class ThemeEditorPage(SettingsPage):
         translucency.row("settings_page_rows_translucent_surfaces",
                          self.checkbox(style.translucent_surfaces, style.set_translucent_surfaces),
                          "settings_page_row_notes_translucent_surfaces")
-
-        opacity = self.section(tab, "surface_opacity")
-        for kind in SURFACE_KINDS:
-            opacity.row(f"settings_labels_surface_opacity_{kind}", self.slider(
-                round(style.surface_opacity[kind] * 100), 0, 100, "%",
-                lambda value, kind=kind: style.set_surface(kind, value / 100)),
-                f"settings_tooltips_surface_opacity_{kind}")
 
         reset = self.section(tab, "appearance_reset")
         reset.row("settings_page_rows_reset_surfaces", self.button(

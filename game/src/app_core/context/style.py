@@ -1,24 +1,24 @@
 import json
 import re
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QApplication
 import darkdetect
 
 from . import palette_generator
+from .themes import MATERIALS, PALETTE_KEYS, THEME_MODES, read_theme, resolve_materials
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .. import Context
 
 # Hand-rolled replacement for qt-material's theme presets. Each family has a
-# dark and light variant; every color key here is required (color() and
-# Style._build_stylesheet both read them directly with no fallback), so a
-# new family must define both variants with the full key set below.
+# dark and light palette with every one of themes.PALETTE_KEYS, and a
+# material list (see themes.py) - defaults, for the built-in one.
 # Blue is built in so the app always has a theme, even without assets/;
-# every other preset family is a <family>.json in assets/themes with the
-# same shape (see Style._load_theme_files) - one there named "blue"
+# every other preset family is a <family>.json in assets/themes (see
+# themes.py and Style._load_theme_files) - one there named "blue"
 # replaces it. Beyond the presets, any accent can be paired with any
 # hierarchy (assets/themes/generator - see palette_generator): a family
 # named "<accent>.<hierarchy>", e.g. "cyan.whisper".
@@ -45,8 +45,6 @@ PALETTES: dict[str, dict[str, dict[str, str]]] = {
     },
 }
 PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
-THEME_MODES = ("dark", "light")
-THEME_KEYS = frozenset(PALETTES["blue"]["dark"])
 # What the accent/hierarchy pickers start from while a preset is in use
 DEFAULT_ACCENT = "azure"
 DEFAULT_HIERARCHY = "baseline"
@@ -76,9 +74,8 @@ CURATED_THEMES: list[str] = ["blue_v2_light"]
 # replace a bundled preset of the same name
 IMPORTED_PREFIX = "imported."
 
-# Surfaces - the kinds of backgrounds whose opacity the
-# user can tune (the "Background" style dropdown), each saved as a
-# preference like the theme:
+# Surfaces - the kinds of backgrounds that can be see-through, each at its
+# material's opacity in the theme (see SURFACE_MATERIALS and themes.py):
 #   panel  - the "panel" color: panel bodies and borders
 #   bar    - menu bars
 #   widget - the "widget" color: cards like forms
@@ -92,13 +89,14 @@ IMPORTED_PREFIX = "imported."
 # instead (see Style.surface).
 SURFACE_KINDS = ("panel", "bar", "widget", "field", "button", "overlay")
 COLOR_SURFACES = ("panel", "widget", "field")
+# The material each surface kind takes its opacity from
+SURFACE_MATERIALS = {"panel": "panel", "bar": "menu_bar", "widget": "card", "field": "field",
+                     "button": "button", "overlay": "overlay"}
 # Whether surfaces can be see-through at all. Off, none of the surface
 # machinery runs: every color is opaque and untagged, there's no overlay
 # snapshot, and scroll areas paint their own background - the app as it
 # was before translucency.
 DEFAULT_TRANSLUCENT_SURFACES = True
-DEFAULT_SURFACE_OPACITY: dict[str, float] = {
-    "panel": 0.5, "bar": 1.0, "widget": 0.5, "field": 0.5, "button": 0.75, "overlay": 1.0}  # 0-1
 # The animated page background (see Page.add_background), each saved as a
 # preference like the theme: whether it's drawn at all, which visual plays
 # (a widgets.visuals.VISUALS key, or "cycle"), whether it moves, whether
@@ -158,7 +156,6 @@ class Style:
         # Surface settings (see SURFACE_KINDS) - load_preferred_surfaces()
         # replaces these defaults once preferences exist
         self.translucent_surfaces: bool = DEFAULT_TRANSLUCENT_SURFACES
-        self.surface_opacity: dict[str, float] = dict(DEFAULT_SURFACE_OPACITY)
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
         # Background settings - load_preferred_background() replaces these
         # defaults once preferences exist
@@ -167,22 +164,14 @@ class Style:
         self.background_animate: bool = DEFAULT_BACKGROUND_ANIMATE
         self.background_detailed: bool = DEFAULT_BACKGROUND_DETAILED
         self.background_fps: int = DEFAULT_BACKGROUND_FPS
-        # Slider drags change these many times a second - restyling and
-        # saving are each coalesced onto a short timer
-        self._restyle_timer = QTimer()
-        self._restyle_timer.setSingleShot(True)
-        self._restyle_timer.setInterval(30)
-        self._restyle_timer.timeout.connect(self.restyle_surfaces)
-        self._save_timer = QTimer()
-        self._save_timer.setSingleShot(True)
-        self._save_timer.setInterval(400)
-        self._save_timer.timeout.connect(self.save_surfaces)
 
         # Preferences don't exist yet at this point in startup (see
         # ContextManager.start_session) - this is just a system-appropriate
         # bootstrap default; load_preferred_theme() overrides it once
         # preferences are available.
         self.palettes: dict[str, dict[str, dict[str, str]]] = dict(PALETTES)
+        # Each preset's materials (see themes.py) - accent + hierarchy themes use the defaults
+        self.materials: dict[str, dict[str, dict[str, dict]]] = {name: resolve_materials(None) for name in PALETTES}
         self.preset_info: dict[str, dict] = dict(PRESET_INFO)
         self.accents: dict[str, str] = {}
         self.hierarchies: dict[str, dict[str, float]] = {}
@@ -353,6 +342,9 @@ class Style:
         '''
         mode, _, family = theme_name.partition("_")
         app = QApplication.instance()
+        # First - the materials (see material) are the current theme's
+        self.current_theme = theme_name
+        self.mode = "Dark" if mode == "dark" else "Light"
         self._theme_colors = self._palette(family, mode)
         # The native platform style (e.g. "windows11") largely ignores QSS
         # background-color/border-radius on QPushButton/QComboBox/QCheckBox -
@@ -367,8 +359,6 @@ class Style:
         self._widget_qss = self._build_stylesheet(self._theme_colors)
         self._opaque_qss = self._build_stylesheet(self._theme_colors, opaque=True)
         app.setStyleSheet(self._widget_qss)
-        self.current_theme = theme_name
-        self.mode = "Dark" if mode == "dark" else "Light"
 
     def themed(self, extra: str = "", widget=None, opaque: bool = False) -> str:
         '''
@@ -599,8 +589,31 @@ class Style:
         return f"rgba({qcolor.red()}, {qcolor.green()}, {qcolor.blue()}, {alpha}) /*s:{kind}:{qcolor.name()}*/"
 
     def opacity(self, kind: str) -> float:
-        '''How solid a surface of this kind draws right now - always 1 with translucent_surfaces off.'''
-        return self.surface_opacity.get(kind, 1.0) if self.translucent_surfaces else 1.0
+        '''How solid a surface of this kind draws right now - its material's opacity, or 1 with translucent_surfaces off.'''
+        if not self.translucent_surfaces or kind not in SURFACE_MATERIALS:
+            return 1.0
+        return self.material_entry(SURFACE_MATERIALS[kind])["opacity"]
+
+    # Materials
+    def theme_materials(self) -> dict[str, dict[str, dict]]:
+        '''The current theme's materials (see themes.py) - every one, for both modes.'''
+        return self.materials.get(self.theme_family()) or resolve_materials(None)
+
+    def material_entry(self, name: str) -> dict:
+        '''One material in the current mode: {"color": <palette key or hex>, "opacity": 0-1}.'''
+        return self.theme_materials()[name][self.current_theme.partition("_")[0]]
+
+    def material(self, name: str) -> QColor:
+        '''
+        What a material (see themes.MATERIALS) looks like right now: its
+        color, resolved from the palette if it names one, at its opacity -
+        or solid, with translucent_surfaces off.
+        '''
+        entry = self.material_entry(name)
+        color = QColor(self._theme_colors.get(entry["color"], entry["color"]))
+        if self.translucent_surfaces:
+            color.setAlphaF(entry["opacity"])
+        return color
 
     def set_translucent_surfaces(self, on: bool):
         '''
@@ -635,12 +648,6 @@ class Style:
 
     def load_preferred_surfaces(self):
         '''Reads the saved surface settings, keeping the default for anything missing or invalid.'''
-        saved = self.context.preferences.get("surface_opacity")
-        if isinstance(saved, dict):
-            for kind in SURFACE_KINDS:
-                value = saved.get(kind)
-                if isinstance(value, (int, float)) and not isinstance(value, bool):
-                    self.surface_opacity[kind] = min(1.0, max(0.0, float(value)))
         if isinstance(self.context.preferences.get("invert_buttons"), bool):
             self.invert_buttons = self.context.preferences.get("invert_buttons")
         if isinstance(self.context.preferences.get("translucent_surfaces"), bool):
@@ -648,21 +655,10 @@ class Style:
         self._rebuild_stylesheets()
 
     def load_default_surfaces(self):
-        '''Back to DEFAULT_SURFACE_OPACITY, without saving - like load_default_theme.'''
+        '''Back to the default surface settings, without saving - like load_default_theme.'''
         self.translucent_surfaces = DEFAULT_TRANSLUCENT_SURFACES
-        self.surface_opacity = dict(DEFAULT_SURFACE_OPACITY)
         self.invert_buttons = DEFAULT_INVERT_BUTTONS
         self.restyle_surfaces()
-
-    def set_surface(self, kind: str, opacity: float):
-        '''
-        Changes one surface kind's opacity (0-1). Takes effect right away on
-        the current page - no rebuild - and is saved to preferences shortly
-        after the last change.
-        '''
-        self.surface_opacity[kind] = min(1.0, max(0.0, opacity))
-        self._restyle_timer.start()
-        self._save_timer.start()
 
     # Background
     BACKGROUND_PREFERENCES = {
@@ -734,8 +730,6 @@ class Style:
         self.save_surfaces()
 
     def save_surfaces(self):
-        self._save_timer.stop()
-        self.context.preferences.set("surface_opacity", dict(self.surface_opacity))
         self.context.preferences.set("invert_buttons", self.invert_buttons)
         self.context.preferences.set("translucent_surfaces", self.translucent_surfaces)
 
@@ -752,7 +746,6 @@ class Style:
         their RGB in any non-text property - so opacity changes show up
         instantly instead of on the next page rebuild.
         '''
-        self._restyle_timer.stop()
         self._rebuild_stylesheets()
 
         surfaces = self._surface_colors()
@@ -797,12 +790,9 @@ class Style:
 
     def _load_theme_files(self):
         '''
-        Reads every assets/themes/<family>.json preset (see PALETTES) - a
-        "label", a "kind" ("original" or "copied"), optionally a source
-        "note" and which sides are "derived" rather than copied, and the
-        "dark"/"light" colors - plus the generator's accents and
-        hierarchies. Anything unreadable or missing a variant or color
-        key is skipped.
+        Reads every assets/themes/<family>.json preset (see themes.py) -
+        plus the generator's accents and hierarchies. Anything unreadable
+        or with an incomplete palette is skipped.
         '''
         for path in sorted(self.context.paths.themes.glob("*.json")):
             self._load_preset(path, path.stem)
@@ -818,15 +808,16 @@ class Style:
         self.load_imported_themes()
 
     def _load_preset(self, path, family: str, kind: str | None = None) -> bool:
-        '''Reads one preset file into palettes/preset_info as family - False (and nothing added) if it's unreadable or incomplete.'''
+        '''Reads one theme file (see themes.py) in as family - False (and nothing added) if it's unreadable or incomplete.'''
         try:
             with open(path, encoding="utf-8") as file:
-                preset = json.load(file)
-            if not all(THEME_KEYS <= set(preset[mode]) for mode in THEME_MODES):
-                print(f"Err: theme {path} is missing color keys - skipped.")
+                theme = read_theme(json.load(file))
+            if theme is None:
+                print(f"Err: theme {path} has an incomplete palette - skipped.")
                 return False
-            self.palettes[family] = {mode: preset[mode] for mode in THEME_MODES}
-            info = {key: value for key, value in preset.items() if key not in THEME_MODES}
+            self.palettes[family] = theme["palette"]
+            self.materials[family] = theme["materials"]
+            info = theme["info"]
             if kind is not None:
                 info["kind"] = kind
             self.preset_info[family] = info
@@ -843,6 +834,7 @@ class Style:
         '''
         for family in [name for name in self.palettes if name.startswith(IMPORTED_PREFIX)]:
             del self.palettes[family]
+            del self.materials[family]
             del self.preset_info[family]
         for path in sorted(self.context.paths.user_themes.glob("*.json")):
             family = IMPORTED_PREFIX + path.stem

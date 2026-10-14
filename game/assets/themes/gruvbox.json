@@ -2,30 +2,214 @@
     "label": "Gruvbox",
     "kind": "copied",
     "note": "Official Gruvbox steps (bg0 hard, bg0, bg1, bg2) in dark, and the matching light set. Yellow accent.",
-    "dark": {
-        "root": "#1d2021",
-        "panel": "#282828",
-        "widget": "#3c3836",
-        "field": "#504945",
-        "field_text": "#ebdbb2",
-        "text": "#ebdbb2",
-        "accent": "#fabd2f",
-        "accent_text": "#0d1417",
-        "border": "#504945",
-        "scrollbar": "#504945",
-        "scrollbar_hover": "#5e5551"
+    "palette": {
+        "dark": {
+            "root": "#1d2021",
+            "panel": "#282828",
+            "widget": "#3c3836",
+            "field": "#504945",
+            "field_text": "#ebdbb2",
+            "text": "#ebdbb2",
+            "accent": "#fabd2f",
+            "accent_text": "#0d1417",
+            "border": "#504945",
+            "scrollbar": "#504945",
+            "scrollbar_hover": "#5e5551"
+        },
+        "light": {
+            "root": "#fbf1c7",
+            "panel": "#f2e5bc",
+            "widget": "#ebdbb2",
+            "field": "#f9f5d7",
+            "field_text": "#3c3836",
+            "text": "#3c3836",
+            "accent": "#b57614",
+            "accent_text": "#0d1417",
+            "border": "#d5c4a1",
+            "scrollbar": "#d5c4a1",
+            "scrollbar_hover": "#ccb78c"
+        }
     },
-    "light": {
-        "root": "#fbf1c7",
-        "panel": "#f2e5bc",
-        "widget": "#ebdbb2",
-        "field": "#f9f5d7",
-        "field_text": "#3c3836",
-        "text": "#3c3836",
-        "accent": "#b57614",
-        "accent_text": "#0d1417",
-        "border": "#d5c4a1",
-        "scrollbar": "#d5c4a1",
-        "scrollbar_hover": "#ccb78c"
+    "materials": {
+        "window": {
+            "dark": {
+                "color": "root",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "root",
+                "opacity": 1.0
+            }
+        },
+        "panel": {
+            "dark": {
+                "color": "panel",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 0.5
+            }
+        },
+        "panel_border": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "menu_bar": {
+            "dark": {
+                "color": "widget",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 1.0
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "field": {
+            "dark": {
+                "color": "field",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "field",
+                "opacity": 0.5
+            }
+        },
+        "button": {
+            "dark": {
+                "color": "accent",
+                "opacity": 0.75
+            },
+            "light": {
+                "color": "accent",
+                "opacity": 0.75
+            }
+        },
+        "overlay": {
+            "dark": {
+                "color": "panel",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 1.0
+            }
+        },
+        "overlay_card": {
+            "dark": {
+                "color": "widget",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 1.0
+            }
+        },
+        "tab": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "tab_selected": {
+            "dark": {
+                "color": "accent",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "accent",
+                "opacity": 1.0
+            }
+        },
+        "table_header": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "alternate_row": {
+            "dark": {
+                "color": "widget",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 0.5
+            }
+        },
+        "selection": {
+            "dark": {
+                "color": "accent",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "accent",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar": {
+            "dark": {
+                "color": "scrollbar",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "scrollbar",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar_track": {
+            "dark": {
+                "color": "panel",
+                "opacity": 0.5
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 0.5
+            }
+        },
+        "tooltip": {
+            "dark": {
+                "color": "panel",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "panel",
+                "opacity": 1.0
+            }
+        },
+        "footer": {
+            "dark": {
+                "color": "widget",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "widget",
+                "opacity": 1.0
+            }
+        }
     }
 }
