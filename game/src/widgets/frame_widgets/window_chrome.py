@@ -265,15 +265,21 @@ class WindowDrag(QObject):
         root.windowHandle().startSystemMove()
 
 
-def window_bar_top(context: Context) -> int:
+def window_bar_room(context: Context) -> int:
     '''
-    The extra room along the top of the window bar, above everything in it.
-    The buttons at its right (the window controls, and the ones every page
-    has - see menu_bar.global_buttons) reach up through it to the window's
-    top edge, so a mouse flung up there still lands on one - their icons
-    padded down by it, in line with the rest.
+    The extra room in the window bar above everything in it, and the same
+    below, so its contents sit midway between the window's top edge and
+    the bar's line. The buttons at its right (the window controls, and the
+    ones every page has - see menu_bar.global_buttons) span the room - up
+    to the window's top edge, so a mouse flung up there still lands on
+    one, and down to just above the line (see window_bar_button_height).
     '''
     return context.style.igap // 2 + context.style.cgap
+
+
+def window_bar_button_height(bar_height: int) -> int:
+    '''The window bar's right buttons' height: all of the bar but its line (see draw_window_bar_line), which their hover never covers.'''
+    return bar_height - 1
 
 
 def window_bar_height(context: Context) -> int:
@@ -282,7 +288,7 @@ def window_bar_height(context: Context) -> int:
     (see MenuBar.bar_height), or the strip around CornerControls on a page
     without one - so it's the same on every page: a menu bar button's
     height (the tallest thing a bar always has - its dropdowns), with a
-    little room above and below, and window_bar_top's more above.
+    little room above and below, and window_bar_room's more of each.
     '''
     style = context.style
     sample = QPushButton("Ag")
@@ -290,7 +296,7 @@ def window_bar_height(context: Context) -> int:
     sample.ensurePolished()
     height = sample.sizeHint().height()
     sample.deleteLater()
-    return height + 4 * style.cgap + window_bar_top(context)
+    return height + 4 * style.cgap + 2 * window_bar_room(context)
 
 
 def window_bar_has_line(context: Context) -> bool:
@@ -396,7 +402,7 @@ class WindowControls(QWidget):
         name = self.objectName()
         text = self.style.color("text")
         return (f"QWidget#{name} QPushButton {{ background: transparent; border: none; color: {text}; {self.style.icon_css()}"
-                f" padding: {window_bar_top(self.context)}px {self.style.igap}px 0px {self.style.igap}px; }}"
+                f" padding: 0px {self.style.igap}px; }}"
                 f" QWidget#{name} QPushButton:hover {{ background: {self.style.css('card')}; color: {self.style.color('accent')}; }}"
                 f" QWidget#{name} QPushButton[close=\"true\"]:hover {{ background: {CLOSE_HOVER}; color: white; }}"
                 f" QWidget#{name} QPushButton:pressed {{ color: {text}; }}")
@@ -479,7 +485,7 @@ class CornerControls(WindowControls):
             controls = wanted and not self.root.isFullScreen()
             width = self.sizeHint().width() if controls else 0
             height = window_bar_height(self.context)
-            self.setGeometry(self.root.width() - width, 0, width, height)
+            self.setGeometry(self.root.width() - width, 0, width, window_bar_button_height(height))
             # The whole width, under the controls too, so its line runs to the edge
             self.strip.setGeometry(0, 0, self.root.width(), height)
             self.strip.update()
@@ -488,7 +494,8 @@ class CornerControls(WindowControls):
             if self.buttons is not None:
                 buttons_width = self.buttons.sizeHint().width()
                 gap = self.spacing() if controls else 0
-                self.buttons.setGeometry(self.root.width() - width - gap - buttons_width, 0, buttons_width, height)
+                self.buttons.setGeometry(self.root.width() - width - gap - buttons_width, 0, buttons_width,
+                                         window_bar_button_height(height))
                 self.buttons.setVisible(wanted)
             if wanted:
                 self.strip.raise_()
