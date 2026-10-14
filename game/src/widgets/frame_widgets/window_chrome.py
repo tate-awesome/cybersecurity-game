@@ -302,7 +302,12 @@ def draw_window_bar_line(widget: QWidget, context: Context):
 
 
 class _Strip(QWidget):
-    '''CornerControls' strip across the top of the window - see-through, but underlined where the window bar is (see window_bar_has_line).'''
+    '''
+    CornerControls' strip across the top of the window - see-through, but
+    underlined where the window bar is (see window_bar_has_line), except
+    fullscreen: with no window to move, the title pages' bar is just its
+    buttons.
+    '''
 
     def __init__(self, context: Context):
         super().__init__(context.root)
@@ -310,7 +315,7 @@ class _Strip(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
     def paintEvent(self, event):
-        if window_bar_has_line(self.context):
+        if window_bar_has_line(self.context) and not self.context.root.isFullScreen():
             draw_window_bar_line(self, self.context)
 
 
