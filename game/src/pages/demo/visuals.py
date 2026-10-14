@@ -1,7 +1,6 @@
 from ...app_core import Context
 from ...pages.page import Page
 from ...widgets import MenuBar, VISUALS, VisualBackground
-from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR
 
 
 class Visuals(Page):
@@ -51,7 +50,6 @@ class Visuals(Page):
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_visual_detailed"), Visuals.detailed, self.set_detailed)
         menu_bar.add_button("replay_intro", self.background.replay_intro)
-        menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
     def select(self, name: str):
         key = self.names[name]

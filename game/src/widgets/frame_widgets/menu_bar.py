@@ -3,30 +3,32 @@ from ...app_core.context.style import Style
 from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
-from .important_buttons import ButtonGroup, ImportantButton, MENU_BAR_BUTTONS
+from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
+                                EditBackgroundStyle, EditWorkspaceAvailability, ImportantButton, MENU_BAR_BUTTONS,
+                                OpenAppearanceSettings, OpenWorkspaceEditor, RefreshCurrentPage, SelectColorTheme,
+                                ToggleDebugLabels, ToggleLightDarkMode)
 from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
 from .window_chrome import WindowControls, WindowDrag, draw_window_bar_line, window_bar_has_line, window_bar_height
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
-#   left   - home (the pause menu), back, forward, the page's title and its bookmark
+#   left   - home (the pause menu), back, forward, the page's title, its bookmark and refresh
 #   center - the page's own tools: the buttons its config's "menu_bar" names
 #   right  - the same on every page: Debug (developer mode), Appearance,
 #            Settings, Help and the window controls
-# The left and right zones never change from page to page, so their buttons
-# are always in the same place - a page config only chooses the center.
+# Everything but the page's own tools is on every page's menu bar by itself -
+# a page config only chooses those.
 
-# The center zone, left to right: each group key ("menu_bar_buttons_<key>" labels
-# its button) maps to its sections, top to bottom - (header key or None, button names).
-# A page config's "menu_bar" only says which buttons a page gets (see MenuBar.add_config_buttons):
-# a group with none of them is left out, and a group with just one shows that button
-# in the group's place instead. PAUSE_MENU_GROUPS go in the pause menu rather than
-# the bar (see PauseMenu).
+# The page's own tools in the center zone, left to right: each group key
+# ("menu_bar_buttons_<key>" labels its button) maps to its sections, top to
+# bottom - (header key or None, button names - keys of
+# important_buttons.MENU_BAR_BUTTONS). A page config's "menu_bar" only says
+# which buttons a page gets (see MenuBar.add_config_buttons): a group with
+# none of them is left out, and a group with just one shows that button in
+# the group's place instead. PAUSE_MENU_GROUPS go in the pause menu rather
+# than the bar (see PauseMenu).
 MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
-    "refresh_button_group": [
-        ("refresh", ["refresh_button"]),
-    ],
     "captures_button_group": [
         ("load_fast", ["pcap_button", "load_json_fast_button"]),
         ("load_real_time", ["stream_pcap_button", "load_button"]),
@@ -50,53 +52,36 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
 }
 PAUSE_MENU_GROUPS = {"links_button_group"}
 
+# Every config button name in layout order - the order the workspace editor lists them in
+MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
+assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu bar button needs exactly one place in MENU_BAR_GROUPS"
+
 # The right zone's dropdowns, the same on every page - Debug only in developer
-# mode (preferences.json "is_developer")
-RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
+# mode (preferences.json "is_developer"), each shown as just its icon
+RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]]] = {
     "debug_button_group": [
-        ("debug_tools", ["delete_all_user_data_button", "delete_all_workspace_data_button", "workspace_editor_button",
-                         "configure_workspace_button", "debug_availability_button", "debug_labels_button"]),
+        ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,
+                         ConfigureThisWorkspace, EditWorkspaceAvailability, ToggleDebugLabels]),
     ],
     "style_button_group": [
-        ("themes", ["toggle_button", "theme_button", "appearance_settings_button"]),
-        ("background", ["background_button"]),
+        ("themes", [ToggleLightDarkMode, SelectColorTheme, OpenAppearanceSettings]),
+        ("background", [EditBackgroundStyle]),
     ],
 }
-
-# The right zone's dropdowns show as just an icon (see MenuBar.icon_button) - group key -> its icon
 RIGHT_ZONE_ICONS: dict[str, str] = {
     "debug_button_group": "bug",
     "style_button_group": "palette",
 }
 
-# Buttons with a fixed place of their own - the left and right zones' solo
-# buttons and the pause menu's rows. A page config naming one changes nothing.
-FIXED_BUTTON_NAMES: list[str] = ["back_button", "page_button", "settings_button", "help_button", "labels_button",
-                                 "workspaces_button", "title_button", "quit_button"]
-
-# Every center zone button name in layout order - the order the workspace editor lists them in
-MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
-assert sorted([*MENU_BAR_BUTTON_ORDER, *FIXED_BUTTON_NAMES,
-               *(name for sections in RIGHT_ZONE_GROUPS.values() for _, names in sections for name in names)]) == sorted(MENU_BAR_BUTTONS),     "every menu bar button needs exactly one place: MENU_BAR_GROUPS, RIGHT_ZONE_GROUPS or FIXED_BUTTON_NAMES"
-
 # The overflow button's text, closed and open (see MenuBar._update_squashing)
 OVERFLOW_CLOSED = Style.icon("chevrons-right")
 OVERFLOW_OPEN = Style.icon("x")
 
-def group_button_names(group_key: str) -> list[str]:
-    '''Every button name in one of MENU_BAR_GROUPS or RIGHT_ZONE_GROUPS, in order.'''
-    groups = MENU_BAR_GROUPS if group_key in MENU_BAR_GROUPS else RIGHT_ZONE_GROUPS
-    return [name for _, names in groups[group_key] for name in names]
-
-
-# What a standard game page gets (see MenuBar.page_buttons)
+# What the hand-built game pages (attacker, defender) get (see MenuBar.page_buttons)
 PAGE_BUTTON_NAMES: list[str] = [
-    "ap_config_button", "refresh_button", "reset_button", "preset_button",
+    "ap_config_button", "reset_button", "preset_button",
     "pcap_button", "load_button", "save_button", "stream_button",
 ]
-
-# What the demo pages get - just the zones every page has
-DEMO_MENU_BAR: list[str] = []
 
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
@@ -196,8 +181,8 @@ def global_buttons(context: Context, spacing: int) -> QWidget:
     for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
         if group_key in DEVELOPER_GROUPS and not context.preferences.is_developer():
             continue
-        sections = [(header, [MENU_BAR_BUTTONS[name] for name in names if MENU_BAR_BUTTONS[name].is_available(context)])
-                    for header, names in group_sections]
+        sections = [(header, [button_class for button_class in button_classes if button_class.is_available(context)])
+                    for header, button_classes in group_sections]
         group = ButtonGroup(context, group_key, [section for section in sections if section[1]])
         row.addWidget(icon_button(context, group, RIGHT_ZONE_ICONS[group_key]), 0, Qt.AlignmentFlag.AlignVCenter)
     for button_class in (OpenSettingsPage, ShowHelpMessage):
@@ -293,8 +278,10 @@ class MenuBar(QFrame):
         if self.page_bar:
             from .important_buttons import ToggleBookmark
             self.bookmark = self.icon_button(ToggleBookmark(context))
-            self.row.addWidget(self.bookmark, 0, Qt.AlignmentFlag.AlignVCenter)
-            self._fixed.append(self.bookmark)
+            self.refresh = self.icon_button(RefreshCurrentPage(context))
+            for button in (self.bookmark, self.refresh):
+                self.row.addWidget(button, 0, Qt.AlignmentFlag.AlignVCenter)
+                self._fixed.append(button)
         self.row.addStretch()
 
         # Button overflow overlay - see update_squashing/_populate_overflow_overlay.
@@ -829,10 +816,9 @@ class MenuBar(QFrame):
         MENU_BAR_GROUPS rather than by names' own order. Buttons that aren't
         available right now (see is_available) don't count toward a group.
 
-        Names with a fixed place (FIXED_BUTTON_NAMES, RIGHT_ZONE_GROUPS) are
-        skipped - a page's menu bar always has them, in their own zones.
         PAUSE_MENU_GROUPS' buttons are kept for the pause menu (page_links)
-        rather than added to the bar.
+        rather than added to the bar. Everything else a page's menu bar has,
+        it has by itself - see MenuBar.
         '''
         for name in names:
             if name not in MENU_BAR_BUTTONS:
@@ -849,10 +835,7 @@ class MenuBar(QFrame):
             if group_key in PAUSE_MENU_GROUPS:
                 self.page_links += button_classes
             elif len(button_classes) == 1:
-                button = self.add_important(button_classes[0])
-                # By itself, a button with an icon of its own (refresh) is just that icon
-                if button is not None and button.ICON is not None and self.page_bar:
-                    self.icon_button(button)
+                self.add_important(button_classes[0])
             elif button_classes:
                 self.add_important(ButtonGroup, group_key, present)
 

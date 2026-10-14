@@ -45,20 +45,8 @@
 
     "title": "defender_hvac_encryption_workspace",
     "menu_bar": [
-        "toggle_button",
-        "theme_button",
-        "appearance_settings_button",
-        "background_button",
-        "labels_button",
-        "refresh_button",
         "reset_button",
-        "help_button",
-        "page_button",
-        "ap_config_button",
-        "settings_button",
-        "workspaces_button",
-        "title_button",
-        "quit_button"
+        "ap_config_button"
     ],
 
     "layout_shape": {

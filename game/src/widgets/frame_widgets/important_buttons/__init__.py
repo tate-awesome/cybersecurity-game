@@ -78,22 +78,15 @@ from .pause_packet_console import PausePacketConsole
 from .free_scroll_status_console import FreeScrollStatusConsole
 from .filter_packet_console.filter_packet_console import FilterPacketConsole
 
-# The names a page config's "menu_bar" list uses. Where each one goes - its
-# group and order - is MenuBar.MENU_BAR_GROUPS.
+# The names a page config's "menu_bar" list uses - only the buttons that
+# depend on the page (the menu bar's center, and its links in the pause
+# menu). Where each one goes - its group and order - is
+# MenuBar.MENU_BAR_GROUPS. The rest are on every page's menu bar by
+# themselves (see MenuBar), so no config lists them.
 MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
-    # Help
-    "help_button": ShowHelpMessage,
-    "labels_button": LoadLocalizationLabelsFile,
-    # Navigation
-    "page_button": SetCurrentPageAsFavorite,
+    # Links
     "ap_config_button": OpenAccessPointConfigInBrowser,
-    "back_button": GoBackToPreviousPage,
-    "workspaces_button": OpenWorkspaceSelect,
-    "title_button": OpenTitlePage,
-    "settings_button": OpenSettingsPage,
-    "quit_button": QuitApplication,
     # Workspace
-    "refresh_button": RefreshCurrentPage,
     "clear_inputs_button": ClearSavedWorkspaceInputs,
     "reset_layout_button": ResetSavedWorkspaceLayout,
     "reset_button": ResetCurrentPageToDefaults,
@@ -102,11 +95,7 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     "modbus_forms_button": ChooseShownModbusTableForms,
     "defender_forms_button": ChooseShownDefenderModbusForms,
     "packet_columns_button": ChooseShownPacketConsoleColumns,
-    # Style
-    "toggle_button": ToggleLightDarkMode,
-    "theme_button": SelectColorTheme,
-    "appearance_settings_button": OpenAppearanceSettings,
-    "background_button": EditBackgroundStyle,
+    # View
     "model_style_button": EditModelStyle,
     "strip_chart_style_button": EditStripChartStyle,
     # Captures
@@ -123,13 +112,6 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     # ModBus
     "registers_button": EditModbusRegisterDisplay,
     "register_preset_button": SelectRegisterPreset,
-    # Debug
-    "delete_all_user_data_button": DeleteAllUserData,
-    "delete_all_workspace_data_button": DeleteAllWorkspaceSavedData,
-    "workspace_editor_button": OpenWorkspaceEditor,
-    "configure_workspace_button": ConfigureThisWorkspace,
-    "debug_availability_button": EditWorkspaceAvailability,
-    "debug_labels_button": ToggleDebugLabels,
 }
 
 # The names a title page config's {"action": ...} buttons use

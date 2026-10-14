@@ -4,14 +4,12 @@ from threading import Lock
 from ...drawing.viewport import ViewPort
 from ...pages.page import Page
 from ...widgets import MenuBar
-from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR
 
 
 class Sprites(Page):
     def __init__(self, context: Context):
         super().__init__(context)
         menu_bar = MenuBar(self, context, "sprites_demo")
-        menu_bar.add_config_buttons(DEMO_MENU_BAR)
         world_map = Map(self, context, self.frame_callback, 100)
 
 

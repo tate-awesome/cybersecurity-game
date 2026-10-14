@@ -13,8 +13,6 @@ from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
 
-# The theme editor's own menu bar, after its theme controls (see add_menu_bar_entries) - navigation
-THEME_EDITOR_MENU_BAR = ["help_button", "back_button", "settings_button", "workspaces_button", "title_button", "quit_button"]
 
 # How tall each row of the gallery's grid is (a panel spanning two rows gets both, and the gap)
 GALLERY_ROW_HEIGHT = 340
@@ -44,7 +42,6 @@ class ThemeEditorPage(SettingsPage):
     CONTROL_WIDTH = 300  # room for a material's color and opacity side by side
     SHOW_NOTES = False  # no room beside the gallery - rows explain themselves in tooltips
     TITLE = "theme_editor"
-    MENU_BAR_BUTTONS = THEME_EDITOR_MENU_BAR
 
     selected_tab: ClassVar[int] = 0
 

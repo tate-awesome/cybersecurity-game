@@ -4,7 +4,6 @@ from ...drawing import sprites
 from ...widgets.map import Map
 from ...pages.page import Page
 from ...widgets import MenuBar
-from ...widgets.frame_widgets.menu_bar import DEMO_MENU_BAR
 
 from threading import Lock
 
@@ -13,7 +12,6 @@ class BoatMotion(Page):
     def __init__(self, context: Context):
         super().__init__(context)
         menu_bar = MenuBar(self, context, "boat_motion_demo")
-        menu_bar.add_config_buttons(DEMO_MENU_BAR)
 
         # Make initial boat path
         self.positions = sprites.random_spline_path(20, 100)

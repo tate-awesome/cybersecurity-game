@@ -23,18 +23,5 @@
         { "label": "admin_suites", "category": "admin" },
         { "label": "attacker_lessons", "category": "attacker", "numbered": true },
         { "label": "defender_lessons", "category": "defender", "numbered": true }
-    ],
-
-    "menu_bar": [
-        "toggle_button",
-        "theme_button",
-        "appearance_settings_button",
-        "background_button",
-        "help_button",
-        "labels_button",
-        "title_button",
-        "back_button",
-        "settings_button",
-        "quit_button"
     ]
 }

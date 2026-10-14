@@ -16,9 +16,6 @@ from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, Delete
                                                        OpenThemeEditor, OpenWorkspaceEditor, ResetTheme, developer_text)
 from .page import Page
 
-# This page's own menu bar - plain navigation; everything else is on the page
-SETTINGS_MENU_BAR = ["help_button", "back_button", "workspaces_button", "title_button", "quit_button"]  # (not settings_button - it's here)
-
 
 class SettingsPage(Page):
     '''
@@ -47,9 +44,8 @@ class SettingsPage(Page):
     CONTROL_WIDTH = 300
     # Whether rows show what they do in a third column - otherwise only as a tooltip
     SHOW_NOTES = True
-    # The menu bar's title ("menu_bar_titles_<TITLE>") and buttons
+    # The menu bar's title ("menu_bar_titles_<TITLE>")
     TITLE = "settings"
-    MENU_BAR_BUTTONS = SETTINGS_MENU_BAR
 
     # Kept on the class so it survives the rebuilds some settings trigger
     # (a subclass keeps its own - see remember_tab)
@@ -65,7 +61,6 @@ class SettingsPage(Page):
 
         menu_bar = MenuBar(self, context, self.TITLE)
         self.add_menu_bar_entries(menu_bar)
-        menu_bar.add_config_buttons(self.MENU_BAR_BUTTONS)
 
         self.tabs = QTabWidget()
         self.tabs.setFont(self.style.get_font("default"))
@@ -103,7 +98,7 @@ class SettingsPage(Page):
         QTimer.singleShot(0, self.tabs, scroll_back)
 
     def add_menu_bar_entries(self, menu_bar: MenuBar):
-        '''Anything a subclass's menu bar has before the MENU_BAR_BUTTONS (see ThemeEditorPage).'''
+        '''Anything a subclass's menu bar has in its center (see ThemeEditorPage).'''
 
     def place_tabs(self):
         '''Puts self.tabs on the page - filling it, below the menu bar.'''

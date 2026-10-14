@@ -45,10 +45,11 @@ class Page(QWidget):
     def build_menu_bar(self, title: str, buttons: list[str]):
         '''
         Builds the page's MenuBar - titled with the labels key
-        "menu_bar_titles_<title>" - and adds one button per name in
-        buttons, each a key of important_buttons.MENU_BAR_BUTTONS (e.g.
-        "quit_button") - grouped and ordered by MENU_BAR_GROUPS (see
-        MenuBar.add_config_buttons). Returns the MenuBar.
+        "menu_bar_titles_<title>" - with everything every page's menu bar
+        has, and one button per name in buttons, each a key of
+        important_buttons.MENU_BAR_BUTTONS (e.g. "pcap_button") - grouped
+        and ordered by MENU_BAR_GROUPS (see MenuBar.add_config_buttons).
+        Returns the MenuBar.
         '''
         from ..widgets import MenuBar
         menu_bar = MenuBar(self, self.context, title)

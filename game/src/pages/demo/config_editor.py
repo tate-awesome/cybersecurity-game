@@ -19,18 +19,6 @@ from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
-# The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
-BUTTON_ORDER = [
-    "toggle_button", "theme_button", "appearance_settings_button", "labels_button", "page_button",
-    "pcap_button", "save_button", "load_button", "stream_button", "preset_button", "data_button",
-    "workspace_editor_button", "delete_all_workspace_data_button", "refresh_button", "reset_button", "help_button",
-    "back_button", "quit_button",
-]
-
-# This page's own menu bar buttons (the other demo pages use DEMO_MENU_BAR)
-EDITOR_MENU_BAR = ["help_button", "labels_button", "toggle_button", "theme_button", "appearance_settings_button",
-                   "page_button", "back_button", "workspaces_button", "title_button", "quit_button"]
-
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
 
@@ -62,13 +50,6 @@ SETTING_TABS: list[tuple[str, list[str] | list[tuple[str, list[str]]]]] = [
 
 # start_on's choice for "the first model this panel offers"
 FIRST_OFFERED = "(first offered)"
-
-
-def menu_bar_buttons() -> list[str]:
-    '''Every MenuBar button a page config's "menu_bar" can name, in the standard order.'''
-    names = [name for name, method in inspect.getmembers(MenuBar, inspect.isfunction)
-             if name.endswith("_button") and list(inspect.signature(method).parameters) == ["self"]]
-    return sorted(names, key=lambda name: (BUTTON_ORDER.index(name) if name in BUTTON_ORDER else len(BUTTON_ORDER), name))
 
 
 def is_switch(key: str, default) -> bool:
@@ -163,7 +144,6 @@ class ConfigEditor(Page):
         if keys:
             opener = menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
             opener.setText(f"{opener.text()} {PAGE_MARK}")
-        menu_bar.add_config_buttons(EDITOR_MENU_BAR)
 
         self.tabs = QTabWidget()
         self.tabs.setFont(self.style.get_font("default"))
