@@ -59,7 +59,8 @@ class Footer(QFrame):
 
     Left to right: where you are (the navigation history on hover), the
     Wi-Fi network (saved networks on hover), the theme (the rest of the
-    appearance settings on hover) | developer mode, the UI
+    appearance settings on hover), the background and its framerate (what
+    it shows and its other settings on hover) | developer mode, the UI
     framerate, zoom (keybinds on hover), session time, and the version.
 
     It keeps its own slow timer, since each page's AnimationManager is
@@ -99,6 +100,7 @@ class Footer(QFrame):
         self.location = self._item()
         self.wifi_label = self._item()
         self.theme = self._item()
+        self.background = self._item()
         self.row.addStretch()
         self.developer = self._item()
         self.fps = self._item()
@@ -218,7 +220,8 @@ class Footer(QFrame):
         self.update_session()
         self.update_fps()
         self.update_zoom()  # fullscreen changes without a rebuild (F11)
-        self.update_theme()  # translucency and the background change without a rebuild
+        self.update_theme()  # translucency changes without a rebuild
+        self.update_background()  # and so do the background settings
         if self.updates % WIFI_EVERY == 0:
             self.update_wifi()
         if self.updates % SAVED_NETWORKS_EVERY == 0 and self.updates > 0:
@@ -318,14 +321,44 @@ class Footer(QFrame):
         ]
         if not special:  # special themes have their own colors - tint does nothing to them
             lines.append(f"{self.label('theme_tint')}: {round(style.theme_tint * 100)}%")
-        background = self.labels.get(f"visual_names_{style.background_visual}") if style.background_enabled else self.label("off")
         lines += [
             f"{self.label('theme_inset')}: {on_off(style.theme_inset)}",
             f"{self.label('theme_invert')}: {on_off(style.invert_buttons)}",
             f"{self.label('theme_translucency')}: {on_off(style.translucent_surfaces)}",
-            f"{self.label('theme_background')}: {background}",
         ]
         self.theme.setToolTip(tooltip(lines))
+
+    # Background
+    def update_background(self):
+        '''
+        The background and its framerate ("still" when it isn't animated),
+        with what it shows and its other settings on hover - or "No
+        Background", pointing to where it's turned back on.
+        '''
+        style = self.style
+        if not style.background_enabled:
+            set_text(self.background, self.label("background_none"))
+            self.background.setToolTip(tooltip([self.label("tooltips_background_off")]))
+            return
+        key = style.background_visual
+        name = self.labels.get(f"visual_names_{key}")
+        rate = f"{style.background_fps} {self.label('fps')}" if style.background_animate else self.label("background_still")
+        set_text(self.background, f"{name} · {rate}")
+
+        def on_off(on: bool) -> str:
+            return self.label("on" if on else "off")
+        lines = [self.labels.get(f"visual_descriptions_{key}")]
+        if key == "cycle":
+            # Which one is up now, from the page's own background (see Page.add_background)
+            showing = getattr(getattr(self.context.router.current_frame, "background", None), "visual", None)
+            if showing is not None:
+                lines.append(f"{self.label('background_showing')}: {self.labels.get(f'visual_names_{showing.KEY}')}")
+        lines += [
+            "",
+            f"{self.label('background_detailed')}: {on_off(style.background_detailed)}",
+            f"{self.label('background_animating')}: {on_off(style.background_animate)}",
+        ]
+        self.background.setToolTip(tooltip(lines))
 
     # Developer mode
     def update_developer(self):
