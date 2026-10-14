@@ -317,15 +317,6 @@ def window_bar_height(context: Context) -> int:
     return height + 4 * style.cgap + 2 * window_bar_room(context)
 
 
-def window_bar_has_line(context: Context) -> bool:
-    '''
-    Whether the window bar is underlined on the current page (see
-    draw_window_bar_line) - everywhere but workspaces, whose panels already
-    start their own row below it.
-    '''
-    return context.pages.get_build_type(context.router.current_page) != "workspace"
-
-
 def draw_window_bar_line(widget: QWidget, context: Context):
     '''Underlines the window bar along widget's bottom edge, in the footer's divider color (the text, faint).'''
     line = QColor(context.style.color("text"))
@@ -339,7 +330,7 @@ def draw_window_bar_line(widget: QWidget, context: Context):
 class _Strip(QWidget):
     '''
     CornerControls' strip across the top of the window - see-through, but
-    underlined where the window bar is (see window_bar_has_line), except
+    underlined like a menu bar (see draw_window_bar_line), except
     fullscreen: with no window to move, the title pages' bar is just its
     buttons.
     '''
@@ -350,7 +341,7 @@ class _Strip(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
     def paintEvent(self, event):
-        if window_bar_has_line(self.context) and not self.context.root.isFullScreen():
+        if not self.context.root.isFullScreen():
             draw_window_bar_line(self, self.context)
 
 

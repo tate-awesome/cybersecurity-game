@@ -10,7 +10,7 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
 from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
 from .window_chrome import (SquareButtons, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
-                            window_bar_has_line, window_bar_height, window_bar_room)
+                            window_bar_height, window_bar_room)
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -548,8 +548,8 @@ class MenuBar(QFrame):
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        # A page's menu bar is underlined, except on workspaces (see window_bar_has_line)
-        if self.page_bar and window_bar_has_line(self.context):
+        # A page's menu bar is underlined (see draw_window_bar_line)
+        if self.page_bar:
             draw_window_bar_line(self, self.context)
 
     def _update_squashing(self):
