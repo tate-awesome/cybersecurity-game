@@ -9,8 +9,8 @@ from ..widgets.frame_widgets.important_buttons import ResetTheme
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
 
-# The theme editor's own menu bar - the theme buttons it doesn't already have as rows, and navigation
-THEME_EDITOR_MENU_BAR = ["help_button", "toggle_button", "theme_button", "import_themes_button", "reset_theme_button",
+# The theme editor's own menu bar - the Appearance dropdown's theme buttons, and navigation
+THEME_EDITOR_MENU_BAR = ["help_button", "toggle_button", "theme_button", "appearance_settings_button",
                          "back_button", "settings_button", "workspaces_button", "title_button", "quit_button"]
 
 # How tall each row of the gallery's grid is (a panel spanning two rows gets both, and the gap)

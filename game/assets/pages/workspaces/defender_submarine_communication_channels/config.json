@@ -48,9 +48,7 @@
     "menu_bar": [
         "toggle_button",
         "theme_button",
-        "theme_editor_button",
-        "import_themes_button",
-        "reset_theme_button",
+        "appearance_settings_button",
         "background_button",
         "labels_button",
         "refresh_button",

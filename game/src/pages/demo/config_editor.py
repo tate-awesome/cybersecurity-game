@@ -20,15 +20,14 @@ from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
 # The standard left-to-right order for menu bar buttons (see MenuBar.page_buttons)
 BUTTON_ORDER = [
-    "toggle_button", "theme_button", "theme_editor_button", "import_themes_button", "reset_theme_button", "labels_button", "page_button",
+    "toggle_button", "theme_button", "appearance_settings_button", "labels_button", "page_button",
     "pcap_button", "save_button", "load_button", "stream_button", "preset_button", "data_button",
     "workspace_editor_button", "delete_all_workspace_data_button", "refresh_button", "reset_button", "help_button",
     "back_button", "quit_button",
 ]
 
 # This page's own menu bar buttons (the other demo pages use DEMO_MENU_BAR)
-EDITOR_MENU_BAR = ["help_button", "labels_button", "toggle_button", "theme_button", "theme_editor_button",
-                   "import_themes_button", "reset_theme_button",
+EDITOR_MENU_BAR = ["help_button", "labels_button", "toggle_button", "theme_button", "appearance_settings_button",
                    "page_button", "back_button", "workspaces_button", "title_button", "quit_button"]
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)

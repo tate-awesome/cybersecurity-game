@@ -54,6 +54,8 @@ class SettingsPage(Page):
     # Kept on the class so it survives the rebuilds some settings trigger
     # (a subclass keeps its own - see remember_tab)
     selected_tab: ClassVar[int] = 0
+    # The first tab built (see build_tabs) - the menu bar's Appearance Settings button opens straight to it
+    APPEARANCE_TAB: ClassVar[int] = 0
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -127,8 +129,8 @@ class SettingsPage(Page):
         '''
         Light or dark, the theme selector (the default themes and imported
         ones - see Style.theme_choices), and links to the theme editor, the
-        imported themes folder and resetting the theme - the same as the
-        menu bar's Themes section.
+        imported themes folder and resetting the theme. The menu bar's Themes
+        section has the first two, and links here (see OpenAppearanceSettings).
         '''
         style, context = self.style, self.context
         mode, _, family = style.current_theme.partition("_")

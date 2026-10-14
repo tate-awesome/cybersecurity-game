@@ -25,7 +25,7 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
     ],
     "style_button_group": [
-        ("themes", ["toggle_button", "theme_button", "theme_editor_button", "import_themes_button", "reset_theme_button"]),
+        ("themes", ["toggle_button", "theme_button", "appearance_settings_button"]),
         ("background", ["background_button"]),
         ("model_display", ["model_style_button", "strip_chart_style_button"]),
     ],
@@ -63,14 +63,13 @@ PAGE_BUTTON_NAMES: list[str] = [
     "help_button", "labels_button",
     "page_button", "ap_config_button", "settings_button", "workspaces_button", "title_button", "quit_button",
     "refresh_button", "reset_button", "preset_button",
-    "toggle_button", "theme_button", "theme_editor_button", "import_themes_button", "reset_theme_button", "background_button",
+    "toggle_button", "theme_button", "appearance_settings_button", "background_button",
     "pcap_button", "load_button", "save_button", "stream_button",
 ]
 
 # What the demo pages get
 DEMO_MENU_BAR: list[str] = ["help_button", "labels_button", "page_button", "back_button", "settings_button", "quit_button",
-                            "toggle_button", "theme_button", "theme_editor_button", "import_themes_button", "reset_theme_button",
-                            "background_button"]
+                            "toggle_button", "theme_button", "appearance_settings_button", "background_button"]
 
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
