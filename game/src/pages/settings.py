@@ -233,9 +233,6 @@ class SettingsPage(Page):
         # Follows F11 too - a slot on the checkbox, so it's dropped with this page
         context.root.fullscreen_changed.connect(fullscreen.setChecked)
         display.row("settings_page_rows_fullscreen", fullscreen, "settings_page_row_notes_fullscreen")
-        footer = context.router.footer
-        display.row("settings_page_rows_footer_transparent",
-                    self.checkbox(footer.transparent, footer.set_transparent), "settings_page_row_notes_footer_transparent")
         display.row("settings_page_rows_fade_in",
                     self.checkbox(preferences.is_fade_in(), lambda on: preferences.set("fade_in", on)),
                     "settings_page_row_notes_fade_in")

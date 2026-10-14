@@ -16,10 +16,6 @@ TICK_MS = 1000
 WIFI_EVERY = 3
 SAVED_NETWORKS_EVERY = 30
 
-# Whether the footer has no background of its own, so the page (and its
-# background visual) shows through - a preference, set on the settings page
-DEFAULT_FOOTER_TRANSPARENT = False
-
 
 class _Quiet:
     '''
@@ -51,12 +47,13 @@ class Footer(QFrame):
     the main window rather than to a page, so it stays put while pages
     change - Router calls page_changed after each page is built (a zoom
     change rebuilds the page, so that's when its font follows). Its
-    colors follow the theme by themselves (see sheet).
+    colors follow the theme by themselves (see sheet) - its background is
+    the theme's "footer" material, as see-through as the theme makes it.
 
     It floats over the bottom of the page rather than sitting below it,
     and each page gets that much more bottom margin so nothing of its own
     is covered - only its background runs underneath, which is what a
-    transparent footer (see set_transparent) shows.
+    see-through footer shows.
 
     Left to right: where you are (the navigation history on hover), the
     Wi-Fi network (saved networks on hover), the theme (the rest of the
@@ -81,7 +78,6 @@ class Footer(QFrame):
         self.row = QHBoxLayout(self)
         self.row.setContentsMargins(0, 0, 0, 0)
         self.row.setSpacing(0)
-        self.transparent = self.preferred_transparent()
         self.held = False  # see hold
         self._placer = _FollowResize(root, self.place)
 
@@ -164,21 +160,6 @@ class Footer(QFrame):
                                 margins.bottom() + self.sizeHint().height())
         page.setProperty("footer_padded", True)
 
-    def preferred_transparent(self) -> bool:
-        transparent = self.context.preferences.get("footer_transparent")
-        return transparent if isinstance(transparent, bool) else DEFAULT_FOOTER_TRANSPARENT
-
-    def load_preferences(self):
-        '''Back in line with preferences (see Context.reload_preferences).'''
-        self.transparent = self.preferred_transparent()
-        self.restyle()
-
-    def set_transparent(self, transparent: bool):
-        '''Drops (or brings back) the footer's background - applied at once, and saved.'''
-        self.transparent = transparent
-        self.context.preferences.set("footer_transparent", transparent)
-        self.restyle()
-
     # Updates
     def page_changed(self):
         '''After every page build: the theme, zoom and labels may have changed with it.'''
@@ -208,10 +189,7 @@ class Footer(QFrame):
         faint.setAlpha(70)
         faint = faint.name(QColor.NameFormat.HexArgb)
         name = self.objectName()
-        if self.transparent:
-            background = "background: transparent; border: none;"
-        else:
-            background = f"background-color: {style.css('footer')}; border-top: 1px solid {faint};"
+        background = f"background-color: {style.css('footer')}; border-top: 1px solid {faint};"
         return (f"QFrame#{name} {{ {background} }}"
                 f" QFrame#{name} QLabel {{ color: {text.name()}; background: transparent;"
                 f" padding: 2px {style.igap}px; border: none; border-left: 1px solid {faint}; }}"

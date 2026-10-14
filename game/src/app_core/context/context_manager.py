@@ -82,7 +82,6 @@ class ContextManager:
         self.labels.reset()
         self.keybinds.load()
         self.keybinds.set_fullscreen(self.preferences.is_fullscreen())
-        self.router.footer.load_preferences()
         if self.helper.enabled:
             self.helper.start()
         else:
