@@ -308,7 +308,7 @@ class MenuBar(QFrame):
         row.addWidget(self.settings_button, 0, Qt.AlignmentFlag.AlignVCenter)
         row.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
         # The whole height of the bar, up into the window's top right corner
-        self.window_controls = WindowControls(self.context)
+        self.window_controls = WindowControls(self.context, zone)
         row.addWidget(self.window_controls)
         return zone
 

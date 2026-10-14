@@ -309,7 +309,9 @@ class WindowControls(QWidget):
     def follow_window(self, *args):
         '''Hidden while fullscreen; the maximize button says restore while maximized.'''
         try:
-            self.setVisible(not self.root.isFullScreen())
+            # Never shown while parentless - it would open as a window of its own
+            if self.parentWidget() is not None:
+                self.setVisible(not self.root.isFullScreen())
             maximized = self.root.isMaximized()
             self.maximize.setText(self.style.icon(self.ICONS["restore" if maximized else "maximize"]))
             self.maximize.setToolTip(self.label("tooltips_restore" if maximized else "tooltips_maximize"))
