@@ -30,7 +30,7 @@ class TitlePage(Page):
         key = context.router.current_page
         config = context.pages.load_page_config(key)
 
-        self.add_background(config)
+        self.add_background(config, menu=True)
 
         panel = TitleMenu(self, context, config.get("title", "_default"))
         for button in config.get("buttons", []):

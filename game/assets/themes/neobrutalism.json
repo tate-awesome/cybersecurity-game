@@ -1,0 +1,349 @@
+{
+    "label": "Neobrutalism",
+    "kind": "original",
+    "note": "Draft. Loud flat color blocks, thick black outlines and hard offset shadows - buttons press down into theirs. Solid, with no background.",
+    "transparency": false,
+    "background": false,
+    "button_radius": 4,
+    "menu_button_radius": 4,
+    "panel_radius": 4,
+    "line_width": 2,
+    "button_shadow": 4,
+    "bold_buttons": true,
+    "font_family": "Bahnschrift",
+    "panel_shadow": {
+        "x": 6,
+        "y": 6,
+        "blur": 0,
+        "dark": {
+            "color": "#000000",
+            "opacity": 1.0
+        },
+        "light": {
+            "color": "#000000",
+            "opacity": 1.0
+        }
+    },
+    "scrollbar_radius": 3,
+    "scrollbar_outline": true,
+    "materials": {
+        "window": {
+            "dark": {
+                "color": "#2f2f3d",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#fdf3e1",
+                "opacity": 1.0
+            }
+        },
+        "panel": {
+            "dark": {
+                "color": "#3b3b4c",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "panel_border": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 1.0
+            }
+        },
+        "menu_bar": {
+            "dark": {
+                "color": "#ffd23f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffd23f",
+                "opacity": 1.0
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "#47475a",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#fff7e6",
+                "opacity": 1.0
+            }
+        },
+        "field": {
+            "dark": {
+                "color": "#25252f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "button": {
+            "dark": {
+                "color": "#a3e635",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#a3e635",
+                "opacity": 1.0
+            }
+        },
+        "button_hover": {
+            "dark": {
+                "color": "#bef264",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#bef264",
+                "opacity": 1.0
+            }
+        },
+        "button_border": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 1.0
+            }
+        },
+        "menu_button": {
+            "dark": {
+                "color": "#74b9ff",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#74b9ff",
+                "opacity": 1.0
+            }
+        },
+        "menu_button_hover": {
+            "dark": {
+                "color": "#a0cfff",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#a0cfff",
+                "opacity": 1.0
+            }
+        },
+        "menu_button_border": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 1.0
+            }
+        },
+        "overlay": {
+            "dark": {
+                "color": "#3b3b4c",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "overlay_card": {
+            "dark": {
+                "color": "#47475a",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#fff7e6",
+                "opacity": 1.0
+            }
+        },
+        "tab": {
+            "dark": {
+                "color": "#47475a",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#fff7e6",
+                "opacity": 1.0
+            }
+        },
+        "tab_selected": {
+            "dark": {
+                "color": "#ff6b9d",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ff6b9d",
+                "opacity": 1.0
+            }
+        },
+        "table_header": {
+            "dark": {
+                "color": "#c4b5fd",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#c4b5fd",
+                "opacity": 1.0
+            }
+        },
+        "alternate_row": {
+            "dark": {
+                "color": "#34343f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#fffaf0",
+                "opacity": 1.0
+            }
+        },
+        "selection": {
+            "dark": {
+                "color": "#ffd23f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffd23f",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar": {
+            "dark": {
+                "color": "#ffd23f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ff6b9d",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar_track": {
+            "dark": {
+                "color": "#25252f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#fff7e6",
+                "opacity": 1.0
+            }
+        },
+        "tooltip": {
+            "dark": {
+                "color": "#3b3b4c",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "footer": {
+            "dark": {
+                "color": "#25252f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "text": {
+            "dark": {
+                "color": "#f6f4ee"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "field_text": {
+            "dark": {
+                "color": "#f6f4ee"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "menu_bar_text": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "accent_text": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "button_text": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "button_hover_text": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "menu_button_text": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "menu_button_hover_text": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "accent": {
+            "dark": {
+                "color": "#ff6b9d"
+            },
+            "light": {
+                "color": "#ff6b9d"
+            }
+        },
+        "border": {
+            "dark": {
+                "color": "#000000"
+            },
+            "light": {
+                "color": "#000000"
+            }
+        },
+        "scrollbar_hover": {
+            "dark": {
+                "color": "#ffe27a"
+            },
+            "light": {
+                "color": "#ff8fb4"
+            }
+        }
+    }
+}

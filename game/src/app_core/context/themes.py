@@ -25,6 +25,33 @@ opacity of 0 leaves out a background or an outline - a ghost button, or
 an outline with nothing inside it. A theme from before these existed
 gets them from its other materials (see INHERITED), so it looks as it did.
 
+A surface material can also have a "gradient" - {"angle": degrees (0 =
+top to bottom, 90 = left to right), "stops": [[0-1, "#rrggbb", opacity],
+...]} - drawn instead of its plain color (which hand-drawn widgets and
+the editor's swatch still use). See read_gradient and Style.css.
+
+More of what a theme looks like, all optional - left out, a theme looks
+as it did before they existed (see STYLE_DEFAULTS):
+    "background"       false turns the animated page background off in
+                       this theme behind workspaces and settings - title
+                       menu pages always keep it (if the user has it on)
+    "background_blur"  px to blur the page background by (frosted glass),
+                       on pages that blur it at all - instead of their own
+    "panel_radius"     panels' corner radius in px
+    "panel_shadow"     a shadow around each panel: {"x", "y", "blur" (px),
+                       "dark": {"color", "opacity"}, "light": {...}} -
+                       blur 0 is a hard shadow, x = y = 0 a glow
+    "line_width"       px - the outlines of buttons, fields, tables and tabs
+    "bevel"            true draws 3D outlines - raised buttons, panels and
+                       headers, sunken fields (an old desktop's look)
+    "button_shadow"    px - a hard shadow below and right of each button,
+                       in its outline's color, that it presses into
+    "font_family"      the font for the interface's text (not consoles)
+    "bold_buttons"     true makes buttons' text bold
+    "scrollbar_radius" px - scrollbar handles' corners (left out: round ends)
+    "scrollbar_inset"  px of track left around each scrollbar handle
+    "scrollbar_outline" true outlines scrollbar handles like fields
+
 Older files had a "palette" of named colors per mode that materials
 pointed into (or, older still, no materials - just the palette's modes at
 the top level). read_theme still reads both, looking each material's
@@ -33,6 +60,7 @@ color up in the palette.
 No Qt here, so scripts can read and write themes too.
 '''
 import copy
+import math
 import re
 
 THEME_MODES = ("dark", "light")
@@ -87,6 +115,7 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "text": ("text", 1.0),                        # all other text
     "field_text": ("field_text", 1.0),            # text in fields
     "accent_text": ("accent_text", 1.0),          # text on selections and the selected tab
+    "menu_bar_text": ("text", 1.0),               # titles and labels on panels' menu bars
     "button_text": ("accent_text", 1.0),          # text on buttons
     "button_hover_text": ("accent_text", 1.0),    # text on buttons under the mouse
     "menu_button_text": ("accent_text", 1.0),        # text on menu buttons
@@ -95,7 +124,7 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "border": ("border", 1.0),                    # outlines of fields, tables and tabs
     "scrollbar_hover": ("scrollbar_hover", 1.0),  # hovered scrollbar handles
 }
-INK_MATERIALS = ("text", "field_text", "accent_text", "accent", "border", "scrollbar_hover",
+INK_MATERIALS = ("text", "field_text", "menu_bar_text", "accent_text", "accent", "border", "scrollbar_hover",
                  "button_text", "button_hover_text", "menu_button_text", "menu_button_hover_text")
 
 # The kinds of button a theme styles separately - each "<kind>" material is
@@ -113,6 +142,7 @@ MAX_BUTTON_RADIUS = 24
 # on hover, have no outline, and menu buttons look like other buttons.
 # In order - each can come from one made before it.
 INHERITED: dict[str, tuple[str, float, float | None]] = {
+    "menu_bar_text": ("text", 0.0, None),
     "button_hover": ("button", 0.15, None),
     "button_border": ("button", 0.0, 0.0),
     "button_text": ("accent_text", 0.0, None),
@@ -137,6 +167,25 @@ COLOR_NAMES: dict[str, str] = {
     "scrollbar": "scrollbar", "scrollbar_hover": "scrollbar_hover",
 }
 
+# The look settings beside the materials (see the module docstring), and
+# what a theme without one gets
+STYLE_DEFAULTS: dict = {
+    "background": True,
+    "background_blur": None,
+    "panel_radius": 10,
+    "panel_shadow": None,
+    "line_width": 1,
+    "bevel": False,
+    "button_shadow": 0,
+    "font_family": None,
+    "bold_buttons": False,
+    "scrollbar_radius": None,
+    "scrollbar_inset": 0,
+    "scrollbar_outline": False,
+}
+MAX_PANEL_RADIUS = 24
+MAX_BACKGROUND_BLUR = 64
+
 HEX_PATTERN = re.compile(r"#[0-9a-fA-F]{6}")
 
 
@@ -160,6 +209,57 @@ def shade(hex_color: str, amount: float) -> str:
     target = 255 if amount > 0 else 0
     r, g, b = (int(v + (target - v) * abs(amount)) for v in (r, g, b))
     return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def read_gradient(value) -> dict | None:
+    '''A material's "gradient" (see the module docstring) cleaned up - None if it isn't one, or has under two stops.'''
+    if not isinstance(value, dict) or not isinstance(value.get("stops"), list):
+        return None
+    stops = []
+    for stop in value["stops"]:
+        if (isinstance(stop, (list, tuple)) and len(stop) == 3 and isinstance(stop[0], (int, float))
+                and is_hex(stop[1]) and isinstance(stop[2], (int, float))):
+            stops.append([min(1.0, max(0.0, float(stop[0]))), stop[1].lower(), min(1.0, max(0.0, float(stop[2])))])
+    if len(stops) < 2:
+        return None
+    angle = value.get("angle", 0)
+    return {"angle": float(angle) if isinstance(angle, (int, float)) else 0.0, "stops": sorted(stops, key=lambda stop: stop[0])}
+
+
+def gradient_points(angle: float) -> tuple[float, float, float, float]:
+    '''Where a gradient at angle (see the module docstring) starts and ends, in its widget's 0-1 box: x1, y1, x2, y2.'''
+    radians = math.radians(angle)
+    dx, dy = math.sin(radians) / 2, math.cos(radians) / 2
+    return 0.5 - dx, 0.5 - dy, 0.5 + dx, 0.5 + dy
+
+
+def style_setting(info: dict, key: str):
+    '''One of STYLE_DEFAULTS from a theme's info (see read_theme) - its default if missing or the wrong type.'''
+    default = STYLE_DEFAULTS[key]
+    value = info.get(key, default)
+    if key in ("background", "bevel", "bold_buttons", "scrollbar_outline"):
+        return value if isinstance(value, bool) else default
+    if key == "font_family":
+        return value if isinstance(value, str) and value.strip() else None
+    if key == "panel_shadow":
+        if not isinstance(value, dict):
+            return None
+        numbers = {name: value.get(name, 0) for name in ("x", "y", "blur")}
+        if not all(isinstance(n, (int, float)) and not isinstance(n, bool) for n in numbers.values()):
+            return None
+        shadow = {name: int(min(48, max(-48, n))) for name, n in numbers.items()}
+        shadow["blur"] = max(0, shadow["blur"])
+        for mode in THEME_MODES:
+            entry = value.get(mode) if isinstance(value.get(mode), dict) else {}
+            opacity = entry.get("opacity", 0.4)
+            shadow[mode] = {"color": entry["color"].lower() if is_hex(entry.get("color")) else "#000000",
+                            "opacity": min(1.0, max(0.0, float(opacity))) if isinstance(opacity, (int, float)) else 0.4}
+        return shadow
+    if value is None or not isinstance(value, (int, float)) or isinstance(value, bool):
+        return default
+    limits = {"background_blur": (0, MAX_BACKGROUND_BLUR), "panel_radius": (0, MAX_PANEL_RADIUS),
+              "line_width": (1, 4), "button_shadow": (0, 8), "scrollbar_radius": (0, 12), "scrollbar_inset": (0, 4)}[key]
+    return int(min(limits[1], max(limits[0], value)))
 
 
 def resolve_materials(given, palette: dict | None = None) -> dict[str, dict[str, dict]]:
@@ -190,6 +290,9 @@ def resolve_materials(given, palette: dict | None = None) -> dict[str, dict[str,
             elif is_hex(colors.get(source)):
                 materials[name][mode]["color"] = colors[source].lower()
             opacity = entry.get("opacity")
+            gradient = read_gradient(entry.get("gradient")) if name not in INK_MATERIALS else None
+            if gradient is not None:
+                materials[name][mode]["gradient"] = gradient
             if name not in INK_MATERIALS and isinstance(opacity, (int, float)) and not isinstance(opacity, bool):
                 materials[name][mode]["opacity"] = min(1.0, max(0.0, float(opacity)))
             elif (name, mode) in missing:

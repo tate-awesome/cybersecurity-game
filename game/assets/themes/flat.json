@@ -1,0 +1,333 @@
+{
+    "label": "Flat Design",
+    "kind": "original",
+    "note": "Draft. Solid color and nothing else - no gradients, shadows or outlines - in the classic Flat UI palette: midnight blue, peter river blue and turquoise.",
+    "transparency": false,
+    "background": false,
+    "button_radius": 3,
+    "menu_button_radius": 3,
+    "panel_radius": 3,
+    "font_family": "Segoe UI",
+    "bold_buttons": true,
+    "scrollbar_inset": 2,
+    "materials": {
+        "window": {
+            "dark": {
+                "color": "#1f2b38",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "panel": {
+            "dark": {
+                "color": "#2c3e50",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "panel_border": {
+            "dark": {
+                "color": "#2c3e50",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "menu_bar": {
+            "dark": {
+                "color": "#22313f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#2c3e50",
+                "opacity": 1.0
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "#34495e",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "field": {
+            "dark": {
+                "color": "#22313f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "button": {
+            "dark": {
+                "color": "#3498db",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#3498db",
+                "opacity": 1.0
+            }
+        },
+        "button_hover": {
+            "dark": {
+                "color": "#5dade2",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#5dade2",
+                "opacity": 1.0
+            }
+        },
+        "button_border": {
+            "dark": {
+                "color": "#3498db",
+                "opacity": 0.0
+            },
+            "light": {
+                "color": "#3498db",
+                "opacity": 0.0
+            }
+        },
+        "menu_button": {
+            "dark": {
+                "color": "#1abc9c",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#1abc9c",
+                "opacity": 1.0
+            }
+        },
+        "menu_button_hover": {
+            "dark": {
+                "color": "#48c9b0",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#48c9b0",
+                "opacity": 1.0
+            }
+        },
+        "menu_button_border": {
+            "dark": {
+                "color": "#1abc9c",
+                "opacity": 0.0
+            },
+            "light": {
+                "color": "#1abc9c",
+                "opacity": 0.0
+            }
+        },
+        "overlay": {
+            "dark": {
+                "color": "#2c3e50",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "overlay_card": {
+            "dark": {
+                "color": "#34495e",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "tab": {
+            "dark": {
+                "color": "#34495e",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "tab_selected": {
+            "dark": {
+                "color": "#3498db",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#3498db",
+                "opacity": 1.0
+            }
+        },
+        "table_header": {
+            "dark": {
+                "color": "#34495e",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "alternate_row": {
+            "dark": {
+                "color": "#31465b",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#f7f9f9",
+                "opacity": 1.0
+            }
+        },
+        "selection": {
+            "dark": {
+                "color": "#3498db",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#3498db",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar": {
+            "dark": {
+                "color": "#4b6584",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#bdc3c7",
+                "opacity": 1.0
+            }
+        },
+        "scrollbar_track": {
+            "dark": {
+                "color": "#22313f",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ecf0f1",
+                "opacity": 1.0
+            }
+        },
+        "tooltip": {
+            "dark": {
+                "color": "#2c3e50",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 1.0
+            }
+        },
+        "footer": {
+            "dark": {
+                "color": "#17202a",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#dfe6e9",
+                "opacity": 1.0
+            }
+        },
+        "text": {
+            "dark": {
+                "color": "#ecf0f1"
+            },
+            "light": {
+                "color": "#2c3e50"
+            }
+        },
+        "field_text": {
+            "dark": {
+                "color": "#ecf0f1"
+            },
+            "light": {
+                "color": "#2c3e50"
+            }
+        },
+        "menu_bar_text": {
+            "dark": {
+                "color": "#ecf0f1"
+            },
+            "light": {
+                "color": "#ecf0f1"
+            }
+        },
+        "accent_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "button_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "button_hover_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "menu_button_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "menu_button_hover_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "accent": {
+            "dark": {
+                "color": "#1abc9c"
+            },
+            "light": {
+                "color": "#1abc9c"
+            }
+        },
+        "border": {
+            "dark": {
+                "color": "#22313f"
+            },
+            "light": {
+                "color": "#dfe6e9"
+            }
+        },
+        "scrollbar_hover": {
+            "dark": {
+                "color": "#3498db"
+            },
+            "light": {
+                "color": "#95a5a6"
+            }
+        }
+    }
+}

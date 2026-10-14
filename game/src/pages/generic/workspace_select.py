@@ -1,12 +1,15 @@
 import re
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QObject, Qt, QUrl, Signal
-from PySide6.QtGui import QColor, QImage, QTextDocument
-from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QPushButton, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRectF, Qt, QUrl, QVariantAnimation, Signal
+from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QTextDocument
+from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QPushButton, QSizePolicy,
+                               QTextBrowser, QVBoxLayout, QWidget)
 
 from ...app_core import Context
+from ...app_core.context.style import PANEL_BORDER_WIDTH
 from ...widgets import Scrollable
+from ...widgets.panels.panel import surface_shadow
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPOUT_MARK
 from ..page import Page
 
@@ -56,6 +59,109 @@ class WorkspaceButton(QPushButton):
         event.accept()
 
 
+class SummaryCard(QFrame):
+    '''
+    The workspace summary's box: dressed like a panel - the theme's panel
+    material, outline, corners and shadow (see Style.panel_shadow) - but
+    painted by hand, so it can fade in and out (see reveal). Its content
+    sits inside the room the shadow needs, so revealing it never moves the
+    text.
+    '''
+
+    REVEAL_MS = 220
+
+    def __init__(self, context: Context):
+        super().__init__()
+        self.context = context
+        self.style = context.style
+        # 0 = not there (the page's own note shows on the bare background), 1 = fully there
+        self.shown = 0.0
+        self.animation = QVariantAnimation(self)
+        self.animation.setDuration(self.REVEAL_MS)
+        self.animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.animation.valueChanged.connect(self._set_shown)
+        self.setLayout(QVBoxLayout())
+        self.fit()
+        self.style.signals.changed.connect(self.fit)
+
+    def fit(self):
+        '''After a theme change: room for its shadow, then its padding.'''
+        left, top, right, bottom = self.style.panel_margins()
+        pad = self.style.igap + PANEL_BORDER_WIDTH
+        self.layout().setContentsMargins(left + pad, top + pad, right + pad, bottom + pad)
+        self.update()
+
+    def reveal(self, show: bool):
+        '''Fades in (or out) - at once with page transitions off (see Performance.page_transitions).'''
+        target = 1.0 if show else 0.0
+        self.animation.stop()
+        if not self.context.performance.page_transitions or self.shown == target:
+            self._set_shown(target)
+            return
+        self.animation.setStartValue(self.shown)
+        self.animation.setEndValue(target)
+        self.animation.start()
+
+    def _set_shown(self, value):
+        self.shown = float(value)
+        self.update()
+
+    def body_rect(self) -> QRectF:
+        left, top, right, bottom = self.style.panel_margins()
+        return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
+
+    def paintEvent(self, event):
+        if self.shown <= 0:
+            return
+        style = self.style
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setOpacity(self.shown)
+        shadow = surface_shadow(style, self.width(), self.height())
+        if shadow is not None:
+            painter.drawImage(0, 0, shadow)
+        half = PANEL_BORDER_WIDTH / 2
+        body = self.body_rect().adjusted(half, half, -half, -half)
+        radius = style.PANEL_RADIUS
+        path = QPainterPath()
+        path.addRoundedRect(body, radius, radius)
+        painter.fillPath(path, style.brush("panel", body))
+        outline = style.material("panel_border")
+        if style.setting("bevel"):
+            # Raised, like the theme's panels (see Style.bevel)
+            base = outline.name()
+            for color, lines in ((style._shade(base, 0.85), ((body.topLeft(), body.topRight()), (body.topLeft(), body.bottomLeft()))),
+                                 (style._shade(base, -0.55), ((body.bottomLeft(), body.bottomRight()), (body.topRight(), body.bottomRight())))):
+                painter.setPen(QPen(QColor(color), PANEL_BORDER_WIDTH))
+                for start, end in lines:
+                    painter.drawLine(start, end)
+        else:
+            painter.setPen(QPen(outline, PANEL_BORDER_WIDTH))
+            painter.drawPath(path)
+        painter.end()
+
+
+def fade_in(widget: QWidget, context: Context, duration: int = 200):
+    '''
+    Fades widget in from transparent - its new content arriving - then
+    drops the effect, so it costs nothing once it's in. At once with page
+    transitions off (see Performance.page_transitions).
+    '''
+    if not context.performance.page_transitions:
+        return
+    effect = QGraphicsOpacityEffect(widget)
+    effect.setOpacity(0.0)
+    widget.setGraphicsEffect(effect)
+    animation = QPropertyAnimation(effect, b"opacity", effect)
+    animation.setDuration(duration)
+    animation.setStartValue(0.0)
+    animation.setEndValue(1.0)
+    animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+    # The effect is the widget's - setting None deletes it, and the animation with it
+    animation.finished.connect(lambda: widget.setGraphicsEffect(None))
+    animation.start()
+
+
 class WorkspaceSelectPage(Page):
     '''
     Page constructor for build_type "workspace_select". Everything floats on
@@ -72,11 +178,12 @@ class WorkspaceSelectPage(Page):
 
     With nothing selected, the summary area shows this page's own "_note"
     straight on the background. Clicking a workspace shows that
-    workspace's config.json "_note" (markdown) on an opaque box instead,
-    with an Open Workspace button pinned to the box's bottom-right corner -
-    it stays put while the summary scrolls under it (with, in developer
-    mode, Edit This Workspace stacked above it, which opens it in the
-    workspace editor). Double-clicking a workspace opens it
+    workspace's config.json "_note" (markdown) on a card dressed like a
+    panel instead (see SummaryCard), which fades in - and switching
+    workspaces fades the new summary in over it. Under the summary, the
+    card's bottom row has Open Workspace (and, in developer mode, Edit This
+    Workspace, which opens it in the workspace editor) - out of the
+    summary's way, so it never covers it. Double-clicking a workspace opens it
     immediately, and clicking any dead space - the background, empty
     sidebar, the box's margins - deselects it, back to this page's note.
 
@@ -97,7 +204,7 @@ class WorkspaceSelectPage(Page):
         self.selected_target: str | None = None
         self.workspaces = context.pages.pages_in(config.get("link_folder", "workspaces"))
 
-        self.add_background(config)
+        self.add_background(config, menu=True)
 
         self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 
@@ -201,17 +308,20 @@ class WorkspaceSelectPage(Page):
     # Summary
     def build_summary(self, body: QHBoxLayout):
         '''
-        The summary box: a frame holding the markdown browser, transparent
-        until a workspace is selected (see set_summary_opaque), plus a stack
-        of action buttons (Edit This Workspace in developer mode, above
-        Open Workspace) that isn't in any layout - it's placed by hand in the box's bottom-right corner on
-        every resize (see eventFilter), so it floats over the browser and
-        stays put while the summary scrolls.
+        The summary card (see SummaryCard): the markdown browser, and under
+        it a row of action buttons - Edit This Workspace in developer mode,
+        then Open Workspace - shown while a workspace is selected. The
+        browser and the row fade in together whenever the summary changes
+        (see show_note).
         '''
-        self.summary_box = QFrame()
-        box_layout = QVBoxLayout(self.summary_box)
-        box_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        self.summary_box = SummaryCard(self.context)
         body.addWidget(self.summary_box, 1)
+
+        self.summary = QWidget()
+        summary_layout = QVBoxLayout(self.summary)
+        summary_layout.setContentsMargins(0, 0, 0, 0)
+        summary_layout.setSpacing(self.style.igap)
+        self.summary_box.layout().addWidget(self.summary)
 
         self.browser = NoteBrowser()
         self.browser.setOpenExternalLinks(True)
@@ -219,13 +329,13 @@ class WorkspaceSelectPage(Page):
         self.browser.setFont(self.style.get_font("default"))
         self.browser.setStyleSheet("QTextBrowser { background-color: transparent; border: none; }")
         self.browser.viewport().setAutoFillBackground(False)
-        box_layout.addWidget(self.browser)
+        summary_layout.addWidget(self.browser, 1)
 
-        self.actions = QWidget(self.summary_box)
-        # Stacked, the same width - the widest one's
-        actions_layout = QVBoxLayout(self.actions)
+        self.actions = QWidget()
+        actions_layout = QHBoxLayout(self.actions)
         actions_layout.setContentsMargins(0, 0, 0, 0)
         actions_layout.setSpacing(self.style.igap)
+        actions_layout.addStretch(1)
 
         self.edit_button = None
         if self.context.preferences.is_developer():
@@ -240,38 +350,15 @@ class WorkspaceSelectPage(Page):
         self.start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
         actions_layout.addWidget(self.start_button)
         self.actions.hide()
-
-        self.summary_box.installEventFilter(self)
-        # The scrollbar appearing/disappearing changes where the corner is
-        self.browser.verticalScrollBar().rangeChanged.connect(lambda *_: self.place_actions())
-        self.set_summary_opaque(False)
-
-    def set_summary_opaque(self, opaque: bool):
-        self.style.set_material(self.summary_box, "field" if opaque else "none", rounded=True)
-        self.actions.setVisible(opaque)
-        self.place_actions()
-
-    def place_actions(self):
-        padding = self.style.igap * 2
-        scrollbar = self.browser.verticalScrollBar()
-        scrollbar_width = scrollbar.width() if scrollbar.isVisible() else 0
-        size = self.actions.sizeHint()
-        self.actions.resize(size)
-        self.actions.move(
-            self.summary_box.width() - size.width() - padding - scrollbar_width,
-            self.summary_box.height() - size.height() - padding,
-        )
-        self.actions.raise_()
-
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if watched is self.summary_box and event.type() == QEvent.Type.Resize:
-            self.place_actions()
-        return False
+        summary_layout.addWidget(self.actions)
 
     def select(self, target: str):
+        if target == self.selected_target:
+            return
         self.selected_target = target
         config = self.context.pages.load_page_config(target)
-        self.set_summary_opaque(True)
+        self.actions.show()
+        self.summary_box.reveal(True)
         self.show_note(self.join_note(config.get("_note", "")), self.context.paths.pages / target)
 
     def deselect(self):
@@ -284,12 +371,13 @@ class WorkspaceSelectPage(Page):
         for button in self.workspace_group.buttons():
             button.setChecked(False)
         self.workspace_group.setExclusive(True)
-        self.set_summary_opaque(False)
+        self.actions.hide()
+        self.summary_box.reveal(False)
         self.show_note(self.default_note, self.default_folder)
 
     def mousePressEvent(self, event):
         # Only clicks nothing else took reach the page: the background,
-        # empty sidebar and box margins, the menu bar's empty stretch
+        # empty sidebar and the card's margins, the menu bar's empty stretch
         if event.button() == Qt.MouseButton.LeftButton:
             self.deselect()
         super().mousePressEvent(event)
@@ -298,13 +386,8 @@ class WorkspaceSelectPage(Page):
         self.browser.setSearchPaths([str(folder)])
         self.browser.document().clear()
         self.browser.setMarkdown(markdown)
-        if self.actions.isVisible():
-            # Room at the bottom so the last lines can scroll up past the pinned buttons
-            root = self.browser.document().rootFrame()
-            frame_format = root.frameFormat()
-            frame_format.setBottomMargin(self.actions.sizeHint().height() + self.style.igap * 2)
-            root.setFrameFormat(frame_format)
         self.browser.verticalScrollBar().setValue(0)
+        fade_in(self.summary, self.context)
 
     @staticmethod
     def join_note(note: str | list) -> str:

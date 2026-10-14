@@ -301,6 +301,11 @@ class Footer(QFrame):
             set_text(self.background, self.label("background_none"))
             self.background.setToolTip(tooltip([self.label("tooltips_background_off")]))
             return
+        background = getattr(self.context.router.current_frame, "background", None)
+        if not style.background_shown(menu=getattr(background, "menu", False)):
+            set_text(self.background, self.label("background_none"))
+            self.background.setToolTip(tooltip([self.label("tooltips_background_theme_off")]))
+            return
         key = style.background_visual
         name = self.labels.get(f"visual_names_{key}")
         rate = f"{style.background_fps} {self.label('fps')}" if style.background_animate else self.label("background_still")

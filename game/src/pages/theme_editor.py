@@ -6,7 +6,8 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
-from ..app_core.context.themes import BUTTON_KINDS, INK_MATERIALS, MATERIALS, MAX_BUTTON_RADIUS
+from ..app_core.context.themes import (BUTTON_KINDS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
+                                      MAX_PANEL_RADIUS)
 from ..widgets import MenuBar, popup
 from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
@@ -213,6 +214,19 @@ class ThemeEditorPage(SettingsPage):
         transparency = self.checkbox(style.allows_transparency(), style.set_transparency)
         transparency.setEnabled(editable)
         section.row("theme_editor_rows_transparency", transparency, "theme_editor_row_notes_transparency")
+
+        # The rest of the theme's look (see themes.STYLE_DEFAULTS) - the others are only in its file
+        background = self.checkbox(style.setting("background"), lambda on: style.set_setting("background", on))
+        background.setEnabled(editable)
+        section.row("theme_editor_rows_background", background, "theme_editor_row_notes_background")
+        theme_blur = style.setting("background_blur")
+        blur = self.slider(-1 if theme_blur is None else theme_blur, -1, MAX_BACKGROUND_BLUR, "px",
+                           lambda value: style.set_setting("background_blur", None if value < 0 else value), live=False)
+        blur.setEnabled(editable)
+        section.row("theme_editor_rows_background_blur", blur, "theme_editor_row_notes_background_blur")
+        corners = self.slider(style.PANEL_RADIUS, 0, MAX_PANEL_RADIUS, "px", lambda value: style.set_setting("panel_radius", value))
+        corners.setEnabled(editable)
+        section.row("theme_editor_rows_panel_radius", corners, "theme_editor_row_notes_panel_radius")
 
     def build_materials_tab(self):
         '''

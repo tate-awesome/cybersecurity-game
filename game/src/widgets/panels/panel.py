@@ -1,9 +1,68 @@
-from PySide6.QtCore import QRectF
-from PySide6.QtGui import QPainterPath, QRegion
+import math
+
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QRegion
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from ...app_core import Context
 from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .. import MenuBar
+
+# Rendered panel shadows (see surface_shadow), by everything that shapes
+# one - panels of one size share theirs, and resizes don't redraw it
+_SHADOWS: dict[tuple, QImage] = {}
+_MAX_SHADOWS = 64
+
+
+def surface_shadow(style, width: int, height: int) -> QImage | None:
+    '''
+    The theme's shadow (see Style.panel_shadow) for a panel-like surface
+    width x height px, drawn inside the room Style.panel_margins leaves
+    around it - its rounded shape, offset and blurred, with the surface's
+    own area cut out so a see-through one isn't darkened by it (like CSS's
+    box-shadow). Cached - see _SHADOWS. For panels, and anything dressed
+    like one (e.g. the workspace select page's summary card).
+    '''
+    shadow = style.panel_shadow()
+    if shadow is None or width <= 0 or height <= 0:
+        return None
+    radius = style.PANEL_RADIUS
+    margins = style.panel_margins()
+    key = (width, height, radius, margins, tuple(sorted(shadow.items())))
+    if key in _SHADOWS:
+        return _SHADOWS[key]
+    left, top, right, bottom = margins
+    body = QRectF(left, top, width - left - right, height - top - bottom)
+    color = QColor(shadow["color"])
+    color.setAlphaF(shadow["opacity"])
+    blur = shadow["blur"]
+    # Drawn at half size and blurred there - a soft shadow has no detail to lose
+    scale = 0.5 if blur >= 4 else 1.0
+    image = QImage(max(1, int(width * scale)), max(1, int(height * scale)), QImage.Format.Format_ARGB32_Premultiplied)
+    image.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(image)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.scale(scale, scale)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(color)
+    painter.drawRoundedRect(body.translated(shadow["x"], shadow["y"]), radius, radius)
+    painter.end()
+    if blur >= 4:
+        from ..visuals.background import pyramid_blur  # here - visuals import panels' package
+        image = pyramid_blur(image, max(1, round(math.log2(blur * scale))))
+        image = image.scaled(width, height, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    painter = QPainter(image)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(Qt.GlobalColor.black)
+    painter.drawRoundedRect(body, radius, radius)
+    painter.end()
+    if len(_SHADOWS) >= _MAX_SHADOWS:
+        _SHADOWS.clear()
+    _SHADOWS[key] = image
+    return image
+
+
 
 class Panel(QWidget):
     '''
@@ -23,6 +82,8 @@ class Panel(QWidget):
         self.style = context.style
 
         self.style.set_material(self, "panel", rounded=True, outlined=True)
+        # Room around it for the theme's shadow, if it has one (see Style.panel_shadow)
+        self.setProperty("shadowed", True)
         master.layout().addWidget(self)
 
         # The menu bar/body otherwise fill this panel edge-to-edge, which
@@ -42,8 +103,9 @@ class Panel(QWidget):
         # layout nothing outside this class ever touches.
         self.setLayout(QVBoxLayout())
         real_layout = super().layout()  # not self.layout() - that's overridden below, and self._content_layout doesn't exist yet
-        real_layout.setContentsMargins(self.BORDER_WIDTH, self.BORDER_WIDTH, self.BORDER_WIDTH, self.BORDER_WIDTH)
         real_layout.setSpacing(0)
+        self.fit_shadow()
+        self.style.signals.changed.connect(self.fit_shadow)
 
         self._content_area = QWidget()
         self._content_layout = QVBoxLayout(self._content_area)
@@ -95,6 +157,44 @@ class Panel(QWidget):
         '''
         return self._content_layout
 
+    def body_rect(self) -> QRectF:
+        '''Where the panel itself is drawn - inside the room for its shadow (see Style.panel_margins).'''
+        left, top, right, bottom = self.style.panel_margins()
+        return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
+
+    def fit_shadow(self):
+        '''After a theme change: room for the theme's shadow (or none), the border inset inside it, and the mask to match.'''
+        left, top, right, bottom = self.style.panel_margins()
+        width = self.BORDER_WIDTH
+        super().layout().setContentsMargins(left + width, top + width, right + width, bottom + width)
+        self.update_mask()
+        self.update()
+
+    def shadow_image(self) -> QImage | None:
+        '''The theme's shadow at this panel's size (see surface_shadow).'''
+        return surface_shadow(self.style, self.width(), self.height())
+
+    def paintEvent(self, event):
+        # The stylesheet has already drawn the panel itself, inside its shadow's room (see fit_shadow)
+        image = self.shadow_image()
+        if image is not None:
+            painter = QPainter(self)
+            painter.drawImage(0, 0, image)
+            painter.end()
+
+    def update_mask(self):
+        '''
+        Clips the panel - menu bar, body and all - to its rounded shape,
+        keeping the room around it for its shadow (see resizeEvent).
+        '''
+        body = self.body_rect()
+        path = QPainterPath()
+        path.addRoundedRect(body, self.style.PANEL_RADIUS, self.style.PANEL_RADIUS)
+        region = QRegion(path.toFillPolygon().toPolygon())
+        if self.style.panel_shadow() is not None:
+            region = QRegion(self.rect()).subtracted(QRegion(body.toRect())).united(region)
+        self.setMask(region)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         # border-radius alone only rounds *this* widget's own background -
@@ -105,6 +205,4 @@ class Panel(QWidget):
         # to a rounded-rect region instead, which is the only way the
         # rounding actually shows. Recomputed on every resize since the
         # mask is in this widget's own pixel coordinates.
-        path = QPainterPath()
-        path.addRoundedRect(QRectF(self.rect()), self.style.PANEL_RADIUS, self.style.PANEL_RADIUS)
-        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+        self.update_mask()

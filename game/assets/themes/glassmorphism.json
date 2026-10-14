@@ -1,0 +1,539 @@
+{
+    "label": "Glassmorphism",
+    "kind": "original",
+    "note": "Draft. Frosted glass cards over a vivid violet-to-blue backdrop: low-opacity white with a light-catching rim, big rounded corners and a soft shadow.",
+    "button_radius": 12,
+    "menu_button_radius": 12,
+    "background_blur": 40,
+    "panel_radius": 18,
+    "font_family": "Segoe UI",
+    "panel_shadow": {
+        "x": 0,
+        "y": 8,
+        "blur": 18,
+        "dark": {
+            "color": "#05010f",
+            "opacity": 0.45
+        },
+        "light": {
+            "color": "#5b3a99",
+            "opacity": 0.22
+        }
+    },
+    "scrollbar_inset": 3,
+    "materials": {
+        "window": {
+            "dark": {
+                "color": "#1a1037",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 135,
+                    "stops": [
+                        [
+                            0,
+                            "#2b0f52",
+                            1
+                        ],
+                        [
+                            0.5,
+                            "#13245a",
+                            1
+                        ],
+                        [
+                            1,
+                            "#0d4a63",
+                            1
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#e9d5ff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 135,
+                    "stops": [
+                        [
+                            0,
+                            "#fbc2eb",
+                            1
+                        ],
+                        [
+                            0.5,
+                            "#d9c6ff",
+                            1
+                        ],
+                        [
+                            1,
+                            "#a6c1ee",
+                            1
+                        ]
+                    ]
+                }
+            }
+        },
+        "panel": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.08,
+                "gradient": {
+                    "angle": 135,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.16
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.05
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.32,
+                "gradient": {
+                    "angle": 135,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.5
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.22
+                        ]
+                    ]
+                }
+            }
+        },
+        "panel_border": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.3,
+                "gradient": {
+                    "angle": 135,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.5
+                        ],
+                        [
+                            0.5,
+                            "#ffffff",
+                            0.12
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.22
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.7,
+                "gradient": {
+                    "angle": 135,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.95
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.4
+                        ]
+                    ]
+                }
+            }
+        },
+        "menu_bar": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.06
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.2
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.07
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.25
+            }
+        },
+        "field": {
+            "dark": {
+                "color": "#0a0420",
+                "opacity": 0.28
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.5
+            }
+        },
+        "button": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.14,
+                "gradient": {
+                    "angle": 0,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.22
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.08
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.45,
+                "gradient": {
+                    "angle": 0,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.65
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.35
+                        ]
+                    ]
+                }
+            }
+        },
+        "button_hover": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.24,
+                "gradient": {
+                    "angle": 0,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.34
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.16
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.7
+            }
+        },
+        "button_border": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.4
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.9
+            }
+        },
+        "menu_button": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.14,
+                "gradient": {
+                    "angle": 0,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.22
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.08
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.45,
+                "gradient": {
+                    "angle": 0,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.65
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.35
+                        ]
+                    ]
+                }
+            }
+        },
+        "menu_button_hover": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.24,
+                "gradient": {
+                    "angle": 0,
+                    "stops": [
+                        [
+                            0,
+                            "#ffffff",
+                            0.34
+                        ],
+                        [
+                            1,
+                            "#ffffff",
+                            0.16
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.7
+            }
+        },
+        "menu_button_border": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.4
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.9
+            }
+        },
+        "overlay": {
+            "dark": {
+                "color": "#2a1f5c",
+                "opacity": 0.94
+            },
+            "light": {
+                "color": "#f6efff",
+                "opacity": 0.96
+            }
+        },
+        "overlay_card": {
+            "dark": {
+                "color": "#3a2f70",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#ece0ff",
+                "opacity": 1.0
+            }
+        },
+        "tab": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.07
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.25
+            }
+        },
+        "tab_selected": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.22
+            },
+            "light": {
+                "color": "#7c3aed",
+                "opacity": 0.85
+            }
+        },
+        "table_header": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.08
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.3
+            }
+        },
+        "alternate_row": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.04
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.18
+            }
+        },
+        "selection": {
+            "dark": {
+                "color": "#c26bff",
+                "opacity": 0.55
+            },
+            "light": {
+                "color": "#7c3aed",
+                "opacity": 0.75
+            }
+        },
+        "scrollbar": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.4
+            },
+            "light": {
+                "color": "#5b3a99",
+                "opacity": 0.4
+            }
+        },
+        "scrollbar_track": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.07
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.3
+            }
+        },
+        "tooltip": {
+            "dark": {
+                "color": "#2a1f5c",
+                "opacity": 0.94
+            },
+            "light": {
+                "color": "#f6efff",
+                "opacity": 0.96
+            }
+        },
+        "footer": {
+            "dark": {
+                "color": "#0a0420",
+                "opacity": 0.4
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.35
+            }
+        },
+        "text": {
+            "dark": {
+                "color": "#f4f1ff"
+            },
+            "light": {
+                "color": "#2a1748"
+            }
+        },
+        "field_text": {
+            "dark": {
+                "color": "#f4f1ff"
+            },
+            "light": {
+                "color": "#2a1748"
+            }
+        },
+        "menu_bar_text": {
+            "dark": {
+                "color": "#f4f1ff"
+            },
+            "light": {
+                "color": "#2a1748"
+            }
+        },
+        "accent_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "button_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#2a1748"
+            }
+        },
+        "button_hover_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#2a1748"
+            }
+        },
+        "menu_button_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#2a1748"
+            }
+        },
+        "menu_button_hover_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#7c3aed"
+            }
+        },
+        "accent": {
+            "dark": {
+                "color": "#d38cff"
+            },
+            "light": {
+                "color": "#7c3aed"
+            }
+        },
+        "border": {
+            "dark": {
+                "color": "#5a4f8c"
+            },
+            "light": {
+                "color": "#d8c8f0"
+            }
+        },
+        "scrollbar_hover": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#7c3aed"
+            }
+        }
+    }
+}

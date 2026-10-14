@@ -4,13 +4,13 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontDatabase
+from PySide6.QtCore import QObject, QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QLinearGradient
 from PySide6.QtWidgets import QApplication, QWidget
 import darkdetect
 
-from .themes import (BUTTON_KINDS, COLOR_NAMES, INK_MATERIALS, MATERIALS, THEME_MODES, button_radius, is_hex, read_theme,
-                     resolve_materials, theme_file)
+from .themes import (BUTTON_KINDS, COLOR_NAMES, INK_MATERIALS, MATERIALS, STYLE_DEFAULTS, THEME_MODES, button_radius,
+                     gradient_points, is_hex, read_theme, resolve_materials, style_setting, theme_file)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -28,9 +28,8 @@ PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
 # good, so these are the ones that do). The first is the theme a fresh
 # start, and Reset Theme, use. Imported themes (see IMPORTED_PREFIX) join
 # them in the selector; every other preset is only in the theme editor.
-CURATED_THEMES: list[str] = ["blue_v2_light",
-                             # It again, showing off the button styles a theme can have (see themes.BUTTON_KINDS)
-                             "blue_outline", "blue_neutral", "blue_ghost"]
+CURATED_THEMES: list[str] = ["acrylic", "glassmorphism", "frutiger_aero", "cybercore", "neobrutalism", "webcore",
+                             "flat", "kimbie_dark"]
 # The user's own themes - <family>.json files in user_data/themes, the same
 # shape as assets/themes' (imported, or made in the theme editor - see
 # Style.new_theme) - are named "imported.<file name>", so one can never
@@ -137,8 +136,9 @@ class Style:
         self.PANE_MIN_WIDTH = self.igap*10
         self.PANE_MIN_HEIGHT = self.igap*10
         self.PANE_BIG = self.igap*100
-        self.PANEL_RADIUS = self.igap
         self.fonts = {}
+        # Font families already standing in for the icon font's glyphs (see _substitute_icons)
+        self._icon_substitutes: set[str] = set()
         self.context = context
         # The icon font's family once loaded (see icon) - None if it couldn't be
         self.icon_family: str | None = self._load_icon_font(context.paths.fonts / ICON_FONT)
@@ -258,6 +258,12 @@ class Style:
             QFont.insertSubstitution(family, families[0])
         return families[0]
 
+    def _substitute_icons(self, family: str | None):
+        '''A theme's own font (see themes.STYLE_DEFAULTS' "font_family") shows icons in text too - see _load_icon_font.'''
+        if family and self.icon_family and family not in self._icon_substitutes:
+            QFont.insertSubstitution(family, self.icon_family)
+            self._icon_substitutes.add(family)
+
     def icon_css(self) -> str:
         '''
         The "icon" font as stylesheet declarations - for icon widgets with a
@@ -372,7 +378,10 @@ class Style:
         # unrepainted viewport background from the previous theme.
         if app.style().objectName().lower() != "fusion":
             app.setStyle("Fusion")
+        self._substitute_icons(self.setting("font_family"))
         self.restyle()
+        # The theme can turn the page background off, or blur it (see themes.STYLE_DEFAULTS)
+        self.apply_background()
 
     # Styling widgets
     def set_material(self, widget: QWidget, material: str, rounded: bool = False, outlined: bool = False):
@@ -408,9 +417,51 @@ class Style:
         widget.destroyed.connect(lambda *_: self._live_sheets.pop(key, None))
         widget.setStyleSheet(build())
 
-    def css(self, material: str) -> str:
-        '''A material's color for a stylesheet, as "rgba(r, g, b, a)".'''
-        return self._css(self.material(material))
+    def css(self, material: str, shade: float = 0.0) -> str:
+        '''
+        A material's color for a stylesheet, as "rgba(r, g, b, a)" - or its
+        gradient (see themes.read_gradient), as a "qlineargradient(...)",
+        which stylesheets take anywhere a color goes. shade lightens it
+        (> 0) or darkens it, keeping its opacity (see _shade).
+
+        A gradient's stops keep their own opacities while surfaces can be
+        see-through; solid (see material), every stop takes the
+        material's opacity instead.
+        '''
+        color = self.material(material)
+        entry = self.material_entry(material)
+        gradient = entry.get("gradient")
+        if gradient is None or material in INK_MATERIALS:
+            if shade:
+                alpha = color.alpha()
+                color = QColor(self._shade(color.name(), shade))
+                color.setAlpha(alpha)
+            return self._css(color)
+        solid = abs(color.alphaF() - entry["opacity"]) > 0.003
+        stops = []
+        for position, hex_color, opacity in gradient["stops"]:
+            stop = QColor(self._shade(hex_color, shade) if shade else hex_color)
+            stop.setAlphaF(color.alphaF() if solid else opacity)
+            stops.append(f"stop:{position:g} {self._css(stop)}")
+        x1, y1, x2, y2 = gradient_points(gradient["angle"])
+        return f"qlineargradient(x1:{x1:.3f}, y1:{y1:.3f}, x2:{x2:.3f}, y2:{y2:.3f}, {', '.join(stops)})"
+
+    def brush(self, material: str, rect: QRectF) -> QBrush:
+        '''A material as a QBrush filling rect - its gradient across rect if it has one - for hand-painted backgrounds.'''
+        color = self.material(material)
+        entry = self.material_entry(material)
+        gradient = entry.get("gradient")
+        if gradient is None or material in INK_MATERIALS:
+            return QBrush(color)
+        solid = abs(color.alphaF() - entry["opacity"]) > 0.003
+        x1, y1, x2, y2 = gradient_points(gradient["angle"])
+        fill = QLinearGradient(QPointF(rect.left() + x1 * rect.width(), rect.top() + y1 * rect.height()),
+                               QPointF(rect.left() + x2 * rect.width(), rect.top() + y2 * rect.height()))
+        for position, hex_color, opacity in gradient["stops"]:
+            stop = QColor(hex_color)
+            stop.setAlphaF(color.alphaF() if solid else opacity)
+            fill.setColorAt(position, stop)
+        return QBrush(fill)
 
     @staticmethod
     def _css(color: QColor) -> str:
@@ -425,7 +476,14 @@ class Style:
         change to the theme, translucency or button style.
         '''
         self._restyle_timer.stop()
-        QApplication.instance().setStyleSheet(self._build_stylesheet())
+        app = QApplication.instance()
+        app.setStyleSheet(self._build_stylesheet())
+        # Links in text (workspace summaries, notes) - stylesheets can't color them
+        palette = app.palette()
+        link = QColor(self.link_color())
+        for role in (palette.ColorRole.Link, palette.ColorRole.LinkVisited):
+            palette.setColor(role, link)
+        app.setPalette(palette)
         for key, (widget, build) in list(self._live_sheets.items()):
             try:
                 widget.setStyleSheet(build())
@@ -450,6 +508,30 @@ class Style:
         return f"#{r:02x}{g:02x}{b:02x}"
 
     @staticmethod
+    def _contrast(hex_a: str, hex_b: str) -> float:
+        '''The WCAG contrast ratio of two colors - 1 (the same) to 21 (black on white).'''
+        def luminance(hex_color: str) -> float:
+            channels = []
+            for i in (1, 3, 5):
+                v = int(hex_color[i:i + 2], 16) / 255
+                channels.append(v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4)
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+        high, low = sorted((luminance(hex_a), luminance(hex_b)), reverse=True)
+        return (high + 0.05) / (low + 0.05)
+
+    def link_color(self) -> str:
+        '''
+        Links' color: the accent - moved toward the text color, a step at a
+        time, until it reads on a panel (WCAG's 4.5:1 for text).
+        '''
+        accent, text, panel = self.color("accent"), self.color("text"), self.color("panel", opaque=True)
+        for step in range(11):
+            color = self._mix(accent, text, step / 10)
+            if self._contrast(color, panel) >= 4.5:
+                return color
+        return text
+
+    @staticmethod
     def _mix(hex_a: str, hex_b: str, amount: float) -> str:
         '''hex_a blended amount (0-1) of the way to hex_b.'''
         a, b = QColor(hex_a), QColor(hex_b)
@@ -470,10 +552,7 @@ class Style:
 
         def shaded(material: str, amount: float) -> str:
             '''A material lightened (amount > 0) or darkened, keeping its opacity.'''
-            color = self.material(material)
-            shade = QColor(self._shade(color.name(), amount))
-            shade.setAlpha(color.alpha())
-            return self._css(shade)
+            return self.css(material, amount)
 
         def at_opacity(color: str, material: str) -> str:
             '''A theme color (see color) or hex code at a material's opacity.'''
@@ -507,6 +586,37 @@ class Style:
         # With surfaces solid, a scroll area in a panel paints the panel's color itself
         panel_fill = m("panel") if not self.translucent_surfaces else "transparent"
 
+        # The theme's outlines (see themes.STYLE_DEFAULTS): bevelled, or lines line_width thick
+        bevel = self.setting("bevel")
+        line = self.setting("line_width")
+        outline = self.bevel(c["border"], raised=False) if bevel else f"{line}px solid {c['border']}"
+        header_border = self.bevel(c["widget"]) if bevel else outline
+        tab_shape = f"border: {self.bevel(c['widget'])}; border-bottom: none;" if bevel else ""
+        panel_border = (self.bevel(self.color("panel_border")) if bevel
+                        else f"{PANEL_BORDER_WIDTH}px solid {m('panel_border')}")
+        # Scrollbars (see themes.STYLE_DEFAULTS): a handle inset in its track, pill-shaped unless the theme says
+        inset = self.setting("scrollbar_inset")
+        thickness = max(2, scroll_w - 2 * inset)
+        radius = self.setting("scrollbar_radius")
+        handle_radius = thickness // 2 if radius is None else min(radius, thickness // 2)
+        if bevel:
+            handle_border = self.bevel(c["scrollbar"])
+        elif self.setting("scrollbar_outline"):
+            handle_border = f"{line}px solid {c['border']}"
+        else:
+            handle_border = "none"
+        left, top, right, bottom = self.panel_margins()
+        font = self.setting("font_family")
+        extras = []
+        if font:
+            # Not consoles, trees and tables - their monospace font is part of what they show
+            extras.append(f'QPushButton, QLabel, QCheckBox, QRadioButton, QTabBar, QComboBox, QLineEdit, QHeaderView, QToolTip,'
+                          f' QSpinBox {{ font-family: "{font}"; }}')
+        if self.setting("bold_buttons"):
+            extras.append("QPushButton, QTabBar { font-weight: bold; }")
+        if self.color("menu_bar_text") != c["text"]:
+            extras.append(f'*[material="menu_bar"] QLabel, *[material="menu_bar"] QCheckBox {{ color: {self.color("menu_bar_text")}; }}')
+
         return f'''
             QWidget {{ color: {c["text"]}; }}
             QMainWindow, QDialog {{ background-color: {m("window")}; }}
@@ -516,7 +626,7 @@ class Style:
                 border: 1px solid {c["border"]};
             }}
             {buttons}
-            QTabWidget::pane {{ border: 1px solid {c["border"]}; border-radius: 4px; }}
+            QTabWidget::pane {{ border: {outline}; border-radius: {0 if bevel else 4}px; }}
             QTabBar::tab {{
                 background-color: {m("tab")};
                 color: {c["text"]};
@@ -524,17 +634,18 @@ class Style:
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
                 margin-right: 2px;
+                {tab_shape}
             }}
             QTabBar::tab:selected {{ background-color: {m("tab_selected")}; color: {c["accent_text"]}; }}
             QTabBar::tab:hover:!selected {{ background-color: {m("panel")}; }}
             QLineEdit, QComboBox, QPlainTextEdit, QTextEdit {{
                 background-color: {m("field")};
                 color: {c["field_text"]};
-                border: 1px solid {c["border"]};
-                border-radius: 4px;
+                border: {outline};
+                border-radius: {0 if bevel else 4}px;
                 padding: 4px;
             }}
-            QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border: 1px solid {c["accent"]}; }}
+            QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border-color: {c["accent"]}; }}
             QComboBox QAbstractItemView {{
                 background-color: {c["field"]};
                 color: {c["field_text"]};
@@ -544,25 +655,26 @@ class Style:
             QCheckBox::indicator {{
                 width: 16px;
                 height: 16px;
-                border: 1px solid {c["border"]};
-                border-radius: 3px;
+                border: {outline};
+                border-radius: {0 if bevel else 3}px;
                 background-color: {m("field")};
             }}
             QCheckBox::indicator:checked {{
                 background-color: {c["accent"]};
-                border: 1px solid {c["accent"]};
+                border-color: {c["accent"]};
             }}
+            QHeaderView {{ background-color: {m("field")}; }}
             QHeaderView::section {{
                 background-color: {m("table_header")};
                 color: {c["text"]};
-                border: 1px solid {c["border"]};
+                border: {header_border};
                 padding: 4px;
             }}
             QTreeWidget, QTreeView, QTableWidget, QTableView {{
                 background-color: {m("field")};
                 alternate-background-color: {m("alternate_row")};
                 color: {c["text"]};
-                border: 1px solid {c["border"]};
+                border: {outline};
             }}
             QTreeWidget::item:selected, QTreeView::item:selected, QTableWidget::item:selected, QTableView::item:selected {{
                 background-color: {m("selection")};
@@ -583,32 +695,42 @@ class Style:
                 background: {m("scrollbar_track")};
                 width: {scroll_w}px;
                 margin: 0px;
+                border: none;
             }}
             QScrollBar::handle:vertical {{
                 background: {m("scrollbar")};
-                border-radius: {scroll_w // 2}px;
-                min-height: 20px;
+                border: {handle_border};
+                border-radius: {handle_radius}px;
+                margin: {inset}px;
+                min-height: 24px;
             }}
             QScrollBar::handle:vertical:hover {{ background: {c["scrollbar_hover"]}; }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
+            QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
             QScrollBar:horizontal {{
                 background: {m("scrollbar_track")};
                 height: {scroll_w}px;
                 margin: 0px;
+                border: none;
             }}
             QScrollBar::handle:horizontal {{
                 background: {m("scrollbar")};
-                border-radius: {scroll_w // 2}px;
-                min-width: 20px;
+                border: {handle_border};
+                border-radius: {handle_radius}px;
+                margin: {inset}px;
+                min-width: 24px;
             }}
             QScrollBar::handle:horizontal:hover {{ background: {c["scrollbar_hover"]}; }}
             QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
+            QAbstractScrollArea::corner {{ background: {m("scrollbar_track")}; border: none; }}
             {self._material_rules()}
             *[material="overlay"] {{ border: 2px solid {c["accent"]}; }}
             *[material="none"] {{ background-color: transparent; border: none; }}
             *[material="panel_fill"] {{ background-color: {panel_fill}; border: none; }}
             *[rounded="true"] {{ border-radius: {self.PANEL_RADIUS}px; }}
-            *[outlined="true"] {{ border: {PANEL_BORDER_WIDTH}px solid {m("panel_border")}; }}
+            *[outlined="true"] {{ border: {panel_border}; }}
+            *[shadowed="true"] {{ margin: {top}px {right}px {bottom}px {left}px; }}
+            {" ".join(extras)}
         '''
 
     def _button_rules(self, kind: str, shaded: Callable[[str, float], str]) -> str:
@@ -616,22 +738,55 @@ class Style:
         The stylesheet rules for one of themes.BUTTON_KINDS, from its
         materials. Plain buttons are every QPushButton; a menu button is
         one with the "button_kind" property "menu" (see mark_menu_button) -
-        and checked, it looks hovered (the selected workspace). Its outline
+        and checked, it looks hovered and marked (the selected workspace). Its outline
         is always there, if see-through, so a theme's choice of outline
         never changes a button's size.
         '''
         selector = "QPushButton" if kind == "button" else 'QPushButton[button_kind="menu"]'
         checked = f", {selector}:checked" if kind != "button" else ""
+        line = self.setting("line_width")
+        depth = self.setting("button_shadow")
+        if self.setting("bevel"):
+            # Raised, and sunken while pressed (see themes.STYLE_DEFAULTS)
+            color = self.color(f"{kind}_border")
+            border = f"border: {self.bevel(color)};"
+            pressed = f"border: {self.bevel(color, raised=False)};"
+        elif depth:
+            # A hard shadow below and right, which pressing sinks into - the same size throughout
+            border = (f"border: {line}px solid {self.css(f'{kind}_border')};"
+                      f" border-right-width: {line + depth}px; border-bottom-width: {line + depth}px; margin: 0px;")
+            pressed = f"border-right-width: {line}px; border-bottom-width: {line}px; margin: {depth}px 0px 0px {depth}px;"
+        else:
+            border = f"border: {line}px solid {self.css(f'{kind}_border')};"
+            pressed = ""
+        # A checked menu button (the selected workspace) stays pressed in - or,
+        # where pressing looks like nothing, gets a bar in the accent color on
+        # its left, its padding giving up the room so its text stays put
+        bar = 3
+        selected = pressed or (f"border-left: {line + bar}px solid {self.color('accent')};"
+                               f" padding-left: {max(0, 11 - bar)}px;")
+        selected_rule = (f"{selector}:checked {{ {selected} }}") if checked else ""
         return f'''
             {selector} {{
                 background-color: {self.css(kind)};
                 color: {self.color(f"{kind}_text")};
-                border: 1px solid {self.css(f"{kind}_border")};
+                {border}
                 border-radius: {self.button_radius(kind)}px;
                 padding: 5px 11px;
             }}
             {selector}:hover{checked} {{ background-color: {self.css(f"{kind}_hover")}; color: {self.color(f"{kind}_hover_text")}; }}
-            {selector}:pressed {{ background-color: {shaded(f"{kind}_hover", -0.1)}; color: {self.color(f"{kind}_hover_text")}; }}'''
+            {selector}:pressed {{ background-color: {shaded(f"{kind}_hover", -0.1)}; color: {self.color(f"{kind}_hover_text")}; {pressed} }}
+            {selected_rule}'''
+
+    def bevel(self, color: str, raised: bool = True) -> str:
+        '''
+        A 3D outline for a stylesheet's "border" (see themes.STYLE_DEFAULTS'
+        "bevel"): lit top and left, shaded bottom and right - the other way
+        round when sunken. Made from color, like an old desktop's chrome.
+        '''
+        light, dark = self._shade(color, 0.85), self._shade(color, -0.55)
+        top, bottom = (light, dark) if raised else (dark, light)
+        return f"2px solid; border-color: {top} {bottom} {bottom} {top}"
 
     @staticmethod
     def mark_menu_button(button: QWidget):
@@ -672,8 +827,9 @@ class Style:
             color.setAlphaF(entry["opacity"])
         else:
             opacity = self.button_opacity(name, entry["opacity"])
-            if opacity is not None:
-                color.setAlphaF(opacity)
+            # Solid - but a material left out (opacity 0, e.g. a scrollbar's
+            # empty track) stays left out, rather than turning solid
+            color.setAlphaF(opacity if opacity is not None else (0.0 if entry["opacity"] == 0 else 1.0))
         return color
 
     def button_opacity(self, name: str, opacity: float) -> float | None:
@@ -697,6 +853,51 @@ class Style:
             return
         self.preset_info[self.theme_family()][f"{kind}_radius"] = int(radius)
         self._edited(self.theme_family())
+
+    # The theme's other look settings (see themes.STYLE_DEFAULTS)
+    def setting(self, key: str, family: str | None = None):
+        '''One of themes.STYLE_DEFAULTS for a theme (the current one, by default).'''
+        family = family or (self.theme_family() if hasattr(self, "current_theme") else "blue")
+        return style_setting(self.preset_info.get(family, {}), key)
+
+    def set_setting(self, key: str, value):
+        '''Changes one of the current theme's look settings (see themes.STYLE_DEFAULTS) - restyled at once.'''
+        if not self.is_editable() or value == self.setting(key):
+            return
+        self.preset_info[self.theme_family()][key] = value
+        self._edited(self.theme_family(), notify=True)
+        self.apply_background()
+
+    @property
+    def PANEL_RADIUS(self) -> int:
+        '''Panels' corner radius in px, from the theme ("panel_radius").'''
+        return self.setting("panel_radius")
+
+    def panel_shadow(self) -> dict | None:
+        '''The theme's shadow around panels in the current mode - {"x", "y", "blur", "color", "opacity"} - or None.'''
+        shadow = self.setting("panel_shadow")
+        if shadow is None:
+            return None
+        mode = self.current_theme.partition("_")[0]
+        if shadow[mode]["opacity"] <= 0:
+            return None
+        return {"x": shadow["x"], "y": shadow["y"], "blur": shadow["blur"], **shadow[mode]}
+
+    def panel_margins(self) -> tuple[int, int, int, int]:
+        '''Room around each panel for its shadow (see panel_shadow) - left, top, right, bottom, in px.'''
+        shadow = self.panel_shadow()
+        if shadow is None:
+            return 0, 0, 0, 0
+        blur, x, y = shadow["blur"], shadow["x"], shadow["y"]
+        return max(0, blur - x), max(0, blur - y), max(0, blur + x), max(0, blur + y)
+
+    def background_shown(self, menu: bool = False) -> bool:
+        '''
+        Whether a page shows its animated background - the user's
+        preference, unless the theme turns it off. Title menu pages (menu)
+        always follow the preference: there the background is the page.
+        '''
+        return self.background_enabled and (menu or self.setting("background"))
 
     def _resolve_colors(self):
         mode = self.current_theme.partition("_")[0]
@@ -892,7 +1093,7 @@ class Style:
             number += 1
             stem = f"{self._file_stem(label)}_{number}"
         info = {"label": label if number == 1 else f"{label} {number}"}
-        for key in ("note", "transparency"):
+        for key in ("note", "transparency", "button_radius", "menu_button_radius", *STYLE_DEFAULTS):
             if key in self.preset_info[source]:
                 info[key] = self.preset_info[source][key]
         self._write_theme(folder / f"{stem}.json", {"info": info, "materials": copy.deepcopy(self.materials[source])})

@@ -1,7 +1,7 @@
 import math
 import time
 
-from PySide6.QtCore import QEvent, QObject, Qt, QTimer
+from PySide6.QtCore import QEvent, QObject, QRectF, Qt, QTimer
 from PySide6.QtGui import QCursor, QImage, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -98,10 +98,14 @@ class VisualBackground(QWidget):
         self.follows_preferences = False
         self.page_animate = animate
         self.page_detailed = True
+        # Behind a title menu page, which a theme can't turn off (see Style.background_shown)
+        self.menu = False
         self.visual_key: str | None = None
         self.frame: QImage | None = None
         # The half-size render a blurred frame is made from (see render_half)
         self.half_frame: QImage | None = None
+        # The page's own blur - a theme's "background_blur" replaces it (see apply_preferences)
+        self.page_blur = blur
         self.set_blur(blur)
         self.state: dict = {"visual": None, "cycle_elapsed": 0.0}
         self.cycling = False
@@ -175,7 +179,7 @@ class VisualBackground(QWidget):
         self.sync_size()
         self.invalidate()
 
-    def follow_preferences(self, page_animate: bool = True, page_detailed: bool = True):
+    def follow_preferences(self, page_animate: bool = True, page_detailed: bool = True, menu: bool = False):
         '''
         Makes this background follow the user's background preferences
         (Style.background_*) from now on - a page background, as opposed to
@@ -187,6 +191,7 @@ class VisualBackground(QWidget):
         distracting behind the panels).
         '''
         self.follows_preferences = True
+        self.menu = menu
         self.page_animate = page_animate
         self.page_detailed = page_detailed
         self.apply_preferences()
@@ -203,7 +208,12 @@ class VisualBackground(QWidget):
             # A still frame should show the finished picture, not one
             # caught partway through an intro (see Visual.settle)
             self.visual.settle()
-        self.setVisible(style.background_enabled)
+        # A theme's blur only replaces a page's own - a page drawn sharp (the title) stays sharp
+        theme_blur = style.setting("background_blur")
+        blur = theme_blur if theme_blur is not None and self.page_blur > 0 else self.page_blur
+        if blur != self.blur_radius:
+            self.set_blur(blur)
+        self.setVisible(style.background_shown(menu=self.menu))
         if self.animate and self.isVisible() and not self.held:
             self.last_tick = time.perf_counter()
             self.timer.start(self.frame_ms)
@@ -300,8 +310,8 @@ class VisualBackground(QWidget):
             image = self.render_blurred(palette)
         else:
             image = QImage(self.width(), self.height(), QImage.Format.Format_RGB32)
-            image.fill(palette.background)
             painter = QPainter(image)
+            self.fill_base(painter, image.width(), image.height())
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, performance.antialiasing)
             self.visual.paint(painter, palette)
             painter.end()
@@ -329,8 +339,8 @@ class VisualBackground(QWidget):
         if self.half_frame is None:
             width, height = max(1, self.width() // 2), max(1, self.height() // 2)
             image = QImage(width, height, QImage.Format.Format_RGB32)
-            image.fill(palette.background)
             painter = QPainter(image)
+            self.fill_base(painter, width, height)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, self.context.performance.antialiasing)
             painter.scale(width / self.width(), height / self.height())
             self.visual.paint_options = self.paint_options
@@ -339,13 +349,21 @@ class VisualBackground(QWidget):
             self.half_frame = image
         return self.half_frame
 
+    def fill_base(self, painter: QPainter, width: int, height: int):
+        '''What the visual is drawn over: the theme's window color - or its gradient, if it has one (see Style.brush).'''
+        rect = QRectF(0, 0, width, height)
+        brush = self.style.brush("window", rect)
+        if brush.gradient() is not None:
+            painter.fillRect(rect, self.style.color("root", opaque=True))
+        painter.fillRect(rect, brush)
+
     # Qt events
     def paintEvent(self, event):
         palette = self.palette_for_theme()
         painter = QPainter(self)
         try:
             if self.held or self.visual is None or self.visual.width <= 0:
-                painter.fillRect(self.rect(), palette.background)
+                self.fill_base(painter, self.width(), self.height())
                 return
             if self.frame is None:
                 self.frame = self.render_frame(palette)
