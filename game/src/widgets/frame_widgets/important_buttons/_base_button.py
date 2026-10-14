@@ -11,7 +11,7 @@ DEVELOPER_MARK = Style.icon("bug")
 # After a button's label, where clicking it takes you (see ImportantButton.OPENS):
 # another page in the app, a popup window (a message, a confirmation, a file
 # picker), or somewhere outside the app (the browser, a folder)
-PAGE_MARK = Style.icon("arrow-bar-right")
+PAGE_MARK = Style.icon("arrow-right")
 POPUP_MARK = Style.icon("layers-subtract")
 POPOUT_MARK = Style.icon("external-link")
 OPENS_MARKS = {"page": PAGE_MARK, "popup": POPUP_MARK, "outside": POPOUT_MARK}
