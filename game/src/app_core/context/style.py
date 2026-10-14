@@ -28,7 +28,9 @@ PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
 # good, so these are the ones that do). The first is the theme a fresh
 # start, and Reset Theme, use. Imported themes (see IMPORTED_PREFIX) join
 # them in the selector; every other preset is only in the theme editor.
-CURATED_THEMES: list[str] = ["blue_v2_light"]
+CURATED_THEMES: list[str] = ["blue_v2_light",
+                             # It again, showing off the button styles a theme can have (see themes.BUTTON_KINDS)
+                             "blue_outline", "blue_neutral", "blue_ghost"]
 # The user's own themes - <family>.json files in user_data/themes, the same
 # shape as assets/themes' (imported, or made in the theme editor - see
 # Style.new_theme) - are named "imported.<file name>", so one can never

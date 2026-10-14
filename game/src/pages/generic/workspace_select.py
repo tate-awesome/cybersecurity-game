@@ -144,7 +144,9 @@ class WorkspaceSelectPage(Page):
         header.setChecked(section.get("expanded", True))
         header.setFont(self.style.get_font("title_btn"))
         self.style.live_style(header, lambda: (
-            f"QPushButton {{ text-align: left; background-color: transparent; color: {self.style.color('text')}; }}"
+            # A header, not a button - whatever a theme's buttons look like (see themes.BUTTON_KINDS)
+            f"QPushButton {{ text-align: left; background-color: transparent; color: {self.style.color('text')};"
+            f" border-color: transparent; }}"
             f"QPushButton:hover, QPushButton:pressed {{ background-color: {self.translucent(self.style.color('widget'), 0.6)}; }}"
         ))
         header.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
