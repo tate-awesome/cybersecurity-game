@@ -3,7 +3,7 @@ from PySide6.QtGui import QImage, QMouseEvent, QPainter
 from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
 from ...app_core import Context
 from ...app_core.context.backdrop import blur_levels, pyramid_blur
-from ...app_core.transitions import PopupEntrance, PopupExit
+from ...app_core.transitions import PopupEntrance
 from collections.abc import Callable
 
 class Overlay(QWidget):
@@ -41,9 +41,6 @@ class Overlay(QWidget):
         # The widget this was last opened from - the button, or the proxy
         # standing in for it in a menu bar's overflow overlay (see click_open)
         self._opened_from: QWidget | None = None
-        # Set while an overlay this was opened from closes it along with
-        # itself - that one's fade-out picture already shows this one too
-        self._fades_with_parent = False
         self._entrance: PopupEntrance | None = None
         # Frosted glass (see capture_behind/paintEvent): a snapshot of what's
         # behind this overlay, where on screen it was taken, and blurred
@@ -267,41 +264,6 @@ class Overlay(QWidget):
     def click_close(self):
         self.hide()  # triggers hideEvent below, which does the actual cleanup
 
-    def setVisible(self, visible: bool):
-        # Every hide - hide(), and Qt closing this popup itself (outside
-        # click, Escape) - comes through here first, while it's still on
-        # screen: the fade-out picture goes up over it before the window
-        # goes, so there's no frame with neither. (An OS-level hide, like
-        # minimizing, doesn't come through here, and doesn't fade.)
-        if not visible and self.isVisible():
-            # It closes the overlays opened from inside it too (see
-            # hideEvent) - all of them fade out as one picture, taken now
-            # while they're all still up
-            stack = [self, *self._open_descendants()]
-            for overlay in stack:
-                if overlay._entrance is not None:
-                    overlay._entrance.stop()  # the picture shows it at rest, not mid-glide
-                    overlay._entrance = None
-            if not self._fades_with_parent:
-                PopupExit.play(stack, self._away)
-            for overlay in stack[1:]:
-                overlay._fades_with_parent = True
-                overlay.hide()
-                overlay._fades_with_parent = False
-        super().setVisible(visible)
-
-    def _open_descendants(self) -> list["Overlay"]:
-        '''Overlays opened from this one, and from those, that are still open - in the order they stack (lowest first).'''
-        found = []
-        frontier = [self]
-        while frontier:
-            parent = frontier.pop(0)
-            for overlay in self.context.root.findChildren(Overlay):
-                if overlay._parent_overlay is parent and overlay is not parent and overlay.isVisible() and overlay not in found:
-                    found.append(overlay)
-                    frontier.append(overlay)
-        return found
-
     def hideEvent(self, event):
         # Also runs when Qt closes this popup itself (outside click,
         # Escape) - not just when click_close() is called directly - so
@@ -353,11 +315,7 @@ class Overlay(QWidget):
         for overlay in closing:
             if on_trigger:
                 overlay.setAttribute(Qt.WidgetAttribute.WA_NoMouseReplay, True)
-        # Only the bottom of each closing stack - it takes the ones opened
-        # from it down too, fading as one picture (see setVisible)
-        for overlay in closing:
-            if overlay._parent_overlay not in closing and overlay.isVisible():
-                overlay.hide()
+            overlay.hide()
 
         if target is None or on_trigger:
             # No popups left open, so Qt replays this press onto whatever
