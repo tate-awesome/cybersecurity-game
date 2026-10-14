@@ -1,7 +1,7 @@
 import math
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QRegion
+from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QRegion
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from ...app_core import Context
 from ...app_core.context.style import PANEL_BORDER_WIDTH
@@ -62,6 +62,42 @@ def surface_shadow(style, width: int, height: int) -> QImage | None:
     _SHADOWS[key] = image
     return image
 
+
+
+def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False):
+    '''
+    Paints a panel-like surface width x height px by hand - the theme's
+    shadow, its panel material in its rounded shape, and its outline (or
+    raised bevel) - inside the room Style.panel_margins leaves. on_window
+    first lays down the page's window material under it, for a surface
+    nothing else is under (a popup window), so it looks as it would on a page.
+    '''
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    shadow = surface_shadow(style, width, height)
+    if shadow is not None:
+        painter.drawImage(0, 0, shadow)
+    left, top, right, bottom = style.panel_margins()
+    half = PANEL_BORDER_WIDTH / 2
+    body = QRectF(left + half, top + half, width - left - right - 2 * half, height - top - bottom - 2 * half)
+    radius = style.PANEL_RADIUS
+    path = QPainterPath()
+    path.addRoundedRect(body, radius, radius)
+    if on_window:
+        painter.fillPath(path, QColor(style.color("window", opaque=True)))
+        painter.fillPath(path, style.brush("window", body))
+    painter.fillPath(path, style.brush("panel", body))
+    outline = style.material("panel_border")
+    if style.setting("bevel"):
+        # Raised, like the theme's panels (see Style.bevel)
+        base = outline.name()
+        for color, lines in ((style._shade(base, 0.85), ((body.topLeft(), body.topRight()), (body.topLeft(), body.bottomLeft()))),
+                             (style._shade(base, -0.55), ((body.bottomLeft(), body.bottomRight()), (body.topRight(), body.bottomRight())))):
+            painter.setPen(QPen(QColor(color), PANEL_BORDER_WIDTH))
+            for start, end in lines:
+                painter.drawLine(start, end)
+    else:
+        painter.setPen(QPen(outline, PANEL_BORDER_WIDTH))
+        painter.drawPath(path)
 
 
 class _DrawerLayout(QVBoxLayout):

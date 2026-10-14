@@ -1,15 +1,15 @@
 import re
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRectF, Qt, QUrl, QVariantAnimation, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QTextDocument
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QUrl, QVariantAnimation, Signal
+from PySide6.QtGui import QColor, QImage, QPainter, QTextDocument
 from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QPushButton, QSizePolicy,
                                QTextBrowser, QVBoxLayout, QWidget)
 
 from ...app_core import Context
 from ...app_core.context.style import PANEL_BORDER_WIDTH
 from ...widgets import Scrollable
-from ...widgets.panels.panel import surface_shadow
+from ...widgets.panels.panel import paint_panel
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPOUT_MARK
 from ..page import Page
 
@@ -106,38 +106,12 @@ class SummaryCard(QFrame):
         self.shown = float(value)
         self.update()
 
-    def body_rect(self) -> QRectF:
-        left, top, right, bottom = self.style.panel_margins()
-        return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
-
     def paintEvent(self, event):
         if self.shown <= 0:
             return
-        style = self.style
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setOpacity(self.shown)
-        shadow = surface_shadow(style, self.width(), self.height())
-        if shadow is not None:
-            painter.drawImage(0, 0, shadow)
-        half = PANEL_BORDER_WIDTH / 2
-        body = self.body_rect().adjusted(half, half, -half, -half)
-        radius = style.PANEL_RADIUS
-        path = QPainterPath()
-        path.addRoundedRect(body, radius, radius)
-        painter.fillPath(path, style.brush("panel", body))
-        outline = style.material("panel_border")
-        if style.setting("bevel"):
-            # Raised, like the theme's panels (see Style.bevel)
-            base = outline.name()
-            for color, lines in ((style._shade(base, 0.85), ((body.topLeft(), body.topRight()), (body.topLeft(), body.bottomLeft()))),
-                                 (style._shade(base, -0.55), ((body.bottomLeft(), body.bottomRight()), (body.topRight(), body.bottomRight())))):
-                painter.setPen(QPen(QColor(color), PANEL_BORDER_WIDTH))
-                for start, end in lines:
-                    painter.drawLine(start, end)
-        else:
-            painter.setPen(QPen(outline, PANEL_BORDER_WIDTH))
-            painter.drawPath(path)
+        paint_panel(painter, self.style, self.width(), self.height())
         painter.end()
 
 

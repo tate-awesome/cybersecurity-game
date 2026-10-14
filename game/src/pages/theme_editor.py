@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QDialogButtonBox, QGridLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
 from ..app_core.context.themes import (BUTTON_KINDS, DATA_MATERIALS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
@@ -114,22 +114,15 @@ class ThemeEditorPage(SettingsPage):
     def new_theme(self):
         '''Asks which theme to start from, then makes the user's own copy of it and switches to it.'''
         labels = self.labels
-        dialog = QDialog(self)
-        dialog.setWindowTitle(labels.get("theme_editor_new_title"))
-        layout = QVBoxLayout(dialog)
-        prompt = QLabel(labels.get("theme_editor_new_prompt"))
-        prompt.setFont(self.style.get_font())
-        layout.addWidget(prompt)
+        dialog = popup.PopupWindow(self, self.context, labels.get("theme_editor_new_title"))
+        dialog.add_text(labels.get("theme_editor_new_prompt"))
         source = QComboBox()
         source.setFont(self.style.get_font())
         self.fill_themes(source, *self.style.editor_themes())
         source.setCurrentIndex(max(0, source.findData(self.style.theme_family())))
-        layout.addWidget(source)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(labels.get("theme_editor_new_confirm"))
-        buttons.accepted.connect(dialog.accept)
-        buttons.rejected.connect(dialog.reject)
-        layout.addWidget(buttons)
+        dialog.body.addWidget(source)
+        dialog.add_button(labels.get("theme_editor_new_confirm"), dialog.accept)
+        dialog.add_button("Cancel", dialog.reject)
         if dialog.exec() == QDialog.DialogCode.Accepted and source.currentData():
             family = source.currentData()
             self.leave_theme(lambda: self.style.new_theme(family))
