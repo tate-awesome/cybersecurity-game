@@ -36,6 +36,9 @@ from .checkbox_overlay.choose_shown_packet_console_columns import ChooseShownPac
 # Style
 from .toggle_light_dark_mode import ToggleLightDarkMode
 from .select_color_theme import SelectColorTheme
+from .open_theme_editor import OpenThemeEditor
+from .import_themes import ImportThemes
+from .reset_theme import ResetTheme
 from .settings_overlays.edit_background_style import EditBackgroundStyle
 from .settings_overlays.edit_model_style import EditModelStyle
 from .settings_overlays.edit_strip_chart_style import EditStripChartStyle
@@ -98,6 +101,9 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     # Style
     "toggle_button": ToggleLightDarkMode,
     "theme_button": SelectColorTheme,
+    "theme_editor_button": OpenThemeEditor,
+    "import_themes_button": ImportThemes,
+    "reset_theme_button": ResetTheme,
     "background_button": EditBackgroundStyle,
     "model_style_button": EditModelStyle,
     "strip_chart_style_button": EditStripChartStyle,

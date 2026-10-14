@@ -64,6 +64,9 @@
     "menu_bar": [
         "toggle_button",
         "theme_button",
+        "theme_editor_button",
+        "import_themes_button",
+        "reset_theme_button",
         "background_button",
         "model_style_button",
         "strip_chart_style_button",

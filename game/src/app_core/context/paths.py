@@ -56,7 +56,10 @@ class Paths:
         self.user_mcaptures: Path = self.user_data / "mcaptures"
         self.user_pcaptures: Path = self.user_data / "pcaptures"
         self.user_pages: Path = self.user_data / "page_data"
-        self._user_dirs: tuple[Path, ...] = (self.user_data, self.user_mcaptures, self.user_pcaptures, self.user_pages)
+        # Imported themes - see style.IMPORTED_PREFIX
+        self.user_themes: Path = self.user_data / "themes"
+        self._user_dirs: tuple[Path, ...] = (self.user_data, self.user_mcaptures, self.user_pcaptures, self.user_pages,
+                                             self.user_themes)
         self.create_user_dirs()
 
     #     self.page_folder_names: list[str] = [f.name for f in self.pages.iterdir() if f.is_dir()]

@@ -17,6 +17,7 @@ from ..pages.defender.defender import DefenderV0
 
 # /settings
 from ..pages.settings import SettingsPage
+from ..pages.theme_editor import ThemeEditorPage
 
 # /generic (data-driven pages, dispatched by each page's own config "build_type").
 # start and title/select_demo are build_type "title" pages
@@ -42,6 +43,7 @@ PAGES: dict[str, type] = {
         "demo/visuals": Visuals,
         "demo/config_editor": ConfigEditor,
         "settings": SettingsPage,
+        "theme_editor": ThemeEditorPage,
         "404": NotFound,
 }
 

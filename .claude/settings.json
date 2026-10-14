@@ -1,5 +1,29 @@
 {
   "enabledPlugins": {
     "ponytail@ponytail": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"C:/Users/tatea/Documents/VSCode Projects/game/cybersecurity-game/venv/Scripts/graphify.EXE\" hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"C:/Users/tatea/Documents/VSCode Projects/game/cybersecurity-game/venv/Scripts/graphify.EXE\" hook-guard read",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

@@ -9,12 +9,11 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
 from ..app_core import Context
 from ..app_core.context.keybinds import DEFAULT_KEYBINDS
 from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
-from ..app_core.context.style import (BACKGROUND_FPS_RANGE, SURFACE_BLUR_MAX, SURFACE_KINDS, THEME_ADJUST_RANGE,
-                                      THEME_TINT_MAX)
+from ..app_core.context.style import BACKGROUND_FPS_RANGE
 from ..widgets import MenuBar, VISUALS
-from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, LinkToPage,
+from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
-                                                       OpenWorkspaceEditor, developer_text)
+                                                       OpenThemeEditor, OpenWorkspaceEditor, ResetTheme, developer_text)
 from .page import Page
 
 # This page's own menu bar - plain navigation; everything else is on the page
@@ -46,11 +45,15 @@ class SettingsPage(Page):
 
     LABEL_WIDTH = 240
     CONTROL_WIDTH = 300
+    # Whether rows show what they do in a third column - otherwise only as a tooltip
+    SHOW_NOTES = True
+    # The menu bar's title ("menu_bar_titles_<TITLE>") and buttons
+    TITLE = "settings"
+    MENU_BAR_BUTTONS = SETTINGS_MENU_BAR
 
     # Kept on the class so it survives the rebuilds some settings trigger
+    # (a subclass keeps its own - see remember_tab)
     selected_tab: ClassVar[int] = 0
-    # The first tab built (see __init__) - the menu bar's theme button opens straight to it
-    APPEARANCE_TAB: ClassVar[int] = 0
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -58,13 +61,22 @@ class SettingsPage(Page):
         # The page's own background, so appearance changes preview live behind the settings
         self.add_background({"background": {"blur": 6}})
 
-        menu_bar = MenuBar(self, context, "settings")
-        menu_bar.add_config_buttons(SETTINGS_MENU_BAR)
+        menu_bar = MenuBar(self, context, self.TITLE)
+        menu_bar.add_config_buttons(self.MENU_BAR_BUTTONS)
 
         self.tabs = QTabWidget()
         self.tabs.setFont(self.style.get_font("default"))
+        self.place_tabs()
+        self.build_tabs()
+
+        self.tabs.setCurrentIndex(min(type(self).selected_tab, self.tabs.count() - 1))
+        self.tabs.currentChanged.connect(self.remember_tab)
+
+    def place_tabs(self):
+        '''Puts self.tabs on the page - filling it, below the menu bar.'''
         self.layout().addWidget(self.tabs, 1)
 
+    def build_tabs(self):
         self.build_appearance_tab()
         self.build_background_tab()
         self.build_performance_tab()
@@ -72,84 +84,39 @@ class SettingsPage(Page):
         self.build_data_tab()
         self.build_developer_tab()
 
-        self.tabs.setCurrentIndex(min(SettingsPage.selected_tab, self.tabs.count() - 1))
-        self.tabs.currentChanged.connect(self.remember_tab)
-
     def remember_tab(self, index: int):
-        SettingsPage.selected_tab = index
+        type(self).selected_tab = index
 
     # Tabs
     def build_appearance_tab(self):
-        style = self.style
+        '''
+        Just the theme settings almost everyone needs (see theme_rows) -
+        everything finer is on the theme editor page.
+        '''
         tab = self.new_tab("appearance")
+        self.theme_rows(self.section(tab, "theme"))
 
-        theme = self.section(tab, "theme")
+    def theme_rows(self, theme: "SettingsSection"):
+        '''
+        Light or dark, the theme selector (the default themes and imported
+        ones - see Style.theme_choices), and links to the theme editor, the
+        imported themes folder and resetting the theme - the same as the
+        menu bar's Themes section.
+        '''
+        style, context = self.style, self.context
         mode, _, family = style.current_theme.partition("_")
-        preset = style.is_preset()
-        theme.row("settings_page_rows_mode", self.dropdown(
-            {"dark": self.labels.get("settings_page_mode_dark"), "light": self.labels.get("settings_page_mode_light")},
-            mode, lambda value: style.set_theme(f"{value}_{family}")), "settings_page_row_notes_mode")
-        # While a special theme is in use, these show that instead - so any pick switches back
-        in_use = {"": self.labels.get("settings_page_special_in_use")} if preset else {}
-        theme.row("settings_page_rows_accent", self.dropdown(
-            {**in_use, **{name: name.replace("_", " ").title() for name in style.accents}},
-            "" if preset else style.theme_accent, style.set_accent), "settings_page_row_notes_accent")
-        theme.row("settings_page_rows_hierarchy", self.dropdown(
-            {**in_use, **{name: name.replace("_", " ").title() for name in style.hierarchies}},
-            "" if preset else style.theme_hierarchy, style.set_hierarchy), "settings_page_row_notes_hierarchy")
-        # Rebuilds the page, so only on release - not every step of a drag.
-        # Special themes have their own colors, so it does nothing for them
-        tint = self.slider(round(style.theme_tint * 100), 0, round(THEME_TINT_MAX * 100), "%",
-                           lambda value: style.set_tint(value / 100), live=False)
-        tint.setEnabled(not preset)
-        theme.row("settings_page_rows_tint", tint, "settings_page_row_notes_tint")
-        theme.row("settings_page_rows_inset", self.checkbox(style.theme_inset, style.set_inset), "settings_page_row_notes_inset")
-        theme.row("settings_labels_surface_invert_buttons", self.checkbox(style.invert_buttons, style.set_invert_buttons),
-                  "settings_tooltips_surface_invert_buttons")
-
-        # Per mode: step size and height shape accent + hierarchy themes; border contrast is for every theme
-        layers = self.section(tab, "layers_and_borders")
-        for theme_mode in ("dark", "light"):
-            for key in THEME_ADJUST_RANGE:
-                low, high = THEME_ADJUST_RANGE[key]
-                percent = key != "height"  # height is in L* steps, the others are multipliers
-                scale = 100 if percent else 1
-                control = self.slider(round(style.theme_adjust[theme_mode][key] * scale), round(low * scale), round(high * scale),
-                                      "%" if percent else "",
-                                      lambda value, theme_mode=theme_mode, key=key, scale=scale: style.set_adjust(theme_mode, key, value / scale),
-                                      live=False)
-                control.setEnabled(key == "border" or not preset)
-                layers.row(f"settings_page_rows_{theme_mode}_{key}", control, f"settings_page_row_notes_adjust_{key}")
-
-        special = self.section(tab, "special_themes")
-        presets = style.preset_names()
-        special.row("settings_page_rows_special_theme", self.dropdown(
-            {"": self.labels.get("settings_page_no_special_theme"), **presets}, family if preset else "",
-            lambda value: style.set_family(value or f"{style.theme_accent}.{style.theme_hierarchy}"),
-            {name: style.preset_info[name].get("note", "") for name in presets}), "settings_page_row_notes_special_theme")
-
-        translucency = self.section(tab, "translucency")
-        translucency.row("settings_page_rows_translucent_surfaces",
-                         self.checkbox(style.translucent_surfaces, style.set_translucent_surfaces),
-                         "settings_page_row_notes_translucent_surfaces")
-
-        # The Background dropdown's two columns, each its own section
-        opacity = self.section(tab, "surface_opacity")
-        for kind in SURFACE_KINDS:
-            opacity.row(f"settings_labels_surface_opacity_{kind}", self.slider(
-                round(style.surface_opacity[kind] * 100), 0, 100, "%",
-                lambda value, kind=kind: style.set_surface(kind, opacity=value / 100)),
-                f"settings_tooltips_surface_opacity_{kind}")
-        blur = self.section(tab, "surface_blur")
-        for kind in SURFACE_KINDS:
-            blur.row(f"settings_labels_surface_blur_{kind}", self.slider(
-                round(style.surface_blur[kind]), 0, int(SURFACE_BLUR_MAX), " px",
-                lambda value, kind=kind: style.set_surface(kind, blur=value)),
-                f"settings_tooltips_surface_blur_{kind}")
-
-        reset = self.section(tab, "appearance_reset")
-        reset.row("settings_page_rows_reset_surfaces", self.button(
-            "settings_page_buttons_reset", self.reset_surfaces), "settings_page_row_notes_reset_surfaces")
+        theme.row("settings_page_rows_dark_mode", self.checkbox(
+            mode == "dark", lambda on: style.set_theme(f"{'dark' if on else 'light'}_{style.theme_family()}")),
+            "settings_page_row_notes_dark_mode")
+        choices = style.theme_choices()
+        # A theme made in the theme editor isn't one of the choices - shown as such, so any pick switches back
+        custom = {} if family in choices else {family: self.labels.get("settings_page_custom_theme")}
+        theme.row("settings_page_rows_theme", self.dropdown(
+            {**choices, **custom}, family, lambda value: value in choices and style.set_family(value),
+            {name: style.preset_info[name].get("note", "") for name in choices}), "settings_page_row_notes_theme")
+        theme.row("settings_page_rows_theme_editor", OpenThemeEditor(context), "settings_page_row_notes_theme_editor")
+        theme.row("settings_page_rows_import_themes", ImportThemes(context), "settings_page_row_notes_import_themes")
+        theme.row("settings_page_rows_reset_theme", ResetTheme(context), "settings_page_row_notes_reset_theme")
 
     def build_background_tab(self):
         style = self.style
@@ -298,10 +265,6 @@ class SettingsPage(Page):
         tools.row("settings_page_rows_workspace_editor", editor, "settings_page_row_notes_workspace_editor")
 
     # Actions
-    def reset_surfaces(self):
-        self.style.reset_surfaces()
-        self.router.refresh()  # so the sliders show the defaults
-
     def reset_background(self):
         self.style.load_default_background()
         self.style.set_background()  # saves the defaults
@@ -483,7 +446,7 @@ class SettingsSection(QFrame):
         # Same column widths in every section, so controls line up down the page
         self.grid.setColumnMinimumWidth(0, page.LABEL_WIDTH)
         self.grid.setColumnMinimumWidth(1, page.CONTROL_WIDTH)
-        self.grid.setColumnStretch(2, 1)
+        self.grid.setColumnStretch(2 if page.SHOW_NOTES else 1, 1)
         layout.addLayout(self.grid)
         self.count = 0
 
@@ -499,6 +462,8 @@ class SettingsSection(QFrame):
         description.setWordWrap(True)
         label.setToolTip(description.text())
         control.setToolTip(control.toolTip() or description.text())
+        if not self.page.SHOW_NOTES:
+            description.deleteLater()  # only needed for its text, as the tooltips above
         # Narrow controls (checkboxes, number boxes, buttons) sit at the column's
         # left edge; dropdowns and sliders fill it
         narrow = isinstance(control, (QCheckBox, QLineEdit, QPushButton, QLabel))
@@ -511,5 +476,6 @@ class SettingsSection(QFrame):
         align = Qt.AlignmentFlag.AlignVCenter | (Qt.AlignmentFlag.AlignLeft if narrow else Qt.AlignmentFlag(0))
         self.grid.addWidget(label, self.count, 0, Qt.AlignmentFlag.AlignVCenter)
         self.grid.addWidget(control, self.count, 1, align)
-        self.grid.addWidget(description, self.count, 2, Qt.AlignmentFlag.AlignVCenter)
+        if self.page.SHOW_NOTES:
+            self.grid.addWidget(description, self.count, 2, Qt.AlignmentFlag.AlignVCenter)
         self.count += 1

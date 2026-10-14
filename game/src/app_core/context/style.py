@@ -65,10 +65,16 @@ THEME_TINT_MAX = 3.0
 DEFAULT_THEME_ADJUST: dict[str, dict[str, float]] = {mode: {"steps": 1.0, "height": 0.0, "border": 1.0} for mode in ("dark", "light")}
 THEME_ADJUST_RANGE: dict[str, tuple[float, float]] = {"steps": (0.0, 3.0), "height": (-20.0, 20.0), "border": (0.0, 3.0)}
 
-# Fallback themes when no preference is saved yet, or when toggle_mode's
-# target mode has no variant in the current color family.
-DEFAULT_DARK_THEME = "dark_blue"
-DEFAULT_LIGHT_THEME = "light_blue"
+# The default themes - the hand-picked families the theme selector offers
+# everyone (most combinations of the theme editor's settings don't look
+# good, so these are the ones that do). The first is the theme a fresh
+# start, and Reset Theme, use. Imported themes (see IMPORTED_PREFIX) join
+# them in the selector; every other preset is only in the theme editor.
+CURATED_THEMES: list[str] = ["blue_v2_light"]
+# Imported themes - <family>.json files in user_data/themes, the same shape
+# as assets/themes' - are named "imported.<file name>", so one can never
+# replace a bundled preset of the same name
+IMPORTED_PREFIX = "imported."
 
 # Surfaces - the kinds of backgrounds whose opacity and backdrop blur the
 # user can tune (the "Background" style dropdown), each saved as a
@@ -193,7 +199,7 @@ class Style:
         self.theme_accent: str = DEFAULT_ACCENT
         self.theme_hierarchy: str = DEFAULT_HIERARCHY
         self._theme_colors: dict[str, str] = {}
-        self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
+        self.apply_theme(self.default_theme())
 
     def packing(self, type = "default"):
         options = {}
@@ -818,16 +824,7 @@ class Style:
         key is skipped.
         '''
         for path in sorted(self.context.paths.themes.glob("*.json")):
-            try:
-                with open(path, encoding="utf-8") as file:
-                    preset = json.load(file)
-                if all(THEME_KEYS <= set(preset[mode]) for mode in THEME_MODES):
-                    self.palettes[path.stem] = {mode: preset[mode] for mode in THEME_MODES}
-                    self.preset_info[path.stem] = {key: value for key, value in preset.items() if key not in THEME_MODES}
-                else:
-                    print(f"Err: theme {path} is missing color keys - skipped.")
-            except Exception as e:
-                print(f"Err: [{e}] while loading theme {path}.")
+            self._load_preset(path, path.stem)
         generator = self.context.paths.themes / "generator"
         try:
             with open(generator / "accents.json", encoding="utf-8") as file:
@@ -837,6 +834,39 @@ class Style:
         except Exception as e:
             print(f"Err: [{e}] while loading the theme generator - only presets are available.")
             self.accents, self.hierarchies = {}, {}
+        self.load_imported_themes()
+
+    def _load_preset(self, path, family: str, kind: str | None = None) -> bool:
+        '''Reads one preset file into palettes/preset_info as family - False (and nothing added) if it's unreadable or incomplete.'''
+        try:
+            with open(path, encoding="utf-8") as file:
+                preset = json.load(file)
+            if not all(THEME_KEYS <= set(preset[mode]) for mode in THEME_MODES):
+                print(f"Err: theme {path} is missing color keys - skipped.")
+                return False
+            self.palettes[family] = {mode: preset[mode] for mode in THEME_MODES}
+            info = {key: value for key, value in preset.items() if key not in THEME_MODES}
+            if kind is not None:
+                info["kind"] = kind
+            self.preset_info[family] = info
+            return True
+        except Exception as e:
+            print(f"Err: [{e}] while loading theme {path}.")
+            return False
+
+    def load_imported_themes(self):
+        '''
+        (Re)reads user_data/themes (see IMPORTED_PREFIX) - so themes dropped
+        in while the app is open show up the next time the selector opens,
+        and deleted ones disappear.
+        '''
+        for family in [name for name in self.palettes if name.startswith(IMPORTED_PREFIX)]:
+            del self.palettes[family]
+            del self.preset_info[family]
+        for path in sorted(self.context.paths.user_themes.glob("*.json")):
+            family = IMPORTED_PREFIX + path.stem
+            if self._load_preset(path, family, "imported"):
+                self.preset_info[family].setdefault("label", path.stem.replace("_", " ").title())
 
     def _palette(self, family: str, mode: str) -> dict[str, str]:
         '''One mode of a preset or "<accent>.<hierarchy>" family, inset if theme_inset is on.'''
@@ -865,19 +895,33 @@ class Style:
         '''The current preset's name, or "<accent>.<hierarchy>".'''
         return self.current_theme.partition("_")[2]
 
+    def preset_name(self, family: str) -> str:
+        '''A preset family's shown name - noting a derived side.'''
+        info = self.preset_info[family]
+        label = info.get("label", family)
+        derived = [self.context.labels.get(f"settings_page_mode_{side}") for side in info.get("derived", [])]
+        if derived:
+            label += self.context.labels.get("theme_picker_derived").replace("{sides}", ", ".join(derived))
+        return label
+
     def preset_names(self) -> dict[str, str]:
-        '''Every preset family -> its shown name, originals first, then copied ones - noting a derived side.'''
-        names = {}
-        for kind in ("original", "copied"):
-            for name, info in self.preset_info.items():
-                if info.get("kind", "original") != kind:
-                    continue
-                label = info.get("label", name)
-                derived = [self.context.labels.get(f"settings_page_mode_{side}") for side in info.get("derived", [])]
-                if derived:
-                    label += self.context.labels.get("theme_picker_derived").replace("{sides}", ", ".join(derived))
-                names[name] = label
-        return names
+        '''Every preset family -> its shown name: originals first, then copied ones, then imported ones.'''
+        return {name: self.preset_name(name) for kind in ("original", "copied", "imported")
+                for name, info in self.preset_info.items() if info.get("kind", "original") == kind}
+
+    def theme_choices(self) -> dict[str, str]:
+        '''What the theme selector offers - the default themes (see CURATED_THEMES), then imported ones - family -> shown name.'''
+        self.load_imported_themes()
+        curated = [name for name in CURATED_THEMES if name in self.palettes]
+        imported = [name for name in self.palettes if name.startswith(IMPORTED_PREFIX)]
+        return {name: self.preset_name(name) for name in curated + imported}
+
+    def default_theme(self, mode: str | None = None) -> str:
+        '''The first default theme (or built-in blue, if assets/themes is missing it) - in mode, or the system's.'''
+        if mode is None:
+            mode = "dark" if darkdetect.isDark() else "light"
+        family = next((name for name in CURATED_THEMES if name in self.palettes), "blue")
+        return f"{mode}_{family}"
 
     def is_preset(self) -> bool:
         return self.theme_family() in self.palettes
@@ -904,7 +948,22 @@ class Style:
         self.theme_inset = DEFAULT_THEME_INSET
         self.theme_tint = DEFAULT_THEME_TINT
         self.theme_adjust = {mode: dict(values) for mode, values in DEFAULT_THEME_ADJUST.items()}
-        self.apply_theme(DEFAULT_DARK_THEME if darkdetect.isDark() else DEFAULT_LIGHT_THEME)
+        self.apply_theme(self.default_theme())
+
+    def reset_theme(self):
+        '''
+        Everything the theme editor changes back to its default - the first
+        default theme (keeping light or dark), its fine-tuning and the
+        surfaces - saved, and the page rebuilt in it.
+        '''
+        self.theme_inset = DEFAULT_THEME_INSET
+        self.theme_tint = DEFAULT_THEME_TINT
+        self.theme_adjust = {mode: dict(values) for mode, values in DEFAULT_THEME_ADJUST.items()}
+        self.context.preferences.set("theme_inset", self.theme_inset)
+        self.context.preferences.set("theme_tint", self.theme_tint)
+        self.context.preferences.set("theme_adjust", {mode: dict(values) for mode, values in self.theme_adjust.items()})
+        self.reset_surfaces()
+        self.set_theme(self.default_theme(self.current_theme.partition("_")[0]))
 
     def set_theme(self, theme_name: str):
         '''Applies a theme ("<mode>_<family>", e.g. "dark_teal" or "light_cyan.whisper"), saves it, and rebuilds the page in it.'''
