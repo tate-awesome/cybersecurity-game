@@ -845,19 +845,26 @@ class Style:
             if self._load_preset(path, family, "imported"):
                 self.preset_info[family].setdefault("label", path.stem.replace("_", " ").title())
 
-    # Editing themes - only the user's own (see IMPORTED_PREFIX). Edits show
-    # at once; save_theme writes them to the theme's file.
+    # Editing themes - the user's own (see IMPORTED_PREFIX), and in developer
+    # mode the built-in ones too. Edits show at once; save_theme writes them
+    # to the theme's file.
     @staticmethod
     def is_user_theme(family: str) -> bool:
         return family.startswith(IMPORTED_PREFIX)
 
+    def can_edit(self, family: str) -> bool:
+        '''Whether a theme can be changed: the user's own always, built-in ones in developer mode.'''
+        return self.is_user_theme(family) or self.context.preferences.is_developer()
+
     def is_editable(self) -> bool:
-        '''Whether the current theme is one of the user's own - the only ones that can be edited.'''
-        return self.is_user_theme(self.theme_family())
+        '''Whether the current theme can be changed (see can_edit).'''
+        return self.can_edit(self.theme_family())
 
     def theme_path(self, family: str) -> Path:
-        '''Where one of the user's own themes is saved.'''
-        return self.context.paths.user_themes / f"{family[len(IMPORTED_PREFIX):]}.json"
+        '''Where a theme is saved: the user's own in user_data/themes, built-in ones in assets/themes.'''
+        if self.is_user_theme(family):
+            return self.context.paths.user_themes / f"{family[len(IMPORTED_PREFIX):]}.json"
+        return self.context.paths.themes / f"{family}.json"
 
     def editor_themes(self) -> tuple[dict[str, str], dict[str, str]]:
         '''Every theme the theme editor offers, family -> shown name: (built-in ones, the user's own).'''
@@ -944,16 +951,18 @@ class Style:
         self._edited(family)
 
     def _theme_contents(self, family: str, kind: str | None = None) -> dict:
-        # "kind" is "imported" for every theme read from user_data (see load_imported_themes) - not part of the file
-        info = {key: value for key, value in self.preset_info[family].items() if key != "kind"}
+        info = dict(self.preset_info[family])
+        if self.is_user_theme(family):
+            # "kind" is "imported" for every theme read from user_data (see load_imported_themes) - not part of the file
+            info.pop("kind", None)
         if kind is not None:
             info = {"label": info.pop("label", family), "kind": kind, **info}
         return {"info": info, "materials": self.materials[family]}
 
     def save_theme(self, family: str | None = None):
-        '''Writes one of the user's themes (the current one, by default) to its file.'''
+        '''Writes a theme (the current one, by default) to its file (see theme_path) - if it can be edited at all.'''
         family = family or self.theme_family()
-        if not self.is_user_theme(family) or family not in self.materials:
+        if not self.can_edit(family) or family not in self.materials:
             return
         if self._write_theme(self.theme_path(family), self._theme_contents(family)):
             self.unsaved.discard(family)
@@ -964,7 +973,13 @@ class Style:
         if family not in self.unsaved:
             return
         self.unsaved.discard(family)
-        self.load_imported_themes()
+        if self.is_user_theme(family):
+            self.load_imported_themes()
+        elif self.theme_path(family).is_file():
+            self._load_preset(self.theme_path(family), family)
+        else:  # built-in blue, which only has a file once it's been saved
+            self.materials[family] = resolve_materials(None)
+            self.preset_info[family] = dict(PRESET_INFO.get(family, {}))
         if family == self.theme_family():
             self.apply_theme(self.current_theme if family in self.materials else self.default_theme(self.current_theme.partition("_")[0]))
         self.signals.edited.emit()

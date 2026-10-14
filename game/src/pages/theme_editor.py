@@ -79,10 +79,9 @@ class ThemeEditorPage(SettingsPage):
         self.fill_themes(self.selector, built_in, own)
         self.selector.setCurrentIndex(max(0, self.selector.findData(family)))
         self.selector.blockSignals(False)
-        editable = style.is_editable()
-        self.save_button.setEnabled(editable and family in style.unsaved)
+        self.save_button.setEnabled(style.is_editable() and family in style.unsaved)
         if self.built_in_button is not None:
-            self.built_in_button.setEnabled(editable)
+            self.built_in_button.setEnabled(style.is_user_theme(family))
 
     def fill_themes(self, combo: QComboBox, built_in: dict[str, str], own: dict[str, str]):
         '''Built-in themes, then the user's own (marked if unsaved), each with its family as data.'''
@@ -141,7 +140,7 @@ class ThemeEditorPage(SettingsPage):
         '''Developers: saves the theme being edited into assets/themes - asking first if that replaces one.'''
         style = self.style
         family = style.theme_family()
-        if not style.is_editable():
+        if not style.is_user_theme(family):
             return
 
         def make():
