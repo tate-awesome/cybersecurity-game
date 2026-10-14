@@ -73,9 +73,9 @@ assert sorted([*MENU_BAR_BUTTON_ORDER, *FIXED_BUTTON_NAMES,
                *(name for sections in RIGHT_ZONE_GROUPS.values() for _, names in sections for name in names)]) == sorted(MENU_BAR_BUTTONS),     "every menu bar button needs exactly one place: MENU_BAR_GROUPS, RIGHT_ZONE_GROUPS or FIXED_BUTTON_NAMES"
 
 # Center zone buttons shown as a bare symbol when they're by themselves
-# (see MenuBar.icon_button) - button class -> the labels key of its symbol
-ICON_LABELS: dict[type[ImportantButton], str] = {
-    MENU_BAR_BUTTONS["refresh_button"]: "menu_bar_buttons_refresh_icon",
+# (see MenuBar.icon_button) - button class -> its icon (see style.ICONS)
+CENTER_ICONS: dict[type[ImportantButton], str] = {
+    MENU_BAR_BUTTONS["refresh_button"]: "reload",
 }
 
 def group_button_names(group_key: str) -> list[str]:
@@ -226,7 +226,7 @@ class MenuBar(QFrame):
 
         if self.page_bar:
             from .important_buttons import ToggleBookmark
-            self.bookmark = self.icon_button(ToggleBookmark(context))
+            self.bookmark = self.icon_button(ToggleBookmark(context), "bookmark", "bookmark-filled")
             self.row.addWidget(self.bookmark, 0, Qt.AlignmentFlag.AlignVCenter)
             self._fixed.append(self.bookmark)
         self.row.addStretch()
@@ -267,9 +267,9 @@ class MenuBar(QFrame):
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
         router = self.context.router
-        self.home = self.icon_button(OpenPauseMenu(self.context))
-        self.back_arrow = self.icon_button(GoBackToPreviousPage(self.context, "menu_bar_buttons_back_arrow"))
-        self.forward_arrow = self.icon_button(GoForwardToNextPage(self.context, "menu_bar_buttons_forward_arrow"))
+        self.home = self.icon_button(OpenPauseMenu(self.context), "menu-2")
+        self.back_arrow = self.icon_button(GoBackToPreviousPage(self.context), "arrow-left")
+        self.forward_arrow = self.icon_button(GoForwardToNextPage(self.context), "arrow-right")
         stack = router.navigation_stack
         self.where_to(self.back_arrow, stack[-2] if len(stack) >= 2 else None, "back_to")
         self.where_to(self.forward_arrow, router.forward_stack[-1] if router.forward_stack else None, "forward_to")
@@ -303,8 +303,8 @@ class MenuBar(QFrame):
                         for header, names in group_sections]
             group = ButtonGroup(self.context, group_key, [section for section in sections if section[1]])
             row.addWidget(group, 0, Qt.AlignmentFlag.AlignVCenter)
-        self.settings_button = self.icon_button(OpenSettingsPage(self.context, "menu_bar_buttons_settings_icon"))
-        self.help_button = self.icon_button(ShowHelpMessage(self.context, "menu_bar_buttons_help_icon"))
+        self.settings_button = self.icon_button(OpenSettingsPage(self.context), "settings")
+        self.help_button = self.icon_button(ShowHelpMessage(self.context), "info-circle")
         row.addWidget(self.settings_button, 0, Qt.AlignmentFlag.AlignVCenter)
         row.addWidget(self.help_button, 0, Qt.AlignmentFlag.AlignVCenter)
         # The whole height of the bar, up into the window's top right corner
@@ -312,16 +312,13 @@ class MenuBar(QFrame):
         row.addWidget(self.window_controls)
         return zone
 
-    def icon_button(self, button: QPushButton) -> QPushButton:
+    def icon_button(self, button: ImportantButton, icon: str, active_icon: str | None = None) -> ImportantButton:
         '''
-        Styles a solo button as a bare symbol - no background or border,
-        just the glyph in the text color (the accent on hover), a size up
-        from the bar's other buttons. Faint while disabled.
+        Shows a solo button as a bare symbol (see ImportantButton.show_icon)
+        - no background or border, just the icon in the text color (the
+        accent on hover), its label as its tooltip. Faint while disabled.
         '''
-        font = self.style.get_font()
-        font = type(font)(font)
-        font.setPointSizeF(font.pointSizeF() * 1.3)
-        button.setFont(font)
+        button.show_icon(icon, active_icon)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         name = f"_icon_button_{id(button)}"
@@ -331,6 +328,7 @@ class MenuBar(QFrame):
             faint = QColor(self.style.color("text"))
             faint.setAlpha(80)
             return (f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px {self.style.igap // 2}px;"
+                    f" {self.style.icon_css()}"
                     f" color: {self.style.color('text')}; }}"
                     f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; }}"
                     f" QPushButton#{name}:pressed {{ color: {self.style.color('text')}; }}"
@@ -808,10 +806,9 @@ class MenuBar(QFrame):
                 self.page_links += button_classes
             elif len(button_classes) == 1:
                 button = self.add_important(button_classes[0])
-                icon = ICON_LABELS.get(button_classes[0])
+                icon = CENTER_ICONS.get(button_classes[0])
                 if button is not None and icon is not None and self.page_bar:
-                    button.setText(self.context.labels.get(icon))
-                    self.icon_button(button)
+                    self.icon_button(button, icon)
             elif button_classes:
                 self.add_important(ButtonGroup, group_key, present)
 

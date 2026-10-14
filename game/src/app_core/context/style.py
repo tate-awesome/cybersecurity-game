@@ -5,7 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QColor, QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication, QWidget
 import darkdetect
 
@@ -82,6 +82,26 @@ class StyleSignals(QObject):
     edited = Signal()
 
 
+# The symbols solo buttons show (see Style.icon) - name -> codepoint in
+# ICON_FONT, a subset of Tabler Icons (MIT - see its license beside it) with
+# just these. Names are Tabler's own; to add one, subset it into the font too.
+ICON_FONT = "tabler-icons.ttf"
+ICONS: dict[str, int] = {
+    "menu-2": 0xec42,
+    "arrow-left": 0xea19,
+    "arrow-right": 0xea1f,
+    "bookmark": 0xea3a,
+    "bookmark-filled": 0xfa88,
+    "settings": 0xeb20,
+    "reload": 0xf3ae,
+    "info-circle": 0xeac5,
+    "minus": 0xeaf2,
+    "square": 0xeb2c,
+    "copy": 0xea7a,
+    "power": 0xeb0d,
+}
+
+
 class Style:
 
     def __init__(self, context: "Context"):
@@ -103,6 +123,8 @@ class Style:
         self.PANEL_RADIUS = self.igap
         self.fonts = {}
         self.context = context
+        # The icon font's family once loaded (see icon) - None if it couldn't be
+        self.icon_family: str | None = self._load_icon_font(context.paths.fonts / ICON_FONT)
         self.signals = StyleSignals()
         # Widgets with colors in their own stylesheet, rebuilt on every theme
         # change (see live_style): id -> (widget, builder)
@@ -185,6 +207,8 @@ class Style:
             elif name == "page_title":
                 font = QFont("Arial", self.get_font_size("page_title"))
                 font.setBold(True)
+            elif name == "icon":
+                font = QFont(self.icon_family or "Arial", self.get_font_size("icon"))
             elif name == "chart_title":
                 font = QFont("Arial", self.get_font_size("chart_title"))
                 font.setBold(True)
@@ -198,6 +222,28 @@ class Style:
             self.fonts[name] = font
         return self.fonts[name]
 
+    @staticmethod
+    def _load_icon_font(path: Path) -> str | None:
+        font_id = QFontDatabase.addApplicationFont(str(path))
+        families = QFontDatabase.applicationFontFamilies(font_id) if font_id >= 0 else []
+        if not families:
+            print(f"Couldn't load the icon font {path} - icons will show as blanks")
+            return None
+        return families[0]
+
+    def icon_css(self) -> str:
+        '''
+        The "icon" font as stylesheet declarations - for icon widgets with a
+        stylesheet of their own, which (re)setting would otherwise reset
+        their font to their parent's.
+        '''
+        return f"font-family: \"{self.icon_family or 'Arial'}\"; font-size: {self.get_font_size('icon')}pt;"
+
+    @staticmethod
+    def icon(name: str) -> str:
+        '''One of ICONS as text, for a widget using the "icon" font (see get_font).'''
+        return chr(ICONS[name])
+
     def get_font_size(self, name="default"):
         size = 16.0
         if name == "title_btn":
@@ -206,6 +252,8 @@ class Style:
             size = 72
         elif name == "page_title":
             size = 21.0
+        elif name == "icon":
+            size = 18.0
         elif name == "small":
             size = 15.0
         elif name == "chart_title":

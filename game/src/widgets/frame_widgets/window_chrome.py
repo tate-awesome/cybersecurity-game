@@ -253,9 +253,13 @@ class WindowControls(QWidget):
     Hidden while fullscreen, where the window has nothing to minimize to
     or restore from - F11 or the settings page leave fullscreen.
 
-    Each glyph is a labels key ("window_controls_<name>"), like the menu
-    bar's back arrow, so a labels file can swap it.
+    Each shows one of style.ICONS (see ICONS here), with its name as a
+    labels key tooltip ("window_controls_tooltips_<name>").
     '''
+
+    # Each control's icon (see style.ICONS) - close is a power symbol, since
+    # closing the window quits the game
+    ICONS = {"minimize": "minus", "maximize": "square", "restore": "copy", "close": "power"}
 
     def __init__(self, context: Context, parent: QWidget | None = None):
         super().__init__(parent)
@@ -280,8 +284,8 @@ class WindowControls(QWidget):
         self.follow_window()
 
     def _button(self, name: str, action) -> QPushButton:
-        button = QPushButton(self.label(name))
-        button.setFont(self.style.get_font())
+        button = QPushButton(self.style.icon(self.ICONS[name]))
+        button.setFont(self.style.get_font("icon"))
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         button.setToolTip(self.label(f"tooltips_{name}"))
@@ -296,7 +300,7 @@ class WindowControls(QWidget):
     def sheet(self) -> str:
         name = self.objectName()
         text = self.style.color("text")
-        return (f"QWidget#{name} QPushButton {{ background: transparent; border: none; color: {text};"
+        return (f"QWidget#{name} QPushButton {{ background: transparent; border: none; color: {text}; {self.style.icon_css()}"
                 f" padding: 0px {self.style.igap}px; }}"
                 f" QWidget#{name} QPushButton:hover {{ background: {self.style.css('card')}; color: {self.style.color('accent')}; }}"
                 f" QWidget#{name} QPushButton[close=\"true\"]:hover {{ background: {CLOSE_HOVER}; color: white; }}"
@@ -307,7 +311,7 @@ class WindowControls(QWidget):
         try:
             self.setVisible(not self.root.isFullScreen())
             maximized = self.root.isMaximized()
-            self.maximize.setText(self.label("restore" if maximized else "maximize"))
+            self.maximize.setText(self.style.icon(self.ICONS["restore" if maximized else "maximize"]))
             self.maximize.setToolTip(self.label("tooltips_restore" if maximized else "tooltips_maximize"))
         except RuntimeError:
             pass  # deleted with its page, with the signal still connected

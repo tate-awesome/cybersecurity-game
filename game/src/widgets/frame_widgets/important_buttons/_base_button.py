@@ -46,6 +46,8 @@ class ImportantButton(QPushButton):
     def __init__(self, context: Context, label_key: str | None = None):
         super().__init__(context.labels.get(label_key or self.LABEL))
         self.developer_only = False
+        # (inactive, active) icon names while shown as a symbol - see show_icon
+        self.icons: tuple[str, str] | None = None
         self.context = context
         self.setFont(context.style.get_font())
         if self.TOOLTIP is not None:
@@ -73,6 +75,23 @@ class ImportantButton(QPushButton):
         self.developer_only = True
         self.setText(self.text())
         self.setFixedHeight(height)
+
+    def show_icon(self, icon: str, active_icon: str | None = None):
+        '''
+        Shows one of style.ICONS in place of the label (which becomes the
+        tooltip, if there isn't one) - for a ToggleButton, active_icon while
+        it's active.
+        '''
+        if not self.toolTip():
+            self.setToolTip(self.text())
+        self.icons = (icon, active_icon or icon)
+        self.setFont(self.context.style.get_font("icon"))
+        self.show_state()
+
+    def show_state(self):
+        '''Puts the button's current look in place - its icon, if it has one (see show_icon).'''
+        if self.icons is not None:
+            self.setText(self.context.style.icon(self.icons[0]))
 
     def setText(self, text: str):
         if self.POPOUT and not text.endswith(POPOUT_MARK):
@@ -144,7 +163,10 @@ class ToggleButton(ImportantButton):
         self.show_state()
 
     def show_state(self):
-        self.setText(self.context.labels.get(self.ACTIVE_LABEL if self.active else self.LABEL))
+        if self.icons is not None:
+            self.setText(self.context.style.icon(self.icons[1] if self.active else self.icons[0]))
+        else:
+            self.setText(self.context.labels.get(self.ACTIVE_LABEL if self.active else self.LABEL))
 
     def start(self):
         pass
