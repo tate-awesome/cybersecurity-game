@@ -120,9 +120,9 @@
     "semantic_hash": "893299ec169957cc49ccc6c17bcf8490"
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1791989490.2377608,
-    "seen": 1791989761.4344225,
-    "ast_hash": "020b84b9039e7db3b5a0ddd1735907f1",
+    "mtime": 1791991888.1388242,
+    "seen": 1791992019.9851372,
+    "ast_hash": "7ad80da40c0b8ac74636e94d12c9ca6a",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1791989599.0763664,
-    "seen": 1791989761.4473252,
-    "ast_hash": "e1c4319f90955aff2767650a12b427a7",
+    "mtime": 1791991888.1357737,
+    "seen": 1791992019.9979277,
+    "ast_hash": "45fe2d5f0e1023fb7c384db5c68ce4e6",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -1362,8 +1362,8 @@
     "semantic_hash": "2f4bb182a4c4b8fb27c7afc304e6f2d2"
   },
   "game/assets/themes/gruvbox.json": {
-    "mtime": 1791976253.9563725,
-    "seen": 1791976407.6384459,
+    "mtime": 1791991977.5817094,
+    "seen": 1791992019.993225,
     "ast_hash": "fb400400ede219f42f32e9245f10c5ee",
     "semantic_hash": ""
   },
@@ -1890,9 +1890,9 @@
     "semantic_hash": "4691829cf22c167bab0bf0228f60d974"
   },
   "game/src/pages/theme_editor.py": {
-    "mtime": 1791989490.2357357,
-    "seen": 1791989761.457602,
-    "ast_hash": "04aae393214e8176745aabf667927d06",
+    "mtime": 1791991888.1357737,
+    "seen": 1791992020.0085485,
+    "ast_hash": "ddc3f1471fa4d7a689f6a283facb2674",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/import_themes.py": {
