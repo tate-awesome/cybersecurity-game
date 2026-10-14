@@ -3,9 +3,7 @@ from typing import ClassVar
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from ..app_core.context.style import THEME_ADJUST_RANGE, THEME_TINT_MAX
 from ..app_core.context.themes import MATERIALS, PALETTE_KEYS, is_color
-from ..widgets.frame_widgets.important_buttons import ResetTheme
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
 
@@ -19,15 +17,12 @@ GALLERY_ROW_HEIGHT = 340
 
 class ThemeEditorPage(SettingsPage):
     '''
-    Every theme setting beyond the few on the settings page and in the
-    menu bar's Themes section (see SettingsPage.theme_rows) - accents and
-    hierarchies, every special theme, tint and layer fine-tuning - and
-    the theme's materials (see themes.py), in tabs on the left. Bundled
+    The theme's materials (see themes.py) in a tab on the left. Bundled
     themes' materials are read-only: Customize copies the theme into the
-    user's own file (see Style.customize), whose materials change live. On the
-    right, a scrolling grid of example panels (see widgets.panels.examples) -
-    every kind of panel body with made-up data - so each change shows on
-    everything it touches.
+    user's own file (see Style.customize), whose materials change live. On
+    the right, a scrolling grid of example panels (see
+    widgets.panels.examples) - every kind of panel body with made-up data -
+    so each change shows on everything it touches.
     '''
 
     LABEL_WIDTH = 190
@@ -47,7 +42,6 @@ class ThemeEditorPage(SettingsPage):
         row.addWidget(self.gallery, 1)
 
     def build_tabs(self):
-        self.build_colors_tab()
         self.build_materials_tab()
         # As wide as the widest tab's rows need (their names' length depends on the
         # language and font), plus the scrollbar - the gallery gets the rest
@@ -55,58 +49,6 @@ class ThemeEditorPage(SettingsPage):
         self.tabs.setFixedWidth(content + self.style.get_scrollbar_size() + self.style.igap * 2)
 
     # Tabs
-    def build_colors_tab(self):
-        style = self.style
-        tab = self.new_tab("colors")
-
-        theme = self.section(tab, "theme_colors")
-        mode, _, family = style.current_theme.partition("_")
-        preset = style.is_preset()
-        theme.row("settings_page_rows_mode", self.dropdown(
-            {"dark": self.labels.get("settings_page_mode_dark"), "light": self.labels.get("settings_page_mode_light")},
-            mode, lambda value: style.set_theme(f"{value}_{family}")), "settings_page_row_notes_mode")
-        # While a special theme is in use, these show that instead - so any pick switches back
-        in_use = {"": self.labels.get("settings_page_special_in_use")} if preset else {}
-        theme.row("settings_page_rows_accent", self.dropdown(
-            {**in_use, **{name: name.replace("_", " ").title() for name in style.accents}},
-            "" if preset else style.theme_accent, style.set_accent), "settings_page_row_notes_accent")
-        theme.row("settings_page_rows_hierarchy", self.dropdown(
-            {**in_use, **{name: name.replace("_", " ").title() for name in style.hierarchies}},
-            "" if preset else style.theme_hierarchy, style.set_hierarchy), "settings_page_row_notes_hierarchy")
-        # Rebuilds the page, so only on release - not every step of a drag.
-        # Special themes have their own colors, so it does nothing for them
-        tint = self.slider(round(style.theme_tint * 100), 0, round(THEME_TINT_MAX * 100), "%",
-                           lambda value: style.set_tint(value / 100), live=False)
-        tint.setEnabled(not preset)
-        theme.row("settings_page_rows_tint", tint, "settings_page_row_notes_tint")
-        theme.row("settings_page_rows_inset", self.checkbox(style.theme_inset, style.set_inset), "settings_page_row_notes_inset")
-        theme.row("settings_labels_surface_invert_buttons", self.checkbox(style.invert_buttons, style.set_invert_buttons),
-                  "settings_tooltips_surface_invert_buttons")
-
-        special = self.section(tab, "special_themes")
-        presets = style.preset_names()
-        special.row("settings_page_rows_special_theme", self.dropdown(
-            {"": self.labels.get("settings_page_no_special_theme"), **presets}, family if preset else "",
-            lambda value: style.set_family(value or f"{style.theme_accent}.{style.theme_hierarchy}"),
-            {name: style.preset_info[name].get("note", "") for name in presets}), "settings_page_row_notes_special_theme")
-
-        # Per mode: step size and height shape accent + hierarchy themes; border contrast is for every theme
-        layers = self.section(tab, "layers_and_borders")
-        for theme_mode in ("dark", "light"):
-            for key in THEME_ADJUST_RANGE:
-                low, high = THEME_ADJUST_RANGE[key]
-                percent = key != "height"  # height is in L* steps, the others are multipliers
-                scale = 100 if percent else 1
-                control = self.slider(round(style.theme_adjust[theme_mode][key] * scale), round(low * scale), round(high * scale),
-                                      "%" if percent else "",
-                                      lambda value, theme_mode=theme_mode, key=key, scale=scale: style.set_adjust(theme_mode, key, value / scale),
-                                      live=False)
-                control.setEnabled(key == "border" or not preset)
-                layers.row(f"settings_page_rows_{theme_mode}_{key}", control, f"settings_page_row_notes_adjust_{key}")
-
-        reset = self.section(tab, "theme_reset")
-        reset.row("settings_page_rows_reset_theme", ResetTheme(self.context), "settings_page_row_notes_reset_theme")
-
     def build_materials_tab(self):
         style = self.style
         tab = self.new_tab("materials")

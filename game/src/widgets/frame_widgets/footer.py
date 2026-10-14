@@ -297,35 +297,21 @@ class Footer(QFrame):
     # Theme
     def update_theme(self):
         '''
-        The theme as "<mode> <hierarchy> <accent>" - e.g. "dark baseline
-        teal", or "dark special kimbie" for a special theme, which has no
-        hierarchy of its own - with every appearance setting on hover.
+        The theme as "<mode> <name>" - e.g. "dark blue (soft light)" - with
+        every appearance setting on hover.
         '''
         style = self.style
-        mode = self.labels.get(f"settings_page_mode_{style.current_theme.partition('_')[0]}")
-        special = style.is_preset()
-        if special:
-            family = style.theme_family()
-            hierarchy = self.label("theme_special")
-            accent = style.preset_info.get(family, {}).get("label", family.replace("_", " "))
-        else:
-            hierarchy = style.theme_hierarchy.replace("_", " ")
-            accent = style.theme_accent.replace("_", " ")
-        mode, hierarchy, accent = mode.lower(), hierarchy.lower(), accent.lower()
-        set_text(self.theme, f"{mode} {hierarchy} {accent}")
+        mode = self.labels.get(f"settings_page_mode_{style.current_theme.partition('_')[0]}").lower()
+        family = style.theme_family()
+        name = style.preset_name(family) if family in style.preset_info else family
+        set_text(self.theme, f"{mode} {name.lower()}")
 
         def on_off(on: bool) -> str:
             return self.label("on" if on else "off")
         lines = [
             self.label("tooltips_theme"),
             f"{self.label('theme_mode')}: {mode}",
-            f"{self.label('theme_hierarchy')}: {hierarchy}",
-            f"{self.label('theme_accent')}: {accent}",
-        ]
-        if not special:  # special themes have their own colors - tint does nothing to them
-            lines.append(f"{self.label('theme_tint')}: {round(style.theme_tint * 100)}%")
-        lines += [
-            f"{self.label('theme_inset')}: {on_off(style.theme_inset)}",
+            f"{self.label('theme_name')}: {name}",
             f"{self.label('theme_invert')}: {on_off(style.invert_buttons)}",
             f"{self.label('theme_translucency')}: {on_off(style.translucent_surfaces)}",
         ]

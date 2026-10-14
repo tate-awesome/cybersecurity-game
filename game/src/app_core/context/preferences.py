@@ -28,6 +28,7 @@ DEFAULT_FADE_OUT = False
 RETIRED_KEYS = (
     "surface_blur",  # surfaces' frosted-glass blur, removed
     "surface_opacity",  # surfaces' opacity, now each theme's materials (see themes.py)
+    "theme_inset", "theme_tint", "theme_adjust",  # palette tweaks on top of themes - each is drawn as authored now
 )
 
 class PreferencesData(TypedDict, total=False):
@@ -37,9 +38,6 @@ class PreferencesData(TypedDict, total=False):
     doesn't guarantee the shape at runtime (see Preferences.has()'s guard).
     '''
     theme: str
-    theme_inset: bool
-    theme_tint: float
-    theme_adjust: dict[str, dict[str, float]]
     is_developer: int
     translucent_surfaces: bool
     invert_buttons: bool
@@ -137,9 +135,6 @@ class Preferences:
         self.data.clear()
         self.data = {
             "theme": "",            # autosaved in Style
-            "theme_inset": False,   # toggled on the settings page (see Style.set_inset)
-            "theme_tint": 1.0,      # set on the settings page (see Style.set_tint)
-            "theme_adjust": {},     # set on the settings page (see Style.set_adjust) - empty means style.DEFAULT_THEME_ADJUST
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
             "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
             "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
