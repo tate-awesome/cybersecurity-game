@@ -58,7 +58,8 @@ class Footer(QFrame):
     transparent footer (see set_transparent) shows.
 
     Left to right: where you are (the navigation history on hover), the
-    Wi-Fi network (saved networks on hover) | developer mode, the UI
+    Wi-Fi network (saved networks on hover), the theme (the rest of the
+    appearance settings on hover) | developer mode, the UI
     framerate, zoom (keybinds on hover), session time, and the version.
 
     It keeps its own slow timer, since each page's AnimationManager is
@@ -97,6 +98,7 @@ class Footer(QFrame):
 
         self.location = self._item()
         self.wifi_label = self._item()
+        self.theme = self._item()
         self.row.addStretch()
         self.developer = self._item()
         self.fps = self._item()
@@ -216,6 +218,7 @@ class Footer(QFrame):
         self.update_session()
         self.update_fps()
         self.update_zoom()  # fullscreen changes without a rebuild (F11)
+        self.update_theme()  # translucency and the background change without a rebuild
         if self.updates % WIFI_EVERY == 0:
             self.update_wifi()
         if self.updates % SAVED_NETWORKS_EVERY == 0 and self.updates > 0:
@@ -284,6 +287,45 @@ class Footer(QFrame):
         if page_wifi is not None and page_wifi._connecting:
             return
         self.saved_networks = sorted(set(self.wifi.get_network_history()), key=str.lower)
+
+    # Theme
+    def update_theme(self):
+        '''
+        The theme as "<mode> <hierarchy> <accent>" - e.g. "dark baseline
+        teal", or "dark special kimbie" for a special theme, which has no
+        hierarchy of its own - with every appearance setting on hover.
+        '''
+        style = self.style
+        mode = self.labels.get(f"settings_page_mode_{style.current_theme.partition('_')[0]}")
+        special = style.is_preset()
+        if special:
+            family = style.theme_family()
+            hierarchy = self.label("theme_special")
+            accent = style.preset_info.get(family, {}).get("label", family.replace("_", " "))
+        else:
+            hierarchy = style.theme_hierarchy.replace("_", " ")
+            accent = style.theme_accent.replace("_", " ")
+        mode, hierarchy, accent = mode.lower(), hierarchy.lower(), accent.lower()
+        set_text(self.theme, f"{mode} {hierarchy} {accent}")
+
+        def on_off(on: bool) -> str:
+            return self.label("on" if on else "off")
+        lines = [
+            self.label("tooltips_theme"),
+            f"{self.label('theme_mode')}: {mode}",
+            f"{self.label('theme_hierarchy')}: {hierarchy}",
+            f"{self.label('theme_accent')}: {accent}",
+        ]
+        if not special:  # special themes have their own colors - tint does nothing to them
+            lines.append(f"{self.label('theme_tint')}: {round(style.theme_tint * 100)}%")
+        background = self.labels.get(f"visual_names_{style.background_visual}") if style.background_enabled else self.label("off")
+        lines += [
+            f"{self.label('theme_inset')}: {on_off(style.theme_inset)}",
+            f"{self.label('theme_invert')}: {on_off(style.invert_buttons)}",
+            f"{self.label('theme_translucency')}: {on_off(style.translucent_surfaces)}",
+            f"{self.label('theme_background')}: {background}",
+        ]
+        self.theme.setToolTip(tooltip(lines))
 
     # Developer mode
     def update_developer(self):
