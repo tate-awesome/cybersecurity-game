@@ -38,8 +38,8 @@ class SettingsSection(QFrame):
         super().__init__()
         self.context = context
         self.style = context.style
-        # Part of the overlay's background - follows the "overlay" surface, not "widget"
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('overlay', 'widget')};", self))
+        # Part of the overlay's background - its own material, not "card"
+        self.style.set_material(self, "overlay_card")
         self.grid = QGridLayout(self)
         self.grid.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         self.grid.setVerticalSpacing(self.style.cgap * 2)

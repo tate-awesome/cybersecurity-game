@@ -106,7 +106,7 @@ class GrowingButton(QObject):
         self.short_text = getattr(button, "short_text", button.text())
         self.full_text = button.text()
         button.setParent(menu)
-        button.setStyleSheet(menu.style.themed("QPushButton { text-align: left; }"))
+        button.setStyleSheet("QPushButton { text-align: left; }")
         button.setText(self.short_text)
         self.short_width = button.sizeHint().width()
         button.setText(self.full_text)

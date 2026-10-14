@@ -36,11 +36,9 @@ class TitleFooter(QWidget):
             link = link_class(context)
             link.setFont(font)
             link.setCursor(Qt.CursorShape.PointingHandCursor)
-            # Not a surface: never tinted (see style.SURFACE_KINDS)
-            link.setProperty("surface", "none")
             name = f"_title_link_{id(link)}"
             link.setObjectName(name)
-            link.setStyleSheet(self.style.themed(
+            self.style.live_style(link, lambda name=name: (
                 f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px;"
                 f" color: {self.style.color('text')}; }}"
                 f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; text-decoration: underline; }}"

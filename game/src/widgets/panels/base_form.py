@@ -35,16 +35,7 @@ class BaseForm(QWidget):
         self.process_noun = process_noun
         self.has_process_button = False
 
-        # A plain QWidget doesn't paint a stylesheet background at all by
-        # default (unlike QFrame/QScrollArea, which do) - it stays
-        # visually transparent and whatever's behind it (Scrollable's own
-        # background) shows straight through, regardless of what color
-        # this stylesheet says - which is also why stacked forms had no
-        # visible gap between them: both the form and the gap were really
-        # just Scrollable's background showing through. WA_StyledBackground
-        # opts this widget into that painting.
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", self))
+        self.style.set_material(self, "card")
 
         self.grid_layout = QGridLayout(self)
         # No left/right margin - the CTk version never padded the frame

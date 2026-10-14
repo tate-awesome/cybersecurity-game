@@ -140,7 +140,7 @@ class MenuBar(QFrame):
         self.style = context.style
 
         master.layout().addWidget(self)
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('bar', 'widget')};", self))
+        self.style.set_material(self, "menu_bar")
         self.setContentsMargins(self.style.igap, self.style.cgap, self.style.igap, self.style.cgap)
         # Qt widgets default to a vertical size policy that's willing to
         # grow into whatever leftover space its layout has - the old
@@ -195,8 +195,6 @@ class MenuBar(QFrame):
         font.setPointSizeF(font.pointSizeF() * 1.6)
         arrow.setFont(font)
         arrow.setCursor(Qt.CursorShape.PointingHandCursor)
-        # Not a surface: never tinted (see style.SURFACE_KINDS)
-        arrow.setProperty("surface", "none")
         # Line the glyph up with the title's lowercase letters: in the
         # bigger font, « sits lower in its line than the title text's
         # middle, so lift it by the difference (padding below the text
@@ -209,7 +207,7 @@ class MenuBar(QFrame):
         lift = max(0, round(2 * (arrow_middle - title_middle)))
         name = f"_back_arrow_{id(arrow)}"
         arrow.setObjectName(name)
-        arrow.setStyleSheet(self.style.themed(
+        self.style.live_style(arrow, lambda: (
             f"QPushButton#{name} {{ background: transparent; border: none; padding: 0px 6px {lift}px 0px;"
             f" color: {self.style.color('text')}; }}"
             f" QPushButton#{name}:hover {{ color: {self.style.color('accent')}; }}"

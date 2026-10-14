@@ -353,7 +353,7 @@ class ConfigEditor(Page):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet(self.style.themed("QScrollArea { background-color: transparent; border: none; }"))
+        scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
         body = QWidget()
         self.paint_root(body)
         form = QVBoxLayout(body)
@@ -370,8 +370,7 @@ class ConfigEditor(Page):
         QWidget, which otherwise shows Qt's default grey in every gap
         between the sections it holds.
         '''
-        widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        widget.setStyleSheet(self.style.themed(f"background-color: {self.style.color('root')};", widget))
+        self.style.set_material(widget, "window")
 
     def remember_tab(self, index: int):
         ConfigEditor.selected_tab = index
@@ -417,8 +416,8 @@ class ConfigEditor(Page):
         preview = NoteBrowser()
         preview.setOpenExternalLinks(True)
         preview.setFont(self.style.get_font("default"))
-        preview.setStyleSheet(self.style.themed(
-            f"QTextBrowser {{ background-color: {self.style.color('field')}; color: {self.style.color('field_text')};"
+        self.style.live_style(preview, lambda: (
+            f"QTextBrowser {{ background-color: {self.style.css('field')}; color: {self.style.color('field_text')};"
             f" border: none; border-radius: {self.style.PANEL_RADIUS}px; padding: 8px; }}"))
         preview.setSearchPaths([str(self.pages.config_paths[ConfigEditor.selected_key].parent)])
         columns.addWidget(preview, 1)
@@ -431,8 +430,7 @@ class ConfigEditor(Page):
     # Form building - one value per row: its name on the left, its input on the right
     def section(self, title: str, explanation: str | None, note: QLabel | None = None) -> "Rows":
         frame = QFrame()
-        frame.setStyleSheet(self.style.themed(
-            f"QFrame {{ background-color: {self.style.color('panel')}; border-radius: {self.style.PANEL_RADIUS}px; }}", frame))
+        self.style.set_material(frame, "panel", rounded=True)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(self.style.igap * 2, self.style.igap, self.style.igap * 2, self.style.igap)
         header = QLabel(title)

@@ -287,7 +287,7 @@ class FlagsExample(Panel):
             for text, color in lines:
                 line = QLabel(text)
                 line.setFont(self.style.get_font("small"))
-                line.setStyleSheet(f"color: {self.style.color(color)};")
+                self.style.live_style(line, lambda color=color: f"QLabel {{ color: {self.style.color(color)}; }}")
                 card.grid_layout.addWidget(line, card.current_row, 0, 1, -1)
                 card.current_row += 1
             scrollable.grid_layout.addWidget(card, row, 0)

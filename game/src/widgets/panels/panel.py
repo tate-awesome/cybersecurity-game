@@ -1,7 +1,8 @@
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QRectF
 from PySide6.QtGui import QPainterPath, QRegion
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from ...app_core import Context
+from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .. import MenuBar
 
 class Panel(QWidget):
@@ -14,24 +15,14 @@ class Panel(QWidget):
     # Settings keys (from _packages/_default.json) this panel reads or writes.
     # The workspace editor uses them to show which panels in a layout use a setting.
     SETTINGS: tuple[str, ...] = ()
-    BORDER_WIDTH = 2
+    BORDER_WIDTH = PANEL_BORDER_WIDTH
 
     def __init__(self, master: QWidget, context: Context, menu_bar_label: str | None = None):
         super().__init__(master)
         self.context = context
         self.style = context.style
 
-        # A plain QWidget doesn't paint a stylesheet background at all by
-        # default (unlike QFrame/QScrollArea, which do) - it stays
-        # visually transparent and whatever's behind it (its parent pane)
-        # shows straight through, regardless of what color this stylesheet
-        # says. WA_StyledBackground opts this widget into that painting.
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(self.style.themed(
-            f"background-color: {self.style.color('panel')}; border-radius: {self.style.PANEL_RADIUS}px; "
-            f"border: {self.BORDER_WIDTH}px solid {self.style.color('widget')};",
-            self
-        ))
+        self.style.set_material(self, "panel", rounded=True, outlined=True)
         master.layout().addWidget(self)
 
         # The menu bar/body otherwise fill this panel edge-to-edge, which

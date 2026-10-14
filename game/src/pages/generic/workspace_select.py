@@ -84,7 +84,7 @@ class WorkspaceSelectPage(Page):
         self.add_background(config)
 
         menu_bar = self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
-        menu_bar.setStyleSheet(self.style.themed("background-color: transparent;", menu_bar))
+        self.style.set_material(menu_bar, "none")
 
         body = QHBoxLayout()
         body.setSpacing(self.style.igap)
@@ -97,9 +97,9 @@ class WorkspaceSelectPage(Page):
         body.addWidget(sidebar)
         self.scrollable = Scrollable(sidebar, context)
         self.scrollable.columnconfigure(0, 1)
-        self.scrollable.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
+        self.style.set_material(self.scrollable, "none")
         self.scrollable.viewport().setAutoFillBackground(False)
-        self.scrollable.inner.setStyleSheet(self.style.themed("background-color: transparent;", self.scrollable.inner))
+        self.style.set_material(self.scrollable.inner, "none")
 
         self.build_summary(body)
 
@@ -128,10 +128,9 @@ class WorkspaceSelectPage(Page):
         header.setCheckable(True)
         header.setChecked(section.get("expanded", True))
         header.setFont(self.style.get_font("title_btn"))
-        hover = self.translucent(self.style.color("widget"), 0.6)
-        header.setStyleSheet(self.style.themed(
+        self.style.live_style(header, lambda: (
             f"QPushButton {{ text-align: left; background-color: transparent; color: {self.style.color('text')}; }}"
-            f"QPushButton:hover, QPushButton:pressed {{ background-color: {hover}; }}"
+            f"QPushButton:hover, QPushButton:pressed {{ background-color: {self.translucent(self.style.color('widget'), 0.6)}; }}"
         ))
         header.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.scrollable.grid_layout.addWidget(header, row, 0)
@@ -153,7 +152,7 @@ class WorkspaceSelectPage(Page):
             # Let long titles clip inside the sidebar instead of widening it past its fixed width
             button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
             button.setFont(self.style.get_font("default"))
-            button.setStyleSheet(self.style.themed(
+            self.style.live_style(button, lambda: (
                 f"QPushButton {{ text-align: left; }}"
                 f"QPushButton:checked {{ border: 2px solid {self.style.color('field_text')}; }}"
             ))
@@ -202,7 +201,7 @@ class WorkspaceSelectPage(Page):
         self.browser.setOpenExternalLinks(True)
         self.browser.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.browser.setFont(self.style.get_font("default"))
-        self.browser.setStyleSheet(self.style.themed("QTextBrowser { background-color: transparent; border: none; }"))
+        self.browser.setStyleSheet("QTextBrowser { background-color: transparent; border: none; }")
         self.browser.viewport().setAutoFillBackground(False)
         box_layout.addWidget(self.browser)
 
@@ -232,10 +231,7 @@ class WorkspaceSelectPage(Page):
         self.set_summary_opaque(False)
 
     def set_summary_opaque(self, opaque: bool):
-        color = self.style.color("field") if opaque else "transparent"
-        self.summary_box.setStyleSheet(self.style.themed(
-            f"background-color: {color}; border-radius: {self.style.PANEL_RADIUS}px;", self.summary_box
-        ))
+        self.style.set_material(self.summary_box, "field" if opaque else "none", rounded=True)
         self.actions.setVisible(opaque)
         self.place_actions()
 

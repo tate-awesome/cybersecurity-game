@@ -1,9 +1,9 @@
 import json
-import re
+from collections.abc import Callable
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 import darkdetect
 
 from . import palette_generator
@@ -74,24 +74,21 @@ CURATED_THEMES: list[str] = ["blue_v2_light"]
 # replace a bundled preset of the same name
 IMPORTED_PREFIX = "imported."
 
-# Surfaces - the kinds of backgrounds that can be see-through, each at its
-# material's opacity in the theme (see SURFACE_MATERIALS and themes.py):
-#   panel  - the "panel" color: panel bodies and borders
-#   bar    - menu bars
-#   widget - the "widget" color: cards like forms
-#   field  - the "field" color: text inputs, tree views, consoles, canvases
-#   button  - buttons
-#   overlay - dropdown overlays (popups), frosted over a snapshot of the
-#             app behind them - see Overlay
-# panel/widget/field are theme colors, so their opacity is built into what
-# Style.color() returns for them (see COLOR_SURFACES). Menu bars,
-# buttons and overlays don't have colors of their own, so they're tagged
-# instead (see Style.surface).
-SURFACE_KINDS = ("panel", "bar", "widget", "field", "button", "overlay")
-COLOR_SURFACES = ("panel", "widget", "field")
-# The material each surface kind takes its opacity from
-SURFACE_MATERIALS = {"panel": "panel", "bar": "menu_bar", "widget": "card", "field": "field",
-                     "button": "button", "overlay": "overlay"}
+# How widgets are styled: each one names its material (see themes.MATERIALS)
+# in a "material" property (see Style.set_material), and the app's one
+# stylesheet (see Style._build_stylesheet) gives every material its color
+# and opacity from the theme - so a theme change restyles every widget in
+# place, without rebuilding the page. Besides the materials, "material"
+# can be "none" (see-through, no border) or "panel_fill" (scroll areas in
+# panels: see-through, since the panel already paints itself, unless
+# surfaces are solid). Shape is its own property: "rounded" rounds the
+# corners like a panel's, "outlined" adds a panel's border.
+SPECIAL_MATERIALS = ("none", "panel_fill")
+PANEL_BORDER_WIDTH = 2
+# The palette colors color() hands back as materials, see-through - so
+# canvases and other hand-drawn widgets naming them follow the theme's
+# opacity (e.g. a "field" chart background is the field material)
+COLOR_MATERIALS = {"panel": "panel", "widget": "card", "field": "field"}
 # Whether surfaces can be see-through at all. Off, none of the surface
 # machinery runs: every color is opaque and untagged, there's no overlay
 # snapshot, and scroll areas paint their own background - the app as it
@@ -114,22 +111,14 @@ BACKGROUND_FPS_RANGE = (1, 120)
 # root, with a clear border - instead of accent_text on solid accent
 DEFAULT_INVERT_BUTTONS = False
 
-# A tagged surface color in a stylesheet (see Style.surface):
-# "rgba(r, g, b, a) /*s:<kind>:#rrggbb*/". The comment marks it so
-# restyle_surfaces can find and rewrite it, without rebuilding the page.
-SURFACE_PATTERN = re.compile(r"rgba\(\d+, \d+, \d+, \d+\) /\*s:(\w+):(#[0-9a-fA-F]{6})\*/")
-# One "property: value" declaration, and a hex color inside a value - for
-# rewriting color()'s panel/widget/field colors (see restyle_surfaces)
-DECLARATION_PATTERN = re.compile(r"([\w-]+)(\s*:\s*)([^;{}]*)")
-HEX_PATTERN = re.compile(r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6})\b")
-# Text color properties are never surfaces, even when a text color happens
-# to match one (e.g. light themes' white accent_text and field)
-TEXT_PROPERTIES = ("color", "selection-color")
-COMMENT_PATTERN = re.compile(r"(/\*.*?\*/)", re.S)
-# The shared rules (see _build_stylesheet) are wrapped in these markers
-# inside every stylesheet that carries a copy (see themed), so
-# restyle_surfaces can swap the whole block for a freshly built one
-BASE_PATTERN = re.compile(r"/\*qss:(opaque|surfaces)\*/.*?/\*qss:end\*/", re.S)
+
+
+class StyleSignals(QObject):
+    '''Style isn't a QObject - its signals live here (see Style.signals).'''
+    # The theme, translucency or button style changed - everything is already
+    # restyled; anything that shows those settings can catch up
+    changed = Signal()
+
 
 class Style:
 
@@ -152,8 +141,12 @@ class Style:
         self.PANEL_RADIUS = self.igap
         self.fonts = {}
         self.context = context
+        self.signals = StyleSignals()
+        # Widgets with colors in their own stylesheet, rebuilt on every theme
+        # change (see live_style): id -> (widget, builder)
+        self._live_sheets: dict[int, tuple[QWidget, Callable[[], str]]] = {}
 
-        # Surface settings (see SURFACE_KINDS) - load_preferred_surfaces()
+        # Surface settings (see materials) - load_preferred_surfaces()
         # replaces these defaults once preferences exist
         self.translucent_surfaces: bool = DEFAULT_TRANSLUCENT_SURFACES
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
@@ -272,25 +265,22 @@ class Style:
 
     def color(self, type: str, opaque: bool = False) -> str:
         '''
-        Returns a color from the active hand-rolled palette (see
-        palettes/apply_theme) for one of THEME_COLOR_NAMES, or the input
-        string itself (e.g. "red" or a hex code) for anything else.
+        A palette color (see themes.PALETTE_KEYS) for one of
+        THEME_COLOR_NAMES, or the input string itself (e.g. "red" or a hex
+        code) for anything else - for hand-drawn widgets and the few
+        stylesheet rules that aren't backgrounds (text, borders).
 
-        "panel", "widget" and "field" come back at their surface opacity
-        (see COLOR_SURFACES) - as "#AARRGGBB" when see-through, which both
-        stylesheets and QColor understand - so everything drawn in them
-        follows the "Background" style settings. opaque=True skips that,
-        for anything that must stay solid.
+        "panel", "widget" and "field" come back as their materials (see
+        COLOR_MATERIALS) - "#AARRGGBB" when see-through, which both
+        stylesheets and QColor understand. opaque=True gives the plain
+        palette color instead. Backgrounds should name their material
+        instead (see set_material).
         '''
-        if type not in self.THEME_COLOR_NAMES:
-            return type
-        hex_color = self._theme_colors[type]
-        if opaque or type not in COLOR_SURFACES:
-            return hex_color
-        opacity = self.opacity(type)
-        if opacity >= 1.0:
-            return hex_color
-        return f"#{round(255 * opacity):02x}{hex_color.lstrip('#')}"
+        if type in COLOR_MATERIALS and not opaque:
+            return self.material(COLOR_MATERIALS[type]).name(QColor.NameFormat.HexArgb)
+        if type in PALETTE_KEYS:
+            return self._theme_colors[type]
+        return type
 
     def get_column_width(self, column_name):
         match column_name:
@@ -331,14 +321,8 @@ class Style:
 
     def apply_theme(self, theme_name: str):
         '''
-        Applies a hand-rolled palette globally (its QSS stylesheet covers
-        every native Qt widget - see _build_stylesheet) and refreshes the
-        color() values this app's own hand-styled widgets pull from. Those
-        are set once, inline, at construction time (see Panel/BaseForm/
-        MenuBar etc.), so - unlike native widgets - they only pick up a new
-        theme on their next rebuild; callers changing the theme after
-        startup (toggle_mode, set_theme) follow this with
-        context.router.refresh().
+        Applies a theme ("<mode>_<family>") to every widget, in place (see
+        restyle) - nothing needs rebuilding.
         '''
         mode, _, family = theme_name.partition("_")
         app = QApplication.instance()
@@ -356,52 +340,61 @@ class Style:
         # unrepainted viewport background from the previous theme.
         if app.style().objectName().lower() != "fusion":
             app.setStyle("Fusion")
-        self._widget_qss = self._build_stylesheet(self._theme_colors)
-        self._opaque_qss = self._build_stylesheet(self._theme_colors, opaque=True)
-        app.setStyleSheet(self._widget_qss)
+        self.restyle()
 
-    def themed(self, extra: str = "", widget=None, opaque: bool = False) -> str:
+    # Styling widgets
+    def set_material(self, widget: QWidget, material: str, rounded: bool = False, outlined: bool = False):
         '''
-        Returns the shared widget-styling stylesheet (QPushButton, QLineEdit,
-        QCheckBox, etc. - see _build_stylesheet) plus an optional extra rule,
-        for use in a widget's own setStyleSheet() call. Qt's style sheet
-        cascade stops climbing the ancestor chain at the first widget with
-        its own local stylesheet - so every container that sets one of its
-        own (Panel, BaseForm, Page, Panes, MenuBar, Scrollable, overlays,
-        etc.) must carry its own copy of the shared rules, or native widgets
-        nested inside it silently fall back to unstyled defaults instead of
-        the stylesheet set on the QApplication in apply_theme.
-
-        If `extra` is already a full rule with its own selector(s) (e.g. a
-        "QSplitter::handle { ... }" override), it's appended as-is. If it's
-        a bare declaration list instead (e.g. "background-color: X;" - the
-        common case for a container's own background), `widget` is required:
-        Qt's QSS parser only allows a selector-less declaration list when
-        it's the ENTIRE stylesheet, so mixed in after other "Selector {...}"
-        blocks it's invalid and gets silently dropped - leaving the widget's
-        background unset and falling back to Qt's default palette instead of
-        the intended color, which is what made panels/forms look like stray
-        dark-gray boxes regardless of the active theme. Assigning `widget` a
-        unique object name and scoping the declaration under a matching ID
-        selector keeps it valid.
-
-        opaque=True uses a copy of the shared rules with every surface fully
-        opaque - for anything that must stay solid whatever the "Background"
-        settings say.
+        Gives widget its background from the theme: one of
+        themes.MATERIALS or SPECIAL_MATERIALS, optionally with a panel's
+        rounded corners and border - styled by the app stylesheet, so it
+        follows every theme change by itself. Can be changed any time.
         '''
-        base = self._opaque_qss if opaque else self._widget_qss
-        if not extra:
-            return base
-        if "{" in extra:
-            return base + "\n" + extra
-        assert widget is not None, "themed() needs `widget` to scope a bare declaration list"
-        name = f"_themed_{id(widget)}"
-        widget.setObjectName(name)
-        # A widget whose own background is a surface is marked with its kind
-        kind = self.surface_kind_of(extra)
-        if kind is not None:
-            widget.setProperty("surface", kind)
-        return base + f"\n#{name} {{ {extra} }}"
+        widget.setProperty("material", material)
+        widget.setProperty("rounded", rounded)
+        widget.setProperty("outlined", outlined)
+        # A plain QWidget only paints a stylesheet background with this
+        widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        if widget.testAttribute(Qt.WidgetAttribute.WA_WState_Polished):
+            # Property selectors are only matched when a widget is polished
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+            widget.update()
+
+    def live_style(self, widget: QWidget, build: Callable[[], str]):
+        '''
+        Sets widget's own stylesheet to build(), and sets it again after
+        every theme change - for the few rules that need colors (text,
+        borders) beyond what set_material gives. build's rules need
+        selectors: a bare declaration list would style every child too.
+        '''
+        key = id(widget)
+        self._live_sheets[key] = (widget, build)
+        widget.destroyed.connect(lambda *_: self._live_sheets.pop(key, None))
+        widget.setStyleSheet(build())
+
+    def css(self, material: str) -> str:
+        '''A material's color for a stylesheet, as "rgba(r, g, b, a)".'''
+        return self._css(self.material(material))
+
+    @staticmethod
+    def _css(color: QColor) -> str:
+        return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
+
+    def restyle(self):
+        '''
+        Rebuilds the app stylesheet (Qt restyles every widget from it) and
+        every live_style sheet, then lets everything else know (see
+        StyleSignals.changed). After any change to the theme, translucency
+        or button style.
+        '''
+        QApplication.instance().setStyleSheet(self._build_stylesheet())
+        for key, (widget, build) in list(self._live_sheets.items()):
+            try:
+                widget.setStyleSheet(build())
+            except RuntimeError:  # already deleted on the C++ side
+                self._live_sheets.pop(key, None)
+        self.signals.changed.emit()
 
     @staticmethod
     def _shade(hex_color: str, amount: float) -> str:
@@ -425,78 +418,84 @@ class Style:
         channels = (round(x + (y - x) * amount) for x, y in ((a.red(), b.red()), (a.green(), b.green()), (a.blue(), b.blue())))
         return "#" + "".join(f"{v:02x}" for v in channels)
 
-    def _build_stylesheet(self, c: dict[str, str], opaque: bool = False) -> str:
+    def _build_stylesheet(self) -> str:
         '''
-        Hand-rolled replacement for qt-material's generated QSS - covers the
-        native widgets this app actually uses (buttons, line edits,
-        checkboxes, combo boxes, tree views, scrollbars, sliders, tooltips)
-        with the current palette's colors. Widgets that already set their
-        own background inline (Panel, BaseForm, etc. via style.color()) are
-        left alone here; this only fills in what those don't cover.
+        Hand-rolled replacement for qt-material's generated QSS: the native
+        widgets this app uses (buttons, text boxes, checkboxes, combo boxes,
+        tabs, trees, scrollbars, sliders, tooltips) and every material's
+        rule (see set_material), all from the current palette and materials.
         '''
-        accent_hover = self._shade(c["accent"], 0.15)
-        accent_pressed = self._shade(c["accent"], -0.15)
+        c = self._theme_colors
+        m = self.css
         scroll_w = int(self.get_scrollbar_size())
 
-        def s(kind: str, color: str) -> str:
-            return color if opaque else self.surface(kind, color)
+        def shaded(material: str, amount: float) -> str:
+            '''A material lightened (amount > 0) or darkened, keeping its opacity.'''
+            color = self.material(material)
+            shade = QColor(self._shade(color.name(), amount))
+            shade.setAlpha(color.alpha())
+            return self._css(shade)
 
-        # Popup-only rules (tooltips, combo box lists) stay opaque - see color()
-        raw = c
-        if not opaque:
-            c = {**c, **{name: self.color(name) for name in COLOR_SURFACES}}
+        def at_opacity(color: str, material: str) -> str:
+            '''A palette color (or hex code) at a material's opacity.'''
+            qcolor = QColor(c.get(color, color))
+            qcolor.setAlpha(self.material(material).alpha())
+            return self._css(qcolor)
 
         if self.invert_buttons:
             # Text-colored, on a background between panel and root, with a
             # border drawn toward the text color so each button stays
             # clearly outlined against whatever it sits on
-            button_bg = self._mix(raw["panel"], raw["root"], 0.5)
+            button_bg = at_opacity(self._mix(c["panel"], c["root"], 0.5), "button")
             buttons = f'''
             QPushButton {{
-                background-color: {s("button", button_bg)};
-                color: {raw["text"]};
-                border: 1px solid {self._mix(raw["panel"], raw["text"], 0.4)};
+                background-color: {button_bg};
+                color: {c["text"]};
+                border: 1px solid {self._mix(c["panel"], c["text"], 0.4)};
                 border-radius: 4px;
                 padding: 5px 11px;
             }}
-            QPushButton:hover {{ background-color: {s("button", raw["widget"])}; border-color: {raw["accent"]}; }}
-            QPushButton:pressed {{ background-color: {s("button", raw["root"])}; border-color: {raw["accent"]}; }}
-            QPushButton:disabled {{ background-color: {s("button", button_bg)}; color: {raw["border"]}; border-color: {raw["border"]}; }}'''
+            QPushButton:hover {{ background-color: {at_opacity("widget", "button")}; border-color: {c["accent"]}; }}
+            QPushButton:pressed {{ background-color: {at_opacity("root", "button")}; border-color: {c["accent"]}; }}
+            QPushButton:disabled {{ background-color: {button_bg}; color: {c["border"]}; border-color: {c["border"]}; }}'''
         else:
             buttons = f'''
             QPushButton {{
-                background-color: {s("button", raw["accent"])};
-                color: {raw["accent_text"]};
+                background-color: {m("button")};
+                color: {c["accent_text"]};
                 border: none;
                 border-radius: 4px;
                 padding: 6px 12px;
             }}
-            QPushButton:hover {{ background-color: {s("button", accent_hover)}; }}
-            QPushButton:pressed {{ background-color: {s("button", accent_pressed)}; }}
-            QPushButton:disabled {{ background-color: {s("button", raw["widget"])}; color: {raw["border"]}; }}'''
+            QPushButton:hover {{ background-color: {shaded("button", 0.15)}; }}
+            QPushButton:pressed {{ background-color: {shaded("button", -0.15)}; }}
+            QPushButton:disabled {{ background-color: {at_opacity("widget", "button")}; color: {c["border"]}; }}'''
 
-        return f"/*qss:{'opaque' if opaque else 'surfaces'}*/" + f'''
+        # With surfaces solid, a scroll area in a panel paints the panel's color itself
+        panel_fill = m("panel") if not self.translucent_surfaces else "transparent"
+
+        return f'''
             QWidget {{ color: {c["text"]}; }}
-            QMainWindow, QDialog {{ background-color: {c["root"]}; }}
+            QMainWindow, QDialog {{ background-color: {m("window")}; }}
             QToolTip {{
-                background-color: {raw["panel"]};
+                background-color: {m("tooltip")};
                 color: {c["text"]};
                 border: 1px solid {c["border"]};
             }}
             {buttons}
             QTabWidget::pane {{ border: 1px solid {c["border"]}; border-radius: 4px; }}
             QTabBar::tab {{
-                background-color: {c["widget"]};
+                background-color: {m("tab")};
                 color: {c["text"]};
                 padding: 6px 12px;
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
                 margin-right: 2px;
             }}
-            QTabBar::tab:selected {{ background-color: {c["accent"]}; color: {c["accent_text"]}; }}
-            QTabBar::tab:hover:!selected {{ background-color: {c["panel"]}; }}
+            QTabBar::tab:selected {{ background-color: {m("tab_selected")}; color: {c["accent_text"]}; }}
+            QTabBar::tab:hover:!selected {{ background-color: {m("panel")}; }}
             QLineEdit, QComboBox, QPlainTextEdit, QTextEdit {{
-                background-color: {c["field"]};
+                background-color: {m("field")};
                 color: {c["field_text"]};
                 border: 1px solid {c["border"]};
                 border-radius: 4px;
@@ -504,9 +503,9 @@ class Style:
             }}
             QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border: 1px solid {c["accent"]}; }}
             QComboBox QAbstractItemView {{
-                background-color: {raw["field"]};
+                background-color: {c["field"]};
                 color: {c["field_text"]};
-                selection-background-color: {c["accent"]};
+                selection-background-color: {m("selection")};
                 selection-color: {c["accent_text"]};
             }}
             QCheckBox::indicator {{
@@ -514,30 +513,30 @@ class Style:
                 height: 16px;
                 border: 1px solid {c["border"]};
                 border-radius: 3px;
-                background-color: {c["field"]};
+                background-color: {m("field")};
             }}
             QCheckBox::indicator:checked {{
                 background-color: {c["accent"]};
                 border: 1px solid {c["accent"]};
             }}
             QHeaderView::section {{
-                background-color: {c["widget"]};
+                background-color: {m("table_header")};
                 color: {c["text"]};
                 border: 1px solid {c["border"]};
                 padding: 4px;
             }}
-            QTreeWidget, QTreeView {{
-                background-color: {c["field"]};
-                alternate-background-color: {c["widget"]};
+            QTreeWidget, QTreeView, QTableWidget, QTableView {{
+                background-color: {m("field")};
+                alternate-background-color: {m("alternate_row")};
                 color: {c["text"]};
                 border: 1px solid {c["border"]};
             }}
-            QTreeWidget::item:selected, QTreeView::item:selected {{
-                background-color: {c["accent"]};
+            QTreeWidget::item:selected, QTreeView::item:selected, QTableWidget::item:selected, QTableView::item:selected {{
+                background-color: {m("selection")};
                 color: {c["accent_text"]};
             }}
             QSlider::groove:horizontal {{
-                background: {c["field"]};
+                background: {m("field")};
                 height: 4px;
                 border-radius: 2px;
             }}
@@ -548,51 +547,40 @@ class Style:
                 border-radius: 7px;
             }}
             QScrollBar:vertical {{
-                background: {c["panel"]};
+                background: {m("scrollbar_track")};
                 width: {scroll_w}px;
                 margin: 0px;
             }}
             QScrollBar::handle:vertical {{
-                background: {c["scrollbar"]};
+                background: {m("scrollbar")};
                 border-radius: {scroll_w // 2}px;
                 min-height: 20px;
             }}
             QScrollBar::handle:vertical:hover {{ background: {c["scrollbar_hover"]}; }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
             QScrollBar:horizontal {{
-                background: {c["panel"]};
+                background: {m("scrollbar_track")};
                 height: {scroll_w}px;
                 margin: 0px;
             }}
             QScrollBar::handle:horizontal {{
-                background: {c["scrollbar"]};
+                background: {m("scrollbar")};
                 border-radius: {scroll_w // 2}px;
                 min-width: 20px;
             }}
             QScrollBar::handle:horizontal:hover {{ background: {c["scrollbar_hover"]}; }}
             QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
-        ''' + "/*qss:end*/"
-
-    # Surfaces
-    def surface(self, kind: str, color: str) -> str:
+            {self._material_rules()}
+            *[material="overlay"] {{ border: 2px solid {c["accent"]}; }}
+            *[material="none"] {{ background-color: transparent; border: none; }}
+            *[material="panel_fill"] {{ background-color: {panel_fill}; border: none; }}
+            *[rounded="true"] {{ border-radius: {self.PANEL_RADIUS}px; }}
+            *[outlined="true"] {{ border: {PANEL_BORDER_WIDTH}px solid {m("panel_border")}; }}
         '''
-        A stylesheet color for a background of one of SURFACE_KINDS:
-        `color` (a theme color name or hex code - see color()) at that
-        kind's opacity, tagged so restyle_surfaces can update it live.
-        For surfaces without a theme color of their own (menu bars,
-        buttons) - panel/widget/field get theirs from color().
-        '''
-        qcolor = QColor(self.color(color))
-        if not self.translucent_surfaces:
-            return qcolor.name()  # just the color - no translucency, nothing tagged
-        alpha = round(255 * self.opacity(kind))
-        return f"rgba({qcolor.red()}, {qcolor.green()}, {qcolor.blue()}, {alpha}) /*s:{kind}:{qcolor.name()}*/"
 
-    def opacity(self, kind: str) -> float:
-        '''How solid a surface of this kind draws right now - its material's opacity, or 1 with translucent_surfaces off.'''
-        if not self.translucent_surfaces or kind not in SURFACE_MATERIALS:
-            return 1.0
-        return self.material_entry(SURFACE_MATERIALS[kind])["opacity"]
+    def _material_rules(self) -> str:
+        '''Each material's background, for widgets set_material gave it.'''
+        return "\n".join(f'*[material="{name}"] {{ background-color: {self.css(name)}; }}' for name in MATERIALS)
 
     # Materials
     def theme_materials(self) -> dict[str, dict[str, dict]]:
@@ -615,36 +603,12 @@ class Style:
             color.setAlphaF(entry["opacity"])
         return color
 
+    # Surfaces
     def set_translucent_surfaces(self, on: bool):
-        '''
-        Switches surface translucency on or off (see DEFAULT_TRANSLUCENT_SURFACES),
-        saves it, and rebuilds the page - it changes how every stylesheet is
-        built, not just its colors, so it can't be restyled in place.
-        '''
+        '''Switches surface translucency on or off (see DEFAULT_TRANSLUCENT_SURFACES) - restyled in place, and saved.'''
         self.translucent_surfaces = on
-        self._rebuild_stylesheets()
+        self.restyle()
         self.save_surfaces()
-        self.context.router.refresh()
-
-    def surface_kind_of(self, declarations: str) -> str | None:
-        '''
-        Which surface kind a widget's own declarations (e.g. "background-
-        color: ...; border: ...") paint its background in, if any.
-        '''
-        tagged = SURFACE_PATTERN.search(declarations)
-        if tagged:
-            return tagged.group(1)
-        surfaces = self._surface_colors()
-        for match in DECLARATION_PATTERN.finditer(declarations):
-            if match.group(1) in ("background", "background-color"):
-                hex_match = HEX_PATTERN.search(match.group(3))
-                if hex_match:
-                    return surfaces.get(hex_match.group(0)[-6:].lower())
-        return None
-
-    def _surface_colors(self) -> dict[str, str]:
-        '''rrggbb (no #, lowercase) -> name, for the current theme's panel/widget/field.'''
-        return {self._theme_colors[name].lstrip("#").lower(): name for name in COLOR_SURFACES}
 
     def load_preferred_surfaces(self):
         '''Reads the saved surface settings, keeping the default for anything missing or invalid.'''
@@ -652,13 +616,13 @@ class Style:
             self.invert_buttons = self.context.preferences.get("invert_buttons")
         if isinstance(self.context.preferences.get("translucent_surfaces"), bool):
             self.translucent_surfaces = self.context.preferences.get("translucent_surfaces")
-        self._rebuild_stylesheets()
+        self.restyle()
 
     def load_default_surfaces(self):
         '''Back to the default surface settings, without saving - like load_default_theme.'''
         self.translucent_surfaces = DEFAULT_TRANSLUCENT_SURFACES
         self.invert_buttons = DEFAULT_INVERT_BUTTONS
-        self.restyle_surfaces()
+        self.restyle()
 
     # Background
     BACKGROUND_PREFERENCES = {
@@ -719,74 +683,19 @@ class Style:
                 apply()
 
     def set_invert_buttons(self, invert: bool):
-        '''Switches inverted buttons (see DEFAULT_INVERT_BUTTONS) on or off - live, and saved.'''
+        '''Switches inverted buttons (see DEFAULT_INVERT_BUTTONS) on or off - restyled in place, and saved.'''
         self.invert_buttons = invert
-        self.restyle_surfaces()
+        self.restyle()
         self.save_surfaces()
 
     def reset_surfaces(self):
-        '''Back to the defaults, saved - the "Background" dropdown's reset button.'''
+        '''Back to the defaults, saved.'''
         self.load_default_surfaces()
         self.save_surfaces()
 
     def save_surfaces(self):
         self.context.preferences.set("invert_buttons", self.invert_buttons)
         self.context.preferences.set("translucent_surfaces", self.translucent_surfaces)
-
-    def _rebuild_stylesheets(self):
-        self._widget_qss = self._build_stylesheet(self._theme_colors)
-        self._opaque_qss = self._build_stylesheet(self._theme_colors, opaque=True)
-        QApplication.instance().setStyleSheet(self._widget_qss)
-
-    def restyle_surfaces(self):
-        '''
-        Rewrites every surface color in the app's and every widget's
-        stylesheet to its kind's current opacity - both tagged ones (see
-        surface()) and color()'s panel/widget/field colors, recognized by
-        their RGB in any non-text property - so opacity changes show up
-        instantly instead of on the next page rebuild.
-        '''
-        self._rebuild_stylesheets()
-
-        surfaces = self._surface_colors()
-        bases = {"surfaces": self._widget_qss, "opaque": self._opaque_qss}
-
-        def replace_tagged(match: re.Match) -> str:
-            return self.surface(match.group(1), match.group(2))
-
-        def replace_hex(match: re.Match) -> str:
-            name = surfaces.get(match.group(0)[-6:].lower())
-            return self.color(name) if name else match.group(0)
-
-        def replace_declaration(match: re.Match) -> str:
-            name, separator, value = match.groups()
-            if name in TEXT_PROPERTIES:
-                return match.group(0)
-            # Never inside a comment - a surface tag's own hex has to stay
-            # exactly as surface() wrote it, or it stops being found
-            parts = COMMENT_PATTERN.split(value)
-            return name + separator + "".join(part if i % 2 else HEX_PATTERN.sub(replace_hex, part) for i, part in enumerate(parts))
-
-        def rewrite(text: str) -> str:
-            return DECLARATION_PATTERN.sub(replace_declaration, SURFACE_PATTERN.sub(replace_tagged, text))
-
-        for widget in QApplication.allWidgets():
-            sheet = widget.styleSheet()
-            if not sheet:
-                continue
-            # The shared block is swapped whole (that's how structural
-            # changes like inverted buttons get in); the widget's own rules
-            # around it get their surface colors rewritten
-            pieces, position = [], 0
-            for match in BASE_PATTERN.finditer(sheet):
-                outside = sheet[position:match.start()]
-                pieces.append(rewrite(outside))
-                pieces.append(bases[match.group(1)])
-                position = match.end()
-            pieces.append(rewrite(sheet[position:]))
-            updated = "".join(pieces)
-            if updated != sheet:
-                widget.setStyleSheet(updated)
 
     def _load_theme_files(self):
         '''
@@ -927,7 +836,7 @@ class Style:
         '''
         Everything the theme editor changes back to its default - the first
         default theme (keeping light or dark), its fine-tuning and the
-        surfaces - saved, and the page rebuilt in it.
+        surfaces - saved, and restyled in place.
         '''
         self.theme_inset = DEFAULT_THEME_INSET
         self.theme_tint = DEFAULT_THEME_TINT
@@ -939,10 +848,9 @@ class Style:
         self.set_theme(self.default_theme(self.current_theme.partition("_")[0]))
 
     def set_theme(self, theme_name: str):
-        '''Applies a theme ("<mode>_<family>", e.g. "dark_teal" or "light_cyan.whisper"), saves it, and rebuilds the page in it.'''
+        '''Applies a theme ("<mode>_<family>", e.g. "dark_teal" or "light_cyan.whisper") in place, and saves it.'''
         self.apply_theme(theme_name)
         self.context.preferences.set("theme", self.current_theme)
-        self.context.router.refresh()
 
     def toggle_mode(self):
         '''
@@ -968,20 +876,20 @@ class Style:
         self.set_family(f"{self.theme_accent}.{hierarchy}")
 
     def set_tint(self, tint: float):
-        '''How much the accent bleeds into the surfaces (see DEFAULT_THEME_TINT) - saved, and the page rebuilt in it.'''
+        '''How much the accent bleeds into the surfaces (see DEFAULT_THEME_TINT) - saved, and restyled in place.'''
         self.theme_tint = min(THEME_TINT_MAX, max(0.0, tint))
         self.context.preferences.set("theme_tint", self.theme_tint)
         self.set_theme(self.current_theme)
 
     def set_adjust(self, mode: str, key: str, value: float):
-        '''One of a mode's adjustments (see DEFAULT_THEME_ADJUST) - saved, and the page rebuilt in it.'''
+        '''One of a mode's adjustments (see DEFAULT_THEME_ADJUST) - saved, and restyled in place.'''
         low, high = THEME_ADJUST_RANGE[key]
         self.theme_adjust[mode][key] = min(high, max(low, value))
         self.context.preferences.set("theme_adjust", {mode: dict(values) for mode, values in self.theme_adjust.items()})
         self.set_theme(self.current_theme)
 
     def set_inset(self, on: bool):
-        '''Inset fields (see DEFAULT_THEME_INSET) on or off - saved, and the page rebuilt in it.'''
+        '''Inset fields (see DEFAULT_THEME_INSET) on or off - saved, and restyled in place.'''
         self.theme_inset = on
         self.context.preferences.set("theme_inset", on)
         self.set_theme(self.current_theme)

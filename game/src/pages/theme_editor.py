@@ -119,7 +119,6 @@ class ThemeEditorPage(SettingsPage):
 
     def reset_surfaces(self):
         self.style.reset_surfaces()
-        self.router.refresh()  # so the sliders show the defaults
 
     # Gallery
     def build_gallery(self) -> QScrollArea:
@@ -127,9 +126,9 @@ class ThemeEditorPage(SettingsPage):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet(self.style.themed("QScrollArea { background-color: transparent; border: none; }"))
+        scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
         body = QWidget()
-        body.setStyleSheet("background-color: transparent;")
+        self.style.set_material(body, "none")
         column = QVBoxLayout(body)
         column.setSpacing(self.style.igap)
         column.setContentsMargins(0, 0, self.style.igap, 0)

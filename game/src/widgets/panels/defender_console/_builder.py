@@ -1,4 +1,3 @@
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QWidget
 from ....app_core import Context
 from ....network.hardware import ap_commands
@@ -57,13 +56,12 @@ class Builder(Panel):
         # rebuilt like the original's _render_log.
         self.cells: list[list[QLabel]] = []
         for r in range(ROW_COUNT):
-            background = self.style.color("field") if r % 2 == 0 else self.style.color("widget")
+            material = "field" if r % 2 == 0 else "alternate_row"
             row = []
             for c in range(COLUMN_COUNT):
                 cell = QLabel("")
                 cell.setFont(self.style.get_font("mono"))
-                cell.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-                cell.setStyleSheet(self.style.themed(f"background-color: {background};", cell))
+                self.style.set_material(cell, material)
                 grid.addWidget(cell, r + 1, c)
                 row.append(cell)
             self.cells.append(row)

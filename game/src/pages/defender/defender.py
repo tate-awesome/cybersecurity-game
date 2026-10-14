@@ -204,7 +204,7 @@ class DefenderV0(Page):
         throughout.
         '''
         section = QWidget()
-        section.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", section))
+        self.style.set_material(section, "card")
         layout = QVBoxLayout(section)
         layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         layout.setSpacing(4)
@@ -351,7 +351,7 @@ class DefenderV0(Page):
 
         for source in ["client", "server"]:
             card = QWidget()
-            card.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", card))
+            self.style.set_material(card, "card")
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
             outer_layout.addWidget(card, 1)
@@ -403,7 +403,7 @@ class DefenderV0(Page):
 
         cols = ["Time", "X (m)", "Y (m)", "Theta", "Speed", "Rudder"]
         col_frame = QWidget()
-        col_frame.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", col_frame))
+        self.style.set_material(col_frame, "card")
         col_layout = QGridLayout(col_frame)
         parent.layout().addWidget(col_frame)
         for i, col in enumerate(cols):
@@ -763,7 +763,7 @@ class DefenderV0(Page):
 
         for r_idx, packet in enumerate(rows):
             row_labels = []
-            bg = self.style.color("field") if r_idx % 2 == 0 else self.style.color("widget")
+            material = "field" if r_idx % 2 == 0 else "alternate_row"
             for c_idx, key in enumerate(cols):
                 raw = packet.get(key, "—")
                 if key == "received_at":
@@ -779,7 +779,7 @@ class DefenderV0(Page):
                 lbl = QLabel(text)
                 font = QFont("Arial", 10, QFont.Weight.Light, False)
                 lbl.setFont(font)
-                lbl.setStyleSheet(f"background-color: {bg};")
+                self.style.set_material(lbl, material)
                 log_layout.addWidget(lbl, r_idx, c_idx)
                 row_labels.append(lbl)
             self._log_rows.append(row_labels)

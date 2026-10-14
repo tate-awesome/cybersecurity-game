@@ -52,7 +52,7 @@ class Overlay(QWidget):
         self._away = (0.0, 1.0)
 
         # Its own "overlay" surface - see paintEvent for what shows through it
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('overlay', 'panel')}; border: 2px solid {self.style.color('accent')};", self))
+        self.style.set_material(self, "overlay")
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
 
@@ -135,7 +135,7 @@ class Overlay(QWidget):
         A popup is its own window, so Qt itself has nothing behind it to
         blend with. Skipped while the overlay surface is fully opaque.
         '''
-        if self.context.style.opacity("overlay") >= 1.0 or self.width() <= 0:
+        if self.context.style.material("overlay").alphaF() >= 1.0 or self.width() <= 0:
             self._behind = None
             return
         root = self.context.root

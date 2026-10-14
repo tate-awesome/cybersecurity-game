@@ -50,7 +50,7 @@ class Builder(Panel):
 
     def _section(self, title: str) -> QWidget:
         section = QWidget()
-        section.setStyleSheet(self.style.themed(f"background-color: {self.style.color('widget')};", section))
+        self.style.set_material(section, "card")
         layout = QVBoxLayout(section)
         layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         layout.setSpacing(4)

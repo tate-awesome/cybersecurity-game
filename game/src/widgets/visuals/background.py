@@ -84,6 +84,8 @@ class VisualBackground(QWidget):
         super().__init__(master)
         self.context = context
         self.style = context.style
+        # Drawn in the theme's colors - a cached frame is stale after a change
+        self.style.signals.changed.connect(self.invalidate)
         self.intensity = intensity
         self.shared = shared
         self.animate = animate

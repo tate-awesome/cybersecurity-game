@@ -49,8 +49,9 @@ class Footer(QFrame):
     '''
     The bar along the bottom of the window, on every page. It belongs to
     the main window rather than to a page, so it stays put while pages
-    change - Router calls page_changed after each page is built (a theme
-    or zoom change rebuilds the page, so that's when it restyles too).
+    change - Router calls page_changed after each page is built (a zoom
+    change rebuilds the page, so that's when its font follows). Its
+    colors follow the theme by themselves (see sheet).
 
     It floats over the bottom of the page rather than sitting below it,
     and each page gets that much more bottom margin so nothing of its own
@@ -76,8 +77,6 @@ class Footer(QFrame):
         self.style = context.style
         self.labels = context.labels
         self.setObjectName(f"_footer_{id(self)}")
-        # Not a surface: never tinted (see style.SURFACE_KINDS)
-        self.setProperty("surface", "none")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.row = QHBoxLayout(self)
         self.row.setContentsMargins(0, 0, 0, 0)
@@ -117,6 +116,8 @@ class Footer(QFrame):
         self.timer.start()
 
         self.update_saved_networks()
+        context.style.live_style(self, self.sheet)
+        context.style.signals.changed.connect(self.update_theme)
         self.page_changed()
 
     def _item(self) -> QLabel:
@@ -198,6 +199,10 @@ class Footer(QFrame):
         self.setFont(QFont("Arial", size))
         for label in self.findChildren(QLabel):
             label.setFont(self.font())
+        self.setStyleSheet(self.sheet())
+
+    def sheet(self) -> str:
+        style = self.style
         text = QColor(style.color("text"))
         faint = QColor(text)
         faint.setAlpha(70)
@@ -206,14 +211,12 @@ class Footer(QFrame):
         if self.transparent:
             background = "background: transparent; border: none;"
         else:
-            background = f"background-color: {style.color('widget', opaque=True)}; border-top: 1px solid {faint};"
-        self.setStyleSheet(style.themed(
-            f"QFrame#{name} {{ {background} }}"
-            f" QFrame#{name} QLabel {{ color: {text.name()}; background: transparent;"
-            f" padding: 2px {style.igap}px; border: none; border-left: 1px solid {faint}; }}"
-            f" QFrame#{name} QLabel[first=\"true\"] {{ border-left: none; }}"
-            f" QFrame#{name} QLabel[badge=\"true\"] {{ color: {style.color('accent')}; font-weight: bold; }}",
-            opaque=True))
+            background = f"background-color: {style.css('footer')}; border-top: 1px solid {faint};"
+        return (f"QFrame#{name} {{ {background} }}"
+                f" QFrame#{name} QLabel {{ color: {text.name()}; background: transparent;"
+                f" padding: 2px {style.igap}px; border: none; border-left: 1px solid {faint}; }}"
+                f" QFrame#{name} QLabel[first=\"true\"] {{ border-left: none; }}"
+                f" QFrame#{name} QLabel[badge=\"true\"] {{ color: {style.color('accent')}; font-weight: bold; }}")
 
     def update_live(self):
         '''Every second: the readings that change by themselves.'''

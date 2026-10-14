@@ -121,8 +121,8 @@ class LayoutEditor:
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.setFont(self.style.get_font("default"))
-        self.tree.setStyleSheet(self.style.themed(
-            f"QTreeWidget {{ background-color: {self.style.color('field')}; color: {self.style.color('field_text')}; border: none; }}"))
+        self.style.live_style(self.tree, lambda: (
+            f"QTreeWidget {{ background-color: {self.style.css('field')}; color: {self.style.color('field_text')}; border: none; }}"))
         self.tree.currentItemChanged.connect(self.on_select)
         left.addWidget(self.tree, 1)
 
@@ -271,7 +271,7 @@ class LayoutEditor:
         right.addWidget(explanation)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet(self.style.themed("QScrollArea { background-color: transparent; border: none; }"))
+        scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
         right.addWidget(scroll, 1)
         self.weight_scroll = scroll
         return tab

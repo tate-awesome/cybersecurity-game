@@ -42,7 +42,7 @@ class PacketTreeview:
     def _build(self, parent: QWidget) -> QTreeWidget:
         tree = QTreeWidget()
         tree.setFont(self.style.get_font("treeview"))
-        tree.setStyleSheet(self.style.themed("QTreeWidget::item { padding: 4px; }"))
+        tree.setStyleSheet("QTreeWidget::item { padding: 4px; }")
         tree.setAlternatingRowColors(True)
 
         tree.setColumnCount(len(self.columns))

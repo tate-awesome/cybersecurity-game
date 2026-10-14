@@ -20,7 +20,7 @@ class VariableOverlay:
         med = self.style.get_font()
         frame = QFrame()
         # Part of the overlay's background - follows the "overlay" surface, not "widget"
-        frame.setStyleSheet(self.style.themed(f"background-color: {self.style.surface('overlay', 'widget')};", frame))
+        self.style.set_material(frame, "overlay_card")
         grid = QGridLayout(frame)
         grid.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         grid.setVerticalSpacing(self.style.cgap * 2)

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import ClassVar
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIntValidator, QKeySequence
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QKeySequenceEdit, QLabel, QLineEdit,
                                QPushButton, QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
@@ -71,6 +71,33 @@ class SettingsPage(Page):
 
         self.tabs.setCurrentIndex(min(type(self).selected_tab, self.tabs.count() - 1))
         self.tabs.currentChanged.connect(self.remember_tab)
+
+        # A theme change restyles everything in place - only the rows showing
+        # theme settings need to catch up (see rebuild_tabs). On a timer, not
+        # at once: the control that changed the theme is still in its signal
+        self.rebuild_timer = QTimer(self)
+        self.rebuild_timer.setSingleShot(True)
+        self.rebuild_timer.setInterval(0)
+        self.rebuild_timer.timeout.connect(self.rebuild_tabs)
+        self.style.signals.changed.connect(self.rebuild_timer.start)
+
+    def rebuild_tabs(self):
+        '''Builds the tabs again in place, on the same tab and scrolled to the same place.'''
+        index = self.tabs.currentIndex()
+        scrolled = [self.tabs.widget(i).verticalScrollBar().value() for i in range(self.tabs.count())]
+        self.tabs.blockSignals(True)
+        while self.tabs.count():
+            tab = self.tabs.widget(0)
+            self.tabs.removeTab(0)
+            tab.deleteLater()
+        self.build_tabs()
+        self.tabs.setCurrentIndex(min(index, self.tabs.count() - 1))
+        self.tabs.blockSignals(False)
+        # Once the new tabs have their size, so there's room to scroll to
+        def scroll_back():
+            for i, value in enumerate(scrolled[:self.tabs.count()]):
+                self.tabs.widget(i).verticalScrollBar().setValue(value)
+        QTimer.singleShot(0, self.tabs, scroll_back)
 
     def place_tabs(self):
         '''Puts self.tabs on the page - filling it, below the menu bar.'''
@@ -310,9 +337,9 @@ class SettingsPage(Page):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet(self.style.themed("QScrollArea { background-color: transparent; border: none; }"))
+        scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
         body = QWidget()
-        body.setStyleSheet("background-color: transparent;")
+        self.style.set_material(body, "none")
         column = QVBoxLayout(body)
         column.setSpacing(self.style.igap)
         column.setContentsMargins(0, self.style.igap, self.style.igap, 0)
@@ -424,8 +451,7 @@ class SettingsSection(QFrame):
         self.developer = developer
         style = page.style
         labels = page.labels
-        self.setStyleSheet(style.themed(
-            f"QFrame {{ background-color: {style.color('panel')}; border-radius: {style.PANEL_RADIUS}px; }}", self))
+        style.set_material(self, "panel", rounded=True)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(style.igap * 2, style.igap, style.igap * 2, style.igap)
         title = labels.get(f"settings_page_sections_{name}")

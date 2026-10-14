@@ -16,11 +16,7 @@ class Page(QWidget):
         self.router = context.router
         self.style = context.style
 
-        # A plain QWidget doesn't paint a stylesheet background at all by
-        # default (unlike QFrame/QScrollArea, which do) - see Panel/
-        # BaseForm for the same fix and the full explanation.
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(self.style.themed(f"background-color: {self.style.color('root')};", self))
+        self.style.set_material(self, "window")
         self.setLayout(QVBoxLayout())
         self.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
         # A page's own MenuBar and its Panes content are both typically

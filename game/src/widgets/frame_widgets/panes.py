@@ -66,8 +66,10 @@ class Panes(QSplitter):
         master.layout().setContentsMargins(margin, margin, margin, margin)
 
         self.setHandleWidth(style.igap)
-        color = "transparent" if transparent else style.color("root")
-        self.setStyleSheet(style.themed(f"QSplitter::handle {{ background-color: {color}; }} QSplitter > QWidget {{ background-color: {color}; }}"))
+        def sheet():
+            color = "transparent" if transparent else style.css("window")
+            return f"QSplitter::handle {{ background-color: {color}; }} QSplitter > QWidget {{ background-color: {color}; }}"
+        style.live_style(self, sheet)
 
         min_size = style.PANE_MIN_WIDTH if direction == "horizontal" else style.PANE_MIN_HEIGHT
         initial_sizes = []
