@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, Qt
 from PySide6.QtGui import QColor, QCursor, QMouseEvent, QPainter
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QStyle, QWidget
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QSizePolicy, QWidget
 
 from ...app_core import Context
 
@@ -277,6 +277,24 @@ def window_bar_room(context: Context) -> int:
     return context.style.igap // 2 + context.style.cgap
 
 
+class SquareButtons(QObject):
+    '''
+    Keeps the buttons in a row (the window bar's right group) square - each
+    as wide as the row is tall - whenever the row's height changes.
+    '''
+
+    def __init__(self, row: QWidget):
+        super().__init__(row)
+        self.row = row
+        row.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.Resize and event.size().height() != event.oldSize().height():
+            for button in self.row.findChildren(QPushButton):
+                button.setFixedWidth(event.size().height())
+        return False
+
+
 def window_bar_button_height(bar_height: int) -> int:
     '''The window bar's right buttons' height: all of the bar but its line (see draw_window_bar_line), which their hover never covers.'''
     return bar_height - 1
@@ -378,6 +396,7 @@ class WindowControls(QWidget):
         self.close_button.setProperty("close", True)
         for button in (self.minimize, self.maximize, self.close_button):
             row.addWidget(button)
+        SquareButtons(self)
 
         self.style.live_style(self, self.sheet)
         self.root.fullscreen_changed.connect(self.follow_window)
@@ -453,11 +472,6 @@ class CornerControls(WindowControls):
         from .menu_bar import MenuBar
         return any(isinstance(child, MenuBar) for child in page.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly))
 
-    @staticmethod
-    def spacing() -> int:
-        '''The space between these buttons - a menu bar row's (the style's), so they sit just where a menu bar's do.'''
-        return QApplication.style().pixelMetric(QStyle.PixelMetric.PM_LayoutHorizontalSpacing)
-
     def wanted(self) -> bool:
         '''Whether the page showing has no menu bar of its own, so these stand in for one.'''
         return self.root.centralWidget() is not None and not self.page_has_menu_bar()
@@ -469,7 +483,7 @@ class CornerControls(WindowControls):
             self.buttons = None
         if self.wanted():
             from .menu_bar import global_buttons
-            self.buttons = global_buttons(self.context, self.spacing())
+            self.buttons = global_buttons(self.context)
             self.buttons.setParent(self.root)
         self.place()
 
@@ -483,19 +497,19 @@ class CornerControls(WindowControls):
         try:
             wanted = self.wanted()
             controls = wanted and not self.root.isFullScreen()
-            width = self.sizeHint().width() if controls else 0
             height = window_bar_height(self.context)
-            self.setGeometry(self.root.width() - width, 0, width, window_bar_button_height(height))
+            # Square buttons (see SquareButtons) - as wide as they are tall, each
+            side = window_bar_button_height(height)
+            width = side * len(self.findChildren(QPushButton)) if controls else 0
+            self.setGeometry(self.root.width() - width, 0, width, side)
             # The whole width, under the controls too, so its line runs to the edge
             self.strip.setGeometry(0, 0, self.root.width(), height)
             self.strip.update()
             self.setVisible(controls)
             self.strip.setVisible(wanted)
             if self.buttons is not None:
-                buttons_width = self.buttons.sizeHint().width()
-                gap = self.spacing() if controls else 0
-                self.buttons.setGeometry(self.root.width() - width - gap - buttons_width, 0, buttons_width,
-                                         window_bar_button_height(height))
+                buttons_width = side * len(self.buttons.findChildren(QPushButton))
+                self.buttons.setGeometry(self.root.width() - width - buttons_width, 0, buttons_width, side)
                 self.buttons.setVisible(wanted)
             if wanted:
                 self.strip.raise_()

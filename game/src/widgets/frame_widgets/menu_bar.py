@@ -9,8 +9,8 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 ToggleDebugLabels, ToggleLightDarkMode)
 from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
-from .window_chrome import (WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height, window_bar_has_line,
-                            window_bar_height, window_bar_room)
+from .window_chrome import (SquareButtons, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
+                            window_bar_has_line, window_bar_height, window_bar_room)
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -167,7 +167,7 @@ def icon_button(context: Context, button: ImportantButton, icon: str | None = No
     return button
 
 
-def global_buttons(context: Context, spacing: int) -> QWidget:
+def global_buttons(context: Context) -> QWidget:
     '''
     The buttons at the top right of every page, left of the window
     controls: Debug (developer mode only) and Appearance, then Settings and
@@ -178,7 +178,8 @@ def global_buttons(context: Context, spacing: int) -> QWidget:
     holder = QWidget()
     row = QHBoxLayout(holder)
     row.setContentsMargins(0, 0, 0, 0)
-    row.setSpacing(spacing)
+    # Square, side by side, like the window controls (see SquareButtons)
+    row.setSpacing(0)
     for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
         if group_key in DEVELOPER_GROUPS and not context.preferences.is_developer():
             continue
@@ -188,9 +189,10 @@ def global_buttons(context: Context, spacing: int) -> QWidget:
         row.addWidget(icon_button(context, group, RIGHT_ZONE_ICONS[group_key]))
     for button_class in (OpenSettingsPage, ShowHelpMessage):
         row.addWidget(icon_button(context, button_class(context)))
-    # As tall as what holds them - the window bar's whole height but its line (see window_bar_room)
+    # As tall as what holds them - the window bar's whole height but its line (see window_bar_room) - and as wide
     for button in holder.findChildren(QPushButton):
         button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+    SquareButtons(holder)
     return holder
 
 
@@ -390,8 +392,8 @@ class MenuBar(QFrame):
         zone = QWidget()
         row = QHBoxLayout(zone)
         row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(self.row.spacing())
-        row.addWidget(global_buttons(self.context, self.row.spacing()))
+        row.setSpacing(0)  # Square buttons, side by side up to the window's corner (see SquareButtons)
+        row.addWidget(global_buttons(self.context))
         # The whole height of the bar, up into the window's top right corner
         self.window_controls = WindowControls(self.context, zone)
         row.addWidget(self.window_controls)
