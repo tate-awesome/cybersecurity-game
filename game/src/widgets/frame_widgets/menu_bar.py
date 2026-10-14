@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel,
 from .important_buttons import ButtonGroup, ImportantButton, MENU_BAR_BUTTONS
 from .important_buttons.button_group import DEVELOPER_GROUPS
 from .overlay import Overlay
-from .window_chrome import WindowControls, WindowDrag
+from .window_chrome import WindowControls, WindowDrag, window_bar_height
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -337,8 +337,11 @@ class MenuBar(QFrame):
         return button
 
     def bar_height(self) -> int:
-        '''A page menu bar's height: its tallest item, with a little room above and below.'''
-        return self.sizeHint().height() + 4 * self.style.cgap
+        '''
+        A page menu bar's height: the same on every page (see
+        window_bar_height) - taller only if something in it is.
+        '''
+        return max(window_bar_height(self.context), self.sizeHint().height() + 4 * self.style.cgap)
 
     def place(self):
         '''

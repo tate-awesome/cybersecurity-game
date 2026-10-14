@@ -235,6 +235,23 @@ class WindowDrag(QObject):
         root.windowHandle().startSystemMove()
 
 
+def window_bar_height(context: Context) -> int:
+    '''
+    The height of the bar along the top of the window - a page's menu bar
+    (see MenuBar.bar_height), or the strip around CornerControls on a page
+    without one - so it's the same on every page: a menu bar button's
+    height (the tallest thing a bar always has - its dropdowns), with a
+    little room above and below.
+    '''
+    style = context.style
+    sample = QPushButton("Ag")
+    sample.setFont(style.get_font())
+    sample.ensurePolished()
+    height = sample.sizeHint().height()
+    sample.deleteLater()
+    return height + 4 * style.cgap
+
+
 def toggle_maximized(root: QWidget):
     '''Maximizes the window, or restores it if it already is - never while fullscreen.'''
     if root.isFullScreen():
@@ -352,12 +369,16 @@ class CornerControls(WindowControls):
         self.place()
 
     def place(self):
-        '''Across the top of the window, over the page - unless the page's own menu bar has the controls.'''
+        '''
+        Across the top of the window, over the page, as tall as a menu bar
+        (see window_bar_height) - unless the page's own menu bar has the controls.
+        '''
         try:
             wanted = not self.page_has_menu_bar() and not self.root.isFullScreen() and self.root.centralWidget() is not None
-            hint = self.sizeHint()
-            self.setGeometry(self.root.width() - hint.width(), 0, hint.width(), hint.height())
-            self.strip.setGeometry(0, 0, self.root.width() - hint.width(), hint.height())
+            width = self.sizeHint().width()
+            height = window_bar_height(self.context)
+            self.setGeometry(self.root.width() - width, 0, width, height)
+            self.strip.setGeometry(0, 0, self.root.width() - width, height)
             self.setVisible(wanted)
             self.strip.setVisible(wanted)
             if wanted:
