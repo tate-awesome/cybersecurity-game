@@ -28,7 +28,9 @@ class Overlay(QWidget):
     Like a menu bar's menus, once one is open, moving the mouse onto
     another overlay button beside its own opens that one instead (see
     _switch_to_hovered) - a click on the wrong one is fixed by just
-    moving over to the right one.
+    moving over to the right one. And an overlay button inside an open
+    overlay opens its own on hover too - one click, then the mouse finds
+    the way down.
     '''
     CLOSED_MARKER = Style.icon("caret-down")
     OPEN_MARKER = Style.icon("caret-up")
@@ -238,7 +240,9 @@ class Overlay(QWidget):
 
     def mouseMoveEvent(self, event):
         # While popups are open, Qt sends every mouse move to the topmost
-        # one - wherever the mouse is, over the window or other overlays too
+        # one - wherever the mouse is, over the window or other overlays
+        # too - and a move over one of its own buttons (which don't track
+        # the mouse) comes up to it as well
         self._switch_to_hovered(event.globalPosition().toPoint())
         super().mouseMoveEvent(event)
 
@@ -247,7 +251,8 @@ class Overlay(QWidget):
         The mouse is over another overlay button beside the one an open
         overlay (this one, or one it was opened from) came from - its
         sibling in the same row or menu: closes that overlay, and opens the
-        hovered button's instead.
+        hovered button's instead. Or it's over an overlay button in this
+        overlay itself, with nothing open from it yet: opens it.
         '''
         hovered = QApplication.widgetAt(global_pos)
         while hovered is not None and not isinstance(hovered, QPushButton):
@@ -268,6 +273,8 @@ class Overlay(QWidget):
                 overlay.hide()  # and anything opened from it
                 hovered.click()
                 return
+        if hovered.window() is self:
+            hovered.click()
 
     def _lineage(self) -> set["Overlay"]:
         '''
@@ -356,14 +363,26 @@ class Overlay(QWidget):
 
         keep = target._lineage() if target is not None else set()
         closing = [overlay for overlay in self.context.root.findChildren(Overlay) if overlay not in keep and overlay.isVisible()]
+        def pressed(overlay: "Overlay") -> bool:
+            return under_mouse is not None and any(
+                trigger is not None and (under_mouse is trigger or trigger.isAncestorOf(under_mouse))
+                for trigger in (overlay.button, overlay._opened_from))
+        # A press on the button inside another overlay that this one opened
+        # from - opened on hover, most likely (see eventFilter) - keeps it
+        # open, as clicking a submenu does: only what was opened from it closes
+        held = next((overlay for overlay in closing if overlay._parent_overlay is not None and pressed(overlay)), None)
+        if held is not None:
+            keep = held._lineage()
+            for overlay in closing:
+                if overlay not in keep:
+                    overlay.hide()
+            return
         # A press on the button (or the menu bar overflow proxy) that opened
         # one of these only closes it - passed on, the button would count a click on
         # release and open it again. WA_NoMouseReplay stops Qt replaying
         # the press once the last popup closes; set on all of them, since
         # Qt checks whichever closes last
-        on_trigger = under_mouse is not None and any(
-            trigger is not None and (under_mouse is trigger or trigger.isAncestorOf(under_mouse))
-            for overlay in closing for trigger in (overlay.button, overlay._opened_from))
+        on_trigger = any(pressed(overlay) for overlay in closing)
         for overlay in closing:
             if on_trigger:
                 overlay.setAttribute(Qt.WidgetAttribute.WA_NoMouseReplay, True)
