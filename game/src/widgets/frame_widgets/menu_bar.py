@@ -27,8 +27,7 @@ from collections.abc import Callable
 # important_buttons.MENU_BAR_BUTTONS). A page config's "menu_bar" only says
 # which buttons a page gets (see MenuBar.add_config_buttons): a group with
 # none of them is left out, and a group with just one shows that button in
-# the group's place instead. PAUSE_MENU_GROUPS go in the pause menu rather
-# than the bar (see PauseMenu).
+# the group's place instead.
 MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
     "captures_button_group": [
         ("load_fast", ["pcap_button", "load_json_fast_button"]),
@@ -51,7 +50,6 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("links", ["ap_config_button"]),
     ],
 }
-PAUSE_MENU_GROUPS = {"links_button_group"}
 
 # Every config button name in layout order - the order the workspace editor lists them in
 MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
@@ -300,8 +298,6 @@ class MenuBar(QFrame):
         self._fixed: list[QWidget] = []
         self.back_arrow = None
         self.window_controls = None
-        # The page's links, for the pause menu (see add_config_buttons, PauseMenu)
-        self.page_links: list[type[ImportantButton]] = []
 
         if self.page_bar:
             self.left_zone = self.build_left_zone()
@@ -435,12 +431,13 @@ class MenuBar(QFrame):
             pass  # deleted with its page, with the signal still connected
 
     def fixed_width(self) -> int:
-        '''Room the row's fixed items take (see _fixed) - none for the window controls while they're hidden (fullscreen).'''
+        '''Room the row's fixed items take (see _fixed) - the right zone's less maximize while it's hidden (fullscreen).'''
         spacing = self.row.spacing()
-        width = sum(widget.sizeHint().width() + spacing for widget in self._fixed)
-        if self.window_controls is not None and self.context.root.isFullScreen():
-            width -= self.window_controls.sizeHint().width() + spacing
-        return width
+        return sum(widget.sizeHint().width() + spacing for widget in self._fixed)
+
+    def tool_buttons(self) -> list[QPushButton]:
+        '''The page's own buttons in the center zone, left to right - squashed ones too (see _update_squashing).'''
+        return [entry["widget"] for entry in self._entries if entry["kind"] == "button"]
 
     def minimumSizeHint(self):
         '''
@@ -860,10 +857,7 @@ class MenuBar(QFrame):
         important_buttons.MENU_BAR_BUTTONS), grouped and ordered by
         MENU_BAR_GROUPS rather than by names' own order. Buttons that aren't
         available right now (see is_available) don't count toward a group.
-
-        PAUSE_MENU_GROUPS' buttons are kept for the pause menu (page_links)
-        rather than added to the bar. Everything else a page's menu bar has,
-        it has by itself - see MenuBar.
+        Everything else a page's menu bar has, it has by itself - see MenuBar.
         '''
         for name in names:
             if name not in MENU_BAR_BUTTONS:
@@ -877,9 +871,7 @@ class MenuBar(QFrame):
                 if button_classes:
                     present.append((header, button_classes))
             button_classes = [button_class for _, section in present for button_class in section]
-            if group_key in PAUSE_MENU_GROUPS:
-                self.page_links += button_classes
-            elif len(button_classes) == 1:
+            if len(button_classes) == 1:
                 self.add_important(button_classes[0])
             elif button_classes:
                 self.add_important(ButtonGroup, group_key, present)

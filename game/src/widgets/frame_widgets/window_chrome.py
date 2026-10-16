@@ -360,8 +360,9 @@ class WindowControls(QWidget):
     Minimize, maximize/restore and close, for the borderless window - at
     the right end of a page's menu bar (see MenuBar), or by themselves in
     the corner of a page that has no menu bar (see CornerControls).
-    Hidden while fullscreen, where the window has nothing to minimize to
-    or restore from - F11 or the settings page leave fullscreen.
+    Fullscreen, maximize/restore hides, since there's nothing to restore
+    from - F11 or the settings page leave fullscreen - but minimize and
+    close stay. Close asks first (see ask_to_quit).
 
     Each shows one of style.ICONS (see ICONS here), with its name as a
     labels key tooltip ("window_controls_tooltips_<name>").
@@ -383,7 +384,7 @@ class WindowControls(QWidget):
 
         self.minimize = self._button("minimize", self.root.showMinimized)
         self.maximize = self._button("maximize", lambda: toggle_maximized(self.root))
-        self.close_button = self._button("close", self.root.close)
+        self.close_button = self._button("close", self.ask_to_quit)
         self.close_button.setProperty("close", True)
         for button in (self.minimize, self.maximize, self.close_button):
             row.addWidget(button)
@@ -405,6 +406,10 @@ class WindowControls(QWidget):
         button.clicked.connect(lambda checked=False: action())
         return button
 
+    def ask_to_quit(self):
+        from .important_buttons.quit_application import ask_to_quit
+        ask_to_quit(self.context, self.window())
+
     def label(self, key: str) -> str:
         return self.context.labels.get(f"window_controls_{key}")
 
@@ -418,11 +423,9 @@ class WindowControls(QWidget):
                 f" QWidget#{name} QPushButton:pressed {{ color: {text}; }}")
 
     def follow_window(self, *args):
-        '''Hidden while fullscreen; the maximize button says restore while maximized.'''
+        '''Maximize hidden while fullscreen; it says restore while maximized.'''
         try:
-            # Never shown while parentless - it would open as a window of its own
-            if self.parentWidget() is not None:
-                self.setVisible(not self.root.isFullScreen())
+            self.maximize.setVisible(not self.root.isFullScreen())
             maximized = self.root.isMaximized()
             self.maximize.setText(self.style.icon(self.ICONS["restore" if maximized else "maximize"]))
             self.maximize.setToolTip(self.label("tooltips_restore" if maximized else "tooltips_maximize"))
@@ -482,21 +485,19 @@ class CornerControls(WindowControls):
         '''
         Across the top of the window, over the page, as tall as a menu bar
         (see window_bar_height) - unless the page's own menu bar has these.
-        The window controls hide while fullscreen, like a menu bar's; the
-        other buttons and the strip stay.
+        Maximize hides while fullscreen, like a menu bar's (see follow_window).
         '''
         try:
             wanted = self.wanted()
-            controls = wanted and not self.root.isFullScreen()
             height = window_bar_height(self.context)
             # Square buttons (see SquareButtons) - as wide as they are tall, each
             side = window_bar_button_height(height)
-            width = side * len(self.findChildren(QPushButton)) if controls else 0
+            width = side * len([button for button in self.findChildren(QPushButton) if not button.isHidden()]) if wanted else 0
             self.setGeometry(self.root.width() - width, 0, width, side)
             # The whole width, under the controls too, so its line runs to the edge
             self.strip.setGeometry(0, 0, self.root.width(), height)
             self.strip.update()
-            self.setVisible(controls)
+            self.setVisible(wanted)
             self.strip.setVisible(wanted)
             if self.buttons is not None:
                 buttons_width = side * len(self.buttons.findChildren(QPushButton))

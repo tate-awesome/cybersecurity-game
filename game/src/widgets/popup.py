@@ -128,7 +128,3 @@ def confirm_dialog(master: QWidget, context: Context, message: str, confirm_text
         window.add_button(cancel_text, window.reject)
         window.show()
         return window
-
-def quit_dialog(master: QWidget, context: Context, quit_func):
-        message = "Are you sure you want to quit?\nNothing will be saved."
-        return confirm_dialog(master, context, message, "Yes, quit", "No, continue", quit_func)
