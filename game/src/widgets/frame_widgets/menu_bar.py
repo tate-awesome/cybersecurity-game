@@ -602,6 +602,8 @@ class MenuBar(QFrame):
             button = entry["widget"]
             proxy = QPushButton(button.text())
             proxy.setFont(self.style.get_font())
+            # Its overlay opens on hover once a sibling's is open (see Overlay._switch_to_hovered)
+            proxy.setProperty("opens_overlay", button.property("opens_overlay"))
             # Replays a real click on the (hidden) original button rather
             # than capturing its callback at insert time, so a proxy always
             # reflects whatever label/handler the button currently has -

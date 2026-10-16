@@ -432,6 +432,8 @@ class PauseMenu:
         self.style_row(proxy)
         proxy.setToolTip(button.toolTip())
         proxy.setEnabled(button.isEnabled())
+        # Its dropdown opens on hover once another's is open, like the bar's (see Overlay._switch_to_hovered)
+        proxy.setProperty("opens_overlay", button.property("opens_overlay"))
         proxy.clicked.connect(lambda checked=False: self.replay(button, proxy))
         self.proxies.append((button, proxy))
         return proxy

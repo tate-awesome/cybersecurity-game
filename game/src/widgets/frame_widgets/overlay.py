@@ -19,6 +19,16 @@ class Overlay(QWidget):
     while closed, up while open - so every overlay button reads as one at a
     glance, and shows which overlay is open. closed_text/open_text replace
     those whole texts instead (e.g. MenuBar's overflow button).
+
+    Opened from inside another overlay, it comes out the other way from
+    that one - beside its button if the parent dropped down, below it if
+    the parent came out the side (see placement_anchor) - so a chain of
+    them steps across the screen instead of piling up on each other.
+
+    Like a menu bar's menus, once one is open, moving the mouse onto
+    another overlay button beside its own opens that one instead (see
+    _switch_to_hovered) - a click on the wrong one is fixed by just
+    moving over to the right one.
     '''
     CLOSED_MARKER = Style.icon("caret-down")
     OPEN_MARKER = Style.icon("caret-up")
@@ -29,7 +39,10 @@ class Overlay(QWidget):
     def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south",
                  closed_text: str | None = None, open_text: str | None = None):
         super().__init__(master, Qt.WindowType.Popup)
+        # The side it opens on by itself - and the side it last opened on,
+        # which differs when it opens from inside another overlay (see placement_anchor)
         self.anchor = anchor
+        self.placed_anchor = anchor
         self.context = context
         self.style = context.style
         self.button = button
@@ -57,6 +70,8 @@ class Overlay(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
 
+        # Mouse moves while no button is held too, for _switch_to_hovered
+        self.setMouseTracking(True)
         button.clicked.connect(lambda checked=False: self._toggle())
         # Lets a ButtonGroup tell which of its buttons open overlays of their own
         button.setProperty("opens_overlay", True)
@@ -115,7 +130,8 @@ class Overlay(QWidget):
         # a later press on that proxy has to be recognised as this overlay's
         # own trigger too (see mousePressEvent)
         self._opened_from = target
-        self.move(self.calculate_placement(self.anchor, target))
+        self.placed_anchor = self.placement_anchor()
+        self.move(self.calculate_placement(self.placed_anchor, target))
         # Started before show() so the very first frame is already in the
         # entrance pose rather than flashing in at its final spot
         if self._entrance is not None:
@@ -196,9 +212,62 @@ class Overlay(QWidget):
         '''
         here = self.geometry().center()
         there = target.mapToGlobal(target.rect().center())
-        if self.anchor in ("north", "south"):
+        if self.placed_anchor in ("north", "south"):
             return (0.0, 1.0 if here.y() >= there.y() else -1.0)
         return (1.0 if here.x() >= there.x() else -1.0, 0.0)
+
+    def placement_anchor(self) -> str:
+        '''
+        The side to open on: its own anchor - or, opened from inside another
+        overlay, across from that one's (beside it if it dropped down, below
+        it if it came out the side).
+        '''
+        parent = self._parent_overlay
+        if parent is None:
+            return self.anchor
+        return "east" if parent.placed_anchor in ("north", "south") else "south"
+
+    def _chain(self) -> list["Overlay"]:
+        '''This overlay, then the overlay it was opened from, and so on out - see _lineage.'''
+        chain = []
+        node = self
+        while node is not None and node not in chain:
+            chain.append(node)
+            node = node._parent_overlay
+        return chain
+
+    def mouseMoveEvent(self, event):
+        # While popups are open, Qt sends every mouse move to the topmost
+        # one - wherever the mouse is, over the window or other overlays too
+        self._switch_to_hovered(event.globalPosition().toPoint())
+        super().mouseMoveEvent(event)
+
+    def _switch_to_hovered(self, global_pos: QPoint):
+        '''
+        The mouse is over another overlay button beside the one an open
+        overlay (this one, or one it was opened from) came from - its
+        sibling in the same row or menu: closes that overlay, and opens the
+        hovered button's instead.
+        '''
+        hovered = QApplication.widgetAt(global_pos)
+        while hovered is not None and not isinstance(hovered, QPushButton):
+            hovered = hovered.parentWidget()
+        if hovered is None or not hovered.property("opens_overlay") or not hovered.isEnabled():
+            return
+        for overlay in self._chain():
+            trigger = overlay._opened_from or overlay.button
+            if trigger is None:
+                continue
+            try:
+                if hovered is trigger:
+                    return  # its own overlay is already open
+                siblings = hovered.parentWidget() is trigger.parentWidget()
+            except RuntimeError:
+                continue  # its trigger was deleted (a proxy in a closed overflow overlay)
+            if siblings:
+                overlay.hide()  # and anything opened from it
+                hovered.click()
+                return
 
     def _lineage(self) -> set["Overlay"]:
         '''
