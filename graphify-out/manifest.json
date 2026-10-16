@@ -864,9 +864,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
-    "mtime": 1792177247.6550777,
-    "seen": 1792177292.2369924,
-    "ast_hash": "80cb10336d759a6163d897ae1ec092c8",
+    "mtime": 1792177627.8002222,
+    "seen": 1792177655.055216,
+    "ast_hash": "0f3a4c37093597f841493ecb4938fa13",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/panes.py": {
