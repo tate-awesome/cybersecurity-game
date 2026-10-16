@@ -76,6 +76,10 @@ class Visual:
     paint(painter, palette) to draw it; on_resize() is called whenever the
     drawing area changes size (including the first time), and should keep
     state in normalized or resize-tolerant coordinates where it can.
+
+    Most visuals build their state in on_resize, so nothing runs until the
+    first resize: step does nothing before it, and settle waits for it
+    (see request_settle) - VisualBackground only paints a sized visual.
     '''
 
     KEY = ""
@@ -96,6 +100,13 @@ class Visual:
         # Per-render drawing options from whichever VisualBackground is
         # painting this visual right now (e.g. {"packets": False})
         self.paint_options: dict = {}
+        # settle asked for before the first resize - done right after it (see request_settle)
+        self.settle_pending = False
+
+    @property
+    def sized(self) -> bool:
+        '''Whether it's been given a size yet - and so built its state (see on_resize).'''
+        return self.width > 0 and self.height > 0
 
     def resize(self, width: int, height: int):
         first = self.width == 0 or self.height == 0
@@ -103,6 +114,9 @@ class Visual:
         self.scale_y = 1.0 if first else height / self.height
         self.width, self.height = width, height
         self.on_resize(first)
+        if self.settle_pending and self.sized:
+            self.settle_pending = False
+            self.settle()
 
     def on_resize(self, first: bool):
         '''
@@ -112,6 +126,8 @@ class Visual:
         pass
 
     def step(self, dt: float):
+        if not self.sized:
+            return  # nothing built yet to move (see on_resize)
         self.time += dt
         self.update(dt)
 
@@ -150,9 +166,17 @@ class Visual:
         '''
         Skips straight to the visual's normal running state, past any
         intro (e.g. the network's startup spawn-in) - for a background
-        that's shown still, which would otherwise freeze mid-intro.
+        that's shown still, which would otherwise freeze mid-intro. Only
+        called on a sized visual - see request_settle.
         '''
         pass
+
+    def request_settle(self):
+        '''settle - now if it's sized, else as soon as it is (see resize), since there's nothing to settle before then.'''
+        if self.sized:
+            self.settle()
+        else:
+            self.settle_pending = True
 
     def paint(self, painter: QPainter, palette: VisualPalette):
         raise NotImplementedError

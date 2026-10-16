@@ -257,8 +257,9 @@ class VisualBackground(QWidget):
         self.frame_ms = max(1, round(1000 / style.background_fps))
         if not self.animate and self.visual is not None:
             # A still frame should show the finished picture, not one
-            # caught partway through an intro (see Visual.settle)
-            self.visual.settle()
+            # caught partway through an intro (see Visual.settle) - once
+            # it has a size, if it's new and not yet on screen
+            self.visual.request_settle()
         # A theme's blur only replaces a page's own - a page drawn sharp (the title) stays sharp
         theme_blur = style.setting("background_blur")
         blur = theme_blur if theme_blur is not None and self.page_blur > 0 else self.page_blur
@@ -317,7 +318,7 @@ class VisualBackground(QWidget):
         # Clamp so a stall (window drag, breakpoint) doesn't teleport everything
         dt = min(0.1, now - self.last_tick)
         self.last_tick = now
-        if self.visual is None or self.width() <= 0 or self.height() <= 0:
+        if self.visual is None or not self.visual.sized or self.width() <= 0 or self.height() <= 0:
             return
         # Background mode ignores mouse events (so clicks reach the page's
         # own widgets), so read the global cursor and buttons instead of
@@ -421,7 +422,7 @@ class VisualBackground(QWidget):
         palette = self.palette_for_theme()
         painter = QPainter(self)
         try:
-            if self.held or self.visual is None or self.visual.width <= 0:
+            if self.held or self.visual is None or not self.visual.sized:
                 self.fill_base(painter, self.width(), self.height())
                 return
             if self.frame is None:
