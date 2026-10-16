@@ -1,5 +1,3 @@
-import base64
-import json
 import os
 import threading
 
@@ -7,6 +5,7 @@ from scapy.all import Ether, IP
 
 
 from ..process import Process
+from . import record_schema as schema
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -26,15 +25,23 @@ class Replay(Process):
 
         self.file_path = ""
         self.realtime = True
+        self.record_filter = schema.RecordFilter()
 
 
     # ------------------------------------------------------------------
     # Loading
     # ------------------------------------------------------------------
 
-    def load_json(self, realtime: bool = True):
+    def load_json(self, realtime: bool = True, record_filter: schema.RecordFilter | None = None,
+                  file_path: str | None = None):
         """
         Button entry point for loading a replay file.
+
+        A file can hold every record kind (see record_schema); record_filter
+        picks which parts this button replays - e.g. RecordFilter(kinds={"pkt"})
+        for just the capture, {"poll"} for just the defender view, or
+        {"act", "mark", "status"} for an instructor's tutorial steps.
+        file_path skips the dialog (e.g. a clip that was just made).
 
         Packets are streamed off disk one line at a time and replayed
         with the exact time spacing recorded in each packet's .time
@@ -53,10 +60,11 @@ class Replay(Process):
             self._is_loading = True
 
         self.realtime = realtime
+        self.record_filter = record_filter or schema.RecordFilter()
         self.abort_event.clear()
 
         try:
-            file_path = self.select_json_file()
+            file_path = file_path or self.select_json_file()
 
             if not file_path:
                 with self._lock:
@@ -115,29 +123,12 @@ class Replay(Process):
 
         worker_thread.start()
 
-    def parse_line(self, line: str):
-        """
-        Parse one replay record line into a (source, purpose, pkt,
-        direction) tuple.
+    def build_packet(self, record: dict):
+        """Rebuild the scapy packet from a pkt record (see record_schema)."""
 
-        Each line contains:
-            {
-                "packet": "<base64>",
-                "purpose": "...",
-                "producer": "...",
-                "time": <float, optional>,
-                "direction": "in" | "out" | "other" | null, optional
-            }
-        """
+        raw_packet = schema.raw_bytes(record)
 
-        data = json.loads(line)
-
-        raw_packet = base64.b64decode(data["packet"])
-        source = data["producer"]
-        purpose = data["purpose"]
-        direction = data.get("direction")
-
-        if source == "nfq":
+        if record.get("link") == "ip":
             pkt = IP(raw_packet)
         else:
             pkt = Ether(raw_packet)
@@ -145,13 +136,32 @@ class Replay(Process):
         # Parsing a packet from raw bytes resets .time to "now".
         # Restore the originally recorded timestamp, if one was saved,
         # so playback can reproduce the real spacing.
-        if "time" in data:
-            pkt.time = data["time"]
+        if record.get("t") is not None:
+            pkt.time = record["t"]
 
-        # Pass the originally resolved direction back in as an explicit
-        # override so replay doesn't depend on MAC-based inference,
-        # which breaks on a different device's local MAC address.
-        return (source, purpose, pkt, direction)
+        return pkt
+
+    def post_record(self, record: dict):
+        """
+        Feed one record back into the buffer the way it first arrived.
+
+        Packets pass their originally resolved direction back in as an
+        explicit override so replay doesn't depend on MAC-based inference,
+        which breaks on a different device's local MAC address.
+        """
+
+        kind = record["k"]
+
+        if kind == "pkt":
+            self.buffer.put(record["src"], record["purpose"], self.build_packet(record), record.get("dir"))
+        elif kind == "poll":
+            self.buffer.put_poll(record["data"])
+        elif kind == "status":
+            self.buffer.put(record["src"], record["msg"])
+        elif kind == "act":
+            self.buffer.put("replay", f"[{record.get('actor', '?')}] {record['name']} {record.get('args') or ''}")
+        elif kind == "mark":
+            self.buffer.put("replay", f"[{record.get('actor', '?')} mark] {record['label']}")
 
     # ------------------------------------------------------------------
     # Playback
@@ -201,8 +211,10 @@ class Replay(Process):
         previous_time = None
 
         try:
-            # Start with an empty buffer state.
+            # Start with an empty buffer state, and keep the replay out of
+            # the session log - it's already on disk.
             self.buffer.reset()
+            self.buffer.recorder.paused = True
 
             with open(self.file_path, encoding="utf-8") as file:
                 for line_number, line in enumerate(file, start=1):
@@ -211,22 +223,24 @@ class Replay(Process):
                         aborted_prematurely = True
                         break
 
-                    # Allow blank lines
-                    if not line.strip():
-                        continue
-
                     try:
-                        source, purpose, pkt, direction = self.parse_line(line)
+                        record = schema.decode(line)
                     except Exception as e:
                         self.buffer.put(
                             "json",
-                            f"Skipping invalid packet on line "
+                            f"Skipping invalid record on line "
                             f"{line_number}: {e}"
                         )
                         continue
 
-                    if self.realtime and previous_time is not None:
-                        delay = max(0.001, pkt.time - previous_time)
+                    # Blank lines, headers, and parts this button doesn't load
+                    if record is None or record["k"] == "hdr" or not self.record_filter.keeps(record):
+                        continue
+
+                    record_time = record.get("t")
+
+                    if self.realtime and previous_time is not None and record_time is not None:
+                        delay = max(0.001, record_time - previous_time)
 
                         # Wake up early if an abort is requested mid-wait.
                         if self.abort_event.wait(delay):
@@ -242,27 +256,33 @@ class Replay(Process):
                     if aborted_prematurely:
                         break
 
-                    self.buffer.put(source, purpose, pkt, direction)
+                    try:
+                        self.post_record(record)
+                    except Exception as e:
+                        self.buffer.put("json", f"Skipping invalid record on line {line_number}: {e}")
+                        continue
 
-                    previous_time = pkt.time
+                    if record_time is not None:
+                        previous_time = record_time
                     index += 1
 
             if aborted_prematurely:
                 self.buffer.put(
                     "json",
-                    f"JSON replay aborted. Processed {index} packets."
+                    f"JSON replay aborted. Processed {index} records."
                 )
 
             else:
                 self.buffer.put(
                     "json",
-                    f"Finished replaying {index} packets from {filename}"
+                    f"Finished replaying {index} records from {filename}"
                 )
         except Exception as e:
             # Without this, an uncaught exception here would leave _is_loading
             # stuck True forever, permanently blocking future loads.
             self.buffer.put("json", f"Error during JSON replay: {e}")
         finally:
+            self.buffer.recorder.paused = False
             self.reset_parameters()
 
             with self._lock:
@@ -328,12 +348,9 @@ class Replay(Process):
         """
         Write the current buffer to a JSON Lines replay file.
 
-        Only the original/replayable packet information is stored:
-            - raw Scapy packet
-            - purpose
-            - producer
-            - capture time
-            - direction (in/out/other, as resolved when captured)
+        Only the original/replayable packet information is stored, as v1
+        pkt records (see record_schema): raw bytes, purpose, producer,
+        capture time, and direction as resolved when captured.
 
         Derived/enriched information is intentionally not saved.
         """
@@ -351,34 +368,15 @@ class Replay(Process):
 
                 for mpkt in meta_packets:
 
-                    pkt = mpkt.get("pkt")
+                    record = schema.packet_from_meta(mpkt)
 
-                    if pkt is None:
+                    if record is None:
                         continue
 
-                    data = {
-                        "packet": base64.b64encode(
-                            bytes(pkt)
-                        ).decode("ascii"),
-
-                        "purpose": mpkt.get("purpose"),
-
-                        "producer": mpkt.get("hack"),
-
-                        "time": pkt.time,
-
-                        "direction": mpkt.get("direction"),
-                    }
-
-                    file.write(
-                        json.dumps(
-                            data,
-                            separators=(",", ":")
-                        )
-                        + "\n"
-                    )
-
                     saved += 1
+                    record["v"] = schema.SCHEMA_VERSION
+                    record["seq"] = saved
+                    file.write(schema.dumps(record))
 
             # The app typically runs under sudo for raw-socket access,
             # so the file above would otherwise come out root-owned and

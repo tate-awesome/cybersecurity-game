@@ -1,5 +1,3 @@
-import base64
-import json
 import os
 import queue
 import threading
@@ -8,6 +6,7 @@ from pathlib import Path
 
 from ..buffer.meta_packet import MetaPacket
 from ..process import Process
+from . import record_schema as schema
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -33,6 +32,7 @@ class FileStream(Process):
         self.is_streaming = False
         self.file_path = ""
         self._file = None
+        self._seq = 0
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -69,6 +69,7 @@ class FileStream(Process):
             self.file_path = file_path
             self._file = file
             self._queue = queue.Queue()
+            self._seq = 0
             self._worker_thread = threading.Thread(
                 target=self.worker,
                 daemon=True
@@ -168,37 +169,21 @@ class FileStream(Process):
 
     def write_record(self, file, mpkt: MetaPacket):
         '''
-        Append one MetaPacket to the stream file, in the same record
-        format as Replay.write_json_file.
+        Append one MetaPacket to the stream file as a v1 pkt record
+        (see record_schema), the same format as Replay.write_json_file.
         '''
 
-        pkt = mpkt.get("pkt")
+        record = schema.packet_from_meta(mpkt)
 
-        if pkt is None:
+        if record is None:
             return
 
-        data = {
-            "packet": base64.b64encode(
-                bytes(pkt)
-            ).decode("ascii"),
-
-            "purpose": mpkt.get("purpose"),
-
-            "producer": mpkt.get("hack"),
-
-            "time": pkt.time,
-
-            "direction": mpkt.get("direction"),
-        }
+        self._seq += 1
+        record["v"] = schema.SCHEMA_VERSION
+        record["seq"] = self._seq
 
         try:
-            file.write(
-                json.dumps(
-                    data,
-                    separators=(",", ":")
-                )
-                + "\n"
-            )
+            file.write(schema.dumps(record))
             file.flush()
         except Exception as e:
             self.buffer.put(

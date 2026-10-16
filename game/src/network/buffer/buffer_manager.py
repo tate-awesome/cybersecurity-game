@@ -19,7 +19,7 @@ from .channels import (
 from .meta_packet import MetaPacket
 from .channels.transaction_manager import TransactionManager
 from .poll_unpacker import _PollUnpacker
-from ..saved import Loader, Replay, FileStream
+from ..saved import Loader, Replay, FileStream, SessionRecorder
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -48,6 +48,13 @@ class Buffer:
         self.file_stream = FileStream(self, context)
         self.loader = Loader(self, context)
         self.replay = Replay(self, context)
+
+        # Rolling on-disk log of packets, polls, statuses and user actions,
+        # for clips and replays (see saved/session_recorder.py). Paused while
+        # a replay is feeding the buffer, so replays aren't re-recorded.
+        self.recorder = SessionRecorder(context.paths.user_mcaptures / "sessions",
+                                        on_file_created=context.paths.lower_permissions)
+        self.recorder.start()
 
         # Defender-page channels: fed by the AP's polled /api/data JSON via
         # _PollUnpacker (see put_poll), not by MetaPacket like the channels
@@ -80,6 +87,7 @@ class Buffer:
         defender_modbus/defender_map/defender_status. The only way in - the
         unpacker itself is private to this class.
         '''
+        self.recorder.record_poll(data)
         self._poll_unpacker.unpack(data)
 
     def reset_modbus(self):
@@ -92,7 +100,12 @@ class Buffer:
             return
         self.worker_thread.start()
 
+    def record_action(self, name: str, args: dict | None = None, actor: str | None = None) -> None:
+        '''Logs something the user did (started arp, changed a target...) for replay.'''
+        self.recorder.record_action(name, args, actor)
+
     def stop_worker(self):
+        self.recorder.stop()
         self.stop_event.set()
         self.worker_thread.join(timeout=1)
 
@@ -179,6 +192,7 @@ class Buffer:
         # Put status message in "status" buffer
         if data is None and isinstance(purpose, str) and isinstance(source, str):
             self.status.put(source, purpose)
+            self.recorder.record_status(source, purpose)
 
         if isinstance(data, MetaPacket):
             self.distribute_packet(data)
@@ -208,3 +222,4 @@ class Buffer:
             self.hvac.put(mpkt)
 
         self.file_stream.put(mpkt)
+        self.recorder.record_meta(mpkt)
