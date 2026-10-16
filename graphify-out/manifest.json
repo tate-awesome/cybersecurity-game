@@ -1080,16 +1080,16 @@
     "semantic_hash": "7e9e9e06b483b059813a6610edf6cfb0"
   },
   "game/src/widgets/visuals/background.py": {
-    "mtime": 1792004173.8437195,
-    "seen": 1792004275.711047,
-    "ast_hash": "70589aef583abddd2f7008120bcfc1c4",
+    "mtime": 1792176024.3919303,
+    "seen": 1792176084.04273,
+    "ast_hash": "3cfe11412cf831436e248320065fee01",
     "semantic_hash": ""
   },
   "game/src/widgets/visuals/base.py": {
-    "mtime": 1791876696.2323673,
-    "seen": 1791960483.96604,
-    "ast_hash": "ff056691784f15493bbab7c5129e8aaa",
-    "semantic_hash": "ff056691784f15493bbab7c5129e8aaa"
+    "mtime": 1792176024.3919303,
+    "seen": 1792176084.0427325,
+    "ast_hash": "92d096e1b9bee8fa3246c0d58bd7f573",
+    "semantic_hash": ""
   },
   "game/src/widgets/visuals/kalman.py": {
     "mtime": 1791144581.8448892,
