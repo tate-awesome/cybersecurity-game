@@ -64,14 +64,17 @@ class SettingsSection(QFrame):
             self.context.states.set(*path, value=value)
 
     # Rows
-    def add_row(self, path: StatePath, editor: QWidget):
+    def add_row(self, path: StatePath, editor: QWidget, text: str | None = None, tooltip: str | None = None):
+        '''A labeled row - text/tooltip, when given, stand in for the path's labels (e.g. a row per item of a list).'''
         keys = "_".join(str(key) for key in path if not isinstance(key, int))
-        text = self.context.labels.get(f"settings_labels_{keys}")
-        if isinstance(path[-1], int):
-            text = f"{text} {path[-1] + 1}"
+        if text is None:
+            text = self.context.labels.get(f"settings_labels_{keys}")
+            if isinstance(path[-1], int):
+                text = f"{text} {path[-1] + 1}"
         label = QLabel(text)
         label.setFont(self.style.get_font())
-        tooltip = self.context.labels.get(f"settings_tooltips_{keys}")
+        if tooltip is None:
+            tooltip = self.context.labels.get(f"settings_tooltips_{keys}")
         label.setToolTip(tooltip)
         editor.setToolTip(tooltip)
         editor.setFont(self.style.get_font())
@@ -121,16 +124,17 @@ class SettingsSection(QFrame):
         self.add_row(path, combobox)
         return combobox
 
-    def toggle(self, path: StatePath, checked: bool, changed: Callable[[bool], None]) -> QCheckBox:
+    def toggle(self, path: StatePath, checked: bool, changed: Callable[[bool], None],
+               text: str | None = None, tooltip: str | None = None) -> QCheckBox:
         '''
         A checkbox for a setting that isn't in context.states (e.g. a style
-        preference) - path only names its label/tooltip.
+        preference) - path only names its label/tooltip (see add_row's text/tooltip).
         '''
         checkbox = QCheckBox()
         # Load before connecting, so restoring it doesn't itself trigger a save
         checkbox.setChecked(checked)
         checkbox.toggled.connect(changed)
-        self.add_row(path, checkbox)
+        self.add_row(path, checkbox, text, tooltip)
         return checkbox
 
     def choice(self, path: StatePath, options: dict[str, str], current: str, changed: Callable[[str], None]) -> QComboBox:

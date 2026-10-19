@@ -1,14 +1,17 @@
 from ...app_core import Context
 from ...pages.page import Page
 from ...widgets import MenuBar, VISUALS, VisualBackground
+from ...widgets.frame_widgets.important_buttons import EditBackgroundChoices
 
 
 class Visuals(Page):
     '''
     Demo page for the procedural visuals (see widgets/visuals). A menu bar
-    dropdown picks which one plays - and makes it the app's background, the
-    same preference as the settings page's Background Type (so it opens on
-    whichever that is); "Background Preview" blurs it the way
+    dropdown picks which one plays - every one, even those hidden from the
+    background pickers - and makes it the app's background, the same
+    preference as Select Background (so it opens on whichever that is);
+    "Background Choices" picks which ones those pickers offer (see
+    EditBackgroundChoices); "Background Preview" blurs it the way
     the title pages do, to judge how it reads behind text; "Detailed"
     switches between the detailed and simple versions; "Replay Startup"
     plays its startup animation again.
@@ -50,6 +53,7 @@ class Visuals(Page):
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_background_preview"), Visuals.preview, self.set_preview)
         menu_bar.add_checkbox(labels.get("menu_bar_buttons_visual_detailed"), Visuals.detailed, self.set_detailed)
         menu_bar.add_button("replay_intro", self.background.replay_intro)
+        menu_bar.add_important(EditBackgroundChoices)
 
     def select(self, name: str):
         key = self.names[name]

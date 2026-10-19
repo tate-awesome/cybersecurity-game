@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 from ..app_core import Context
+from ..app_core.context.style import NO_BACKGROUND
 
 class Page(QWidget):
     '''
@@ -83,18 +84,20 @@ class Page(QWidget):
         if not isinstance(background, dict):
             return False
         from ..widgets import VisualBackground
+        visual = self.style.background_visual
         self.background = VisualBackground(
             self, self.context,
-            self.style.background_visual,
+            # No background still builds one, hidden, ready for a visual to be picked
+            None if visual == NO_BACKGROUND else visual,
             intensity=background.get("intensity", 1.0),
             in_layout=False,
             blur=background.get("blur", 0.0),
             # Same running network from page to page, not a fresh one each time
             shared=True,
         )
-        # Which visual, whether it's drawn/animated and its frame rate are
-        # the user's preferences (Style.background_*, set in the Background
-        # dropdown). Detail is always on where the page allows it ("packets"),
+        # Which visual (if any), whether it's animated and its frame rate are
+        # the user's preferences (Style.background_*, set in quick settings
+        # and on the settings page). Detail is always on where the page allows it ("packets"),
         # and otherwise up to the "Detailed Background" preference
         self.background.follow_preferences(page_animate=background.get("animate", True),
                                            page_detailed=background.get("packets", True), menu=menu)

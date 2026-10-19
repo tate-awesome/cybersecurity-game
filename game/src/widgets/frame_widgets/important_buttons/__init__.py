@@ -24,6 +24,7 @@ from .quit_application import QuitApplication
 from .link_to_page import LinkToPage
 from .open_favorite_page import OpenFavoritePage
 from .open_settings_page import OpenSettingsPage
+from .toggle_fullscreen import ToggleFullscreen
 
 # Workspace
 from .refresh_current_page import RefreshCurrentPage
@@ -40,9 +41,11 @@ from .checkbox_overlay.choose_shown_packet_console_columns import ChooseShownPac
 from .toggle_light_dark_mode import ToggleLightDarkMode
 from .select_color_theme import SelectColorTheme
 from .open_theme_editor import OpenThemeEditor
-from .open_appearance_settings import OpenAppearanceSettings
 from .import_themes import ImportThemes
-from .settings_overlays.edit_background_style import EditBackgroundStyle
+from .toggle_translucent_surfaces import ToggleTranslucentSurfaces
+from .toggle_freeze_background import ToggleFreezeBackground
+from .select_background import SelectBackground
+from .settings_overlays.edit_background_choices import EditBackgroundChoices
 from .settings_overlays.edit_model_style import EditModelStyle
 from .settings_overlays.edit_strip_chart_style import EditStripChartStyle
 

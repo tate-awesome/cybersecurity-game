@@ -6,6 +6,7 @@ from PySide6.QtGui import QColor, QCursor, QImage, QLinearGradient, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ...app_core import Context
+from ...app_core.context.style import NO_BACKGROUND
 from .base import Visual, VisualPalette
 # The package __init__ defines VISUALS before importing this module
 from . import VISUALS
@@ -114,7 +115,8 @@ class VisualBackground(QWidget):
     animation (and its intro) only starts once the first page has come in
     (see App.start_first_page).
 
-    The special key "cycle" rotates through every visual, CYCLE_SECONDS each.
+    The special key "cycle" rotates through every visual the background
+    pickers offer (see cycle_keys), CYCLE_SECONDS each.
 
     shared=True makes every shared VisualBackground playing the same key
     drive one simulation (see SHARED), so page backgrounds carry on
@@ -202,13 +204,13 @@ class VisualBackground(QWidget):
         self.visual_key = key
         if switching:
             self.SHARED.pop(key, None)
-            Visual.intros_played.discard(next(iter(VISUALS)) if self.cycling else key)
+            Visual.intros_played.discard(self.cycle_keys()[0] if self.cycling else key)
 
         if self.shared and key in self.SHARED:
             # Pick up the already-running simulation where the last page left it
             self.state = self.SHARED[key]
         else:
-            first = next(iter(VISUALS)) if self.cycling else key
+            first = self.cycle_keys()[0] if self.cycling else key
             self.state = {"visual": VISUALS[first](), "cycle_elapsed": 0.0}
             if self.shared:
                 self.SHARED[key] = self.state
@@ -250,10 +252,11 @@ class VisualBackground(QWidget):
     def apply_preferences(self):
         '''Brings this background in line with Style.background_* - called again whenever they change.'''
         style = self.style
-        if style.background_visual != self.visual_key:
+        # No background keeps whatever visual it had, just hidden (see Style.background_shown)
+        if style.background_visual not in (self.visual_key, NO_BACKGROUND):
             self.set_visual(style.background_visual)
         self.paint_options = {**self.paint_options, "packets": self.page_detailed or style.background_detailed}
-        self.animate = self.page_animate and style.background_animate
+        self.animate = self.page_animate and not style.background_frozen()
         self.frame_ms = max(1, round(1000 / style.background_fps))
         if not self.animate and self.visual is not None:
             # A still frame should show the finished picture, not one
@@ -286,9 +289,14 @@ class VisualBackground(QWidget):
         self.blur_levels = 0 if radius <= 0 else max(1, round(math.log2(radius)) - 1)
         self.invalidate()
 
+    def cycle_keys(self) -> list[str]:
+        '''The visuals "cycle" takes turns with - all but those hidden from the background pickers (all, if that's every one).'''
+        keys = [key for key in VISUALS if key not in self.style.background_hidden]
+        return keys or list(VISUALS)
+
     def next_visual(self):
-        keys = list(VISUALS)
-        index = (keys.index(self.visual.KEY) + 1) % len(keys) if self.visual else 0
+        keys = self.cycle_keys()
+        index = (keys.index(self.visual.KEY) + 1) % len(keys) if self.visual and self.visual.KEY in keys else 0
         # Each visual in the cycle arrives with its startup intro
         Visual.intros_played.discard(keys[index])
         self.visual = VISUALS[keys[index]]()

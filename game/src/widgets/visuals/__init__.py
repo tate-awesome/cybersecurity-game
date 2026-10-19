@@ -28,4 +28,18 @@ VISUALS: dict[str, type[Visual]] = {
     Proximity.KEY: Proximity,
 }
 
+
+def background_choices(context) -> dict[str, str]:
+    '''
+    What the background pickers offer, key -> shown name: No Background,
+    every visual not hidden from them (see Style.background_hidden - chosen
+    on the visuals demo page), then Cycle All when there's more than one.
+    '''
+    from ...app_core.context.style import NO_BACKGROUND
+    hidden = context.style.background_hidden
+    keys = [key for key in VISUALS if key not in hidden]
+    if len(keys) > 1 and "cycle" not in hidden:
+        keys.append("cycle")
+    return {key: context.labels.get(f"visual_names_{key}") for key in [NO_BACKGROUND, *keys]}
+
 from .background import VisualBackground

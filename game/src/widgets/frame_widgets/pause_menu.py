@@ -4,8 +4,8 @@ from PySide6.QtWidgets import QFrame, QLabel, QPushButton, QScrollArea, QStyle, 
 
 from ...app_core import Context
 from .important_buttons import (ButtonGroup, GoBackToPreviousPage, GoForwardToNextPage, ImportantButton, OpenPauseMenu,
-                                OpenSettingsPage, QuitApplication, RefreshCurrentPage, ShowHelpMessage, ToggleBookmark)
-from .important_buttons.button_group import DEVELOPER_GROUPS, QWIDGETSIZE_MAX
+                                QuitApplication, RefreshCurrentPage, ShowHelpMessage, ToggleBookmark)
+from .important_buttons.button_group import QWIDGETSIZE_MAX, offered_sections
 from .overlay import Overlay
 from .window_chrome import WindowControls, toggle_maximized
 
@@ -357,23 +357,18 @@ class PauseMenu:
         button.setText(self.context.labels.get(f"menu_bar_tooltips_{label}").replace("{page}", name))
 
     def global_rows(self) -> list[QPushButton]:
-        '''The bar's right zone, but the window controls: Debug (developer mode), Appearance, Settings and Help - see global_buttons.'''
+        '''The bar's right zone, but the window controls: Quick Settings and Help - see global_buttons.'''
         from .menu_bar import RIGHT_ZONE_GROUPS, RIGHT_ZONE_ICONS
         context = self.context
         buttons = []
         for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
-            if group_key in DEVELOPER_GROUPS and not context.preferences.is_developer():
-                continue
-            sections = [(header, [button_class for button_class in button_classes if button_class.is_available(context)])
-                        for header, button_classes in group_sections]
-            group = ButtonGroup(context, group_key, [section for section in sections if section[1]])
+            group = ButtonGroup(context, group_key, offered_sections(context, group_sections))
             group.ICON = RIGHT_ZONE_ICONS[group_key]
             # Its submenu opens out to the right, beside the menu
             group.overlay.anchor = "east"
             self.watch(group.overlay)
             buttons.append(self.row(group, closes=False))
-        for button_class in (OpenSettingsPage, ShowHelpMessage):
-            buttons.append(self.row(button_class(context)))
+        buttons.append(self.row(ShowHelpMessage(context)))
         return buttons
 
     def window_rows(self) -> list[QPushButton]:

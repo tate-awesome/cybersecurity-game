@@ -1,16 +1,28 @@
 from PySide6.QtWidgets import QLabel
 from ....app_core import Context
 from ..overlay import Overlay
-from ._base_button import ImportantButton
+from ._base_button import ImportantButton, developer_text
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
 QWIDGETSIZE_MAX = (1 << 24) - 1
 
-# Groups shown only in developer mode - marked as developer-only, with every button in them
-DEVELOPER_GROUPS = {"debug_button_group"}
+# Sections shown only in developer mode - marked as developer-only, header and every button
+DEVELOPER_SECTIONS = {"debug_tools"}
 
 # One titled block of a group: (header key - "menu_bar_headers_<key>", or None - , its buttons in order)
 Section = tuple[str | None, list[type[ImportantButton]]]
+
+
+def offered_sections(context: Context, sections: list[Section]) -> list[Section]:
+    '''
+    The sections as they are right now - each with just its available
+    buttons (see ImportantButton.is_available), developer-only ones only in
+    developer mode, and any left empty dropped.
+    '''
+    developer = context.preferences.is_developer()
+    offered = [(header, [button_class for button_class in button_classes if button_class.is_available(context)])
+               for header, button_classes in sections if developer or header not in DEVELOPER_SECTIONS]
+    return [section for section in offered if section[1]]
 
 
 class ButtonGroup(ImportantButton):
@@ -27,34 +39,27 @@ class ButtonGroup(ImportantButton):
         super().__init__(context, f"menu_bar_buttons_{group_key}")
         self.setToolTip(context.labels.get(f"menu_bar_tooltips_{group_key}"))
         self.sections = sections
-        self.developer_group = group_key in DEVELOPER_GROUPS
-        if self.developer_group:
-            self.mark_developer_only()  # before the overlay reads the text for its marker
         self.overlay = Overlay(context.root, context, self, self.populate)
 
     def show_icon(self, icon: str, active_icon: str | None = None):
-        '''
-        Shows the group as just its icon - the overlay's ▾/▴ and the
-        developer-only mark aren't in the icon font, so open or closed it
-        keeps the icon, and Debug's bug says developer-only by itself.
-        '''
-        if self.developer_group:
-            self.developer_only = False
-            # (mark_developer_only fixed its height to the text's)
-            self.setMinimumHeight(0)
-            self.setMaximumHeight(QWIDGETSIZE_MAX)
+        '''Shows the group as just its icon - the overlay's ▾/▴ isn't in the icon font, so open or closed it keeps the icon.'''
         super().show_icon(icon, active_icon)
         self.overlay.closed_text = self.overlay.open_text = self.text()
 
     def populate(self, overlay: Overlay):
         for header, button_classes in self.sections:
+            developer = header in DEVELOPER_SECTIONS
             if header is not None:
-                label = QLabel(self.context.labels.get(f"menu_bar_headers_{header}"))
+                text = self.context.labels.get(f"menu_bar_headers_{header}")
+                label = QLabel(developer_text(text) if developer else text)
                 label.setFont(self.context.style.get_font("small"))
+                if developer:
+                    # The mark's fallback font has a taller line - keep the header's own
+                    label.setFixedHeight(label.fontMetrics().height())
                 overlay.layout().addWidget(label)
             for button_class in button_classes:
                 button = button_class(self.context)
-                if self.developer_group:
+                if developer:
                     button.mark_developer_only()
                 if not button.property("opens_overlay"):
                     # Close first, then act - an action that opens a dialog or

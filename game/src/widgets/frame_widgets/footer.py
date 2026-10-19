@@ -6,6 +6,7 @@ from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMainWindow
 
 from ...app_core import Context
+from ...app_core.context.style import NO_BACKGROUND
 from ...app_core.version import BuildInfo
 from ...network.hardware import Wifi
 from .important_buttons import DEVELOPER_MARK
@@ -297,7 +298,7 @@ class Footer(QFrame):
         Background", pointing to where it's turned back on.
         '''
         style = self.style
-        if not style.background_enabled:
+        if style.background_visual == NO_BACKGROUND:
             set_text(self.background, self.label("background_none"))
             self.background.setToolTip(tooltip([self.label("tooltips_background_off")]))
             return

@@ -58,16 +58,18 @@ SEE_THROUGH_COLORS = ("panel", "widget", "field")
 # was before translucency.
 DEFAULT_TRANSLUCENT_SURFACES = True
 # The animated page background (see Page.add_background), each saved as a
-# preference like the theme: whether it's drawn at all, which visual plays
-# (a widgets.visuals.VISUALS key, or "cycle"), whether it moves, whether
-# it's detailed in workspaces (the network's packets - title and lesson
-# select pages always are; off by default since it's distracting behind
-# panels), and its frame rate
-DEFAULT_BACKGROUND_ENABLED = True
+# preference like the theme: which visual plays (a widgets.visuals.VISUALS
+# key, "cycle", or NO_BACKGROUND), whether it moves, whether it's detailed
+# in workspaces (the network's packets - title and lesson select pages
+# always are; off by default since it's distracting behind panels), its
+# frame rate, and which visuals the background pickers leave out (chosen on
+# the visuals demo page - "cycle" skips them too)
+NO_BACKGROUND = "none"
 DEFAULT_BACKGROUND_VISUAL = "network_mesh"
 DEFAULT_BACKGROUND_ANIMATE = True
 DEFAULT_BACKGROUND_DETAILED = False
 DEFAULT_BACKGROUND_FPS = 30
+DEFAULT_BACKGROUND_HIDDEN: tuple[str, ...] = ()
 BACKGROUND_FPS_RANGE = (1, 120)
 
 # Inverted buttons: text-colored labels on a background between panel and
@@ -104,6 +106,7 @@ ICONS: dict[str, int] = {
     "power": 0xeb0d,
     "bug": 0xea48,
     "palette": 0xeb01,
+    "adjustments-horizontal": 0xec38,
     # Marks in text (see _load_icon_font) - dropdowns, overflow, where a button goes
     "caret-down": 0xeb5d,
     "caret-up": 0xeb60,
@@ -177,11 +180,11 @@ class Style:
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
         # Background settings - load_preferred_background() replaces these
         # defaults once preferences exist
-        self.background_enabled: bool = DEFAULT_BACKGROUND_ENABLED
         self.background_visual: str = DEFAULT_BACKGROUND_VISUAL
         self.background_animate: bool = DEFAULT_BACKGROUND_ANIMATE
         self.background_detailed: bool = DEFAULT_BACKGROUND_DETAILED
         self.background_fps: int = DEFAULT_BACKGROUND_FPS
+        self.background_hidden: list[str] = list(DEFAULT_BACKGROUND_HIDDEN)
 
         # Preferences don't exist yet at this point in startup (see
         # ContextManager.start_session) - this is just a system-appropriate
@@ -970,11 +973,15 @@ class Style:
 
     def background_shown(self, menu: bool = False) -> bool:
         '''
-        Whether a page shows its animated background - the user's
-        preference, unless the theme turns it off. Title menu pages (menu)
+        Whether a page shows its animated background - any visual but
+        NO_BACKGROUND, unless the theme turns it off. Title menu pages (menu)
         always follow the preference: there the background is the page.
         '''
-        return self.background_enabled and (menu or self.setting("background"))
+        return self.background_visual != NO_BACKGROUND and (menu or self.setting("background"))
+
+    def background_frozen(self) -> bool:
+        '''Whether the background holds still - frozen by the preference, or by there being no background to animate.'''
+        return not self.background_animate or self.background_visual == NO_BACKGROUND
 
     def _resolve_colors(self):
         mode = self.current_theme.partition("_")[0]
@@ -1008,11 +1015,11 @@ class Style:
     # Background
     BACKGROUND_PREFERENCES = {
         # attribute: (preference key, type)
-        "background_enabled": ("background_enabled", bool),
         "background_visual": ("background_visual", str),
         "background_animate": ("background_animate", bool),
         "background_detailed": ("background_detailed", bool),
         "background_fps": ("background_fps", int),
+        "background_hidden": ("background_hidden", list),
     }
 
     def load_preferred_background(self):
@@ -1024,22 +1031,21 @@ class Style:
             if isinstance(value, kind) and not (kind is str and not value):
                 setattr(self, attribute, value)
         self.background_fps = min(BACKGROUND_FPS_RANGE[1], max(BACKGROUND_FPS_RANGE[0], self.background_fps))
+        self.background_hidden = [key for key in self.background_hidden if isinstance(key, str)]
         self.apply_background()
 
     def load_default_background(self):
         '''Back to the DEFAULT_BACKGROUND_* values, without saving - like load_default_theme.'''
-        self.background_enabled = DEFAULT_BACKGROUND_ENABLED
         self.background_visual = DEFAULT_BACKGROUND_VISUAL
         self.background_animate = DEFAULT_BACKGROUND_ANIMATE
         self.background_detailed = DEFAULT_BACKGROUND_DETAILED
         self.background_fps = DEFAULT_BACKGROUND_FPS
+        self.background_hidden = list(DEFAULT_BACKGROUND_HIDDEN)
         self.apply_background()
 
-    def set_background(self, enabled: bool | None = None, visual: str | None = None, animate: bool | None = None,
-                       detailed: bool | None = None, fps: int | None = None):
+    def set_background(self, visual: str | None = None, animate: bool | None = None, detailed: bool | None = None,
+                       fps: int | None = None, hidden: list[str] | None = None):
         '''Changes background settings - applied to the page on screen at once, and saved.'''
-        if enabled is not None:
-            self.background_enabled = enabled
         if visual is not None:
             self.background_visual = visual
         if animate is not None:
@@ -1048,6 +1054,8 @@ class Style:
             self.background_detailed = detailed
         if fps is not None:
             self.background_fps = min(BACKGROUND_FPS_RANGE[1], max(BACKGROUND_FPS_RANGE[0], int(fps)))
+        if hidden is not None:
+            self.background_hidden = list(hidden)
         self.apply_background()
         for attribute, (key, _kind) in self.BACKGROUND_PREFERENCES.items():
             self.context.preferences.set(key, getattr(self, attribute))

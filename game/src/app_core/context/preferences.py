@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING, TypedDict
 from .performance import (DEFAULT_ANTIALIASING, DEFAULT_PAGE_TRANSITIONS, DEFAULT_PERFORMANCE_LOG,
                           DEFAULT_PERFORMANCE_OVERLAY, DEFAULT_UI_FPS)
-from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_ENABLED,
-                    DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES)
+from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_FPS,
+                    DEFAULT_BACKGROUND_HIDDEN, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES,
+                    NO_BACKGROUND)
 if TYPE_CHECKING:
     from .. import Context
 
@@ -29,6 +30,7 @@ RETIRED_KEYS = (
     "surface_blur",  # surfaces' frosted-glass blur, removed
     "surface_opacity",  # surfaces' opacity, now each theme's materials (see themes.py)
     "theme_inset", "theme_tint", "theme_adjust",  # palette tweaks on top of themes - each is drawn as authored now
+    "background_enabled",  # the background's on/off switch - now its "none" visual (see style.NO_BACKGROUND)
 )
 
 class PreferencesData(TypedDict, total=False):
@@ -41,11 +43,11 @@ class PreferencesData(TypedDict, total=False):
     is_developer: int
     translucent_surfaces: bool
     invert_buttons: bool
-    background_enabled: bool
     background_visual: str
     background_animate: bool
     background_detailed: bool
     background_fps: int
+    background_hidden: list[str]
     ui_fps: int
     antialiasing: bool
     page_transitions: bool
@@ -78,6 +80,9 @@ class Preferences:
         
         for key, value in data.items():
             self.data[key] = value
+        # A background switched off carries over as no background
+        if self.data.get("background_enabled") is False:
+            self.data["background_visual"] = NO_BACKGROUND
         # Settings the app no longer has - dropped, so the file only holds live ones
         retired = [key for key in RETIRED_KEYS if key in self.data]
         for key in retired:
@@ -135,14 +140,14 @@ class Preferences:
         self.data = {
             "theme": "",            # autosaved in Style
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
-            "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled on the settings page (see Style.set_translucent_surfaces)
-            "invert_buttons": False,  # toggled in the Background dropdown (see Style.set_invert_buttons)
-            # Set in the Background dropdown (see Style.set_background)
-            "background_enabled": DEFAULT_BACKGROUND_ENABLED,
+            "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled in quick settings and on the Graphics tab (see Style.set_translucent_surfaces)
+            "invert_buttons": False,  # toggled on the Appearance tab (see Style.set_invert_buttons)
+            # Set in quick settings and on the settings page (see Style.set_background)
             "background_visual": DEFAULT_BACKGROUND_VISUAL,
             "background_animate": DEFAULT_BACKGROUND_ANIMATE,
             "background_detailed": DEFAULT_BACKGROUND_DETAILED,
             "background_fps": DEFAULT_BACKGROUND_FPS,
+            "background_hidden": list(DEFAULT_BACKGROUND_HIDDEN),  # chosen on the visuals demo page
             # Set on the settings page's Performance tab (see Performance.set)
             "ui_fps": DEFAULT_UI_FPS,
             "antialiasing": DEFAULT_ANTIALIASING,

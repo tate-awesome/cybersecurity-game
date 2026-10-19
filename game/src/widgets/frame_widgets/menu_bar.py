@@ -4,10 +4,11 @@ from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
-                                EditBackgroundStyle, EditWorkspaceAvailability, ImportantButton, MENU_BAR_BUTTONS,
-                                OpenAppearanceSettings, OpenWorkspaceEditor, RefreshCurrentPage, SelectColorTheme,
-                                ToggleDebugLabels, ToggleLightDarkMode)
-from .important_buttons.button_group import DEVELOPER_GROUPS
+                                EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
+                                OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, RefreshCurrentPage,
+                                SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleFreezeBackground,
+                                ToggleFullscreen, ToggleLightDarkMode, ToggleTranslucentSurfaces)
+from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
 from .window_chrome import (SquareButtons, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
                             window_bar_height, window_bar_room)
@@ -16,8 +17,7 @@ from collections.abc import Callable
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
 #   left   - home (the pause menu), back, forward, the page's title, its bookmark and refresh
 #   center - the page's own tools: the buttons its config's "menu_bar" names
-#   right  - the same on every page: Debug (developer mode), Appearance,
-#            Settings, Help and the window controls
+#   right  - the same on every page: Quick Settings, Help and the window controls
 # Everything but the page's own tools is on every page's menu bar by itself -
 # a page config only chooses those.
 
@@ -55,21 +55,22 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
 MENU_BAR_BUTTON_ORDER: list[str] = [name for sections in MENU_BAR_GROUPS.values() for _, names in sections for name in names]
 assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu bar button needs exactly one place in MENU_BAR_GROUPS"
 
-# The right zone's dropdowns, the same on every page - Debug only in developer
-# mode (preferences.json "is_developer"), each shown as just its icon
+# The right zone's dropdowns, the same on every page, each shown as just its
+# icon. Quick Settings has what's changed most often - everything else is
+# on the settings page it links to - and, in developer mode
+# (preferences.json "is_developer"), the debug tools (see DEVELOPER_SECTIONS)
 RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]]] = {
-    "debug_button_group": [
+    "quick_settings_button_group": [
+        ("general", [ToggleFullscreen, LoadLocalizationLabelsFile]),
+        ("appearance", [ToggleLightDarkMode, SelectColorTheme, ToggleTranslucentSurfaces, ToggleFreezeBackground,
+                        SelectBackground]),
+        ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,
                          ConfigureThisWorkspace, EditWorkspaceAvailability, ToggleDebugLabels]),
     ],
-    "style_button_group": [
-        ("themes", [ToggleLightDarkMode, SelectColorTheme, OpenAppearanceSettings]),
-        ("background", [EditBackgroundStyle]),
-    ],
 }
 RIGHT_ZONE_ICONS: dict[str, str] = {
-    "debug_button_group": "bug",
-    "style_button_group": "palette",
+    "quick_settings_button_group": "adjustments-horizontal",
 }
 
 # The overflow button's text, closed and open (see MenuBar._update_squashing)
@@ -168,25 +169,19 @@ def icon_button(context: Context, button: ImportantButton, icon: str | None = No
 def global_buttons(context: Context) -> QWidget:
     '''
     The buttons at the top right of every page, left of the window
-    controls: Debug (developer mode only) and Appearance, then Settings and
-    Help - a page's menu bar has them (see MenuBar.build_right_zone), and so
+    controls: Quick Settings, then Help - a page's menu bar has them (see MenuBar.build_right_zone), and so
     do the title pages, which have none (see CornerControls).
     '''
-    from .important_buttons import OpenSettingsPage, ShowHelpMessage
+    from .important_buttons import ShowHelpMessage
     holder = QWidget()
     row = QHBoxLayout(holder)
     row.setContentsMargins(0, 0, 0, 0)
     # Square, side by side, like the window controls (see SquareButtons)
     row.setSpacing(0)
     for group_key, group_sections in RIGHT_ZONE_GROUPS.items():
-        if group_key in DEVELOPER_GROUPS and not context.preferences.is_developer():
-            continue
-        sections = [(header, [button_class for button_class in button_classes if button_class.is_available(context)])
-                    for header, button_classes in group_sections]
-        group = ButtonGroup(context, group_key, [section for section in sections if section[1]])
+        group = ButtonGroup(context, group_key, offered_sections(context, group_sections))
         row.addWidget(icon_button(context, group, RIGHT_ZONE_ICONS[group_key]))
-    for button_class in (OpenSettingsPage, ShowHelpMessage):
-        row.addWidget(icon_button(context, button_class(context)))
+    row.addWidget(icon_button(context, ShowHelpMessage(context)))
     # As tall as what holds them - the window bar's whole height but its line (see window_bar_room) - and as wide
     for button in holder.findChildren(QPushButton):
         button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)

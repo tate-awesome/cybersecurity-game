@@ -11,9 +11,10 @@ from ..app_core.context.keybinds import DEFAULT_KEYBINDS
 from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
 from ..app_core.context.preferences import DEFAULT_FADE_IN, DEFAULT_FADE_OUT
 from ..app_core.context.style import (BACKGROUND_FPS_RANGE, DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED,
-                                      DEFAULT_BACKGROUND_ENABLED, DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL,
-                                      PANEL_BORDER_WIDTH)
-from ..widgets import MenuBar, VISUALS
+                                      DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES,
+                                      NO_BACKGROUND, PANEL_BORDER_WIDTH)
+from ..widgets import MenuBar
+from ..widgets.visuals import background_choices
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
                                                        OpenThemeEditor, OpenWorkspaceEditor, ToggleLightDarkMode,
@@ -28,9 +29,8 @@ class SettingsPage(Page):
     one setting per row - its name, its control, and what it does.
 
     It unpacks the important buttons and dropdowns that don't belong to a
-    workspace or panel (the theme buttons, the Background dropdown, the
-    labels file, the favorite page, the data and debug tools) into plain
-    rows, and adds the preferences that had no button at all (fullscreen,
+    workspace or panel (Quick Settings, the labels file, the favorite page,
+    the data and debug tools) into plain rows, and adds the preferences that had no button at all (fullscreen,
     keybinds, developer mode). Tabs run from what anyone would look for
     (General) to what only some should touch (Advanced, then Developer -
     only in developer mode). Everything applies as soon as it's changed and is
@@ -56,8 +56,6 @@ class SettingsPage(Page):
     # Kept on the class so it survives the rebuilds some settings trigger
     # (a subclass keeps its own - see remember_tab)
     selected_tab: ClassVar[int] = 0
-    # The Appearance tab's place (see build_tabs) - the menu bar's Appearance Settings button opens straight to it
-    APPEARANCE_TAB: ClassVar[int] = 1
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -169,13 +167,13 @@ class SettingsPage(Page):
         self.theme_rows(self.section(tab, "theme"))
 
         background = self.section(tab, "background")
-        background.row("settings_labels_background_enabled",
-                       self.checkbox(style.background_enabled, lambda on: style.set_background(enabled=on)),
-                       "settings_tooltips_background_enabled")
-        background.row("settings_labels_background_visual",
-                       self.dropdown({key: self.labels.get(f"visual_names_{key}") for key in [*VISUALS, "cycle"]},
-                                     style.background_visual, lambda key: style.set_background(visual=key)),
-                       "settings_tooltips_background_visual")
+        choices = background_choices(self.context)
+        current = style.background_visual
+        # One hidden from the pickers (on the visuals demo page) still shows by name while it plays
+        shown = choices if current in choices else {**choices, current: self.labels.get(f"visual_names_{current}")}
+        background.row("settings_labels_background_visual", self.dropdown(
+            shown, current, self.set_background_visual,
+            {key: self.labels.get(f"visual_descriptions_{key}") for key in shown}), "settings_tooltips_background_visual")
         background.row("settings_page_rows_visuals_demo", LinkToPage(self.context, "demo/visuals"),
                        "settings_page_row_notes_visuals_demo")
 
@@ -193,10 +191,9 @@ class SettingsPage(Page):
     def theme_rows(self, theme: "SettingsSection"):
         '''
         Light or dark, the theme selector (the default themes and imported
-        ones - see Style.theme_choices), and a link to the imported themes
-        folder. The menu bar's Themes section has the first two, and links
-        here (see OpenAppearanceSettings). The theme editor is on the
-        Advanced tab.
+        ones - see Style.theme_choices), the imported themes folder and
+        inverted buttons. Quick Settings has the first two too. The theme
+        editor is on the Advanced tab.
         '''
         style, context = self.style, self.context
         family = style.theme_family()
@@ -208,6 +205,8 @@ class SettingsPage(Page):
             {**choices, **custom}, family, lambda value: value in choices and style.set_family(value),
             {name: style.preset_info[name].get("note", "") for name in choices}), "settings_page_row_notes_theme")
         theme.row("settings_page_rows_import_themes", ImportThemes(context), "settings_page_row_notes_import_themes")
+        theme.row("settings_labels_surface_invert_buttons",
+                  self.checkbox(style.invert_buttons, style.set_invert_buttons), "settings_tooltips_surface_invert_buttons")
 
     def build_graphics_tab(self):
         '''
@@ -241,9 +240,13 @@ class SettingsPage(Page):
         rendering.row("settings_page_rows_page_transitions",
                       self.checkbox(performance.page_transitions, lambda on: performance.set(page_transitions=on)),
                       "settings_page_row_notes_page_transitions")
-        rendering.row("settings_page_rows_freeze_background",
-                      self.checkbox(not style.background_animate, lambda on: style.set_background(animate=not on)),
-                      "settings_page_row_notes_freeze_background")
+        rendering.row("settings_labels_surface_translucent",
+                      self.checkbox(style.translucent_surfaces, style.set_translucent_surfaces),
+                      "settings_tooltips_surface_translucent")
+        # No background is always frozen - nothing to animate (see Style.background_frozen)
+        freeze = self.checkbox(style.background_frozen(), lambda on: style.set_background(animate=not on))
+        freeze.setEnabled(style.background_visual != NO_BACKGROUND)
+        rendering.row("settings_page_rows_freeze_background", freeze, "settings_page_row_notes_freeze_background")
         rendering.row("settings_labels_background_detailed",
                       self.checkbox(style.background_detailed, lambda on: style.set_background(detailed=on)),
                       "settings_tooltips_background_detailed")
@@ -345,9 +348,14 @@ class SettingsPage(Page):
         preferences = self.context.preferences
         preferences.set("fade_in", DEFAULT_FADE_IN)
         preferences.set("fade_out", DEFAULT_FADE_OUT)
-        self.style.set_background(enabled=DEFAULT_BACKGROUND_ENABLED, visual=DEFAULT_BACKGROUND_VISUAL)
+        self.style.set_background(visual=DEFAULT_BACKGROUND_VISUAL)
         self.style.reset_theme()
         self.router.refresh()
+
+    def set_background_visual(self, key: str):
+        self.style.set_background(visual=key)
+        # Freeze Background follows it (locked on for No Background) - rebuilt so it shows that
+        self.rebuild_timer.start()
 
     def apply_performance_preset(self, name: str):
         if name:  # "" (Custom) just means the settings below don't match a preset
@@ -359,6 +367,7 @@ class SettingsPage(Page):
         self.context.performance.reset()
         self.style.set_background(animate=DEFAULT_BACKGROUND_ANIMATE, detailed=DEFAULT_BACKGROUND_DETAILED,
                                   fps=DEFAULT_BACKGROUND_FPS)
+        self.style.set_translucent_surfaces(DEFAULT_TRANSLUCENT_SURFACES)
         self.router.refresh()
 
     def set_fullscreen(self, on: bool):
