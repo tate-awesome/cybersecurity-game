@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/preferences.py": {
-    "mtime": 1792428081.065831,
-    "seen": 1792428135.5764434,
-    "ast_hash": "44dcbce33767acfa101476343542a949",
+    "mtime": 1792429392.7141788,
+    "seen": 1792429396.290163,
+    "ast_hash": "9885ebeb4378218a405cd5fec1f25b39",
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {

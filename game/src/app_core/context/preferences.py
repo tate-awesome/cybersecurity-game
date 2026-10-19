@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 DEFAULT_IS_DEVELOPER = 1
 
 # Privileged network helper: whether network capture runs in a separate
-# elevated process (see network/helper). Off keeps everything in-process,
-# exactly as before. Toggled on the settings page's Performance tab.
-DEFAULT_NETWORK_HELPER = False
+# elevated process (see network/helper). Off keeps everything in-process.
+# Toggled on the settings page's Performance tab.
+DEFAULT_NETWORK_HELPER = True
 
 # Fullscreen: whether the window starts fullscreen. Saved whenever it's
 # switched (the keybind or the settings page's checkbox, see KeyBinds).
