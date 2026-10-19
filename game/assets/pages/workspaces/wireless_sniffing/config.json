@@ -15,8 +15,8 @@
     "link_label": "title_buttons_workspace_wireless_sniffing",
     "include": 1,
     "category": "attacker",
-    "order": 18,
-    "prerequisites": ["workspaces/network_recon"],
+    "order": 26,
+    "prerequisites": [],
     "estimated_minutes": 25,
     "gradable": true,
 
