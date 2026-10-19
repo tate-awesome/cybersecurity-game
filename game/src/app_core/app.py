@@ -154,8 +154,9 @@ class App:
 
     def show_window(self, context, fade: bool = True):
         '''
-        Shows the window maximized, or fullscreen if that's the preference -
-        transparent at first, until WindowReveal fades it in (see there).
+        Shows the window maximized, or fullscreen if that's the preference,
+        and focused - transparent at first, until WindowReveal fades it in
+        (see there).
         fade=False shows it straight away - for FadeIn, which covers it
         until it's painted (just the background color, see hold_first_page).
         '''
@@ -165,6 +166,9 @@ class App:
             self.root.showFullScreen()
         else:
             self.root.showMaximized()
+        # Take focus, so the fade in plays in front rather than behind whatever had it
+        self.root.raise_()
+        self.root.activateWindow()
         if fade:
             # Counted from when the event loop is running, not from now
             QTimer.singleShot(0, lambda: WindowReveal.reveal(self.root))
