@@ -48,6 +48,23 @@ class WifiBaseClass(Process):
     def _describe_lost_connection(self) -> str:
         return f"Lost connection to '{self.target_network}'; it may no longer be in range."
 
+    def set_match_name(self, match_name: "str | None"):
+        '''
+        The Device Name changed (see WifiForm). If the network this is on no
+        longer matches it, that's not a lost connection - just not the device
+        any more - so let go now, quietly, rather than after is_running's
+        RECONNECT_GRACE_SECONDS with a "lost connection" message. is_running
+        then re-detects from scratch against the new name.
+        '''
+        if match_name == self.match_name:
+            return
+        self.match_name = match_name
+        if self.is_connected and not self._connecting and not self._matches(self.target_network, match_name):
+            self._unwatch_active_connection()
+            self.is_connected = False
+            self.target_network = None
+            self._mismatch_since = None
+
     @property
     def restore_network(self) -> "str | None":
         return self.home_network or self.previous_network
@@ -92,7 +109,7 @@ class WifiBaseClass(Process):
             self.previous_network = current
 
         if self.is_connected and self.target_network is not None and not self._connecting:
-            if current is not None and current == self.target_network:
+            if self._equal_ci(current, self.target_network):
                 self._mismatch_since = None
                 return self.is_connected
 
@@ -119,7 +136,7 @@ class WifiBaseClass(Process):
             if now - self._mismatch_since < RECONNECT_GRACE_SECONDS:
                 return self.is_connected
 
-            if current is not None and current == self.previous_network:
+            if self._equal_ci(current, self.previous_network):
                 self.buffer.put("wifi", f"Already reconnected to '{current}' on its own.")
             else:
                 self.buffer.put("wifi", self._describe_lost_connection())

@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792437665.4457426,
-    "seen": 1792437695.1982415,
-    "ast_hash": "4cd794889a612125dc16e36f600a8c59",
+    "mtime": 1792438020.044689,
+    "seen": 1792438073.7504077,
+    "ast_hash": "0c6a4683d80aa6f7c8a3e0d8163e6224",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -203,34 +203,10 @@
     "ast_hash": "2be96ef16bf4c9cd7f44d84533ea220c",
     "semantic_hash": ""
   },
-  "game/assets/pages/workspaces/defender_ap_intro/config.json": {
-    "mtime": 1792435957.8229108,
-    "seen": 1792437052.8487644,
-    "ast_hash": "7ae1b850dbee345ee82eebd463bc6aaf",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/defender_hvac/config.json": {
-    "mtime": 1792435957.8229108,
-    "seen": 1792437052.8487656,
-    "ast_hash": "0d19c1f04d3095aae83feab4316238dc",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/defender_submarine/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487725,
-    "ast_hash": "f6c4db3b64445e02346012de859bc4a7",
-    "semantic_hash": ""
-  },
   "game/assets/pages/workspaces/defender_suite/config.json": {
     "mtime": 1792435957.8269105,
     "seen": 1792437052.8487794,
     "ast_hash": "f7c9265805a9eed9a1ba2a63657cc72f",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/defending_against_arp_spoofing/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487806,
-    "ast_hash": "5100be7545348be74791d3e79562042f",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/dos_attack/config.json": {
@@ -684,9 +660,9 @@
     "semantic_hash": ""
   },
   "game/src/pages/demo/config_editor.py": {
-    "mtime": 1792435957.83491,
-    "seen": 1792437052.850637,
-    "ast_hash": "7d61af461dbd6d38d1ab5ae48da5d20f",
+    "mtime": 1792438001.7928143,
+    "seen": 1792438073.7555916,
+    "ast_hash": "f140d7c49c67e6d0db40c7b9dadae8ea",
     "semantic_hash": ""
   },
   "game/src/pages/demo/layout_editor.py": {
@@ -1269,18 +1245,6 @@
     "mtime": 1792435957.8269105,
     "seen": 1792437052.8487782,
     "ast_hash": "8208898d80362387e5e25392124eb62e",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/detecting_attacks/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487823,
-    "ast_hash": "1b1cc5fb004974728c2dc836bb90fb05",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/encrypting_modbus/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487847,
-    "ast_hash": "40259fe6625a05af77d5f299423c4a1a",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_replay/config.json": {
@@ -1938,9 +1902,9 @@
     "semantic_hash": ""
   },
   "game/src/pages/demo/workspace_sorter.py": {
-    "mtime": 1792437665.4457426,
-    "seen": 1792437695.2037456,
-    "ast_hash": "1f982a918645be024d150bc8f4b8d097",
+    "mtime": 1792438068.16833,
+    "seen": 1792438073.7557545,
+    "ast_hash": "f76f2b431d39ed0cc1228977b14c0e54",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/drag_drop.py": {

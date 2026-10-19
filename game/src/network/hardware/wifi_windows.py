@@ -574,16 +574,17 @@ class Wifi(WifiBaseClass):
         if interface_guid is None:
             return False
 
-        profile_name = next(
-            (name for name in self._get_profile_names(client, interface_guid) if name == ssid),
-            None,
+        # Exact first, then ignoring case - the home network is typed by hand
+        profile_names = self._get_profile_names(client, interface_guid)
+        profile_name = next((name for name in profile_names if name == ssid), None) or next(
+            (name for name in profile_names if self._equal_ci(name, ssid)), None,
         )
         if profile_name is None:
             self.buffer.put("wifi", f"'{ssid}' is not a saved (historical) connection.")
             return False
 
         configured_ssid = self._profile_ssid(client, interface_guid, profile_name)
-        in_range = configured_ssid is not None and configured_ssid in self._get_available_networks(client, interface_guid)
+        in_range = any(self._equal_ci(configured_ssid, network) for network in self._get_available_networks(client, interface_guid))
         if not in_range:
             self.buffer.put("wifi", f"'{ssid}' is not currently in range.")
             return False

@@ -321,11 +321,12 @@ class Wifi(WifiBaseClass):
         if device is None:
             return False
 
-        connection = next(
-            (
-                c for c in client.get_connections()
-                if c.get_connection_type() == NM.SETTING_WIRELESS_SETTING_NAME and c.get_id() == ssid
-            ),
+        # Exact profile name first, then loosened: the home network is typed
+        # (or read off the air) as an SSID, while NM names profiles it made
+        # itself "Auto <SSID>", and either may differ in case.
+        wireless = [c for c in client.get_connections() if c.get_connection_type() == NM.SETTING_WIRELESS_SETTING_NAME]
+        connection = next((c for c in wireless if c.get_id() == ssid), None) or next(
+            (c for c in wireless if self._equal_ci(c.get_id(), ssid) or self._equal_ci(self._connection_ssid(c), ssid)),
             None,
         )
         if connection is None:
@@ -334,7 +335,7 @@ class Wifi(WifiBaseClass):
 
         configured_ssid = self._connection_ssid(connection)
         in_range = configured_ssid is not None and any(
-            self._ssid_to_str(ap.get_ssid()) == configured_ssid for ap in device.get_access_points()
+            self._equal_ci(self._ssid_to_str(ap.get_ssid()), configured_ssid) for ap in device.get_access_points()
         )
         if not in_range:
             self.buffer.put("wifi", f"'{ssid}' is not currently in range.")
