@@ -69,6 +69,7 @@ from .settings_overlays.select_register_preset import SelectRegisterPreset
 from .delete_all_user_data import DeleteAllUserData
 from .delete_all_workspace_saved_data import DeleteAllWorkspaceSavedData
 from .open_workspace_editor import OpenWorkspaceEditor
+from .open_workspace_sorter import OpenWorkspaceSorter
 from .configure_this_workspace import ConfigureThisWorkspace
 from .settings_overlays.edit_workspace_availability import EditWorkspaceAvailability
 from .toggle_debug_labels import ToggleDebugLabels

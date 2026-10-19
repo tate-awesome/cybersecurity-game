@@ -5,7 +5,8 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
-                                OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, RefreshCurrentPage,
+                                OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, OpenWorkspaceSorter,
+                                RefreshCurrentPage,
                                 SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleFreezeBackground,
                                 ToggleFullscreen, ToggleLightDarkMode, ToggleTranslucentSurfaces)
 from .important_buttons.button_group import offered_sections
@@ -66,7 +67,7 @@ RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]
                         SelectBackground]),
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,
-                         ConfigureThisWorkspace, EditWorkspaceAvailability, ToggleDebugLabels]),
+                         OpenWorkspaceSorter, ConfigureThisWorkspace, EditWorkspaceAvailability, ToggleDebugLabels]),
     ],
 }
 RIGHT_ZONE_ICONS: dict[str, str] = {

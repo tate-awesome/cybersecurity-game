@@ -10,6 +10,7 @@ from ..pages.demo.boat_motion import BoatMotion
 from ..pages.demo.triangle import Triangle
 from ..pages.demo.visuals import Visuals
 from ..pages.demo.config_editor import ConfigEditor
+from ..pages.demo.workspace_sorter import WorkspaceSorter
 
 # /attacker
 from ..pages.attacker.attacker import AttackerV0
@@ -46,6 +47,7 @@ PAGES: dict[str, type] = {
         "demo/triangle": Triangle,
         "demo/visuals": Visuals,
         "demo/config_editor": ConfigEditor,
+        "demo/workspace_sorter": WorkspaceSorter,
         "settings": SettingsPage,
         "theme_editor": ThemeEditorPage,
         "404": NotFound,

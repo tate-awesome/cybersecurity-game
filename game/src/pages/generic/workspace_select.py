@@ -147,7 +147,7 @@ class WorkspaceSelectPage(Page):
         sections, one per config["sections"] entry, each listing the
         workspaces whose "category" matches it - every page directly inside
         the config["link_folder"] folder with "include": 1, sorted by
-        their "order"
+        their "order". A section with "hidden": true isn't shown at all
       - the summary area filling the rest
 
     With nothing selected, the summary area shows this page's own "_note"
@@ -203,7 +203,8 @@ class WorkspaceSelectPage(Page):
         self.workspace_group.setExclusive(True)
         row = 0
         for section in config.get("sections", []):
-            row = self.build_section(section, row)
+            if not section.get("hidden", False):
+                row = self.build_section(section, row)
         self.scrollable.add_deadspace()
 
         self.show_note(self.default_note, self.default_folder)

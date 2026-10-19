@@ -17,7 +17,8 @@ from ..widgets import MenuBar
 from ..widgets.visuals import background_choices
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
-                                                       OpenThemeEditor, OpenWorkspaceEditor, ToggleLightDarkMode,
+                                                       OpenThemeEditor, OpenWorkspaceEditor, OpenWorkspaceSorter,
+                                                       ToggleLightDarkMode,
                                                        developer_text)
 from .page import Page
 
@@ -328,6 +329,9 @@ class SettingsPage(Page):
         editor = OpenWorkspaceEditor(context)
         editor.mark_developer_only()
         tools.row("settings_page_rows_workspace_editor", editor, "settings_page_row_notes_workspace_editor")
+        sorter = OpenWorkspaceSorter(context)
+        sorter.mark_developer_only()
+        tools.row("settings_page_rows_workspace_sorter", sorter, "settings_page_row_notes_workspace_sorter")
 
     # Buttons shown on more than one tab - each placement needs its own widget
     def reset_appearance_button(self) -> QPushButton:
