@@ -14,7 +14,7 @@ DEFAULT_IS_DEVELOPER = 1
 # Privileged network helper: whether network capture runs in a separate
 # elevated process (see network/helper). Off keeps everything in-process.
 # Toggled on the settings page's Performance tab.
-DEFAULT_NETWORK_HELPER = True
+DEFAULT_NETWORK_HELPER = False
 
 # Fullscreen: whether the window starts fullscreen. Saved whenever it's
 # switched (the keybind or the settings page's checkbox, see KeyBinds).

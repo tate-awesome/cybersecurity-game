@@ -17,15 +17,17 @@ class CallbackRegistry:
         self._replace = "-+"
         self._remove = "-"
         self._error = "error:"
+        self.log_changes = False
 
     def add_callback(self, name: str, callback_func: Callable):
         """
         Dynamically adds a callback function.
         """
-        if name in self.callbacks:
-            print(f"{self._tag} {self._replace} {name}")
-        else:
-            print(f"{self._tag} {self._add} {name}")
+        if self.log_changes:
+            if name in self.callbacks:
+                print(f"{self._tag} {self._replace} {name}")
+            else:
+                print(f"{self._tag} {self._add} {name}")
         self.callbacks[name] = callback_func
 
     def remove_callback(self, name: str):
