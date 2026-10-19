@@ -325,20 +325,45 @@ class FadeIn(DesktopFade):
     '''
 
     DURATION_MS = 900
-    # Time for the window to paint under this before it's uncovered
+    # Time for the window's painted frame to reach the screen before it's uncovered
     WINDOW_PAINT_MS = 50
+    # How often to check whether the window has settled, and the longest to wait for it
+    SETTLE_POLL_MS = 16
+    SETTLE_MAX_MS = 1000
 
     def __init__(self, area: QRect, color: str):
         super().__init__(area)
         self.color = QColor(color)
 
-    def play(self, show_window: Callable[[], None], done: Callable[[], None]):
-        '''Fades in, calls show_window, and once that's painted closes and calls done.'''
+    def play(self, window: QWidget, show_window: Callable[[], None], done: Callable[[], None]):
+        '''
+        Fades in, calls show_window, and once window has settled and painted
+        closes and calls done. Settled is shown on screen with the same
+        geometry two checks running - on Linux the window manager maps the
+        window and only then maximizes it, so a fixed delay can uncover it
+        unpainted or mid-resize.
+        '''
         self.show()
+        last_geometry = None
+        waited = 0
 
         def covered():
             show_window()
-            QTimer.singleShot(self.WINDOW_PAINT_MS, uncovered)
+            QTimer.singleShot(self.SETTLE_POLL_MS, settle)
+
+        def settle():
+            nonlocal last_geometry, waited
+            waited += self.SETTLE_POLL_MS
+            handle = window.windowHandle()
+            exposed = handle is not None and handle.isExposed()
+            geometry = window.geometry()
+            if (exposed and geometry == last_geometry) or waited >= self.SETTLE_MAX_MS:
+                # Painted at its final size before the cover goes
+                window.repaint()
+                QTimer.singleShot(self.WINDOW_PAINT_MS, uncovered)
+                return
+            last_geometry = geometry if exposed else None
+            QTimer.singleShot(self.SETTLE_POLL_MS, settle)
 
         def uncovered():
             self.close()

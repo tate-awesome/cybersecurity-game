@@ -130,8 +130,8 @@ class App:
             area = screen.geometry() if context.preferences.is_fullscreen() else screen.availableGeometry()
             # Kept referenced - a window with no parent and no reference is deleted by Python mid-fade
             self.fade_in = FadeIn(area, context.style.color("root"))
-            self.fade_in.play(lambda: self.show_window(context, fade=False),
-                              lambda: self.release_first_page(router))
+            self.fade_in.play(self.root, lambda: self.show_window(context, fade=False),
+                              lambda: self.uncovered(router))
         else:
             self.show_window(context)
             router.start(start_page)
@@ -157,8 +157,9 @@ class App:
         Shows the window maximized, or fullscreen if that's the preference,
         and focused - transparent at first, until WindowReveal fades it in
         (see there).
-        fade=False shows it straight away - for FadeIn, which covers it
-        until it's painted (just the background color, see hold_first_page).
+        fade=False shows it straight away and unfocused - for FadeIn, which
+        covers it until it's painted (just the background color, see
+        hold_first_page) and focuses it once uncovered (see uncovered).
         '''
         if fade:
             WindowReveal.hide(self.root)
@@ -166,12 +167,26 @@ class App:
             self.root.showFullScreen()
         else:
             self.root.showMaximized()
-        # Take focus, so the fade in plays in front rather than behind whatever had it
-        self.root.raise_()
-        self.root.activateWindow()
         if fade:
+            self.focus_window()
             # Counted from when the event loop is running, not from now
             QTimer.singleShot(0, lambda: WindowReveal.reveal(self.root))
+
+
+    def focus_window(self):
+        '''
+        Takes focus, so the fade in plays in front rather than behind
+        whatever had it. Not while FadeIn covers the window - a focused
+        fullscreen window can go above it on Linux before it's painted.
+        '''
+        self.root.raise_()
+        self.root.activateWindow()
+
+
+    def uncovered(self, router: Router):
+        '''Once FadeIn is gone: the window takes focus and the first page comes in.'''
+        self.focus_window()
+        self.release_first_page(router)
 
 
     def hold_first_page(self, router: Router, start_page: str | None):
