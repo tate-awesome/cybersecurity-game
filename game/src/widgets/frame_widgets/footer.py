@@ -57,7 +57,8 @@ class Footer(QFrame):
     see-through footer shows.
 
     Left to right: where you are (the navigation history on hover), the
-    Wi-Fi network (saved networks on hover), the theme (the rest of the
+    Wi-Fi network and whether it's home or the device (both, and the saved
+    networks, on hover), the theme (the rest of the
     appearance settings on hover), the background and its framerate (what
     it shows and its other settings on hover) | developer mode, the UI
     framerate, zoom (keybinds on hover), session time, and the version.
@@ -87,6 +88,9 @@ class Footer(QFrame):
         self.ssid: str | None = None
         self.saved_networks: list[str] = []
         self.updates = 0
+        # The network the app started on - the Wi-Fi form's default home
+        # network until one's saved (see WifiForm.default_home)
+        self.startup_ssid = self.wifi.get_current_ssid()
         self.last_ticks = context.performance.ticks
         self.last_tick_time = time.perf_counter()
         from ... import STARTED
@@ -242,15 +246,25 @@ class Footer(QFrame):
         if page_wifi is None or not page_wifi._connecting:
             self.ssid = self.wifi.get_current_ssid()
 
+        home, device = self.wifi_roles()
         name = self.ssid if self.ssid is not None else self.label("wifi_none")
-        set_text(self.wifi_label, f"{self.label('wifi')}: {name}")
+        text = f"{self.label('wifi')}: {name}"
+        if Wifi._equal_ci(self.ssid, home):
+            text += f" · {self.label('wifi_home')}"
+        elif Wifi._matches(self.ssid, device):
+            text += f" · {self.label('wifi_device')}"
+        set_text(self.wifi_label, text)
 
         if self.ssid is not None:
             lines = [f"{self.label('tooltips_wifi_current')} {self.ssid}"]
         else:
             lines = [self.label("tooltips_wifi_disconnected")]
-        if page_wifi is not None and page_wifi.is_connected and page_wifi.previous_network:
-            lines.append(f"{self.label('tooltips_wifi_restore')} {page_wifi.previous_network}")
+        if page_wifi is not None and page_wifi.is_connected and page_wifi.restore_network:
+            lines.append(f"{self.label('tooltips_wifi_restore')} {page_wifi.restore_network}")
+        unset = self.label("tooltips_wifi_unset")
+        lines.append("")
+        lines.append(f"{self.label('tooltips_wifi_home')} {home or unset}")
+        lines.append(f"{self.label('tooltips_wifi_device')} {device or unset}")
         lines.append("")
         lines.append(self.label("tooltips_wifi_saved"))
         if self.saved_networks:
@@ -260,6 +274,19 @@ class Footer(QFrame):
         else:
             lines.append(f" {self.label('tooltips_wifi_none_saved')}")
         self.wifi_label.setToolTip(tooltip(lines))
+
+    def wifi_roles(self) -> tuple[str | None, str | None]:
+        '''
+        The home network and the device name, as the Wi-Fi form has them -
+        saved in preferences, with the startup network standing in for an
+        unsaved home (unless it's the device). See WifiForm.default_home.
+        '''
+        preferences = self.context.preferences
+        device = preferences.get("wifi_device") or None
+        home = preferences.get("wifi_home") or None
+        if home is None and not Wifi._matches(self.startup_ssid, device):
+            home = self.startup_ssid
+        return home, device
 
     def update_saved_networks(self):
         page_wifi = self.page_wifi()

@@ -61,6 +61,8 @@ class PreferencesData(TypedDict, total=False):
     fade_in: bool
     fade_out: bool
     debug_labels: bool
+    wifi_home: str
+    wifi_device: str
 
 class Preferences:
     def __init__(self, context: "Context"):
@@ -161,7 +163,11 @@ class Preferences:
             "fade_in": DEFAULT_FADE_IN,    # toggled on the General tab (see App)
             "fade_out": DEFAULT_FADE_OUT,  # toggled on the General tab (see Router.quit)
             "keybinds": {},         # set on the settings page (see KeyBinds.rebind) - empty means keybinds.DEFAULT_KEYBINDS
-            "debug_labels": False   # toggled by ToggleDebugLabels (see LocalizationManager.is_debug)
+            "debug_labels": False,  # toggled by ToggleDebugLabels (see LocalizationManager.is_debug)
+            # Set from the Wi-Fi form's entries (see WifiForm) - app-wide, since
+            # there's only the one Wi-Fi radio whichever page switches it
+            "wifi_home": "",
+            "wifi_device": "",
         }
         self.save()
 

@@ -697,6 +697,7 @@ class Style:
             }}
             QPlainTextEdit, QTextEdit {{ background-color: {m("card")}; }}
             QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border-color: {c["accent"]}; }}
+            QLineEdit:read-only {{ background-color: transparent; }}
             QComboBox QAbstractItemView {{
                 background-color: {self.color("overlay")};
                 border: none;

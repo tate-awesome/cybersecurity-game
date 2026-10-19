@@ -170,10 +170,12 @@ class BaseForm(QWidget):
         self.current_row += 1
         return output
 
-    def add_labeled_entry(self, label: str):
+    def add_labeled_entry(self, label: str, autosave: bool = True):
         '''
         Adds a labeled entry for the curent row in the form.
-        This entry has autosave and auto-loading for its text input.
+        With autosave, the entry saves and reloads its text input from the
+        page's states - without, the form fills and saves it itself (e.g.
+        WifiForm's, which live in app-wide preferences instead).
         Requires `key` to have been set (network_action_forms forms only).
         '''
 
@@ -196,6 +198,9 @@ class BaseForm(QWidget):
         entry.setFixedWidth(self.style.igap * 16)
         self.grid_layout.addWidget(self.fixed_width_wrapper(entry), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
         self.entries.append(entry)
+        self.current_row += 1
+        if not autosave:
+            return label_widget, entry
 
         # Bind autosave
         save_slots = self.context.states.get("network_action_form_inputs", self.key)
@@ -207,7 +212,6 @@ class BaseForm(QWidget):
         entry.setText(save_slots[self.entry_index])
 
         # Update current index
-        self.current_row += 1
         self.entry_index += 1
 
         return label_widget, entry

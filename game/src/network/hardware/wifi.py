@@ -28,6 +28,13 @@ class WifiBaseClass(Process):
         self.previous_network = None
         self.target_network = None
         self.match_name: str | None = None
+        # Where stop() switches back to - set by the Wi-Fi form from its Home
+        # Network entry. None falls back to previous_network (the last
+        # non-matching network seen - see is_running).
+        self.home_network: str | None = None
+        # The SSID as of is_running()'s last reading (None while switching,
+        # when it doesn't read) - so the form can show it without asking again.
+        self.current_ssid: str | None = None
         self._connecting = False
         self._mismatch_since: float | None = None
 
@@ -40,6 +47,10 @@ class WifiBaseClass(Process):
 
     def _describe_lost_connection(self) -> str:
         return f"Lost connection to '{self.target_network}'; it may no longer be in range."
+
+    @property
+    def restore_network(self) -> "str | None":
+        return self.home_network or self.previous_network
 
     @staticmethod
     def _matches(text: "str | None", pattern: "str | None") -> bool:
@@ -67,7 +78,8 @@ class WifiBaseClass(Process):
         worst fight whatever the OS is already doing.
         '''
         can_sense = self.match_name is not None and not self._connecting
-        current = self.get_current_ssid() if can_sense else None
+        current = self.get_current_ssid() if not self._connecting else None
+        self.current_ssid = current
 
         if can_sense and current is not None and not self._matches(current, self.match_name):
             # previous_network is always "whatever non-matching network was
@@ -158,6 +170,31 @@ class WifiBaseClass(Process):
         self._connecting = True
         threading.Thread(target=self._run_start, args=(match_name,), daemon=True).start()
 
+    def _note_restore_target(self, match_name: str):
+        '''
+        Start of _start_impl: settles (and reports) where stop() will switch
+        back to - the home network if one's set, otherwise the network this
+        is switching away from.
+        '''
+        if self.home_network:
+            self.buffer.put("wifi", f"Home network to switch back to: {self.home_network}")
+            return
+        if self.previous_network is not None:
+            self.buffer.put("wifi", f"Using saved connection: {self.previous_network}")
+            return
+        current = self.get_current_ssid()
+        if self._matches(current, match_name):
+            # Already sitting on a network matching the target pattern -
+            # there's nothing to fall back to, and saving it as
+            # previous_network would make stop() "restore" the very
+            # connection it just tore down.
+            self.buffer.put("wifi", f"Already connected to a matching network: {current}")
+        elif current is not None:
+            self.previous_network = current
+            self.buffer.put("wifi", f"Saved current connection: {self.previous_network}")
+        else:
+            self.buffer.put("wifi", "Not currently connected to any network; nothing to restore later.")
+
     def _run_start(self, match_name: str):
         try:
             self._start_impl(match_name)
@@ -189,15 +226,16 @@ class WifiBaseClass(Process):
 
     def _run_stop(self):
         try:
-            if self.previous_network:
-                self.buffer.put("wifi", f"Restoring previous connection: {self.previous_network}")
+            restore = self.restore_network
+            if restore:
+                self.buffer.put("wifi", f"Restoring previous connection: {restore}")
                 # Scan for it first, same as start() does for its target -
                 # connect_to_saved_wifi()'s own in-range check only reads
                 # whatever's already cached, which by now could easily be
                 # stale (e.g. left over from scanning for a completely
                 # different match_name back when this run started).
-                self.get_available_networks(self.previous_network)
-                self.connect_to_saved_wifi(self.previous_network)
+                self.get_available_networks(restore)
+                self.connect_to_saved_wifi(restore)
             else:
                 # No fallback was ever recorded - e.g. the target network was
                 # already the active connection when this was started, so

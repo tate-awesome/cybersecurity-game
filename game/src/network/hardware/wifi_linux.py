@@ -451,21 +451,7 @@ class Wifi(WifiBaseClass):
         if client is None or self._wifi_ready(client) is None:
             return
 
-        if self.previous_network is None:
-            current = self.get_current_ssid()
-            if self._matches(current, match_name):
-                # Already sitting on a network matching the target pattern -
-                # there's nothing to fall back to, and saving it as
-                # previous_network would make stop() "restore" the very
-                # connection it just tore down.
-                self.buffer.put("wifi", f"Already connected to a matching network: {current}")
-            elif current is not None:
-                self.previous_network = current
-                self.buffer.put("wifi", f"Saved current connection: {self.previous_network}")
-            else:
-                self.buffer.put("wifi", "Not currently connected to any network; nothing to restore later.")
-        else:
-            self.buffer.put("wifi", f"Using saved connection: {self.previous_network}")
+        self._note_restore_target(match_name)
 
         available = self.get_available_networks(match_name)
         self.buffer.put("wifi", "Available Networks:")
