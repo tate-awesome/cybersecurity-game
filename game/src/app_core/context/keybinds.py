@@ -6,12 +6,13 @@ if TYPE_CHECKING:
     from .. import Context
 
 # Rebindable actions -> their default key sequence ("" = unbound). Set on the
-# settings page's General tab, saved in preferences.json as "keybinds".
+# settings page's Keybinds tab, saved in preferences.json as "keybinds".
 DEFAULT_KEYBINDS = {
     "zoom_in": "Ctrl++",
     "zoom_out": "Ctrl+-",
     "zoom_reset": "",
     "fullscreen": "F11",
+    "developer_mode": "F12",
 }
 
 # Extra sequences bound alongside one - Ctrl + is Shift = on most keyboards,
@@ -22,8 +23,8 @@ ALIASES = {"Ctrl++": ["Ctrl+="]}
 class KeyBinds:
     '''
     Adds global keybinds and event handlers to the app.
-    Includes the rebindable zoom controls and fullscreen toggle (see
-    DEFAULT_KEYBINDS), and the performance overlay (F3).
+    Includes the rebindable zoom controls and fullscreen and developer mode
+    toggles (see DEFAULT_KEYBINDS), and the performance overlay (F3).
     Also runs Router.quit() when the window is closed.
 
     Kept on the context (context.keybinds) - PySide drops a connection to a
@@ -45,6 +46,7 @@ class KeyBinds:
             "zoom_out": self.zoom_out,
             "zoom_reset": self.zoom_reset,
             "fullscreen": self.toggle_fullscreen,
+            "developer_mode": self.toggle_developer_mode,
         }
         self.shortcuts: dict[str, list[QShortcut]] = {action: [] for action in DEFAULT_KEYBINDS}
         self.load()
@@ -127,6 +129,13 @@ class KeyBinds:
 
     def toggle_fullscreen(self):
         self.set_fullscreen(not self.root.isFullScreen(), save=True)
+
+    # Developer mode
+    def toggle_developer_mode(self):
+        '''Switches developer mode (see Preferences.is_developer) - rebuilt, so menu bars and settings follow it.'''
+        preferences = self.context.preferences
+        preferences.set("is_developer", 0 if preferences.is_developer() else 1)
+        self.refresh()
 
     # Zoom - context.style, not a copy, since deleting user data replaces it
     def zoom_in(self, event=None):

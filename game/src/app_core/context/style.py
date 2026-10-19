@@ -1341,11 +1341,11 @@ class Style:
 
     def reset_theme(self):
         '''
-        Back to the first default theme (keeping light or dark) and the
-        default surface settings - saved, and restyled in place.
+        Back to the first default theme, in the system's light or dark mode,
+        and the default surface settings - saved, and restyled in place.
         '''
         self.reset_surfaces()
-        self.set_theme(self.default_theme(self.current_theme.partition("_")[0]))
+        self.set_theme(self.default_theme())
 
     def set_theme(self, theme_name: str):
         '''Applies a theme ("<mode>_<family>", e.g. "dark_teal") in place, and saves it.'''

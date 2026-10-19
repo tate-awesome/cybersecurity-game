@@ -9,11 +9,14 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxL
 from ..app_core import Context
 from ..app_core.context.keybinds import DEFAULT_KEYBINDS
 from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
-from ..app_core.context.style import BACKGROUND_FPS_RANGE, PANEL_BORDER_WIDTH
+from ..app_core.context.preferences import DEFAULT_FADE_IN, DEFAULT_FADE_OUT
+from ..app_core.context.style import (BACKGROUND_FPS_RANGE, DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED,
+                                      DEFAULT_BACKGROUND_ENABLED, DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL,
+                                      PANEL_BORDER_WIDTH)
 from ..widgets import MenuBar, VISUALS
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
-                                                       OpenThemeEditor, OpenWorkspaceEditor, ResetTheme, ToggleLightDarkMode,
+                                                       OpenThemeEditor, OpenWorkspaceEditor, ToggleLightDarkMode,
                                                        developer_text)
 from .page import Page
 
@@ -28,7 +31,9 @@ class SettingsPage(Page):
     workspace or panel (the theme buttons, the Background dropdown, the
     labels file, the favorite page, the data and debug tools) into plain
     rows, and adds the preferences that had no button at all (fullscreen,
-    keybinds, developer mode). Everything applies as soon as it's changed and is
+    keybinds, developer mode). Tabs run from what anyone would look for
+    (General) to what only some should touch (Advanced, then Developer -
+    only in developer mode). Everything applies as soon as it's changed and is
     saved like any other preference - there's no Save button. Changes that
     need the page rebuilt (theme, language, developer mode) rebuild it in
     place, on the same tab.
@@ -51,8 +56,8 @@ class SettingsPage(Page):
     # Kept on the class so it survives the rebuilds some settings trigger
     # (a subclass keeps its own - see remember_tab)
     selected_tab: ClassVar[int] = 0
-    # The first tab built (see build_tabs) - the menu bar's Appearance Settings button opens straight to it
-    APPEARANCE_TAB: ClassVar[int] = 0
+    # The Appearance tab's place (see build_tabs) - the menu bar's Appearance Settings button opens straight to it
+    APPEARANCE_TAB: ClassVar[int] = 1
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -106,31 +111,92 @@ class SettingsPage(Page):
         self.layout().addWidget(self.tabs, 1)
 
     def build_tabs(self):
-        self.build_appearance_tab()
-        self.build_background_tab()
-        self.build_performance_tab()
+        # Most-wanted first - General is where the page opens (selected_tab's default)
         self.build_general_tab()
-        self.build_data_tab()
-        self.build_developer_tab()
+        self.build_appearance_tab()
+        self.build_graphics_tab()
+        self.build_keybinds_tab()
+        self.build_troubleshooting_tab()
+        self.build_advanced_tab()
+        if self.context.preferences.is_developer():
+            self.build_developer_tab()
 
     def remember_tab(self, index: int):
         type(self).selected_tab = index
 
     # Tabs
+    def build_general_tab(self):
+        '''What almost anyone would come to settings for.'''
+        context = self.context
+        preferences = context.preferences
+        tab = self.new_tab("general")
+
+        display = self.section(tab, "display")
+        fullscreen = self.checkbox(context.root.isFullScreen(), self.set_fullscreen)
+        # Follows F11 too - a slot on the checkbox, so it's dropped with this page
+        context.root.fullscreen_changed.connect(fullscreen.setChecked)
+        display.row("settings_page_rows_fullscreen", fullscreen, "settings_page_row_notes_fullscreen")
+
+        language = self.section(tab, "language")
+        current = preferences.get("labels_file") if preferences.has("labels_file") else None
+        file_name = QLabel(str(current).replace("\\", "/").rsplit("/", 1)[-1] if current
+                           else self.labels.get("settings_page_default_labels"))
+        file_name.setFont(self.style.get_font())
+        language.row("settings_page_rows_labels_file", file_name, "settings_page_row_notes_labels_file")
+        language.row("settings_page_rows_load_labels", LoadLocalizationLabelsFile(context), "settings_page_row_notes_load_labels")
+        if current:
+            language.row("settings_page_rows_default_labels", self.default_labels_button(), "settings_page_row_notes_default_labels")
+
+        navigation = self.section(tab, "navigation")
+        pages = context.pages
+        workspaces = sorted((key for key, kind in pages.build_types.items() if kind == "workspace"),
+                            key=lambda key: self.labels.get(pages.link_label(key)))
+        options = {"": self.labels.get("settings_page_no_favorite")}
+        options.update({key: self.labels.get(pages.link_label(key)) for key in workspaces})
+        favorite = preferences.get("page") if preferences.has("page") else ""
+        navigation.row("settings_page_rows_favorite", self.dropdown(options, favorite, lambda key: preferences.set("page", key)),
+                       "settings_page_row_notes_favorite")
+
     def build_appearance_tab(self):
         '''
-        Just the theme settings almost everyone needs (see theme_rows) -
-        everything finer is on the theme editor page.
+        How the app looks: the theme settings almost everyone needs (see
+        theme_rows - everything finer is on the theme editor page), the
+        background's picture, and the window's fades. How smoothly it's all
+        drawn is on the Graphics tab.
         '''
+        style, preferences = self.style, self.context.preferences
         tab = self.new_tab("appearance")
         self.theme_rows(self.section(tab, "theme"))
+
+        background = self.section(tab, "background")
+        background.row("settings_labels_background_enabled",
+                       self.checkbox(style.background_enabled, lambda on: style.set_background(enabled=on)),
+                       "settings_tooltips_background_enabled")
+        background.row("settings_labels_background_visual",
+                       self.dropdown({key: self.labels.get(f"visual_names_{key}") for key in [*VISUALS, "cycle"]},
+                                     style.background_visual, lambda key: style.set_background(visual=key)),
+                       "settings_tooltips_background_visual")
+        background.row("settings_page_rows_visuals_demo", LinkToPage(self.context, "demo/visuals"),
+                       "settings_page_row_notes_visuals_demo")
+
+        window = self.section(tab, "window_effects")
+        window.row("settings_page_rows_fade_in",
+                   self.checkbox(preferences.is_fade_in(), lambda on: preferences.set("fade_in", on)),
+                   "settings_page_row_notes_fade_in")
+        window.row("settings_page_rows_fade_out",
+                   self.checkbox(preferences.is_fade_out(), lambda on: preferences.set("fade_out", on)),
+                   "settings_page_row_notes_fade_out")
+
+        reset = self.section(tab, "appearance_reset")
+        reset.row("settings_page_rows_reset_appearance", self.reset_appearance_button(), "settings_page_row_notes_reset_appearance")
 
     def theme_rows(self, theme: "SettingsSection"):
         '''
         Light or dark, the theme selector (the default themes and imported
-        ones - see Style.theme_choices), and links to the theme editor, the
-        imported themes folder and resetting the theme. The menu bar's Themes
-        section has the first two, and links here (see OpenAppearanceSettings).
+        ones - see Style.theme_choices), and a link to the imported themes
+        folder. The menu bar's Themes section has the first two, and links
+        here (see OpenAppearanceSettings). The theme editor is on the
+        Advanced tab.
         '''
         style, context = self.style, self.context
         family = style.theme_family()
@@ -141,44 +207,17 @@ class SettingsPage(Page):
         theme.row("settings_page_rows_theme", self.dropdown(
             {**choices, **custom}, family, lambda value: value in choices and style.set_family(value),
             {name: style.preset_info[name].get("note", "") for name in choices}), "settings_page_row_notes_theme")
-        theme.row("settings_page_rows_theme_editor", OpenThemeEditor(context), "settings_page_row_notes_theme_editor")
         theme.row("settings_page_rows_import_themes", ImportThemes(context), "settings_page_row_notes_import_themes")
-        theme.row("settings_page_rows_reset_theme", ResetTheme(context), "settings_page_row_notes_reset_theme")
 
-    def build_background_tab(self):
-        style = self.style
-        tab = self.new_tab("background")
-        section = self.section(tab, "background")
-        section.row("settings_labels_background_enabled",
-                    self.checkbox(style.background_enabled, lambda on: style.set_background(enabled=on)),
-                    "settings_tooltips_background_enabled")
-        section.row("settings_labels_background_visual",
-                    self.dropdown({key: self.labels.get(f"visual_names_{key}") for key in [*VISUALS, "cycle"]},
-                                  style.background_visual, lambda key: style.set_background(visual=key)),
-                    "settings_tooltips_background_visual")
-        section.row("settings_labels_background_animate",
-                    self.checkbox(style.background_animate, lambda on: style.set_background(animate=on)),
-                    "settings_tooltips_background_animate")
-        section.row("settings_labels_background_detailed",
-                    self.checkbox(style.background_detailed, lambda on: style.set_background(detailed=on)),
-                    "settings_tooltips_background_detailed")
-        section.row("settings_labels_background_fps",
-                    self.integer(style.background_fps, *BACKGROUND_FPS_RANGE, lambda fps: style.set_background(fps=fps)),
-                    "settings_tooltips_background_fps")
+    def build_graphics_tab(self):
+        '''
+        How smoothly and finely things are drawn - everything the quality
+        preset sets (the background's framerate and animation among them),
+        so a preset's effect shows on this one tab.
+        '''
+        performance, style = self.context.performance, self.style
+        tab = self.new_tab("graphics")
 
-        preview = self.section(tab, "background_preview")
-        preview.row("settings_page_rows_visuals_demo", LinkToPage(self.context, "demo/visuals"),
-                    "settings_page_row_notes_visuals_demo")
-
-        reset = self.section(tab, "background_reset")
-        reset.row("settings_page_rows_reset_background", self.button(
-            "settings_page_buttons_reset", self.reset_background), "settings_page_row_notes_reset_background")
-
-    def build_performance_tab(self):
-        performance = self.context.performance
-        tab = self.new_tab("performance")
-
-        # A preset changes rows on this tab and the background tab - rebuilt so they show it
         presets = self.section(tab, "performance_preset")
         options = {"": self.labels.get("settings_page_performance_presets_custom")}
         options.update({name: self.labels.get(f"settings_page_performance_presets_{name}") for name in QUALITY_PRESETS})
@@ -191,6 +230,9 @@ class SettingsPage(Page):
         rates.row("settings_page_rows_ui_fps",
                   self.integer(performance.ui_fps, *UI_FPS_RANGE, lambda fps: performance.set(ui_fps=fps)),
                   "settings_page_row_notes_ui_fps")
+        rates.row("settings_labels_background_fps",
+                  self.integer(style.background_fps, *BACKGROUND_FPS_RANGE, lambda fps: style.set_background(fps=fps)),
+                  "settings_tooltips_background_fps")
 
         rendering = self.section(tab, "rendering")
         rendering.row("settings_page_rows_antialiasing",
@@ -199,87 +241,83 @@ class SettingsPage(Page):
         rendering.row("settings_page_rows_page_transitions",
                       self.checkbox(performance.page_transitions, lambda on: performance.set(page_transitions=on)),
                       "settings_page_row_notes_page_transitions")
-
-        monitoring = self.section(tab, "monitoring")
-        monitoring.row("settings_page_rows_performance_overlay",
-                       self.checkbox(performance.overlay_enabled, lambda on: performance.set(overlay=on)),
-                       "settings_page_row_notes_performance_overlay")
-        monitoring.row("settings_page_rows_performance_log",
-                       self.checkbox(performance.log_enabled, lambda on: performance.set(log=on)),
-                       "settings_page_row_notes_performance_log")
-
-        helper = self.section(tab, "network_helper")
-        helper.row("settings_page_rows_network_helper",
-                   self.checkbox(self.context.helper.enabled, self.context.helper.set_enabled),
-                   "settings_page_row_notes_network_helper")
+        rendering.row("settings_page_rows_freeze_background",
+                      self.checkbox(not style.background_animate, lambda on: style.set_background(animate=not on)),
+                      "settings_page_row_notes_freeze_background")
+        rendering.row("settings_labels_background_detailed",
+                      self.checkbox(style.background_detailed, lambda on: style.set_background(detailed=on)),
+                      "settings_tooltips_background_detailed")
 
         reset = self.section(tab, "performance_reset")
-        reset.row("settings_page_rows_reset_performance", self.button(
-            "settings_page_buttons_reset", self.reset_performance), "settings_page_row_notes_reset_performance")
+        reset.row("settings_page_rows_reset_performance", self.reset_performance_button(),
+                  "settings_page_row_notes_reset_performance")
 
-    def build_general_tab(self):
-        context = self.context
-        preferences = context.preferences
-        tab = self.new_tab("general")
-
-        display = self.section(tab, "display")
-        fullscreen = self.checkbox(context.root.isFullScreen(), self.set_fullscreen)
-        # Follows F11 too - a slot on the checkbox, so it's dropped with this page
-        context.root.fullscreen_changed.connect(fullscreen.setChecked)
-        display.row("settings_page_rows_fullscreen", fullscreen, "settings_page_row_notes_fullscreen")
-        display.row("settings_page_rows_fade_in",
-                    self.checkbox(preferences.is_fade_in(), lambda on: preferences.set("fade_in", on)),
-                    "settings_page_row_notes_fade_in")
-        display.row("settings_page_rows_fade_out",
-                    self.checkbox(preferences.is_fade_out(), lambda on: preferences.set("fade_out", on)),
-                    "settings_page_row_notes_fade_out")
-
+    def build_keybinds_tab(self):
+        tab = self.new_tab("keybinds")
         keybinds = self.section(tab, "keybinds")
         for action in DEFAULT_KEYBINDS:
             keybinds.row(f"settings_page_rows_keybind_{action}", self.keybind(action), f"settings_page_row_notes_keybind_{action}")
-        keybinds.row("settings_page_rows_reset_keybinds", self.button(
-            "settings_page_buttons_reset", self.reset_keybinds), "settings_page_row_notes_reset_keybinds")
+        keybinds.row("settings_page_rows_reset_keybinds", self.reset_keybinds_button(), "settings_page_row_notes_reset_keybinds")
 
-        language = self.section(tab, "language")
-        current = preferences.get("labels_file") if preferences.has("labels_file") else None
-        file_name = QLabel(str(current).replace("\\", "/").rsplit("/", 1)[-1] if current
-                           else self.labels.get("settings_page_default_labels"))
-        file_name.setFont(self.style.get_font())
-        language.row("settings_page_rows_labels_file", file_name, "settings_page_row_notes_labels_file")
-        language.row("settings_page_rows_load_labels", LoadLocalizationLabelsFile(context), "settings_page_row_notes_load_labels")
-        if current:
-            language.row("settings_page_rows_default_labels", self.button(
-                "settings_page_buttons_default_labels", self.use_default_labels), "settings_page_row_notes_default_labels")
+    def build_troubleshooting_tab(self):
+        '''
+        Safe ways out when something looks or acts wrong: each group of
+        settings back to its defaults (the same resets as on their own tabs),
+        workspace data cleared, and the performance overlay.
+        '''
+        context = self.context
+        tab = self.new_tab("troubleshooting")
 
-        navigation = self.section(tab, "navigation")
-        pages = context.pages
-        workspaces = sorted((key for key, kind in pages.build_types.items() if kind == "workspace"),
-                            key=lambda key: self.labels.get(pages.link_label(key)))
-        options = {"": self.labels.get("settings_page_no_favorite")}
-        options.update({key: self.labels.get(pages.link_label(key)) for key in workspaces})
-        favorite = preferences.get("page") if preferences.has("page") else ""
-        navigation.row("settings_page_rows_favorite", self.dropdown(options, favorite, lambda key: preferences.set("page", key)),
-                       "settings_page_row_notes_favorite")
+        reset = self.section(tab, "reset_settings")
+        reset.row("settings_page_rows_reset_appearance", self.reset_appearance_button(), "settings_page_row_notes_reset_appearance")
+        reset.row("settings_page_rows_reset_performance", self.reset_performance_button(),
+                  "settings_page_row_notes_reset_performance")
+        reset.row("settings_page_rows_reset_keybinds", self.reset_keybinds_button(), "settings_page_row_notes_reset_keybinds")
+        if context.preferences.has("labels_file") and context.preferences.get("labels_file"):
+            reset.row("settings_page_rows_default_labels", self.default_labels_button(), "settings_page_row_notes_default_labels")
+
+        data = self.section(tab, "saved_data")
+        data.row("settings_page_rows_delete_workspace_data", DeleteAllWorkspaceSavedData(context),
+                 "settings_page_row_notes_delete_workspace_data")
+
+        monitoring = self.section(tab, "monitoring")
+        monitoring.row("settings_page_rows_performance_overlay",
+                       self.checkbox(context.performance.overlay_enabled, lambda on: context.performance.set(overlay=on)),
+                       "settings_page_row_notes_performance_overlay")
+
+    def build_advanced_tab(self):
+        '''Settings that can break things if misused, or that need to know how the app works inside.'''
+        context = self.context
+        tab = self.new_tab("advanced")
+
+        helper = self.section(tab, "network_helper")
+        helper.row("settings_page_rows_network_helper",
+                   self.checkbox(context.helper.enabled, context.helper.set_enabled),
+                   "settings_page_row_notes_network_helper")
+
+        editor = self.section(tab, "theme_editor")
+        editor.row("settings_page_rows_theme_editor", OpenThemeEditor(context), "settings_page_row_notes_theme_editor")
 
         hardware = self.section(tab, "access_point")
         hardware.row("settings_page_rows_ap_config", OpenAccessPointConfigInBrowser(context), "settings_page_row_notes_ap_config")
 
-    def build_data_tab(self):
-        tab = self.new_tab("data")
-        section = self.section(tab, "saved_data")
-        section.row("settings_page_rows_delete_workspace_data", DeleteAllWorkspaceSavedData(self.context),
-                    "settings_page_row_notes_delete_workspace_data")
-        section.row("settings_page_rows_delete_user_data", DeleteAllUserData(self.context),
-                    "settings_page_row_notes_delete_user_data")
+        diagnostics = self.section(tab, "diagnostics")
+        diagnostics.row("settings_page_rows_performance_log",
+                        self.checkbox(context.performance.log_enabled, lambda on: context.performance.set(log=on)),
+                        "settings_page_row_notes_performance_log")
 
-    def build_developer_tab(self):
-        context = self.context
-        tab = self.new_tab("developer")
+        full_reset = self.section(tab, "full_reset")
+        full_reset.row("settings_page_rows_delete_user_data", DeleteAllUserData(context),
+                       "settings_page_row_notes_delete_user_data")
+
         mode = self.section(tab, "developer_mode")
         mode.row("settings_page_rows_is_developer", self.checkbox(context.preferences.is_developer(), self.set_developer),
                  "settings_page_row_notes_is_developer")
-        if not context.preferences.is_developer():
-            return
+
+    def build_developer_tab(self):
+        '''Only built in developer mode (switched on from the Advanced tab).'''
+        context = self.context
+        tab = self.new_tab("developer")
         # Developer-only, so marked as such (see important_buttons.DEVELOPER_MARK)
         tools = self.section(tab, "developer_tools", developer=True)
         tools.row("settings_page_rows_debug_labels", self.checkbox(context.labels.is_debug(), self.set_debug_labels),
@@ -288,10 +326,27 @@ class SettingsPage(Page):
         editor.mark_developer_only()
         tools.row("settings_page_rows_workspace_editor", editor, "settings_page_row_notes_workspace_editor")
 
+    # Buttons shown on more than one tab - each placement needs its own widget
+    def reset_appearance_button(self) -> QPushButton:
+        return self.button("settings_page_buttons_reset", self.reset_appearance)
+
+    def reset_performance_button(self) -> QPushButton:
+        return self.button("settings_page_buttons_reset", self.reset_performance)
+
+    def reset_keybinds_button(self) -> QPushButton:
+        return self.button("settings_page_buttons_reset", self.reset_keybinds)
+
+    def default_labels_button(self) -> QPushButton:
+        return self.button("settings_page_buttons_default_labels", self.use_default_labels)
+
     # Actions
-    def reset_background(self):
-        self.style.load_default_background()
-        self.style.set_background()  # saves the defaults
+    def reset_appearance(self):
+        '''Everything on the Appearance tab back to its default - the background's motion is Graphics' (see reset_performance).'''
+        preferences = self.context.preferences
+        preferences.set("fade_in", DEFAULT_FADE_IN)
+        preferences.set("fade_out", DEFAULT_FADE_OUT)
+        self.style.set_background(enabled=DEFAULT_BACKGROUND_ENABLED, visual=DEFAULT_BACKGROUND_VISUAL)
+        self.style.reset_theme()
         self.router.refresh()
 
     def apply_performance_preset(self, name: str):
@@ -300,7 +355,10 @@ class SettingsPage(Page):
             self.router.refresh()
 
     def reset_performance(self):
+        '''Everything on the Graphics tab back to its default, the background's framerate, motion and detail too.'''
         self.context.performance.reset()
+        self.style.set_background(animate=DEFAULT_BACKGROUND_ANIMATE, detailed=DEFAULT_BACKGROUND_DETAILED,
+                                  fps=DEFAULT_BACKGROUND_FPS)
         self.router.refresh()
 
     def set_fullscreen(self, on: bool):

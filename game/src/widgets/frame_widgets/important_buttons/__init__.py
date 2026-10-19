@@ -42,7 +42,6 @@ from .select_color_theme import SelectColorTheme
 from .open_theme_editor import OpenThemeEditor
 from .open_appearance_settings import OpenAppearanceSettings
 from .import_themes import ImportThemes
-from .reset_theme import ResetTheme
 from .settings_overlays.edit_background_style import EditBackgroundStyle
 from .settings_overlays.edit_model_style import EditModelStyle
 from .settings_overlays.edit_strip_chart_style import EditStripChartStyle

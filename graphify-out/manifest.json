@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792423870.5711887,
-    "seen": 1792423876.174378,
-    "ast_hash": "75d4da4086dce68a75ba80ebc3862f44",
+    "mtime": 1792426378.2199233,
+    "seen": 1792426384.2754304,
+    "ast_hash": "e4b7b4f6927368c23fafa59bf1d60972",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -366,9 +366,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/keybinds.py": {
-    "mtime": 1792423166.8145266,
-    "seen": 1792423760.354571,
-    "ast_hash": "1c4defa4d1419f33e6151ada7c56fe56",
+    "mtime": 1792426360.1280348,
+    "seen": 1792426384.278214,
+    "ast_hash": "c44addf2eb9c008bc09f6352f4fdcf88",
     "semantic_hash": ""
   },
   "game/src/app_core/context/localization_manager.py": {
@@ -396,9 +396,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1792423166.8185263,
-    "seen": 1792423760.3545773,
-    "ast_hash": "6adaee7bb2c7b3bf09eeca320de536c3",
+    "mtime": 1792426360.1280348,
+    "seen": 1792426384.2784667,
+    "ast_hash": "127349b5dae201cc269b380d3d8d2415",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "game/src/pages/settings.py": {
-    "mtime": 1792423870.5711887,
-    "seen": 1792423876.1802688,
-    "ast_hash": "c82d1daac6aaf9c36dc79421c1629de7",
+    "mtime": 1792426360.088035,
+    "seen": 1792426384.281333,
+    "ast_hash": "d4408909bcbc6b65b2b84a25efeed651",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/footer.py": {
@@ -1392,9 +1392,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/__init__.py": {
-    "mtime": 1792423166.8225262,
-    "seen": 1792423760.3546607,
-    "ast_hash": "b35e7b336ccbe02ecf22367ee9d6134a",
+    "mtime": 1792426360.1280348,
+    "seen": 1792426384.2823555,
+    "ast_hash": "0dd6aef4ae20918bde17c94633f3894d",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
@@ -1785,12 +1785,6 @@
     "mtime": 1792423166.8225262,
     "seen": 1792423760.3546958,
     "ast_hash": "d2d5ae6b719303259ae8b298595b7400",
-    "semantic_hash": ""
-  },
-  "game/src/widgets/frame_widgets/important_buttons/reset_theme.py": {
-    "mtime": 1792423166.8265262,
-    "seen": 1792423760.3547041,
-    "ast_hash": "352c4ebb7e7d4918704d1c9f7f888890",
     "semantic_hash": ""
   },
   "CLAUDE.md": {

@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792423754.9528015,
-    "seen": 1792423760.3545024,
-    "ast_hash": "bcff7394299a85840452225aa1590e7d",
+    "mtime": 1792425800.5436497,
+    "seen": 1792425813.9022882,
+    "ast_hash": "52d7f72afacbf9c4d77fa06a9e82172c",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "game/src/pages/settings.py": {
-    "mtime": 1792423166.8225262,
-    "seen": 1792423760.3546414,
-    "ast_hash": "5a451c6fca26d98ff017fa0277956aa4",
+    "mtime": 1792425778.2558033,
+    "seen": 1792425813.9080956,
+    "ast_hash": "524201493ebb362d72b68a7688e13075",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/footer.py": {
