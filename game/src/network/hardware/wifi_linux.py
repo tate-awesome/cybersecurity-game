@@ -1,3 +1,6 @@
+import functools
+import threading
+
 from .wifi import WifiBaseClass
 
 try:
@@ -23,6 +26,30 @@ CONNECT_TIMEOUT_SECONDS = 20
 SCAN_TIMEOUT_SECONDS = 10
 
 
+def _in_nm_context(method):
+    '''
+    Runs method with this Wifi's private GLib.MainContext pushed as the
+    calling thread's default, under a lock so only one thread at a time owns
+    it. NM.Client binds to (and must acquire) whatever context is
+    thread-default when it's created, and delivers every later callback/
+    signal there. Qt's Linux event loop already owns GLib's *global* default
+    context on the GUI thread, so letting NM use that one from the
+    background start/stop threads fails ("g_main_context_push_thread_default:
+    assertion 'acquired_context' failed") and races Qt for its events.
+    '''
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if GLib is None:
+            return method(self, *args, **kwargs)
+        with self._nm_lock:
+            self._nm_context.push_thread_default()
+            try:
+                return method(self, *args, **kwargs)
+            finally:
+                self._nm_context.pop_thread_default()
+    return wrapper
+
+
 class Wifi(WifiBaseClass):
     '''
     Linux Version - switches wifi via NetworkManager's libnm bindings.
@@ -33,6 +60,15 @@ class Wifi(WifiBaseClass):
         self._watched_connection = None
         self._watched_handler_id = None
         self._last_deactivation_reason = None
+        self._nm_lock = threading.RLock()
+        self._nm_context = GLib.MainContext.new() if GLib is not None else None
+
+    def _add_timeout(self, seconds: int, callback):
+        '''GLib.timeout_add_seconds, but on _nm_context instead of the global default.'''
+        source = GLib.Timeout(seconds * 1000)
+        source.set_callback(lambda *_: callback())
+        source.attach(self._nm_context)
+        return source
 
     def _watch_active_connection(self, active_connection):
         '''
@@ -69,12 +105,11 @@ class Wifi(WifiBaseClass):
             return f"'{self.target_network}' was manually disconnected."
         return super()._describe_lost_connection()
 
-    @staticmethod
-    def _pump_pending_events():
+    def _pump_pending_events(self):
         '''
         NM.Client's properties (active access point, device state, etc.)
-        are only kept current by processing D-Bus signals on GLib's default
-        main context - and nothing else in this Qt app drives that context.
+        are only kept current by processing D-Bus signals on _nm_context -
+        and nothing else in this Qt app drives that context.
         The only time it normally gets pumped is inside connect_to_saved_wifi's
         own short-lived GLib.MainLoop, so a signal that arrives right after
         that loop quits (e.g. "active access point changed", which can lag
@@ -85,8 +120,7 @@ class Wifi(WifiBaseClass):
         '''
         if GLib is None:
             return
-        context = GLib.MainContext.default()
-        while context.iteration(False):
+        while self._nm_context.iteration(False):
             pass
 
     def _get_client(self):
@@ -152,6 +186,7 @@ class Wifi(WifiBaseClass):
             return None
         return device
 
+    @_in_nm_context
     def get_network_history(self) -> list[str]:
         client = self._get_client()
         if client is None:
@@ -163,6 +198,7 @@ class Wifi(WifiBaseClass):
             if connection.get_connection_type() == NM.SETTING_WIRELESS_SETTING_NAME
         ]
 
+    @_in_nm_context
     def get_current_ssid(self) -> "str | None":
         '''
         Returns the SSID of the network currently connected to, or None if
@@ -190,7 +226,7 @@ class Wifi(WifiBaseClass):
         get_available_networks() falls back to whatever's already cached,
         same as if this method didn't exist.
         '''
-        loop = GLib.MainLoop()
+        loop = GLib.MainLoop(self._nm_context)
         done = {"flag": False}
 
         def finish():
@@ -215,14 +251,17 @@ class Wifi(WifiBaseClass):
             return GLib.SOURCE_REMOVE
 
         handler_id = device.connect("notify::last-scan", on_last_scan_changed)
-        timeout_id = GLib.timeout_add_seconds(SCAN_TIMEOUT_SECONDS, on_timeout)
+        timeout_source = self._add_timeout(SCAN_TIMEOUT_SECONDS, on_timeout)
         try:
             device.request_scan_async(None, on_scanned, None)
             loop.run()
         finally:
-            device.disconnect(handler_id)
-            GLib.source_remove(timeout_id)
+            # handler_disconnect, not disconnect: NM.Device.disconnect() is
+            # NM's own "disconnect from the network" call, shadowing GObject's.
+            device.handler_disconnect(handler_id)
+            timeout_source.destroy()
 
+    @_in_nm_context
     def get_available_networks(self, match_name: "str | None" = None) -> list[str]:
         '''
         match_name, when given, is checked against the already-cached access
@@ -268,6 +307,7 @@ class Wifi(WifiBaseClass):
             return f"permission was denied ({e.message})"
         return e.message
 
+    @_in_nm_context
     def connect_to_saved_wifi(self, ssid: "str | None") -> bool:
         if not ssid:
             self.buffer.put("wifi", "No target network was specified to connect to.")
@@ -300,7 +340,7 @@ class Wifi(WifiBaseClass):
             self.buffer.put("wifi", f"'{ssid}' is not currently in range.")
             return False
 
-        loop = GLib.MainLoop()
+        loop = GLib.MainLoop(self._nm_context)
         outcome = {"ok": False, "message": None, "done": False, "timed_out": False}
         state_handler: list[tuple] | None = []
 
@@ -347,13 +387,13 @@ class Wifi(WifiBaseClass):
             finish(f"timed out after {CONNECT_TIMEOUT_SECONDS}s waiting to finish connecting")
             return GLib.SOURCE_REMOVE
 
-        timeout_id = GLib.timeout_add_seconds(CONNECT_TIMEOUT_SECONDS, on_timeout)
+        timeout_source = self._add_timeout(CONNECT_TIMEOUT_SECONDS, on_timeout)
         try:
             client.activate_connection_async(connection, device, None, None, on_activated, loop)
             loop.run()
         finally:
             if not outcome["timed_out"]:
-                GLib.source_remove(timeout_id)
+                timeout_source.destroy()
             for active_connection, handler_id in state_handler:
                 active_connection.disconnect(handler_id)
 
@@ -363,6 +403,7 @@ class Wifi(WifiBaseClass):
             self.buffer.put("wifi", f"Failed to connect to '{ssid}': {outcome['message']}")
         return outcome["ok"]
 
+    @_in_nm_context
     def disconnect_current(self):
         '''
         Drops whatever the device is currently connected to, without
@@ -379,7 +420,7 @@ class Wifi(WifiBaseClass):
             self.buffer.put("wifi", "No Wi-Fi device found on this system.")
             return
 
-        loop = GLib.MainLoop()
+        loop = GLib.MainLoop(self._nm_context)
         outcome = {"ok": False, "message": None}
 
         def on_disconnected(dev, async_result, _loop):
@@ -398,6 +439,7 @@ class Wifi(WifiBaseClass):
         else:
             self.buffer.put("wifi", f"Failed to disconnect: {outcome['message']}")
 
+    @_in_nm_context
     def _start_impl(self, match_name: str):
         '''
         The actual scan/match/connect flow, run on a background thread by
