@@ -1,17 +1,17 @@
 # Graph Report - cybersecurity-game  (2026-10-19)
 
 ## Corpus Check
-- 305 files · ~244,936 words
+- 305 files · ~245,014 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
 ## Summary
-- 4007 nodes · 8146 edges · 211 communities (65 shown, 146 thin omitted)
+- 4007 nodes · 8147 edges · 211 communities (65 shown, 146 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 466 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `22331725`
+- Built from commit: `a64c3287`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -511,7 +511,7 @@ Nodes (3): GoBackToPreviousPage, GoForwardToNextPage, OpenPauseMenu
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `widgets/__init__.py`, `host.py`, `style.py`, `PageManager`, `Visual`, `LinkToPage`, `buffer_manager.py`, `CheckboxOverlay`, `hvac_view.py`, `Performance`, `AnimationManager`, `Canvas`, `preferences.py`, `MenuBar`, `LocalizationManager`, `examples.py`, `Panel`, `context_manager.py`, `InputManager`, `Json`, `Style`, `KeyBinds`, `Router`, `threading`, `open_favorite_page.py`, `Preferences`, `GoForwardToNextPage`, `_base_button.py`, `WorkspaceSaveResetButton`, `quit_application.py`, `ConfigureThisWorkspace`, `.start_session`, `FilterOverlay`?**
-  _High betweenness centrality (0.260) - this node is a cross-community bridge._
+  _High betweenness centrality (0.262) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `DOT11_SSID`, `WLAN_INTERFACE_INFO`, `WLAN_INTERFACE_INFO_LIST` to the rest of the system?**

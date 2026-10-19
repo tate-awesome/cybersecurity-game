@@ -120,21 +120,21 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792432115.6663043,
-    "seen": 1792432126.8782403,
-    "ast_hash": "53e5924cc101fa669218836c8e26159a",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.554539,
+    "ast_hash": "3a3963deb1e3fe3d42024db5cfc7369a",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
-    "mtime": 1792423754.9608014,
-    "seen": 1792423760.3545034,
-    "ast_hash": "866f773c95ad298365d80482c75c1979",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.5545413,
+    "ast_hash": "d2740c74ad207dc4b87bd87c1767a53a",
     "semantic_hash": ""
   },
   "game/assets/labels/test.json": {
-    "mtime": 1792423754.9608014,
-    "seen": 1792423760.354504,
-    "ast_hash": "1fdcd9d22f900e693104c450b042c7dc",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.5545425,
+    "ast_hash": "1526bddfbee21443cce310b7e90705d1",
     "semantic_hash": ""
   },
   "game/assets/pages/404.json": {
@@ -390,15 +390,15 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/preferences.py": {
-    "mtime": 1792430308.46484,
-    "seen": 1792431318.627715,
-    "ast_hash": "dd524b22268ba78f9d1608b30fce4336",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.5574315,
+    "ast_hash": "02cfcc09f878f9d103ef439d2a2434a1",
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1792427920.1587713,
-    "seen": 1792428135.5764449,
-    "ast_hash": "e4309ed647cc55fdf60127c6b6c506bc",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.557433,
+    "ast_hash": "c1217e465fccf6d3678f950638b90679",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -588,21 +588,21 @@
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi.py": {
-    "mtime": 1791411917.4755387,
-    "seen": 1792423760.3546095,
-    "ast_hash": "ea4b4ecb0cb29acb1e0edd2d459dbd19",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.559874,
+    "ast_hash": "c8bf3f453db31a3af7c58a8de75e6b1d",
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi_linux.py": {
-    "mtime": 1792431264.0952687,
-    "seen": 1792431318.6291792,
-    "ast_hash": "043185a757e230cd55ecc5cd9900bf0f",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.5598757,
+    "ast_hash": "4fd2173812578decd406e7dece954655",
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi_windows.py": {
-    "mtime": 1791411917.4755387,
-    "seen": 1792423760.3546112,
-    "ast_hash": "bcf89785c634cf66429e0093afd9137e",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.5598774,
+    "ast_hash": "f70e232859c78af033ae3cd2d4a6ad04",
     "semantic_hash": ""
   },
   "game/src/network/process.py": {
@@ -900,9 +900,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/base_form.py": {
-    "mtime": 1792423166.8265262,
-    "seen": 1792423760.3547292,
-    "ast_hash": "e900ac0136a04f919239386d41731054",
+    "mtime": 1792433100.8805606,
+    "seen": 1792433109.5654294,
+    "ast_hash": "ac8534ae92c69b6e2529e6fb66a90e37",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_console/_builder.py": {
@@ -1026,9 +1026,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/forms/wifi.py": {
-    "mtime": 1788976608.7860062,
-    "seen": 1792423760.3547494,
-    "ast_hash": "f4f6616db0f050b0fc7727579deaef86",
+    "mtime": 1792433100.8805606,
+    "seen": 1792433109.5665116,
+    "ast_hash": "1cce7d2e437dbb6646dada5ecd6522b5",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {
@@ -1386,9 +1386,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/footer.py": {
-    "mtime": 1792427882.190993,
-    "seen": 1792428135.5799754,
-    "ast_hash": "7e902c2c0c3e4099a9e117fe353d981c",
+    "mtime": 1792433100.8765607,
+    "seen": 1792433109.5620754,
+    "ast_hash": "c211acc97db4a774d9ad7b6494285650",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/__init__.py": {
