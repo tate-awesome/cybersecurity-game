@@ -20,7 +20,7 @@
     "link_label": "title_buttons_workspace_modbus_replay",
     "include": 1,
     "category": "attacker",
-    "order": 9,
+    "order": 19,
     "prerequisites": ["workspaces/wireless_sniffing", "workspaces/modbus_mitm"],
     "estimated_minutes": 25,
     "gradable": true,

@@ -52,6 +52,45 @@ SETTING_TABS: list[tuple[str, list[str] | list[tuple[str, list[str]]]]] = [
 FIRST_OFFERED = "(first offered)"
 
 
+def workspace_folder(context: Context) -> str:
+    '''The folder workspaces live in, as listed by the workspace select page.'''
+    return context.pages.load_page_config("title/select_workspace").get("link_folder", "workspaces")
+
+
+def make_workspace(context: Context, name: str, folder: str, template_key: str, overrides: dict | None = None) -> str:
+    '''
+    Makes a new workspace by copying template_key's config - its layout,
+    menu bar and settings - with a fresh name, description and place at
+    the end of its section, plus the two labels it needs, and registers it
+    with the Router. overrides replace any of the copied config's values
+    first - e.g. {"category": ...} to put it in another section. Returns
+    its page key.
+    '''
+    pages, labels = context.pages, context.labels
+    key = f"{workspace_folder(context)}/{folder}"
+    config = json.loads(pages.config_paths[template_key].read_text(encoding="utf-8"))
+    config.pop("_dev_note", None)
+    config.update(overrides or {})
+    category = config.get("category")
+    orders = [other.get("order", 0) for other in pages.pages_in(workspace_folder(context)).values()
+              if other.get("category") == category]
+    config.update({
+        "_note": [f"# {name}", "Describe this workspace here: its summary, objectives, reading, and videos."],
+        "link_label": f"title_buttons_workspace_{folder}",
+        "include": 1,
+        "order": max(orders, default=0) + 1,
+        "prerequisites": [],
+        "title": f"{folder}_workspace",
+    })
+    # _note first, the way every workspace config starts
+    config = {"_note": config.pop("_note"), **config}
+    labels.add_default_label(config["link_label"], name, after_prefix="title_buttons_workspace_")
+    labels.add_default_label(f"menu_bar_titles_{config['title']}", name, after_prefix="menu_bar_titles_")
+    pages.create_folder_page(key, config)
+    context.router.register_discovered_pages()
+    return key
+
+
 def is_switch(key: str, default) -> bool:
     '''Whether a default value is a 0/1 on-off switch (shown as a checkbox).'''
     if isinstance(default, bool):
@@ -183,10 +222,6 @@ class ConfigEditor(Page):
         return self.labels.get(self.pages.link_label(key))
 
     # Creating and deleting workspaces
-    def workspace_folder(self) -> str:
-        '''The folder workspaces live in, as listed by the workspace select page.'''
-        return self.pages.load_page_config("title/select_workspace").get("link_folder", "workspaces")
-
     def unless_unsaved(self, action: Callable[[], None]):
         '''Runs action, first asking to discard any unsaved changes.'''
         if not self.dirty:
@@ -196,35 +231,11 @@ class ConfigEditor(Page):
                              "Yes, discard", "No, keep editing", action)
 
     def new_workspace(self):
-        NewWorkspaceDialog(self).show()
+        NewWorkspaceDialog(self, self.context, self.keys_by_name, ConfigEditor.selected_key, self.create_workspace).show()
 
     def create_workspace(self, name: str, folder: str, template_key: str):
-        '''
-        Makes a new workspace by copying template_key's config - its layout,
-        menu bar and settings - with a fresh name, description and place at
-        the end of its section, plus the two labels it needs, then opens it.
-        '''
-        key = f"{self.workspace_folder()}/{folder}"
-        config = json.loads(self.pages.config_paths[template_key].read_text(encoding="utf-8"))
-        config.pop("_dev_note", None)
-        category = config.get("category")
-        orders = [other.get("order", 0) for other in self.pages.pages_in(self.workspace_folder()).values()
-                  if other.get("category") == category]
-        config.update({
-            "_note": [f"# {name}", "Describe this workspace here: its summary, objectives, reading, and videos."],
-            "link_label": f"title_buttons_workspace_{folder}",
-            "include": 1,
-            "order": max(orders, default=0) + 1,
-            "prerequisites": [],
-            "title": f"{folder}_workspace",
-        })
-        # _note first, the way every workspace config starts
-        config = {"_note": config.pop("_note"), **config}
-        self.labels.add_default_label(config["link_label"], name, after_prefix="title_buttons_workspace_")
-        self.labels.add_default_label(f"menu_bar_titles_{config['title']}", name, after_prefix="menu_bar_titles_")
-        self.pages.create_folder_page(key, config)
-        self.router.register_discovered_pages()
-        ConfigEditor.selected_key = key
+        '''Makes a new workspace (see make_workspace), then opens it here.'''
+        ConfigEditor.selected_key = make_workspace(self.context, name, folder, template_key)
         self.router.refresh(save=False)
 
     def open_workspace(self):
@@ -1087,14 +1098,20 @@ class NewWorkspaceDialog(QDialog):
     Asks for a new workspace's name, its folder name (filled in from the name
     until edited by hand), and which existing workspace to copy its layout,
     menu bar and settings from - the form can't add or remove panels itself.
+    templates maps each workspace's name to its key, template is the key
+    picked to begin with, and create(name, folder, template_key) makes it
+    (see make_workspace) - so any page can offer it.
     '''
 
     FOLDER_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
 
-    def __init__(self, editor: ConfigEditor):
-        super().__init__(editor)
-        self.editor = editor
-        style = editor.style
+    def __init__(self, master: QWidget, context: Context, templates: dict[str, str], template: str | None,
+                 create: Callable[[str, str, str], None]):
+        super().__init__(master)
+        self.context = context
+        self.templates = templates
+        self.on_create = create
+        style = context.style
         self.setWindowTitle("New Workspace")
         self.setModal(True)
         self.resize(600, 300)
@@ -1116,9 +1133,10 @@ class NewWorkspaceDialog(QDialog):
         self.folder.setPlaceholderText("e.g. wireless_sniffing")
         add(1, "Folder", self.folder)
         self.template = QComboBox()
-        self.template.addItems(list(editor.keys_by_name))
-        if ConfigEditor.selected_key is not None:
-            self.template.setCurrentText(editor.workspace_name(ConfigEditor.selected_key))
+        self.template.addItems(list(templates))
+        names = {key: name for name, key in templates.items()}
+        if template in names:
+            self.template.setCurrentText(names[template])
         add(2, "Copy layout from", self.template)
 
         self.error = QLabel()
@@ -1148,16 +1166,15 @@ class NewWorkspaceDialog(QDialog):
             self.folder.setText(re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_"))
 
     def problems(self, name: str, folder: str) -> list[str]:
-        editor = self.editor
         if not name:
             return ["Give the workspace a name."]
         if not self.FOLDER_PATTERN.fullmatch(folder):
             return ["The folder name must start with a lowercase letter and use only lowercase letters, numbers, and underscores."]
-        key = f"{editor.workspace_folder()}/{folder}"
-        if (editor.context.paths.pages / key).exists():
+        key = f"{workspace_folder(self.context)}/{folder}"
+        if (self.context.paths.pages / key).exists():
             return [f"There's already a folder named \"{folder}\"."]
         taken = [label for label in (f"title_buttons_workspace_{folder}", f"menu_bar_titles_{folder}_workspace")
-                 if label in editor.labels.data]
+                 if label in self.context.labels.data]
         if taken:
             return [f"The label \"{taken[0]}\" already exists - pick a different folder name."]
         return []
@@ -1168,9 +1185,9 @@ class NewWorkspaceDialog(QDialog):
         if problems:
             self.error.setText(problems[0])
             return
-        template = self.editor.keys_by_name[self.template.currentText()]
+        template = self.templates[self.template.currentText()]
         self.accept()
-        self.editor.create_workspace(name, folder, template)
+        self.on_create(name, folder, template)
 
 
 class DeleteWorkspaceDialog(QDialog):

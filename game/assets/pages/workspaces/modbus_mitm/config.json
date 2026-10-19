@@ -22,7 +22,7 @@
     "link_label": "title_buttons_workspace_modbus_mitm",
     "include": 1,
     "category": "attacker",
-    "order": 4,
+    "order": 14,
     "prerequisites": ["workspaces/modbus_intro"],
     "estimated_minutes": 20,
     "gradable": true,

@@ -1,0 +1,64 @@
+{
+    "_note": [
+        "# Internet Traffic",
+        "## Summary",
+        "No matter the size, every network has three basic parts: devices that send or receive information, connections between those devices, and rules that determine how communication happens. Understanding these basic ideas is the foundation of understanding the Internet, cybersecurity, hacking, and modern digital communication.",
+        "The Internet is not a single machine, company, or location. It is a massive collection of smaller networks connected together. You can think of the Internet as millions of computers, billions of devices, countless cables, switches, routers, and servers all cooperating to move information from one place to another.",
+        "Every home network, school network, office network, and cellular network connects into larger networks owned by Internet Service Providers (ISPs). Those providers connect to even larger backbone networks that span countries and oceans using fiber optic cables and satellites.",
+        "## Objectives",
+        "In this lab, you will be examining traffic as you use the internet. Simply observing packet counts can reveal a lot about how the internet works."
+    ],
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_internet_traffic",
+    "include": 1,
+    "category": "attacker",
+    "order": 10,
+    "prerequisites": [],
+    "estimated_minutes": 20,
+    "gradable": true,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "available": {"sniff": 1},
+        "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1},
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
+    },
+
+    "title": "internet_traffic_workspace",
+    "menu_bar": [
+        "model_style_button",
+        "strip_chart_style_button",
+        "clear_inputs_button",
+        "reset_layout_button",
+        "reset_button",
+        "preset_button",
+        "network_forms_button",
+        "modbus_forms_button",
+        "defender_forms_button",
+        "packet_columns_button",
+        "ap_config_button"
+    ],
+
+    "layout_shape": {
+        "h_panes_1": [
+            {"v_panes_1": ["network_action_panel_2", "network_graph_panel_1", "status_panel_1"]},
+            "packet_panel_1"
+        ]
+    },
+    "layout_weights": {
+        "v_panes_1": 31,
+        "network_action_panel_2": 33,
+        "network_graph_panel_1": 32,
+        "status_panel_1": 34,
+        "packet_panel_1": 69
+    }
+}

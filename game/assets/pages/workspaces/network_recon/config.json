@@ -22,7 +22,7 @@
     "link_label": "title_buttons_workspace_recon",
     "include": 1,
     "category": "attacker",
-    "order": 2,
+    "order": 12,
     "prerequisites": [],
     "estimated_minutes": 15,
     "gradable": false,

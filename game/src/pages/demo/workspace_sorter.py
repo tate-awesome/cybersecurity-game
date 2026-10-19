@@ -7,8 +7,9 @@ from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
 from ...app_core import Context
 from ...widgets import MenuBar, Scrollable, popup
 from ...widgets.frame_widgets.drag_drop import DragHandle, DragPayload, DropZone, ListZone
-from ...widgets.frame_widgets.important_buttons import PAGE_MARK
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK
 from ..page import Page
+from .config_editor import NewWorkspaceDialog, make_workspace
 
 WORKSPACE = "workspace"
 SECTION = "section"
@@ -68,8 +69,9 @@ class SectionCard(QFrame):
     '''
     A category of workspaces - one select page section - as a card: its
     title (dragged to reorder the categories) with its own controls beside
-    it, above a ListZone of its workspaces. section is None for the Not
-    Listed card, which has no controls and takes no drops.
+    it, above a ListZone of its workspaces, and a button to make a new
+    workspace in it. section is None for the Not Listed card, which has no
+    controls and takes no drops.
     '''
 
     def __init__(self, page: "WorkspaceSorter", zone_id: str, title: str, section: dict | None, note: str = ""):
@@ -112,6 +114,15 @@ class SectionCard(QFrame):
         self.chips = ListZone(context, zone_id, {WORKSPACE} if section is not None else set(),
                               spacing=context.style.cgap * 2)
         layout.addWidget(self.chips)
+
+        new = QPushButton(f"{context.labels.get('workspace_sorter_new_workspace')} {POPUP_MARK}")
+        new.setFont(context.style.get_font("default"))
+        new.setToolTip(context.labels.get("workspace_sorter_new_workspace_tooltip"))
+        new.clicked.connect(lambda checked=False: page.new_workspace(self))
+        new_row = QHBoxLayout()
+        new_row.addStretch(1)
+        new_row.addWidget(new)
+        layout.addLayout(new_row)
         self.show_state()
 
     def set_numbered(self, numbered: bool):
@@ -155,6 +166,8 @@ class WorkspaceSorter(Page):
         typed beside it.
       - Workspaces whose category no section lists sit in Not Listed at
         the bottom - drag one into a category to list it.
+      - New Workspace, under each card, makes a workspace in it right
+        away (see make_workspace) - in Not Listed, with no category.
 
     Nothing is written until Save, which sets every workspace's
     "category", "order" and "include" in its config.json - only the files
@@ -230,13 +243,7 @@ class WorkspaceSorter(Page):
         self.chips: dict[str, WorkspaceChip] = {}
         ordered = sorted(self.workspaces.items(), key=lambda item: (self.number_or_zero(item[1].get("order")), item[0]))
         for key, config in ordered:
-            chip = WorkspaceChip(context, key, self.labels.get(self.pages.link_label(key)),
-                                 config.get("include") == 1, self.mark_dirty, self.edit_workspace)
-            self.chips[key] = chip
-            card = self.cards.get(self.zone_id(config.get("category")), self.not_listed)
-            chip.zone = card.chips
-            card.chips.insert(chip, len(card.chips.items))
-        self.not_listed.setVisible(bool(self.not_listed.chips.items))
+            self.add_chip(key, self.cards.get(self.zone_id(config.get("category")), self.not_listed))
         scrollable.add_deadspace()
 
         self.status = QLabel()
@@ -260,6 +267,14 @@ class WorkspaceSorter(Page):
         if path is None:
             return {}
         return json.loads(path.read_text(encoding="utf-8"))
+
+    def add_chip(self, key: str, card: SectionCard):
+        '''A chip for workspace key, at the bottom of card.'''
+        chip = WorkspaceChip(self.context, key, self.labels.get(self.pages.link_label(key)),
+                             self.workspaces[key].get("include") == 1, self.mark_dirty, self.edit_workspace)
+        self.chips[key] = chip
+        chip.zone = card.chips
+        card.chips.insert(chip, len(card.chips.items))
 
     # Categories
     def add_section(self, section: dict, title: str) -> SectionCard:
@@ -318,6 +333,30 @@ class WorkspaceSorter(Page):
         card.deleteLater()
         self.mark_dirty()
 
+    def new_workspace(self, card: SectionCard):
+        '''
+        Asks for a new workspace's name and what to copy (see
+        NewWorkspaceDialog) - the card's last workspace to begin with - and
+        makes it in that card's category at once, at the bottom. It's
+        written straight away (it needs its own folder), so the sorting
+        changes still unsaved stay as they are.
+        '''
+        templates = {chip.name: key for key, chip in sorted(self.chips.items(), key=lambda item: item[1].name)}
+        template = card.chips.items[-1].key if card.chips.items else None
+        category = card.section.get("category") if card.section is not None else None
+
+        def create(name: str, folder: str, template_key: str):
+            key = make_workspace(self.context, name, folder, template_key, {"category": category})
+            self.workspaces[key] = self.raw_config(key)
+            self.add_chip(key, card)
+            self.renumber()
+            created = self.labels.get("workspace_sorter_created").format(name=name)
+            if self.dirty:  # still unsaved, and the status line is where that shows
+                self.set_status(f"{created} {self.labels.get('workspace_sorter_unsaved')}", "warning")
+            else:
+                self.set_status(created, "good")
+        NewWorkspaceDialog(self, self.context, templates, template, create).show()
+
     def edit_workspace(self, key: str):
         '''Opens the workspace editor on this workspace (Back returns here) - asking first if there are unsaved changes.'''
         def edit():
@@ -374,7 +413,6 @@ class WorkspaceSorter(Page):
 
     def mark_dirty(self):
         self.renumber()
-        self.not_listed.setVisible(bool(self.not_listed.chips.items))
         if not self.dirty:
             self.dirty = True
             self.set_status(self.labels.get("workspace_sorter_unsaved"), "warning")

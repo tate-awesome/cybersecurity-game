@@ -22,7 +22,7 @@
     "link_label": "title_buttons_workspace_arp_ip",
     "include": 1,
     "category": "attacker",
-    "order": 1,
+    "order": 11,
     "prerequisites": [],
     "estimated_minutes": 20,
     "gradable": true,
