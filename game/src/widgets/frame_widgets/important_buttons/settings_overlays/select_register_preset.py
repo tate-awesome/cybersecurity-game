@@ -7,7 +7,9 @@ class SelectRegisterPreset(SettingsOverlayButton):
     '''
     Opens a list of register presets - every JSON file in
     assets/settings/register_presets, each a partial modbus_registers
-    (e.g. {"hreg_3": {"show": 1, "nickname": "Speed", ...}}). Picking one
+    (e.g. {"hreg_3": {"show": 1, "nickname": "Speed", ...}}), named by its
+    "register_presets_<file name>" label and described (in its tooltip) by
+    "register_presets_descriptions_<file name>". Picking one
     resets every register to _default.json's values, then applies the
     preset - so registers it doesn't mention end up hidden. The ModBus
     forms and strip charts follow modbus_registers.
@@ -18,7 +20,8 @@ class SelectRegisterPreset(SettingsOverlayButton):
     def populate(self, overlay: Overlay):
         presets = self.section("register_presets")
         for path in sorted(self.context.paths.register_presets.glob("*.json")):
-            presets.button(self.preset_name(path), lambda path=path: self.apply(overlay, path))
+            presets.button(self.preset_name(path), lambda path=path: self.apply(overlay, path),
+                           self.context.labels.data.get(f"register_presets_descriptions_{path.stem}"))
 
     def preset_name(self, path: Path) -> str:
         '''The preset's "register_presets_<file name>" label, or its file name if it has none.'''

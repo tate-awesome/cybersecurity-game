@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792428065.5779214,
-    "seen": 1792428135.5730839,
-    "ast_hash": "776a6217a18fd225afe5d29f48ec1fa8",
+    "mtime": 1792432115.6663043,
+    "seen": 1792432126.8782403,
+    "ast_hash": "53e5924cc101fa669218836c8e26159a",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -948,9 +948,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/modbus_panel/_builder.py": {
-    "mtime": 1791418937.480878,
-    "seen": 1792423760.3547378,
-    "ast_hash": "48a79d31dfc5219f27b369336da8b132",
+    "mtime": 1792432115.6663043,
+    "seen": 1792432126.889034,
+    "ast_hash": "a02cfe308a8bb570b0179db7077ca030",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/modbus_panel/forms/modify.py": {
@@ -1674,9 +1674,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/settings_overlays/select_register_preset.py": {
-    "mtime": 1791430800.8925095,
-    "seen": 1792423760.3547113,
-    "ast_hash": "917722990ab90ef9fa363326a8c1b7ef",
+    "mtime": 1792432115.6663043,
+    "seen": 1792432126.8877354,
+    "ast_hash": "b221366f94bf21ab776473e1f838f5d7",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/settings_overlays/settings_overlay_button.py": {

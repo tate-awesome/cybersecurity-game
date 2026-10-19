@@ -6,7 +6,7 @@ from .forms.table import MitmTable
 from .forms.modify import Modify
 
 from ....widgets import Scrollable
-from ...frame_widgets.important_buttons import ChooseShownModbusTableForms, ClearModbusAndModelData, EditModbusRegisterDisplay
+from ...frame_widgets.important_buttons import ChooseShownModbusTableForms, ClearModbusAndModelData, EditModbusRegisterDisplay, SelectRegisterPreset
 
 FORM_CLASSES = {
     "table": MitmTable,
@@ -45,6 +45,7 @@ class Builder(Panel):
         self.scrollable.add_deadspace("grid")
 
         self.menu_bar.add_important(EditModbusRegisterDisplay)
+        self.menu_bar.add_important(SelectRegisterPreset)
         self.menu_bar.add_important(ChooseShownModbusTableForms)
         self.menu_bar.add_important(ClearModbusAndModelData)
 
