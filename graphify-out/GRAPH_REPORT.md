@@ -1,17 +1,17 @@
 # Graph Report - cybersecurity-game  (2026-10-19)
 
 ## Corpus Check
-- 303 files · ~243,566 words
+- 303 files · ~243,557 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
 ## Summary
-- 3955 nodes · 8016 edges · 223 communities (63 shown, 160 thin omitted)
+- 3955 nodes · 8017 edges · 218 communities (63 shown, 155 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 462 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `38231054`
+- Built from commit: `2a9a2130`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -28,7 +28,6 @@
 - SettingsPage
 - ._build_stylesheet
 - PageManager
-- .setText
 - DefenderV0
 - ToggleButton
 - VisualPalette
@@ -61,7 +60,7 @@
 - _DrawerLayout
 - ViewPort
 - Runtime Requirements
-- CheckboxOverlay
+- filter_overlay.py
 - StatusBuffer
 - PopupEntrance
 - ConfigEditor
@@ -140,7 +139,7 @@
 - NMapper
 - .entry
 - .__init__
-- pyside6_qtcore
+- ContextManager
 - .restyle
 - .collect
 - host.py
@@ -163,7 +162,7 @@
 - Utah Smart Energy Lab
 - Utah Smart Energy Lab (U-SMART)
 - CallbackRegistry
-- ContextManager
+- widgets/__init__.py
 - Skull Hacker Image (skull.png)
 - Dev Requirements (pyright)
 - PreferencesData
@@ -171,27 +170,19 @@
 - NetFilterQueue
 - RecordFilter
 - CLAUDE.md
-- ToggleBookmark
+- .global_rows
 - WindowControls
 - SelectRegisterPreset
 - ArpSpoofer
-- menu_bar.py
-- NotFound
 - SettingsSection
 - DefenderWorldMap
 - RefreshCurrentPage
 - OpenFavoritePage
 - WorldMap
-- StreamIncomingPacketsToMcap
-- ToggleDebugLabels
-- ToggleLightDarkMode
+- icon_button
 - SampleNetwork
 - SampleSubmarine
 - .__init__
-- FreeScrollStatusConsole
-- LinkToPage
-- PausePacketConsole
-- ToggleStripChartAutoFit
 - SampleHVAC
 
 ## God Nodes (most connected - your core abstractions)
@@ -246,11 +237,11 @@
 - **ModBus process observation panels** — game_assets_pages_workspaces_dos_attack_screenshot_modbus_data_panel, game_assets_pages_workspaces_dos_attack_screenshot_modbus_model_panel, game_assets_pages_workspaces_dos_attack_screenshot_modbus_monitors_panel [INFERRED 0.85]
 - **MITM attack workflow: WiFi connect, network mapping, ARP spoofing** — game_assets_pages_workspaces_modbus_mitm_screenshot_wifi_connection, game_assets_pages_workspaces_modbus_mitm_screenshot_nmapping, game_assets_pages_workspaces_modbus_mitm_screenshot_arp_spoofing, game_assets_pages_workspaces_modbus_mitm_screenshot_modbus_mitm_attack [INFERRED 0.85]
 
-## Communities (223 total, 160 thin omitted)
+## Communities (218 total, 155 thin omitted)
 
 ### Community 0 - "important_buttons/__init__.py"
-Cohesion: 0.03
-Nodes (29): AbortAllNetworkActions, ImportantButton, open_in_browser(), ClearAllCapturedBufferData, ClearModbusAndModelData, ClearPacketConsole, ClearStatusConsole, ConfigureThisWorkspace (+21 more)
+Cohesion: 0.02
+Nodes (40): AbortAllNetworkActions, ImportantButton, open_in_browser(), PanelButton, CheckboxOverlay, ChooseShownDefenderModbusForms, ChooseShownModbusTableForms, ChooseShownNetworkActionForms (+32 more)
 
 ### Community 1 - "MetaPacket"
 Cohesion: 0.07
@@ -279,6 +270,10 @@ Nodes (3): flush(), flush_all(), run()
 ### Community 10 - "._build_stylesheet"
 Cohesion: 0.09
 Nodes (3): at_opacity(), shaded(), gradient_points()
+
+### Community 15 - "ToggleButton"
+Cohesion: 0.04
+Nodes (8): ToggleButton, FreeScrollStatusConsole, PausePacketConsole, ToggleBookmark, StreamIncomingPacketsToMcap, ToggleDebugLabels, ToggleLightDarkMode, ToggleStripChartAutoFit
 
 ### Community 16 - "VisualPalette"
 Cohesion: 0.09
@@ -332,9 +327,9 @@ Nodes (4): ControlsExample, SampleHouse, SampleNetworkDiagram, SamplePackets
 Cohesion: 0.10
 Nodes (17): Game Architecture Outline, Modbus Master, Modbus Register/Frame Protocol, Network Interface Layer, Modbus Slave, Game GUI Design README, Metapacket Object, Runtime Requirements (+9 more)
 
-### Community 47 - "CheckboxOverlay"
-Cohesion: 0.14
-Nodes (6): PanelButton, CheckboxOverlay, ChooseShownDefenderModbusForms, ChooseShownModbusTableForms, ChooseShownNetworkActionForms, ChooseShownPacketConsoleColumns
+### Community 47 - "filter_overlay.py"
+Cohesion: 0.27
+Nodes (3): compile_packet_filter(), FilterOverlay, FilterPacketConsole
 
 ### Community 57 - "Json"
 Cohesion: 0.08
@@ -369,8 +364,8 @@ Cohesion: 0.13
 Nodes (3): add(), click(), sync()
 
 ### Community 81 - "confirm_dialog"
-Cohesion: 0.09
-Nodes (6): ClearSavedWorkspaceInputs, DeleteAllUserData, DeleteAllWorkspaceSavedData, ResetSavedWorkspaceLayout, WorkspaceSaveResetButton, confirm_dialog()
+Cohesion: 0.07
+Nodes (8): ClearSavedWorkspaceInputs, DeleteAllUserData, DeleteAllWorkspaceSavedData, ask_to_quit(), QuitApplication, ResetCurrentPageToDefaults, WorkspaceSaveResetButton, confirm_dialog()
 
 ### Community 83 - "ModBus MITM Workspace Screenshot"
 Cohesion: 0.17
@@ -405,8 +400,8 @@ Cohesion: 0.18
 Nodes (7): HelperHandle, _PopenHandle, spawn(), _spawn_linux(), _spawn_mac(), _spawn_windows(), _WindowsHandle
 
 ### Community 98 - "_Dim"
-Cohesion: 0.11
-Nodes (4): _Dim, _Drawer, _FollowResize, _OnHide
+Cohesion: 0.14
+Nodes (3): _Dim, _Drawer, _FollowResize
 
 ### Community 100 - "ModBus HVAC Exercise Screenshot"
 Cohesion: 0.19
@@ -444,9 +439,9 @@ Nodes (4): NetFilterQueue, InterfaceManager, NMapper, job()
 Cohesion: 0.11
 Nodes (3): _FollowResize, global_buttons(), _RightZoneRoom
 
-### Community 132 - "pyside6_qtcore"
-Cohesion: 0.08
-Nodes (9): AttackerV0, BoatMotion, Sprites, Triangle, Visuals, TitlePage, WorkspacePage, Page (+1 more)
+### Community 132 - "ContextManager"
+Cohesion: 0.07
+Nodes (15): ContextManager, BoatMotion, Sprites, Triangle, Visuals, TitlePage, WorkspacePage, NotFound (+7 more)
 
 ### Community 134 - ".collect"
 Cohesion: 0.17
@@ -484,13 +479,9 @@ Nodes (4): Smart_Energy2.jpg (Utah SMART Energy Lab logo), Power Grid / Transmis
 Cohesion: 0.67
 Nodes (4): Utah Smart Energy Lab Logo, Power Grid / Transmission Infrastructure, University of Utah, Utah Smart Energy Lab (U-SMART)
 
-### Community 163 - "ContextManager"
+### Community 163 - "widgets/__init__.py"
 Cohesion: 0.06
-Nodes (22): ContextManager, StripChart, TriangleCanvas, compile_packet_filter(), FilterOverlay, FilterPacketConsole, Panes, Scrollable (+14 more)
-
-### Community 184 - "menu_bar.py"
-Cohesion: 0.07
-Nodes (11): ButtonGroup, GoBackToPreviousPage, GoForwardToNextPage, OpenPauseMenu, OpenSettingsPage, ask_to_quit(), QuitApplication, toggle_maximized() (+3 more)
+Nodes (19): AttackerV0, StripChart, TriangleCanvas, Panes, Scrollable, panel(), ChartsExample, FlagsExample (+11 more)
 
 ### Community 190 - "RefreshCurrentPage"
 Cohesion: 0.24
@@ -503,20 +494,20 @@ Nodes (6): WorldMap, frame_callback(), sprite(), sprite_enabled(), PassWheel, Sa
 ## Knowledge Gaps
 - **58 isolated node(s):** `DOT11_SSID`, `WLAN_INTERFACE_INFO`, `WLAN_INTERFACE_INFO_LIST`, `WLAN_AVAILABLE_NETWORK`, `WLAN_AVAILABLE_NETWORK_LIST` (+53 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1591 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **160 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **155 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `pyside6_qtwidgets`, `pyside6_qtcore`, `channels/__init__.py`, `host.py`, `PageManager`, `geometry.py`, `.start_session`, `VisualPalette`, `.apply`, `Overlay`, `AnimationManager`, `hvac_view.py`, `Performance`, `LocalizationManager`, `.reload_preferences`, `CheckboxOverlay`, `ClickManager`, `InputManager`, `menu_bar.py`, `Json`, `KeyBinds`, `Router`, `threading`, `Preferences`, `.save_current_page`, `confirm_dialog`, `ProcessManager`, `Style`?**
-  _High betweenness centrality (0.267) - this node is a cross-community bridge._
+- **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `pyside6_qtwidgets`, `channels/__init__.py`, `host.py`, `PageManager`, `geometry.py`, `.start_session`, `VisualPalette`, `.apply`, `Overlay`, `AnimationManager`, `hvac_view.py`, `Performance`, `widgets/__init__.py`, `LocalizationManager`, `.reload_preferences`, `filter_overlay.py`, `ClickManager`, `InputManager`, `Json`, `KeyBinds`, `Router`, `threading`, `Preferences`, `.save_current_page`, `confirm_dialog`, `ProcessManager`, `Style`?**
+  _High betweenness centrality (0.266) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 13 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `DOT11_SSID`, `WLAN_INTERFACE_INFO`, `WLAN_INTERFACE_INFO_LIST` to the rest of the system?**
   _58 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `important_buttons/__init__.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.03095632946379215 - nodes in this community are weakly interconnected._
-- **Why does `Style` connect `Style` to `important_buttons/__init__.py`, `ContextManager`, `pyside6_qtcore`, `.restyle`, `QWidget`, `SettingsSection`, `._build_stylesheet`, `.theme_family`, `.link_color`, `.start_session`, `.discard_changes`, `Overlay`, `.setting`, `menu_bar.py`?**
+  _Cohesion score 0.024096385542168676 - nodes in this community are weakly interconnected._
+- **Why does `Style` connect `Style` to `important_buttons/__init__.py`, `QWidget`, `ContextManager`, `.restyle`, `SettingsSection`, `._build_stylesheet`, `.theme_family`, `.link_color`, `.start_session`, `.discard_changes`, `Overlay`, `.setting`?**
   _High betweenness centrality (0.072) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `Style` (e.g. with `ContextManager` and `SettingsSection`) actually correct?**
   _`Style` has 3 INFERRED edges - model-reasoned connections that need verification._

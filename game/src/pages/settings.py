@@ -13,7 +13,8 @@ from ..app_core.context.style import BACKGROUND_FPS_RANGE, PANEL_BORDER_WIDTH
 from ..widgets import MenuBar, VISUALS
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
                                                        LoadLocalizationLabelsFile, OpenAccessPointConfigInBrowser,
-                                                       OpenThemeEditor, OpenWorkspaceEditor, ResetTheme, developer_text)
+                                                       OpenThemeEditor, OpenWorkspaceEditor, ResetTheme, ToggleLightDarkMode,
+                                                       developer_text)
 from .page import Page
 
 
@@ -132,10 +133,8 @@ class SettingsPage(Page):
         section has the first two, and links here (see OpenAppearanceSettings).
         '''
         style, context = self.style, self.context
-        mode, _, family = style.current_theme.partition("_")
-        theme.row("settings_page_rows_dark_mode", self.checkbox(
-            mode == "dark", lambda on: style.set_theme(f"{'dark' if on else 'light'}_{style.theme_family()}")),
-            "settings_page_row_notes_dark_mode")
+        family = style.theme_family()
+        theme.row("settings_page_rows_dark_mode", ToggleLightDarkMode(context), "settings_page_row_notes_dark_mode")
         choices = style.theme_choices()
         # A theme made in the theme editor isn't one of the choices - shown as such, so any pick switches back
         custom = {} if family in choices else {family: self.labels.get("settings_page_custom_theme")}
