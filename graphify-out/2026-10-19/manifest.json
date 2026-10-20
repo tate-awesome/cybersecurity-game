@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/variable_monitor/_builder.py": {
-    "mtime": 1792458175.114367,
-    "seen": 1792458187.0784702,
-    "ast_hash": "8de8c92e8c5d3bca20ef3667504360f6",
+    "mtime": 1792458249.238123,
+    "seen": 1792458254.4801667,
+    "ast_hash": "208db4fbde97523515b99fcfdf57c030",
     "semantic_hash": ""
   },
   "game/src/widgets/popup.py": {

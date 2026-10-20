@@ -36,6 +36,10 @@ class WifiBaseClass(Process):
         # when it doesn't read) - so the form can show it without asking again.
         self.current_ssid: str | None = None
         self._connecting = False
+        # Whether the change _connecting covers is a start (not a stop), and
+        # whether stop() was asked for meanwhile - see stop()
+        self._starting = False
+        self._stop_queued = False
         self._mismatch_since: float | None = None
 
     def _unwatch_active_connection(self):
@@ -185,7 +189,9 @@ class WifiBaseClass(Process):
             return
 
         self._connecting = True
-        threading.Thread(target=self._run_start, args=(match_name,), daemon=True).start()
+        self._starting = True
+        # Not a daemon - see _run_stop's thread in stop()
+        threading.Thread(target=self._run_start, args=(match_name,)).start()
 
     def _note_restore_target(self, match_name: str):
         '''
@@ -216,17 +222,46 @@ class WifiBaseClass(Process):
         try:
             self._start_impl(match_name)
         finally:
+            self._starting = False
             self._connecting = False
+            if self._stop_queued:
+                # Right here on this thread rather than through stop()'s new
+                # one - this may well be the app quitting, see stop()
+                self._stop_queued = False
+                if self._claim_stop():
+                    self._run_stop()
 
     def stop(self):
+        '''
+        Switches back to the home network (see restore_network) - from the
+        form's button, and on page exit/Abort All/quitting through
+        ProcessManager.abort_all.
+
+        Asked mid-start (e.g. quitting while still connecting to the
+        device), it's queued to run as soon as the start finishes rather
+        than dropped, or the app could be left on the device. And the
+        threads doing the switching aren't daemons, so quitting doesn't
+        kill them partway: the window closes at once, while the process
+        stays alive just long enough to finish switching back (bounded by
+        the platform's scan/connect timeouts).
+        '''
+        if self._claim_stop():
+            threading.Thread(target=self._run_stop).start()
+
+    def _claim_stop(self) -> bool:
+        '''stop()'s checks and state flip - whether _run_stop should go ahead.'''
+        if self._connecting:
+            if self._starting:
+                self._stop_queued = True
+                self.buffer.put("wifi", "Will switch back once the current connection attempt finishes.")
+            else:
+                self.buffer.put("wifi", "A Wi-Fi connection change is already in progress.")
+            return False
+
         if not self.is_running():
             self.buffer.put("wifi", "Wifi is already disconnected.")
             self.is_connected = False
-            return
-
-        if self._connecting:
-            self.buffer.put("wifi", "A Wi-Fi connection change is already in progress.")
-            return
+            return False
 
         # Unlike start(), flip to "not running" *before* the restore attempt
         # rather than after: stopping means the forced switch is over, so the
@@ -239,7 +274,7 @@ class WifiBaseClass(Process):
         self.is_connected = False
         self.target_network = None
         self._connecting = True
-        threading.Thread(target=self._run_stop, daemon=True).start()
+        return True
 
     def _run_stop(self):
         try:

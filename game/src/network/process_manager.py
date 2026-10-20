@@ -52,3 +52,27 @@ class ProcessManager:
                 self._safe_stop(process.stop)
         for process in stop_last:
             self._safe_stop(process.stop)
+
+    def return_wifi_home(self):
+        '''
+        Quitting and Abort All mean "back to the home network" even on a
+        page without a Wi-Fi form - e.g. the app was started on the device,
+        or switched there by hand. A page that has one already did this
+        through abort_all (its process restores home on stop), so this only
+        covers the rest, from the saved home network and Device Name (see
+        WifiForm). Without both there's no telling which network is the
+        device or where home is, so it's left alone.
+        '''
+        from .hardware import Wifi
+        if any(isinstance(process, Wifi) for process in self.processes.values()):
+            return
+        preferences = self.context.preferences
+        home = preferences.get("wifi_home")
+        device = preferences.get("wifi_device")
+        if not home or not device:
+            return
+        wifi = Wifi(self.context.buffer, self.context)
+        wifi.home_network = home
+        wifi.set_match_name(device)
+        if wifi.is_running():  # on the device right now
+            self._safe_stop(wifi.stop)

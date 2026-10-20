@@ -248,6 +248,7 @@ class Router:
             return False  # already on the way out - quit() closing the window, say
         self.quitting = True
         self.context.reset_page()
+        self.context.process_manager.return_wifi_home()
         self.context.reset_build()
         # Stop the privileged helper last, so it restores any system state
         # and exits with the app rather than being orphaned.

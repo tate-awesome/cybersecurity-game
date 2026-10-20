@@ -15757,7 +15757,7 @@
       "file_type": "code",
       "norm_label": ".refresh_visibility()",
       "source_file": "game/src/widgets/panels/variable_monitor/_builder.py",
-      "source_location": "L57"
+      "source_location": "L58"
     },
     {
       "id": "game_src_widgets_frame_widgets_find_bar_findbar_clear_outline",
@@ -82495,6 +82495,18 @@
     },
     {
       "source": "game_src_widgets_panels_variable_monitor_builder",
+      "target": "game_src_widgets_frame_widgets_important_buttons_settings_overlays_select_register_preset_selectregisterpreset",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "game/src/widgets/panels/variable_monitor/_builder.py",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "game_src_widgets_panels_variable_monitor_builder",
       "target": "game_src_widgets_frame_widgets_important_buttons_toggle_strip_chart_auto_fit_togglestripchartautofit",
       "relation": "imports",
       "_origin": "ast",
@@ -126033,7 +126045,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/widgets/panels/variable_monitor/_builder.py",
-      "source_location": "L57",
+      "source_location": "L58",
       "weight": 1.0
     },
     {
