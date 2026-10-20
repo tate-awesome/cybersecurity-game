@@ -12,7 +12,7 @@ class Telemetry(Visual):
     second-order control loop chasing a setpoint that steps every few
     seconds - overshoot, ringing, and settling included - plus a little
     sensor noise. The dashed line is the setpoint; the grid scrolls with
-    the data like the Defender Monitors charts.
+    the data like the Variable Graphs charts.
     '''
 
     KEY = "telemetry"
