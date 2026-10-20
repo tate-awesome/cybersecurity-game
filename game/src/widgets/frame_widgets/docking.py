@@ -915,6 +915,7 @@ class DockArea(QWidget):
         self.chip: _Chip | None = None
         self.preview: _DropPreview | None = None
         self.build()
+        self.style.signals.changed.connect(self.restyled)
 
     # Panels
     def add_panel(self, panel_id: str) -> QWidget:
@@ -960,6 +961,22 @@ class DockArea(QWidget):
             self.root_panes = self.build_split(self.root, self.host)
         # Minimized panes, once the new skeleton's in place
         self.relayout_soon()
+
+    def restyled(self):
+        '''
+        After a theme change: built again, panels, sizes and minimized panes
+        kept - a minimized pane's thickness and a sideways strip's insides
+        are the theme's (see minimized_thickness), and would otherwise keep
+        the old theme's until something else laid them out.
+        '''
+        try:
+            if self.held is not None:
+                self.end_drag(QPoint(), drop=False)
+            self.end_peek()
+            self.capture_sizes()
+            self.build()
+        except RuntimeError:
+            pass  # deleted with its page, with the signal still connected
 
     def build_split(self, node: dict, master: QWidget) -> Panes:
         children = node["children"]
