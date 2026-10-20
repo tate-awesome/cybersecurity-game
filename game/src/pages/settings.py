@@ -11,7 +11,7 @@ from ..app_core.context.keybinds import DEFAULT_KEYBINDS
 from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
 from ..app_core.context.preferences import DEFAULT_FADE_IN, DEFAULT_FADE_OUT
 from ..app_core.context.style import (BACKGROUND_FPS_RANGE, DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED,
-                                      DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES,
+                                      DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL,
                                       NO_BACKGROUND, PANEL_BORDER_WIDTH)
 from ..widgets import MenuBar
 from ..widgets.visuals import background_choices
@@ -241,9 +241,6 @@ class SettingsPage(Page):
         rendering.row("settings_page_rows_page_transitions",
                       self.checkbox(performance.page_transitions, lambda on: performance.set(page_transitions=on)),
                       "settings_page_row_notes_page_transitions")
-        rendering.row("settings_labels_surface_translucent",
-                      self.checkbox(style.translucent_surfaces, style.set_translucent_surfaces),
-                      "settings_tooltips_surface_translucent")
         # No background is always frozen - nothing to animate (see Style.background_frozen)
         freeze = self.checkbox(style.background_frozen(), lambda on: style.set_background(animate=not on))
         freeze.setEnabled(style.background_visual != NO_BACKGROUND)
@@ -371,7 +368,6 @@ class SettingsPage(Page):
         self.context.performance.reset()
         self.style.set_background(animate=DEFAULT_BACKGROUND_ANIMATE, detailed=DEFAULT_BACKGROUND_DETAILED,
                                   fps=DEFAULT_BACKGROUND_FPS)
-        self.style.set_translucent_surfaces(DEFAULT_TRANSLUCENT_SURFACES)
         self.router.refresh()
 
     def set_fullscreen(self, on: bool):

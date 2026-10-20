@@ -12505,7 +12505,7 @@
       "file_type": "code",
       "norm_label": "apply()",
       "source_file": "game/src/widgets/canvases/figure_theme.py",
-      "source_location": "L22"
+      "source_location": "L26"
     },
     {
       "id": "game_src_widgets_frame_widgets_shift_wheel_slider_shiftwheelslider_wheelevent",
@@ -70343,7 +70343,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "game/src/widgets/canvases/figure_theme.py",
-      "source_location": "L22",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -145099,5 +145099,5 @@
       "source_file": "game/assets/pages/workspaces/dos_attack/screenshot.png"
     }
   ],
-  "built_at_commit": "4f826d21348a1c76bf9f4e24b695ea963496ed16"
+  "built_at_commit": "579c97057ca3b3c75f19ec220eeb839a0d9188c7"
 }

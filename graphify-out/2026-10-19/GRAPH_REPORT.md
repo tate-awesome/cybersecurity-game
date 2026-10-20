@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-19)
 
 ## Corpus Check
-- 302 files · ~232,234 words
+- 302 files · ~232,272 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4f826d21`
+- Built from commit: `579c9705`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

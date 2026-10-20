@@ -52,11 +52,6 @@ PANEL_BORDER_WIDTH = 2
 # at their material's opacity - so canvases and other hand-drawn widgets
 # naming them follow the theme (e.g. a "field" chart background)
 SEE_THROUGH_COLORS = ("panel", "widget", "field")
-# Whether surfaces can be see-through at all. Off, none of the surface
-# machinery runs: every color is opaque and untagged, there's no overlay
-# snapshot, and scroll areas paint their own background - the app as it
-# was before translucency.
-DEFAULT_TRANSLUCENT_SURFACES = True
 # The animated page background (see Page.add_background), each saved as a
 # preference like the theme: which visual plays (a widgets.visuals.VISUALS
 # key, "cycle", or NO_BACKGROUND), whether it moves, whether it's detailed
@@ -80,7 +75,7 @@ DEFAULT_INVERT_BUTTONS = False
 
 class StyleSignals(QObject):
     '''Style isn't a QObject - its signals live here (see Style.signals).'''
-    # The theme, translucency or button style changed - everything is already
+    # The theme or button style changed - everything is already
     # restyled; anything that shows those settings can catch up
     changed = Signal()
     # One of the user's themes was edited, saved or discarded (see Style.unsaved)
@@ -176,7 +171,6 @@ class Style:
 
         # Surface settings (see materials) - load_preferred_surfaces()
         # replaces these defaults once preferences exist
-        self.translucent_surfaces: bool = DEFAULT_TRANSLUCENT_SURFACES
         self.invert_buttons: bool = DEFAULT_INVERT_BUTTONS
         # Background settings - load_preferred_background() replaces these
         # defaults once preferences exist
@@ -492,7 +486,7 @@ class Style:
         every live_style sheet, then lets everything else know (see
         StyleSignals.changed) - unless notify is False, for edits whose
         controls already show them (see set_material_value). After any
-        change to the theme, translucency or button style.
+        change to the theme or button style.
         '''
         self._restyle_timer.stop()
         app = QApplication.instance()
@@ -890,8 +884,8 @@ class Style:
     def material(self, name: str) -> QColor:
         '''
         What a material (see themes.MATERIALS) looks like right now: its
-        color at its opacity - or solid, with translucent_surfaces off, in a
-        theme that doesn't allow transparency, or for text and lines (see
+        color at its opacity - or solid, in a theme that doesn't allow
+        transparency (see allows_transparency), or for text and lines (see
         themes.INK_MATERIALS).
 
         Buttons' see-through parts are part of their design, though, not
@@ -904,7 +898,7 @@ class Style:
         color = QColor(entry["color"])
         if name in INK_MATERIALS:
             return color
-        if self.translucent_surfaces and self.allows_transparency():
+        if self.allows_transparency():
             color.setAlphaF(entry["opacity"])
         else:
             opacity = self.button_opacity(name, entry["opacity"])
@@ -993,23 +987,14 @@ class Style:
         return self.preset_info.get(family or self.theme_family(), {}).get("transparency", True) is not False
 
     # Surfaces
-    def set_translucent_surfaces(self, on: bool):
-        '''Switches surface translucency on or off (see DEFAULT_TRANSLUCENT_SURFACES) - restyled in place, and saved.'''
-        self.translucent_surfaces = on
-        self.restyle()
-        self.save_surfaces()
-
     def load_preferred_surfaces(self):
         '''Reads the saved surface settings, keeping the default for anything missing or invalid.'''
         if isinstance(self.context.preferences.get("invert_buttons"), bool):
             self.invert_buttons = self.context.preferences.get("invert_buttons")
-        if isinstance(self.context.preferences.get("translucent_surfaces"), bool):
-            self.translucent_surfaces = self.context.preferences.get("translucent_surfaces")
         self.restyle()
 
     def load_default_surfaces(self):
         '''Back to the default surface settings, without saving - like load_default_theme.'''
-        self.translucent_surfaces = DEFAULT_TRANSLUCENT_SURFACES
         self.invert_buttons = DEFAULT_INVERT_BUTTONS
         self.restyle()
 
@@ -1085,7 +1070,6 @@ class Style:
 
     def save_surfaces(self):
         self.context.preferences.set("invert_buttons", self.invert_buttons)
-        self.context.preferences.set("translucent_surfaces", self.translucent_surfaces)
 
     def _load_theme_files(self):
         '''

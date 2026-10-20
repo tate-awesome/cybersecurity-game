@@ -42,7 +42,6 @@ from .toggle_light_dark_mode import ToggleLightDarkMode
 from .select_color_theme import SelectColorTheme
 from .open_theme_editor import OpenThemeEditor
 from .import_themes import ImportThemes
-from .toggle_translucent_surfaces import ToggleTranslucentSurfaces
 from .toggle_freeze_background import ToggleFreezeBackground
 from .select_background import SelectBackground
 from .settings_overlays.edit_background_choices import EditBackgroundChoices

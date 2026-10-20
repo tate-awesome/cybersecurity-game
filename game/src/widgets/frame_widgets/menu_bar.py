@@ -8,7 +8,7 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, OpenWorkspaceSorter,
                                 RefreshCurrentPage,
                                 SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleFreezeBackground,
-                                ToggleFullscreen, ToggleLightDarkMode, ToggleTranslucentSurfaces)
+                                ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
 from .window_chrome import (SquareButtons, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
@@ -63,7 +63,7 @@ assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu ba
 RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]]] = {
     "quick_settings_button_group": [
         ("general", [ToggleFullscreen, LoadLocalizationLabelsFile]),
-        ("appearance", [ToggleLightDarkMode, SelectColorTheme, ToggleTranslucentSurfaces, ToggleFreezeBackground,
+        ("appearance", [ToggleLightDarkMode, SelectColorTheme, ToggleFreezeBackground,
                         SelectBackground]),
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,

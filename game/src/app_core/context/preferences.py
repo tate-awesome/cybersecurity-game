@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, TypedDict
 from .performance import (DEFAULT_ANTIALIASING, DEFAULT_PAGE_TRANSITIONS, DEFAULT_PERFORMANCE_LOG,
                           DEFAULT_PERFORMANCE_OVERLAY, DEFAULT_UI_FPS)
 from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_FPS,
-                    DEFAULT_BACKGROUND_HIDDEN, DEFAULT_BACKGROUND_VISUAL, DEFAULT_TRANSLUCENT_SURFACES,
+                    DEFAULT_BACKGROUND_HIDDEN, DEFAULT_BACKGROUND_VISUAL,
                     NO_BACKGROUND)
 if TYPE_CHECKING:
     from .. import Context
@@ -41,7 +41,6 @@ class PreferencesData(TypedDict, total=False):
     '''
     theme: str
     is_developer: int
-    translucent_surfaces: bool
     invert_buttons: bool
     background_visual: str
     background_animate: bool
@@ -142,7 +141,6 @@ class Preferences:
         self.data = {
             "theme": "",            # autosaved in Style
             "is_developer": DEFAULT_IS_DEVELOPER,  # set by hand in the file - 1 adds the debug tools to menu bars
-            "translucent_surfaces": DEFAULT_TRANSLUCENT_SURFACES,  # toggled in quick settings and on the Graphics tab (see Style.set_translucent_surfaces)
             "invert_buttons": False,  # toggled on the Appearance tab (see Style.set_invert_buttons)
             # Set in quick settings and on the settings page (see Style.set_background)
             "background_visual": DEFAULT_BACKGROUND_VISUAL,

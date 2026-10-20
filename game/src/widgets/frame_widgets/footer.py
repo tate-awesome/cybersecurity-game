@@ -206,7 +206,7 @@ class Footer(QFrame):
         self.update_session()
         self.update_fps()
         self.update_zoom()  # fullscreen changes without a rebuild (F11)
-        self.update_theme()  # translucency changes without a rebuild
+        self.update_theme()  # the button style changes without a rebuild
         self.update_background()  # and so do the background settings
         if self.updates % WIFI_EVERY == 0:
             self.update_wifi()
@@ -313,7 +313,6 @@ class Footer(QFrame):
             f"{self.label('theme_mode')}: {mode}",
             f"{self.label('theme_name')}: {name}",
             f"{self.label('theme_invert')}: {on_off(style.invert_buttons)}",
-            f"{self.label('theme_translucency')}: {on_off(style.translucent_surfaces)}",
         ]
         self.theme.setToolTip(tooltip(lines))
 
