@@ -1,8 +1,8 @@
 import os, subprocess, webbrowser
 
-from PySide6.QtWidgets import QPushButton
 from ....app_core import Context
 from ....app_core.context.style import Style
+from ..window_chrome import WindowBarButton
 
 # Marks are icons in the text (see Style._load_icon_font).
 # Marks everything only developers see (developer mode - preferences.json
@@ -37,7 +37,7 @@ def open_in_browser(url: str):
         webbrowser.open(url)
 
 
-class ImportantButton(QPushButton):
+class ImportantButton(WindowBarButton):
     '''
     A button that can be placed anywhere - a MenuBar (add_important), a
     TitleMenu (add_important), or any plain layout - and reads and behaves

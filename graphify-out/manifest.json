@@ -810,9 +810,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1792460886.2753844,
-    "seen": 1792461089.400149,
-    "ast_hash": "14d3b2f7b006fd9415a71ad0d11918bf",
+    "mtime": 1792461180.2634964,
+    "seen": 1792461222.399367,
+    "ast_hash": "2106bd12582cd408d41bf0eac834492a",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -1302,9 +1302,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
-    "mtime": 1792435957.8389096,
-    "seen": 1792437052.8512988,
-    "ast_hash": "3c20aec1725ac82f760eaeb4da6a7467",
+    "mtime": 1792461180.2634964,
+    "seen": 1792461222.3962657,
+    "ast_hash": "8ae6b41ab33e9cb798e9d2c175a64ad6",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_workspace_save_button.py": {
@@ -1722,9 +1722,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/window_chrome.py": {
-    "mtime": 1792435957.846909,
-    "seen": 1792437052.8523808,
-    "ast_hash": "4c5b39935016b8e06434a73998970a1e",
+    "mtime": 1792461180.2634964,
+    "seen": 1792461222.39997,
+    "ast_hash": "0b5f873b91b107edbffdc7f8446cba5f",
     "semantic_hash": ""
   },
   "game/assets/fonts/LICENSE-tabler-icons.txt": {

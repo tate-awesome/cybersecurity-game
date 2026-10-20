@@ -16,6 +16,20 @@ CORNER = 16
 CLOSE_HOVER = "#c42b1c"
 
 
+class WindowBarButton(QPushButton):
+    '''
+    A QPushButton that takes clicks anywhere on itself. A theme whose
+    buttons press into their shadow (see Style._button_rules) moves the
+    button's face down and right while it's held, and QPushButton only
+    counts a press that stays on its face - so one pressed at the very top
+    or left of a button (the mouse up against the window's edge, on the
+    window bar) would slip off it the moment it moved, and never click.
+    '''
+
+    def hitButton(self, pos: QPoint) -> bool:
+        return self.rect().contains(pos)
+
+
 class NativeFrame:
     '''
     Windows only: gives the borderless window its native resizable frame
@@ -396,7 +410,7 @@ class WindowControls(QWidget):
         self.follow_window()
 
     def _button(self, name: str, action) -> QPushButton:
-        button = QPushButton(self.style.icon(self.ICONS[name]))
+        button = WindowBarButton(self.style.icon(self.ICONS[name]))
         button.setFont(self.style.get_font("icon"))
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)

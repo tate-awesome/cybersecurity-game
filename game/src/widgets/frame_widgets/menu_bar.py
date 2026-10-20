@@ -11,7 +11,7 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
-from .window_chrome import (SquareButtons, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
+from .window_chrome import (SquareButtons, WindowBarButton, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
                             window_bar_height, window_bar_room)
 from collections.abc import Callable
 
@@ -327,7 +327,7 @@ class MenuBar(QFrame):
         # been, hidden until squashing finds something to put in it.
         self._entries: list[dict] = []
         self._squashed_entries: list[dict] = []
-        self.the_overflow_button = QPushButton()
+        self.the_overflow_button = WindowBarButton()
         self.the_overflow_button.setFont(self.style.get_font())
         self.add_tooltip(self.the_overflow_button, "overflow")
         self.row.addWidget(self.the_overflow_button)
@@ -466,7 +466,7 @@ class MenuBar(QFrame):
         self.context.style.add_tooltip(widget, "menu_bar_tooltips", key)
 
     def add_button(self, label: str = "_default", function: Callable | None = None) -> QPushButton:
-        button = QPushButton(self.context.labels.get(f"menu_bar_buttons_{label}"))
+        button = WindowBarButton(self.context.labels.get(f"menu_bar_buttons_{label}"))
         button.setFont(self.style.get_font())
         if function is not None:
             self._connect(button, function)
