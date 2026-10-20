@@ -7,9 +7,10 @@ from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
 from ...app_core import Context
 from ...widgets import MenuBar, Scrollable, popup
 from ...widgets.frame_widgets.drag_drop import DragHandle, DragPayload, DropZone, ListZone
-from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
 from ..page import Page
-from .config_editor import NewWorkspaceDialog, make_workspace
+from .config_editor import (DeleteWorkspaceDialog, NewWorkspaceDialog, RenameWorkspaceDialog, delete_workspace, make_workspace,
+                            rename_workspace)
 
 WORKSPACE = "workspace"
 SECTION = "section"
@@ -29,10 +30,11 @@ class WorkspaceChip(QFrame):
     One workspace on the sorter, a full-width row: its name, dragged to
     reorder or recategorize it, a checkbox for whether the workspace
     select page lists it ("include") - a hidden one stays where it is,
-    faded - and a link to edit it in the workspace editor.
+    faded - buttons to rename or delete it, and a link to edit it in the
+    workspace editor. rename, delete and edit are called with its key.
     '''
 
-    def __init__(self, context: Context, key: str, name: str, shown: bool, changed, edit):
+    def __init__(self, context: Context, key: str, name: str, shown: bool, changed, edit, rename, delete):
         super().__init__()
         self.key = key
         self.name = name
@@ -49,6 +51,12 @@ class WorkspaceChip(QFrame):
         self.shown = checkbox(context, "workspace_sorter_shown", shown, "workspace_sorter_shown_tooltip",
                               lambda checked: (self.show_state(), changed()))
         layout.addWidget(self.shown)
+        for label, mark, action in (("rename", POPUP_MARK, rename), ("delete", WARNING_MARK, delete)):
+            button = QPushButton(f"{context.labels.get(f'workspace_sorter_{label}_workspace')} {mark}")
+            button.setFont(context.style.get_font("default"))
+            button.setToolTip(context.labels.get(f"workspace_sorter_{label}_workspace_tooltip"))
+            button.clicked.connect(lambda checked=False, action=action: action(self.key))
+            layout.addWidget(button)
         editor = QPushButton(f"{context.labels.get('workspace_sorter_edit_workspace')} {PAGE_MARK}")
         editor.setFont(context.style.get_font("default"))
         editor.setToolTip(context.labels.get("workspace_sorter_edit_workspace_tooltip"))
@@ -56,6 +64,10 @@ class WorkspaceChip(QFrame):
         layout.addWidget(editor)
         self.show_state()
         DragHandle(self, lambda: DragPayload(WORKSPACE, self.key, self.zone.zone_id))
+
+    def set_name(self, name: str):
+        self.name = name
+        self.label.setText(name)
 
     def number(self, position: int | None):
         '''Shows its place in a numbered section - as the select page numbers it - or just its name.'''
@@ -160,7 +172,8 @@ class WorkspaceSorter(Page):
         the whole category there or not ("hidden"), and Remove takes it
         away - its workspaces go to Not Listed.
       - Each workspace's Shown checkbox is its "include" - a hidden one
-        keeps its place, for whenever it's shown again - and its Edit
+        keeps its place, for whenever it's shown again - Rename gives it a
+        new name and folder, Delete deletes it for good, and its Edit
         button opens it in the workspace editor.
       - Add Category, under the cards, adds an empty one with the name
         typed beside it.
@@ -271,7 +284,8 @@ class WorkspaceSorter(Page):
     def add_chip(self, key: str, card: SectionCard):
         '''A chip for workspace key, at the bottom of card.'''
         chip = WorkspaceChip(self.context, key, self.labels.get(self.pages.link_label(key)),
-                             self.workspaces[key].get("include") == 1, self.mark_dirty, self.edit_workspace)
+                             self.workspaces[key].get("include") == 1, self.mark_dirty, self.edit_workspace,
+                             self.rename_workspace, self.delete_workspace)
         self.chips[key] = chip
         chip.zone = card.chips
         card.chips.insert(chip, len(card.chips.items))
@@ -339,7 +353,8 @@ class WorkspaceSorter(Page):
         NewWorkspaceDialog) - the card's last workspace to begin with - and
         makes it in that card's category at once, at the bottom. It's
         written straight away (it needs its own folder), so the sorting
-        changes still unsaved stay as they are.
+        changes still unsaved stay as they are - as with renaming and
+        deleting one.
         '''
         templates = {chip.name: key for key, chip in sorted(self.chips.items(), key=lambda item: item[1].name)}
         template = card.chips.items[-1].key if card.chips.items else None
@@ -350,12 +365,44 @@ class WorkspaceSorter(Page):
             self.workspaces[key] = self.raw_config(key)
             self.add_chip(key, card)
             self.renumber()
-            created = self.labels.get("workspace_sorter_created").format(name=name)
-            if self.dirty:  # still unsaved, and the status line is where that shows
-                self.set_status(f"{created} {self.labels.get('workspace_sorter_unsaved')}", "warning")
-            else:
-                self.set_status(created, "good")
+            self.status_after(self.labels.get("workspace_sorter_created").format(name=name))
         NewWorkspaceDialog(self, self.context, templates, template, create).show()
+
+    def rename_workspace(self, key: str):
+        '''Asks for a new name and folder (see RenameWorkspaceDialog) and renames it at once - written straight away, like a new one.'''
+        def rename(name: str, folder: str):
+            new_key = rename_workspace(self.context, key, name, folder)
+            chip = self.chips.pop(key)
+            chip.key = new_key
+            chip.set_name(name)
+            self.chips[new_key] = chip
+            self.workspaces[new_key] = self.raw_config(new_key)
+            if new_key != key:
+                del self.workspaces[key]
+            self.renumber()
+            self.status_after(self.labels.get("workspace_sorter_renamed").format(name=name))
+        RenameWorkspaceDialog(self, self.context, key, self.chips[key].name, rename).show()
+
+    def delete_workspace(self, key: str):
+        '''Deletes it for good, once its folder name's typed (see DeleteWorkspaceDialog) - written straight away.'''
+        name = self.chips[key].name
+        def delete():
+            delete_workspace(self.context, key)
+            chip = self.chips.pop(key)
+            del self.workspaces[key]
+            chip.zone.take(chip)
+            chip.hide()
+            chip.deleteLater()
+            self.renumber()
+            self.status_after(self.labels.get("workspace_sorter_deleted").format(name=name))
+        DeleteWorkspaceDialog(self, self.context, key, name, delete).show()
+
+    def status_after(self, done: str):
+        '''Says something was written - and, with sorting still unsaved, that that still is.'''
+        if self.dirty:
+            self.set_status(f"{done} {self.labels.get('workspace_sorter_unsaved')}", "warning")
+        else:
+            self.set_status(done, "good")
 
     def edit_workspace(self, key: str):
         '''Opens the workspace editor on this workspace (Back returns here) - asking first if there are unsaved changes.'''

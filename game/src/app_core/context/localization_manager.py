@@ -113,6 +113,16 @@ class LocalizationManager:
         self.save_default_labels(output)
         self.data[key] = text
 
+    def set_default_label(self, key: str, text: str, after_prefix: str):
+        '''Changes a label's text in assets/labels/_default.json where it is - or adds it, if it isn't there (see add_default_label).'''
+        labels = json.loads(self.default_path.read_text(encoding="utf-8"))
+        if key not in labels:
+            self.add_default_label(key, text, after_prefix)
+            return
+        labels[key] = text
+        self.save_default_labels(labels)
+        self.data[key] = text
+
     def remove_default_labels(self, keys: list[str]):
         '''Removes labels from assets/labels/_default.json and from the labels in use now.'''
         labels = json.loads(self.default_path.read_text(encoding="utf-8"))
