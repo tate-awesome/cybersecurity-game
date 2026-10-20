@@ -18,6 +18,7 @@ class Modify(BaseForm):
 
         # Create value table entries
         self.rows = {}
+        self.row_cells: dict[str, list[QWidget]] = {}
         self.entries = []
 
         self.add_label_row("modbus_modifier", ["variable", "multiplier", "offset"])
@@ -51,6 +52,9 @@ class Modify(BaseForm):
 
     def add_var_row(self, key):
         this_row = {}
+        # What's in the row's grid cells - an entry's wrapper, not just the entry: a
+        # shown wrapper keeps the row in the grid, spaced like any other (see row_visibility)
+        cells = []
         self.current_column = 0
 
         def label(text):
@@ -58,6 +62,7 @@ class Modify(BaseForm):
             label.setFont(self.style.get_font("mono"))
             label.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.grid_layout.addWidget(label, self.current_row, self.current_column)
+            cells.append(label)
             self.current_column += 1
             return label
 
@@ -72,6 +77,7 @@ class Modify(BaseForm):
             entry.setFixedWidth(self.style.igap * 8)
             wrapper = self.fixed_width_wrapper(entry, Qt.AlignmentFlag.AlignCenter)
             self.grid_layout.addWidget(wrapper, self.current_row, self.current_column)
+            cells.append(wrapper)
             self.entries.append(entry)
             self.current_column += 1
             return entry
@@ -80,6 +86,7 @@ class Modify(BaseForm):
         this_row["multiplier"] = entry()
         this_row["offset"] = entry()
         self.rows[key] = this_row
+        self.row_cells[key] = cells
         self.current_row += 1
 
         self.row_visibility(key)
@@ -96,8 +103,7 @@ class Modify(BaseForm):
 
     def row_visibility(self, key: str):
         state = self.context.states.get_register(key, "show")
-        row = self.rows[key]
-        for _, widget in row.items():
+        for widget in self.row_cells[key]:
             if (state == 0 or state == "0") and not widget.isHidden():
                 widget.hide()
             elif (state == 1 or state == "1") and widget.isHidden():
