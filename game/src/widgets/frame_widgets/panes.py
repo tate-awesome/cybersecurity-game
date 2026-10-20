@@ -92,11 +92,6 @@ class Panes(QSplitter):
             stretch = max(1, round(1000 / child_sizes[i]))
             self.setStretchFactor(i, stretch)
             initial_sizes.append(stretch)
-            # This pane's authored proportion of the splitter, as designed
-            # in the page file's own child_sizes - MenuBar.minimize_button
-            # reads this back to compute a maximizing pane's target size,
-            # independent of whatever the sashes have since been dragged to.
-            pane.default_stretch = stretch
             pane.pane_id = ids[i] if ids else None
             self.panels.append(pane)
 

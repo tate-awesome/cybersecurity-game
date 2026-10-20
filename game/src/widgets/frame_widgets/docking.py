@@ -25,6 +25,8 @@ Three pieces:
     the layout, and a chip with its title follows the mouse - and
     releasing it over a pane docks it there. While it's held, a
     see-through rectangle shows where it'd land (see DockArea.target_at).
+    It also minimizes panes, a pane at a time or whole groups laid flat
+    (see DockArea's Minimizing section).
 
 Like drag_drop's drags, it's plain mouse events and widgets floating over
 the window, not the system's drag and drop - so it works the same on every
@@ -39,6 +41,7 @@ from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedLayout, QVBoxLayout, QWidget
 
 from ...app_core import Context
+from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .overlay import Overlay
 from .panes import Panes
 from .window_chrome import WindowBarButton
@@ -54,6 +57,12 @@ CENTER_INSET = 0.25
 GROUP_BAND = 18
 # The tab strip's "more tabs" button
 MORE_TABS = "···"
+# A menu bar button's height, by font (see TabbedPane.thickness)
+_BUTTON_HEIGHTS: dict[str, int] = {}
+
+
+# Qt's "no maximum" size
+QWIDGETSIZE_MAX = (1 << 24) - 1
 
 
 # Layout model
@@ -234,6 +243,33 @@ def split_at(root: dict | None, target_id: str | None, edge: str, panel_id: str)
     return normalize(root)
 
 
+def drain_evenly(sizes: list[float], floors: list[float], amount: float) -> list[float]:
+    '''
+    Takes up to amount from sizes in all, never one below its floor -
+    always from the biggest first, in lockstep, like water draining off the
+    tallest bars evenly: two that started at different sizes end up level
+    (or at a floor) before either drops further. How a restored pane takes
+    its room back from its neighbours (see DockArea.lay_out_split).
+    '''
+    sizes = [float(size) for size in sizes]
+    remaining = float(amount)
+    while remaining > 1e-6:
+        room = [i for i in range(len(sizes)) if sizes[i] - floors[i] > 1e-6]
+        if not room:
+            break
+        tallest = max(sizes[i] for i in room)
+        top = [i for i in room if abs(sizes[i] - tallest) < 1e-6]
+        lower = [size for size in sizes if size < tallest - 1e-6]
+        boundary = max(max(lower) if lower else min(floors[i] for i in top), min(floors[i] for i in top))
+        take = min((tallest - boundary) * len(top), remaining)
+        if take <= 1e-9:
+            break
+        for i in top:
+            sizes[i] -= take / len(top)
+        remaining -= take
+    return sizes
+
+
 # Panes
 
 class TabStrip(QWidget):
@@ -348,24 +384,109 @@ class TabStrip(QWidget):
         return self.buttons[shown[-1]].geometry().right() + self.layout().spacing() // 2 if shown else 0
 
 
+class _SideTitle(QWidget):
+    '''A panel's title, turned to read down a sideways strip (see _SideStrip) - clicking it calls click.'''
+
+    def __init__(self, context: Context, text: str, current: bool, click: Callable[[], None]):
+        super().__init__()
+        self.style = context.style
+        self.text = text
+        self.current = current
+        self.click = click
+        self.setFont(self.style.get_font())
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def sizeHint(self) -> QSize:
+        metrics = self.fontMetrics()
+        pad = self.style.igap
+        return QSize(metrics.height(), metrics.horizontalAdvance(self.text) + pad)
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(self.fontMetrics().height(), 0)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        color = QColor(self.style.color("text"))
+        if not self.current:
+            color.setAlphaF(0.6)
+        painter.setPen(color)
+        # A quarter turn clockwise: it reads top to bottom
+        painter.translate(self.width(), 0)
+        painter.rotate(90)
+        painter.drawText(QRect(0, 0, self.height(), self.width()),
+                         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text)
+        painter.end()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.click()
+
+
+class _SideStrip(QWidget):
+    '''
+    A minimized pane laid flat the other way (see DockArea.lay_out_minimized):
+    a thin upright panel with its restore button at the top and its tabs'
+    titles turned sideways below - clicking one restores the pane showing it.
+    '''
+
+    def __init__(self, context: Context, tabs: list[tuple[str, str]], current: str, restore: Callable[[str | None], None],
+                 watch: Callable[[QWidget, str], None] | None):
+        super().__init__()
+        self.style = context.style
+        self.setProperty("shadowed", True)
+        column = QVBoxLayout(self)
+        left, top, right, bottom = self.style.panel_margins()
+        border = PANEL_BORDER_WIDTH
+        gap = self.style.igap // 2
+        column.setContentsMargins(left + border, top + border + gap, right + border, bottom + border + gap)
+        column.setSpacing(self.style.igap)
+        from .menu_bar import RESTORE_ICON, bare_icon  # here - menu_bar imports this module's package
+        button = bare_icon(context, WindowBarButton(self.style.icon(RESTORE_ICON)))
+        button.setToolTip(context.labels.get("menu_bar_buttons_maximize"))
+        button.clicked.connect(lambda checked=False: restore(None))
+        column.addWidget(button, 0, Qt.AlignmentFlag.AlignHCenter)
+        for panel_id, title in tabs:
+            label = _SideTitle(context, title, panel_id == current, lambda panel_id=panel_id: restore(panel_id))
+            column.addWidget(label, 0, Qt.AlignmentFlag.AlignHCenter)
+            if watch is not None:
+                watch(label, panel_id)
+        column.addStretch()
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(0, 0)
+
+    def paintEvent(self, event):
+        from ..panels.panel import paint_panel  # here - panels import this module's package
+        painter = QPainter(self)
+        paint_panel(painter, self.style, self.width(), self.height())
+        painter.end()
+
+
 class TabbedPane(QWidget):
     '''
     Fills a pane with one or more panels, stacked - only the current one
     showing. With more than one, each panel's menu bar shows a TabStrip
-    for switching between them. A panel that's minimized (see
-    MenuBar.minimize_button) passes that on to whichever tab replaces it,
-    so the pane keeps its size.
+    for switching between them.
+
+    A pane is shown in one of three forms (see set_form): "open"; "bar" -
+    minimized to just its menu bar, bodies hidden; or "side" - minimized
+    the other way, a _SideStrip of its titles turned sideways.
 
     panels are (panel id, panel) pairs; watch(widget, panel id) is called
     on every tab, so whoever made this can make it a handle to pick that
-    panel up by (see DockArea); switched(panel id) on every switch.
+    panel up by (see DockArea); switched(panel id) on every switch, and
+    restore(panel id or None) when a sideways title or its button's clicked.
     '''
 
     def __init__(self, master: QWidget, context: Context, panels: list[tuple[str, QWidget]], current: str | None = None,
-                 switched: Callable[[str], None] | None = None, watch: Callable[[QWidget, str], None] | None = None):
+                 switched: Callable[[str], None] | None = None, watch: Callable[[QWidget, str], None] | None = None,
+                 restore: Callable[[str | None], None] | None = None):
         super().__init__(master)
         self.context = context
+        self.style = context.style
         self.switched = switched
+        self.watch = watch
+        self.restore = restore
         master.layout().addWidget(self, 1)
         self.stack = QStackedLayout(self)
         self.stack.setContentsMargins(0, 0, 0, 0)
@@ -373,13 +494,13 @@ class TabbedPane(QWidget):
         for panel_id, panel in panels:
             self.panels[panel_id] = panel
             self.stack.addWidget(panel)
-        tabs = [(panel_id, panel.menu_bar.title()) for panel_id, panel in panels if getattr(panel, "menu_bar", None) is not None]
+        self.tabs = [(panel_id, panel.menu_bar.title()) for panel_id, panel in panels if getattr(panel, "menu_bar", None) is not None]
         for panel_id, panel in panels:
             menu_bar = getattr(panel, "menu_bar", None)
             if menu_bar is None:
                 continue
             if len(panels) > 1:
-                strip = TabStrip(context, tabs, panel_id, self.set_current)
+                strip = TabStrip(context, self.tabs, panel_id, self.set_current)
                 menu_bar.set_title_widget(strip)
                 if watch is not None:
                     watch(strip, panel_id)
@@ -387,6 +508,8 @@ class TabbedPane(QWidget):
                         watch(button, tab_id)
             else:
                 menu_bar.set_title_widget(None)
+        self.form = "open"
+        self.side: _SideStrip | None = None
         self.current = None
         self.set_current(current if current in self.panels else next(iter(self.panels)))
 
@@ -395,22 +518,55 @@ class TabbedPane(QWidget):
         return QSize(0, 0)
 
     def set_current(self, panel_id: str):
-        old = self.panels.get(self.current)
-        new = self.panels[panel_id]
-        if new is old:
+        if panel_id == self.current:
             return
-        minimized = old is not None and getattr(old, "menu_bar", None) is not None and old.menu_bar.is_minimized()
-        if minimized:
-            old.menu_bar.set_minimized(False)
         self.current = panel_id
-        self.stack.setCurrentWidget(new)
-        if minimized and getattr(new, "menu_bar", None) is not None:
-            new.menu_bar.set_minimized(True)
+        if self.form == "side":
+            self.set_form("side")  # its titles show which is current
+        else:
+            self.stack.setCurrentWidget(self.panels[panel_id])
         if self.switched is not None:
             self.switched(panel_id)
 
     def current_panel(self) -> QWidget:
         return self.panels[self.current]
+
+    def set_form(self, form: str):
+        '''Shows the pane "open", minimized as a "bar" (its menu bar), or minimized to the "side" (see the class docstring).'''
+        self.form = form
+        for panel in self.panels.values():
+            menu_bar = getattr(panel, "menu_bar", None)
+            if menu_bar is not None:
+                menu_bar.show_minimized(form != "open")
+        if self.side is not None:
+            self.stack.removeWidget(self.side)
+            self.side.deleteLater()
+            self.side = None
+        if form == "side":
+            self.side = _SideStrip(self.context, self.tabs, self.current, self.restore or (lambda panel_id: None), self.watch)
+            self.stack.addWidget(self.side)
+            self.stack.setCurrentWidget(self.side)
+        else:
+            self.stack.setCurrentWidget(self.panels[self.current])
+
+    def thickness(self) -> int:
+        '''
+        How thick it is minimized, either way: a panel menu bar's height
+        (its buttons' and the room around them - the same for every panel,
+        so minimized panes line up, and measurable while hidden) and the
+        panel's frame around it.
+        '''
+        font = self.style.get_font()
+        key = font.toString()
+        if key not in _BUTTON_HEIGHTS:
+            sample = QPushButton("Ag")
+            sample.setFont(font)
+            sample.ensurePolished()
+            _BUTTON_HEIGHTS[key] = sample.sizeHint().height()
+            sample.deleteLater()
+        _, top, _, bottom = self.style.panel_margins()
+        bar = _BUTTON_HEIGHTS[key] + 4 * self.style.cgap
+        return bar + top + bottom + 2 * PANEL_BORDER_WIDTH + self.style.setting("panel_frame")
 
 
 # Dragging
@@ -601,6 +757,7 @@ class DockArea(QWidget):
         self.held: str | None = None
         self.held_new = False
         self.held_at = QPoint()
+        self._relayout_queued = False
         self.before: dict | None = None
         self.chip: _Chip | None = None
         self.preview: _DropPreview | None = None
@@ -614,6 +771,7 @@ class DockArea(QWidget):
         if menu_bar is not None:
             for widget in (menu_bar, menu_bar.game_label):
                 self.watch(widget, panel_id)
+            menu_bar.minimize_clicked.connect(lambda panel_id=panel_id: self.toggle_minimized(panel_id))
         return panel
 
     def watch(self, widget: QWidget, panel_id: str):
@@ -647,10 +805,8 @@ class DockArea(QWidget):
             self.host.layout().addWidget(empty)
         else:
             self.root_panes = self.build_split(self.root, self.host)
-        current = {node["current"] for node, _ in walk(self.root) if not is_split(node)} if self.root else set()
-        for panel_id, panel in self.panels.items():
-            if hasattr(panel, "redocked"):
-                panel.redocked(keep_minimized=panel_id in current)
+        # Minimized panes, once the new skeleton's in place
+        self.relayout_soon()
 
     def build_split(self, node: dict, master: QWidget) -> Panes:
         children = node["children"]
@@ -667,7 +823,8 @@ class DockArea(QWidget):
             else:
                 self.tabbed[child["id"]] = TabbedPane(
                     pane, self.context, [(panel_id, self.panels[panel_id]) for panel_id in child["panels"]], child["current"],
-                    switched=lambda panel_id, child=child: child.__setitem__("current", panel_id), watch=self.watch)
+                    switched=lambda panel_id, child=child: child.__setitem__("current", panel_id), watch=self.watch,
+                    restore=lambda panel_id, child=child: self.restore(child, panel_id))
         return panes
 
     # Reading it back
@@ -680,10 +837,13 @@ class DockArea(QWidget):
         '''
         if self.root is None:
             return
+        collapsed = self.collapsed()
         for node, _ in walk(self.root):
             panes = self.splits.get(node["id"]) if is_split(node) else None
             if panes is None or not panes.isVisible() or panes.testAttribute(Qt.WidgetAttribute.WA_PendingResizeEvent):
                 continue
+            if collapsed[node["id"]] or any(collapsed[child["id"]] for child in node["children"]):
+                continue  # minimized panes' sizes aren't theirs to keep - see minimize
             sizes = panes.sizes()
             if len(sizes) == len(node["children"]) and all(size > 0 for size in sizes):
                 for child, size in zip(node["children"], sizes):
@@ -693,6 +853,184 @@ class DockArea(QWidget):
         '''The layout as it is now, as a layout_tree - its weights each pane's live size.'''
         self.capture_sizes()
         return to_tree(self.root) if self.root is not None else None
+
+    # Minimizing
+    #
+    # A pane minimizes along the group it's in, to just its menu bar,
+    # handing its room to the open panes beside it evenly - and restoring,
+    # takes back the size it had from them. Once every pane in a group is
+    # minimized, the group minimizes the other way, along the group it's in
+    # in turn: flat, its panes turned to sideways strips of titles (see
+    # TabbedPane's "side" form). Restoring one pane in it opens the group
+    # back up to its own size, that pane taking all the room its minimized
+    # neighbours leave. A layout's top group never minimizes - nothing's
+    # left to take its room.
+
+    def toggle_minimized(self, panel_id: str):
+        node = leaf_of(self.root, panel_id) if self.root is not None else None
+        if node is not None:
+            self.minimize(node, not node.get("minimized", False))
+
+    def restore(self, node: dict, panel_id: str | None = None):
+        '''Restores a minimized pane - showing panel_id, if given (a sideways title was clicked).'''
+        if panel_id is not None and node["id"] in self.tabbed:
+            self.tabbed[node["id"]].set_current(panel_id)
+        self.minimize(node, False)
+
+    def minimize(self, node: dict, minimized: bool):
+        before = self.collapsed()
+        self.remember_open_sizes(before)
+        node["minimized"] = minimized
+        self.lay_out_minimized(before)
+
+    def collapsed(self) -> dict[str, bool]:
+        '''Which nodes are minimized: a minimized pane, or a group (not the top one) whose panes all are.'''
+        found = {}
+        def visit(node: dict, top: bool) -> bool:
+            if is_split(node):
+                children = [visit(child, False) for child in node["children"]]
+                found[node["id"]] = not top and all(children)
+            else:
+                found[node["id"]] = bool(node.get("minimized"))
+            return found[node["id"]]
+        if self.root is not None:
+            visit(self.root, True)
+        return found
+
+    def thin_axis(self, parents: tuple, collapsed: dict[str, bool]) -> str:
+        '''The way a minimized node is flattened: along the innermost group above it that's still open.'''
+        for parent in reversed(parents):
+            if not collapsed[parent["id"]]:
+                return parent["orientation"]
+        return parents[0]["orientation"] if parents else "vertical"
+
+    def thickness(self, node: dict, axis: str) -> int:
+        '''How thick a minimized node is along axis, the way it's flattened.'''
+        if not is_split(node):
+            tabbed = self.tabbed.get(node["id"])
+            return tabbed.thickness() if tabbed is not None else self.style.igap * 4
+        sizes = [self.thickness(child, axis) for child in node["children"]]
+        if node["orientation"] == axis:
+            panes = self.splits.get(node["id"])
+            handle = panes.handleWidth() if panes is not None else 0
+            return sum(sizes) + handle * (len(sizes) - 1)
+        return max(sizes)
+
+    def remember_open_sizes(self, collapsed: dict[str, bool]):
+        '''Each open pane's size in its open group - what it goes back to when restored.'''
+        for node, _ in walk(self.root) if self.root is not None else ():
+            panes = self.splits.get(node["id"]) if is_split(node) else None
+            if panes is None or collapsed[node["id"]] or panes.testAttribute(Qt.WidgetAttribute.WA_PendingResizeEvent):
+                continue
+            for child, size in zip(node["children"], panes.sizes()):
+                if not collapsed[child["id"]] and size > 0:
+                    child["open_size"] = size
+
+    def relayout_soon(self):
+        if not self._relayout_queued:
+            self._relayout_queued = True
+            QTimer.singleShot(0, self._relayout)
+
+    def _relayout(self):
+        self._relayout_queued = False
+        if self.root is not None:
+            collapsed = self.collapsed()
+            if any(collapsed.values()):
+                self.lay_out_minimized(collapsed)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.relayout_soon()
+
+    def lay_out_minimized(self, before: dict[str, bool]):
+        '''
+        Sizes every group's panes for which are minimized now, coming from
+        before (which were then), and shows each pane in its form.
+        '''
+        if self.root is None or self.root_panes is None:
+            return
+        after = self.collapsed()
+        self.lay_out_split(self.root, (), self.width(), self.height(), before, after)
+        for node, parents in walk(self.root):
+            tabbed = self.tabbed.get(node["id"])
+            if tabbed is None:
+                continue
+            if not after[node["id"]]:
+                form = "open"
+            else:
+                form = "bar" if self.thin_axis(parents, after) == "vertical" else "side"
+            if form != tabbed.form:
+                tabbed.set_form(form)
+
+    def lay_out_split(self, node: dict, parents: tuple, width: int, height: int, before: dict, after: dict):
+        panes = self.splits[node["id"]]
+        children = node["children"]
+        axis = node["orientation"]
+        horizontal = axis == "horizontal"
+        room = (width if horizontal else height) - panes.handleWidth() * (len(children) - 1)
+        floor = self.style.PANE_MIN_WIDTH if horizontal else self.style.PANE_MIN_HEIGHT
+        current = [float(size) for size in panes.sizes()]
+        total = sum(current)
+        if len(current) != len(children) or total <= 0:
+            current = [float(child["weight"]) for child in children]
+            total = sum(current) or 1
+        current = [size / total * room for size in current]
+
+        # Flattened along this group's own direction, a minimized pane is
+        # just its thickness - but in a group minimized the other way, its
+        # panes share the group's length, in their open proportions
+        sharing = after[node["id"]] and self.thin_axis(parents + (node,), after) != axis
+        kinds, sizes = [], []
+        for child, size in zip(children, current):
+            if after[child["id"]] and not sharing:
+                kinds.append("flat")
+                sizes.append(float(self.thickness(child, axis)))
+            elif sharing:
+                kinds.append("share")
+                sizes.append(float(child.get("open_size") or child["weight"]))
+            elif before.get(child["id"]):
+                kinds.append("opened")  # restored: back to the size it had
+                sizes.append(float(child.get("open_size") or size))
+            else:
+                kinds.append("open")
+                sizes.append(size)
+
+        if sharing:
+            flat = sum(size for kind, size in zip(kinds, sizes) if kind == "flat")
+            shares = sum(size for kind, size in zip(kinds, sizes) if kind == "share") or 1
+            sizes = [size if kind == "flat" else size / shares * (room - flat) for kind, size in zip(kinds, sizes)]
+        else:
+            spare = room - sum(sizes)
+            takers = [i for i, kind in enumerate(kinds) if kind == "open"] or [i for i, kind in enumerate(kinds) if kind == "opened"]
+            if spare > 0 and takers:
+                # Freed room goes to the open panes evenly
+                for i in takers:
+                    sizes[i] += spare / len(takers)
+            elif spare < 0:
+                # A restored pane takes its room back from the open panes, tallest first
+                for group in ([i for i, kind in enumerate(kinds) if kind == "open"], [i for i, kind in enumerate(kinds) if kind == "opened"]):
+                    if not group or spare >= 0:
+                        continue
+                    drained = drain_evenly([sizes[i] for i in group], [floor] * len(group), -spare)
+                    spare += sum(sizes[i] for i in group) - sum(drained)
+                    for i, size in zip(group, drained):
+                        sizes[i] = size
+
+        for index, (child, kind, size) in enumerate(zip(children, kinds, sizes)):
+            pane = panes.pane(index)
+            low, high = (int(size), int(size)) if kind == "flat" else (min(floor, int(size)) if kind == "share" else floor, QWIDGETSIZE_MAX)
+            if horizontal:
+                pane.setMinimumWidth(low)
+                pane.setMaximumWidth(high)
+            else:
+                pane.setMinimumHeight(low)
+                pane.setMaximumHeight(high)
+        panes.setSizes([max(0, round(size)) for size in sizes])
+
+        for child, size in zip(children, sizes):
+            if is_split(child):
+                self.lay_out_split(child, parents + (node,), round(size) if horizontal else width,
+                                   height if horizontal else round(size), before, after)
 
     # Dragging
     def begin_drag(self, panel_id: str, at: QPoint, new: bool = False):

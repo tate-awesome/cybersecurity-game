@@ -1,8 +1,8 @@
 from ...app_core import Context
 from ...app_core.context.style import Style
-from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, Signal
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSplitter, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
                                 OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, OpenWorkspaceSorter,
@@ -80,60 +80,6 @@ OVERFLOW_CLOSED = Style.icon("chevrons-right")
 OVERFLOW_OPEN = Style.icon("x")
 
 
-def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
-    '''
-    A minimized pane has had its own floor lowered below the splitter's
-    normal PANE_MIN_HEIGHT/WIDTH (down to just its menu bar's height - see
-    minimize_button.shrink_pane), and nothing else in Panes ever sets a
-    smaller floor - so a floor below that normal value reliably means "this
-    pane is currently minimized," with no extra bookkeeping needed.
-    '''
-    normal_floor = style.PANE_MIN_HEIGHT if vertical else style.PANE_MIN_WIDTH
-    current_floor = widget.minimumHeight() if vertical else widget.minimumWidth()
-    return current_floor < normal_floor
-
-
-def _drain_evenly(sizes: list[float], floors: list[float], amount: float) -> list[float]:
-    '''
-    Removes up to `amount` total from `sizes` (never taking an entry below
-    its matching `floors` value), always draining whichever entries are
-    currently tallest first and in lockstep - like water draining off the
-    tallest bars evenly - so two entries that started at different heights
-    end up equal (or at a floor) before either drops further. Used by
-    minimize_button's maximize path: the growing pane takes height from its
-    single biggest sibling until they're level with the next-biggest, then
-    takes from all of them evenly, the same way a human would rebalance a
-    row of panes by hand.
-    '''
-    sizes = [float(s) for s in sizes]
-    floors = [float(f) for f in floors]
-    remaining = float(amount)
-    n = len(sizes)
-
-    while remaining > 1e-6:
-        room = [i for i in range(n) if sizes[i] - floors[i] > 1e-6]
-        if not room:
-            break
-        tallest_height = max(sizes[i] for i in room)
-        tallest = [i for i in room if abs(sizes[i] - tallest_height) < 1e-6]
-
-        lower_heights = [sizes[i] for i in range(n) if sizes[i] < tallest_height - 1e-6]
-        next_height = max(lower_heights) if lower_heights else None
-        floor_ceiling = min(floors[i] for i in tallest)
-        boundary = floor_ceiling if next_height is None else max(next_height, floor_ceiling)
-
-        headroom = (tallest_height - boundary) * len(tallest)
-        take = min(headroom, remaining)
-        if take <= 1e-9:
-            break
-        share = take / len(tallest)
-        for i in tallest:
-            sizes[i] -= share
-        remaining -= take
-
-    return sizes
-
-
 def icon_button(context: Context, button: ImportantButton, icon: str | None = None,
                 active_icon: str | None = None) -> ImportantButton:
     '''
@@ -142,8 +88,14 @@ def icon_button(context: Context, button: ImportantButton, icon: str | None = No
     just the icon in the text color (the accent on hover), its label as its
     tooltip. Faint while disabled.
     '''
-    style = context.style
     button.show_icon(icon, active_icon)
+    return bare_icon(context, button)
+
+
+def bare_icon(context: Context, button: QPushButton) -> QPushButton:
+    '''Dresses a button whose text is one of style.ICONS (see Style.icon) as a bare symbol - see icon_button.'''
+    style = context.style
+    button.setFont(style.get_font("icon"))
     button.setCursor(Qt.CursorShape.PointingHandCursor)
     button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
     name = f"_icon_button_{id(button)}"
@@ -235,6 +187,11 @@ class _FollowResize(QObject):
         return False
 
 
+# A panel's minimize button, open and minimized (see MenuBar.minimize_button)
+MINIMIZE_ICON = "minus"
+RESTORE_ICON = "square"
+
+
 class MenuBar(QFrame):
     '''
     The main Widget for the menu bar.
@@ -249,6 +206,9 @@ class MenuBar(QFrame):
     buttons (add_button, add_config_buttons...). Its empty space moves the
     window. A panel's menu bar is just its title and its buttons.
     '''
+
+    # A panel's minimize button was clicked (see minimize_button)
+    minimize_clicked = Signal()
 
     def __init__(self, master: QWidget, context: Context, title_label: str = "_default"):
         super().__init__(master)
@@ -289,8 +249,9 @@ class MenuBar(QFrame):
         self._fixed: list[QWidget] = []
         # What shows in the title's place instead of it, if anything (see set_title_widget)
         self._title_widget: QWidget | None = None
-        # A panel's minimize button's state and controls (see minimize_button)
-        self._minimizer: dict | None = None
+        # A panel's minimize button and the body it hides (see minimize_button)
+        self.minimize: QPushButton | None = None
+        self._minimize_body: QWidget | None = None
         self.back_arrow = None
         self.window_controls = None
 
@@ -552,8 +513,8 @@ class MenuBar(QFrame):
             available_width -= self.fixed_width()
 
             # Fit buttons in from the right, so the leftmost ones squash
-            # first - a bar's most important buttons (back, quit, a panel's
-            # minimize) go last, on the right, and stay visible longest.
+            # first - a bar's most important buttons (back, quit) go last,
+            # on the right, and stay visible longest.
             def split(width: int) -> tuple[list[dict], list[dict]]:
                 # Dropdowns/checkboxes never squash, so their room comes off the top
                 # before any button is fitted - wherever they sit in the row
@@ -602,15 +563,15 @@ class MenuBar(QFrame):
             # Replays a real click on the (hidden) original button rather
             # than capturing its callback at insert time, so a proxy always
             # reflects whatever label/handler the button currently has -
-            # including buttons like minimize/ToggleButton that swap
-            # their text and handler dynamically after creation.
+            # including buttons like ToggleButton that swap their text
+            # and handler dynamically after creation.
             proxy.clicked.connect(lambda checked=False, b=button, p=proxy: self._replay_click(b, p))
             overlay.layout().addWidget(proxy)
             proxies.append((button, proxy))
 
         # QPushButton has no text-changed signal, and a button's label can
         # change from anywhere (a ToggleButton click, an overlay it opens
-        # closing, a pane's sash being dragged to minimize it) - so poll
+        # closing) - so poll
         # labels across while this overlay is open, then stop.
         callback_name = f"overflow_proxies_{id(self)}"
 
@@ -648,267 +609,33 @@ class MenuBar(QFrame):
 
     # Panel Buttons
 
-    def minimize_button(self, frame_widget: QWidget | None = None):
+    def minimize_button(self, frame_widget: QWidget | None = None) -> QPushButton:
         '''
-        Adds a button that hides frame_widget and shrinks the pane this
-        menu bar's panel sits in down to just this menu bar's own height,
-        or restores both - and auto-minimizes as the user drags that pane's
-        Panes sash down to its normal floor (PANE_MIN_HEIGHT/WIDTH),
-        mirroring the old <Configure>-driven auto-minimize.
-
-        The pane is looked up whenever it's needed (see pane), not fixed
-        when the panel is built - a panel can be docked somewhere else
-        (see DockArea), which calls redocked to follow it there.
-
-        Space freed by shrinking is handed to the sibling panes evenly.
-        Restoring takes it back from whichever sibling is currently
-        tallest first (leveling siblings down together once they match),
-        growing the pane back to its authored share of the splitter - see
-        Panes.default_stretch - rather than an arbitrary fixed size.
+        Adds the panel's minimize button: a bare bar symbol at the very
+        left of the menu bar, before its title (or tabs) - a square while
+        minimized, which restores it. Clicking it emits minimize_clicked;
+        the DockArea the panel's in does the minimizing (see
+        DockArea.toggle_minimized) and calls show_minimized to match.
+        frame_widget is the panel's body, hidden while it's minimized.
         '''
-        minimize_text = self.context.labels.get("menu_bar_buttons_minimize")
-        maximize_text = self.context.labels.get("menu_bar_buttons_maximize")
-        button = self.add_button("minimize")
-        is_minimized = False
-        normal_min_extent = None  # pane's PANE_MIN_HEIGHT/WIDTH floor, remembered while it's lowered
-        watched_splitter = None  # the Panes whose sash moves on_sash_moved follows (see attach)
-
-        def shrink_pane():
-            nonlocal normal_min_extent
-            pane = self.pane()
-            if pane is None:
-                return
-            splitter = pane.parent()
-            index = splitter.indexOf(pane)
-            vertical = splitter.orientation() == Qt.Orientation.Vertical
-
-            sizes = [float(s) for s in splitter.sizes()]
-            current = sizes[index]
-            target = min(float(self.sizeHint().height() if vertical else self.sizeHint().width()), current)
-
-            # Lower this pane's hard floor so the splitter will actually
-            # allow it down to the menu bar's own height - its normal
-            # floor is PANE_MIN_HEIGHT/WIDTH, set once in Panes.__init__.
-            normal_min_extent = pane.minimumHeight() if vertical else pane.minimumWidth()
-            if vertical:
-                pane.setMinimumHeight(int(target))
-            else:
-                pane.setMinimumWidth(int(target))
-
-            freed = current - target
-            siblings = [i for i in range(splitter.count()) if i != index]
-            # A sibling that's already minimized has its own floor lowered
-            # the same way (see above) - handing it a share of the freed
-            # space would grow it past that floor, since a floor only ever
-            # stops a pane from getting *smaller*. Left out of the
-            # recipients, it stays exactly at its own minimized height
-            # instead of ballooning back up with nothing to fill but blank
-            # space under its own menu bar.
-            growable = [i for i in siblings if not _pane_is_minimized(splitter.widget(i), vertical, self.style)]
-            if growable and freed > 0:
-                share = freed / len(growable)
-                for i in growable:
-                    sizes[i] += share
-                sizes[index] = target
-            # else: every other pane in this splitter is already minimized
-            # too, so there's no one left to hand the freed space to -
-            # leave this pane's own allocated size alone rather than
-            # shrinking it into space Qt would just renormalize back out
-            # across every pane (silently un-minimizing all of them). Its
-            # body is still hidden and its menu bar still pins to the top
-            # of that space (see Panel's AlignTop), so the extra room just
-            # collects as blank space below it - the last minimized pane in
-            # a splitter ends up holding whatever's left over instead of
-            # everyone floating apart.
-            splitter.setSizes([round(s) for s in sizes])
-
-        def restore_floor():
-            '''
-            Restores this pane's normal PANE_MIN_HEIGHT/WIDTH floor if
-            shrink_pane lowered it - shared by grow_pane's click-to-restore
-            path and on_sash_moved's drag-to-restore path below, since only
-            one of them (grow_pane) also needs to resize the pane afterward.
-            '''
-            nonlocal normal_min_extent
-            pane = self.pane()
-            if pane is None or normal_min_extent is None:
-                return
-            splitter = pane.parent()
-            vertical = splitter.orientation() == Qt.Orientation.Vertical
-            if vertical:
-                pane.setMinimumHeight(normal_min_extent)
-            else:
-                pane.setMinimumWidth(normal_min_extent)
-            normal_min_extent = None
-
-        def grow_pane():
-            pane = self.pane()
-            if pane is None:
-                return
-            splitter = pane.parent()
-            index = splitter.indexOf(pane)
-            vertical = splitter.orientation() == Qt.Orientation.Vertical
-
-            # Restore this pane's normal floor before asking the splitter
-            # for more room - otherwise it's still pinned at the minimized
-            # (menu-bar-only) height from shrink_pane.
-            restore_floor()
-
-            sizes = [float(s) for s in splitter.sizes()]
-            current = sizes[index]
-
-            default_weight = getattr(pane, "default_stretch", None)
-            if default_weight is not None:
-                total_weight = sum(
-                    getattr(splitter.widget(i), "default_stretch", default_weight)
-                    for i in range(splitter.count())
-                )
-                target = (default_weight / total_weight) * sum(sizes) if total_weight else self.style.PANE_BIG
-            else:
-                target = self.style.PANE_BIG
-            target = max(target, current)
-            needed = target - current
-
-            siblings = [i for i in range(splitter.count()) if i != index]
-            sibling_sizes = [sizes[i] for i in siblings]
-            sibling_floors = [
-                (splitter.widget(i).minimumHeight() if vertical else splitter.widget(i).minimumWidth())
-                for i in siblings
-            ]
-            drained = _drain_evenly(sibling_sizes, sibling_floors, needed)
-            actually_taken = sum(sibling_sizes) - sum(drained)
-
-            for offset, i in enumerate(siblings):
-                sizes[i] = drained[offset]
-            sizes[index] = current + actually_taken
-            splitter.setSizes([round(s) for s in sizes])
-
-        def click_minimize():
-            nonlocal is_minimized
-            if is_minimized:
-                return
-            is_minimized = True
-            button.clicked.disconnect()
-            self._connect(button, click_maximize)
-            button.setText(maximize_text)
-            shrink_pane()
-            if frame_widget is not None:
-                frame_widget.hide()
-
-        def unminimize(resize: bool):
-            '''
-            Shared by click_maximize (button click - also resizes the pane
-            back out to its authored share) and on_sash_moved (the user
-            already dragged the pane to whatever size they wanted, so this
-            only needs to reveal frame_widget in place, not also resize it
-            out from under them).
-            '''
-            nonlocal is_minimized
-            if not is_minimized:
-                return
-            is_minimized = False
-            button.clicked.disconnect()
-            self._connect(button, click_minimize)
-            button.setText(minimize_text)
-            if resize:
-                grow_pane()
-            else:
-                restore_floor()
-            if frame_widget is not None:
-                frame_widget.show()
-
-        def click_maximize():
-            unminimize(resize=True)
-
-        def on_sash_moved(pos=None, index=None):
-            pane = self.pane()
-            if pane is None or not self.isVisible():
-                return  # a tab behind another (see TabbedPane) doesn't follow its pane
-            splitter = pane.parent()
-            min_size = self.style.PANE_MIN_HEIGHT if splitter.orientation() == Qt.Orientation.Vertical else self.style.PANE_MIN_WIDTH
-            current = pane.height() if splitter.orientation() == Qt.Orientation.Vertical else pane.width()
-            big_enough = current > min_size + self.style.igap
-            if not is_minimized and not big_enough:
-                click_minimize()
-            elif is_minimized and big_enough:
-                # The user dragged this pane back open by hand - show
-                # frame_widget in place instead of requiring an explicit
-                # click on the now-hidden Maximize button, the same way
-                # dragging it down to its floor auto-minimizes above.
-                unminimize(resize=False)
-
-        def attach():
-            '''Follows the sash of whichever Panes the pane is in now (see redocked).'''
-            nonlocal watched_splitter
-            pane = self.pane()
-            splitter = pane.parent() if pane is not None else None
-            if splitter is watched_splitter:
-                return
-            if watched_splitter is not None:
-                try:
-                    watched_splitter.splitterMoved.disconnect(on_sash_moved)
-                except (RuntimeError, TypeError):
-                    pass  # deleted with its old layout
-            watched_splitter = splitter
-            if splitter is not None:
-                splitter.splitterMoved.connect(on_sash_moved)
-
-        def redocked(keep: bool):
-            '''
-            After the panel moves to another pane (see DockArea): starts
-            following that one, and - if it was minimized and keep - shrinks
-            it there too, once the new layout has its sizes. Otherwise it
-            comes back open (a tab behind another, or a pane that's gone).
-            '''
-            nonlocal is_minimized, normal_min_extent
-            was_minimized = is_minimized
-            if is_minimized:
-                # Its old pane - and the floor lowered on it - are gone: start over open
-                is_minimized = False
-                normal_min_extent = None
-                button.clicked.disconnect()
-                self._connect(button, click_minimize)
-                button.setText(minimize_text)
-                if frame_widget is not None:
-                    frame_widget.show()
-            attach()
-            if was_minimized and keep:
-                QTimer.singleShot(0, lambda: self.pane() is not None and click_minimize())
-
-        def set_minimized(minimized: bool):
-            if minimized:
-                click_minimize()
-            else:
-                unminimize(resize=False)
-
-        self._connect(button, click_minimize)
-        attach()
-        self._minimizer = {"is": lambda: is_minimized, "set": set_minimized, "redocked": redocked}
-
+        self._minimize_body = frame_widget
+        button = bare_icon(self.context, WindowBarButton(self.style.icon(MINIMIZE_ICON)))
+        button.setToolTip(self.context.labels.get("menu_bar_buttons_minimize"))
+        button.clicked.connect(lambda checked=False: self.minimize_clicked.emit())
+        self.row.insertWidget(0, button, 0, Qt.AlignmentFlag.AlignVCenter)
+        self._fixed.append(button)
+        self.minimize = button
+        self._update_squashing()
         return button
 
-    def pane(self) -> QWidget | None:
-        '''
-        The pane this menu bar's panel sits in right now - the nearest
-        widget up from it that's directly in a splitter (a Panes) - or None.
-        '''
-        widget = self.parentWidget()
-        while widget is not None and not isinstance(widget.parentWidget(), QSplitter):
-            widget = widget.parentWidget()
-        return widget
-
-    def is_minimized(self) -> bool:
-        return self._minimizer is not None and self._minimizer["is"]()
-
-    def set_minimized(self, minimized: bool):
-        '''Minimizes or restores in place (no resize) - for a panel with a minimize button.'''
-        if self._minimizer is not None:
-            self._minimizer["set"](minimized)
-
-    def redocked(self, keep_minimized: bool = True):
-        '''The panel has moved to another pane - see minimize_button's redocked.'''
-        if self._minimizer is not None:
-            self._minimizer["redocked"](keep_minimized)
+    def show_minimized(self, minimized: bool):
+        '''Shows the panel minimized - its body hidden, its button a square - or not.'''
+        if self.minimize is None:
+            return
+        self.minimize.setText(self.style.icon(RESTORE_ICON if minimized else MINIMIZE_ICON))
+        self.minimize.setToolTip(self.context.labels.get("menu_bar_buttons_maximize" if minimized else "menu_bar_buttons_minimize"))
+        if self._minimize_body is not None:
+            self._minimize_body.setVisible(not minimized)
 
     # Title or tabs
 

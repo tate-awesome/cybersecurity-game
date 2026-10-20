@@ -210,12 +210,6 @@ class Panel(QWidget):
         filler.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self._content_layout.addWidget(filler)
 
-    def redocked(self, keep_minimized: bool = True):
-        '''Called by DockArea once it's moved this panel to another pane - see MenuBar.redocked.'''
-        menu_bar = getattr(self, "menu_bar", None)
-        if menu_bar is not None:
-            menu_bar.redocked(keep_minimized)
-
     def layout(self):
         '''
         Overrides QWidget.layout() (not virtual on the C++ side, so this

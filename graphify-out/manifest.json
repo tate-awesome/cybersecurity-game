@@ -792,9 +792,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1792464241.7520502,
-    "seen": 1792464344.829852,
-    "ast_hash": "3cf0bf492118781e37b966e659ccabad",
+    "mtime": 1792464819.2942255,
+    "seen": 1792465098.5049047,
+    "ast_hash": "daa2bd6fc7d6efcae3a1ba6919dfee25",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -804,9 +804,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/panes.py": {
-    "mtime": 1792461573.409811,
-    "seen": 1792463941.9285195,
-    "ast_hash": "958b3f3386c135a9c51f7c2c19aef581",
+    "mtime": 1792464819.2960324,
+    "seen": 1792465098.5049431,
+    "ast_hash": "01aeb2bfe576648e1b21b7afc33dbb74",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/scrollable.py": {
@@ -984,9 +984,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/panel.py": {
-    "mtime": 1792464119.1467888,
-    "seen": 1792464344.8318317,
-    "ast_hash": "21132dde821ab423dd281ac0d77eaed1",
+    "mtime": 1792464803.252175,
+    "seen": 1792465098.5062833,
+    "ast_hash": "7db832919f4879a0fde83b839a739818",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/status_console/_builder.py": {
@@ -1866,9 +1866,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/docking.py": {
-    "mtime": 1792463882.3978877,
-    "seen": 1792463941.9282675,
-    "ast_hash": "b33365bbaa970100ea966434523660eb",
+    "mtime": 1792465058.605077,
+    "seen": 1792465098.5019915,
+    "ast_hash": "92df5580f8debaabf01696f7605a4afe",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/save_layout_as_default.py": {
@@ -1878,27 +1878,27 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/docking_grid/config.json": {
-    "mtime": 1792464281.6819525,
-    "seen": 1792464344.8221092,
-    "ast_hash": "4fea9a307d6ddf10e3079d892ebcba34",
+    "mtime": 1792465059.5378685,
+    "seen": 1792465098.497078,
+    "ast_hash": "20519f538dc3f9c3b5fd6208a3ceb0fe",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/docking_one_pane/config.json": {
-    "mtime": 1792464281.6825135,
-    "seen": 1792464344.8221169,
-    "ast_hash": "9b74498292a8c1a1f2fac3a3d97420f8",
+    "mtime": 1792465059.5385928,
+    "seen": 1792465098.4970827,
+    "ast_hash": "14dc89b552c2aeaee44fa3213387eb6d",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/docking_sandbox/config.json": {
-    "mtime": 1792464281.682958,
-    "seen": 1792464344.8221197,
-    "ast_hash": "a06bc54d8920e3034a8f54dbf9059fa1",
+    "mtime": 1792465059.5393627,
+    "seen": 1792465098.4970853,
+    "ast_hash": "69f6decfe88a2800d7866d39a2f56a62",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/docking_tabs/config.json": {
-    "mtime": 1792464281.6814346,
-    "seen": 1792464344.8221216,
-    "ast_hash": "5c22e84a6f48d73877d0f35c0689020e",
+    "mtime": 1792465059.5370016,
+    "seen": 1792465098.4970875,
+    "ast_hash": "d25cdd268b771c6b9fa048d779afa304",
     "semantic_hash": ""
   }
 }
