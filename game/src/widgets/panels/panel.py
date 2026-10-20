@@ -227,11 +227,17 @@ class Panel(QWidget):
         return self._body_layout if self._body_layout is not None else self._content_layout
 
     def fit_frame(self):
-        '''The drawer's frame around the body - the theme's "panel_frame" px left, right and below.'''
+        '''
+        The drawer's frame around the body - the theme's "panel_frame" px
+        left, right and below - or none with the body hidden (minimized),
+        so the menu bar's room is the same above and below it.
+        '''
         if self._body_layout is None:
             return
-        frame = self.style.setting("panel_frame")
-        self._body_layout.frame(frame, 0, frame, frame)
+        layout = self._body_layout
+        shown = any(not layout.itemAt(i).widget().isHidden() for i in range(layout.count()) if layout.itemAt(i).widget() is not None)
+        frame = self.style.setting("panel_frame") if shown else 0
+        layout.frame(frame, 0, frame, frame)
 
     def body_rect(self) -> QRectF:
         '''Where the panel itself is drawn - inside the room for its shadow (see Style.panel_margins).'''

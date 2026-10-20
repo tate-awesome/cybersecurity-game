@@ -16,7 +16,7 @@ from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
 from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
-from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
@@ -91,6 +91,66 @@ def make_workspace(context: Context, name: str, folder: str, template_key: str, 
     return key
 
 
+def workspace_labels(config: dict) -> list[str]:
+    '''The two labels a workspace config names: its link's and its menu bar title's.'''
+    return [config.get("link_label"), f"menu_bar_titles_{config.get('title')}"]
+
+
+def drop_unused_labels(context: Context, label_keys: list[str]):
+    '''Removes these labels from _default.json, unless a page still names them.'''
+    pages = context.pages
+    still_used = set()
+    for other_key in pages.config_paths:
+        still_used |= set(workspace_labels(pages.load_page_config(other_key)))
+    context.labels.remove_default_labels([label for label in label_keys if label not in still_used])
+
+
+def delete_workspace(context: Context, key: str):
+    '''
+    Permanently deletes a workspace: its folder, every student's saved
+    data for it, other workspaces' prerequisites naming it, and its two
+    labels (unless another page still uses them).
+    '''
+    label_keys = workspace_labels(context.pages.load_page_config(key))
+    context.pages.delete_folder_page(key)
+    drop_unused_labels(context, label_keys)
+    context.router.register_discovered_pages()
+    context.router.page_moved(key, None)
+
+
+def rename_workspace(context: Context, key: str, name: str, folder: str) -> str:
+    '''
+    Gives a workspace a new name - both its labels - and, with a new
+    folder, moves it there (see PageManager.rename_folder_page), its
+    labels renamed to match like a new workspace's (see make_workspace).
+    Returns its page key, new or not.
+    '''
+    pages, labels = context.pages, context.labels
+    new_key = f"{workspace_folder(context)}/{folder}"
+    config = pages.load_page_config(key)
+    if new_key == key:
+        labels.set_default_label(config["link_label"], name, after_prefix="title_buttons_workspace_")
+        labels.set_default_label(f"menu_bar_titles_{config['title']}", name, after_prefix="menu_bar_titles_")
+        return key
+    old_labels = workspace_labels(config)
+    pages.rename_folder_page(key, new_key)
+    link_label, title = f"title_buttons_workspace_{folder}", f"{folder}_workspace"
+    labels.add_default_label(link_label, name, after_prefix="title_buttons_workspace_")
+    labels.add_default_label(f"menu_bar_titles_{title}", name, after_prefix="menu_bar_titles_")
+    # Just those two values rewritten, so the rest of the hand-written file stays as it was
+    path = pages.config_paths[new_key]
+    text = path.read_text(encoding="utf-8")
+    for field, value in (("link_label", link_label), ("title", title)):
+        text = re.sub(rf'^(    "{field}"\s*:\s*)"[^"]*"', lambda match: match.group(1) + json.dumps(value), text, count=1, flags=re.MULTILINE)
+    json.loads(text)  # never write a broken config
+    path.write_text(text, encoding="utf-8")
+    pages.discover()
+    drop_unused_labels(context, old_labels)
+    context.router.register_discovered_pages()
+    context.router.page_moved(key, new_key)
+    return new_key
+
+
 def is_switch(key: str, default) -> bool:
     '''Whether a default value is a 0/1 on-off switch (shown as a checkbox).'''
     if isinstance(default, bool):
@@ -123,8 +183,10 @@ def remove_nested(data: dict, path: tuple):
 
 class ConfigEditor(Page):
     '''
-    Demo page for editing workspace configs with a form instead of raw
-    JSON. The menu bar dropdown picks a workspace; the form below shows:
+    Demo page for editing a workspace's config with a form instead of raw
+    JSON - the workspace in selected_key, which the page is titled with
+    (Edit Workspaces opens it on one, and creates, renames and deletes
+    them - see WorkspaceSorter). The form shows:
 
       - its own fields (name, section, order, description, ...)
       - its menu bar buttons, as checkboxes (saved in the standard order)
@@ -167,18 +229,10 @@ class ConfigEditor(Page):
             ConfigEditor.selected_key = keys[0] if keys else None
 
         menu_bar = MenuBar(self, context, "config_editor_demo")
-        # A developer tool - marked as one (see important_buttons.DEVELOPER_MARK)
+        # Titled with the workspace it edits - a developer tool, marked as one (see important_buttons.DEVELOPER_MARK)
         from ...widgets.frame_widgets.important_buttons import developer_text
-        menu_bar.game_label.setText(developer_text(menu_bar.game_label.text()))
-        self.dropdown = None
-        if keys:
-            self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
-                                                  default=self.workspace_name(ConfigEditor.selected_key))
-        new = menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
-        new.setText(f"{new.text()} {POPUP_MARK}")
-        if keys:
-            delete = menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
-            delete.setText(f"{delete.text()} {WARNING_MARK}")
+        title = self.workspace_name(ConfigEditor.selected_key) if keys else menu_bar.game_label.text()
+        menu_bar.game_label.setText(developer_text(title))
         menu_bar.add_button("save_config", self.save)
         if keys:
             opener = menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
@@ -221,7 +275,6 @@ class ConfigEditor(Page):
     def workspace_name(self, key: str) -> str:
         return self.labels.get(self.pages.link_label(key))
 
-    # Creating and deleting workspaces
     def unless_unsaved(self, action: Callable[[], None]):
         '''Runs action, first asking to discard any unsaved changes.'''
         if not self.dirty:
@@ -230,64 +283,12 @@ class ConfigEditor(Page):
         popup.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
                              "Yes, discard", "No, keep editing", action)
 
-    def new_workspace(self):
-        NewWorkspaceDialog(self, self.context, self.keys_by_name, ConfigEditor.selected_key, self.create_workspace).show()
-
-    def create_workspace(self, name: str, folder: str, template_key: str):
-        '''Makes a new workspace (see make_workspace), then opens it here.'''
-        ConfigEditor.selected_key = make_workspace(self.context, name, folder, template_key)
-        self.router.refresh(save=False)
-
     def open_workspace(self):
         '''Shows the workspace being edited, as saved (Back returns here).'''
         if ConfigEditor.selected_key is not None:
             self.router.show(ConfigEditor.selected_key)
 
-    def delete_workspace(self):
-        key = ConfigEditor.selected_key
-        if key is not None:
-            DeleteWorkspaceDialog(self, key).show()
-
-    def remove_workspace(self, key: str):
-        '''
-        Permanently deletes a workspace: its folder, every student's saved
-        data for it, other workspaces' prerequisites naming it, and its two
-        labels (unless another page still uses them).
-        '''
-        config = self.pages.load_page_config(key)
-        label_keys = [config.get("link_label"), f"menu_bar_titles_{config.get('title')}"]
-        self.pages.delete_folder_page(key)
-        still_used = set()
-        for other_key in self.pages.config_paths:
-            other = self.pages.load_page_config(other_key)
-            still_used |= {other.get("link_label"), f"menu_bar_titles_{other.get('title')}"}
-        self.labels.remove_default_labels([label for label in label_keys if label not in still_used])
-        self.router.register_discovered_pages()
-        ConfigEditor.selected_key = None
-        self.router.refresh(save=False)
-
     # Loading
-    def pick(self, name: str):
-        key = self.keys_by_name[name]
-        if key == ConfigEditor.selected_key:
-            return
-        if not self.dirty:
-            self.load(key)
-            return
-        # Put the dropdown back until the switch is confirmed
-        self.set_dropdown(ConfigEditor.selected_key)
-        def discard():
-            self.load(key)
-            self.set_dropdown(key)
-        popup.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
-                             "Yes, discard", "No, keep editing", discard)
-
-    def set_dropdown(self, key: str):
-        if self.dropdown is not None:
-            self.dropdown.blockSignals(True)
-            self.dropdown.setCurrentText(self.workspace_name(key))
-            self.dropdown.blockSignals(False)
-
     def load(self, key: str | None):
         ConfigEditor.selected_key = key
         self.dirty = False
@@ -1156,18 +1157,7 @@ class NewWorkspaceDialog(QDialog):
             self.folder.setText(re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_"))
 
     def problems(self, name: str, folder: str) -> list[str]:
-        if not name:
-            return ["Give the workspace a name."]
-        if not self.FOLDER_PATTERN.fullmatch(folder):
-            return ["The folder name must start with a lowercase letter and use only lowercase letters, numbers, and underscores."]
-        key = f"{workspace_folder(self.context)}/{folder}"
-        if (self.context.paths.pages / key).exists():
-            return [f"There's already a folder named \"{folder}\"."]
-        taken = [label for label in (f"title_buttons_workspace_{folder}", f"menu_bar_titles_{folder}_workspace")
-                 if label in self.context.labels.data]
-        if taken:
-            return [f"The label \"{taken[0]}\" already exists - pick a different folder name."]
-        return []
+        return workspace_name_problems(self.context, name, folder)
 
     def create(self):
         name, folder = self.name.text().strip(), self.folder.text().strip()
@@ -1180,17 +1170,110 @@ class NewWorkspaceDialog(QDialog):
         self.on_create(name, folder, template)
 
 
+def workspace_name_problems(context: Context, name: str, folder: str, current: str | None = None) -> list[str]:
+    '''
+    What's wrong with a workspace name and folder name, if anything -
+    current is the workspace's own key when renaming one, whose folder
+    and labels are its own to keep.
+    '''
+    if not name:
+        return ["Give the workspace a name."]
+    if not NewWorkspaceDialog.FOLDER_PATTERN.fullmatch(folder):
+        return ["The folder name must start with a lowercase letter and use only lowercase letters, numbers, and underscores."]
+    key = f"{workspace_folder(context)}/{folder}"
+    if key == current:
+        return []
+    if (context.paths.pages / key).exists():
+        return [f"There's already a folder named \"{folder}\"."]
+    taken = [label for label in (f"title_buttons_workspace_{folder}", f"menu_bar_titles_{folder}_workspace")
+             if label in context.labels.data]
+    if taken:
+        return [f"The label \"{taken[0]}\" already exists - pick a different folder name."]
+    return []
+
+
+class RenameWorkspaceDialog(QDialog):
+    '''
+    Asks for a workspace's new name and folder name, together - the folder
+    follows the name as it's typed, until it's edited by hand - then
+    rename(name, folder) does it (see rename_workspace).
+    '''
+
+    def __init__(self, master: QWidget, context: Context, key: str, name: str, rename: Callable[[str, str], None]):
+        super().__init__(master)
+        self.context = context
+        self.key = key
+        self.on_rename = rename
+        style = context.style
+        self.setWindowTitle("Rename Workspace")
+        self.setModal(True)
+        self.resize(600, 240)
+        layout = QVBoxLayout(self)
+        grid = QGridLayout()
+        layout.addLayout(grid)
+        self.name = QLineEdit(name)
+        self.folder = QLineEdit(key.rsplit("/", 1)[-1])
+        for row, (text, widget) in enumerate((("Name", self.name), ("Folder", self.folder))):
+            label = QLabel(text)
+            label.setFont(style.get_font())
+            widget.setFont(style.get_font())
+            grid.addWidget(label, row, 0)
+            grid.addWidget(widget, row, 1)
+
+        self.error = QLabel()
+        self.error.setFont(style.get_font("small"))
+        self.error.setWordWrap(True)
+        self.error.setStyleSheet(f"color: {style.color('bad')};")
+        layout.addWidget(self.error)
+        layout.addStretch(1)
+
+        buttons = QHBoxLayout()
+        layout.addLayout(buttons)
+        rename_button = QPushButton("Rename")
+        rename_button.setFont(style.get_font())
+        rename_button.setDefault(True)
+        rename_button.clicked.connect(self.rename)
+        buttons.addWidget(rename_button)
+        cancel = QPushButton("Cancel")
+        cancel.setFont(style.get_font())
+        cancel.clicked.connect(self.reject)
+        buttons.addWidget(cancel)
+
+        # The folder follows the name only while it still matches it - one picked by hand stays
+        self.folder_edited = self.folder.text() != self.slug(name)
+        self.name.textEdited.connect(self.suggest_folder)
+        self.folder.textEdited.connect(lambda _: setattr(self, "folder_edited", True))
+        self.name.selectAll()
+
+    @staticmethod
+    def slug(name: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+
+    def suggest_folder(self, name: str):
+        if not self.folder_edited:
+            self.folder.setText(self.slug(name))
+
+    def rename(self):
+        name, folder = self.name.text().strip(), self.folder.text().strip()
+        problems = workspace_name_problems(self.context, name, folder, self.key)
+        if problems:
+            self.error.setText(problems[0])
+            return
+        self.accept()
+        self.on_rename(name, folder)
+
+
 class DeleteWorkspaceDialog(QDialog):
     '''
     Deleting a workspace can't be undone, so it has to be confirmed by
-    typing the workspace's folder name exactly.
+    typing the workspace's folder name exactly - then delete() does it
+    (see delete_workspace).
     '''
 
-    def __init__(self, editor: ConfigEditor, key: str):
-        super().__init__(editor)
-        self.editor = editor
-        self.key = key
-        style = editor.style
+    def __init__(self, master: QWidget, context: Context, key: str, name: str, delete: Callable[[], None]):
+        super().__init__(master)
+        self.on_delete = delete
+        style = context.style
         folder = key.rsplit("/", 1)[-1]
         self.setWindowTitle("Delete Workspace")
         self.setModal(True)
@@ -1198,7 +1281,7 @@ class DeleteWorkspaceDialog(QDialog):
         layout = QVBoxLayout(self)
 
         message = QLabel(
-            f"Permanently delete \"{editor.workspace_name(key)}\"?\n\n"
+            f"Permanently delete \"{name}\"?\n\n"
             f"This deletes its folder ({key}) and everything in it, its labels, and every student's saved "
             "data for it. It can't be undone.\n\n"
             f"Type {folder} below to confirm."
@@ -1227,7 +1310,7 @@ class DeleteWorkspaceDialog(QDialog):
 
     def delete(self):
         self.accept()
-        self.editor.remove_workspace(self.key)
+        self.on_delete()
 
 
 class TopLayout:

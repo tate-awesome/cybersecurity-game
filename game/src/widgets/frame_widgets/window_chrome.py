@@ -16,6 +16,27 @@ CORNER = 16
 CLOSE_HOVER = "#c42b1c"
 
 
+# A menu bar button's height, by font and theme (see bar_button_height)
+_BUTTON_HEIGHTS: dict[tuple[str, str], int] = {}
+
+
+def bar_button_height(style) -> int:
+    '''
+    How tall a menu bar's buttons are, in the current font and theme - a
+    theme's button shadow or bevel makes them taller in the same font -
+    measured once each, so it's known while no button's showing.
+    '''
+    font = style.get_font()
+    key = (font.toString(), style.current_theme)
+    if key not in _BUTTON_HEIGHTS:
+        sample = WindowBarButton("Ag")
+        sample.setFont(font)
+        sample.ensurePolished()
+        _BUTTON_HEIGHTS[key] = sample.sizeHint().height()
+        sample.deleteLater()
+    return _BUTTON_HEIGHTS[key]
+
+
 class WindowBarButton(QPushButton):
     '''
     A QPushButton that takes clicks anywhere on itself. A theme whose

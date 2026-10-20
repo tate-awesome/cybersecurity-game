@@ -46,7 +46,6 @@
 
     "title": "defender_submarine_communication_channels_workspace",
     "menu_bar": [
-        "reset_button",
         "ap_config_button"
     ],
 

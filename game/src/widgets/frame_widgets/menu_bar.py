@@ -5,14 +5,14 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
 from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
-                                OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, OpenWorkspaceSorter,
+                                OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor,
                                 RefreshCurrentPage, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
                                 SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleWorkspaceBackground,
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
-from .window_chrome import (SquareButtons, WindowBarButton, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
-                            window_bar_height, window_bar_room)
+from .window_chrome import (SquareButtons, WindowBarButton, WindowControls, WindowDrag, bar_button_height, draw_window_bar_line,
+                            window_bar_button_height, window_bar_height, window_bar_room)
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -67,7 +67,7 @@ RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]
                         ToggleWorkspaceBackground]),
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,
-                         OpenWorkspaceSorter, ConfigureThisWorkspace, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
+                         ConfigureThisWorkspace, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
                          EditWorkspaceAvailability, ToggleDebugLabels]),
     ],
 }
@@ -251,6 +251,7 @@ class MenuBar(QFrame):
         self._title_widget: QWidget | None = None
         # A panel's minimize button and the body it hides (see minimize_button)
         self.minimize: QPushButton | None = None
+        self.peek_arrow: QWidget | None = None
         self._minimize_body: QWidget | None = None
         self.back_arrow = None
         self.window_controls = None
@@ -387,9 +388,9 @@ class MenuBar(QFrame):
             pass  # deleted with its page, with the signal still connected
 
     def fixed_width(self) -> int:
-        '''Room the row's fixed items take (see _fixed) - the right zone's less maximize while it's hidden (fullscreen).'''
+        '''Room the row's shown fixed items take (see _fixed) - the right zone's less maximize while it's hidden (fullscreen).'''
         spacing = self.row.spacing()
-        return sum(widget.sizeHint().width() + spacing for widget in self._fixed)
+        return sum(widget.sizeHint().width() + spacing for widget in self._fixed if not widget.isHidden())
 
     def tool_buttons(self) -> list[QPushButton]:
         '''The page's own buttons in the center zone, left to right - squashed ones too (see _update_squashing).'''
@@ -617,6 +618,11 @@ class MenuBar(QFrame):
         the DockArea the panel's in does the minimizing (see
         DockArea.toggle_minimized) and calls show_minimized to match.
         frame_widget is the panel's body, hidden while it's minimized.
+
+        It's a square as tall as the bar's buttons, as far in from the
+        bar's left as from its top - just where a sideways minimized
+        panel's restore button is (see docking.bar_inset), so it stays put
+        whichever way its panel minimizes.
         '''
         self._minimize_body = frame_widget
         button = bare_icon(self.context, WindowBarButton(self.style.icon(MINIMIZE_ICON)))
@@ -625,22 +631,49 @@ class MenuBar(QFrame):
         self.row.insertWidget(0, button, 0, Qt.AlignmentFlag.AlignVCenter)
         self._fixed.append(button)
         self.minimize = button
-        self._update_squashing()
+        # The overlay caret, beside the title while minimized (see show_minimized)
+        from .docking import PeekArrow  # here - docking imports this module
+        self.peek_arrow = PeekArrow(self.context)
+        self.row.insertWidget(self.row.indexOf(self._title_widget or self.game_label) + 1, self.peek_arrow, 0, Qt.AlignmentFlag.AlignVCenter)
+        self._fixed.append(self.peek_arrow)
+        self.peek_arrow.hide()
+        self.fit_minimize_button()
+        self.style.signals.changed.connect(self.fit_minimize_button)
         return button
 
-    def show_minimized(self, minimized: bool):
-        '''Shows the panel minimized - its body hidden, its button a square - or not.'''
+    def fit_minimize_button(self):
+        '''Sizes the minimize button for the theme, and the room left of it to match the room above it (see minimize_button).'''
+        try:
+            size = bar_button_height(self.style)
+            self.minimize.setFixedSize(size, size)
+            gap = self.style.cgap
+            for item in (self, self.row):
+                margins = item.contentsMargins()
+                item.setContentsMargins(gap, margins.top(), margins.right(), margins.bottom())
+            self._update_squashing()
+        except RuntimeError:
+            pass  # deleted with its panel, with the signal still connected
+
+    def show_minimized(self, minimized: bool, peekable: bool = False):
+        '''
+        Shows the panel minimized - its body hidden, its button a square,
+        and, if peekable, the overlay caret by its title: clicking it shows
+        the panel over the layout (see DockArea.peek) - or not.
+        '''
         if self.minimize is None:
             return
+        self.peek_arrow.setVisible(minimized and peekable)
         self.minimize.setText(self.style.icon(RESTORE_ICON if minimized else MINIMIZE_ICON))
         self.minimize.setToolTip(self.context.labels.get("menu_bar_buttons_maximize" if minimized else "menu_bar_buttons_minimize"))
-        if self._minimize_body is not None:
-            self._minimize_body.setVisible(not minimized)
+        self.show_body(not minimized)
 
     def show_body(self, shown: bool):
         '''Shows or hides just the body minimizing hides - for a minimized panel peeked at (see DockArea.peek).'''
         if self._minimize_body is not None:
             self._minimize_body.setVisible(shown)
+            fit_frame = getattr(self.parentWidget(), "fit_frame", None)
+            if fit_frame is not None:
+                fit_frame()  # no frame around a hidden body
 
     # Title or tabs
 

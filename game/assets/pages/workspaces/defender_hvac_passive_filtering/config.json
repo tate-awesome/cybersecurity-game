@@ -37,7 +37,6 @@
 
     "title": "defender_hvac_passive_filtering_workspace",
     "menu_bar": [
-        "reset_button",
         "ap_config_button"
     ],
 

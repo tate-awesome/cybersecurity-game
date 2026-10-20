@@ -38,7 +38,9 @@
     },
 
     "title": "defender_submarine_system_workspace",
-    "menu_bar": ["reset_button", "ap_config_button"],
+    "menu_bar": [
+        "ap_config_button"
+    ],
 
     "layout_shape": {
         "v_panes_1": [

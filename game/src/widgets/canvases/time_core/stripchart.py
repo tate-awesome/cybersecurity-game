@@ -135,10 +135,15 @@ class StripChartBase(QWidget):
     def leaveEvent(self, event):
         self.hover_pos = None
 
+    # Shift+wheel zooms it along time - it takes shift+wheel itself (see ShiftWheel)
+    SHIFT_WHEEL = True
+
     def wheelEvent(self, event):
         if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
             pos = event.position()
-            self.camera.zoom(pos.x(), event.angleDelta().y())
+            # Some systems turn shift+wheel sideways already
+            delta = event.angleDelta()
+            self.camera.zoom(pos.x(), delta.y() or delta.x())
             self.update()
         else:
             event.ignore()

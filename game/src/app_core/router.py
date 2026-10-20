@@ -296,6 +296,15 @@ class Router:
             return  # nowhere to go forward to
         self.show(self.forward_stack.pop(), forward=True)
 
+    def page_moved(self, key: str, new_key: str | None):
+        '''A page's key changed (or, with None, it was deleted) - its history entries follow it, or go.'''
+        for stack in (self.navigation_stack, self.forward_stack):
+            stack[:] = [new_key if entry == key else entry for entry in stack if entry != key or new_key is not None]
+        if self.current_page == key and new_key is not None:
+            self.current_page = new_key
+        if self.context.preferences.has("page") and self.context.preferences.get("page") == key:
+            self.context.preferences.set("page", new_key or "")
+
     def page_name(self, key: str) -> str:
         '''A page's name as its links show it, or its own footer label, or just its key.'''
         config = self.context.pages.load_page_config(key)

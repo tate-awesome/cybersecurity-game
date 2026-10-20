@@ -36,7 +36,7 @@ platform and window system, and as root under sudo.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedLayout, QVBoxLayout, QWidget
 
@@ -44,7 +44,7 @@ from ...app_core import Context
 from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .overlay import Overlay
 from .panes import Panes
-from .window_chrome import WindowBarButton
+from .window_chrome import WindowBarButton, bar_button_height
 
 EDGES = ("left", "right", "top", "bottom")
 SPLIT_PREFIXES = {"horizontal": "h_panes", "vertical": "v_panes"}
@@ -59,8 +59,8 @@ GROUP_BAND = 18
 MORE_TABS = "···"
 # The smallest a peeked-at panel's popup gets (see DockArea.peek)
 PEEK_MIN = QSize(360, 280)
-# A menu bar button's height, by font (see TabbedPane.thickness)
-_BUTTON_HEIGHTS: dict[str, int] = {}
+# How long a peeked-at panel's popup takes to fade in, in ms
+PEEK_FADE_MS = 140
 
 
 # Qt's "no maximum" size
@@ -303,6 +303,63 @@ def drain_evenly(sizes: list[float], floors: list[float], amount: float) -> list
 
 # Panes
 
+def paint_mark(painter: QPainter, rect: QRect, open: bool, color: QColor):
+    '''
+    A minimized panel's peek mark in the middle of rect - the overlay
+    buttons' own caret (see Overlay), down while it's put away and up while
+    it's showing, since a peek opens over the layout like their overlays do.
+    '''
+    painter.save()
+    painter.setPen(color)
+    painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, Overlay.OPEN_MARKER if open else Overlay.CLOSED_MARKER)
+    painter.restore()
+
+
+class PeekArrow(QWidget):
+    '''
+    Beside a minimized panel's title on its bar (see MenuBar.show_minimized):
+    the overlay buttons' caret (see paint_mark) - clicking the title shows
+    the panel over the layout (see DockArea.peek).
+    '''
+
+    def __init__(self, context: Context):
+        super().__init__()
+        self.style = context.style
+        self.setFont(self.style.get_font())  # sized like its title
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip(context.labels.get("menu_bar_tooltips_peek"))
+
+    def sizeHint(self) -> QSize:
+        side = self.fontMetrics().height()
+        return QSize(side, side)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        paint_mark(painter, self.rect(), False, QColor(self.style.color("text")))
+        painter.end()
+
+
+def bar_inset(style) -> int:
+    '''
+    How far a panel's minimize button is in from the top and the left of
+    its border - the same both ways, open or minimized either way (see
+    MenuBar.minimize_button and _SideStrip), so it never moves.
+    '''
+    return PANEL_BORDER_WIDTH + 2 * style.cgap
+
+
+def minimized_thickness(style, axis: str = "vertical") -> int:
+    '''
+    How thick a minimized pane is along axis: its menu bar - a menu bar
+    button's height (the same for every panel, so minimized panes line
+    up, and measurable while hidden) with bar_inset all round - and the
+    room for the theme's shadow on those two sides.
+    '''
+    left, top, right, bottom = style.panel_margins()
+    shadow = left + right if axis == "horizontal" else top + bottom
+    return bar_button_height(style) + 2 * bar_inset(style) + shadow
+
+
 class TabStrip(QWidget):
     '''
     The tabs of a TabbedPane, in one of its panels' menu bars in the
@@ -418,18 +475,22 @@ class TabStrip(QWidget):
 class _SideTitle(QWidget):
     '''A panel's title, turned to read down a sideways strip (see _SideStrip).'''
 
-    def __init__(self, context: Context, text: str, current: bool):
+    def __init__(self, context: Context, text: str, current: bool, open: bool = False):
         super().__init__()
         self.style = context.style
         self.text = text
         self.current = current
+        # Whether its peek is showing (see paint_mark)
+        self.open = open
         self.setFont(self.style.get_font())
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip(context.labels.get("menu_bar_tooltips_peek"))
 
     def sizeHint(self) -> QSize:
         metrics = self.fontMetrics()
         pad = self.style.igap
-        return QSize(metrics.height(), metrics.horizontalAdvance(self.text) + pad)
+        # The title, then its peek mark below it
+        return QSize(metrics.height(), metrics.horizontalAdvance(self.text) + pad + metrics.height())
 
     def minimumSizeHint(self) -> QSize:
         return QSize(self.fontMetrics().height(), 0)
@@ -443,8 +504,13 @@ class _SideTitle(QWidget):
         # A quarter turn clockwise: it reads top to bottom
         painter.translate(self.width(), 0)
         painter.rotate(90)
-        painter.drawText(QRect(0, 0, self.height(), self.width()),
+        side = self.width()
+        painter.drawText(QRect(0, 0, self.height() - side, self.width()),
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text)
+        painter.resetTransform()
+        # Upright, as on an overlay button
+        mark = QColor(self.style.color("accent")) if self.open else QColor(self.style.color("text"))
+        paint_mark(painter, QRect(0, self.height() - side, side, side), self.open, mark)
         painter.end()
 
 
@@ -457,24 +523,28 @@ class _SideStrip(QWidget):
     '''
 
     def __init__(self, context: Context, tabs: list[tuple[str, str]], current: str, restore: Callable[[str | None], None],
-                 watch: Callable[[QWidget, str], None] | None):
+                 watch: Callable[[QWidget, str], None] | None, peeking: str | None = None):
         super().__init__()
         self.style = context.style
         self.setProperty("shadowed", True)
         column = QVBoxLayout(self)
         left, top, right, bottom = self.style.panel_margins()
-        border = PANEL_BORDER_WIDTH
-        gap = self.style.igap // 2
-        column.setContentsMargins(left + border, top + border + gap, right + border, bottom + border + gap)
+        # Its restore button just where an open panel's minimize button is (see bar_inset)
+        inset = bar_inset(self.style)
+        column.setContentsMargins(left + inset, top + inset, right + inset, bottom + inset)
         column.setSpacing(self.style.igap)
         from .menu_bar import RESTORE_ICON, bare_icon  # here - menu_bar imports this module's package
         button = bare_icon(context, WindowBarButton(self.style.icon(RESTORE_ICON)))
+        size = bar_button_height(self.style)
+        button.setFixedSize(size, size)
         button.setToolTip(context.labels.get("menu_bar_buttons_maximize"))
         button.clicked.connect(lambda checked=False: restore(None))
         column.addWidget(button, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.titles: dict[str, _SideTitle] = {}
         for panel_id, title in tabs:
-            label = _SideTitle(context, title, panel_id == current)
+            label = _SideTitle(context, title, panel_id == current, panel_id == peeking)
             column.addWidget(label, 0, Qt.AlignmentFlag.AlignHCenter)
+            self.titles[panel_id] = label
             if watch is not None:
                 watch(label, panel_id)
         column.addStretch()
@@ -509,8 +579,14 @@ class _LentPlaceholder(QWidget):
         color.setAlphaF(0.45)
         painter.setPen(color)
         left, top, right, bottom = self.style.panel_margins()
-        room = self.rect().adjusted(left + self.style.igap * 2, top, -right, -bottom)
+        # Where the title was, after the minimize button (see MenuBar.minimize_button)
+        inset = bar_inset(self.style)
+        room = self.rect().adjusted(left + inset + bar_button_height(self.style) + self.style.igap, top, -right, -bottom)
         painter.drawText(room, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.title)
+        # Its peek mark, open and in the accent - it's showing (see paint_mark)
+        side = self.fontMetrics().height()
+        x = room.left() + self.fontMetrics().horizontalAdvance(self.title) + self.style.igap
+        paint_mark(painter, QRect(x, room.center().y() - side // 2, side, side), True, QColor(self.style.color("accent")))
         painter.end()
 
 
@@ -563,6 +639,8 @@ class TabbedPane(QWidget):
         self.form = "open"
         self.side: _SideStrip | None = None
         self.lent: QWidget | None = None
+        # The panel being peeked at (see DockArea.peek)
+        self.peeking: str | None = None
         self.current = None
         self.set_current(current if current in self.panels else next(iter(self.panels)))
 
@@ -590,13 +668,14 @@ class TabbedPane(QWidget):
         for panel in self.panels.values():
             menu_bar = getattr(panel, "menu_bar", None)
             if menu_bar is not None:
-                menu_bar.show_minimized(form != "open")
+                menu_bar.show_minimized(form != "open", peekable=form == "bar")
         if self.side is not None:
             self.stack.removeWidget(self.side)
             self.side.deleteLater()
             self.side = None
         if form == "side":
-            self.side = _SideStrip(self.context, self.tabs, self.current, self.restore or (lambda panel_id: None), self.watch)
+            self.side = _SideStrip(self.context, self.tabs, self.current, self.restore or (lambda panel_id: None), self.watch,
+                                   self.peeking)
             self.stack.addWidget(self.side)
             self.stack.setCurrentWidget(self.side)
         else:
@@ -605,6 +684,7 @@ class TabbedPane(QWidget):
     def lend(self, panel_id: str) -> QWidget:
         '''Takes a panel out to be shown somewhere else for a while (see DockArea.peek) - give it back with take_back.'''
         panel = self.panels[panel_id]
+        self.peeking = panel_id
         self.stack.removeWidget(panel)
         if self.form != "side":
             # Its menu bar's gone with it - a stand-in keeps the pane's place
@@ -612,9 +692,20 @@ class TabbedPane(QWidget):
             self.lent = _LentPlaceholder(self.context, title)
             self.stack.addWidget(self.lent)
             self.stack.setCurrentWidget(self.lent)
+        elif self.side is not None and panel_id in self.side.titles:
+            title = self.side.titles[panel_id]
+            title.open = True
+            title.update()
         return panel
 
+    def peek_anchor(self) -> QWidget:
+        '''What a peeked-at panel's popup opens beside, and a click on just closes it - its sideways title, or its stand-in.'''
+        if self.form == "side" and self.side is not None and self.peeking in self.side.titles:
+            return self.side.titles[self.peeking]
+        return self.lent or self
+
     def take_back(self, panel_id: str):
+        self.peeking = None
         if self.lent is not None:
             self.stack.removeWidget(self.lent)
             self.lent.deleteLater()
@@ -622,24 +713,12 @@ class TabbedPane(QWidget):
         self.stack.insertWidget(list(self.panels).index(panel_id), self.panels[panel_id])
         self.set_form(self.form)
 
-    def thickness(self) -> int:
+    def thickness(self, axis: str = "vertical") -> int:
         '''
-        How thick it is minimized, either way: a panel menu bar's height
-        (its buttons' and the room around them - the same for every panel,
-        so minimized panes line up, and measurable while hidden) and the
-        panel's frame around it.
+        How thick it is minimized along axis ("vertical": a bar's height,
+        "horizontal": a sideways strip's width) - see minimized_thickness.
         '''
-        font = self.style.get_font()
-        key = font.toString()
-        if key not in _BUTTON_HEIGHTS:
-            sample = QPushButton("Ag")
-            sample.setFont(font)
-            sample.ensurePolished()
-            _BUTTON_HEIGHTS[key] = sample.sizeHint().height()
-            sample.deleteLater()
-        _, top, _, bottom = self.style.panel_margins()
-        bar = _BUTTON_HEIGHTS[key] + 4 * self.style.cgap
-        return bar + top + bottom + 2 * PANEL_BORDER_WIDTH + self.style.setting("panel_frame")
+        return minimized_thickness(self.style, axis)
 
 
 # Dragging
@@ -684,15 +763,25 @@ class _Grip(QObject):
 
 
 class _SashGrip(QObject):
-    '''Remembers every open pane's size when a divider is pressed - what one dragged down to minimized goes back to.'''
+    '''
+    Watches the dividers: pressing one remembers every open pane's size -
+    what one dragged down to minimized goes back to - and frees a
+    minimized pane beside it to be dragged open (see DockArea.unpin_beside);
+    letting go pins it again, if it's still minimized.
+    '''
 
     def __init__(self, area: "DockArea"):
         super().__init__(area)
         self.area = area
 
     def eventFilter(self, watched, event):
-        if event.type() == QEvent.Type.MouseButtonPress and self.area.root is not None:
+        if self.area.root is None:
+            return False
+        if event.type() == QEvent.Type.MouseButtonPress:
             self.area.remember_open_sizes(self.area.collapsed())
+            self.area.unpin_beside(watched)
+        elif event.type() == QEvent.Type.MouseButtonRelease:
+            self.area.relayout_soon()
         return False
 
 
@@ -807,15 +896,35 @@ class _Peek(QWidget):
     panel back.
     '''
 
-    def __init__(self, area: "DockArea", panel: QWidget, closed: Callable[[], None]):
+    def __init__(self, area: "DockArea", panel: QWidget, anchor: QRect, closed: Callable[[], None]):
         super().__init__(area.window(), Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.style = area.style
         self.closed = closed
+        # Global - a press there only closes it (see mousePressEvent)
+        self.anchor = anchor
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(panel)
         panel.show()
+        # Fades in, so it reads as over the layout rather than part of it
+        self.setWindowOpacity(0.0)
+        self.fade = QPropertyAnimation(self, b"windowOpacity", self)
+        self.fade.setDuration(PEEK_FADE_MS)
+        self.fade.setStartValue(0.0)
+        self.fade.setEndValue(1.0)
+        self.fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.fade.start()
+
+    def mousePressEvent(self, event):
+        # A press outside closes it, and Qt passes the press on to what's
+        # under it - which, on the title that opened it, would open it again
+        if not self.rect().contains(event.position().toPoint()) and self.anchor.contains(event.globalPosition().toPoint()):
+            self.setAttribute(Qt.WidgetAttribute.WA_NoMouseReplay, True)
+        super().mousePressEvent(event)
 
     def paintEvent(self, event):
         # The page's window material under the panel, as on the page - a
@@ -904,6 +1013,7 @@ class DockArea(QWidget):
         self.chip: _Chip | None = None
         self.preview: _DropPreview | None = None
         self.build()
+        self.style.signals.changed.connect(self.restyled)
 
     # Panels
     def add_panel(self, panel_id: str) -> QWidget:
@@ -911,8 +1021,9 @@ class DockArea(QWidget):
         self.panels[panel_id] = panel
         menu_bar = getattr(panel, "menu_bar", None)
         if menu_bar is not None:
-            for widget in (menu_bar, menu_bar.game_label):
-                self.watch(widget, panel_id)
+            for widget in (menu_bar, menu_bar.game_label, menu_bar.peek_arrow):
+                if widget is not None:
+                    self.watch(widget, panel_id)
             menu_bar.minimize_clicked.connect(lambda panel_id=panel_id: self.toggle_minimized(panel_id))
         return panel
 
@@ -949,6 +1060,22 @@ class DockArea(QWidget):
             self.root_panes = self.build_split(self.root, self.host)
         # Minimized panes, once the new skeleton's in place
         self.relayout_soon()
+
+    def restyled(self):
+        '''
+        After a theme change: built again, panels, sizes and minimized panes
+        kept - a minimized pane's thickness and a sideways strip's insides
+        are the theme's (see minimized_thickness), and would otherwise keep
+        the old theme's until something else laid them out.
+        '''
+        try:
+            if self.held is not None:
+                self.end_drag(QPoint(), drop=False)
+            self.end_peek()
+            self.capture_sizes()
+            self.build()
+        except RuntimeError:
+            pass  # deleted with its page, with the signal still connected
 
     def build_split(self, node: dict, master: QWidget) -> Panes:
         children = node["children"]
@@ -1054,7 +1181,7 @@ class DockArea(QWidget):
         '''How thick a minimized node is along axis, the way it's flattened.'''
         if not is_split(node):
             tabbed = self.tabbed.get(node["id"])
-            return tabbed.thickness() if tabbed is not None else self.style.igap * 4
+            return tabbed.thickness(axis) if tabbed is not None else self.style.igap * 4
         sizes = [self.thickness(child, axis) for child in node["children"]]
         if node["orientation"] == axis:
             panes = self.splits.get(node["id"])
@@ -1077,22 +1204,52 @@ class DockArea(QWidget):
         A divider in node's group was dragged: a pane dragged down to its
         title bar's thickness minimizes - and a group dragged that thin
         (across the way it stacks its panes) minimizes all its panes,
-        laying it flat.
+        laying it flat. The other way, a minimized pane (or group) dragged
+        open past that restores, at the size it's dragged to.
         '''
         before = self.collapsed()
         panes = self.splits.get(node["id"])
         if panes is None or before.get(node["id"]):
             return
         axis = node["orientation"]
-        shrunk = [child for child, size in zip(node["children"], panes.sizes())
-                  if not before[child["id"]] and self.can_minimize(child) and size <= self.thickness(child, axis) + self.style.igap]
-        if not shrunk:
+        sizes = panes.sizes()
+        shrunk, grown = [], []
+        for child, size in zip(node["children"], sizes):
+            floor = self.thickness(child, axis) + self.style.igap
+            if not before[child["id"]] and self.can_minimize(child) and size <= floor:
+                shrunk.append(child)
+            elif before[child["id"]] and size > floor:
+                child["open_size"] = size  # restored just as big as it's dragged (see lay_out_split)
+                grown.append(child)
+        if not shrunk and not grown:
             return
-        for child in shrunk:
+        for child in shrunk + grown:
             for inner, _ in walk(child):
                 if not is_split(inner):
-                    inner["minimized"] = True
+                    inner["minimized"] = child in shrunk
         self.lay_out_minimized(before)
+
+    def unpin_beside(self, handle: QWidget):
+        '''
+        Frees the minimized panes on either side of a pressed divider -
+        pinned to their thickness otherwise (see lay_out_split) - so
+        dragging it can open them (see sash_moved).
+        '''
+        splitter = getattr(handle, "splitter", lambda: None)()
+        node = next((found for found, _ in walk(self.root) if self.splits.get(found["id"]) is splitter), None)
+        if node is None:
+            return
+        collapsed = self.collapsed()
+        if collapsed[node["id"]]:
+            return
+        index = splitter.indexOf(handle)
+        for i in (index - 1, index):
+            if 0 <= i < len(node["children"]) and collapsed[node["children"][i]["id"]]:
+                pane = splitter.pane(i)
+                if node["orientation"] == "horizontal":
+                    pane.setMaximumWidth(QWIDGETSIZE_MAX)
+                else:
+                    pane.setMaximumHeight(QWIDGETSIZE_MAX)
 
     def can_minimize(self, node: dict) -> bool:
         '''Whether every panel in node has a minimize button to restore it with (the layout editor's stand-ins don't).'''
@@ -1232,30 +1389,37 @@ class DockArea(QWidget):
         tabbed = self.tabbed.get(node["id"]) if node is not None else None
         if tabbed is None:
             return
-        anchor = QRect(tabbed.mapToGlobal(QPoint(0, 0)), tabbed.size())
-        side = tabbed.form == "side"
+        geometry = self.peek_geometry(node, tabbed)
         panel = tabbed.lend(panel_id)
         menu_bar = getattr(panel, "menu_bar", None)
         if menu_bar is not None:
             menu_bar.show_body(True)
-        popup = _Peek(self, panel, lambda: self.end_peek(closing=True))
+        anchor = tabbed.peek_anchor()
+        popup = _Peek(self, panel, QRect(anchor.mapToGlobal(QPoint(0, 0)), anchor.size()), lambda: self.end_peek(closing=True))
         self.peeking = (panel_id, tabbed, popup)
+        popup.setGeometry(geometry)
+        popup.show()
 
-        # As big as the pane is with nothing minimized (see open_share) - within the window - and beside its strip
+    def peek_geometry(self, node: dict, tabbed: TabbedPane) -> QRect:
+        '''
+        Where a peek at node's panel shows (global): as big as the pane is with nothing minimized (see
+        open_share) - within the window - beside its strip, below it or to
+        its right if there's room, or else above it or to its left.
+        '''
+        anchor = QRect(tabbed.mapToGlobal(QPoint(0, 0)), tabbed.size())
         window = QRect(self.window().mapToGlobal(QPoint(0, 0)), self.window().size())
         share_width, share_height = self.open_share(node)
         width = max(PEEK_MIN.width(), min(round(share_width * self.width()), window.width()))
         height = max(PEEK_MIN.height(), min(round(share_height * self.height()), window.height()))
-        if side:
-            x = anchor.right() if anchor.right() + width <= window.right() else anchor.left() - width
-            y = anchor.top()
+        if tabbed.form == "side":
+            fits = anchor.right() + width <= window.right()
+            x, y = (anchor.right(), anchor.top()) if fits else (anchor.left() - width, anchor.top())
         else:
-            x = anchor.left()
-            y = anchor.bottom() if anchor.bottom() + height <= window.bottom() else anchor.top() - height
+            fits = anchor.bottom() + height <= window.bottom()
+            x, y = (anchor.left(), anchor.bottom()) if fits else (anchor.left(), anchor.top() - height)
         x = max(window.left(), min(x, window.right() - width))
         y = max(window.top(), min(y, window.bottom() - height))
-        popup.setGeometry(x, y, width, height)
-        popup.show()
+        return QRect(x, y, width, height)
 
     def open_share(self, node: dict) -> tuple[float, float]:
         '''
@@ -1431,21 +1595,33 @@ class DockArea(QWidget):
         return target.kind == "tab" and target.index is None
 
     def tab_row_target(self, node: dict, rect: QRect, pos: QPoint) -> DropTarget | None:
-        if len(node["panels"]) < 2:
-            return None
+        '''
+        Over a pane's menu bar, a drop goes in its tabs at that spot - a
+        tab stack's tab row, or a lone panel's title, as if it were a row
+        of one tab: before it or after it, whichever half is nearer.
+        '''
         tabbed = self.tabbed[node["id"]]
+        if tabbed.form == "side":
+            return None
         menu_bar = getattr(tabbed.current_panel(), "menu_bar", None)
-        strip = menu_bar._title_widget if menu_bar is not None else None
-        if not isinstance(strip, TabStrip):
+        if menu_bar is None or not menu_bar.isVisible():
             return None
         bar = QRect(menu_bar.mapTo(self, QPoint(0, 0)), menu_bar.size())
         if not bar.contains(pos):
             return None
-        local = strip.mapFrom(self, pos)
-        index = strip.insert_index(local)
-        x = strip.mapTo(self, QPoint(strip.insert_x(index), 0)).x()
-        top = strip.mapTo(self, QPoint(0, 0)).y()
-        line = QRect(x - 1, top, 3, strip.height())
+        strip = menu_bar._title_widget
+        if isinstance(strip, TabStrip):
+            index = strip.insert_index(strip.mapFrom(self, pos))
+            title, x = strip, strip.insert_x(index)
+        elif len(node["panels"]) == 1:
+            title = menu_bar.game_label
+            index = 0 if title.mapFrom(self, pos).x() < title.width() // 2 else 1
+            gap = menu_bar.row.spacing() // 2
+            x = -gap if index == 0 else title.width() + gap
+        else:
+            return None
+        at = title.mapTo(self, QPoint(x, 0))
+        line = QRect(at.x() - 1, at.y(), 3, title.height())
         return DropTarget("tab", node["id"], rect, index=index, line=line)
 
     def group_target(self, node: dict, parents: tuple, rect: QRect, pos: QPoint) -> DropTarget | None:

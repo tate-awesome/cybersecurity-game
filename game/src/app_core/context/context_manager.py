@@ -2,6 +2,7 @@ from .style import Style
 from ...network.process_manager import ProcessManager
 from ...network.buffer import Buffer
 from .click_manager import ClickManager
+from .shift_wheel import ShiftWheel
 from .animation_manager import AnimationManager
 from .preferences import Preferences
 from .performance import Performance
@@ -36,6 +37,8 @@ class ContextManager:
         self.paths: Paths = Paths()
         self.json: Json = Json(self.paths)
         self.style: Style = Style(self)
+        # Shift+wheel moves things sideways, everywhere (see ShiftWheel)
+        self.shift_wheel: ShiftWheel = ShiftWheel()
 
         self.start_session()
         self.start_page()

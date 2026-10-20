@@ -508,6 +508,33 @@ class PageManager:
         (folder / self.FOLDER_CONFIG).write_text(self.context.json.format_config(config), encoding="utf-8")
         self.discover()
 
+    def rename_folder_page(self, key: str, new_key: str):
+        '''
+        Moves a folder page to new_key: its folder under assets/pages, every
+        student's autosaved data for it, and any other page's
+        "prerequisites" entry naming it. Rediscovers pages afterward; the
+        Router still has to register it (see Router.register_discovered_pages).
+        '''
+        path = self.config_paths.get(key)
+        if path is None or path.name != self.FOLDER_CONFIG:
+            raise ValueError(f"{key!r} isn't a folder page")
+        target = self.context.paths.pages / new_key
+        if target.exists():
+            raise ValueError(f"{new_key!r} already exists")
+        shutil.move(path.parent, target)
+        saved = self.context.paths.user_pages / key
+        if saved.exists():
+            (self.context.paths.user_pages / new_key).parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(saved, self.context.paths.user_pages / new_key)
+        self.discover()
+        for other_path in self.config_paths.values():
+            if not other_path.is_file():
+                continue
+            other = json.loads(other_path.read_text(encoding="utf-8"))
+            if key in other.get("prerequisites", []):
+                other["prerequisites"] = [new_key if item == key else item for item in other["prerequisites"]]
+                other_path.write_text(self.context.json.format_config(other), encoding="utf-8")
+
     def delete_folder_page(self, key: str):
         '''
         Permanently deletes a folder page: its whole folder under

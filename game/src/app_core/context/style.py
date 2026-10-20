@@ -574,6 +574,21 @@ class Style:
                 return color
         return text
 
+    def disabled_text(self) -> str:
+        '''
+        A disabled button's text (and outline): the text color faded toward
+        what the buttons that get disabled sit on - a form's card - but only
+        as far as it still reads on it (3:1 - dimmer than any enabled text,
+        never lost in it). Not toward the panel: a theme's panel can be a
+        loud color that tints it.
+        '''
+        text, card = self.color("text"), self.color("widget", opaque=True)
+        for step in range(7, -1, -1):
+            color = self._mix(text, card, step / 10)
+            if self._contrast(color, card) >= 3:
+                return color
+        return text
+
     @staticmethod
     def _mix(hex_a: str, hex_b: str, amount: float) -> str:
         '''hex_a blended amount (0-1) of the way to hex_b.'''
@@ -617,14 +632,16 @@ class Style:
                 padding: 5px 11px;
             }}
             QPushButton:hover {{ background-color: {at_opacity("widget", "button")}; border-color: {c["accent"]}; }}
-            QPushButton:pressed {{ background-color: {at_opacity("root", "button")}; border-color: {c["accent"]}; }}
-            QPushButton:disabled {{ background-color: {button_bg}; color: {c["border"]}; border-color: {c["border"]}; }}'''
+            QPushButton:pressed {{ background-color: {at_opacity("root", "button")}; border-color: {c["accent"]}; }}'''
         else:
             buttons = "".join(self._button_rules(kind, shaded) for kind in BUTTON_KINDS)
-            # Disabled buttons of every kind look alike - faint, whatever the theme
-            buttons += f'''
-            QPushButton:disabled {{ background-color: {at_opacity("widget", "button")}; color: {c["border"]};
-                                    border-color: transparent; }}'''
+        # Disabled buttons of every kind look alike, whatever the theme: no
+        # face of their own, just a dashed outline - still a button, plainly
+        # not one to press - and text dimmed only as far as it still reads (see disabled_text)
+        disabled = self.disabled_text()
+        buttons += f'''
+            QPushButton:disabled {{ background-color: transparent; color: {disabled};
+                                    border-color: {disabled}; border-style: dashed; }}'''
 
         # The theme's outlines (see themes.STYLE_DEFAULTS): bevelled, or lines line_width thick
         bevel = self.setting("bevel")
