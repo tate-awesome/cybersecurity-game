@@ -21,9 +21,10 @@ Three pieces:
   - DockArea: builds the Panes/TabbedPane skeleton for a layout, holds
     every panel (built once, moved from skeleton to skeleton as the layout
     changes), and runs the drag: pressing a panel's menu bar (its empty
-    space, its title or a tab) and moving picks the panel up - it leaves
-    the layout, and a chip with its title follows the mouse - and
-    releasing it over a pane docks it there. While it's held, a
+    space, its title or a tab) and moving picks the panel up - it stays
+    where it is, faded, while a chip with its title follows the mouse -
+    and releasing it over a pane moves it there. Nothing in the layout
+    moves until it's dropped. While it's held, a
     see-through rectangle shows where it'd land (see DockArea.target_at).
     It also minimizes panes, a pane at a time or whole groups laid flat
     (see DockArea's Minimizing section).
@@ -32,7 +33,6 @@ Like drag_drop's drags, it's plain mouse events and widgets floating over
 the window, not the system's drag and drop - so it works the same on every
 platform and window system, and as root under sudo.
 '''
-import copy
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -214,6 +214,35 @@ def add_tab(root: dict, leaf_id: str, panel_id: str, index: int | None = None) -
     index = len(node["panels"]) if index is None else max(0, min(index, len(node["panels"])))
     node["panels"].insert(index, panel_id)
     node["current"] = panel_id
+    return normalize(root)
+
+
+def move_panel(root: dict, panel_id: str, kind: str, target_id: str | None, edge: str | None = None,
+               index: int | None = None) -> dict:
+    '''
+    Moves panel_id from where it is to a drop target (see DropTarget):
+    into target_id's tabs at index (kind "tab"), or a new pane on edge of
+    target_id (kind "split"). It's put in its new place first and only
+    then taken out of its old one, so target_id - found in the layout as
+    it was when the drop was aimed - still names the right node.
+    '''
+    origin = leaf_of(root, panel_id)
+    position = origin["panels"].index(panel_id)
+    if kind == "tab":
+        target, _ = find(root, target_id)
+        index = len(target["panels"]) if index is None else max(0, min(index, len(target["panels"])))
+        target["panels"].insert(index, panel_id)
+        if target is origin and index <= position:
+            position += 1  # reordered within its own tabs
+        target["current"] = panel_id
+        moved_within = target is origin
+    else:
+        root = split_at(root, target_id, edge or "right", panel_id)
+        moved_within = False
+    origin["panels"].pop(position)
+    if origin["current"] == panel_id and not moved_within and origin["panels"]:
+        # The tab beside it shows instead
+        origin["current"] = origin["panels"][min(position, len(origin["panels"]) - 1)]
     return normalize(root)
 
 
@@ -719,7 +748,10 @@ class _Chip(QLabel):
 
 
 class _DropPreview(QWidget):
-    '''Over the whole window while a panel's held: a see-through rectangle where it'd land, and for a tab, the gap it'd go in.'''
+    '''
+    Over the whole window while a panel's held: where it is now, faded, and
+    a see-through rectangle where it'd land - for a tab, the gap it'd go in too.
+    '''
 
     def __init__(self, area: "DockArea"):
         super().__init__(area.window())
@@ -727,7 +759,13 @@ class _DropPreview(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.rect_at: QRect | None = None
         self.line_at: QRect | None = None
+        self.source: QRect | None = None
         self.setGeometry(self.parentWidget().rect())
+
+    def show_source(self, rect: QRect | None):
+        '''Fades where the held panel is now, so it reads as the one being moved.'''
+        self.source = rect
+        self.update()
 
     def show_target(self, rect: QRect | None, line: QRect | None):
         if rect != self.rect_at or line != self.line_at:
@@ -735,19 +773,26 @@ class _DropPreview(QWidget):
             self.update()
 
     def paintEvent(self, event):
-        if self.rect_at is None:
-            return
         style = self.area.style
-        accent = QColor(style.color("accent"))
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        radius = style.PANEL_RADIUS
+        if self.source is not None:
+            wash = QColor(style.color("window", opaque=True))
+            wash.setAlphaF(0.6)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(wash)
+            painter.drawRoundedRect(self.source, radius, radius)
+        if self.rect_at is None:
+            painter.end()
+            return
+        accent = QColor(style.color("accent"))
         fill = QColor(accent)
         fill.setAlphaF(0.22)
         edge = QColor(accent)
         edge.setAlphaF(0.8)
         painter.setPen(QPen(edge, 2))
         painter.setBrush(fill)
-        radius = style.PANEL_RADIUS
         painter.drawRoundedRect(self.rect_at.adjusted(2, 2, -2, -2), radius, radius)
         if self.line_at is not None:
             painter.fillRect(self.line_at, accent)
@@ -851,12 +896,11 @@ class DockArea(QWidget):
         self.splits: dict[str, Panes] = {}
         self.tabbed: dict[str, TabbedPane] = {}
 
-        # While a panel's held: its id, whether it's new (see begin_drag), the layout to go back to, and what's drawn
+        # While a panel's held: its id, whether it's new (see begin_drag), where the mouse is, and what's drawn
         self.held: str | None = None
         self.held_new = False
         self.held_at = QPoint()
         self._relayout_queued = False
-        self.before: dict | None = None
         self.chip: _Chip | None = None
         self.preview: _DropPreview | None = None
         self.build()
@@ -1251,26 +1295,23 @@ class DockArea(QWidget):
     # Dragging
     def begin_drag(self, panel_id: str, at: QPoint, new: bool = False):
         '''
-        Picks panel_id up: it leaves the layout and its chip follows the
-        mouse from at. new is for a panel that isn't in the layout yet (the
-        layout editor's list) - built now, and dropped anywhere but the
-        layout, it's gone again.
+        Picks panel_id up: its chip follows the mouse from at, while the
+        panel stays where it is, faded, until it's dropped somewhere else
+        (see end_drag). new is for a panel that isn't in the layout yet
+        (the layout editor's list) - built now, and dropped anywhere but
+        the layout, it's gone again.
         '''
         if self.held is not None:
             return
         self.end_peek()
-        self.capture_sizes()
-        self.before = copy.deepcopy(self.root)
         self.held, self.held_new = panel_id, new
         if new:
             self.add_panel(panel_id)
-        elif self.root is not None:
-            self.root = remove_panel(self.root, panel_id)
-        self.build()
         panel = self.panels[panel_id]
         menu_bar = getattr(panel, "menu_bar", None)
         title = menu_bar.title() if menu_bar is not None else panel_id
         self.preview = _DropPreview(self)
+        self.preview.show_source(self.source_rect(panel_id))
         self.preview.show()
         self.chip = _Chip(self, title)
         self.chip.show()
@@ -1278,9 +1319,23 @@ class DockArea(QWidget):
         self.chip.follow(at)
         self.chip.grabMouse()
         self.chip.grabKeyboard()
-        # The new layout's pane sizes come in once it's laid out
         self.held_at = at
-        QTimer.singleShot(0, lambda: self.drag_to(self.held_at))
+        self.drag_to(at)
+
+    def source_rect(self, panel_id: str) -> QRect | None:
+        '''Where the held panel is, in the window - its pane, or just its tab if another tab's showing.'''
+        node = leaf_of(self.root, panel_id) if self.root is not None and not self.held_new else None
+        tabbed = self.tabbed.get(node["id"]) if node is not None else None
+        if tabbed is None:
+            return None
+        widget = tabbed
+        if tabbed.current != panel_id:
+            strip = getattr(getattr(tabbed.current_panel(), "menu_bar", None), "_title_widget", None)
+            button = strip.buttons.get(panel_id) if isinstance(strip, TabStrip) else None
+            if button is None or not button.isVisible():
+                return None  # behind the "···"
+            widget = button
+        return QRect(widget.mapTo(self.window(), QPoint(0, 0)), widget.size())
 
     def drag_to(self, at: QPoint):
         if self.held is None or self.chip is None:
@@ -1307,21 +1362,27 @@ class DockArea(QWidget):
                 widget.hide()
                 widget.deleteLater()
         self.chip = self.preview = None
-        self.held = None
+        self.held, self.held_new = None, False
         if target is not None:
             self.capture_sizes()
-            if target.kind == "tab":
+            if new and target.kind == "tab":
                 self.root = add_tab(self.root, target.node_id, panel_id, target.index)
-            else:
+            elif new:
                 self.root = split_at(self.root, target.node_id, target.edge or "right", panel_id)
+            else:
+                self.root = move_panel(self.root, panel_id, target.kind, target.node_id, target.edge, target.index)
         elif new or (drop and self.over_discard(at)):
             # Out of the layout for good
+            if not new:
+                self.capture_sizes()
+                self.root = remove_panel(self.root, panel_id)
             panel = self.panels.pop(panel_id)
             panel.hide()
             panel.deleteLater()
+            if new:
+                return  # it never left the shelf
         else:
-            self.root = self.before
-        self.before = None
+            return  # nothing moved
         self.build()
         self.changed.emit()
 
@@ -1357,8 +1418,17 @@ class DockArea(QWidget):
             rect = self.node_rect(node)
             if rect is None or not rect.contains(pos):
                 continue
-            return self.tab_row_target(node, rect, pos) or self.group_target(node, parents, rect, pos) or self.pane_target(node, rect, pos)
+            target = self.tab_row_target(node, rect, pos) or self.group_target(node, parents, rect, pos) or self.pane_target(node, rect, pos)
+            return None if self.goes_nowhere(node, target) else target
         return None
+
+    def goes_nowhere(self, node: dict, target: DropTarget) -> bool:
+        '''Whether dropping the held panel on target would leave it where it is - onto its own pane, alone in it, or its own tabs' middle.'''
+        if self.held_new or self.held not in node["panels"] or target.node_id != node["id"]:
+            return False
+        if len(node["panels"]) == 1:
+            return True
+        return target.kind == "tab" and target.index is None
 
     def tab_row_target(self, node: dict, rect: QRect, pos: QPoint) -> DropTarget | None:
         if len(node["panels"]) < 2:
