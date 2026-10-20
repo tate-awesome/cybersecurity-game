@@ -36,8 +36,8 @@ platform and window system, and as root under sudo.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedLayout, QVBoxLayout, QWidget
 
 from ...app_core import Context
@@ -352,12 +352,10 @@ def minimized_thickness(style, axis: str = "vertical") -> int:
     '''
     How thick a minimized pane is along axis: its menu bar - a menu bar
     button's height (the same for every panel, so minimized panes line
-    up, and measurable while hidden) with bar_inset all round - and the
-    room for the theme's shadow on those two sides.
+    up, and measurable while hidden) with bar_inset all round. No room
+    for the theme's shadow: the DockArea draws it (see DockArea.paintEvent).
     '''
-    left, top, right, bottom = style.panel_margins()
-    shadow = left + right if axis == "horizontal" else top + bottom
-    return bar_button_height(style) + 2 * bar_inset(style) + shadow
+    return bar_button_height(style) + 2 * bar_inset(style)
 
 
 class TabStrip(QWidget):
@@ -526,12 +524,10 @@ class _SideStrip(QWidget):
                  watch: Callable[[QWidget, str], None] | None, peeking: str | None = None):
         super().__init__()
         self.style = context.style
-        self.setProperty("shadowed", True)
         column = QVBoxLayout(self)
-        left, top, right, bottom = self.style.panel_margins()
         # Its restore button just where an open panel's minimize button is (see bar_inset)
         inset = bar_inset(self.style)
-        column.setContentsMargins(left + inset, top + inset, right + inset, bottom + inset)
+        column.setContentsMargins(inset, inset, inset, inset)
         column.setSpacing(self.style.igap)
         from .menu_bar import RESTORE_ICON, bare_icon  # here - menu_bar imports this module's package
         button = bare_icon(context, WindowBarButton(self.style.icon(RESTORE_ICON)))
@@ -555,7 +551,8 @@ class _SideStrip(QWidget):
     def paintEvent(self, event):
         from ..panels.panel import paint_panel  # here - panels import this module's package
         painter = QPainter(self)
-        paint_panel(painter, self.style, self.width(), self.height())
+        # Its shadow's the DockArea's (see DockArea.paintEvent)
+        paint_panel(painter, self.style, self.width(), self.height(), shadowed=False)
         painter.end()
 
 
@@ -574,14 +571,14 @@ class _LentPlaceholder(QWidget):
     def paintEvent(self, event):
         from ..panels.panel import paint_panel  # here - panels import this module's package
         painter = QPainter(self)
-        paint_panel(painter, self.style, self.width(), self.height())
+        # Its shadow's the DockArea's (see DockArea.paintEvent)
+        paint_panel(painter, self.style, self.width(), self.height(), shadowed=False)
         color = QColor(self.style.color("text"))
         color.setAlphaF(0.45)
         painter.setPen(color)
-        left, top, right, bottom = self.style.panel_margins()
         # Where the title was, after the minimize button (see MenuBar.minimize_button)
         inset = bar_inset(self.style)
-        room = self.rect().adjusted(left + inset + bar_button_height(self.style) + self.style.igap, top, -right, -bottom)
+        room = self.rect().adjusted(inset + bar_button_height(self.style) + self.style.igap, 0, 0, 0)
         painter.drawText(room, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.title)
         # Its peek mark, open and in the accent - it's showing (see paint_mark)
         side = self.fontMetrics().height()
@@ -942,6 +939,21 @@ class _Peek(QWidget):
 
 
 @dataclass
+class _ShadowWatch(QObject):
+    '''Repaints a DockArea's shadows whenever one of its panels moves, resizes, shows or hides (see DockArea.paintEvent).'''
+
+    EVENTS = (QEvent.Type.Move, QEvent.Type.Resize, QEvent.Type.Show, QEvent.Type.Hide)
+
+    def __init__(self, area: "DockArea"):
+        super().__init__(area)
+        self.area = area
+
+    def eventFilter(self, watched, event):
+        if event.type() in self.EVENTS:
+            self.area.update()
+        return False
+
+
 class DropTarget:
     '''
     Where a held panel would land: kind "tab" (into leaf node_id's tabs at
@@ -960,7 +972,9 @@ class DropTarget:
 class DockArea(QWidget):
     '''
     A layout of panels the user can rearrange by dragging them (see the
-    module docstring), filling master. tree is a layout_tree (see
+    module docstring), filling master. It draws every panel's shadow,
+    under them all (see paintEvent), so the gap between two panels is just
+    the gap between them, whatever the theme's shadow. tree is a layout_tree (see
     PageManager.layout_tree) or None for none; make_panel(panel id, parent)
     builds a panel - each once, kept for as long as it's in the layout.
 
@@ -981,8 +995,9 @@ class DockArea(QWidget):
         self.transparent = transparent
         self.discard = discard
         self.empty_text = empty_text
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        QVBoxLayout(self)
+        self.shadow_watch = _ShadowWatch(self)
+        self.fit_shadow_room()
         if master.layout() is not None:
             master.layout().addWidget(self, 1)
 
@@ -1019,6 +1034,10 @@ class DockArea(QWidget):
     def add_panel(self, panel_id: str) -> QWidget:
         panel = self.make_panel(panel_id, self.shelf)
         self.panels[panel_id] = panel
+        # Its shadow's drawn here (see paintEvent)
+        if hasattr(panel, "set_docked"):
+            panel.set_docked(True)
+        panel.installEventFilter(self.shadow_watch)
         menu_bar = getattr(panel, "menu_bar", None)
         if menu_bar is not None:
             for widget in (menu_bar, menu_bar.game_label, menu_bar.peek_arrow):
@@ -1069,6 +1088,7 @@ class DockArea(QWidget):
         the old theme's until something else laid them out.
         '''
         try:
+            self.fit_shadow_room()
             if self.held is not None:
                 self.end_drag(QPoint(), drop=False)
             self.end_peek()
@@ -1081,8 +1101,10 @@ class DockArea(QWidget):
         children = node["children"]
         total = sum(child["weight"] for child in children) or 1
         divisors = [total / max(child["weight"], 1e-6) for child in children]
+        # Always see-through: the shadows under the panels are drawn below
+        # them, and the window's material too, if it's not (see paintEvent)
         panes = Panes(master, self.context, node["orientation"], len(children), divisors, False,
-                      transparent=self.transparent, ids=[child["id"] for child in children])
+                      transparent=True, ids=[child["id"] for child in children])
         panes.splitterMoved.connect(lambda *_, node=node: (self.sash_moved(node), self.changed.emit()))
         for index in range(1, panes.count()):
             panes.handle(index).installEventFilter(self.sash_grip)
@@ -1097,6 +1119,47 @@ class DockArea(QWidget):
                     switched=lambda panel_id, child=child: child.__setitem__("current", panel_id), watch=self.watch,
                     restore=lambda panel_id, child=child: self.restore(child, panel_id))
         return panes
+
+    # Shadows
+    def fit_shadow_room(self):
+        '''Room around the whole layout for the outermost panels' shadows (see Style.panel_margins).'''
+        self.layout().setContentsMargins(*self.style.panel_margins())
+
+    def surfaces(self) -> list[QRect]:
+        '''Where each panel - or a minimized pane's sideways strip, or a peeked-at panel's stand-in - is showing.'''
+        if self.host is None:
+            return []
+        docked = set(map(id, self.panels.values()))
+        return [QRect(widget.mapTo(self, QPoint(0, 0)), widget.size()) for widget in self.host.findChildren(QWidget)
+                if (id(widget) in docked or isinstance(widget, (_SideStrip, _LentPlaceholder))) and widget.isVisibleTo(self)]
+
+    def paintEvent(self, event):
+        '''
+        The window's material, if the panes aren't see-through, then every
+        panel's shadow (see surface_shadow) - clipped to the gaps between
+        the panels, so one's shadow never shows through its see-through
+        neighbor, and reaching just past each rounded corner, which the
+        panel's mask leaves open (see Panel.update_mask).
+        '''
+        from ..panels.panel import surface_shadow  # here - panels import this module's package
+        painter = QPainter(self)
+        if not self.transparent:
+            painter.fillRect(self.rect(), self.style.brush("window", QRectF(self.rect())))
+        surfaces = self.surfaces() if self.style.panel_shadow() is not None else []
+        if surfaces:
+            radius = self.style.PANEL_RADIUS
+            gaps = QPainterPath()
+            gaps.addRect(QRectF(self.rect()))
+            bodies = QPainterPath()
+            for rect in surfaces:
+                bodies.addRoundedRect(QRectF(rect), radius, radius)
+            painter.setClipPath(gaps.subtracted(bodies))
+            left, top, right, bottom = self.style.panel_margins()
+            for rect in surfaces:
+                image = surface_shadow(self.style, rect.width() + left + right, rect.height() + top + bottom)
+                if image is not None:
+                    painter.drawImage(rect.x() - left, rect.y() - top, image)
+        painter.end()
 
     # Reading it back
     def capture_sizes(self):
@@ -1391,6 +1454,9 @@ class DockArea(QWidget):
             return
         geometry = self.peek_geometry(node, tabbed)
         panel = tabbed.lend(panel_id)
+        # Floating in its popup, out of reach of the shadows drawn here (see paintEvent)
+        if hasattr(panel, "set_docked"):
+            panel.set_docked(False)
         menu_bar = getattr(panel, "menu_bar", None)
         if menu_bar is not None:
             menu_bar.show_body(True)
@@ -1447,6 +1513,8 @@ class DockArea(QWidget):
         panel = self.panels.get(panel_id)
         if panel is not None:
             panel.setParent(self.shelf)
+            if hasattr(panel, "set_docked"):
+                panel.set_docked(True)
             if self.tabbed.get(leaf_of(self.root, panel_id)["id"]) is tabbed:
                 tabbed.take_back(panel_id)
             else:

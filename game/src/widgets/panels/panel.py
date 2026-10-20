@@ -64,19 +64,21 @@ def surface_shadow(style, width: int, height: int) -> QImage | None:
 
 
 
-def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False):
+def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False, shadowed: bool = True):
     '''
     Paints a panel-like surface width x height px by hand - the theme's
     shadow, its panel material in its rounded shape, and its outline (or
     raised bevel) - inside the room Style.panel_margins leaves. on_window
     first lays down the page's window material under it, for a surface
     nothing else is under (a popup window), so it looks as it would on a page.
+    shadowed=False leaves the shadow, and the room for it, out - for a
+    surface something else draws the shadow of (see DockArea.paintEvent).
     '''
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    shadow = surface_shadow(style, width, height)
+    shadow = surface_shadow(style, width, height) if shadowed else None
     if shadow is not None:
         painter.drawImage(0, 0, shadow)
-    left, top, right, bottom = style.panel_margins()
+    left, top, right, bottom = style.panel_margins() if shadowed else (0, 0, 0, 0)
     half = PANEL_BORDER_WIDTH / 2
     body = QRectF(left + half, top + half, width - left - right - 2 * half, height - top - bottom - 2 * half)
     radius = style.PANEL_RADIUS
@@ -129,6 +131,11 @@ class Panel(QWidget):
     A panel is a drawer (see themes' module docstring): its menu bar and a
     frame around its body - "panel_frame" px left, right and below - are
     all the panel material, one piece.
+
+    It draws its own shadow, in room around it (see Style.panel_margins) -
+    except docked (see set_docked), where the DockArea draws every panel's
+    shadow under them all instead, so neighbors' shadows don't each widen
+    the gap between them.
     '''
     KEY = "base_panel"
     # Settings keys (from _packages/_default.json) this panel reads or writes.
@@ -140,6 +147,8 @@ class Panel(QWidget):
         super().__init__(master)
         self.context = context
         self.style = context.style
+        # In a DockArea, which draws its shadow (see set_docked)
+        self.docked = False
 
         self.style.set_material(self, "panel", rounded=True, outlined=True)
         # Room around it for the theme's shadow, if it has one (see Style.panel_shadow)
@@ -229,24 +238,48 @@ class Panel(QWidget):
     def fit_frame(self):
         '''
         The drawer's frame around the body - the theme's "panel_frame" px
-        left, right and below - or none with the body hidden (minimized),
-        so the menu bar's room is the same above and below it.
+        left, right and below, and never so thin the body's square corners
+        poke out of its rounded ones - or none with the body hidden
+        (minimized), so the menu bar's room is the same above and below it.
         '''
         if self._body_layout is None:
             return
         layout = self._body_layout
         shown = any(not layout.itemAt(i).widget().isHidden() for i in range(layout.count()) if layout.itemAt(i).widget() is not None)
-        frame = self.style.setting("panel_frame") if shown else 0
+        # A corner's curve is this far in from the corner, along its diagonal - 1 - 1/sqrt(2) of its radius
+        clear = math.ceil(self.style.PANEL_RADIUS * (1 - math.sqrt(0.5)))
+        frame = max(self.style.setting("panel_frame"), clear) if shown else 0
         layout.frame(frame, 0, frame, frame)
 
+    def showEvent(self, event):
+        # Its body's been added since __init__'s fit_frame, which found none
+        self.fit_frame()
+        super().showEvent(event)
+
+    def margins(self) -> tuple[int, int, int, int]:
+        '''The room around it for its shadow (see Style.panel_margins) - none docked, where the DockArea draws it.'''
+        return (0, 0, 0, 0) if self.docked else self.style.panel_margins()
+
+    def set_docked(self, docked: bool):
+        '''In a DockArea (or back out of one, as a peek's popup): the DockArea draws its shadow, under every panel's.'''
+        if docked == self.docked:
+            return
+        self.docked = docked
+        # The stylesheet's room for a shadow (see Style's "shadowed" rule) - matched only when polished
+        self.setProperty("shadowed", not docked)
+        qt_style = QWidget.style(self)
+        qt_style.unpolish(self)
+        qt_style.polish(self)
+        self.fit_shadow()
+
     def body_rect(self) -> QRectF:
-        '''Where the panel itself is drawn - inside the room for its shadow (see Style.panel_margins).'''
-        left, top, right, bottom = self.style.panel_margins()
+        '''Where the panel itself is drawn - inside the room for its shadow (see margins).'''
+        left, top, right, bottom = self.margins()
         return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
 
     def fit_shadow(self):
         '''After a theme change: room for the theme's shadow (or none), the border inset inside it, and the mask to match.'''
-        left, top, right, bottom = self.style.panel_margins()
+        left, top, right, bottom = self.margins()
         width = self.BORDER_WIDTH
         super().layout().setContentsMargins(left + width, top + width, right + width, bottom + width)
         self.fit_frame()
@@ -254,8 +287,8 @@ class Panel(QWidget):
         self.update()
 
     def shadow_image(self) -> QImage | None:
-        '''The theme's shadow at this panel's size (see surface_shadow).'''
-        return surface_shadow(self.style, self.width(), self.height())
+        '''The theme's shadow at this panel's size (see surface_shadow) - None docked (see set_docked).'''
+        return None if self.docked else surface_shadow(self.style, self.width(), self.height())
 
     def paintEvent(self, event):
         # The stylesheet has already drawn the panel itself, inside its shadow's room (see fit_shadow)
@@ -267,16 +300,21 @@ class Panel(QWidget):
 
     def update_mask(self):
         '''
-        Clips the panel - menu bar, body and all - to its rounded shape,
-        keeping the room around it for its shadow (see resizeEvent).
+        Clips the panel - menu bar, body and all - to its rounded shape
+        (see resizeEvent), so whatever's under it shows past its corners.
+
+        Not one drawing its own shadow: clipped, the bits of shadow just
+        outside its corners would be cut away with them, leaving a square
+        notch around each rounded corner. Its body never reaches its
+        corners anyway (see fit_frame), and its menu bar has no
+        background of its own.
         '''
-        body = self.body_rect()
+        if self.style.panel_shadow() is not None and not self.docked:
+            self.clearMask()
+            return
         path = QPainterPath()
-        path.addRoundedRect(body, self.style.PANEL_RADIUS, self.style.PANEL_RADIUS)
-        region = QRegion(path.toFillPolygon().toPolygon())
-        if self.style.panel_shadow() is not None:
-            region = QRegion(self.rect()).subtracted(QRegion(body.toRect())).united(region)
-        self.setMask(region)
+        path.addRoundedRect(self.body_rect(), self.style.PANEL_RADIUS, self.style.PANEL_RADIUS)
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
