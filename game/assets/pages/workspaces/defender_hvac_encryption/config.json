@@ -45,7 +45,6 @@
 
     "title": "defender_hvac_encryption_workspace",
     "menu_bar": [
-        "reset_button",
         "ap_config_button"
     ],
 

@@ -39,13 +39,7 @@
     },
 
     "title": "docking_one_pane_workspace",
-    "menu_bar": [
-        "clear_inputs_button",
-        "reset_layout_button",
-        "reset_button",
-        "network_forms_button",
-        "packet_columns_button"
-    ],
+    "menu_bar": [],
 
     "layout_shape": {
         "h_panes_1": [

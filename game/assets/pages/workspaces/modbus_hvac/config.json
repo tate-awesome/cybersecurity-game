@@ -70,14 +70,6 @@
     "menu_bar": [
         "model_style_button",
         "strip_chart_style_button",
-        "clear_inputs_button",
-        "reset_layout_button",
-        "reset_button",
-        "preset_button",
-        "network_forms_button",
-        "modbus_forms_button",
-        "defender_forms_button",
-        "packet_columns_button",
         "ap_config_button"
     ],
 

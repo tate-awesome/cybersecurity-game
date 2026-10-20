@@ -43,7 +43,6 @@
 
     "title": "defender_submarine_system_workspace",
     "menu_bar": [
-        "reset_button",
         "ap_config_button"
     ],
 
