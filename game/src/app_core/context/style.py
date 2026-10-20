@@ -637,11 +637,23 @@ class Style:
             buttons = "".join(self._button_rules(kind, shaded) for kind in BUTTON_KINDS)
         # Disabled buttons of every kind look alike, whatever the theme: no
         # face of their own, just a dashed outline - still a button, plainly
-        # not one to press - and text dimmed only as far as it still reads (see disabled_text)
+        # not one to press - and text dimmed only as far as it still reads (see disabled_text).
+        # The outline's the same width all round: not a button shadow's
+        # thicker right and bottom (see _button_rules), or a selected menu
+        # button's accent bar - margin and padding take up the difference,
+        # so disabling a button never changes its size or moves its text
         disabled = self.disabled_text()
+        if self.invert_buttons:
+            width, depth = 1, 0
+        else:
+            width = 2 if self.setting("bevel") else self.setting("line_width")
+            depth = 0 if self.setting("bevel") else self.setting("button_shadow")
+        # As specific as the rules they override - a checked menu button's would otherwise win
+        menu = 'QPushButton[button_kind="menu"]'
         buttons += f'''
-            QPushButton:disabled {{ background-color: transparent; color: {disabled};
-                                    border-color: {disabled}; border-style: dashed; }}'''
+            QPushButton:disabled, {menu}:disabled, {menu}:checked:disabled {{
+                background-color: transparent; color: {disabled};
+                border: {width}px dashed {disabled}; margin: 0px {depth}px {depth}px 0px; padding: 5px 11px; }}'''
 
         # The theme's outlines (see themes.STYLE_DEFAULTS): bevelled, or lines line_width thick
         bevel = self.setting("bevel")
