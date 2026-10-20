@@ -329,13 +329,16 @@ class Footer(QFrame):
             self.background.setToolTip(tooltip([self.label("tooltips_background_off")]))
             return
         background = getattr(self.context.router.current_frame, "background", None)
-        if not style.background_shown(menu=getattr(background, "menu", False)):
+        workspace = getattr(background, "workspace", False)
+        if not style.background_shown(menu=getattr(background, "menu", False), workspace=workspace):
             set_text(self.background, self.label("background_none"))
-            self.background.setToolTip(tooltip([self.label("tooltips_background_theme_off")]))
+            off = "workspace_off" if workspace and style.background_workspace_disabled else "theme_off"
+            self.background.setToolTip(tooltip([self.label(f"tooltips_background_{off}")]))
             return
         key = style.background_visual
         name = self.labels.get(f"visual_names_{key}")
-        rate = f"{style.background_fps} {self.label('fps')}" if style.background_animate else self.label("background_still")
+        frozen = style.background_frozen(workspace=workspace)
+        rate = self.label("background_still") if frozen else f"{style.background_fps} {self.label('fps')}"
         set_text(self.background, f"{name} · {rate}")
 
         def on_off(on: bool) -> str:
@@ -349,7 +352,7 @@ class Footer(QFrame):
         lines += [
             "",
             f"{self.label('background_detailed')}: {on_off(style.background_detailed)}",
-            f"{self.label('background_animating')}: {on_off(style.background_animate)}",
+            f"{self.label('background_animating')}: {on_off(not frozen)}",
         ]
         self.background.setToolTip(tooltip(lines))
 

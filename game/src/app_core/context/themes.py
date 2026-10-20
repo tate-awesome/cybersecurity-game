@@ -63,9 +63,10 @@ as it did before they existed (see STYLE_DEFAULTS):
     "scrollbar_radius" px - scrollbar handles' corners (left out: round ends)
     "scrollbar_inset"  px of track left around each scrollbar handle
     "scrollbar_outline" true outlines scrollbar handles like fields
-    "aurora"           northern lights shimmering over the window's color,
-                       behind the background visual: {"dark": ["#rrggbb",
-                       ...], "light": [...]} - a curtain of light per color
+    "noise_gradient"   a slowly drifting gradient laid out by a noise map,
+                       over the window's color, behind the background
+                       visual: {"dark": ["#rrggbb", ...], "light": [...]} -
+                       the gradient's colors, 2 to 5
 
 Older files had a "palette" of named colors per mode that materials
 pointed into (or, older still, no materials - just the palette's modes at
@@ -219,7 +220,7 @@ STYLE_DEFAULTS: dict = {
     "scrollbar_radius": None,
     "scrollbar_inset": 0,
     "scrollbar_outline": False,
-    "aurora": None,
+    "noise_gradient": None,
 }
 MAX_PANEL_RADIUS = 24
 MAX_PANEL_FRAME = 16
@@ -280,11 +281,11 @@ def style_setting(info: dict, key: str):
         return value if isinstance(value, bool) else default
     if key == "font_family":
         return value if isinstance(value, str) and value.strip() else None
-    if key == "aurora":
+    if key == "noise_gradient":
         if not isinstance(value, dict):
             return None
         colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:5] for mode in THEME_MODES}
-        return colors if all(colors.values()) else None
+        return colors if all(len(c) >= 2 for c in colors.values()) else None
     if key == "panel_shadow":
         if not isinstance(value, dict):
             return None

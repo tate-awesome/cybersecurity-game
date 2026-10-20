@@ -28,7 +28,7 @@ class WorkspacePage(Page):
         # The network behind the gaps between panels - slowly drifting and
         # without packets, so it reads as texture rather than content. The
         # panes turn transparent only if it's there.
-        self.transparent_panes = self.add_background(config, self.DEFAULT_BACKGROUND)
+        self.transparent_panes = self.add_background(config, self.DEFAULT_BACKGROUND, workspace=True)
 
         self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 

@@ -1,8 +1,9 @@
 import math
 import time
 
+import numpy as np
 from PySide6.QtCore import QEvent, QObject, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QCursor, QImage, QLinearGradient, QPainter
+from PySide6.QtGui import QColor, QCursor, QImage, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ...app_core import Context
@@ -29,51 +30,53 @@ def pyramid_blur(image: QImage, levels: int) -> QImage:
     return image
 
 
-# How many columns wide the northern lights are drawn, whatever the window's
-# size - soft shapes lose nothing scaled up, and it keeps them cheap enough for every frame
-AURORA_COLUMNS = 120
+# How many columns wide the noise gradient is drawn, whatever the window's
+# size - it's smooth enough to lose nothing scaled up, and cheap enough for every frame
+NOISE_COLUMNS = 96
+# The noise map: a fixed random lattice per octave, tiling, so the same
+# theme always flows the same way
+NOISE_LATTICES = np.random.default_rng(7).random((2, 16, 16))
+# Fixed, so a frozen frame redrawn looks the same - big enough for any window's shape
+NOISE_DITHER = np.random.default_rng(11).uniform(0.0, 1.0, (NOISE_COLUMNS * 4, NOISE_COLUMNS, 1))
+# Per octave: weight, lattice cells across the window's width, and drift (cells/s, x and y)
+NOISE_OCTAVES = ((0.65, 3.0, (0.030, 0.017)), (0.35, 6.0, (-0.050, 0.040)))
 
 
-def paint_aurora(painter: QPainter, width: int, height: int, colors: list[str], t: float, glow: bool = True):
+def value_noise(lattice: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    '''The lattice smoothly interpolated at every (y, x) of the grid x by y (in lattice cells, wrapping) - 0-1.'''
+    n = lattice.shape[0]
+    x0, y0 = np.floor(x).astype(int), np.floor(y).astype(int)
+    fx, fy = x - x0, y - y0
+    sx, sy = fx * fx * (3 - 2 * fx), (fy * fy * (3 - 2 * fy))[:, None]
+    x0, x1, y0, y1 = x0 % n, (x0 + 1) % n, y0 % n, (y0 + 1) % n
+    top = lattice[np.ix_(y0, x0)] * (1 - sx) + lattice[np.ix_(y0, x1)] * sx
+    bottom = lattice[np.ix_(y1, x0)] * (1 - sx) + lattice[np.ix_(y1, x1)] * sx
+    return top * (1 - sy) + bottom * sy
+
+
+def paint_noise_gradient(painter: QPainter, width: int, height: int, colors: list[str], t: float):
     '''
-    Northern lights across the top of a width x height area: a curtain of
-    light per color, each a band with a wavy lower edge that fades upward,
-    swaying slowly and shimmering in vertical rays as t (seconds) passes.
-    glow adds the light (on a dark sky); otherwise it's laid over (a light one).
+    A gradient through colors filling a width x height area, laid out by a
+    noise map that drifts slowly as t (seconds) passes - so the colors
+    flow into each other in soft, shifting clouds.
     '''
     if width <= 0 or height <= 0:
         return
-    w = AURORA_COLUMNS
-    h = max(8, round(w * height / width))
-    image = QImage(w, h, QImage.Format.Format_ARGB32_Premultiplied)
-    image.fill(Qt.GlobalColor.transparent)
-    p = QPainter(image)
-    p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus if glow else QPainter.CompositionMode.CompositionMode_SourceOver)
-    strength = 0.55 if glow else 0.32
-    for i, hex_color in enumerate(colors):
-        # One curtain's light, top to bottom of each column it's drawn in -
-        # faint at the top, brightest just above its lower edge
-        gradient = QLinearGradient(0, 0, 0, 1)
-        gradient.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectMode)
-        for stop, a in ((0.0, 0.0), (0.7, 0.55), (0.93, 1.0), (1.0, 0.0)):
-            c = QColor(hex_color)
-            c.setAlphaF(a)
-            gradient.setColorAt(stop, c)
-        phase = i * 2.1
-        base = 0.22 + 0.13 * i  # each curtain a little lower down the sky
-        for x in range(w):
-            u = x / w
-            # The lower edge sways, and the curtain's height breathes along it
-            edge = base + 0.07 * math.sin(u * 5.3 + t * 0.21 + phase) + 0.035 * math.sin(u * 11.7 - t * 0.37 + phase * 1.7)
-            reach = 0.16 + 0.07 * math.sin(u * 3.1 + t * 0.15 + phase)
-            # Rays: brightness rippling sideways along the curtain
-            ray = 0.45 + 0.55 * math.sin(u * 37.0 + t * 0.9 + phase + math.sin(t * 0.3 + u * 7)) ** 2
-            # Fading out toward the sides, so no curtain ends at an edge
-            ends = min(1.0, 4 * u, 4 * (1 - u))
-            top = (edge - reach * 1.5) * h
-            p.setOpacity(min(1.0, strength * ray * ends))
-            p.fillRect(QRectF(x, top, 1, edge * h + 2 - top), gradient)
-    p.end()
+    w = NOISE_COLUMNS
+    h = max(4, round(w * height / width))
+    u, v = np.arange(w) / w, np.arange(h) / w
+    value = sum(weight * value_noise(lattice, u * cells + t * dx, v * cells + t * dy)
+                for lattice, (weight, cells, (dx, dy)) in zip(NOISE_LATTICES, NOISE_OCTAVES))
+    # Summed noise bunches up around the middle - stretched, so every color gets its share
+    value = np.clip((value - 0.5) * 1.8 + 0.5, 0.0, 1.0)
+    stops = np.array([QColor(c).getRgb()[:3] for c in colors], dtype=float)
+    position = value * (len(stops) - 1)
+    index = np.minimum(position.astype(int), len(stops) - 2)
+    f = (position - index)[..., None]
+    # Dithered, so close colors (a dark theme's) blend instead of stepping in bands
+    rgb = stops[index] * (1 - f) + stops[index + 1] * f + NOISE_DITHER[:h, :w]
+    rgb = np.ascontiguousarray(np.clip(rgb, 0, 255).astype(np.uint8))
+    image = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888)
     painter.save()
     painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
     painter.drawImage(QRectF(0, 0, width, height), image)
@@ -153,6 +156,8 @@ class VisualBackground(QWidget):
         self.page_detailed = True
         # Behind a title menu page, which a theme can't turn off (see Style.background_shown)
         self.menu = False
+        # Behind a workspace, which has its own freeze and disable preferences (see Style.background_frozen)
+        self.workspace = False
         self.visual_key: str | None = None
         self.frame: QImage | None = None
         # The half-size render a blurred frame is made from (see render_half)
@@ -232,7 +237,8 @@ class VisualBackground(QWidget):
         self.sync_size()
         self.invalidate()
 
-    def follow_preferences(self, page_animate: bool = True, page_detailed: bool = True, menu: bool = False):
+    def follow_preferences(self, page_animate: bool = True, page_detailed: bool = True, menu: bool = False,
+                           workspace: bool = False):
         '''
         Makes this background follow the user's background preferences
         (Style.background_*) from now on - a page background, as opposed to
@@ -241,10 +247,12 @@ class VisualBackground(QWidget):
         page_detailed=True makes the page always detailed (title and lesson
         select pages); False leaves it to the "Detailed Background"
         preference (workspaces, where detail is off by default since it's
-        distracting behind the panels).
+        distracting behind the panels). workspace=True makes it follow the
+        workspace freeze and disable preferences too.
         '''
         self.follows_preferences = True
         self.menu = menu
+        self.workspace = workspace
         self.page_animate = page_animate
         self.page_detailed = page_detailed
         self.apply_preferences()
@@ -256,7 +264,7 @@ class VisualBackground(QWidget):
         if style.background_visual not in (self.visual_key, NO_BACKGROUND):
             self.set_visual(style.background_visual)
         self.paint_options = {**self.paint_options, "packets": self.page_detailed or style.background_detailed}
-        self.animate = self.page_animate and not style.background_frozen()
+        self.animate = self.page_animate and not style.background_frozen(workspace=self.workspace)
         self.frame_ms = max(1, round(1000 / style.background_fps))
         if not self.animate and self.visual is not None:
             # A still frame should show the finished picture, not one
@@ -268,7 +276,7 @@ class VisualBackground(QWidget):
         blur = theme_blur if theme_blur is not None and self.page_blur > 0 else self.page_blur
         if blur != self.blur_radius:
             self.set_blur(blur)
-        self.setVisible(style.background_shown(menu=self.menu))
+        self.setVisible(style.background_shown(menu=self.menu, workspace=self.workspace))
         if self.animate and self.isVisible() and not self.held:
             self.last_tick = time.perf_counter()
             self.timer.start(self.frame_ms)
@@ -412,18 +420,18 @@ class VisualBackground(QWidget):
     def fill_base(self, painter: QPainter, width: int, height: int):
         '''
         What the visual is drawn over: the theme's window color - or its
-        gradient, if it has one (see Style.brush) - and its northern lights,
-        if it has those (see paint_aurora).
+        gradient, if it has one (see Style.brush) - or its noise gradient,
+        if it has one (see paint_noise_gradient).
         '''
         rect = QRectF(0, 0, width, height)
         brush = self.style.brush("window", rect)
         if brush.gradient() is not None:
             painter.fillRect(rect, self.style.color("root", opaque=True))
         painter.fillRect(rect, brush)
-        aurora = self.style.setting("aurora")
-        if aurora:
-            mode = self.style.current_theme.partition("_")[0]
-            paint_aurora(painter, width, height, aurora[mode], time.perf_counter(), glow=mode == "dark")
+        noise = self.style.setting("noise_gradient")
+        if noise:
+            paint_noise_gradient(painter, width, height, noise[self.style.current_theme.partition("_")[0]],
+                                 time.perf_counter())
 
     # Qt events
     def paintEvent(self, event):

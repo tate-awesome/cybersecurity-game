@@ -12,6 +12,7 @@ from ..app_core.context.performance import QUALITY_PRESETS, UI_FPS_RANGE
 from ..app_core.context.preferences import DEFAULT_FADE_IN, DEFAULT_FADE_OUT
 from ..app_core.context.style import (BACKGROUND_FPS_RANGE, DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED,
                                       DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL,
+                                      DEFAULT_BACKGROUND_WORKSPACE_DISABLED, DEFAULT_BACKGROUND_WORKSPACE_FROZEN,
                                       NO_BACKGROUND, PANEL_BORDER_WIDTH)
 from ..widgets import MenuBar
 from ..widgets.visuals import background_choices
@@ -245,6 +246,12 @@ class SettingsPage(Page):
         freeze = self.checkbox(style.background_frozen(), lambda on: style.set_background(animate=not on))
         freeze.setEnabled(style.background_visual != NO_BACKGROUND)
         rendering.row("settings_page_rows_freeze_background", freeze, "settings_page_row_notes_freeze_background")
+        rendering.row("settings_page_rows_freeze_workspace_background",
+                      self.checkbox(style.background_workspace_frozen, lambda on: style.set_background(workspace_frozen=on)),
+                      "settings_page_row_notes_freeze_workspace_background")
+        rendering.row("settings_page_rows_disable_workspace_background",
+                      self.checkbox(style.background_workspace_disabled, lambda on: style.set_background(workspace_disabled=on)),
+                      "settings_page_row_notes_disable_workspace_background")
         rendering.row("settings_labels_background_detailed",
                       self.checkbox(style.background_detailed, lambda on: style.set_background(detailed=on)),
                       "settings_tooltips_background_detailed")
@@ -367,7 +374,8 @@ class SettingsPage(Page):
         '''Everything on the Graphics tab back to its default, the background's framerate, motion and detail too.'''
         self.context.performance.reset()
         self.style.set_background(animate=DEFAULT_BACKGROUND_ANIMATE, detailed=DEFAULT_BACKGROUND_DETAILED,
-                                  fps=DEFAULT_BACKGROUND_FPS)
+                                  fps=DEFAULT_BACKGROUND_FPS, workspace_frozen=DEFAULT_BACKGROUND_WORKSPACE_FROZEN,
+                                  workspace_disabled=DEFAULT_BACKGROUND_WORKSPACE_DISABLED)
         self.router.refresh()
 
     def set_fullscreen(self, on: bool):

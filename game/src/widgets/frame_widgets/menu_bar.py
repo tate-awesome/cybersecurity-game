@@ -7,7 +7,7 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
                                 OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, OpenWorkspaceSorter,
                                 RefreshCurrentPage,
-                                SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleFreezeBackground,
+                                SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleWorkspaceBackground,
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
@@ -63,8 +63,8 @@ assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu ba
 RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]]] = {
     "quick_settings_button_group": [
         ("general", [ToggleFullscreen, LoadLocalizationLabelsFile]),
-        ("appearance", [ToggleLightDarkMode, SelectColorTheme, ToggleFreezeBackground,
-                        SelectBackground]),
+        ("appearance", [ToggleLightDarkMode, SelectColorTheme, SelectBackground,
+                        ToggleWorkspaceBackground]),
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,
                          OpenWorkspaceSorter, ConfigureThisWorkspace, EditWorkspaceAvailability, ToggleDebugLabels]),

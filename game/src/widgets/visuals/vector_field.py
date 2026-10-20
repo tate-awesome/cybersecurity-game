@@ -16,11 +16,10 @@ class VectorField(Visual):
     bends the far ones off target and gusts swell and shrink them as they
     blow through (a moving noise map scales every vector's length). The
     wind has moods (see gust): calmer spells and wild ones where it churns
-    faster still and bends hard. A few big translucent discs ride the
-    field in to the mouse, then blow back in from the edge for another run.
+    faster still and bends hard.
     Simple: steady wind alone, paying the mouse no attention - longer
     vectors, moving briskly but without the gusts, all in the foreground
-    color, with no discs.
+    color.
 
     Startup: a cloud of points flies out from the mouse to the field. The
     vectors are already there, invisibly - each point heads for its
@@ -39,11 +38,6 @@ class VectorField(Visual):
     MAX_BEND = 1.8           # detailed: radians the wildest wind bends the farthest vectors
     WIND_PACE = {"calm": 2.8, "wild": 8.4, "simple": 2.8}   # how fast the wind pattern moves, by mood
     GUST_SHRINK = 0.75       # detailed: how far a lull in the gust map can shrink a vector (0-1)
-    # Discs riding the field (detailed only)
-    BALLS = 3
-    BALL_SPEED = 4.0         # px/s of disc speed per px of vector length
-    BALL_GRIP = 2.5          # 1/s - how quickly a disc takes up the field's velocity
-    BALL_RADIUS = 1.5        # in grid spacings
     # Startup flight
     LAUNCH_SPREAD = 0.35     # s over which the points leave the mouse
     FLY_SPEED = (650.0, 950.0)   # px/s to the tip
@@ -63,7 +57,6 @@ class VectorField(Visual):
             self.target = (self.width / 2, self.height / 2)
             self.intro = None
             self.vec_x, self.vec_y = self.aim(self.base_x, self.base_y)
-            self.balls = [self.new_ball() for _ in range(self.BALLS)]
             if self.claim_intro():
                 self.start_intro()
         else:
@@ -71,9 +64,6 @@ class VectorField(Visual):
             # intro in progress (sized to the old grid) just finishes
             self.vec_x, self.vec_y = self.aim(self.base_x, self.base_y)
             self.intro = None
-            for ball in self.balls:
-                ball["x"] *= self.scale_x
-                ball["y"] *= self.scale_y
 
     def max_length(self) -> float:
         return self.spacing * self.MAX_LENGTH["detailed" if self.detailed else "simple"]
@@ -131,40 +121,6 @@ class VectorField(Visual):
         self.vec_y += (aim_y - self.vec_y) * ease
         if self.intro is not None:
             self.update_intro(dt)
-        elif self.detailed:
-            self.update_balls(dt)
-
-    # Balls
-    def new_ball(self) -> dict:
-        return {"x": self.rng.uniform(0, self.width), "y": self.rng.uniform(0, self.height), "vx": 0.0, "vy": 0.0}
-
-    def update_balls(self, dt: float):
-        grip = 1.0 - math.exp(-self.BALL_GRIP * dt)
-        xs = np.array([ball["x"] for ball in self.balls])
-        ys = np.array([ball["y"] for ball in self.balls])
-        fx, fy = self.aim(xs, ys)
-        margin = self.spacing
-        for ball, field_x, field_y in zip(self.balls, fx, fy):
-            ball["vx"] += (field_x * self.BALL_SPEED - ball["vx"]) * grip
-            ball["vy"] += (field_y * self.BALL_SPEED - ball["vy"]) * grip
-            ball["x"] += ball["vx"] * dt
-            ball["y"] += ball["vy"] * dt
-            if self.detailed and math.hypot(ball["x"] - self.target[0], ball["y"] - self.target[1]) < self.spacing * 0.6:
-                # Reached the mouse, where the field dies away - blow it
-                # back in from somewhere along the edge for another run
-                self.enter_from_edge(ball)
-                continue
-            # Blown off one edge, it comes back in at the opposite one
-            if not -margin <= ball["x"] <= self.width + margin or not -margin <= ball["y"] <= self.height + margin:
-                ball["x"] = (ball["x"] + margin) % (self.width + 2 * margin) - margin
-                ball["y"] = (ball["y"] + margin) % (self.height + 2 * margin) - margin
-
-    def enter_from_edge(self, ball: dict):
-        side = self.rng.randrange(4)
-        along = self.rng.random()
-        ball["x"] = (along * self.width, self.width, along * self.width, 0.0)[side]
-        ball["y"] = (0.0, along * self.height, self.height, along * self.height)[side]
-        ball["vx"] = ball["vy"] = 0.0
 
     # Startup
     def start_intro(self):
@@ -178,9 +134,6 @@ class VectorField(Visual):
             "phase": np.zeros(count, dtype=int),
             "drawn": np.zeros(count),
         }
-        # The discs set off from the mouse too, once the field is drawn
-        for ball in self.balls:
-            ball["x"], ball["y"] = float(launch_x), float(launch_y)
 
     def np_rng(self) -> np.random.Generator:
         if not hasattr(self, "_np_rng"):
@@ -253,12 +206,3 @@ class VectorField(Visual):
             head_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(head_pen)
             painter.drawPoints(heads)
-            return
-
-        if not self.detailed:
-            return
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(palette.color("accent", 0.18))
-        radius = self.spacing * self.BALL_RADIUS
-        for ball in self.balls:
-            painter.drawEllipse(QPointF(ball["x"], ball["y"]), radius, radius)

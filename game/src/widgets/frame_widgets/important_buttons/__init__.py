@@ -42,7 +42,7 @@ from .toggle_light_dark_mode import ToggleLightDarkMode
 from .select_color_theme import SelectColorTheme
 from .open_theme_editor import OpenThemeEditor
 from .import_themes import ImportThemes
-from .toggle_freeze_background import ToggleFreezeBackground
+from .toggle_workspace_background import ToggleWorkspaceBackground
 from .select_background import SelectBackground
 from .settings_overlays.edit_background_choices import EditBackgroundChoices
 from .settings_overlays.edit_model_style import EditModelStyle

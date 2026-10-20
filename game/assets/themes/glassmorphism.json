@@ -22,16 +22,16 @@
     },
     "scrollbar_inset": 3,
     "panel_frame": 10,
-    "aurora": {
+    "noise_gradient": {
         "dark": [
-            "#3dffb0",
-            "#6f6bff",
-            "#ff6ad5"
+            "#2b0f52",
+            "#13245a",
+            "#0d4a63"
         ],
         "light": [
-            "#2fd59a",
-            "#8a6cff",
-            "#ff7ccf"
+            "#fbc2eb",
+            "#d9c6ff",
+            "#a6c1ee"
         ]
     },
     "materials": {

@@ -57,7 +57,8 @@ class Page(QWidget):
         menu_bar.add_config_buttons([name for name in buttons if isinstance(name, str)])
         return menu_bar
 
-    def add_background(self, config: dict, default: dict | None = None, menu: bool = False) -> bool:
+    def add_background(self, config: dict, default: dict | None = None, menu: bool = False,
+                       workspace: bool = False) -> bool:
         '''
         Plays a procedural visual behind this page's content if its config
         has a "background": {
@@ -76,7 +77,9 @@ class Page(QWidget):
         "background": false turns it off even when there's a default.
         menu=True is for the title menu's pages, where the background is
         the page - a theme can't turn it off there (see themes.STYLE_DEFAULTS'
-        "background"), only the user's preference can.
+        "background"), only the user's preference can. workspace=True is for
+        workspaces, which also follow the workspace freeze and disable
+        preferences (see Style.background_frozen / background_shown).
         Call it before adding content that should be drawn on top.
         Returns whether a background was added.
         '''
@@ -100,5 +103,6 @@ class Page(QWidget):
         # and on the settings page). Detail is always on where the page allows it ("packets"),
         # and otherwise up to the "Detailed Background" preference
         self.background.follow_preferences(page_animate=background.get("animate", True),
-                                           page_detailed=background.get("packets", True), menu=menu)
+                                           page_detailed=background.get("packets", True), menu=menu,
+                                           workspace=workspace)
         return True

@@ -57,14 +57,18 @@ SEE_THROUGH_COLORS = ("panel", "widget", "field")
 # key, "cycle", or NO_BACKGROUND), whether it moves, whether it's detailed
 # in workspaces (the network's packets - title and lesson select pages
 # always are; off by default since it's distracting behind panels), its
-# frame rate, and which visuals the background pickers leave out (chosen on
-# the visuals demo page - "cycle" skips them too)
+# frame rate, which visuals the background pickers leave out (chosen on
+# the visuals demo page - "cycle" skips them too), and whether workspaces
+# hold it still (on by default - it only shows through the gaps between
+# panels, and every frame repaints the panels above) or leave it out
 NO_BACKGROUND = "none"
 DEFAULT_BACKGROUND_VISUAL = "network_mesh"
 DEFAULT_BACKGROUND_ANIMATE = True
 DEFAULT_BACKGROUND_DETAILED = False
 DEFAULT_BACKGROUND_FPS = 30
 DEFAULT_BACKGROUND_HIDDEN: tuple[str, ...] = ()
+DEFAULT_BACKGROUND_WORKSPACE_FROZEN = True
+DEFAULT_BACKGROUND_WORKSPACE_DISABLED = False
 BACKGROUND_FPS_RANGE = (1, 120)
 
 # Inverted buttons: text-colored labels on a background between panel and
@@ -179,6 +183,8 @@ class Style:
         self.background_detailed: bool = DEFAULT_BACKGROUND_DETAILED
         self.background_fps: int = DEFAULT_BACKGROUND_FPS
         self.background_hidden: list[str] = list(DEFAULT_BACKGROUND_HIDDEN)
+        self.background_workspace_frozen: bool = DEFAULT_BACKGROUND_WORKSPACE_FROZEN
+        self.background_workspace_disabled: bool = DEFAULT_BACKGROUND_WORKSPACE_DISABLED
 
         # Preferences don't exist yet at this point in startup (see
         # ContextManager.start_session) - this is just a system-appropriate
@@ -966,17 +972,24 @@ class Style:
         blur, x, y = shadow["blur"], shadow["x"], shadow["y"]
         return max(0, blur - x), max(0, blur - y), max(0, blur + x), max(0, blur + y)
 
-    def background_shown(self, menu: bool = False) -> bool:
+    def background_shown(self, menu: bool = False, workspace: bool = False) -> bool:
         '''
         Whether a page shows its animated background - any visual but
-        NO_BACKGROUND, unless the theme turns it off. Title menu pages (menu)
+        NO_BACKGROUND, unless the theme turns it off, or it's a workspace
+        and "Disable Background in Workspaces" is on. Title menu pages (menu)
         always follow the preference: there the background is the page.
         '''
+        if workspace and self.background_workspace_disabled:
+            return False
         return self.background_visual != NO_BACKGROUND and (menu or self.setting("background"))
 
-    def background_frozen(self) -> bool:
-        '''Whether the background holds still - frozen by the preference, or by there being no background to animate.'''
-        return not self.background_animate or self.background_visual == NO_BACKGROUND
+    def background_frozen(self, workspace: bool = False) -> bool:
+        '''
+        Whether the background holds still - frozen by the preference (or,
+        in a workspace, the workspace one), or by there being no background to animate.
+        '''
+        return (not self.background_animate or self.background_visual == NO_BACKGROUND
+                or (workspace and self.background_workspace_frozen))
 
     def _resolve_colors(self):
         mode = self.current_theme.partition("_")[0]
@@ -1006,6 +1019,8 @@ class Style:
         "background_detailed": ("background_detailed", bool),
         "background_fps": ("background_fps", int),
         "background_hidden": ("background_hidden", list),
+        "background_workspace_frozen": ("background_workspace_frozen", bool),
+        "background_workspace_disabled": ("background_workspace_disabled", bool),
     }
 
     def load_preferred_background(self):
@@ -1027,10 +1042,13 @@ class Style:
         self.background_detailed = DEFAULT_BACKGROUND_DETAILED
         self.background_fps = DEFAULT_BACKGROUND_FPS
         self.background_hidden = list(DEFAULT_BACKGROUND_HIDDEN)
+        self.background_workspace_frozen = DEFAULT_BACKGROUND_WORKSPACE_FROZEN
+        self.background_workspace_disabled = DEFAULT_BACKGROUND_WORKSPACE_DISABLED
         self.apply_background()
 
     def set_background(self, visual: str | None = None, animate: bool | None = None, detailed: bool | None = None,
-                       fps: int | None = None, hidden: list[str] | None = None):
+                       fps: int | None = None, hidden: list[str] | None = None,
+                       workspace_frozen: bool | None = None, workspace_disabled: bool | None = None):
         '''Changes background settings - applied to the page on screen at once, and saved.'''
         if visual is not None:
             self.background_visual = visual
@@ -1042,6 +1060,10 @@ class Style:
             self.background_fps = min(BACKGROUND_FPS_RANGE[1], max(BACKGROUND_FPS_RANGE[0], int(fps)))
         if hidden is not None:
             self.background_hidden = list(hidden)
+        if workspace_frozen is not None:
+            self.background_workspace_frozen = workspace_frozen
+        if workspace_disabled is not None:
+            self.background_workspace_disabled = workspace_disabled
         self.apply_background()
         for attribute, (key, _kind) in self.BACKGROUND_PREFERENCES.items():
             self.context.preferences.set(key, getattr(self, attribute))
