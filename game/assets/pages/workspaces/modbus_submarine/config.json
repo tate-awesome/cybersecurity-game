@@ -22,7 +22,7 @@
     "link_label": "title_buttons_workspace_submarine",
     "include": 1,
     "category": "attacker",
-    "order": 47,
+    "order": 51,
     "prerequisites": [],
     "estimated_minutes": 25,
     "gradable": true,
