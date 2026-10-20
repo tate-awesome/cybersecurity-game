@@ -1459,21 +1459,33 @@ class DockArea(QWidget):
         return target.kind == "tab" and target.index is None
 
     def tab_row_target(self, node: dict, rect: QRect, pos: QPoint) -> DropTarget | None:
-        if len(node["panels"]) < 2:
-            return None
+        '''
+        Over a pane's menu bar, a drop goes in its tabs at that spot - a
+        tab stack's tab row, or a lone panel's title, as if it were a row
+        of one tab: before it or after it, whichever half is nearer.
+        '''
         tabbed = self.tabbed[node["id"]]
+        if tabbed.form == "side":
+            return None
         menu_bar = getattr(tabbed.current_panel(), "menu_bar", None)
-        strip = menu_bar._title_widget if menu_bar is not None else None
-        if not isinstance(strip, TabStrip):
+        if menu_bar is None or not menu_bar.isVisible():
             return None
         bar = QRect(menu_bar.mapTo(self, QPoint(0, 0)), menu_bar.size())
         if not bar.contains(pos):
             return None
-        local = strip.mapFrom(self, pos)
-        index = strip.insert_index(local)
-        x = strip.mapTo(self, QPoint(strip.insert_x(index), 0)).x()
-        top = strip.mapTo(self, QPoint(0, 0)).y()
-        line = QRect(x - 1, top, 3, strip.height())
+        strip = menu_bar._title_widget
+        if isinstance(strip, TabStrip):
+            index = strip.insert_index(strip.mapFrom(self, pos))
+            title, x = strip, strip.insert_x(index)
+        elif len(node["panels"]) == 1:
+            title = menu_bar.game_label
+            index = 0 if title.mapFrom(self, pos).x() < title.width() // 2 else 1
+            gap = menu_bar.row.spacing() // 2
+            x = -gap if index == 0 else title.width() + gap
+        else:
+            return None
+        at = title.mapTo(self, QPoint(x, 0))
+        line = QRect(at.x() - 1, at.y(), 3, title.height())
         return DropTarget("tab", node["id"], rect, index=index, line=line)
 
     def group_target(self, node: dict, parents: tuple, rect: QRect, pos: QPoint) -> DropTarget | None:
