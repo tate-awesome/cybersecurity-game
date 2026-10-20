@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRectF, QSizeF, Qt, QUrl, QVariantAnimation, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QTextDocument
+from PySide6.QtGui import QBrush, QColor, QImage, QLinearGradient, QPainter, QPainterPath, QTextDocument
 from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QSizePolicy,
                                QTextBrowser, QVBoxLayout, QWidget)
 
@@ -23,10 +23,56 @@ class NoteBrowser(QTextBrowser):
 
     Links that open the browser (http/https) get the POPOUT_MARK after
     their text, like every other way out of the app.
+
+    An edge with more of the note past it fades the text out toward it
+    (see show_edges), so a long note never looks like it ends at the
+    bottom of the card.
     '''
 
     # A markdown link to the web - not an image (![...](...))
     WEB_LINK = re.compile(r"(?<!!)\[([^\]]+)\]\((https?://[^)\s]+)\)")
+    # px the fade reaches in from an edge
+    FADE_DEPTH = 56
+
+    def __init__(self):
+        super().__init__()
+        self.fade: QGraphicsOpacityEffect | None = None
+        bar = self.verticalScrollBar()
+        bar.valueChanged.connect(self.show_edges)
+        bar.rangeChanged.connect(self.show_edges)
+
+    def show_edges(self, *_):
+        '''
+        Fades the text out toward each edge with more of the note past it -
+        the text itself, through an opacity mask, so it fades into whatever
+        is behind it, see-through themes and all. No effect at all while
+        the whole note shows.
+        '''
+        bar = self.verticalScrollBar()
+        above, below = bar.value() > bar.minimum(), bar.value() < bar.maximum()
+        if not (above or below):
+            if self.fade is not None:
+                # Setting None deletes it
+                self.viewport().setGraphicsEffect(None)
+                self.fade = None
+            return
+        if self.fade is None:
+            self.fade = QGraphicsOpacityEffect(self.viewport())
+            # Its default is 0.7 - only the mask should fade anything
+            self.fade.setOpacity(1.0)
+            self.viewport().setGraphicsEffect(self.fade)
+        height = self.viewport().height()
+        depth = min(self.FADE_DEPTH, height / 3) / max(1, height)
+        gradient = QLinearGradient(0, 0, 0, height)
+        gradient.setColorAt(0, QColor(0, 0, 0, 0 if above else 255))
+        gradient.setColorAt(depth, Qt.GlobalColor.black)
+        gradient.setColorAt(1 - depth, Qt.GlobalColor.black)
+        gradient.setColorAt(1, QColor(0, 0, 0, 0 if below else 255))
+        self.fade.setOpacityMask(QBrush(gradient))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.show_edges()
 
     def setMarkdown(self, markdown: str):
         def mark(match: re.Match) -> str:
