@@ -385,14 +385,13 @@ class TabStrip(QWidget):
 
 
 class _SideTitle(QWidget):
-    '''A panel's title, turned to read down a sideways strip (see _SideStrip) - clicking it calls click.'''
+    '''A panel's title, turned to read down a sideways strip (see _SideStrip).'''
 
-    def __init__(self, context: Context, text: str, current: bool, click: Callable[[], None]):
+    def __init__(self, context: Context, text: str, current: bool):
         super().__init__()
         self.style = context.style
         self.text = text
         self.current = current
-        self.click = click
         self.setFont(self.style.get_font())
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -417,16 +416,13 @@ class _SideTitle(QWidget):
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text)
         painter.end()
 
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
-            self.click()
-
 
 class _SideStrip(QWidget):
     '''
     A minimized pane laid flat the other way (see DockArea.lay_out_minimized):
     a thin upright panel with its restore button at the top and its tabs'
-    titles turned sideways below - clicking one restores the pane showing it.
+    titles turned sideways below - each a handle to pick its panel up by,
+    or click to peek at it (see DockArea.peek).
     '''
 
     def __init__(self, context: Context, tabs: list[tuple[str, str]], current: str, restore: Callable[[str | None], None],
@@ -446,7 +442,7 @@ class _SideStrip(QWidget):
         button.clicked.connect(lambda checked=False: restore(None))
         column.addWidget(button, 0, Qt.AlignmentFlag.AlignHCenter)
         for panel_id, title in tabs:
-            label = _SideTitle(context, title, panel_id == current, lambda panel_id=panel_id: restore(panel_id))
+            label = _SideTitle(context, title, panel_id == current)
             column.addWidget(label, 0, Qt.AlignmentFlag.AlignHCenter)
             if watch is not None:
                 watch(label, panel_id)
@@ -459,6 +455,31 @@ class _SideStrip(QWidget):
         from ..panels.panel import paint_panel  # here - panels import this module's package
         painter = QPainter(self)
         paint_panel(painter, self.style, self.width(), self.height())
+        painter.end()
+
+
+class _LentPlaceholder(QWidget):
+    '''Where a minimized panel's bar was while it's out being peeked at (see TabbedPane.lend): its title, faint.'''
+
+    def __init__(self, context: Context, title: str):
+        super().__init__()
+        self.style = context.style
+        self.title = title
+        self.setFont(self.style.get_font())
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(0, 0)
+
+    def paintEvent(self, event):
+        from ..panels.panel import paint_panel  # here - panels import this module's package
+        painter = QPainter(self)
+        paint_panel(painter, self.style, self.width(), self.height())
+        color = QColor(self.style.color("text"))
+        color.setAlphaF(0.45)
+        painter.setPen(color)
+        left, top, right, bottom = self.style.panel_margins()
+        room = self.rect().adjusted(left + self.style.igap * 2, top, -right, -bottom)
+        painter.drawText(room, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.title)
         painter.end()
 
 
@@ -510,6 +531,7 @@ class TabbedPane(QWidget):
                 menu_bar.set_title_widget(None)
         self.form = "open"
         self.side: _SideStrip | None = None
+        self.lent: QWidget | None = None
         self.current = None
         self.set_current(current if current in self.panels else next(iter(self.panels)))
 
@@ -549,6 +571,26 @@ class TabbedPane(QWidget):
         else:
             self.stack.setCurrentWidget(self.panels[self.current])
 
+    def lend(self, panel_id: str) -> QWidget:
+        '''Takes a panel out to be shown somewhere else for a while (see DockArea.peek) - give it back with take_back.'''
+        panel = self.panels[panel_id]
+        self.stack.removeWidget(panel)
+        if self.form != "side":
+            # Its menu bar's gone with it - a stand-in keeps the pane's place
+            title = panel.menu_bar.title() if getattr(panel, "menu_bar", None) is not None else ""
+            self.lent = _LentPlaceholder(self.context, title)
+            self.stack.addWidget(self.lent)
+            self.stack.setCurrentWidget(self.lent)
+        return panel
+
+    def take_back(self, panel_id: str):
+        if self.lent is not None:
+            self.stack.removeWidget(self.lent)
+            self.lent.deleteLater()
+            self.lent = None
+        self.stack.insertWidget(list(self.panels).index(panel_id), self.panels[panel_id])
+        self.set_form(self.form)
+
     def thickness(self) -> int:
         '''
         How thick it is minimized, either way: a panel menu bar's height
@@ -576,7 +618,8 @@ class _Grip(QObject):
     Watches the widgets a panel can be picked up by - its menu bar, title
     and tabs, each marked with the "dock_panel_id" it picks up - and starts
     a DockArea drag once one's pressed and the mouse moves past the
-    platform's drag distance.
+    platform's drag distance - or, pressed and let go without moving, tells
+    it the title was clicked.
     '''
 
     def __init__(self, area: "DockArea"):
@@ -600,8 +643,25 @@ class _Grip(QObject):
                     source.setDown(False)  # a tab: it's picked up, not clicked
                 self.area.begin_drag(panel_id, at)
                 return True
-        elif kind == QEvent.Type.MouseButtonRelease:
+        elif kind == QEvent.Type.MouseButtonRelease and self.pressed is not None:
+            # A click, not a drag: on a minimized pane's title, it peeks at the panel (see DockArea.peek)
+            _, panel_id, source = self.pressed
             self.pressed = None
+            if event.button() == Qt.MouseButton.LeftButton and not isinstance(source, QAbstractButton):
+                QTimer.singleShot(0, lambda: self.area.title_clicked(panel_id, source))
+        return False
+
+
+class _SashGrip(QObject):
+    '''Remembers every open pane's size when a divider is pressed - what one dragged down to minimized goes back to.'''
+
+    def __init__(self, area: "DockArea"):
+        super().__init__(area)
+        self.area = area
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.MouseButtonPress and self.area.root is not None:
+            self.area.remember_open_sizes(self.area.collapsed())
         return False
 
 
@@ -692,6 +752,39 @@ class _DropPreview(QWidget):
         painter.end()
 
 
+class _Peek(QWidget):
+    '''
+    A minimized panel, lent out of its pane and shown open in a popup by
+    it (see DockArea.peek) - to look at or use without restoring the pane.
+    Closes like any popup, on a click outside it or Esc, and hands the
+    panel back.
+    '''
+
+    def __init__(self, area: "DockArea", panel: QWidget, closed: Callable[[], None]):
+        super().__init__(area.window(), Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.style = area.style
+        self.closed = closed
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(panel)
+        panel.show()
+
+    def paintEvent(self, event):
+        # The page's window material under the panel, as on the page - a
+        # see-through panel would otherwise show whatever's under the popup
+        from ..panels.panel import paint_panel  # here - panels import this module's package
+        painter = QPainter(self)
+        paint_panel(painter, self.style, self.width(), self.height(), on_window=True)
+        painter.end()
+
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        closed, self.closed = self.closed, None
+        if closed is not None:
+            closed()
+
+
 @dataclass
 class DropTarget:
     '''
@@ -742,6 +835,9 @@ class DockArea(QWidget):
         self.shelf.setLayout(QVBoxLayout())
         self.shelf.hide()
         self.grip = _Grip(self)
+        self.sash_grip = _SashGrip(self)
+        # The panel being peeked at, its pane and its popup (see peek)
+        self.peeking: tuple[str, TabbedPane, _Peek] | None = None
 
         self.root = from_tree(tree) if tree else None
         self.panels: dict[str, QWidget] = {}
@@ -814,7 +910,9 @@ class DockArea(QWidget):
         divisors = [total / max(child["weight"], 1e-6) for child in children]
         panes = Panes(master, self.context, node["orientation"], len(children), divisors, False,
                       transparent=self.transparent, ids=[child["id"] for child in children])
-        panes.splitterMoved.connect(lambda *_: self.changed.emit())
+        panes.splitterMoved.connect(lambda *_, node=node: (self.sash_moved(node), self.changed.emit()))
+        for index in range(1, panes.count()):
+            panes.handle(index).installEventFilter(self.sash_grip)
         self.splits[node["id"]] = panes
         for index, child in enumerate(children):
             pane = panes.pane(index)
@@ -867,12 +965,14 @@ class DockArea(QWidget):
     # left to take its room.
 
     def toggle_minimized(self, panel_id: str):
+        self.end_peek()
         node = leaf_of(self.root, panel_id) if self.root is not None else None
         if node is not None:
             self.minimize(node, not node.get("minimized", False))
 
     def restore(self, node: dict, panel_id: str | None = None):
-        '''Restores a minimized pane - showing panel_id, if given (a sideways title was clicked).'''
+        '''Restores a minimized pane - showing panel_id, if given.'''
+        self.end_peek()
         if panel_id is not None and node["id"] in self.tabbed:
             self.tabbed[node["id"]].set_current(panel_id)
         self.minimize(node, False)
@@ -926,6 +1026,33 @@ class DockArea(QWidget):
                 if not collapsed[child["id"]] and size > 0:
                     child["open_size"] = size
 
+    def sash_moved(self, node: dict):
+        '''
+        A divider in node's group was dragged: a pane dragged down to its
+        title bar's thickness minimizes - and a group dragged that thin
+        (across the way it stacks its panes) minimizes all its panes,
+        laying it flat.
+        '''
+        before = self.collapsed()
+        panes = self.splits.get(node["id"])
+        if panes is None or before.get(node["id"]):
+            return
+        axis = node["orientation"]
+        shrunk = [child for child, size in zip(node["children"], panes.sizes())
+                  if not before[child["id"]] and self.can_minimize(child) and size <= self.thickness(child, axis) + self.style.igap]
+        if not shrunk:
+            return
+        for child in shrunk:
+            for inner, _ in walk(child):
+                if not is_split(inner):
+                    inner["minimized"] = True
+        self.lay_out_minimized(before)
+
+    def can_minimize(self, node: dict) -> bool:
+        '''Whether every panel in node has a minimize button to restore it with (the layout editor's stand-ins don't).'''
+        return all(getattr(getattr(self.panels.get(panel_id), "menu_bar", None), "minimize", None) is not None
+                   for panel_id in panel_ids(node))
+
     def relayout_soon(self):
         if not self._relayout_queued:
             self._relayout_queued = True
@@ -933,13 +1060,17 @@ class DockArea(QWidget):
 
     def _relayout(self):
         self._relayout_queued = False
-        if self.root is not None:
-            collapsed = self.collapsed()
-            if any(collapsed.values()):
-                self.lay_out_minimized(collapsed)
+        # Not until it's on screen with its real size - see showEvent
+        if self.root is not None and self.isVisible() and not self.testAttribute(Qt.WidgetAttribute.WA_PendingResizeEvent):
+            # Even with nothing minimized: every pane's floor is its title bar (see lay_out_split)
+            self.lay_out_minimized(self.collapsed())
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self.relayout_soon()
+
+    def showEvent(self, event):
+        super().showEvent(event)
         self.relayout_soon()
 
     def lay_out_minimized(self, before: dict[str, bool]):
@@ -971,7 +1102,8 @@ class DockArea(QWidget):
         floor = self.style.PANE_MIN_WIDTH if horizontal else self.style.PANE_MIN_HEIGHT
         current = [float(size) for size in panes.sizes()]
         total = sum(current)
-        if len(current) != len(children) or total <= 0:
+        if len(current) != len(children) or total <= 0 or panes.testAttribute(Qt.WidgetAttribute.WA_PendingResizeEvent):
+            # Not laid out yet: its sizes are Qt's placeholders
             current = [float(child["weight"]) for child in children]
             total = sum(current) or 1
         current = [size / total * room for size in current]
@@ -1018,7 +1150,12 @@ class DockArea(QWidget):
 
         for index, (child, kind, size) in enumerate(zip(children, kinds, sizes)):
             pane = panes.pane(index)
-            low, high = (int(size), int(size)) if kind == "flat" else (min(floor, int(size)) if kind == "share" else floor, QWIDGETSIZE_MAX)
+            if kind == "flat":
+                low, high = int(size), int(size)
+            else:
+                # Open, a pane can be dragged down to its title bar - which minimizes it (see sash_moved)
+                low = self.thickness(child, axis) if self.can_minimize(child) else floor
+                low, high = min(low, int(size)), QWIDGETSIZE_MAX
             if horizontal:
                 pane.setMinimumWidth(low)
                 pane.setMaximumWidth(high)
@@ -1032,6 +1169,78 @@ class DockArea(QWidget):
                 self.lay_out_split(child, parents + (node,), round(size) if horizontal else width,
                                    height if horizontal else round(size), before, after)
 
+    # Peeking
+    def title_clicked(self, panel_id: str, source: QWidget):
+        node = leaf_of(self.root, panel_id) if self.root is not None else None
+        if node is not None and node.get("minimized") and self.held is None:
+            self.peek(panel_id)
+
+    def peek(self, panel_id: str):
+        '''
+        Shows a minimized panel open in a popup beside its strip - the
+        panel itself, lent out of its pane until the popup closes - to
+        glance at or use (flip a form on, say) without restoring the pane.
+        '''
+        self.end_peek()
+        node = leaf_of(self.root, panel_id)
+        tabbed = self.tabbed.get(node["id"]) if node is not None else None
+        if tabbed is None:
+            return
+        # Its open size the way it's flattened: what the minimized group it's in - or it - had open
+        collapsed = self.collapsed()
+        _, parents = find(self.root, node["id"])
+        flattened = node
+        for parent in reversed(parents):
+            if not collapsed[parent["id"]]:
+                break
+            flattened = parent
+        anchor = QRect(tabbed.mapToGlobal(QPoint(0, 0)), tabbed.size())
+        side = tabbed.form == "side"
+        panel = tabbed.lend(panel_id)
+        menu_bar = getattr(panel, "menu_bar", None)
+        if menu_bar is not None:
+            menu_bar.show_body(True)
+        popup = _Peek(self, panel, lambda: self.end_peek(closing=True))
+        self.peeking = (panel_id, tabbed, popup)
+
+        # Its size open along the way it's minimized, within reason - and beside its strip
+        window = QRect(self.window().mapToGlobal(QPoint(0, 0)), self.window().size())
+        open_size = int(flattened.get("open_size") or 0)
+        # ...and across, the room its strip has, or what it had open in its own group
+        own = int(node.get("open_size") or 0)
+        width = open_size if side else anchor.width()
+        height = max(anchor.height(), own) if side else open_size
+        width = max(360, min(width or 480, window.width() * 2 // 3))
+        height = max(280, min(height or 360, window.height() * 2 // 3))
+        if side:
+            x = anchor.right() if anchor.right() + width <= window.right() else anchor.left() - width
+            y = anchor.top()
+        else:
+            x = anchor.left()
+            y = anchor.bottom() if anchor.bottom() + height <= window.bottom() else anchor.top() - height
+        x = max(window.left(), min(x, window.right() - width))
+        y = max(window.top(), min(y, window.bottom() - height))
+        popup.setGeometry(x, y, width, height)
+        popup.show()
+
+    def end_peek(self, closing: bool = False):
+        '''Hands a peeked-at panel back to its pane (see peek).'''
+        if self.peeking is None:
+            return
+        panel_id, tabbed, popup = self.peeking
+        self.peeking = None
+        panel = self.panels.get(panel_id)
+        if panel is not None:
+            panel.setParent(self.shelf)
+            if self.tabbed.get(leaf_of(self.root, panel_id)["id"]) is tabbed:
+                tabbed.take_back(panel_id)
+            else:
+                self.build()  # its pane was rebuilt meanwhile
+        if not closing:
+            popup.closed = None
+            popup.close()
+        popup.deleteLater()
+
     # Dragging
     def begin_drag(self, panel_id: str, at: QPoint, new: bool = False):
         '''
@@ -1042,6 +1251,7 @@ class DockArea(QWidget):
         '''
         if self.held is not None:
             return
+        self.end_peek()
         self.capture_sizes()
         self.before = copy.deepcopy(self.root)
         self.held, self.held_new = panel_id, new

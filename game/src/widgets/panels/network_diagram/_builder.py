@@ -21,7 +21,9 @@ class Builder(Panel):
 
         self.buffer = context.buffer.packets
 
+        # The graph and its chart side by side, or stacked - whichever keeps them squarer (see resizeEvent)
         panes = Panes(self, context, "horizontal", 2, [2, 2], False)
+        self.panes = panes
 
         left_frame = panes.pane(0)
         right_frame = panes.pane(1)
@@ -59,6 +61,12 @@ class Builder(Panel):
         self.current_mode = "live"
         self.current_selected_number = None
         self.context.animation_manager.add_callback(f"network_diagram_panel_{id(self)}", self.tick)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Like the HVAC house (see canvases.house): side by side when wide, stacked when tall
+        if self.panes.isVisible():
+            self.panes.set_direction("horizontal" if self.panes.width() >= self.panes.height() else "vertical")
 
     def tick(self):
         mode = self.context.states.get("packet_console", "mode")

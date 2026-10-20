@@ -102,6 +102,24 @@ class Panes(QSplitter):
         # numbers don't matter, only their ratios.
         self.setSizes(initial_sizes)
 
+    def set_direction(self, direction: str):
+        '''Turns the split to run "horizontal" (side by side) or "vertical" (stacked), its panes' floors with it.'''
+        if direction == self.direction:
+            return
+        self.direction = direction
+        sizes = self.sizes()
+        self.setOrientation(Qt.Orientation.Horizontal if direction == "horizontal" else Qt.Orientation.Vertical)
+        style = self.context.style
+        for pane in self.panels:
+            if direction == "horizontal":
+                pane.setMinimumHeight(0)
+                pane.setMinimumWidth(style.PANE_MIN_WIDTH)
+            else:
+                pane.setMinimumWidth(0)
+                pane.setMinimumHeight(style.PANE_MIN_HEIGHT)
+        # The same shares, the other way
+        self.setSizes(sizes)
+
     def pane(self, index: int):
         if hasattr(self, "panels"):
             return self.panels[index]

@@ -637,6 +637,11 @@ class MenuBar(QFrame):
         if self._minimize_body is not None:
             self._minimize_body.setVisible(not minimized)
 
+    def show_body(self, shown: bool):
+        '''Shows or hides just the body minimizing hides - for a minimized panel peeked at (see DockArea.peek).'''
+        if self._minimize_body is not None:
+            self._minimize_body.setVisible(shown)
+
     # Title or tabs
 
     def set_title_widget(self, widget: QWidget | None):
