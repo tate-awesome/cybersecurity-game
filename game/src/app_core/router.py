@@ -12,10 +12,6 @@ from ..pages.demo.visuals import Visuals
 from ..pages.demo.config_editor import ConfigEditor
 from ..pages.demo.workspace_sorter import WorkspaceSorter
 
-# /attacker
-from ..pages.attacker.attacker import AttackerV0
-from ..pages.defender.defender import DefenderV0
-
 # /settings
 from ..pages.settings import SettingsPage
 from ..pages.theme_editor import ThemeEditorPage
@@ -40,8 +36,6 @@ from ..widgets.frame_widgets.pause_menu import PauseMenu
 # Add new pages here to make them accessible by the router.
 # All page builder functions should take a Context object as an argument and build the page as the root window's central widget.
 PAGES: dict[str, type] = {
-        "attacker": AttackerV0,
-        "defender": DefenderV0,
         "demo/sprites": Sprites,
         "demo/boat_motion": BoatMotion,
         "demo/triangle": Triangle,

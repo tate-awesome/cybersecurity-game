@@ -201,7 +201,7 @@
         },
         "category": {
             "type": "string",
-            "description": "The workspace select section that lists it (admin, attacker, defender)."
+            "description": "The workspace select section that lists it (admin, attacker, defender, docking_demo)."
         },
         "include": {
             "enum": [

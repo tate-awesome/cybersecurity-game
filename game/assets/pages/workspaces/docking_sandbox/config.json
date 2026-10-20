@@ -1,0 +1,65 @@
+{
+    "_note": [
+        "# Docking: Sandbox",
+        "## Summary",
+        "A plain three-column layout to rearrange however you like - try building each of the layouts below from it.",
+        "## Try This",
+        "- **Two rows:** Network Actions and the Network Graph across the top, everything else across the bottom.\n- **Sidebar:** Status down the whole left edge, with every other panel stacked as tabs beside it.\n- **Quadrants:** four panes in a two-by-two grid, with the leftover panels as tabs in them.",
+        "## How Docking Works",
+        "**Moving a panel:** press its title bar - the empty space, the title, or a tab - and drag. The panel leaves the layout and a chip with its name follows the mouse; a see-through rectangle shows where it'll land.",
+        "- **The middle of a pane:** the panel joins it as a tab.\n- **Near one of a pane's edges:** the pane splits, and the panel takes that half.\n- **A tab row:** the panel goes in as a tab, right where the marker is.\n- **The very edge of a group of panes:** a thin band along it docks the panel beside the whole group - near the window's edges, beside everything.\n- **Anywhere else, or Esc:** the panel goes back where it was.",
+        "Your layout is saved with the workspace, like your inputs. **Reset Layout** (under **Edit Workspace**) puts every panel back where it started."
+    ],
+
+    "_dev_note": "A demo of docking (see widgets/frame_widgets/docking.py) - no lesson, just a layout to rearrange.",
+
+    "schema_version": 1,
+    "link_label": "title_buttons_workspace_docking_sandbox",
+    "include": 1,
+    "category": "docking_demo",
+    "order": 4,
+    "prerequisites": [],
+    "estimated_minutes": 5,
+    "gradable": false,
+
+    "build_type": "workspace",
+
+    "settings": {
+        "available": {"sniff": 1, "wifi": 1, "nmap": 1, "arp": 1},
+        "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nmap": 1},
+        "packet_columns": {
+            "time_word": 1,
+            "number": 1,
+            "observer": 1,
+            "direction": 1,
+            "protocol": 1,
+            "modbus_word": 1
+        }
+    },
+
+    "title": "docking_sandbox_workspace",
+    "menu_bar": [
+        "clear_inputs_button",
+        "reset_layout_button",
+        "reset_button",
+        "network_forms_button",
+        "packet_columns_button"
+    ],
+
+    "layout_shape": {
+        "h_panes_1": [
+            {"v_panes_1": ["network_action_panel_1", "status_panel_1"]},
+            "packet_panel_1",
+            {"v_panes_2": ["network_graph_panel_1", "modbus_table_panel_1"]}
+        ]
+    },
+    "layout_weights": {
+        "v_panes_1": 30,
+        "network_action_panel_1": 60,
+        "status_panel_1": 40,
+        "packet_panel_1": 40,
+        "v_panes_2": 30,
+        "network_graph_panel_1": 50,
+        "modbus_table_panel_1": 50
+    }
+}

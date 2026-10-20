@@ -79,12 +79,6 @@ RIGHT_ZONE_ICONS: dict[str, str] = {
 OVERFLOW_CLOSED = Style.icon("chevrons-right")
 OVERFLOW_OPEN = Style.icon("x")
 
-# What the hand-built game pages (attacker, defender) get (see MenuBar.page_buttons)
-PAGE_BUTTON_NAMES: list[str] = [
-    "ap_config_button", "reset_button", "preset_button",
-    "pcap_button", "load_button", "save_button", "stream_button",
-]
-
 
 def _pane_is_minimized(widget: QWidget, vertical: bool, style) -> bool:
     '''
@@ -982,7 +976,3 @@ class MenuBar(QFrame):
                 self.add_important(button_classes[0])
             elif button_classes:
                 self.add_important(ButtonGroup, group_key, present)
-
-    def page_buttons(self):
-        '''Every standard page button - see PAGE_BUTTON_NAMES.'''
-        self.add_config_buttons(PAGE_BUTTON_NAMES)
