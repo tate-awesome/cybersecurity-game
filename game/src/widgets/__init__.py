@@ -6,6 +6,7 @@ from ..app_core import Context
 from .frame_widgets.menu_bar import MenuBar
 from .frame_widgets.title_menu import TitleMenu
 from .frame_widgets.panes import Panes
+from .frame_widgets.docking import DockArea, TabbedPane
 from .frame_widgets.scrollable import Scrollable
 from .frame_widgets.overlay import Overlay
 from .frame_widgets.shift_wheel_slider import ShiftWheelSlider
@@ -45,13 +46,12 @@ def panel(key: str, master: QWidget, context: Context, panel_id: str | None = No
     Generic panel builder. Make panels by key instead of class name.
     panel_id is the panel's id in the layout ("modbus_model_panel_2"),
     passed on to builders that take one - so per-copy settings (see
-    ModbusModel and "model_panels") can tell the copies apart.
+    ModbusModel and "model_panels") can tell the copies apart. Returns
+    the panel it built.
     '''
     if key not in PANELS:
-        GenericPanel(master, context, f"err: no panel for this key: {key}")
-        return
+        return GenericPanel(master, context, f"err: no panel for this key: {key}")
     builder = PANELS[key]
     if "panel_id" in inspect.signature(builder).parameters:
-        builder(master, context, panel_id=panel_id)
-    else:
-        builder(master, context)
+        return builder(master, context, panel_id=panel_id)
+    return builder(master, context)

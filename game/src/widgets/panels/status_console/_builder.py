@@ -19,7 +19,7 @@ class Builder(Panel):
 
         self.text_box = self.create_text_box(self)
 
-        minimize_button = self.menu_bar.minimize_button(self.text_box, master)
+        minimize_button = self.menu_bar.minimize_button(self.text_box)
 
         self.menu_bar.add_important(FreeScrollStatusConsole)
 

@@ -53,7 +53,7 @@ class Builder(Panel):
 
         self.menu_bar.add_important(ChooseShownDefenderModbusForms)
 
-        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
+        minimize_button = self.menu_bar.minimize_button(self.scrollable)
 
         self.shown_forms = None  # defender_modbus_forms_shown as of the last refresh_forms
         self.refresh_forms()

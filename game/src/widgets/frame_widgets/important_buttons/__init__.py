@@ -70,6 +70,7 @@ from .delete_all_workspace_saved_data import DeleteAllWorkspaceSavedData
 from .open_workspace_editor import OpenWorkspaceEditor
 from .open_workspace_sorter import OpenWorkspaceSorter
 from .configure_this_workspace import ConfigureThisWorkspace
+from .save_layout_as_default import SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault
 from .settings_overlays.edit_workspace_availability import EditWorkspaceAvailability
 from .toggle_debug_labels import ToggleDebugLabels
 

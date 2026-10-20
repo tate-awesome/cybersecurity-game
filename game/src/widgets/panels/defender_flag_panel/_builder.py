@@ -42,7 +42,7 @@ class Builder(Panel):
             self.scrollable.grid_layout.addWidget(section, row, 0)
         self.scrollable.add_deadspace("grid")
 
-        self.menu_bar.minimize_button(self.scrollable, master)
+        self.menu_bar.minimize_button(self.scrollable)
 
         self._submarine_mode = None
         self.context.animation_manager.add_callback(f"DefenderFlagPanel_{id(self)}", self.refresh)

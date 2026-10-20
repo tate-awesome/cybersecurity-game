@@ -33,7 +33,7 @@ class Builder(Panel):
         self.menu_bar.add_important(FilterPacketConsole)
         self.menu_bar.add_important(ChooseShownPacketConsoleColumns)
         self.menu_bar.add_important(PausePacketConsole)
-        minimize_button = self.menu_bar.minimize_button(self.treeview.frame, master)
+        minimize_button = self.menu_bar.minimize_button(self.treeview.frame)
         self.menu_bar.add_important(ClearAllCapturedBufferData)
 
         # Printing Flags

@@ -331,8 +331,7 @@ class ConfigEditor(Page):
         self.form = self.new_tab("Menu Bar")
         self.build_menu_bar_section()
         self.layout_editor = LayoutEditor(self, self.config.get("layout_shape"), self.config.get("layout_weights"))
-        self.tabs.addTab(self.layout_editor.shape_tab, "Layout Shape")
-        self.tabs.addTab(self.layout_editor.weights_tab, "Layout Weights")
+        self.tabs.addTab(self.layout_editor.tab, "Layout")
         raw = self.config.get("settings", {})
         self.raw_settings = raw if isinstance(raw, dict) else {}
         self.build_settings_tabs()
@@ -621,16 +620,7 @@ class ConfigEditor(Page):
 
     def layout_panels(self) -> list[str]:
         '''The panel types in the layout being edited, in layout order, each once.'''
-        found = []
-        def walk(entry: dict):
-            if "widget" in entry:
-                if entry["widget"] not in found:
-                    found.append(entry["widget"])
-            else:
-                for child in entry["panes"]["children"]:
-                    walk(child)
-        walk(self.layout_editor.root)
-        return found
+        return self.layout_editor.panel_types()
 
     def refresh_usage(self):
         '''

@@ -83,7 +83,7 @@ class Builder(Panel):
         self.key_by_label = {label: key for key, label in self.labels_by_key.items()}
         if not models:
             print(f"{panel_id} has no models available")
-            self.menu_bar.minimize_button(self.body, master)
+            self.menu_bar.minimize_button(self.body)
             return
 
         start_key = settings["start_on"] if settings["start_on"] in models else models[0]
@@ -115,7 +115,7 @@ class Builder(Panel):
             if auto_switch_enabled:
                 self.context.animation_manager.add_callback(self._auto_switch_callback_name, self._auto_switch)
 
-        self.menu_bar.minimize_button(self.body, master)
+        self.menu_bar.minimize_button(self.body)
 
     def _set_auto_switch(self, enabled: bool):
         self.context.states.set("model_panels", self.panel_id, "auto_switch_on_poll", value=1 if enabled else 0)

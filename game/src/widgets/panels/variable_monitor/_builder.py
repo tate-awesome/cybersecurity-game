@@ -50,7 +50,7 @@ class Builder(Panel):
 
         # self.start_animation(framerate_ms=100)
 
-        self.menu_bar.minimize_button(scrollable, master)
+        self.menu_bar.minimize_button(scrollable)
         self.menu_bar.add_important(EditModbusRegisterDisplay)
         self.menu_bar.add_important(SelectRegisterPreset)
         self.menu_bar.add_important(ToggleStripChartAutoFit)

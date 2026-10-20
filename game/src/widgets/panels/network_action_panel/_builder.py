@@ -75,7 +75,7 @@ class Builder(Panel):
 
         self.menu_bar.add_important(ChooseShownNetworkActionForms)
         self.menu_bar.add_important(AbortAllNetworkActions)
-        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
+        minimize_button = self.menu_bar.minimize_button(self.scrollable)
 
 
     def refresh_forms(self):

@@ -5,14 +5,14 @@ from ._base_button import ImportantButton
 
 class WorkspaceSaveResetButton(ImportantButton):
     '''
-    Shared by buttons that reset one part ("settings" or "layout_weights") of the
-    current workspace's autosave (see PageManager.save_current_page): asks
+    Shared by buttons that reset part of the current workspace's autosave
+    ("settings", or "layout_shape" and "layout_weights") (see PageManager.save_current_page): asks
     for confirmation, autosaves first (so the other part keeps what's on
     screen right now), deletes PART, and rebuilds the page without
     re-autosaving - so it comes back with that part at its defaults.
     Only offered on workspace pages, the only ones with an autosave.
     '''
-    PART = ""
+    PART: str | tuple[str, ...] = ""
     MESSAGE = ""
     OPENS = "warning"  # it asks first
 

@@ -54,7 +54,7 @@ class Builder(Panel):
         right_frame.grid_layout.addWidget(self.selected_text, 0, 0)
         self.selected_text.hide()
 
-        self.menu_bar.minimize_button(panes, master)
+        self.menu_bar.minimize_button(panes)
 
         self.current_mode = "live"
         self.current_selected_number = None

@@ -8,7 +8,7 @@ class WorkspacePage(Page):
     '''
     Page constructor for build_type "workspace". Reads its own config.json
     (resolved by PageManager from the key it was navigated to) and builds a
-    MenuBar plus a tree of Panes/panels from the "menu_bar", "layout_shape"
+    MenuBar plus a DockArea of panels from the "menu_bar", "layout_shape"
     and "layout_weights" sections, instead of hardcoding a specific page's layout.
     '''
 
@@ -32,40 +32,12 @@ class WorkspacePage(Page):
 
         self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 
+        # The panels, which the user can rearrange by dragging them by
+        # their menu bars - autosaved with the page (see PageManager.save_current_page)
         layout = config.get("layout")
-        self.panes_root = self.build_panes(layout, self) if layout else None
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.dock = widgets.DockArea(self, self.context, layout, self.make_panel, transparent=self.transparent_panes) if layout else None
 
-    def build_panes(self, node: dict, master):
-        '''
-        Recursively builds a widgets.Panes tree from a layout-tree node:
-        {"orientation": ..., "children": [{"id": ..., "weight": ..., "panes": {...}} | {"id": ..., "weight": ..., "widget": "<panel type>"}]}
-        (PageManager.layout_tree builds this from a page config's
-        layout_shape and layout_weights). Each child's "weight" is its proportional share of its parent -
-        bigger weight, bigger pane - converted here into the divisors
-        widgets.Panes actually expects (pane size = total size / divisor).
-        Returns the Panes built at this node, so the caller can hang onto
-        the outermost one (see self.panes_root) - PageManager reads its
-        current sizes back out through Panes.get_weights() to autosave.
-        '''
-        children = node.get("children", [])
-        if not children:
-            return None
-
-        weights = [child.get("weight", 1) for child in children]
-        total_weight = sum(weights)
-        divisors = [total_weight / weight for weight in weights]
-
-        panes = widgets.Panes(master, self.context, node.get("orientation", "horizontal"), len(children), divisors, False,
-                              transparent=self.transparent_panes, ids=[child["id"] for child in children])
-
-        for i, child in enumerate(children):
-            pane = panes.pane(i)
-            if "panes" in child:
-                self.build_panes(child["panes"], pane)
-            elif "widget" in child:
-                # A panel's type is its class's KEY (see widgets.PANELS)
-                widgets.panel(child["widget"], pane, self.context, panel_id=child["id"])
-            else:
-                print(f"Pane-tree child {child!r} has neither 'panes' nor 'widget', skipping")
-
-        return panes
+    def make_panel(self, panel_id: str, master):
+        # A panel's type is its class's KEY (see widgets.PANELS)
+        return widgets.panel(self.context.pages.panel_type(panel_id), master, self.context, panel_id=panel_id)

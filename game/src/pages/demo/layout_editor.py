@@ -1,91 +1,78 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
-                               QSplitter, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from ...widgets import PANELS
+from ...widgets import PANELS, DockArea, GenericPanel
 
 if TYPE_CHECKING:
     from .config_editor import ConfigEditor
 
-ORIENTATION_NAMES = {"horizontal": "Side by side", "vertical": "Stacked"}
-PREFIXES = {"horizontal": "h_panes", "vertical": "v_panes"}
+
+class PanelChip(QFrame):
+    '''
+    One panel type in the layout editor's list: its name, picked up and
+    dragged into the preview to add a copy of it there (see LayoutEditor.pick_up).
+    '''
+
+    def __init__(self, layout_editor: "LayoutEditor", panel: str):
+        super().__init__()
+        self.layout_editor = layout_editor
+        self.panel = panel
+        style = layout_editor.style
+        style.set_material(self, "card", rounded=True, outlined=True)
+        row = QHBoxLayout(self)
+        gap = style.cgap * 2
+        row.setContentsMargins(gap * 2, gap, gap * 2, gap)
+        name = QLabel(layout_editor.panel_name(panel))
+        name.setFont(style.get_font("default"))
+        name.setWordWrap(True)
+        name.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        row.addWidget(name, 1)
+        self.setToolTip(layout_editor.panel_details(panel))
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.pressed_at: QPoint | None = None
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.pressed_at = event.globalPosition().toPoint()
+
+    def mouseMoveEvent(self, event):
+        at = event.globalPosition().toPoint()
+        if self.pressed_at is not None and (at - self.pressed_at).manhattanLength() >= QApplication.startDragDistance():
+            self.pressed_at = None
+            self.layout_editor.pick_up(self.panel, at)
+
+    def mouseReleaseEvent(self, event):
+        self.pressed_at = None
 
 
 class LayoutEditor:
     '''
-    The workspace editor's two layout tabs, sharing one pane tree - the
-    positional tree PageManager.layout_tree makes:
-    {"id", "orientation", "children": [{"id", "weight", "panes": {...}} | {"id", "weight", "widget": "<panel type>"}]}
+    The workspace editor's Layout tab: every panel type down the left - a
+    scrollable list to pick panels up from - beside a preview of the
+    layout on the right. The preview is a DockArea, the same as a
+    workspace's, with a stand-in for each panel: drag a panel from the
+    list into it to add one, drag a panel by its menu bar to move it (or
+    onto another, as a tab), drag one back onto the list to remove it, and
+    drag the dividers to resize. Every copy of a panel gets its own
+    numbered id ("status_panel_2"), so one panel type can appear any
+    number of times - up to its MAX_COPIES, if it has one.
 
-      - shape_tab: the tree's groups and panels, with buttons to add
-        panels and groups, remove them, reorder them, and flip a group's
-        direction, beside a preview of the result.
-      - weights_tab: a full-size preview whose dividers can be dragged to
-        resize panes, beside every weight as a number.
-
-    A spot in the tree is a path: child indexes from the top group, so ()
-    is the top group itself. Every panel and group has an id - its type
-    plus a number, like "status_panel_2" - so one panel type can appear
-    any number of times. authored() turns the tree back into the
-    layout_shape and layout_weights a config file holds.
+    authored() turns the preview back into the layout_shape and
+    layout_weights a config file holds.
     '''
 
     def __init__(self, editor: "ConfigEditor", shape: dict | None, weights: dict | None):
         self.editor = editor
         self.style = editor.style
-        tree = editor.pages.layout_tree(shape, weights)
-        tree = tree or {"id": "h_panes_1", "orientation": "horizontal", "children": []}
-        self.root = {"id": tree["id"], "weight": 1, "panes": tree}
-        self.selected: tuple = ()
-        self.syncing = False
-
-        self.shape_tab = self.build_shape_tab()
-        self.weights_tab = self.build_weights_tab()
-        self.refresh()
-
-    # Tree access
-    def entry(self, path: tuple) -> dict:
-        '''The {"weight", "panes"|"widget"} entry at path.'''
-        entry = self.root
-        for index in path:
-            entry = entry["panes"]["children"][index]
-        return entry
-
-    def is_group(self, path: tuple) -> bool:
-        return "panes" in self.entry(path)
-
-    def all_ids(self, entry: dict | None = None) -> list[str]:
-        entry = entry or self.root
-        ids = [entry["id"]]
-        if "panes" in entry:
-            for child in entry["panes"]["children"]:
-                ids += self.all_ids(child)
-        return ids
-
-    def numbers(self, kind: str) -> list[int]:
-        '''The numbers in use by a panel type's or group prefix's ids.'''
-        return [int(pane_id.rpartition("_")[2]) for pane_id in self.all_ids()
-                if self.editor.pages.panel_type(pane_id) == kind and pane_id.rpartition("_")[2].isdigit()]
-
-    def next_id(self, kind: str) -> str | None:
-        '''
-        A new id for a panel type or group prefix: one past the highest number
-        it already has - or, for a panel type with a MAX_COPIES (its settings
-        are per copy, like ModbusModel's model_panels), the lowest number from
-        1 to MAX_COPIES not in use yet, and None once they all are.
-        '''
-        limit = getattr(PANELS.get(kind), "MAX_COPIES", None)
-        if limit is None:
-            return f"{kind}_{max(self.numbers(kind), default=0) + 1}"
-        free = [number for number in range(1, limit + 1) if number not in self.numbers(kind)]
-        return f"{kind}_{free[0]}" if free else None
-
-    def entry_name(self, entry: dict) -> str:
-        if "panes" in entry:
-            return ORIENTATION_NAMES[entry["panes"]["orientation"]]
-        return self.panel_name(entry["widget"])
+        self.context = editor.context
+        self.tree = editor.pages.layout_tree(shape, weights)
+        self.shape = shape
+        self.weights = weights if isinstance(weights, dict) else {}
+        # Only once the preview's been changed is the layout read back off it - until then, it's saved as it was written
+        self.touched = False
+        self.tab = self.build_tab()
 
     # Panel names and explanations, from _default_notes.json's "panels"
     def panel_note(self, panel: str) -> dict:
@@ -103,310 +90,113 @@ class LayoutEditor:
         listed = [key for key in self.editor.notes.get("panels", {}) if key in PANELS]
         return listed + [key for key in PANELS if key not in listed]
 
-    # Shape tab
-    def build_shape_tab(self) -> QWidget:
+    # The tab
+    def build_tab(self) -> QWidget:
         tab = QWidget()
         row = QHBoxLayout(tab)
         row.setSpacing(self.style.igap)
-        left = QVBoxLayout()
-        row.addLayout(left, 2)
 
-        explanation = QLabel("The workspace's panels and how they're grouped. Select a group to add inside it, "
-                             "or a panel to add right after it. A panel type can be added as many times as you like "
-                             "(model panels up to 5) - each copy gets its own numbered id, so its weight is kept separately.")
+        left = QVBoxLayout()
+        row.addLayout(left, 1)
+        explanation = QLabel("Drag a panel from here into the preview to add it. In the preview, drag a panel by its "
+                             "title bar to move it: onto the middle of another panel to share its pane as a tab, or onto "
+                             "an edge to split that pane. Drag one back here to remove it, and drag the dividers to resize.")
         explanation.setFont(self.style.get_font("small"))
         explanation.setWordWrap(True)
         left.addWidget(explanation)
+        self.buffet = QScrollArea()
+        self.buffet.setWidgetResizable(True)
+        self.buffet.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.buffet.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
+        chips = QWidget()
+        self.editor.paint_root(chips)
+        column = QVBoxLayout(chips)
+        column.setSpacing(self.style.cgap * 3)
+        column.setAlignment(Qt.AlignmentFlag.AlignTop)
+        for panel in self.panel_keys():
+            column.addWidget(PanelChip(self, panel))
+        self.buffet.setWidget(chips)
+        left.addWidget(self.buffet, 1)
 
-        self.tree = QTreeWidget()
-        self.tree.setHeaderHidden(True)
-        self.tree.setFont(self.style.get_font("default"))
-        self.style.live_style(self.tree, lambda: (
-            f"QTreeWidget {{ background-color: {self.style.css('field')}; color: {self.style.color('field_text')}; border: none; }}"))
-        self.tree.currentItemChanged.connect(self.on_select)
-        left.addWidget(self.tree, 1)
-
-        controls = QGridLayout()
-        left.addLayout(controls)
-        self.panel_type = QComboBox()
-        self.panel_type.setFont(self.style.get_font("default"))
-        for index, panel in enumerate(self.panel_keys()):
-            self.panel_type.addItem(self.panel_name(panel), panel)
-            self.panel_type.setItemData(index, self.panel_details(panel), Qt.ItemDataRole.ToolTipRole)
-        # The closed dropdown explains its current pick too
-        self.panel_type.currentIndexChanged.connect(
-            lambda index: self.panel_type.setToolTip(self.panel_details(self.panel_type.itemData(index))))
-        self.panel_type.setToolTip(self.panel_details(self.panel_type.currentData()))
-        controls.addWidget(self.panel_type, 0, 0, 1, 2)
-        controls.addWidget(self.button("Add Panel", self.add_panel), 0, 2)
-        controls.addWidget(self.button("Add Side-by-Side Group", lambda: self.add_group("horizontal")), 1, 0)
-        controls.addWidget(self.button("Add Stacked Group", lambda: self.add_group("vertical")), 1, 1)
-        controls.addWidget(self.button("Flip Direction", self.flip), 1, 2)
-        controls.addWidget(self.button("Move Up", lambda: self.move(-1)), 2, 0)
-        controls.addWidget(self.button("Move Down", lambda: self.move(1)), 2, 1)
-        controls.addWidget(self.button("Remove", self.remove), 2, 2)
-
-        self.shape_preview = QVBoxLayout()
-        self.shape_preview.setContentsMargins(0, 0, 0, 0)
-        row.addLayout(self.shape_preview, 3)
+        preview = QWidget()
+        preview.setLayout(QVBoxLayout())
+        preview.layout().setContentsMargins(0, 0, 0, 0)
+        row.addWidget(preview, 3)
+        self.dock = DockArea(preview, self.context, self.tree, self.stand_in, discard=self.buffet,
+                             empty_text="No panels yet - drag one in from the list.")
+        self.dock.changed.connect(self.changed)
         return tab
 
-    def button(self, text: str, function) -> QPushButton:
-        button = QPushButton(text)
-        button.setFont(self.style.get_font("default"))
-        button.clicked.connect(lambda checked=False: function())
-        return button
+    def stand_in(self, panel_id: str, master: QWidget) -> QWidget:
+        '''A panel's stand-in in the preview: its menu bar, and its id and what it's for.'''
+        panel = self.editor.pages.panel_type(panel_id)
+        stand_in = GenericPanel(master, self.context, panel if panel in PANELS else "_default")
+        text = QLabel(f"{panel_id}\n\n{self.panel_details(panel)}".strip())
+        text.setFont(self.style.get_font("small"))
+        text.setWordWrap(True)
+        text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        text.setContentsMargins(0, self.style.igap, 0, 0)
+        stand_in.layout().addWidget(text, 1)
+        return stand_in
 
-    def on_select(self):
-        if self.syncing:
-            return
-        item = self.tree.currentItem()
-        self.selected = tuple(item.data(0, Qt.ItemDataRole.UserRole)) if item is not None else ()
-        self.build_preview(self.shape_preview, interactive=False)
-
-    def fill_tree(self):
-        self.syncing = True
-        self.tree.clear()
-        current = None
-        def add(parent, path: tuple):
-            nonlocal current
-            entry = self.entry(path)
-            text = f"{self.entry_name(entry)}  ({entry['id']})"
-            item = QTreeWidgetItem([text])
-            if "widget" in entry:
-                item.setToolTip(0, self.panel_details(entry["widget"]))
-            item.setData(0, Qt.ItemDataRole.UserRole, path)
-            if parent is None:
-                self.tree.addTopLevelItem(item)
-            else:
-                parent.addChild(item)
-            if path == self.selected:
-                current = item
-            if "panes" in entry:
-                for index in range(len(entry["panes"]["children"])):
-                    add(item, path + (index,))
-        add(None, ())
-        self.tree.expandAll()
-        if current is not None:
-            self.tree.setCurrentItem(current)
-        self.syncing = False
-
-    # Shape changes
-    def changed(self, select: tuple | None = None):
-        if select is not None:
-            self.selected = select
-        self.editor.mark_dirty()
-        self.refresh()
-        self.editor.refresh_usage()
-
-    def add(self, new: dict):
-        # Inside a selected group, or right after a selected panel
-        if self.is_group(self.selected):
-            parent_path, index = self.selected, len(self.entry(self.selected)["panes"]["children"])
-        else:
-            parent_path, index = self.selected[:-1], self.selected[-1] + 1
-        siblings = self.entry(parent_path)["panes"]["children"]
-        weights = [child["weight"] for child in siblings]
-        average = round(sum(weights) / len(weights), 2) if weights else 1
-        new["weight"] = int(average) if average == int(average) else average
-        siblings.insert(index, new)
-        self.changed(select=parent_path + (index,))
-
-    def add_panel(self):
-        panel = self.panel_type.currentData()
+    def pick_up(self, panel: str, at: QPoint):
+        '''Starts dragging a new copy of a panel type from the list - see PanelChip.'''
         panel_id = self.next_id(panel)
         if panel_id is None:
             self.editor.set_status(f"A layout can only hold {PANELS[panel].MAX_COPIES} of {self.panel_name(panel)}.", "bad")
             return
-        self.add({"id": panel_id, "widget": panel})
+        self.dock.begin_drag(panel_id, at, new=True)
 
-    def add_group(self, orientation: str):
-        group_id = self.next_id(PREFIXES[orientation])
-        self.add({"id": group_id, "panes": {"id": group_id, "orientation": orientation, "children": []}})
-
-    def remove(self):
-        if self.selected == ():
-            self.editor.set_status("The top group can't be removed.", "bad")
-            return
-        parent_path, index = self.selected[:-1], self.selected[-1]
-        del self.entry(parent_path)["panes"]["children"][index]
-        self.changed(select=parent_path)
-
-    def move(self, step: int):
-        if self.selected == ():
-            return
-        parent_path, index = self.selected[:-1], self.selected[-1]
-        siblings = self.entry(parent_path)["panes"]["children"]
-        target = index + step
-        if not 0 <= target < len(siblings):
-            return
-        siblings[index], siblings[target] = siblings[target], siblings[index]
-        self.changed(select=parent_path + (target,))
-
-    def flip(self):
-        path = self.selected if self.is_group(self.selected) else self.selected[:-1]
-        entry = self.entry(path)
-        group = entry["panes"]
-        group["orientation"] = "vertical" if group["orientation"] == "horizontal" else "horizontal"
-        # The id names the direction, so it changes with it
-        entry["id"] = group["id"] = self.next_id(PREFIXES[group["orientation"]])
-        self.changed(select=path)
-
-    # Weights tab
-    def build_weights_tab(self) -> QWidget:
-        tab = QWidget()
-        row = QHBoxLayout(tab)
-        row.setSpacing(self.style.igap)
-        self.weight_preview = QVBoxLayout()
-        self.weight_preview.setContentsMargins(0, 0, 0, 0)
-        row.addLayout(self.weight_preview, 3)
-
-        right = QVBoxLayout()
-        row.addLayout(right, 2)
-        explanation = QLabel("Drag the dividers in the preview to resize panes, or type a weight. "
-                             "Weights are shares of the group a pane sits in - a pane with weight 2 gets "
-                             "twice the room of a weight-1 neighbour.")
-        explanation.setFont(self.style.get_font("small"))
-        explanation.setWordWrap(True)
-        right.addWidget(explanation)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
-        right.addWidget(scroll, 1)
-        self.weight_scroll = scroll
-        return tab
-
-    def fill_weight_rows(self):
-        body = QWidget()
-        self.editor.paint_root(body)
-        grid = QGridLayout(body)
-        grid.setColumnStretch(1, 1)
-        grid.setAlignment(Qt.AlignmentFlag.AlignTop)
-        row = 0
-        def add(path: tuple, depth: int):
-            nonlocal row
-            entry = self.entry(path)
-            if path != ():
-                label = QLabel("    " * (depth - 1) + f"{self.entry_name(entry)}  ({entry['id']})")
-                label.setFont(self.style.get_font("default"))
-                grid.addWidget(label, row, 0)
-                weight = QLineEdit(f"{entry['weight']:g}")
-                weight.setFont(self.style.get_font("default"))
-                weight.setMaximumWidth(140)
-                weight.editingFinished.connect(lambda path=path, weight=weight: self.type_weight(path, weight))
-                grid.addWidget(weight, row, 1, Qt.AlignmentFlag.AlignLeft)
-                row += 1
-            if "panes" in entry:
-                for index in range(len(entry["panes"]["children"])):
-                    add(path + (index,), depth + 1)
-        add((), 0)
-        self.weight_scroll.setWidget(body)
-
-    def type_weight(self, path: tuple, entry_box: QLineEdit):
-        entry = self.entry(path)
-        try:
-            weight = float(entry_box.text())
-        except ValueError:
-            weight = 0
-        if weight <= 0:
-            self.editor.set_status(f'A weight must be a number above 0, not "{entry_box.text()}".', "bad")
-            entry_box.setText(f"{entry['weight']:g}")
-            return
-        weight = int(weight) if weight == int(weight) else weight
-        if weight != entry["weight"]:
-            entry["weight"] = weight
-            self.editor.mark_dirty()
-            self.build_preview(self.shape_preview, interactive=False)
-            self.build_preview(self.weight_preview, interactive=True)
-
-    def drag(self, path: tuple, splitter: QSplitter):
-        '''A divider in the weights preview moved: each pane's weight becomes its percentage of the group.'''
-        sizes = splitter.sizes()
-        total = sum(sizes)
-        if total <= 0:
-            return
-        for child, size in zip(self.entry(path)["panes"]["children"], sizes):
-            child["weight"] = max(1, round(size / total * 100))
+    def changed(self):
+        self.touched = True
         self.editor.mark_dirty()
-        self.fill_weight_rows()
-        self.build_preview(self.shape_preview, interactive=False)
+        self.editor.refresh_usage()
 
-    # Previews
-    def build_preview(self, holder: QVBoxLayout, interactive: bool):
-        '''A mock of the layout: nested splitters, with a labelled box per panel.'''
-        while holder.count():
-            old = holder.takeAt(0).widget()
-            if old is not None:
-                # Out of the layout but not deleted until the event loop gets to it - hide it
-                # now, or it's drawn loose over whatever's at the top-left of the tab until then
-                old.hide()
-                old.deleteLater()
-        holder.addWidget(self.preview_widget((), interactive))
+    # The layout
+    def numbers(self, kind: str) -> list[int]:
+        '''The numbers in use by a panel type's ids.'''
+        return [int(panel_id.rpartition("_")[2]) for panel_id in self.dock.panel_ids()
+                if self.editor.pages.panel_type(panel_id) == kind]
 
-    def preview_widget(self, path: tuple, interactive: bool) -> QWidget:
-        entry = self.entry(path)
-        if "widget" in entry:
-            selected = not interactive and path == self.selected
-            box = QLabel(f"{self.entry_name(entry)}\n{entry['id']}")
-            box.setToolTip(self.panel_details(entry["widget"]))
-            box.setFont(self.style.get_font("default"))
-            box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            box.setWordWrap(True)
-            border = self.style.color("accent") if selected else self.style.color("widget")
-            box.setStyleSheet(f"background-color: {self.style.color('panel')}; color: {self.style.color('text')};"
-                              f" border: 3px solid {border}; border-radius: {self.style.PANEL_RADIUS}px;")
-            return box
-        group = entry["panes"]
-        orientation = Qt.Orientation.Horizontal if group["orientation"] == "horizontal" else Qt.Orientation.Vertical
-        splitter = QSplitter(orientation)
-        splitter.setChildrenCollapsible(False)
-        splitter.setHandleWidth(self.style.igap)
-        if not interactive and path == self.selected:
-            splitter.setStyleSheet(f"QSplitter {{ border: 3px solid {self.style.color('accent')}; }}")
-        children = group["children"]
-        if not children:
-            empty = QLabel(f"Empty {ORIENTATION_NAMES[group['orientation']].lower()} group - add a panel to it")
-            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty.setWordWrap(True)
-            empty.setStyleSheet(f"color: {self.style.color('bad')};")
-            splitter.addWidget(empty)
-            return splitter
-        for index in range(len(children)):
-            splitter.addWidget(self.preview_widget(path + (index,), interactive))
-        splitter.setSizes([max(1, int(child["weight"] * 1000)) for child in children])
-        for index in range(1, splitter.count()):
-            splitter.handle(index).setEnabled(interactive)
-        if interactive:
-            splitter.splitterMoved.connect(lambda *_, path=path, splitter=splitter: self.drag(path, splitter))
-        return splitter
+    def next_id(self, kind: str) -> str | None:
+        '''
+        A new id for a panel type: one past the highest number it already
+        has - or, for a panel type with a MAX_COPIES (its settings are per
+        copy, like ModbusModel's model_panels), the lowest number from 1 to
+        MAX_COPIES not in use yet, and None once they all are.
+        '''
+        limit = getattr(PANELS.get(kind), "MAX_COPIES", None)
+        if limit is None:
+            return f"{kind}_{max(self.numbers(kind), default=0) + 1}"
+        free = [number for number in range(1, limit + 1) if number not in self.numbers(kind)]
+        return f"{kind}_{free[0]}" if free else None
 
-    def refresh(self):
-        self.fill_tree()
-        self.fill_weight_rows()
-        self.build_preview(self.shape_preview, interactive=False)
-        self.build_preview(self.weight_preview, interactive=True)
+    def all_ids(self) -> list[str]:
+        '''Every panel id in the layout.'''
+        return self.dock.panel_ids()
+
+    def panel_types(self) -> list[str]:
+        '''The panel types in the layout, in layout order, each once.'''
+        found = []
+        for panel_id in self.dock.panel_ids():
+            panel = self.editor.pages.panel_type(panel_id)
+            if panel not in found:
+                found.append(panel)
+        return found
 
     # Saving
-    def authored(self) -> tuple[dict, dict, list[str]]:
+    def authored(self) -> tuple[dict | None, dict, list[str]]:
         '''The layout as a config file's "layout_shape" and "layout_weights", plus any problems with it.'''
+        pages = self.editor.pages
+        tree = self.dock.layout_tree() if self.touched else self.tree
+        if tree is None:
+            return None, {}, ["The layout has no panels - drag at least one into the preview."]
         errors = []
-        weights = {}
-        def group(panes: dict) -> list:
-            children = panes["children"]
-            if not children:
-                errors.append(f"An empty {ORIENTATION_NAMES[panes['orientation']].lower()} group - add a panel to it or remove it.")
-            out = []
-            for child in children:
-                weights[child["id"]] = child["weight"]
-                out.append(child["id"] if "widget" in child else {child["id"]: group(child["panes"])})
-            return out
-        shape = {self.root["id"]: group(self.root["panes"])}
-        ids = self.all_ids()
-        for duplicate in sorted({pane_id for pane_id in ids if ids.count(pane_id) > 1}):
-            errors.append(f'The id "{duplicate}" is used more than once.')
-        for pane_id in ids:
-            limit = getattr(PANELS.get(self.editor.pages.panel_type(pane_id)), "MAX_COPIES", None)
-            number = pane_id.rpartition("_")[2]
+        for panel_id in pages.layout_panel_ids(tree):
+            limit = getattr(PANELS.get(pages.panel_type(panel_id)), "MAX_COPIES", None)
+            number = panel_id.rpartition("_")[2]
             if limit is not None and number.isdigit() and not 1 <= int(number) <= limit:
-                errors.append(f'"{pane_id}": this panel\'s ids only go from 1 to {limit}.')
-        return shape, weights, errors
+                errors.append(f'"{panel_id}": this panel\'s ids only go from 1 to {limit}.')
+        if not self.touched:
+            return self.shape, self.weights, errors
+        return pages.layout_shape_of(tree), pages.authored_weights(tree, self.weights), errors

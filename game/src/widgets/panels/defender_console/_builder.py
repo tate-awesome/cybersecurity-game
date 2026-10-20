@@ -71,7 +71,7 @@ class Builder(Panel):
             self.cells.append(row)
         self.scrollable.add_deadspace("grid")
 
-        self.menu_bar.minimize_button(self.scrollable, master)
+        self.menu_bar.minimize_button(self.scrollable)
 
         self.context.animation_manager.add_callback(f"DefenderConsole_{id(self)}", self.refresh)
         self.refresh()

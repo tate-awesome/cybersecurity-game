@@ -345,7 +345,7 @@
                         "pattern": "^_"
                     },
                     {
-                        "pattern": "^[hv]_panes_[0-9]+$"
+                        "pattern": "^([hv]_panes|tabs)_[0-9]+$"
                     },
                     {
                         "$ref": "#/$defs/panel_id"
@@ -535,8 +535,27 @@
                             },
                             {
                                 "$ref": "#/$defs/pane_group"
+                            },
+                            {
+                                "$ref": "#/$defs/tab_stack"
                             }
                         ]
+                    }
+                }
+            }
+        },
+        "tab_stack": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": false,
+            "description": "{\"tabs_<n>\": [...]}: panels sharing one pane as tabs, the first one showing.",
+            "patternProperties": {
+                "^tabs_[0-9]+$": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "$ref": "#/$defs/panel_id"
                     }
                 }
             }

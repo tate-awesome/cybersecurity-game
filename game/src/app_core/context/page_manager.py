@@ -87,22 +87,29 @@ class PageManager:
 
     # Pane layouts
     PANE_GROUPS = {"h_panes": "horizontal", "v_panes": "vertical"}
+    # A layout_shape item {"tabs_<n>": [panel ids]} - panels sharing one pane as tabs (see TabbedPane)
+    TAB_STACK = "tabs"
 
     def layout_tree(self, shape: dict | None, weights: dict | None = None) -> dict | None:
         '''
         Combines a page config's "layout_shape" and "layout_weights" into
-        the positional tree that WorkspacePage.build_panes, the layout
-        editor and the autosave helpers below work with:
-        {"id": ..., "orientation": ..., "children": [{"id": ..., "weight": ..., "panes": {...}} | {"id": ..., "weight": ..., "widget": "<panel type>"}]}
+        the positional tree that DockArea, the layout editor and the
+        autosave helpers below work with:
+        {"id": ..., "orientation": ..., "children": [{"id": ..., "weight": ..., "panes": {...}}
+                                                     | {"id": ..., "weight": ..., "widget": "<panel type>"}
+                                                     | {"id": ..., "weight": ..., "tabs": ["<panel id>", ...]}]}
 
         "layout_shape" is one group: {"h_panes_1": [...]} (side by side)
         or {"v_panes_1": [...]} (stacked), listing its contents in order -
-        a panel id string like "status_panel_1", or another group of the
-        same form. Every id is its type plus a number, so the same panel
+        a panel id string like "status_panel_1", another group of the
+        same form, or a tab stack {"tabs_1": ["status_panel_1", ...]}:
+        panels sharing one pane, switched between by their tabs, the first
+        one showing. Every id is its type plus a number, so the same panel
         type can appear any number of times as long as each copy's number
         differs. "layout_weights" is a flat {id: weight}: each pane's
-        proportional share of the group it sits in (default 1). The top
-        group fills the page, so it needs no weight.
+        proportional share of the group it sits in (default 1) - a tab
+        stack's weight is under its tabs_<n> id. The top group fills the
+        page, so it needs no weight.
         '''
         if not isinstance(shape, dict):
             return None
@@ -143,8 +150,8 @@ class PageManager:
                 child_id, value = item, None
             elif isinstance(item, dict) and len(item) == 1:
                 child_id, value = next(iter(item.items()))
-                if not self.pane_group(child_id):
-                    print(f"Layout group {child_id!r} should start with h_panes or v_panes, skipping")
+                if not self.pane_group(child_id) and not self.is_tab_stack(child_id):
+                    print(f"Layout group {child_id!r} should start with h_panes, v_panes or tabs, skipping")
                     continue
             else:
                 print(f"Layout item {item!r} in {group_id!r} should be a panel id or a one-key group, skipping")
@@ -159,10 +166,115 @@ class PageManager:
             child = {"id": child_id, "weight": weight}
             if value is None:
                 child["widget"] = self.panel_type(child_id)
+            elif self.is_tab_stack(child_id):
+                tabs = self.parse_tab_stack(child_id, value, seen)
+                if not tabs:
+                    continue
+                if len(tabs) == 1:
+                    # One tab is just a panel
+                    child = {"id": tabs[0], "weight": weight, "widget": self.panel_type(tabs[0])}
+                else:
+                    child["tabs"] = tabs
             else:
                 child["panes"] = self.parse_layout_group(child_id, value, weights, seen)
             children.append(child)
         return {"id": group_id, "orientation": self.pane_group(group_id), "children": children}
+
+    def is_tab_stack(self, key: str) -> bool:
+        base, _, number = key.rpartition("_")
+        return base == self.TAB_STACK and number.isdigit()
+
+    def parse_tab_stack(self, stack_id: str, contents, seen: set) -> list[str]:
+        '''A tab stack's panel ids, in tab order - each a panel id string.'''
+        if not isinstance(contents, list):
+            print(f"Tab stack {stack_id!r} should be a list of panel ids, skipping it")
+            return []
+        tabs = []
+        for item in contents:
+            if not isinstance(item, str) or self.pane_group(item) or self.is_tab_stack(item):
+                print(f"Tab stack {stack_id!r} can only hold panel ids, not {item!r} - skipping it")
+                continue
+            if item in seen:
+                print(f"Layout id {item!r} is used more than once - give each copy its own number")
+            seen.add(item)
+            tabs.append(item)
+        return tabs
+
+    def layout_shape_of(self, tree: dict) -> dict:
+        '''A layout_tree (see there) back as the "layout_shape" a config file holds.'''
+        def group(node: dict) -> list:
+            items = []
+            for child in node["children"]:
+                if "panes" in child:
+                    items.append({child["id"]: group(child["panes"])})
+                elif "tabs" in child:
+                    items.append({child["id"]: list(child["tabs"])})
+                else:
+                    items.append(child["id"])
+            return items
+        return {tree["id"]: group(tree)}
+
+    def layout_weights_of(self, tree: dict, percent: bool = False) -> dict:
+        '''
+        A layout_tree's weights as the flat "layout_weights" a config file
+        holds. percent turns each group's weights into whole percentages of
+        it (at least 1) - for live pixel sizes (see DockArea.layout_tree),
+        which mean nothing to whoever reads the file next.
+        '''
+        weights = {}
+        def walk(node: dict):
+            total = sum(child["weight"] for child in node["children"]) or 1
+            for child in node["children"]:
+                weight = max(1, round(child["weight"] / total * 100)) if percent else child["weight"]
+                weights[child["id"]] = weight
+                if "panes" in child:
+                    walk(child["panes"])
+        walk(tree)
+        return weights
+
+    def authored_weights(self, live: dict, weights: dict | None, tolerance: float = 0.02) -> dict:
+        '''
+        "layout_weights" to write for the live layout_tree (see
+        DockArea.layout_tree - its weights are pixel sizes): a group whose
+        panes all had weights in weights, still in those proportions
+        (within tolerance), keeps them as written; any other gets its
+        live sizes as whole percentages. Keys starting with "_" are kept.
+        '''
+        weights = weights if isinstance(weights, dict) else {}
+        percents = self.layout_weights_of(live, percent=True)
+        authored = {key: value for key, value in weights.items() if key.startswith("_")}
+
+        def valid(value) -> bool:
+            return isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
+
+        def walk(node: dict):
+            children = node["children"]
+            keep = all(valid(weights.get(child["id"])) for child in children)
+            if keep:
+                old_total = sum(weights[child["id"]] for child in children)
+                live_total = sum(child["weight"] for child in children) or 1
+                keep = all(abs(weights[child["id"]] / old_total - child["weight"] / live_total) <= tolerance for child in children)
+            for child in children:
+                authored[child["id"]] = weights[child["id"]] if keep else percents[child["id"]]
+                if "panes" in child:
+                    walk(child["panes"])
+        walk(live)
+        return authored
+
+    def layout_panel_ids(self, tree: dict | None) -> list[str]:
+        '''Every panel id a layout_tree places, in layout order (tabs in tab order).'''
+        found = []
+        def walk(node: dict):
+            for child in node["children"]:
+                if "panes" in child:
+                    walk(child["panes"])
+                elif "tabs" in child:
+                    found.extend(child["tabs"])
+                else:
+                    found.append(child["id"])
+        if tree:
+            walk(tree)
+        return found
 
     def link_label(self, key: str) -> str:
         '''
@@ -223,6 +335,15 @@ class PageManager:
         if saved_path.is_file():
             saved = self.context.json.load(saved_path)
             self.context.json.deep_merge(config["settings"], saved.get("settings"))
+            # A rearranged layout (see DockArea) - only if it still holds
+            # exactly the page's own panels, so one saved before the page's
+            # defaults gained or lost a panel is dropped rather than half-applied
+            saved_shape = saved.get("layout_shape")
+            if isinstance(saved_shape, dict):
+                saved_tree = self.layout_tree(saved_shape)
+                default_tree = self.layout_tree(config.get("layout_shape"))
+                if saved_tree and sorted(self.layout_panel_ids(saved_tree)) == sorted(self.layout_panel_ids(default_tree)):
+                    config["layout_shape"] = saved_shape
             saved_weights = saved.get("layout_weights")
             if isinstance(saved_weights, dict):
                 # Matched by id, so a saved weight only lands on a pane that's still in the layout
@@ -237,12 +358,13 @@ class PageManager:
         return config
 
     def layout_ids(self, tree: dict) -> set[str]:
-        '''Every pane id below the top group of a layout_tree.'''
+        '''Every pane id below the top group of a layout_tree - its groups, tab stacks and panels.'''
         ids = set()
         for child in tree.get("children", []):
             ids.add(child["id"])
             if "panes" in child:
                 ids |= self.layout_ids(child["panes"])
+            ids |= set(child.get("tabs", ()))
         return ids
 
     def save_current_page(self):
@@ -256,10 +378,11 @@ class PageManager:
 
         Saves the diff of context.states (kept live by the widgets that
         read/write it as the student works) against the default
-        "settings", and the live pane weights (read straight off the
-        Panes tree as {id: size}, since dragging a sash doesn't itself
-        touch context.states) as "layout_weights" only if their
-        proportions differ from the default layout. If nothing differs,
+        "settings"; the live layout (read straight off the page's
+        DockArea, since dragging a sash or a panel doesn't itself touch
+        context.states) as "layout_shape" if its panels have been
+        rearranged; and its pane sizes {id: size} as "layout_weights" if
+        the shape or the proportions differ from the default layout. If nothing differs,
         any old save is deleted instead. Called by ContextManager on page
         exit/app close (and by the Router before a refresh), while the
         page's widgets are still alive to read from. A no-op for anything
@@ -278,11 +401,15 @@ class PageManager:
         if settings:
             saved["settings"] = settings
 
-        panes_root = getattr(self.context.router.current_frame, "panes_root", None)
-        if panes_root is not None:
-            weights = panes_root.get_weights()
+        dock = getattr(self.context.router.current_frame, "dock", None)
+        live = dock.layout_tree() if dock is not None else None
+        if live is not None:
+            weights = self.layout_weights_of(live)
             tree = self.layout_tree(default.get("layout_shape"), default.get("layout_weights"))
-            if not self.pane_weights_match(tree, weights):
+            if tree is None or self.layout_shape_of(live) != self.layout_shape_of(tree):
+                saved["layout_shape"] = self.layout_shape_of(live)
+                saved["layout_weights"] = weights
+            elif not self.pane_weights_match(tree, weights):
                 saved["layout_weights"] = weights
 
         path = self.context.paths.user_pages / key / "config.json"
@@ -326,17 +453,18 @@ class PageManager:
         path = self.context.paths.user_pages / key / "config.json"
         path.unlink(missing_ok=True)
 
-    def delete_saved_page_part(self, key: str, part: str):
+    def delete_saved_page_part(self, key: str, parts: str | tuple[str, ...]):
         '''
-        Deletes one part ("settings" or "layout_weights") of the given page's
-        autosaved page_data (see save_current_page), keeping the other -
-        and the whole file if nothing's left in it.
+        Deletes parts ("settings", "layout_shape", "layout_weights") of the
+        given page's autosaved page_data (see save_current_page), keeping
+        the rest - and the whole file if nothing's left in it.
         '''
         path = self.context.paths.user_pages / key / "config.json"
         if not path.is_file():
             return
         saved = self.context.json.load(path)
-        saved.pop(part, None)
+        for part in (parts,) if isinstance(parts, str) else parts:
+            saved.pop(part, None)
         if saved:
             self.context.json.save_to_file(saved, path)
         else:
@@ -353,16 +481,7 @@ class PageManager:
         tree = self.layout_tree(self.load_page_config(key).get("layout_shape"))
         if tree is None:
             return None
-        found: set[str] = set()
-
-        def walk(node: dict):
-            for child in node["children"]:
-                if "panes" in child:
-                    walk(child["panes"])
-                else:
-                    found.add(child["widget"])
-        walk(tree)
-        return found
+        return {self.panel_type(panel_id) for panel_id in self.layout_panel_ids(tree)}
 
     def has_saved_page(self, key: str) -> bool:
         '''Whether the given page has any autosaved page_data (see save_current_page).'''

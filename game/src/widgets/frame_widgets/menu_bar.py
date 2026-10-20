@@ -1,12 +1,12 @@
 from ...app_core import Context
 from ...app_core.context.style import Style
-from PySide6.QtCore import QEvent, QObject, QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSplitter, QWidget
 from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
                                 OpenAccessPointConfigInBrowser, OpenSettingsPage, OpenWorkspaceEditor, OpenWorkspaceSorter,
-                                RefreshCurrentPage,
+                                RefreshCurrentPage, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
                                 SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleWorkspaceBackground,
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
@@ -67,7 +67,8 @@ RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]
                         ToggleWorkspaceBackground]),
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor,
-                         OpenWorkspaceSorter, ConfigureThisWorkspace, EditWorkspaceAvailability, ToggleDebugLabels]),
+                         OpenWorkspaceSorter, ConfigureThisWorkspace, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
+                         EditWorkspaceAvailability, ToggleDebugLabels]),
     ],
 }
 RIGHT_ZONE_ICONS: dict[str, str] = {
@@ -292,6 +293,10 @@ class MenuBar(QFrame):
 
         # Everything in the row that isn't an entry - room squashing never takes (see _update_squashing)
         self._fixed: list[QWidget] = []
+        # What shows in the title's place instead of it, if anything (see set_title_widget)
+        self._title_widget: QWidget | None = None
+        # A panel's minimize button's state and controls (see minimize_button)
+        self._minimizer: dict | None = None
         self.back_arrow = None
         self.window_controls = None
 
@@ -649,18 +654,22 @@ class MenuBar(QFrame):
 
     # Panel Buttons
 
-    def minimize_button(self, frame_widget: QWidget | None = None, pane: QWidget | None = None):
+    def minimize_button(self, frame_widget: QWidget | None = None):
         '''
-        Adds a button that hides frame_widget and shrinks pane down to just
-        this menu bar's own height, or restores both - and auto-minimizes
-        as the user drags pane's containing Panes sash down to its normal
-        floor (PANE_MIN_HEIGHT/WIDTH), mirroring the old <Configure>-driven
-        auto-minimize.
+        Adds a button that hides frame_widget and shrinks the pane this
+        menu bar's panel sits in down to just this menu bar's own height,
+        or restores both - and auto-minimizes as the user drags that pane's
+        Panes sash down to its normal floor (PANE_MIN_HEIGHT/WIDTH),
+        mirroring the old <Configure>-driven auto-minimize.
+
+        The pane is looked up whenever it's needed (see pane), not fixed
+        when the panel is built - a panel can be docked somewhere else
+        (see DockArea), which calls redocked to follow it there.
 
         Space freed by shrinking is handed to the sibling panes evenly.
         Restoring takes it back from whichever sibling is currently
         tallest first (leveling siblings down together once they match),
-        growing pane back to its authored share of the splitter - see
+        growing the pane back to its authored share of the splitter - see
         Panes.default_stretch - rather than an arbitrary fixed size.
         '''
         minimize_text = self.context.labels.get("menu_bar_buttons_minimize")
@@ -668,9 +677,11 @@ class MenuBar(QFrame):
         button = self.add_button("minimize")
         is_minimized = False
         normal_min_extent = None  # pane's PANE_MIN_HEIGHT/WIDTH floor, remembered while it's lowered
+        watched_splitter = None  # the Panes whose sash moves on_sash_moved follows (see attach)
 
         def shrink_pane():
             nonlocal normal_min_extent
+            pane = self.pane()
             if pane is None:
                 return
             splitter = pane.parent()
@@ -725,6 +736,7 @@ class MenuBar(QFrame):
             one of them (grow_pane) also needs to resize the pane afterward.
             '''
             nonlocal normal_min_extent
+            pane = self.pane()
             if pane is None or normal_min_extent is None:
                 return
             splitter = pane.parent()
@@ -736,6 +748,7 @@ class MenuBar(QFrame):
             normal_min_extent = None
 
         def grow_pane():
+            pane = self.pane()
             if pane is None:
                 return
             splitter = pane.parent()
@@ -814,8 +827,9 @@ class MenuBar(QFrame):
             unminimize(resize=True)
 
         def on_sash_moved(pos=None, index=None):
-            if pane is None:
-                return
+            pane = self.pane()
+            if pane is None or not self.isVisible():
+                return  # a tab behind another (see TabbedPane) doesn't follow its pane
             splitter = pane.parent()
             min_size = self.style.PANE_MIN_HEIGHT if splitter.orientation() == Qt.Orientation.Vertical else self.style.PANE_MIN_WIDTH
             current = pane.height() if splitter.orientation() == Qt.Orientation.Vertical else pane.width()
@@ -829,11 +843,106 @@ class MenuBar(QFrame):
                 # dragging it down to its floor auto-minimizes above.
                 unminimize(resize=False)
 
+        def attach():
+            '''Follows the sash of whichever Panes the pane is in now (see redocked).'''
+            nonlocal watched_splitter
+            pane = self.pane()
+            splitter = pane.parent() if pane is not None else None
+            if splitter is watched_splitter:
+                return
+            if watched_splitter is not None:
+                try:
+                    watched_splitter.splitterMoved.disconnect(on_sash_moved)
+                except (RuntimeError, TypeError):
+                    pass  # deleted with its old layout
+            watched_splitter = splitter
+            if splitter is not None:
+                splitter.splitterMoved.connect(on_sash_moved)
+
+        def redocked(keep: bool):
+            '''
+            After the panel moves to another pane (see DockArea): starts
+            following that one, and - if it was minimized and keep - shrinks
+            it there too, once the new layout has its sizes. Otherwise it
+            comes back open (a tab behind another, or a pane that's gone).
+            '''
+            nonlocal is_minimized, normal_min_extent
+            was_minimized = is_minimized
+            if is_minimized:
+                # Its old pane - and the floor lowered on it - are gone: start over open
+                is_minimized = False
+                normal_min_extent = None
+                button.clicked.disconnect()
+                self._connect(button, click_minimize)
+                button.setText(minimize_text)
+                if frame_widget is not None:
+                    frame_widget.show()
+            attach()
+            if was_minimized and keep:
+                QTimer.singleShot(0, lambda: self.pane() is not None and click_minimize())
+
+        def set_minimized(minimized: bool):
+            if minimized:
+                click_minimize()
+            else:
+                unminimize(resize=False)
+
         self._connect(button, click_minimize)
-        if pane is not None:
-            pane.parent().splitterMoved.connect(on_sash_moved)
+        attach()
+        self._minimizer = {"is": lambda: is_minimized, "set": set_minimized, "redocked": redocked}
 
         return button
+
+    def pane(self) -> QWidget | None:
+        '''
+        The pane this menu bar's panel sits in right now - the nearest
+        widget up from it that's directly in a splitter (a Panes) - or None.
+        '''
+        widget = self.parentWidget()
+        while widget is not None and not isinstance(widget.parentWidget(), QSplitter):
+            widget = widget.parentWidget()
+        return widget
+
+    def is_minimized(self) -> bool:
+        return self._minimizer is not None and self._minimizer["is"]()
+
+    def set_minimized(self, minimized: bool):
+        '''Minimizes or restores in place (no resize) - for a panel with a minimize button.'''
+        if self._minimizer is not None:
+            self._minimizer["set"](minimized)
+
+    def redocked(self, keep_minimized: bool = True):
+        '''The panel has moved to another pane - see minimize_button's redocked.'''
+        if self._minimizer is not None:
+            self._minimizer["redocked"](keep_minimized)
+
+    # Title or tabs
+
+    def set_title_widget(self, widget: QWidget | None):
+        '''
+        Shows widget (e.g. a TabStrip) where the title is, stretched over
+        the room the buttons leave - or, with None, the title again. The
+        widget it replaces, if not the title, is deleted.
+        '''
+        current = self._title_widget or self.game_label
+        if widget is current or (widget is None and self._title_widget is None):
+            return
+        index = self.row.indexOf(current)
+        self._fixed[self._fixed.index(current)] = widget or self.game_label
+        if self._title_widget is not None:
+            self.row.removeWidget(self._title_widget)
+            self._title_widget.hide()
+            self._title_widget.deleteLater()
+        if widget is None:
+            self.game_label.show()
+        else:
+            self.game_label.hide()
+            self.row.insertWidget(index, widget, 1)
+        self._title_widget = widget
+        self._update_squashing()
+
+    def title(self) -> str:
+        return self.game_label.text()
 
     # Important Buttons
 

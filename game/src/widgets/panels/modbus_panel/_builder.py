@@ -49,7 +49,7 @@ class Builder(Panel):
         self.menu_bar.add_important(ChooseShownModbusTableForms)
         self.menu_bar.add_important(ClearModbusAndModelData)
 
-        minimize_button = self.menu_bar.minimize_button(self.scrollable, master)
+        minimize_button = self.menu_bar.minimize_button(self.scrollable)
 
         self.shown_forms = None  # modbus_table_forms_shown as of the last refresh_forms
         self.refresh_forms()

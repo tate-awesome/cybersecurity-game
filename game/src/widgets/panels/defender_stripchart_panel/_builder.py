@@ -81,7 +81,7 @@ class Builder(Panel):
         self.context.animation_manager.add_callback(f"DefenderStripchartVisibility_{id(self)}", self.refresh_visibility)
         self.refresh_visibility()
 
-        self.menu_bar.minimize_button(scrollable, master)
+        self.menu_bar.minimize_button(scrollable)
 
     def refresh_visibility(self):
         submarine_mode = bool(self.context.buffer.defender_status.get("submarine_mode", True))
