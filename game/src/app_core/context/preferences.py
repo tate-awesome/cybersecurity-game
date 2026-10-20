@@ -58,6 +58,7 @@ class PreferencesData(TypedDict, total=False):
     network_helper: bool
     labels_file: str
     page: str
+    workspace_description: str
     fullscreen: bool
     keybinds: dict[str, str]
     fade_in: bool
@@ -162,6 +163,9 @@ class Preferences:
             "network_helper": DEFAULT_NETWORK_HELPER,  # toggled on the Performance tab (see PrivilegedHelper)
             "labels_file": "",      # autosaved in LocalizationManager
             "page": "",             # manual saved in menu bar/router
+            # The workspace whose description was read last - the select page opens on it,
+            # or on the first in its list with none (see WorkspaceSelectPage)
+            "workspace_description": "",
             "fullscreen": DEFAULT_FULLSCREEN,  # autosaved in KeyBinds
             "fade_in": DEFAULT_FADE_IN,    # toggled on the General tab (see App)
             "fade_out": DEFAULT_FADE_OUT,  # toggled on the General tab (see Router.quit)

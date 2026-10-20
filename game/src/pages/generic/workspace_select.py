@@ -114,9 +114,6 @@ class SummaryDrawer(QFrame):
     they fade in and out together (see reveal); inner holds everything on
     them - the bar's title and buttons and the card's content - to fade new
     content in over them.
-
-    With nothing selected it isn't there: no drawer, no bar, and the
-    page's own note on the bare background, where the card's content sits.
     '''
 
     REVEAL_MS = 220
@@ -125,7 +122,7 @@ class SummaryDrawer(QFrame):
         super().__init__()
         self.context = context
         self.style = context.style
-        # 0 = not there (the page's own note shows on the bare background), 1 = fully there
+        # 0 = not there yet, 1 = fully there
         self.shown = 0.0
         self.animation = QVariantAnimation(self)
         self.animation.setDuration(self.REVEAL_MS)
@@ -169,10 +166,10 @@ class SummaryDrawer(QFrame):
         button.setFont(self.style.get_font("title_btn"))
         self.bar.layout().addWidget(button)
 
-    def show_bar(self, title: str | None):
-        '''The bar, titled - or None for no bar, with nothing selected.'''
-        self.bar.setVisible(title is not None)
-        self.title.setText(title or "")
+    def show_bar(self, title: str):
+        '''The bar, titled.'''
+        self.bar.show()
+        self.title.setText(title)
 
     def fit(self):
         '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the bar's padding.'''
@@ -203,14 +200,6 @@ class SummaryDrawer(QFrame):
     def _set_shown(self, value):
         self.shown = float(value)
         self.update()
-
-    def mousePressEvent(self, event):
-        # A click on the drawer stays here - only the room around it, or
-        # the bare page note, reaches the page (which deselects)
-        if self.shown > 0 and self.body_rect().contains(event.position()):
-            event.accept()
-        else:
-            event.ignore()
 
     def paintEvent(self, event):
         if self.shown <= 0:
@@ -255,29 +244,34 @@ class WorkspaceSelectPage(Page):
 
       - a transparent MenuBar on top, titled by config["title"] with
         config["menu_bar"]'s buttons
-      - a transparent scrollable sidebar on the left of collapsible
-        sections, one per config["sections"] entry, each listing the
-        workspaces whose "category" matches it - every page directly inside
-        the config["link_folder"] folder with "include": 1, sorted by
-        their "order". A section with "hidden": true isn't shown at all
+      - a transparent scrollable sidebar on the left, one entry per
+        config["sections"] entry, in order: a collapsible section
+        ({"label", "category", ...}) listing the workspaces whose
+        "category" matches it - every page directly inside the
+        config["link_folder"] folder with "include": 1, sorted by their
+        "order" - or a single workspace outside any section
+        ({"workspace": its page key}), like Start Here!. A section with
+        "hidden": true, or a workspace without "include": 1, isn't shown.
+        Sections start collapsed, but for "expanded": true and the one
+        holding the selected workspace
       - the summary area filling the rest
 
-    With nothing selected, the summary area shows this page's own "_note"
-    straight on the background. Clicking a workspace shows that
-    workspace's config.json "_note" (markdown) in a drawer shaped like a
-    panel's instead (see SummaryDrawer), which fades in - and switching
-    workspaces fades the new summary in over it. The drawer's bar, where a
-    panel's menu bar is, has the workspace's title and its buttons: Open
-    Workspace (and, in developer mode, Edit This Workspace, which opens it
-    in the workspace editor). Double-clicking a workspace opens it
-    immediately, and clicking any dead space - the background, empty
-    sidebar - deselects it, back to this page's note.
+    A workspace is always selected, its config.json "_note" (markdown)
+    shown in a drawer shaped like a panel's (see SummaryDrawer) - the one
+    last selected (the "workspace_description" preference), or the first
+    in the list. Switching workspaces fades the new summary in. The
+    drawer's bar, where a panel's menu bar is, has the workspace's title
+    and its buttons: Open Workspace (and, in developer mode, Edit This
+    Workspace, which opens it in the workspace editor). Double-clicking a
+    workspace opens it immediately.
 
     A _note can be one string or a list of markdown blocks, joined with
     blank lines between them.
     '''
 
     SIDEBAR_WIDTH = 380
+    # The preference holding the workspace whose description was read last
+    LAST_READ = "workspace_description"
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -285,9 +279,9 @@ class WorkspaceSelectPage(Page):
 
         key = context.router.current_page
         config = context.pages.load_page_config(key)
-        self.default_note = self.join_note(config.get("_note", ""))
-        self.default_folder = context.paths.pages / key
         self.selected_target: str | None = None
+        # Each listed workspace's button, and the section header it's under (None outside any), in list order
+        self.buttons: dict[str, tuple[WorkspaceButton, QPushButton | None]] = {}
         self.workspaces = context.pages.pages_in(config.get("link_folder", "workspaces"))
 
         self.add_background(config, menu=True)
@@ -315,11 +309,22 @@ class WorkspaceSelectPage(Page):
         self.workspace_group.setExclusive(True)
         row = 0
         for section in config.get("sections", []):
-            if not section.get("hidden", False):
+            if not isinstance(section, dict):
+                continue
+            if "workspace" in section:
+                row = self.build_lone_workspace(section["workspace"], row)
+            elif not section.get("hidden", False):
                 row = self.build_section(section, row)
         self.scrollable.add_deadspace()
 
-        self.show_note(self.default_note, self.default_folder)
+        last = context.preferences.get(self.LAST_READ)
+        first = last if last in self.buttons else next(iter(self.buttons), None)
+        if first is not None:
+            button, header = self.buttons[first]
+            if header is not None:
+                header.setChecked(True)  # its section opened, to show it's the one
+            button.setChecked(True)
+            self.select(first)
 
     # Sidebar
     def build_section(self, section: dict, row: int) -> int:
@@ -335,7 +340,8 @@ class WorkspaceSelectPage(Page):
 
         header = QPushButton()
         header.setCheckable(True)
-        header.setChecked(section.get("expanded", True))
+        # Collapsed unless the section says otherwise - the last-read workspace's opens anyway (see __init__)
+        header.setChecked(section.get("expanded", False))
         header.setFont(self.style.get_font("title_btn"))
         self.style.live_style(header, lambda: (
             # A header, not a button - whatever a theme's buttons look like (see themes.BUTTON_KINDS)
@@ -353,23 +359,7 @@ class WorkspaceSelectPage(Page):
         self.scrollable.grid_layout.addWidget(content, row + 1, 0)
 
         for i, (label, target) in enumerate(workspaces, start=1):
-            # "&" would otherwise be eaten as a keyboard-mnemonic marker
-            text = self.labels.get(label).replace("&", "&&")
-            if numbered:
-                text = f"{i}. {text}"
-            button = WorkspaceButton(text)
-            button.setToolTip(text.replace("&&", "&"))
-            button.setCheckable(True)
-            # Let long titles clip inside the sidebar instead of widening it past its fixed width
-            button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-            button.setFont(self.style.get_font("default"))
-            # A menu button - the selected one (checked) looks hovered (see Style.mark_menu_button)
-            self.style.mark_menu_button(button)
-            button.setStyleSheet("QPushButton { text-align: left; }")
-            button.clicked.connect(lambda checked=False, target=target: self.select(target))
-            button.doubleClicked.connect(lambda target=target: self.start(target))
-            self.workspace_group.addButton(button)
-            content_layout.addWidget(button)
+            content_layout.addWidget(self.workspace_button(label, target, header, i if numbered else None))
 
         def update(expanded: bool, title=title, header=header, content=content):
             header.setText(f"{self.style.icon('chevron-down' if expanded else 'chevron-right')}  {title}")
@@ -378,6 +368,39 @@ class WorkspaceSelectPage(Page):
         update(header.isChecked())
 
         return row + 2
+
+    def build_lone_workspace(self, target: str, row: int) -> int:
+        '''Adds a workspace outside any section at the given grid row - if it's there and included - and returns the next free row.'''
+        config = self.workspaces.get(target)
+        if config is None or config.get("include") != 1 or target in self.buttons:
+            return row
+        self.scrollable.grid_layout.addWidget(self.workspace_button(self.context.pages.link_label(target), target), row, 0)
+        return row + 1
+
+    def workspace_button(self, label: str, target: str, header: QPushButton | None = None,
+                         number: int | None = None) -> "WorkspaceButton":
+        '''
+        A workspace's button in the sidebar - under header's section, or
+        outside any - numbered as its section numbers it, if it does.
+        '''
+        # "&" would otherwise be eaten as a keyboard-mnemonic marker
+        text = self.labels.get(label).replace("&", "&&")
+        if number is not None:
+            text = f"{number}. {text}"
+        button = WorkspaceButton(text)
+        button.setToolTip(text.replace("&&", "&"))
+        button.setCheckable(True)
+        # Let long titles clip inside the sidebar instead of widening it past its fixed width
+        button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        button.setFont(self.style.get_font("default"))
+        # A menu button - the selected one (checked) looks hovered (see Style.mark_menu_button)
+        self.style.mark_menu_button(button)
+        button.setStyleSheet("QPushButton { text-align: left; }")
+        button.clicked.connect(lambda checked=False, target=target: self.select(target))
+        button.doubleClicked.connect(lambda target=target: self.start(target))
+        self.workspace_group.addButton(button)
+        self.buttons.setdefault(target, (button, header))
+        return button
 
     def workspaces_in(self, category: str | None) -> list[tuple[str, str]]:
         '''
@@ -445,6 +468,7 @@ class WorkspaceSelectPage(Page):
                 f" QScrollBar::handle:vertical {{ border-radius: {handle_radius}px; min-height: {width * 2}px; }}")
 
     def select(self, target: str):
+        '''Shows target's description - and remembers it, for the next time this page opens.'''
         if target == self.selected_target:
             return
         self.selected_target = target
@@ -452,27 +476,8 @@ class WorkspaceSelectPage(Page):
         self.summary_box.show_bar(self.labels.get(self.context.pages.link_label(target)))
         self.summary_box.reveal(True)
         self.show_note(self.join_note(config.get("_note", "")), self.context.paths.pages / target)
-
-    def deselect(self):
-        '''Back to nothing selected - this page's own note, on the bare background.'''
-        if self.selected_target is None:
-            return
-        self.selected_target = None
-        # An exclusive group won't let its checked button be unchecked directly
-        self.workspace_group.setExclusive(False)
-        for button in self.workspace_group.buttons():
-            button.setChecked(False)
-        self.workspace_group.setExclusive(True)
-        self.summary_box.show_bar(None)
-        self.summary_box.reveal(False)
-        self.show_note(self.default_note, self.default_folder)
-
-    def mousePressEvent(self, event):
-        # Only clicks nothing else took reach the page: the background,
-        # empty sidebar and the room around the drawer, the menu bar's empty stretch
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.deselect()
-        super().mousePressEvent(event)
+        if self.context.preferences.get(self.LAST_READ) != target:
+            self.context.preferences.set(self.LAST_READ, target)
 
     def show_note(self, markdown: str, folder: Path):
         self.browser.setSearchPaths([str(folder)])

@@ -302,8 +302,9 @@ class Router:
             stack[:] = [new_key if entry == key else entry for entry in stack if entry != key or new_key is not None]
         if self.current_page == key and new_key is not None:
             self.current_page = new_key
-        if self.context.preferences.has("page") and self.context.preferences.get("page") == key:
-            self.context.preferences.set("page", new_key or "")
+        for preference in ("page", "workspace_description"):
+            if self.context.preferences.has(preference) and self.context.preferences.get(preference) == key:
+                self.context.preferences.set(preference, new_key or "")
 
     def page_name(self, key: str) -> str:
         '''A page's name as its links show it, or its own footer label, or just its key.'''

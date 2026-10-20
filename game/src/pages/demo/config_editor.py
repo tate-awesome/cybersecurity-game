@@ -91,6 +91,57 @@ def make_workspace(context: Context, name: str, folder: str, template_key: str, 
     return key
 
 
+# A top-level key's line in a config written 4-space indented (see Json.format_config)
+TOP_LEVEL_KEY = r'^    "{}"\s*:\s*'
+
+
+def write_config_values(context: Context, key: str, values: dict):
+    '''
+    Sets top-level values in a page's config.json by rewriting only
+    those values in its text, so the rest of the hand-written file -
+    its blank lines, its one-line lists - stays exactly as it was.
+    A key it doesn't have yet is added at the end.
+    '''
+    path = context.pages.config_paths[key]
+    text = path.read_text(encoding="utf-8")
+    for name, value in values.items():
+        formatted = context.json.format_value(value, 4)
+        match = re.search(TOP_LEVEL_KEY.format(re.escape(name)), text, re.MULTILINE)
+        if match is not None:
+            _, end = json.JSONDecoder().raw_decode(text, match.end())
+            text = text[:match.end()] + formatted + text[end:]
+        else:
+            close = text.rstrip().rfind("}")
+            body = text[:close].rstrip()
+            text = f"{body},\n    {json.dumps(name)}: {formatted}\n}}\n"
+    json.loads(text)  # never write a broken config
+    path.write_text(text, encoding="utf-8")
+
+
+def relist_workspace(context: Context, key: str, new_key: str | None):
+    '''
+    A workspace's key changed (or, with None, it was deleted): every
+    workspace select page listing it outside its sections - {"workspace":
+    key} in its "sections" (see WorkspaceSelectPage) - follows it, or
+    drops it. Written straight away, like the change itself.
+    '''
+    pages = context.pages
+    for page_key in list(pages.config_paths):
+        config = json.loads(pages.config_paths[page_key].read_text(encoding="utf-8"))
+        sections = config.get("sections")
+        if config.get("build_type") != "workspace_select" or not isinstance(sections, list):
+            continue
+        listed = [entry for entry in sections if isinstance(entry, dict) and entry.get("workspace") == key]
+        if not listed:
+            continue
+        if new_key is None:
+            sections = [entry for entry in sections if not any(entry is gone for gone in listed)]
+        else:
+            for entry in listed:
+                entry["workspace"] = new_key
+        write_config_values(context, page_key, {"sections": sections})
+
+
 def workspace_labels(config: dict) -> list[str]:
     '''The two labels a workspace config names: its link's and its menu bar title's.'''
     return [config.get("link_label"), f"menu_bar_titles_{config.get('title')}"]
@@ -108,12 +159,14 @@ def drop_unused_labels(context: Context, label_keys: list[str]):
 def delete_workspace(context: Context, key: str):
     '''
     Permanently deletes a workspace: its folder, every student's saved
-    data for it, other workspaces' prerequisites naming it, and its two
-    labels (unless another page still uses them).
+    data for it, other workspaces' prerequisites naming it, its two
+    labels (unless another page still uses them), and its place on any
+    select page's list (see relist_workspace).
     '''
     label_keys = workspace_labels(context.pages.load_page_config(key))
     context.pages.delete_folder_page(key)
     drop_unused_labels(context, label_keys)
+    relist_workspace(context, key, None)
     context.router.register_discovered_pages()
     context.router.page_moved(key, None)
 
@@ -146,6 +199,7 @@ def rename_workspace(context: Context, key: str, name: str, folder: str) -> str:
     path.write_text(text, encoding="utf-8")
     pages.discover()
     drop_unused_labels(context, old_labels)
+    relist_workspace(context, key, new_key)
     context.router.register_discovered_pages()
     context.router.page_moved(key, new_key)
     return new_key

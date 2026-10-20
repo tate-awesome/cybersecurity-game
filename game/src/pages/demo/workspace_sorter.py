@@ -11,7 +11,7 @@ from ...widgets.frame_widgets.drag_drop import DragHandle, DragPayload, DropZone
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
 from ..page import Page
 from .config_editor import (DeleteWorkspaceDialog, NewWorkspaceDialog, RenameWorkspaceDialog, delete_workspace, make_workspace,
-                            rename_workspace)
+                            rename_workspace, write_config_values)
 
 WORKSPACE = "workspace"
 SECTION = "section"
@@ -201,6 +201,10 @@ class WorkspaceSorter(Page):
         "sections") - is a card listing its workspaces top to bottom. Drag
         a workspace within a card to reorder it, or onto another card to
         move it to that category ("category").
+      - A workspace can also sit on its own between, above or below the
+        categories - listed outside any, like Start Here! ({"workspace":
+        its key} in "sections", and no "category"). Drag it there, or
+        back into a category.
       - Drag a card by its title - or its chip in the Categories sidebar
         on the left, which never scrolls away - to reorder the categories.
         Clicking a chip scrolls to its card. A card's Numbered
@@ -214,15 +218,17 @@ class WorkspaceSorter(Page):
         itself.
       - Add Category, under the cards, adds an empty one with the name
         typed beside it.
-      - Workspaces whose category no section lists sit in Not Listed at
-        the bottom - drag one into a category to list it.
+      - Workspaces neither in a category nor on their own sit in Not
+        Listed at the bottom - drag one into a category, or between them,
+        to list it.
       - New Workspace, under each card, makes a workspace in it right
         away (see make_workspace) - in Not Listed, with no category.
 
     Nothing is written until Save, which sets every workspace's
     "category", "order" and "include" in its config.json - only the files
-    that change - and the categories in title/select_workspace's
-    config.json, adding a new category's name to the labels. Discard
+    that change - and the categories and workspaces on their own in
+    title/select_workspace's config.json, adding a new category's name to
+    the labels. Discard
     Changes rebuilds the page from the files.
     '''
 
@@ -265,7 +271,7 @@ class WorkspaceSorter(Page):
         sidebar_heading.setFont(self.style.get_font("title_btn"))
         sidebar.grid_layout.addWidget(sidebar_heading, 0, 0)
         self.category_list = ListZone(context, "categories", {SECTION}, spacing=self.style.cgap * 2)
-        self.category_list.dropped.connect(self.drop_section)
+        self.category_list.dropped.connect(lambda payload, slot: self.drop_section(payload, slot, self.category_list))
         sidebar.grid_layout.addWidget(self.category_list, 1, 0)
         sidebar.add_deadspace()
 
@@ -293,13 +299,19 @@ class WorkspaceSorter(Page):
         intro.setWordWrap(True)
         column_layout.addWidget(intro)
 
-        self.section_list = ListZone(context, "sections", {SECTION})
-        self.section_list.dropped.connect(self.drop_section)
+        # The categories' cards, and the workspaces on their own between them (see drop_listed)
+        self.section_list = ListZone(context, "sections", {SECTION, WORKSPACE})
+        self.section_list.dropped.connect(self.drop_listed)
         column_layout.addWidget(self.section_list)
 
         self.cards: dict[str, SectionCard] = {}
+        self.chips: dict[str, WorkspaceChip] = {}
         for section in self.sections:
-            self.add_section(copy.deepcopy(section), self.labels.get(f'title_buttons_{section.get("label", "_default")}'))
+            if "workspace" in section:
+                if section["workspace"] in self.workspaces and section["workspace"] not in self.chips:
+                    self.add_chip(section["workspace"], self.section_list)
+            else:
+                self.add_section(copy.deepcopy(section), self.labels.get(f'title_buttons_{section.get("label", "_default")}'))
 
         column_layout.addWidget(self.build_new_category_row())
 
@@ -309,10 +321,10 @@ class WorkspaceSorter(Page):
         self.cards[self.NOT_LISTED] = self.not_listed
         column_layout.addWidget(self.not_listed)
 
-        self.chips: dict[str, WorkspaceChip] = {}
         ordered = sorted(self.workspaces.items(), key=lambda item: (self.number_or_zero(item[1].get("order")), item[0]))
         for key, config in ordered:
-            self.add_chip(key, self.cards.get(self.zone_id(config.get("category")), self.not_listed))
+            if key not in self.chips:
+                self.add_chip(key, self.cards.get(self.zone_id(config.get("category")), self.not_listed).chips)
         scrollable.add_deadspace()
 
         self.status = QLabel()
@@ -337,14 +349,14 @@ class WorkspaceSorter(Page):
             return {}
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def add_chip(self, key: str, card: SectionCard):
-        '''A chip for workspace key, at the bottom of card.'''
+    def add_chip(self, key: str, zone: DropZone):
+        '''A chip for workspace key, at the bottom of zone - a card's, or the list of categories, on its own.'''
         chip = WorkspaceChip(self.context, key, self.labels.get(self.pages.link_label(key)),
                              self.workspaces[key].get("include") == 1, self.mark_dirty, self.edit_workspace,
                              self.open_workspace, self.rename_workspace, self.delete_workspace)
         self.chips[key] = chip
-        chip.zone = card.chips
-        card.chips.insert(chip, len(card.chips.items))
+        chip.zone = zone
+        zone.insert(chip, len(zone.items))
 
     # Categories
     def add_section(self, section: dict, title: str) -> SectionCard:
@@ -430,7 +442,7 @@ class WorkspaceSorter(Page):
         def create(name: str, folder: str, template_key: str):
             key = make_workspace(self.context, name, folder, template_key, {"category": category})
             self.workspaces[key] = self.raw_config(key)
-            self.add_chip(key, card)
+            self.add_chip(key, card.chips)
             self.renumber()
             self.status_after(self.labels.get("workspace_sorter_created").format(name=name))
         NewWorkspaceDialog(self, self.context, templates, template, create).show()
@@ -446,6 +458,10 @@ class WorkspaceSorter(Page):
             self.workspaces[new_key] = self.raw_config(new_key)
             if new_key != key:
                 del self.workspaces[key]
+                # Already written to the select page (see relist_workspace) - so it's not a change to save
+                for section in self.sections:
+                    if section.get("workspace") == key:
+                        section["workspace"] = new_key
             self.renumber()
             self.status_after(self.labels.get("workspace_sorter_renamed").format(name=name))
         RenameWorkspaceDialog(self, self.context, key, self.chips[key].name, rename).show()
@@ -457,6 +473,8 @@ class WorkspaceSorter(Page):
             delete_workspace(self.context, key)
             chip = self.chips.pop(key)
             del self.workspaces[key]
+            # Already gone from the select page (see relist_workspace)
+            self.sections = [section for section in self.sections if section.get("workspace") != key]
             chip.zone.take(chip)
             chip.hide()
             chip.deleteLater()
@@ -502,15 +520,39 @@ class WorkspaceSorter(Page):
         chip.zone = zone
         self.mark_dirty()
 
-    def drop_section(self, payload: DragPayload, index: int):
-        '''A category dropped on the cards or the sidebar - both list them in the same order, so it moves in both.'''
+    def drop_listed(self, payload: DragPayload, index: int):
+        '''Something dropped among the categories: a category, or a workspace to go there on its own.'''
+        if payload.kind == WORKSPACE:
+            self.drop_workspace(payload, self.section_list, index)
+        else:
+            self.drop_section(payload, index, self.section_list)
+
+    def drop_section(self, payload: DragPayload, index: int, zone: DropZone):
+        '''
+        A category dropped among the cards, or in the sidebar - where index
+        counts categories only, so it lands just before the card it's
+        dropped before there, after any workspaces on their own between them.
+        '''
         card = self.cards.get(payload.item_id)
         if card is None or card is self.not_listed:
             return
+        if zone is self.category_list:
+            current = self.category_list.index_of(card.chip)
+            if index in (current, current + 1):
+                return  # dropped back where it was
+            cards = [item for item in self.section_list.items if isinstance(item, SectionCard)]
+            index = self.section_list.index_of(cards[index]) if index < len(cards) else len(self.section_list.items)
         if not self.move(card, self.section_list, self.section_list, index):
             return
-        self.move(card.chip, self.category_list, self.category_list, index)
+        self.sync_sidebar()
         self.mark_dirty()
+
+    def sync_sidebar(self):
+        '''Puts the sidebar's chips in the cards' order.'''
+        for position, card in enumerate(item for item in self.section_list.items if isinstance(item, SectionCard)):
+            if self.category_list.index_of(card.chip) != position:
+                self.category_list.take(card.chip)
+                self.category_list.insert(card.chip, position)
 
     @staticmethod
     def move(widget: QWidget, source: DropZone, target: DropZone, index: int) -> bool:
@@ -530,7 +572,10 @@ class WorkspaceSorter(Page):
         return True
 
     def renumber(self):
-        '''Numbers the shown workspaces in numbered categories, as the select page will.'''
+        '''Numbers the shown workspaces in numbered categories, as the select page will - not ones on their own.'''
+        for item in self.section_list.items:
+            if isinstance(item, WorkspaceChip):
+                item.number(None)
         for card in self.cards.values():
             numbered = card.section is not None and card.section.get("numbered", False)
             position = 0
@@ -575,8 +620,22 @@ class WorkspaceSorter(Page):
                     config.update(changes)
                     written += 1
 
-        sections = [copy.deepcopy(card.section) for card in self.section_list.items]
+        # On their own: listed by the select page's sections, in no category
+        for chip in self.section_list.items:
+            if isinstance(chip, WorkspaceChip):
+                config = self.workspaces[chip.key]
+                changes = {name: value for name, value in (("include", 1 if chip.shown.isChecked() else 0), ("category", None))
+                           if config.get(name) != value}
+                if changes:
+                    self.write_values(chip.key, changes)
+                    config.update(changes)
+                    written += 1
+
+        sections = [copy.deepcopy(item.section) if isinstance(item, SectionCard) else {"workspace": item.key}
+                    for item in self.section_list.items]
         for section in sections:
+            if "workspace" in section:
+                continue
             key = f"title_buttons_{section.get('label')}"
             if key in self.new_labels:
                 self.labels.add_default_label(key, self.new_labels.pop(key), after_prefix="title_buttons_")
@@ -589,28 +648,6 @@ class WorkspaceSorter(Page):
         self.dirty = False
         self.set_status(self.labels.get("workspace_sorter_saved").format(count=written), "good")
 
-    # A top-level key's line in a config written 4-space indented (see Json.format_config)
-    TOP_LEVEL_KEY = r'^    "{}"\s*:\s*'
-
     def write_values(self, key: str, values: dict):
-        '''
-        Sets top-level values in a page's config.json by rewriting only
-        those values in its text, so the rest of the hand-written file -
-        its blank lines, its one-line lists - stays exactly as it was.
-        A key it doesn't have yet is added at the end.
-        '''
-        path = self.pages.config_paths[key]
-        text = path.read_text(encoding="utf-8")
-        json_tools = self.context.json
-        for name, value in values.items():
-            formatted = json_tools.format_value(value, 4)
-            match = re.search(self.TOP_LEVEL_KEY.format(re.escape(name)), text, re.MULTILINE)
-            if match is not None:
-                _, end = json.JSONDecoder().raw_decode(text, match.end())
-                text = text[:match.end()] + formatted + text[end:]
-            else:
-                close = text.rstrip().rfind("}")
-                body = text[:close].rstrip()
-                text = f"{body},\n    {json.dumps(name)}: {formatted}\n}}\n"
-        json.loads(text)  # never write a broken config
-        path.write_text(text, encoding="utf-8")
+        '''Sets top-level values in a page's config.json, the rest of the file as it was (see write_config_values).'''
+        write_config_values(self.context, key, values)
