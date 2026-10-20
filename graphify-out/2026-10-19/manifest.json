@@ -120,21 +120,21 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792438020.044689,
-    "seen": 1792438073.7504077,
-    "ast_hash": "0c6a4683d80aa6f7c8a3e0d8163e6224",
+    "mtime": 1792457490.83577,
+    "seen": 1792458187.0677073,
+    "ast_hash": "e4e2bf99553c12f0cc053f506791f9c1",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
-    "mtime": 1792435957.8229108,
-    "seen": 1792437052.8483815,
-    "ast_hash": "d2740c74ad207dc4b87bd87c1767a53a",
+    "mtime": 1792451195.372451,
+    "seen": 1792451239.2972114,
+    "ast_hash": "1eee949f832e04656a1016fe79105aec",
     "semantic_hash": ""
   },
   "game/assets/labels/test.json": {
-    "mtime": 1792435957.8229108,
-    "seen": 1792437052.8483825,
-    "ast_hash": "1526bddfbee21443cce310b7e90705d1",
+    "mtime": 1792451195.372451,
+    "seen": 1792451239.2972126,
+    "ast_hash": "b2047db34bef98ef5ae5c3aab4517264",
     "semantic_hash": ""
   },
   "game/assets/pages/404.json": {
@@ -191,12 +191,6 @@
     "ast_hash": "8988bdb9e594fef87c1183d5ac8195ae",
     "semantic_hash": ""
   },
-  "game/assets/pages/workspaces/arp_ip/config.json": {
-    "mtime": 1792435957.8229108,
-    "seen": 1792437052.848762,
-    "ast_hash": "6be91271f2304180d0dce0100b4e2b74",
-    "semantic_hash": ""
-  },
   "game/assets/pages/workspaces/attacker_suite/config.json": {
     "mtime": 1792435957.8229108,
     "seen": 1792437052.8487632,
@@ -210,45 +204,27 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/dos_attack/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487837,
-    "ast_hash": "ce6e97ebb20919e05a6124bfa543484a",
+    "mtime": 1792457495.7548864,
+    "seen": 1792458187.0686948,
+    "ast_hash": "9dad4b7b6b38f4de0d0b1a118eee72d0",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_hvac/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.848786,
-    "ast_hash": "ad9bbdf7e1e0091aa10dbe2f9aaf025c",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/modbus_intro/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487875,
-    "ast_hash": "91c186440507a50f0b3c281ed5d1c8c1",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/modbus_mitm/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487885,
-    "ast_hash": "0380dcc597f9f79b8111e486a8e00b7d",
+    "mtime": 1792457495.7548864,
+    "seen": 1792458187.0687416,
+    "ast_hash": "21a58ed4004edbfac9b4012d2c1c3c0e",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_submarine/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487911,
-    "ast_hash": "d2db361f4908e8f1c438e1c29cfc7ef0",
+    "mtime": 1792457495.7548864,
+    "seen": 1792458187.0687466,
+    "ast_hash": "e73775844704d514339be2e7891f597b",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/network_recon/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487923,
-    "ast_hash": "c588b9f4f45a1fcf8668265b9df8b8b9",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/wireless_sniffing/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487937,
-    "ast_hash": "acc2678bbb81138e66dbbde227ed6dcf",
+    "mtime": 1792441867.3726845,
+    "seen": 1792451239.2980845,
+    "ast_hash": "7594c6979ad1b9ed943e5b27a288c9d0",
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default.json": {
@@ -564,21 +540,21 @@
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi.py": {
-    "mtime": 1792435957.83491,
-    "seen": 1792437052.850329,
-    "ast_hash": "c8bf3f453db31a3af7c58a8de75e6b1d",
+    "mtime": 1792451212.4643297,
+    "seen": 1792451239.300887,
+    "ast_hash": "884c2bc9bdbc566c39f7cc1ed4572ab8",
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi_linux.py": {
-    "mtime": 1792435957.83491,
-    "seen": 1792437052.8503304,
-    "ast_hash": "4fd2173812578decd406e7dece954655",
+    "mtime": 1792451212.4643297,
+    "seen": 1792451239.3008883,
+    "ast_hash": "9e743fa881cc5d76b236717208b1f58c",
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi_windows.py": {
-    "mtime": 1792435957.83491,
-    "seen": 1792437052.8503313,
-    "ast_hash": "f70e232859c78af033ae3cd2d4a6ad04",
+    "mtime": 1792451212.4643297,
+    "seen": 1792451239.3008895,
+    "ast_hash": "2e6d085737dd934ca300fce98d5772cc",
     "semantic_hash": ""
   },
   "game/src/network/process.py": {
@@ -1002,9 +978,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/forms/wifi.py": {
-    "mtime": 1792435957.846909,
-    "seen": 1792437052.8530061,
-    "ast_hash": "1cce7d2e437dbb6646dada5ecd6522b5",
+    "mtime": 1792451195.376453,
+    "seen": 1792451239.30783,
+    "ast_hash": "fc32abc5c89419707fb376665d022fca",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {
@@ -1038,9 +1014,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/variable_monitor/_builder.py": {
-    "mtime": 1791417454.5976784,
-    "seen": 1792423760.3547552,
-    "ast_hash": "eb208bb51723879d8ea68b05f1083d5d",
+    "mtime": 1792458175.114367,
+    "seen": 1792458187.0784702,
+    "ast_hash": "8de8c92e8c5d3bca20ef3667504360f6",
     "semantic_hash": ""
   },
   "game/src/widgets/popup.py": {
@@ -1139,12 +1115,6 @@
     "ast_hash": "7b14c49ef300e3286273a4467d4ff207",
     "semantic_hash": "7b14c49ef300e3286273a4467d4ff207"
   },
-  "game/assets/pages/workspaces/arp_ip/screenshot.png": {
-    "mtime": 1791411917.4475386,
-    "seen": 1792423760.3547764,
-    "ast_hash": "879533cceb3b479c25a1563a793b2557",
-    "semantic_hash": "879533cceb3b479c25a1563a793b2557"
-  },
   "game/assets/pages/workspaces/attacker_suite/screenshot.png": {
     "mtime": 1791411917.4515388,
     "seen": 1792423760.3547773,
@@ -1169,29 +1139,11 @@
     "ast_hash": "4afcf0916d9cc3ddd444a9a10b071757",
     "semantic_hash": "4afcf0916d9cc3ddd444a9a10b071757"
   },
-  "game/assets/pages/workspaces/modbus_intro/screenshot.png": {
-    "mtime": 1791411917.4595387,
-    "seen": 1792423760.3547812,
-    "ast_hash": "fb41557bbc385ab15023abd12b393e7b",
-    "semantic_hash": "fb41557bbc385ab15023abd12b393e7b"
-  },
-  "game/assets/pages/workspaces/modbus_mitm/screenshot.png": {
-    "mtime": 1791411917.4635386,
-    "seen": 1792423760.354782,
-    "ast_hash": "8fecf70262d3a65fd096d855039a5db9",
-    "semantic_hash": "8fecf70262d3a65fd096d855039a5db9"
-  },
   "game/assets/pages/workspaces/modbus_submarine/screenshot.png": {
     "mtime": 1791411917.4675386,
     "seen": 1792423760.354783,
     "ast_hash": "e2947090fc8975badd4f1bc1a84d24e1",
     "semantic_hash": "e2947090fc8975badd4f1bc1a84d24e1"
-  },
-  "game/assets/pages/workspaces/network_recon/screenshot.png": {
-    "mtime": 1791411917.4675386,
-    "seen": 1792423760.3547838,
-    "ast_hash": "604e04f999895aefbaef5ea5426d6812",
-    "semantic_hash": "604e04f999895aefbaef5ea5426d6812"
   },
   ".claude/settings.json": {
     "mtime": 1792435957.8229108,
@@ -1245,12 +1197,6 @@
     "mtime": 1792435957.8269105,
     "seen": 1792437052.8487782,
     "ast_hash": "8208898d80362387e5e25392124eb62e",
-    "semantic_hash": ""
-  },
-  "game/assets/pages/workspaces/modbus_replay/config.json": {
-    "mtime": 1792435957.8269105,
-    "seen": 1792437052.8487897,
-    "ast_hash": "57782b35486af7162dc5f4c5e4859fb7",
     "semantic_hash": ""
   },
   "game/assets/schemas/page_config.schema.json": {
@@ -1917,6 +1863,30 @@
     "mtime": 1792436914.0827138,
     "seen": 1792437052.85198,
     "ast_hash": "182b815a2413faeffc83b2f8afa02145",
+    "semantic_hash": ""
+  },
+  "game/assets/pages/workspaces/arp_spoofing/config.json": {
+    "mtime": 1792448220.7764702,
+    "seen": 1792451239.2976289,
+    "ast_hash": "e2955d98217e27ead91e63e718c2f374",
+    "semantic_hash": ""
+  },
+  "game/assets/pages/workspaces/internet_traffic/config.json": {
+    "mtime": 1792438725.51676,
+    "seen": 1792451239.2980773,
+    "ast_hash": "9253c4f4d7a1c0fd7c92ec4ba148cca7",
+    "semantic_hash": ""
+  },
+  "game/assets/pages/workspaces/modbus_models/config.json": {
+    "mtime": 1792457684.9500678,
+    "seen": 1792458187.0687435,
+    "ast_hash": "6594e59208691ed8065b472afde49ebb",
+    "semantic_hash": ""
+  },
+  "game/assets/pages/workspaces/modbus_recon/config.json": {
+    "mtime": 1792454360.4115655,
+    "seen": 1792458187.0687447,
+    "ast_hash": "706d7e8955a655c83ceb04ebc3fe2aed",
     "semantic_hash": ""
   }
 }

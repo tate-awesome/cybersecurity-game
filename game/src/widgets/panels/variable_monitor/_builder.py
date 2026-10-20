@@ -1,6 +1,6 @@
 from ....app_core import Context
 from ... import Scrollable
-from ...frame_widgets.important_buttons import ToggleStripChartAutoFit
+from ...frame_widgets.important_buttons import EditModbusRegisterDisplay, SelectRegisterPreset, ToggleStripChartAutoFit
 from ...canvases.strip_chart import StripChart
 from ..panel import Panel
 
@@ -51,11 +51,9 @@ class Builder(Panel):
         # self.start_animation(framerate_ms=100)
 
         self.menu_bar.minimize_button(scrollable, master)
-        self.menu_bar.add_button() # set the zero point of the variable monitor
-        self.menu_bar.add_button("pause") # pause or resume the variable monitor
+        self.menu_bar.add_important(EditModbusRegisterDisplay)
+        self.menu_bar.add_important(SelectRegisterPreset)
         self.menu_bar.add_important(ToggleStripChartAutoFit)
-
-        self.menu_bar.add_button() # turn on the crosshairs
 
     def refresh_visibility(self):
         for key in self.context.states.get_registers():
