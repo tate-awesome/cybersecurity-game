@@ -126,7 +126,7 @@
     "menu_bar_tooltips_help_button": "View a help message based on your progress.",
     "menu_bar_tooltips_back_button": "Return to the previous page.",
     "menu_bar_tooltips_reset_button": "Reset this workspace's saved inputs and layout to its defaults.",
-    "menu_bar_tooltips_refresh_button": "Rebuild the page without losing persistent data - attack threads, entries, settings.",
+    "menu_bar_tooltips_refresh_button": "Rebuild the page, with a workspace's panels back where they started at their default sizes - keeps attack threads, entries and settings.",
     "menu_bar_tooltips_quit_button": "Close the program.",
     "menu_bar_tooltips_preferences_button": "Saves the current theme, mode, and localization for next time.",
     "menu_bar_tooltips_page_button": "Bookmark this workspace - the title page's Resume button opens it.",
