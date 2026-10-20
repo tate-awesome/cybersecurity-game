@@ -16,7 +16,7 @@ from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
 from ...widgets import MenuBar, PANELS, popup
 from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
-from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
+from ...widgets.frame_widgets.important_buttons import PAGE_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
 
 # Qt's "no maximum" widget size (QWIDGETSIZE_MAX, which PySide6 doesn't export)
@@ -183,8 +183,10 @@ def remove_nested(data: dict, path: tuple):
 
 class ConfigEditor(Page):
     '''
-    Demo page for editing workspace configs with a form instead of raw
-    JSON. The menu bar dropdown picks a workspace; the form below shows:
+    Demo page for editing a workspace's config with a form instead of raw
+    JSON - the workspace in selected_key, which the page is titled with
+    (Edit Workspaces opens it on one, and creates, renames and deletes
+    them - see WorkspaceSorter). The form shows:
 
       - its own fields (name, section, order, description, ...)
       - its menu bar buttons, as checkboxes (saved in the standard order)
@@ -227,18 +229,10 @@ class ConfigEditor(Page):
             ConfigEditor.selected_key = keys[0] if keys else None
 
         menu_bar = MenuBar(self, context, "config_editor_demo")
-        # A developer tool - marked as one (see important_buttons.DEVELOPER_MARK)
+        # Titled with the workspace it edits - a developer tool, marked as one (see important_buttons.DEVELOPER_MARK)
         from ...widgets.frame_widgets.important_buttons import developer_text
-        menu_bar.game_label.setText(developer_text(menu_bar.game_label.text()))
-        self.dropdown = None
-        if keys:
-            self.dropdown = menu_bar.add_dropdown(list(self.keys_by_name), self.pick,
-                                                  default=self.workspace_name(ConfigEditor.selected_key))
-        new = menu_bar.add_button("new_workspace", lambda: self.unless_unsaved(self.new_workspace))
-        new.setText(f"{new.text()} {POPUP_MARK}")
-        if keys:
-            delete = menu_bar.add_button("delete_workspace", lambda: self.unless_unsaved(self.delete_workspace))
-            delete.setText(f"{delete.text()} {WARNING_MARK}")
+        title = self.workspace_name(ConfigEditor.selected_key) if keys else menu_bar.game_label.text()
+        menu_bar.game_label.setText(developer_text(title))
         menu_bar.add_button("save_config", self.save)
         if keys:
             opener = menu_bar.add_button("open_workspace", lambda: self.unless_unsaved(self.open_workspace))
@@ -281,7 +275,6 @@ class ConfigEditor(Page):
     def workspace_name(self, key: str) -> str:
         return self.labels.get(self.pages.link_label(key))
 
-    # Creating and deleting workspaces
     def unless_unsaved(self, action: Callable[[], None]):
         '''Runs action, first asking to discard any unsaved changes.'''
         if not self.dirty:
@@ -290,52 +283,12 @@ class ConfigEditor(Page):
         popup.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
                              "Yes, discard", "No, keep editing", action)
 
-    def new_workspace(self):
-        NewWorkspaceDialog(self, self.context, self.keys_by_name, ConfigEditor.selected_key, self.create_workspace).show()
-
-    def create_workspace(self, name: str, folder: str, template_key: str):
-        '''Makes a new workspace (see make_workspace), then opens it here.'''
-        ConfigEditor.selected_key = make_workspace(self.context, name, folder, template_key)
-        self.router.refresh(save=False)
-
     def open_workspace(self):
         '''Shows the workspace being edited, as saved (Back returns here).'''
         if ConfigEditor.selected_key is not None:
             self.router.show(ConfigEditor.selected_key)
 
-    def delete_workspace(self):
-        key = ConfigEditor.selected_key
-        if key is not None:
-            DeleteWorkspaceDialog(self, self.context, key, self.workspace_name(key), lambda: self.remove_workspace(key)).show()
-
-    def remove_workspace(self, key: str):
-        '''Permanently deletes a workspace (see delete_workspace).'''
-        delete_workspace(self.context, key)
-        ConfigEditor.selected_key = None
-        self.router.refresh(save=False)
-
     # Loading
-    def pick(self, name: str):
-        key = self.keys_by_name[name]
-        if key == ConfigEditor.selected_key:
-            return
-        if not self.dirty:
-            self.load(key)
-            return
-        # Put the dropdown back until the switch is confirmed
-        self.set_dropdown(ConfigEditor.selected_key)
-        def discard():
-            self.load(key)
-            self.set_dropdown(key)
-        popup.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
-                             "Yes, discard", "No, keep editing", discard)
-
-    def set_dropdown(self, key: str):
-        if self.dropdown is not None:
-            self.dropdown.blockSignals(True)
-            self.dropdown.setCurrentText(self.workspace_name(key))
-            self.dropdown.blockSignals(False)
-
     def load(self, key: str | None):
         ConfigEditor.selected_key = key
         self.dirty = False

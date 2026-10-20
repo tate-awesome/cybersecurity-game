@@ -315,8 +315,6 @@
     "menu_bar_buttons_save_workspace_order": "Save",
     "menu_bar_buttons_discard_workspace_order": "Discard Changes",
     "menu_bar_buttons_configure_workspace_button": "Edit This Workspace",
-    "menu_bar_buttons_new_workspace": "New Workspace",
-    "menu_bar_buttons_delete_workspace": "Delete Workspace",
     "menu_bar_buttons_save_config": "Save Config",
     "menu_bar_buttons_open_workspace": "Open This Workspace",
     "menu_bar_buttons_clear_packets_button": "Clear All Captured Data",
