@@ -7,7 +7,7 @@
     "schema_version": 1,
     "link_label": "title_buttons_workspace_network_recon",
     "include": 1,
-    "category": "attacker",
+    "category": "module_1_networks",
     "order": 20,
     "prerequisites": [],
     "estimated_minutes": 20,
