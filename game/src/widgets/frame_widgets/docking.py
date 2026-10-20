@@ -44,7 +44,7 @@ from ...app_core import Context
 from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .overlay import Overlay
 from .panes import Panes
-from .window_chrome import WindowBarButton
+from .window_chrome import WindowBarButton, bar_button_height
 
 EDGES = ("left", "right", "top", "bottom")
 SPLIT_PREFIXES = {"horizontal": "h_panes", "vertical": "v_panes"}
@@ -59,8 +59,6 @@ GROUP_BAND = 18
 MORE_TABS = "···"
 # The smallest a peeked-at panel's popup gets (see DockArea.peek)
 PEEK_MIN = QSize(360, 280)
-# A menu bar button's height, by font (see TabbedPane.thickness)
-_BUTTON_HEIGHTS: dict[str, int] = {}
 
 
 # Qt's "no maximum" size
@@ -303,6 +301,27 @@ def drain_evenly(sizes: list[float], floors: list[float], amount: float) -> list
 
 # Panes
 
+def bar_inset(style) -> int:
+    '''
+    How far a panel's minimize button is in from the top and the left of
+    its border - the same both ways, open or minimized either way (see
+    MenuBar.minimize_button and _SideStrip), so it never moves.
+    '''
+    return PANEL_BORDER_WIDTH + 2 * style.cgap
+
+
+def minimized_thickness(style, axis: str = "vertical") -> int:
+    '''
+    How thick a minimized pane is along axis: its menu bar - a menu bar
+    button's height (the same for every panel, so minimized panes line
+    up, and measurable while hidden) with bar_inset all round - and the
+    room for the theme's shadow on those two sides.
+    '''
+    left, top, right, bottom = style.panel_margins()
+    shadow = left + right if axis == "horizontal" else top + bottom
+    return bar_button_height(style) + 2 * bar_inset(style) + shadow
+
+
 class TabStrip(QWidget):
     '''
     The tabs of a TabbedPane, in one of its panels' menu bars in the
@@ -463,12 +482,14 @@ class _SideStrip(QWidget):
         self.setProperty("shadowed", True)
         column = QVBoxLayout(self)
         left, top, right, bottom = self.style.panel_margins()
-        border = PANEL_BORDER_WIDTH
-        gap = self.style.igap // 2
-        column.setContentsMargins(left + border, top + border + gap, right + border, bottom + border + gap)
+        # Its restore button just where an open panel's minimize button is (see bar_inset)
+        inset = bar_inset(self.style)
+        column.setContentsMargins(left + inset, top + inset, right + inset, bottom + inset)
         column.setSpacing(self.style.igap)
         from .menu_bar import RESTORE_ICON, bare_icon  # here - menu_bar imports this module's package
         button = bare_icon(context, WindowBarButton(self.style.icon(RESTORE_ICON)))
+        size = bar_button_height(self.style)
+        button.setFixedSize(size, size)
         button.setToolTip(context.labels.get("menu_bar_buttons_maximize"))
         button.clicked.connect(lambda checked=False: restore(None))
         column.addWidget(button, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -509,7 +530,9 @@ class _LentPlaceholder(QWidget):
         color.setAlphaF(0.45)
         painter.setPen(color)
         left, top, right, bottom = self.style.panel_margins()
-        room = self.rect().adjusted(left + self.style.igap * 2, top, -right, -bottom)
+        # Where the title was, after the minimize button (see MenuBar.minimize_button)
+        inset = bar_inset(self.style)
+        room = self.rect().adjusted(left + inset + bar_button_height(self.style) + self.style.igap, top, -right, -bottom)
         painter.drawText(room, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.title)
         painter.end()
 
@@ -622,24 +645,12 @@ class TabbedPane(QWidget):
         self.stack.insertWidget(list(self.panels).index(panel_id), self.panels[panel_id])
         self.set_form(self.form)
 
-    def thickness(self) -> int:
+    def thickness(self, axis: str = "vertical") -> int:
         '''
-        How thick it is minimized, either way: a panel menu bar's height
-        (its buttons' and the room around them - the same for every panel,
-        so minimized panes line up, and measurable while hidden) and the
-        panel's frame around it.
+        How thick it is minimized along axis ("vertical": a bar's height,
+        "horizontal": a sideways strip's width) - see minimized_thickness.
         '''
-        font = self.style.get_font()
-        key = font.toString()
-        if key not in _BUTTON_HEIGHTS:
-            sample = QPushButton("Ag")
-            sample.setFont(font)
-            sample.ensurePolished()
-            _BUTTON_HEIGHTS[key] = sample.sizeHint().height()
-            sample.deleteLater()
-        _, top, _, bottom = self.style.panel_margins()
-        bar = _BUTTON_HEIGHTS[key] + 4 * self.style.cgap
-        return bar + top + bottom + 2 * PANEL_BORDER_WIDTH + self.style.setting("panel_frame")
+        return minimized_thickness(self.style, axis)
 
 
 # Dragging
@@ -1054,7 +1065,7 @@ class DockArea(QWidget):
         '''How thick a minimized node is along axis, the way it's flattened.'''
         if not is_split(node):
             tabbed = self.tabbed.get(node["id"])
-            return tabbed.thickness() if tabbed is not None else self.style.igap * 4
+            return tabbed.thickness(axis) if tabbed is not None else self.style.igap * 4
         sizes = [self.thickness(child, axis) for child in node["children"]]
         if node["orientation"] == axis:
             panes = self.splits.get(node["id"])

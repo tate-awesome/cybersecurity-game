@@ -11,8 +11,8 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
-from .window_chrome import (SquareButtons, WindowBarButton, WindowControls, WindowDrag, draw_window_bar_line, window_bar_button_height,
-                            window_bar_height, window_bar_room)
+from .window_chrome import (SquareButtons, WindowBarButton, WindowControls, WindowDrag, bar_button_height, draw_window_bar_line,
+                            window_bar_button_height, window_bar_height, window_bar_room)
 from collections.abc import Callable
 
 # A page's menu bar has three zones (see MenuBar.build_page_zones):
@@ -617,6 +617,11 @@ class MenuBar(QFrame):
         the DockArea the panel's in does the minimizing (see
         DockArea.toggle_minimized) and calls show_minimized to match.
         frame_widget is the panel's body, hidden while it's minimized.
+
+        It's a square as tall as the bar's buttons, as far in from the
+        bar's left as from its top - just where a sideways minimized
+        panel's restore button is (see docking.bar_inset), so it stays put
+        whichever way its panel minimizes.
         '''
         self._minimize_body = frame_widget
         button = bare_icon(self.context, WindowBarButton(self.style.icon(MINIMIZE_ICON)))
@@ -625,8 +630,22 @@ class MenuBar(QFrame):
         self.row.insertWidget(0, button, 0, Qt.AlignmentFlag.AlignVCenter)
         self._fixed.append(button)
         self.minimize = button
-        self._update_squashing()
+        self.fit_minimize_button()
+        self.style.signals.changed.connect(self.fit_minimize_button)
         return button
+
+    def fit_minimize_button(self):
+        '''Sizes the minimize button for the theme, and the room left of it to match the room above it (see minimize_button).'''
+        try:
+            size = bar_button_height(self.style)
+            self.minimize.setFixedSize(size, size)
+            gap = self.style.cgap
+            for item in (self, self.row):
+                margins = item.contentsMargins()
+                item.setContentsMargins(gap, margins.top(), margins.right(), margins.bottom())
+            self._update_squashing()
+        except RuntimeError:
+            pass  # deleted with its panel, with the signal still connected
 
     def show_minimized(self, minimized: bool):
         '''Shows the panel minimized - its body hidden, its button a square - or not.'''
@@ -634,13 +653,15 @@ class MenuBar(QFrame):
             return
         self.minimize.setText(self.style.icon(RESTORE_ICON if minimized else MINIMIZE_ICON))
         self.minimize.setToolTip(self.context.labels.get("menu_bar_buttons_maximize" if minimized else "menu_bar_buttons_minimize"))
-        if self._minimize_body is not None:
-            self._minimize_body.setVisible(not minimized)
+        self.show_body(not minimized)
 
     def show_body(self, shown: bool):
         '''Shows or hides just the body minimizing hides - for a minimized panel peeked at (see DockArea.peek).'''
         if self._minimize_body is not None:
             self._minimize_body.setVisible(shown)
+            fit_frame = getattr(self.parentWidget(), "fit_frame", None)
+            if fit_frame is not None:
+                fit_frame()  # no frame around a hidden body
 
     # Title or tabs
 
