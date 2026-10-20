@@ -1,9 +1,9 @@
 import re
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QUrl, QVariantAnimation, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QTextDocument
-from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QPushButton, QSizePolicy,
+from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRectF, QSizeF, Qt, QUrl, QVariantAnimation, Signal
+from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QTextDocument
+from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QSizePolicy,
                                QTextBrowser, QVBoxLayout, QWidget)
 
 from ...app_core import Context
@@ -59,13 +59,18 @@ class WorkspaceButton(QPushButton):
         event.accept()
 
 
-class SummaryCard(QFrame):
+class SummaryDrawer(QFrame):
     '''
-    The workspace summary's box: dressed like a panel - the theme's panel
-    material, outline, corners and shadow (see Style.panel_shadow) - but
-    painted by hand, so it can fade in and out (see reveal). Its content
-    sits inside the room the shadow needs, so revealing it never moves the
-    text.
+    The workspace summary, shaped like a panel's drawer (see themes' module
+    docstring): a beefy bar along its top - the workspace's title, big, and
+    its action buttons (see add_button) - over a card holding its note, in
+    the drawer's frame. The shadow, drawer and card are painted by hand, so
+    they fade in and out together (see reveal); inner holds everything on
+    them - the bar's title and buttons and the card's content - to fade new
+    content in over them.
+
+    With nothing selected it isn't there: no drawer, no bar, and the
+    page's own note on the bare background, where the card's content sits.
     '''
 
     REVEAL_MS = 220
@@ -80,16 +85,63 @@ class SummaryCard(QFrame):
         self.animation.setDuration(self.REVEAL_MS)
         self.animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         self.animation.valueChanged.connect(self._set_shown)
-        self.setLayout(QVBoxLayout())
+        drawer = QVBoxLayout(self)
+        drawer.setSpacing(0)
+
+        self.inner = QWidget()
+        inner_layout = QVBoxLayout(self.inner)
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.setSpacing(0)
+        drawer.addWidget(self.inner)
+
+        self.bar = QWidget()
+        bar_layout = QHBoxLayout(self.bar)
+        bar_layout.setSpacing(self.style.igap)
+        self.title = QLabel()
+        self.title.setFont(self.style.get_font("page_title"))
+        # A title is a name, never markup
+        self.title.setTextFormat(Qt.TextFormat.PlainText)
+        # A long one clips, rather than pushing the buttons out
+        self.title.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.style.live_style(self.title, lambda: f"QLabel {{ color: {self.style.color('menu_bar_text')}; }}")
+        bar_layout.addWidget(self.title, 1)
+        self.bar.hide()
+        inner_layout.addWidget(self.bar)
+
+        self.content = QWidget()
+        content_layout = QVBoxLayout(self.content)
+        # Edge to edge with the card - the note scrolls right up to its top and
+        # bottom, with its scrollbar along its right (see build_summary)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(self.content, 1)
+
         self.fit()
         self.style.signals.changed.connect(self.fit)
 
+    def add_button(self, button: QPushButton):
+        '''A button along the bar, right of the title, in the order added - as big as the title.'''
+        button.setFont(self.style.get_font("title_btn"))
+        self.bar.layout().addWidget(button)
+
+    def show_bar(self, title: str | None):
+        '''The bar, titled - or None for no bar, with nothing selected.'''
+        self.bar.setVisible(title is not None)
+        self.title.setText(title or "")
+
     def fit(self):
-        '''After a theme change: room for its shadow, then its padding.'''
-        left, top, right, bottom = self.style.panel_margins()
-        pad = self.style.igap + PANEL_BORDER_WIDTH
-        self.layout().setContentsMargins(left + pad, top + pad, right + pad, bottom + pad)
+        '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the bar's padding.'''
+        style = self.style
+        left, top, right, bottom = style.panel_margins()
+        frame = style.setting("panel_frame") + PANEL_BORDER_WIDTH
+        self.layout().setContentsMargins(left + frame, top + PANEL_BORDER_WIDTH, right + frame, bottom + frame)
+        # The title lines up with the card's text below it
+        self.bar.layout().setContentsMargins(max(0, style.igap * 2 - frame), style.igap, 0, style.igap)
         self.update()
+
+    def body_rect(self) -> QRectF:
+        '''Where the drawer itself is drawn - inside the room for its shadow (see Style.panel_margins).'''
+        left, top, right, bottom = self.style.panel_margins()
+        return QRectF(self.rect()).adjusted(left, top, -right, -bottom)
 
     def reveal(self, show: bool):
         '''Fades in (or out) - at once with page transitions off (see Performance.page_transitions).'''
@@ -106,12 +158,26 @@ class SummaryCard(QFrame):
         self.shown = float(value)
         self.update()
 
+    def mousePressEvent(self, event):
+        # A click on the drawer stays here - only the room around it, or
+        # the bare page note, reaches the page (which deselects)
+        if self.shown > 0 and self.body_rect().contains(event.position()):
+            event.accept()
+        else:
+            event.ignore()
+
     def paintEvent(self, event):
         if self.shown <= 0:
             return
         painter = QPainter(self)
         painter.setOpacity(self.shown)
         paint_panel(painter, self.style, self.width(), self.height())
+        # The card, clipped to the drawer's rounded shape - with no frame, its corners are the drawer's
+        path = QPainterPath()
+        path.addRoundedRect(self.body_rect(), self.style.PANEL_RADIUS, self.style.PANEL_RADIUS)
+        painter.setClipPath(path)
+        card = QRectF(self.content.mapTo(self, QPoint(0, 0)), QSizeF(self.content.size()))
+        painter.fillRect(card, self.style.brush("card", card))
         painter.end()
 
 
@@ -152,14 +218,14 @@ class WorkspaceSelectPage(Page):
 
     With nothing selected, the summary area shows this page's own "_note"
     straight on the background. Clicking a workspace shows that
-    workspace's config.json "_note" (markdown) on a card dressed like a
-    panel instead (see SummaryCard), which fades in - and switching
-    workspaces fades the new summary in over it. Under the summary, the
-    card's bottom row has Open Workspace (and, in developer mode, Edit This
-    Workspace, which opens it in the workspace editor) - out of the
-    summary's way, so it never covers it. Double-clicking a workspace opens it
+    workspace's config.json "_note" (markdown) in a drawer shaped like a
+    panel's instead (see SummaryDrawer), which fades in - and switching
+    workspaces fades the new summary in over it. The drawer's bar, where a
+    panel's menu bar is, has the workspace's title and its buttons: Open
+    Workspace (and, in developer mode, Edit This Workspace, which opens it
+    in the workspace editor). Double-clicking a workspace opens it
     immediately, and clicking any dead space - the background, empty
-    sidebar, the box's margins - deselects it, back to this page's note.
+    sidebar - deselects it, back to this page's note.
 
     A _note can be one string or a list of markdown blocks, joined with
     blank lines between them.
@@ -283,56 +349,61 @@ class WorkspaceSelectPage(Page):
     # Summary
     def build_summary(self, body: QHBoxLayout):
         '''
-        The summary card (see SummaryCard): the markdown browser, and under
-        it a row of action buttons - Edit This Workspace in developer mode,
-        then Open Workspace - shown while a workspace is selected. The
-        browser and the row fade in together whenever the summary changes
-        (see show_note).
+        The summary drawer (see SummaryDrawer): the markdown browser on its
+        card, and on its bar Edit This Workspace in developer mode, then
+        Open Workspace. The bar's title and buttons and the browser fade in
+        together whenever the summary changes (see show_note).
         '''
-        self.summary_box = SummaryCard(self.context)
+        self.summary_box = SummaryDrawer(self.context)
         body.addWidget(self.summary_box, 1)
-
-        self.summary = QWidget()
-        summary_layout = QVBoxLayout(self.summary)
-        summary_layout.setContentsMargins(0, 0, 0, 0)
-        summary_layout.setSpacing(self.style.igap)
-        self.summary_box.layout().addWidget(self.summary)
+        self.summary = self.summary_box.inner
 
         self.browser = NoteBrowser()
         self.browser.setOpenExternalLinks(True)
         self.browser.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.browser.setFont(self.style.get_font("default"))
-        self.browser.setStyleSheet("QTextBrowser { background-color: transparent; border: none; }")
+        self.style.live_style(self.browser, self.browser_sheet)
         self.browser.viewport().setAutoFillBackground(False)
-        summary_layout.addWidget(self.browser, 1)
+        # The text's padding from the card's sides - around the text only, so
+        # the scrollbar still runs along the card's right edge, as in panels
+        pad = self.style.igap * 2
+        self.browser.setViewportMargins(pad, 0, pad, 0)
+        self.summary_box.content.layout().addWidget(self.browser, 1)
 
-        self.actions = QWidget()
-        actions_layout = QHBoxLayout(self.actions)
-        actions_layout.setContentsMargins(0, 0, 0, 0)
-        actions_layout.setSpacing(self.style.igap)
-        actions_layout.addStretch(1)
-
-        self.edit_button = None
         if self.context.preferences.is_developer():
             from ...widgets.frame_widgets.important_buttons import developer_text
-            self.edit_button = QPushButton(developer_text(f"{self.labels.get('title_buttons_edit_workspace')} {PAGE_MARK}"))
-            self.edit_button.setFont(self.style.get_font("title_btn"))
-            self.edit_button.clicked.connect(lambda checked=False: self.edit(self.selected_target))
-            actions_layout.addWidget(self.edit_button)
+            edit_button = QPushButton(developer_text(f"{self.labels.get('title_buttons_edit_workspace')} {PAGE_MARK}"))
+            edit_button.clicked.connect(lambda checked=False: self.edit(self.selected_target))
+            self.summary_box.add_button(edit_button)
 
-        self.start_button = QPushButton(f"{self.labels.get('title_buttons_open_workspace')} {PAGE_MARK}")
-        self.start_button.setFont(self.style.get_font("title_btn"))
-        self.start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
-        actions_layout.addWidget(self.start_button)
-        self.actions.hide()
-        summary_layout.addWidget(self.actions)
+        start_button = QPushButton(f"{self.labels.get('title_buttons_open_workspace')} {PAGE_MARK}")
+        start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
+        self.summary_box.add_button(start_button)
+
+    # How much thicker the note's scrollbar is than the theme's others - a long note's is easy to miss
+    SCROLLBAR_SCALE = 1.75
+
+    def browser_sheet(self) -> str:
+        '''
+        The note's own rules: no background or border of its own, and a
+        thicker scrollbar - its handle's corners scaled with it, so it keeps
+        the theme's shape (see Style's scrollbar rules).
+        '''
+        style = self.style
+        width = int(style.get_scrollbar_size() * self.SCROLLBAR_SCALE)
+        thickness = max(2, width - 2 * style.setting("scrollbar_inset"))
+        radius = style.setting("scrollbar_radius")
+        handle_radius = thickness // 2 if radius is None else min(radius, thickness // 2)
+        return (f"QTextBrowser {{ background-color: transparent; border: none; }}"
+                f" QScrollBar:vertical {{ width: {width}px; }}"
+                f" QScrollBar::handle:vertical {{ border-radius: {handle_radius}px; min-height: {width * 2}px; }}")
 
     def select(self, target: str):
         if target == self.selected_target:
             return
         self.selected_target = target
         config = self.context.pages.load_page_config(target)
-        self.actions.show()
+        self.summary_box.show_bar(self.labels.get(self.context.pages.link_label(target)))
         self.summary_box.reveal(True)
         self.show_note(self.join_note(config.get("_note", "")), self.context.paths.pages / target)
 
@@ -346,13 +417,13 @@ class WorkspaceSelectPage(Page):
         for button in self.workspace_group.buttons():
             button.setChecked(False)
         self.workspace_group.setExclusive(True)
-        self.actions.hide()
+        self.summary_box.show_bar(None)
         self.summary_box.reveal(False)
         self.show_note(self.default_note, self.default_folder)
 
     def mousePressEvent(self, event):
         # Only clicks nothing else took reach the page: the background,
-        # empty sidebar and the card's margins, the menu bar's empty stretch
+        # empty sidebar and the room around the drawer, the menu bar's empty stretch
         if event.button() == Qt.MouseButton.LeftButton:
             self.deselect()
         super().mousePressEvent(event)
