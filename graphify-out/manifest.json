@@ -792,9 +792,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1792510063.3243198,
-    "seen": 1792510813.038521,
-    "ast_hash": "b5dcc3ececac6987c8eea747fd1e2692",
+    "mtime": 1792510973.1272879,
+    "seen": 1792511014.0602756,
+    "ast_hash": "56ba0a840ead23472cbfb6d4e84059ba",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -1860,9 +1860,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/docking.py": {
-    "mtime": 1792510166.8643632,
-    "seen": 1792510813.0382662,
-    "ast_hash": "abc7a6afd84c9103776adaf5489ed685",
+    "mtime": 1792510973.125852,
+    "seen": 1792511014.0575433,
+    "ast_hash": "3d30b9bdc2ad84629e8bf5c601dc1e90",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/save_layout_as_default.py": {
