@@ -57,6 +57,8 @@ CENTER_INSET = 0.25
 GROUP_BAND = 18
 # The tab strip's "more tabs" button
 MORE_TABS = "···"
+# The smallest a peeked-at panel's popup gets (see DockArea.peek)
+PEEK_MIN = QSize(360, 280)
 # A menu bar button's height, by font (see TabbedPane.thickness)
 _BUTTON_HEIGHTS: dict[str, int] = {}
 
@@ -1186,14 +1188,6 @@ class DockArea(QWidget):
         tabbed = self.tabbed.get(node["id"]) if node is not None else None
         if tabbed is None:
             return
-        # Its open size the way it's flattened: what the minimized group it's in - or it - had open
-        collapsed = self.collapsed()
-        _, parents = find(self.root, node["id"])
-        flattened = node
-        for parent in reversed(parents):
-            if not collapsed[parent["id"]]:
-                break
-            flattened = parent
         anchor = QRect(tabbed.mapToGlobal(QPoint(0, 0)), tabbed.size())
         side = tabbed.form == "side"
         panel = tabbed.lend(panel_id)
@@ -1203,15 +1197,11 @@ class DockArea(QWidget):
         popup = _Peek(self, panel, lambda: self.end_peek(closing=True))
         self.peeking = (panel_id, tabbed, popup)
 
-        # Its size open along the way it's minimized, within reason - and beside its strip
+        # As big as the pane is with nothing minimized (see open_share) - within the window - and beside its strip
         window = QRect(self.window().mapToGlobal(QPoint(0, 0)), self.window().size())
-        open_size = int(flattened.get("open_size") or 0)
-        # ...and across, the room its strip has, or what it had open in its own group
-        own = int(node.get("open_size") or 0)
-        width = open_size if side else anchor.width()
-        height = max(anchor.height(), own) if side else open_size
-        width = max(360, min(width or 480, window.width() * 2 // 3))
-        height = max(280, min(height or 360, window.height() * 2 // 3))
+        share_width, share_height = self.open_share(node)
+        width = max(PEEK_MIN.width(), min(round(share_width * self.width()), window.width()))
+        height = max(PEEK_MIN.height(), min(round(share_height * self.height()), window.height()))
         if side:
             x = anchor.right() if anchor.right() + width <= window.right() else anchor.left() - width
             y = anchor.top()
@@ -1222,6 +1212,23 @@ class DockArea(QWidget):
         y = max(window.top(), min(y, window.bottom() - height))
         popup.setGeometry(x, y, width, height)
         popup.show()
+
+    def open_share(self, node: dict) -> tuple[float, float]:
+        '''
+        The share of the area's width and height node has with every pane
+        open, by the layout's weights - its size at the layout's default
+        weights, unless the user's resized the panes since.
+        '''
+        _, parents = find(self.root, node["id"])
+        width = height = 1.0
+        for parent, child in zip(parents, parents[1:] + (node,)):
+            total = sum(sibling["weight"] for sibling in parent["children"]) or 1
+            share = child["weight"] / total
+            if parent["orientation"] == "horizontal":
+                width *= share
+            else:
+                height *= share
+        return width, height
 
     def end_peek(self, closing: bool = False):
         '''Hands a peeked-at panel back to its pane (see peek).'''

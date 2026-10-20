@@ -1866,9 +1866,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/docking.py": {
-    "mtime": 1792465452.742033,
-    "seen": 1792465500.6579554,
-    "ast_hash": "822f156fb0e17856722f7f43d4f54c45",
+    "mtime": 1792465548.9184663,
+    "seen": 1792465580.5900257,
+    "ast_hash": "492a4480f049a70b32f553fb53e3b261",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/save_layout_as_default.py": {
