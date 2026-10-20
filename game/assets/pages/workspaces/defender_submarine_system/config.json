@@ -5,7 +5,7 @@
         "The submarine model combines a submarine and a server that communicates over the air. The submarine takes in control commands from the server in order to navigate towards a target that only the server knows the location of.",
         "In this lesson you will learn the specifics of the submarine system and how to change the target which the submarine follows.",
         "## Objectives",
-        "- Understand the variables which control the movement of the submarine\n- Understand which variables are owned by the Client\n- Understand which variables are owned by the Server\n- Understand what the Client computes\n- Understand what the Server computes",
+        "- Understand which variables control the movement of the submarine\n- Understand which variables track the position of the submarine\n- Understand which variables are owned by the Client\n- Understand which variables are owned by the Server\n- Understand what the Client computes\n- Understand what the Server computes",
         "## Reading",
         "*Securing Cyber-Physical Systems: A Hands-On Guide*",
         "- TBD",
@@ -28,24 +28,17 @@
 
     "settings": {
         "model_panels": {
-            "modbus_model_panel_1": {"available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "ap_polled_hvac_chart": 0}}
+            "modbus_model_panel_1": {
+                "available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "ap_polled_hvac_chart": 0}
+            }
         },
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
-        "available": {
-            "ap_connect": 1,
-            "encryption": 0,
-            "ap_tunnel": 0,
-            "mode": 1,
-            "sliders": 1
-        },
+        "available": {"ap_connect": 1, "encryption": 0, "ap_tunnel": 0, "mode": 1, "sliders": 1},
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
     "title": "defender_submarine_system_workspace",
-    "menu_bar": [
-        "reset_button",
-        "ap_config_button"
-    ],
+    "menu_bar": ["reset_button", "ap_config_button"],
 
     "layout_shape": {
         "v_panes_1": [
