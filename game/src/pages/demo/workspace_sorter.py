@@ -30,11 +30,12 @@ class WorkspaceChip(QFrame):
     One workspace on the sorter, a full-width row: its name, dragged to
     reorder or recategorize it, a checkbox for whether the workspace
     select page lists it ("include") - a hidden one stays where it is,
-    faded - buttons to rename or delete it, and a link to edit it in the
-    workspace editor. rename, delete and edit are called with its key.
+    faded - buttons to rename or delete it, and links to edit it in the
+    workspace editor and to open it. rename, delete, edit and open_ are
+    called with its key.
     '''
 
-    def __init__(self, context: Context, key: str, name: str, shown: bool, changed, edit, rename, delete):
+    def __init__(self, context: Context, key: str, name: str, shown: bool, changed, edit, open_, rename, delete):
         super().__init__()
         self.key = key
         self.name = name
@@ -57,11 +58,12 @@ class WorkspaceChip(QFrame):
             button.setToolTip(context.labels.get(f"workspace_sorter_{label}_workspace_tooltip"))
             button.clicked.connect(lambda checked=False, action=action: action(self.key))
             layout.addWidget(button)
-        editor = QPushButton(f"{context.labels.get('workspace_sorter_edit_workspace')} {PAGE_MARK}")
-        editor.setFont(context.style.get_font("default"))
-        editor.setToolTip(context.labels.get("workspace_sorter_edit_workspace_tooltip"))
-        editor.clicked.connect(lambda checked=False: edit(self.key))
-        layout.addWidget(editor)
+        for label, action in (("edit", edit), ("open", open_)):
+            button = QPushButton(f"{context.labels.get(f'workspace_sorter_{label}_workspace')} {PAGE_MARK}")
+            button.setFont(context.style.get_font("default"))
+            button.setToolTip(context.labels.get(f"workspace_sorter_{label}_workspace_tooltip"))
+            button.clicked.connect(lambda checked=False, action=action: action(self.key))
+            layout.addWidget(button)
         self.show_state()
         DragHandle(self, lambda: DragPayload(WORKSPACE, self.key, self.zone.zone_id))
 
@@ -173,8 +175,9 @@ class WorkspaceSorter(Page):
         away - its workspaces go to Not Listed.
       - Each workspace's Shown checkbox is its "include" - a hidden one
         keeps its place, for whenever it's shown again - Rename gives it a
-        new name and folder, Delete deletes it for good, and its Edit
-        button opens it in the workspace editor.
+        new name and folder, Delete deletes it for good, its Edit button
+        opens it in the workspace editor, and Open opens the workspace
+        itself.
       - Add Category, under the cards, adds an empty one with the name
         typed beside it.
       - Workspaces whose category no section lists sit in Not Listed at
@@ -285,7 +288,7 @@ class WorkspaceSorter(Page):
         '''A chip for workspace key, at the bottom of card.'''
         chip = WorkspaceChip(self.context, key, self.labels.get(self.pages.link_label(key)),
                              self.workspaces[key].get("include") == 1, self.mark_dirty, self.edit_workspace,
-                             self.rename_workspace, self.delete_workspace)
+                             self.open_workspace, self.rename_workspace, self.delete_workspace)
         self.chips[key] = chip
         chip.zone = card.chips
         card.chips.insert(chip, len(card.chips.items))
@@ -411,12 +414,20 @@ class WorkspaceSorter(Page):
             from .config_editor import ConfigEditor
             ConfigEditor.selected_key = key
             self.router.show("demo/config_editor")
+        self.leave(edit)
+
+    def open_workspace(self, key: str):
+        '''Opens the workspace itself (Back returns here) - asking first if there are unsaved changes.'''
+        self.leave(lambda: self.router.show(key))
+
+    def leave(self, go):
+        '''Calls go, which leaves this page - once confirmed, if there are unsaved changes.'''
         if not self.dirty:
-            edit()
+            go()
             return
         popup.confirm_dialog(self, self.context, self.labels.get("workspace_sorter_discard_question"),
                              self.labels.get("workspace_sorter_discard_confirm"),
-                             self.labels.get("workspace_sorter_discard_cancel"), edit)
+                             self.labels.get("workspace_sorter_discard_cancel"), go)
 
     # Dropping
     def drop_workspace(self, payload: DragPayload, zone: DropZone, index: int):
