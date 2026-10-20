@@ -157,6 +157,7 @@
     "menu_bar_tooltips_delete_user_data_button": "Delete all user data: every workspace's saved data, captures, and preferences.",
     "menu_bar_tooltips_clear_inputs_button": "Reset this workspace's saved form entries, toggles, register settings, and display styles to its defaults (keeps the pane layout).",
     "menu_bar_tooltips_reset_layout_button": "Put this workspace's panels back where they started, at their default sizes (keeps your inputs).",
+    "menu_bar_tooltips_peek": "Show this panel over the layout without restoring it - click outside it, or here again, to put it away",
     "menu_bar_tooltips_more_tabs": "The tabs there's no room for",
     "menu_bar_tooltips_save_layout_shape_button": "Make this workspace's current arrangement of panels its default, in its config.json.",
     "menu_bar_tooltips_save_layout_weights_button": "Make this workspace's current pane sizes its defaults, in its config.json.",

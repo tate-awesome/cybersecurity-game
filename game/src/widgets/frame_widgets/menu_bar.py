@@ -251,6 +251,7 @@ class MenuBar(QFrame):
         self._title_widget: QWidget | None = None
         # A panel's minimize button and the body it hides (see minimize_button)
         self.minimize: QPushButton | None = None
+        self.peek_arrow: QWidget | None = None
         self._minimize_body: QWidget | None = None
         self.back_arrow = None
         self.window_controls = None
@@ -387,9 +388,9 @@ class MenuBar(QFrame):
             pass  # deleted with its page, with the signal still connected
 
     def fixed_width(self) -> int:
-        '''Room the row's fixed items take (see _fixed) - the right zone's less maximize while it's hidden (fullscreen).'''
+        '''Room the row's shown fixed items take (see _fixed) - the right zone's less maximize while it's hidden (fullscreen).'''
         spacing = self.row.spacing()
-        return sum(widget.sizeHint().width() + spacing for widget in self._fixed)
+        return sum(widget.sizeHint().width() + spacing for widget in self._fixed if not widget.isHidden())
 
     def tool_buttons(self) -> list[QPushButton]:
         '''The page's own buttons in the center zone, left to right - squashed ones too (see _update_squashing).'''
@@ -630,6 +631,12 @@ class MenuBar(QFrame):
         self.row.insertWidget(0, button, 0, Qt.AlignmentFlag.AlignVCenter)
         self._fixed.append(button)
         self.minimize = button
+        # Where a peek opens, beside the title while minimized (see show_minimized)
+        from .docking import PeekArrow  # here - docking imports this module
+        self.peek_arrow = PeekArrow(self.context)
+        self.row.insertWidget(self.row.indexOf(self._title_widget or self.game_label) + 1, self.peek_arrow, 0, Qt.AlignmentFlag.AlignVCenter)
+        self._fixed.append(self.peek_arrow)
+        self.peek_arrow.hide()
         self.fit_minimize_button()
         self.style.signals.changed.connect(self.fit_minimize_button)
         return button
@@ -647,10 +654,17 @@ class MenuBar(QFrame):
         except RuntimeError:
             pass  # deleted with its panel, with the signal still connected
 
-    def show_minimized(self, minimized: bool):
-        '''Shows the panel minimized - its body hidden, its button a square - or not.'''
+    def show_minimized(self, minimized: bool, peek_direction: str | None = None):
+        '''
+        Shows the panel minimized - its body hidden, its button a square,
+        and, given peek_direction, an arrow by its title pointing where
+        clicking it shows the panel (see DockArea.peek) - or not.
+        '''
         if self.minimize is None:
             return
+        self.peek_arrow.setVisible(minimized and peek_direction is not None)
+        if peek_direction is not None:
+            self.peek_arrow.point(peek_direction)
         self.minimize.setText(self.style.icon(RESTORE_ICON if minimized else MINIMIZE_ICON))
         self.minimize.setToolTip(self.context.labels.get("menu_bar_buttons_maximize" if minimized else "menu_bar_buttons_minimize"))
         self.show_body(not minimized)
