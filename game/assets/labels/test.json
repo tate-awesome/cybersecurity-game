@@ -192,6 +192,5 @@
     "modbus_settings_units": "#",
     "modbus_settings_modify": "#",
     "network_graph_stripchart_title": "#",
-    "network_graph_stripchart_units": "#",
     "stripcharts_time": "#"
 }

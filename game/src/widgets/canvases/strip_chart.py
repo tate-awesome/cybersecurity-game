@@ -56,7 +56,9 @@ class StripChart(StripChartBase):
 
             time_text = self.context.labels.get("stripcharts_time")
             self.draw.strip_chart_x_label(layout, time_text, text_color)
-            self.draw.strip_chart_units_label(units_getter(), text_color)
+            units = units_getter()
+            if units:
+                self.draw.strip_chart_units_label(units, text_color)
             self.draw.strip_chart_value_label(layout, text_color)
             self.draw.strip_chart_title(title_getter(), text_color)
 

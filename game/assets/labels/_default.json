@@ -425,7 +425,6 @@
     "modbus_settings_units": "Units\nfor display",
     "modbus_settings_modify": "Modify\nin NFQ callback",
     "network_graph_stripchart_title": "Packets per Second",
-    "network_graph_stripchart_units": "Packets",
     "stripcharts_time": "Time",
     "stripcharts_in": "In",
     "stripcharts_out": "Out",
