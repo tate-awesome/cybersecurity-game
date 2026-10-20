@@ -631,7 +631,7 @@ class MenuBar(QFrame):
         self.row.insertWidget(0, button, 0, Qt.AlignmentFlag.AlignVCenter)
         self._fixed.append(button)
         self.minimize = button
-        # Where a peek opens, beside the title while minimized (see show_minimized)
+        # The overlay caret, beside the title while minimized (see show_minimized)
         from .docking import PeekArrow  # here - docking imports this module
         self.peek_arrow = PeekArrow(self.context)
         self.row.insertWidget(self.row.indexOf(self._title_widget or self.game_label) + 1, self.peek_arrow, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -654,17 +654,15 @@ class MenuBar(QFrame):
         except RuntimeError:
             pass  # deleted with its panel, with the signal still connected
 
-    def show_minimized(self, minimized: bool, peek_direction: str | None = None):
+    def show_minimized(self, minimized: bool, peekable: bool = False):
         '''
         Shows the panel minimized - its body hidden, its button a square,
-        and, given peek_direction, an arrow by its title pointing where
-        clicking it shows the panel (see DockArea.peek) - or not.
+        and, if peekable, the overlay caret by its title: clicking it shows
+        the panel over the layout (see DockArea.peek) - or not.
         '''
         if self.minimize is None:
             return
-        self.peek_arrow.setVisible(minimized and peek_direction is not None)
-        if peek_direction is not None:
-            self.peek_arrow.point(peek_direction)
+        self.peek_arrow.setVisible(minimized and peekable)
         self.minimize.setText(self.style.icon(RESTORE_ICON if minimized else MINIMIZE_ICON))
         self.minimize.setToolTip(self.context.labels.get("menu_bar_buttons_maximize" if minimized else "menu_bar_buttons_minimize"))
         self.show_body(not minimized)

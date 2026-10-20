@@ -36,8 +36,8 @@ platform and window system, and as root under sudo.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPointF, QPropertyAnimation, QRect, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedLayout, QVBoxLayout, QWidget
 
 from ...app_core import Context
@@ -303,49 +303,31 @@ def drain_evenly(sizes: list[float], floors: list[float], amount: float) -> list
 
 # Panes
 
-def paint_arrow(painter: QPainter, rect: QRect, direction: str, color: QColor):
+def paint_mark(painter: QPainter, rect: QRect, open: bool, color: QColor):
     '''
-    A chevron pointing direction ("up", "down", "left" or "right") in the
-    middle of rect - where a minimized panel's peek opens (see DockArea.peek).
+    A minimized panel's peek mark in the middle of rect - the overlay
+    buttons' own caret (see Overlay), down while it's put away and up while
+    it's showing, since a peek opens over the layout like their overlays do.
     '''
-    size = min(rect.width(), rect.height()) * 0.28
-    center = QPointF(rect.center())
-    # Drawn pointing right, then turned
-    turns = {"right": 0, "down": 90, "left": 180, "up": 270}[direction]
-    path = QPainterPath(QPointF(-size / 2, -size))
-    path.lineTo(QPointF(size / 2, 0))
-    path.lineTo(QPointF(-size / 2, size))
     painter.save()
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.translate(center)
-    painter.rotate(turns)
-    pen = QPen(color, max(1.5, size / 3))
-    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-    painter.setPen(pen)
-    painter.drawPath(path)
+    painter.setPen(color)
+    painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, Overlay.OPEN_MARKER if open else Overlay.CLOSED_MARKER)
     painter.restore()
 
 
 class PeekArrow(QWidget):
     '''
     Beside a minimized panel's title on its bar (see MenuBar.show_minimized):
-    a chevron pointing where clicking the title shows the panel, over the
-    layout (see DockArea.peek).
+    the overlay buttons' caret (see paint_mark) - clicking the title shows
+    the panel over the layout (see DockArea.peek).
     '''
 
     def __init__(self, context: Context):
         super().__init__()
         self.style = context.style
-        self.direction = "down"
         self.setFont(self.style.get_font())  # sized like its title
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip(context.labels.get("menu_bar_tooltips_peek"))
-
-    def point(self, direction: str):
-        if direction != self.direction:
-            self.direction = direction
-            self.update()
 
     def sizeHint(self) -> QSize:
         side = self.fontMetrics().height()
@@ -353,9 +335,7 @@ class PeekArrow(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        color = QColor(self.style.color("text"))
-        color.setAlphaF(0.7)
-        paint_arrow(painter, self.rect(), self.direction, color)
+        paint_mark(painter, self.rect(), False, QColor(self.style.color("text")))
         painter.end()
 
 
@@ -495,13 +475,12 @@ class TabStrip(QWidget):
 class _SideTitle(QWidget):
     '''A panel's title, turned to read down a sideways strip (see _SideStrip).'''
 
-    def __init__(self, context: Context, text: str, current: bool, direction: str, open: bool = False):
+    def __init__(self, context: Context, text: str, current: bool, open: bool = False):
         super().__init__()
         self.style = context.style
         self.text = text
         self.current = current
-        # Where its peek opens, and whether it's open now (see PeekArrow)
-        self.direction = direction
+        # Whether its peek is showing (see paint_mark)
         self.open = open
         self.setFont(self.style.get_font())
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -510,7 +489,7 @@ class _SideTitle(QWidget):
     def sizeHint(self) -> QSize:
         metrics = self.fontMetrics()
         pad = self.style.igap
-        # The title, then its arrow below it
+        # The title, then its peek mark below it
         return QSize(metrics.height(), metrics.horizontalAdvance(self.text) + pad + metrics.height())
 
     def minimumSizeHint(self) -> QSize:
@@ -529,8 +508,9 @@ class _SideTitle(QWidget):
         painter.drawText(QRect(0, 0, self.height() - side, self.width()),
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text)
         painter.resetTransform()
-        arrow = QColor(self.style.color("accent")) if self.open else color
-        paint_arrow(painter, QRect(0, self.height() - side, side, side), self.direction, arrow)
+        # Upright, as on an overlay button
+        mark = QColor(self.style.color("accent")) if self.open else QColor(self.style.color("text"))
+        paint_mark(painter, QRect(0, self.height() - side, side, side), self.open, mark)
         painter.end()
 
 
@@ -543,7 +523,7 @@ class _SideStrip(QWidget):
     '''
 
     def __init__(self, context: Context, tabs: list[tuple[str, str]], current: str, restore: Callable[[str | None], None],
-                 watch: Callable[[QWidget, str], None] | None, direction: str = "right", peeking: str | None = None):
+                 watch: Callable[[QWidget, str], None] | None, peeking: str | None = None):
         super().__init__()
         self.style = context.style
         self.setProperty("shadowed", True)
@@ -562,7 +542,7 @@ class _SideStrip(QWidget):
         column.addWidget(button, 0, Qt.AlignmentFlag.AlignHCenter)
         self.titles: dict[str, _SideTitle] = {}
         for panel_id, title in tabs:
-            label = _SideTitle(context, title, panel_id == current, direction, panel_id == peeking)
+            label = _SideTitle(context, title, panel_id == current, panel_id == peeking)
             column.addWidget(label, 0, Qt.AlignmentFlag.AlignHCenter)
             self.titles[panel_id] = label
             if watch is not None:
@@ -582,11 +562,10 @@ class _SideStrip(QWidget):
 class _LentPlaceholder(QWidget):
     '''Where a minimized panel's bar was while it's out being peeked at (see TabbedPane.lend): its title, faint.'''
 
-    def __init__(self, context: Context, title: str, direction: str):
+    def __init__(self, context: Context, title: str):
         super().__init__()
         self.style = context.style
         self.title = title
-        self.direction = direction
         self.setFont(self.style.get_font())
 
     def minimumSizeHint(self) -> QSize:
@@ -604,10 +583,10 @@ class _LentPlaceholder(QWidget):
         inset = bar_inset(self.style)
         room = self.rect().adjusted(left + inset + bar_button_height(self.style) + self.style.igap, top, -right, -bottom)
         painter.drawText(room, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.title)
-        # Its arrow, in the accent - it's showing (see PeekArrow)
+        # Its peek mark, open and in the accent - it's showing (see paint_mark)
         side = self.fontMetrics().height()
         x = room.left() + self.fontMetrics().horizontalAdvance(self.title) + self.style.igap
-        paint_arrow(painter, QRect(x, room.center().y() - side // 2, side, side), self.direction, QColor(self.style.color("accent")))
+        paint_mark(painter, QRect(x, room.center().y() - side // 2, side, side), True, QColor(self.style.color("accent")))
         painter.end()
 
 
@@ -660,8 +639,7 @@ class TabbedPane(QWidget):
         self.form = "open"
         self.side: _SideStrip | None = None
         self.lent: QWidget | None = None
-        # Where a peek at it opens, and the panel being peeked at (see DockArea.peek)
-        self.peek_direction = "down"
+        # The panel being peeked at (see DockArea.peek)
         self.peeking: str | None = None
         self.current = None
         self.set_current(current if current in self.panels else next(iter(self.panels)))
@@ -690,26 +668,18 @@ class TabbedPane(QWidget):
         for panel in self.panels.values():
             menu_bar = getattr(panel, "menu_bar", None)
             if menu_bar is not None:
-                menu_bar.show_minimized(form != "open", self.peek_direction if form == "bar" else None)
+                menu_bar.show_minimized(form != "open", peekable=form == "bar")
         if self.side is not None:
             self.stack.removeWidget(self.side)
             self.side.deleteLater()
             self.side = None
         if form == "side":
             self.side = _SideStrip(self.context, self.tabs, self.current, self.restore or (lambda panel_id: None), self.watch,
-                                   self.peek_direction, self.peeking)
+                                   self.peeking)
             self.stack.addWidget(self.side)
             self.stack.setCurrentWidget(self.side)
         else:
             self.stack.setCurrentWidget(self.panels[self.current])
-
-    def point_peek(self, direction: str):
-        '''Where a peek at it opens now - its arrows point that way (see PeekArrow).'''
-        if direction == self.peek_direction:
-            return
-        self.peek_direction = direction
-        if self.form != "open" and self.peeking is None:
-            self.set_form(self.form)
 
     def lend(self, panel_id: str) -> QWidget:
         '''Takes a panel out to be shown somewhere else for a while (see DockArea.peek) - give it back with take_back.'''
@@ -719,7 +689,7 @@ class TabbedPane(QWidget):
         if self.form != "side":
             # Its menu bar's gone with it - a stand-in keeps the pane's place
             title = panel.menu_bar.title() if getattr(panel, "menu_bar", None) is not None else ""
-            self.lent = _LentPlaceholder(self.context, title, self.peek_direction)
+            self.lent = _LentPlaceholder(self.context, title)
             self.stack.addWidget(self.lent)
             self.stack.setCurrentWidget(self.lent)
         elif self.side is not None and panel_id in self.side.titles:
@@ -1325,8 +1295,6 @@ class DockArea(QWidget):
                 form = "bar" if self.thin_axis(parents, after) == "vertical" else "side"
             if form != tabbed.form:
                 tabbed.set_form(form)
-            if form != "open":
-                tabbed.point_peek(self.peek_geometry(node, tabbed)[1])
 
     def lay_out_split(self, node: dict, parents: tuple, width: int, height: int, before: dict, after: dict):
         panes = self.splits[node["id"]]
@@ -1421,7 +1389,7 @@ class DockArea(QWidget):
         tabbed = self.tabbed.get(node["id"]) if node is not None else None
         if tabbed is None:
             return
-        geometry, _ = self.peek_geometry(node, tabbed)
+        geometry = self.peek_geometry(node, tabbed)
         panel = tabbed.lend(panel_id)
         menu_bar = getattr(panel, "menu_bar", None)
         if menu_bar is not None:
@@ -1432,10 +1400,9 @@ class DockArea(QWidget):
         popup.setGeometry(geometry)
         popup.show()
 
-    def peek_geometry(self, node: dict, tabbed: TabbedPane) -> tuple[QRect, str]:
+    def peek_geometry(self, node: dict, tabbed: TabbedPane) -> QRect:
         '''
-        Where a peek at node's panel shows (global), and which way that is
-        from its strip: as big as the pane is with nothing minimized (see
+        Where a peek at node's panel shows (global): as big as the pane is with nothing minimized (see
         open_share) - within the window - beside its strip, below it or to
         its right if there's room, or else above it or to its left.
         '''
@@ -1447,14 +1414,12 @@ class DockArea(QWidget):
         if tabbed.form == "side":
             fits = anchor.right() + width <= window.right()
             x, y = (anchor.right(), anchor.top()) if fits else (anchor.left() - width, anchor.top())
-            direction = "right" if fits else "left"
         else:
             fits = anchor.bottom() + height <= window.bottom()
             x, y = (anchor.left(), anchor.bottom()) if fits else (anchor.left(), anchor.top() - height)
-            direction = "down" if fits else "up"
         x = max(window.left(), min(x, window.right() - width))
         y = max(window.top(), min(y, window.bottom() - height))
-        return QRect(x, y, width, height), direction
+        return QRect(x, y, width, height)
 
     def open_share(self, node: dict) -> tuple[float, float]:
         '''
