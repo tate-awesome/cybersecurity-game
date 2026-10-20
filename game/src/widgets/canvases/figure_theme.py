@@ -17,6 +17,10 @@ def follow_theme(style, canvas, axes: list, lines: dict, legend=None):
     palette.setColor(QPalette.ColorRole.Window, Qt.GlobalColor.transparent)
     canvas.setPalette(palette)
     canvas.setAutoFillBackground(False)
+    # matplotlib marks the canvas opaque, so Qt never repaints the card
+    # behind it - a see-through figure then piles up over whatever was
+    # last painted there (e.g. every frame of a page transition)
+    canvas.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
     figure = canvas.figure
 
     def apply():

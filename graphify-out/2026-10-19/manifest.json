@@ -354,9 +354,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
-    "mtime": 1792436914.102713,
-    "seen": 1792437052.8492093,
-    "ast_hash": "fb3ea8bf86298027dc13f730dcbd09d5",
+    "mtime": 1792458928.936346,
+    "seen": 1792458934.0397482,
+    "ast_hash": "0a9fc1256a8cc4a9f52a08a7ae12c425",
     "semantic_hash": ""
   },
   "game/src/drawing/sprites.py": {
@@ -540,9 +540,9 @@
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi.py": {
-    "mtime": 1792451212.4643297,
-    "seen": 1792451239.300887,
-    "ast_hash": "884c2bc9bdbc566c39f7cc1ed4572ab8",
+    "mtime": 1792458928.936346,
+    "seen": 1792458934.0410588,
+    "ast_hash": "73a8716d4c8479abebd00d8ac7b06250",
     "semantic_hash": ""
   },
   "game/src/network/hardware/wifi_linux.py": {
@@ -564,9 +564,9 @@
     "semantic_hash": ""
   },
   "game/src/network/process_manager.py": {
-    "mtime": 1788976222.202784,
-    "seen": 1792423760.3546185,
-    "ast_hash": "a8b24466015372dde050c3d4c5449819",
+    "mtime": 1792458928.936346,
+    "seen": 1792458934.0413768,
+    "ast_hash": "8faff27b2aef5a8bfe59576bcb6fc0ce",
     "semantic_hash": ""
   },
   "game/src/network/saved/__init__.py": {
@@ -1314,9 +1314,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/abort_all_network_actions.py": {
-    "mtime": 1791418847.1062846,
-    "seen": 1792423760.3546638,
-    "ast_hash": "89b085bed819793c7087456ab7842c53",
+    "mtime": 1792458928.936346,
+    "seen": 1792458934.0434666,
+    "ast_hash": "2aa0bfc98fd46f015cf1628b5460243d",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/button_group.py": {
