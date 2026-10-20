@@ -793,15 +793,25 @@ class _Grip(QObject):
 
 
 class _SashGrip(QObject):
-    '''Remembers every open pane's size when a divider is pressed - what one dragged down to minimized goes back to.'''
+    '''
+    Watches the dividers: pressing one remembers every open pane's size -
+    what one dragged down to minimized goes back to - and frees a
+    minimized pane beside it to be dragged open (see DockArea.unpin_beside);
+    letting go pins it again, if it's still minimized.
+    '''
 
     def __init__(self, area: "DockArea"):
         super().__init__(area)
         self.area = area
 
     def eventFilter(self, watched, event):
-        if event.type() == QEvent.Type.MouseButtonPress and self.area.root is not None:
+        if self.area.root is None:
+            return False
+        if event.type() == QEvent.Type.MouseButtonPress:
             self.area.remember_open_sizes(self.area.collapsed())
+            self.area.unpin_beside(watched)
+        elif event.type() == QEvent.Type.MouseButtonRelease:
+            self.area.relayout_soon()
         return False
 
 
@@ -1224,22 +1234,52 @@ class DockArea(QWidget):
         A divider in node's group was dragged: a pane dragged down to its
         title bar's thickness minimizes - and a group dragged that thin
         (across the way it stacks its panes) minimizes all its panes,
-        laying it flat.
+        laying it flat. The other way, a minimized pane (or group) dragged
+        open past that restores, at the size it's dragged to.
         '''
         before = self.collapsed()
         panes = self.splits.get(node["id"])
         if panes is None or before.get(node["id"]):
             return
         axis = node["orientation"]
-        shrunk = [child for child, size in zip(node["children"], panes.sizes())
-                  if not before[child["id"]] and self.can_minimize(child) and size <= self.thickness(child, axis) + self.style.igap]
-        if not shrunk:
+        sizes = panes.sizes()
+        shrunk, grown = [], []
+        for child, size in zip(node["children"], sizes):
+            floor = self.thickness(child, axis) + self.style.igap
+            if not before[child["id"]] and self.can_minimize(child) and size <= floor:
+                shrunk.append(child)
+            elif before[child["id"]] and size > floor:
+                child["open_size"] = size  # restored just as big as it's dragged (see lay_out_split)
+                grown.append(child)
+        if not shrunk and not grown:
             return
-        for child in shrunk:
+        for child in shrunk + grown:
             for inner, _ in walk(child):
                 if not is_split(inner):
-                    inner["minimized"] = True
+                    inner["minimized"] = child in shrunk
         self.lay_out_minimized(before)
+
+    def unpin_beside(self, handle: QWidget):
+        '''
+        Frees the minimized panes on either side of a pressed divider -
+        pinned to their thickness otherwise (see lay_out_split) - so
+        dragging it can open them (see sash_moved).
+        '''
+        splitter = getattr(handle, "splitter", lambda: None)()
+        node = next((found for found, _ in walk(self.root) if self.splits.get(found["id"]) is splitter), None)
+        if node is None:
+            return
+        collapsed = self.collapsed()
+        if collapsed[node["id"]]:
+            return
+        index = splitter.indexOf(handle)
+        for i in (index - 1, index):
+            if 0 <= i < len(node["children"]) and collapsed[node["children"][i]["id"]]:
+                pane = splitter.pane(i)
+                if node["orientation"] == "horizontal":
+                    pane.setMaximumWidth(QWIDGETSIZE_MAX)
+                else:
+                    pane.setMaximumHeight(QWIDGETSIZE_MAX)
 
     def can_minimize(self, node: dict) -> bool:
         '''Whether every panel in node has a minimize button to restore it with (the layout editor's stand-ins don't).'''
