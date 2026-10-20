@@ -2,6 +2,7 @@ import copy
 import json
 import re
 
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 from ...app_core import Context
@@ -79,6 +80,33 @@ class WorkspaceChip(QFrame):
         self.style.set_tone(self.label, None if self.shown.isChecked() else "muted")
 
 
+class CategoryChip(QFrame):
+    '''
+    A category's stand-in in the sidebar, by its title: dragged to reorder
+    the categories without scrolling past their cards, and clicked to
+    scroll to its card.
+    '''
+
+    def __init__(self, context: Context, title: str, clicked):
+        super().__init__()
+        self.clicked = clicked
+        context.style.set_material(self, "card", rounded=True, outlined=True)
+        layout = QHBoxLayout(self)
+        gap = context.style.cgap * 2
+        layout.setContentsMargins(gap * 2, gap, gap * 2, gap)
+        self.label = QLabel(title)
+        self.label.setFont(context.style.get_font("default"))
+        self.label.setWordWrap(True)
+        layout.addWidget(self.label)
+        self.setToolTip(context.labels.get("workspace_sorter_category_chip_tooltip"))
+
+    def mouseReleaseEvent(self, event):
+        # A drag's release never gets here - its DragHandle takes it
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.clicked()
+        super().mouseReleaseEvent(event)
+
+
 class SectionCard(QFrame):
     '''
     A category of workspaces - one select page section - as a card: its
@@ -94,6 +122,8 @@ class SectionCard(QFrame):
         self.zone_id = zone_id
         self.section = section
         self.style = context.style
+        # Its sidebar chip (see WorkspaceSorter.add_section) - None for Not Listed
+        self.chip: CategoryChip | None = None
         self.changed = page.mark_dirty
         context.style.set_material(self, "panel", rounded=True, outlined=True)
         layout = QVBoxLayout(self)
@@ -157,6 +187,8 @@ class SectionCard(QFrame):
     def show_state(self):
         hidden = self.section is not None and self.section.get("hidden")
         self.style.set_tone(self.heading, "muted" if hidden else None)
+        if self.chip is not None:
+            self.style.set_tone(self.chip.label, "muted" if hidden else None)
 
 
 class WorkspaceSorter(Page):
@@ -169,7 +201,9 @@ class WorkspaceSorter(Page):
         "sections") - is a card listing its workspaces top to bottom. Drag
         a workspace within a card to reorder it, or onto another card to
         move it to that category ("category").
-      - Drag a card by its title to reorder the categories. Its Numbered
+      - Drag a card by its title - or its chip in the Categories sidebar
+        on the left, which never scrolls away - to reorder the categories.
+        Clicking a chip scrolls to its card. A card's Numbered
         checkbox numbers its workspaces on the select page, Shown lists
         the whole category there or not ("hidden"), and Remove takes it
         away - its workspaces go to Not Listed.
@@ -195,6 +229,7 @@ class WorkspaceSorter(Page):
     SELECT_PAGE = "title/select_workspace"
     NOT_LISTED = "_not_listed"
     COLUMN_WIDTH = 820
+    SIDEBAR_WIDTH = 240
 
     def __init__(self, context: Context):
         super().__init__(context)
@@ -217,7 +252,25 @@ class WorkspaceSorter(Page):
         link_folder = select_config.get("link_folder", "workspaces")
         self.workspaces = {key: self.raw_config(key) for key in self.pages.pages_in(link_folder)}
 
-        scrollable = Scrollable(self, context)
+        # The categories sidebar on the left, beside the scrolling cards
+        body = QWidget()
+        body_layout = QHBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(self.style.igap)
+        self.layout().addWidget(body, 1)
+        sidebar = Scrollable(body, context)
+        sidebar.setFixedWidth(self.SIDEBAR_WIDTH)
+        sidebar.columnconfigure(0, 1)
+        sidebar_heading = QLabel(self.labels.get("workspace_sorter_categories"))
+        sidebar_heading.setFont(self.style.get_font("title_btn"))
+        sidebar.grid_layout.addWidget(sidebar_heading, 0, 0)
+        self.category_list = ListZone(context, "categories", {SECTION}, spacing=self.style.cgap * 2)
+        self.category_list.dropped.connect(self.drop_section)
+        sidebar.grid_layout.addWidget(self.category_list, 1, 0)
+        sidebar.add_deadspace()
+
+        scrollable = Scrollable(body, context)
+        self.scrollable = scrollable
         scrollable.columnconfigure(0, 1)
         self.style.set_material(scrollable, "none")
         scrollable.viewport().setAutoFillBackground(False)
@@ -295,13 +348,22 @@ class WorkspaceSorter(Page):
 
     # Categories
     def add_section(self, section: dict, title: str) -> SectionCard:
-        '''A card for section, at the bottom of the list, draggable by its header.'''
+        '''A card for section, at the bottom of the list, draggable by its header - and its chip, at the bottom of the sidebar.'''
         card = SectionCard(self, self.zone_id(section.get("category")), title, section)
         card.chips.dropped.connect(lambda payload, slot, zone=card.chips: self.drop_workspace(payload, zone, slot))
         self.cards[card.zone_id] = card
         self.section_list.insert(card, len(self.section_list.items))
         DragHandle(card.header, lambda: DragPayload(SECTION, card.zone_id, self.section_list.zone_id), preview=card)
+        card.chip = CategoryChip(self.context, title, lambda: self.scroll_to(card))
+        card.show_state()
+        self.category_list.insert(card.chip, len(self.category_list.items))
+        DragHandle(card.chip, lambda: DragPayload(SECTION, card.zone_id, self.category_list.zone_id))
         return card
+
+    def scroll_to(self, card: SectionCard):
+        '''Scrolls the cards so card's top is at the top.'''
+        top = card.mapTo(self.scrollable.inner, QPoint(0, 0)).y()
+        self.scrollable.verticalScrollBar().setValue(top - self.style.igap)
 
     def build_new_category_row(self) -> QWidget:
         row = QWidget()
@@ -345,9 +407,11 @@ class WorkspaceSorter(Page):
             self.not_listed.chips.insert(chip, len(self.not_listed.chips.items))
             chip.zone = self.not_listed.chips
         self.section_list.take(card)
+        self.category_list.take(card.chip)
         del self.cards[card.zone_id]
-        card.hide()
-        card.deleteLater()
+        for widget in (card, card.chip):
+            widget.hide()
+            widget.deleteLater()
         self.mark_dirty()
 
     def new_workspace(self, card: SectionCard):
@@ -439,23 +503,31 @@ class WorkspaceSorter(Page):
         self.mark_dirty()
 
     def drop_section(self, payload: DragPayload, index: int):
+        '''A category dropped on the cards or the sidebar - both list them in the same order, so it moves in both.'''
         card = self.cards.get(payload.item_id)
         if card is None or card is self.not_listed:
             return
-        self.move(card, self.section_list, self.section_list, index)
+        if not self.move(card, self.section_list, self.section_list, index):
+            return
+        self.move(card.chip, self.category_list, self.category_list, index)
         self.mark_dirty()
 
     @staticmethod
-    def move(widget: QWidget, source: DropZone, target: DropZone, index: int):
-        '''Moves widget from source to index in target - an index counted with it still in place, as a drop's slot is.'''
+    def move(widget: QWidget, source: DropZone, target: DropZone, index: int) -> bool:
+        '''
+        Moves widget from source to index in target - an index counted with
+        it still in place, as a drop's slot is. False if that's where it
+        already was.
+        '''
         if source is target:
             current = source.index_of(widget)
             if index in (current, current + 1):
-                return  # dropped back where it was
+                return False  # dropped back where it was
             if index > current:
                 index -= 1
         source.take(widget)
         target.insert(widget, index)
+        return True
 
     def renumber(self):
         '''Numbers the shown workspaces in numbered categories, as the select page will.'''

@@ -27,14 +27,16 @@ from dataclasses import dataclass
 from typing import Callable
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSpinBox, QApplication, QComboBox, QFrame,
                                QGraphicsOpacityEffect, QLabel, QLineEdit, QVBoxLayout, QWidget)
 
 from ...app_core import Context
 
-# How thick the line showing where a drop lands is
-INDICATOR_WIDTH = 3
+# How thick the line showing where a drop lands is, the soft glow around it, and the dots capping its ends
+INDICATOR_WIDTH = 4
+INDICATOR_GLOW = 12
+INDICATOR_CAP = 10
 # Dragging this close to a scroll area's top or bottom edge scrolls it - faster the closer
 AUTO_SCROLL_MARGIN = 60
 AUTO_SCROLL_MAX_STEP = 24
@@ -183,6 +185,49 @@ class DragHandle(QObject):
                 zone.dropped.emit(payload, zone.slot_at(zone.mapFromGlobal(at)))
 
 
+class _Indicator(QWidget):
+    '''
+    The line showing where a drop lands, floating over a zone's items so
+    none of them can cover it: an accent line in a soft glow, with a dot
+    at each end. Its line runs along its middle, end to end.
+    '''
+
+    def __init__(self, zone: "DropZone"):
+        super().__init__(zone)
+        self.style = zone.style
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.style.set_material(self, "none")
+        self.hide()
+
+    def place(self, line: QRect):
+        '''Covers line, with room around it for the glow and the dots.'''
+        pad = max(INDICATOR_GLOW, INDICATOR_CAP) // 2
+        self.setGeometry(line.adjusted(0, -pad, 0, pad))
+        self.show()
+        self.raise_()
+        self.update()
+
+    def paintEvent(self, event):
+        color = QColor(self.style.color("accent"))
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        y = self.height() / 2
+        r = INDICATOR_CAP / 2
+        left, right = r, self.width() - r
+        glow = QColor(color)
+        glow.setAlpha(70)
+        for line_color, width in ((glow, INDICATOR_GLOW), (color, INDICATOR_WIDTH)):
+            pen = QPen(line_color, width)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            painter.setPen(pen)
+            painter.drawLine(int(left), int(y), int(right), int(y))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        for x in (left, right):
+            painter.drawEllipse(int(x - r), int(y - r), INDICATOR_CAP, INDICATOR_CAP)
+        painter.end()
+
+
 class DropZone(QFrame):
     '''
     A widget that takes drops of the kinds it accepts (see DragPayload.kind)
@@ -205,6 +250,7 @@ class DropZone(QFrame):
         self.accepts = accepts
         self.items: list[QWidget] = []
         self.indicator: QRect | None = None
+        self.indicator_line = _Indicator(self)
 
     # Items
     def insert(self, widget: QWidget, index: int):
@@ -232,19 +278,14 @@ class DropZone(QFrame):
         indicator = self.indicator_rect(self.slot_at(pos))
         if indicator != self.indicator:
             self.indicator = indicator
-            self.update()
+            if indicator is None:
+                self.indicator_line.hide()
+            else:
+                self.indicator_line.place(indicator)
 
     def clear_indicator(self):
         self.indicator = None
-        self.update()
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        if self.indicator is None:
-            return
-        painter = QPainter(self)
-        painter.fillRect(self.indicator, QColor(self.style.color("accent")))
-        painter.end()
+        self.indicator_line.hide()
 
 
 class ListZone(DropZone):
