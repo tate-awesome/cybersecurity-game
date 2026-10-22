@@ -11,13 +11,13 @@ class WifiForm(BaseForm):
     page's states - there's one Wi-Fi radio, whichever page switches it.
 
     The process's "on" state means "on the device" (see
-    WifiBaseClass.is_running), so the button is an ordinary Start/Stop:
-    Start connects to the device, Stop goes back home. Switching either way
-    needs both networks (there'd be no getting back otherwise), so if the one
-    it would need is missing, the click posts a message saying which to the
-    wifi log instead of switching. Once both are saved, the entry for
-    whichever network you're on is read-only - a fact, not a choice - and
-    both are while switching.
+    WifiBaseClass.is_running), so the button points at where it switches to:
+    "-> Device" when home, "-> Home" when on the device. Switching either way
+    needs both networks (there'd be no getting back otherwise), so until
+    they're both entered the button shows a caution "Enter WiFi" and a click
+    posts which one is missing to the wifi log instead of switching. Once both
+    are saved, the entry for whichever network you're on is read-only - a
+    fact, not a choice - and both are while switching.
     '''
     def __init__(self, master: QWidget, context: Context):
 
@@ -136,12 +136,11 @@ class WifiForm(BaseForm):
 
     def refresh_process_button(self):
         '''
-        On top of the base's Start/Stop + dot reconcile, every poll: which
-        entry is locked, and the brief lockout while a switch is in flight.
-        Reads the entries as last applied (see apply_entries), so an edit
-        counts once it's finished. The button itself stays an ordinary
-        Start/Stop - a click that can't switch posts why (see connect_device
-        / disconnect_to_home).
+        On top of the base's dot reconcile, every poll: the button's
+        destination text, which entry is locked, and the brief lockout while
+        a switch is in flight. Reads the entries as last applied (see
+        apply_entries), so an edit counts once it's finished. A click that
+        can't switch posts why (see connect_device / disconnect_to_home).
         '''
         super().refresh_process_button()
         process = self.process
@@ -157,6 +156,15 @@ class WifiForm(BaseForm):
         set_read_only(self.home_entry, switching or (paired and on_home))
         set_enabled(self.process_button, not switching)
 
+        if switching:
+            return  # leave the optimistic text set by the click
+        if self.missing(on_device) is not None:
+            text = f"{self.style.icon('alert-triangle')}  Enter WiFi"
+        else:
+            # The arrow points at where a click would take you.
+            text = f"{self.style.icon('arrow-right')}  {'Home' if on_device else 'Device'}"
+        set_text(self.process_button, text)
+
 
 def set_read_only(entry: QLineEdit, read_only: bool):
     if entry.isReadOnly() != read_only:
@@ -169,3 +177,8 @@ def set_read_only(entry: QLineEdit, read_only: bool):
 def set_enabled(widget: QWidget, enabled: bool):
     if widget.isEnabled() != enabled:
         widget.setEnabled(enabled)
+
+
+def set_text(widget, text: str):
+    if widget.text() != text:
+        widget.setText(text)

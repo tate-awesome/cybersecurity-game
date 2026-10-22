@@ -3,7 +3,6 @@
   "42": "LocalizationManager",
   "46": "Runtime Requirements",
   "58": "KeyBinds",
-  "69": "Builder",
   "70": "palette_generator.py",
   "88": "ModBus Submarine Exercise Screenshot",
   "93": "Full Attacker Exercise Workspace Screenshot",
@@ -20,6 +19,5 @@
   "165": "Dev Requirements (pyright)",
   "166": "virtual/__init__.py",
   "172": "CLAUDE.md",
-  "175": "._scan_for_networks",
-  "207": "WifiForm"
+  "175": "._scan_for_networks"
 }

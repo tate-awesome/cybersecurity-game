@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792658679.6014452,
-    "seen": 1792658799.7579653,
-    "ast_hash": "91f0234614ed1c7ffd43c19aa8151c22",
+    "mtime": 1792665708.3225513,
+    "seen": 1792666073.0051441,
+    "ast_hash": "75fadf36d899f0ce6fa83105b9ff678c",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -960,9 +960,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/forms/wifi.py": {
-    "mtime": 1792663391.585585,
-    "seen": 1792663901.3121264,
-    "ast_hash": "98fd952d8389db1f573b7d42ee208c61",
+    "mtime": 1792665943.758998,
+    "seen": 1792666073.0430279,
+    "ast_hash": "84b3d0c7d2a66107207db961c6c827ea",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {
