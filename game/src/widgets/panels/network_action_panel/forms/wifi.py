@@ -11,11 +11,13 @@ class WifiForm(BaseForm):
     page's states - there's one Wi-Fi radio, whichever page switches it.
 
     The process's "on" state means "on the device" (see
-    WifiBaseClass.is_running), so the button toggles Connect to device /
-    Connect to home. It needs both networks to switch either way (there'd be
-    no getting back otherwise), so with one missing it's disabled and says
-    which. Once both are saved, the entry for whichever network you're on is
-    read-only - a fact, not a choice - and both are while switching.
+    WifiBaseClass.is_running), so the button is an ordinary Start/Stop:
+    Start connects to the device, Stop goes back home. Switching either way
+    needs both networks (there'd be no getting back otherwise), so if the one
+    it would need is missing, the click posts a message saying which to the
+    wifi log instead of switching. Once both are saved, the entry for
+    whichever network you're on is read-only - a fact, not a choice - and
+    both are while switching.
     '''
     def __init__(self, master: QWidget, context: Context):
 
@@ -38,7 +40,7 @@ class WifiForm(BaseForm):
         # started on is already recognised (see is_running's detection)
         self.apply_entries()
 
-        self.add_process_row(self.connect_device, self.process.stop, self.process.is_running)
+        self.add_process_row(self.connect_device, self.disconnect_to_home, self.process.is_running)
         # Return in Device Name connects to it; in Home Network it only saves
         # (editingFinished) - it'd be odd for setting home to leave home.
         for entry in self.entries:
@@ -91,8 +93,20 @@ class WifiForm(BaseForm):
         self.apply_entries()
 
     def connect_device(self):
+        '''Start = connect to the device, or post what's missing if it can't.'''
         self.save_entries()
+        missing = self.missing(self.process.is_connected)
+        if missing is not None:
+            self.context.buffer.put("wifi", self.label(missing))
+            return
         self.process.start(self.device_entry.text())
+
+    def disconnect_to_home(self):
+        '''Stop = go back home, or post that home is missing if it can't.'''
+        if not self.process.home_network:
+            self.context.buffer.put("wifi", self.label("needs_home"))
+            return
+        self.process.stop()
 
     def submit_device(self):
         '''
@@ -104,7 +118,7 @@ class WifiForm(BaseForm):
         self.save_entries(self.device_entry)
         self.refresh_process_button()
         if not self.process.is_connected:
-            self.process_button.click()  # no-op while disabled
+            self.process_button.click()
 
     def missing(self, on_device: bool) -> str | None:
         '''The label key naming what's missing before the button can switch, or None.'''
@@ -122,10 +136,12 @@ class WifiForm(BaseForm):
 
     def refresh_process_button(self):
         '''
-        On top of the base's on/off reconcile, every poll: which network the
-        status names, which entry is locked, and whether the button has both
-        networks it needs. Reads the entries as last applied (see
-        apply_entries), so an edit counts once it's finished.
+        On top of the base's Start/Stop + dot reconcile, every poll: which
+        entry is locked, and the brief lockout while a switch is in flight.
+        Reads the entries as last applied (see apply_entries), so an edit
+        counts once it's finished. The button itself stays an ordinary
+        Start/Stop - a click that can't switch posts why (see connect_device
+        / disconnect_to_home).
         '''
         super().refresh_process_button()
         process = self.process
@@ -133,40 +149,13 @@ class WifiForm(BaseForm):
         on_device = process.is_connected
         current = process.current_ssid
         on_home = not on_device and Wifi._equal_ci(current, process.home_network)
-        missing = self.missing(on_device)
 
         # Locking reads as "you're here - switch to the other one" only once
         # there is another one, saved - until then both stay open to fix
         paired = bool(self.preferences.get("wifi_home") and self.preferences.get("wifi_device"))
         set_read_only(self.device_entry, switching or (paired and on_device))
         set_read_only(self.home_entry, switching or (paired and on_home))
-        set_enabled(self.process_button, not switching and missing is None)
-
-        if switching:
-            # The button already shows the optimistic text (see click_start/click_stop)
-            set_text(self.process_status, self.label("switching"))
-            return
-
-        if missing is not None:
-            set_text(self.process_button, self.label(missing))
-        else:
-            # Wifi's button is a network toggle, not a process - it keeps its
-            # own "Connect to device"/"Connect to home" wording rather than
-            # the generic Start/Stop.
-            set_text(self.process_button, self.stop_process_text if on_device else self.start_process_text)
-        # The button is width-capped in the flat card, so its longer guidance
-        # labels ("Enter both networks") elide - keep the full text on hover.
-        self.process_button.setToolTip(self.process_button.text())
-
-        if on_device:
-            status = self.status_on_text
-        elif on_home:
-            status = self.label("on_home")
-        elif current is not None:
-            status = f"{self.label('on_other')} {current}."
-        else:
-            status = self.status_off_text
-        set_text(self.process_status, status)
+        set_enabled(self.process_button, not switching)
 
 
 def set_read_only(entry: QLineEdit, read_only: bool):
@@ -180,8 +169,3 @@ def set_read_only(entry: QLineEdit, read_only: bool):
 def set_enabled(widget: QWidget, enabled: bool):
     if widget.isEnabled() != enabled:
         widget.setEnabled(enabled)
-
-
-def set_text(widget, text: str):
-    if widget.text() != text:
-        widget.setText(text)
