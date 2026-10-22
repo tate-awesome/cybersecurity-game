@@ -18,8 +18,8 @@ floating over the window, not the system's drag and drop, so it works the
 same on every platform and window system (and as root under sudo, where
 the system's can't reach the window).
 
-ListZone (a column, by index) and RowZone (rows that wrap, by index) are
-the zones so far. A "slot" is whatever a zone's slot_at returns, so a zone that docks - say, by which edge of a
+ListZone (a column, by index), RowZone (rows that wrap, by index) and
+BinZone (anywhere in it, the same) are the zones so far. A "slot" is whatever a zone's slot_at returns, so a zone that docks - say, by which edge of a
 pane the drop is near - only needs its own slot_at and indicator_rect, and
 its owner reads that slot.
 '''
@@ -162,10 +162,10 @@ class DragHandle(QObject):
             self.move_to(self.at)  # what's under the mouse moved
 
     def zone_at(self, at: QPoint) -> "DropZone | None":
-        '''The innermost DropZone under the mouse that accepts what's dragged.'''
+        '''The innermost DropZone under the mouse that takes what's dragged.'''
         widget = QApplication.widgetAt(at)
         while widget is not None:
-            if isinstance(widget, DropZone) and self.dragging.kind in widget.accepts:
+            if isinstance(widget, DropZone) and widget.takes(self.dragging):
                 return widget
             widget = widget.parentWidget()
         return None
@@ -246,7 +246,8 @@ class DropZone(QFrame):
     draw that (indicator_rect).
 
     Zones can nest - cards in a ListZone, each holding a ListZone - and a
-    drag goes to the innermost one under the mouse that accepts its kind.
+    drag goes to the innermost one under the mouse that takes it (see
+    takes): one of its kinds, by default.
     '''
 
     dropped = Signal(object, object)
@@ -274,6 +275,10 @@ class DropZone(QFrame):
 
     def index_of(self, widget: QWidget) -> int:
         return self.items.index(widget)
+
+    def takes(self, payload: DragPayload) -> bool:
+        '''Whether a drag of payload can drop here.'''
+        return payload.kind in self.accepts
 
     # Subclasses
     def slot_at(self, pos: QPoint):
@@ -379,3 +384,51 @@ class RowZone(DropZone):
             at = before
             x = at.right() + (gap - INDICATOR_WIDTH) // 2 + 1
         return QRect(max(0, min(x, self.width() - INDICATOR_WIDTH)), at.top(), INDICATOR_WIDTH, at.height())
+
+
+class BinZone(DropZone):
+    '''
+    A drop anywhere in it is the same drop - into the area, not to a place
+    in it - so it draws no line: while a drag is over it, its contents fade
+    instead, the whole area marked as where the drop goes. It lays its
+    contents out top to bottom (add them to its layout - it has no items),
+    and they can hold zones of their own that take nothing, so a drag over
+    them comes up to this one.
+
+    takes, if given, narrows what it takes past its kinds - say, only what
+    came from somewhere else, since dropping a thing back where it is
+    means nothing.
+    '''
+
+    FADED = 0.4
+
+    def __init__(self, context: Context, zone_id: str, accepts: set[str],
+                 takes: Callable[[DragPayload], bool] | None = None, spacing: int | None = None):
+        super().__init__(context, zone_id, accepts)
+        self.predicate = takes
+        self.faded = False
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(context.style.igap if spacing is None else spacing)
+
+    def takes(self, payload: DragPayload) -> bool:
+        return super().takes(payload) and (self.predicate is None or self.predicate(payload))
+
+    def slot_at(self, pos: QPoint) -> None:
+        return None
+
+    def indicator_rect(self, slot) -> None:
+        return None
+
+    def hover(self, pos: QPoint):
+        if not self.faded:
+            self.faded = True
+            effect = QGraphicsOpacityEffect(self)
+            effect.setOpacity(self.FADED)
+            self.setGraphicsEffect(effect)
+
+    def clear_indicator(self):
+        if self.faded:
+            self.faded = False
+            # Setting None deletes the effect
+            self.setGraphicsEffect(None)

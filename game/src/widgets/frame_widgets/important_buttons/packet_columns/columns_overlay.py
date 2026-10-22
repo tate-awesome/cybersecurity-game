@@ -3,7 +3,7 @@ from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import QApplication, QCheckBox, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from .....app_core import Context
-from ...drag_drop import INTERACTIVE, DragHandle, DragPayload, RowZone
+from ...drag_drop import INTERACTIVE, BinZone, DragHandle, DragPayload, RowZone
 from ...overlay import Overlay
 
 # The buffet's groups, each field in the order it's listed in there. A
@@ -66,6 +66,10 @@ class PacketColumnsOverlay(QObject):
     moves it across. Pointing at a chip describes its field, in the panel
     on the right.
 
+    The buffet is one drop target (a BinZone): while a tray chip is over
+    it, it fades, rather than showing a place to drop, since a chip always
+    goes back to its own group.
+
     Writes the tray to packet_columns as each column's place in it (1 is
     the leftmost, 0 not shown) - positions rather than key order, since a
     page's settings are merged over _packages/_default.json, which keeps
@@ -119,17 +123,21 @@ class PacketColumnsOverlay(QObject):
         chips_column.setSpacing(gap)
         body.addLayout(chips_column)
 
-        # The buffet: a zone per group. A drop on any of them takes a chip
-        # out of the tray, back to its own group (see on_buffet_drop)
+        # The buffet: one area to drop on (it fades while a tray chip is
+        # over it), wherever in it the chip goes back to its own group (see
+        # on_buffet_drop) - so its groups' zones take no drops themselves
+        buffet = BinZone(self.context, "packet_columns_buffet", {CHIP_KIND},
+                         takes=lambda payload: self.chips[payload.item_id] in self.tray.items, spacing=gap)
+        buffet.dropped.connect(self.on_buffet_drop)
+        chips_column.addWidget(buffet)
         self.buffet = {}
         for category in COLUMN_CATEGORIES:
             if not any(column_category(key) == category for key in keys):
                 continue
-            chips_column.addWidget(self.heading(f"packet_column_categories_{category}"))
-            zone = RowZone(self.context, f"packet_columns_{category}", {CHIP_KIND}, spacing=gap)
+            buffet.layout().addWidget(self.heading(f"packet_column_categories_{category}"))
+            zone = RowZone(self.context, f"packet_columns_{category}", set(), spacing=gap)
             zone.setFixedWidth(chips_width)
-            zone.dropped.connect(self.on_buffet_drop)
-            chips_column.addWidget(zone)
+            buffet.layout().addWidget(zone)
             self.buffet[category] = zone
 
         chips_column.addSpacing(style.igap)
@@ -308,7 +316,7 @@ class PacketColumnsOverlay(QObject):
         self.tray.insert(chip, slot)
         self.changed()
 
-    def on_buffet_drop(self, payload: DragPayload, slot: int):
+    def on_buffet_drop(self, payload: DragPayload, slot: None):
         '''Wherever in the buffet it's dropped, a chip goes back to its own group.'''
         chip = self.chips.get(payload.item_id)
         if chip is None or chip not in self.tray.items:
