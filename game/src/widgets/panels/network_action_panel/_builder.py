@@ -14,7 +14,16 @@ from .forms.ap_tunnel import APTunnelForm
 from .forms.kalman import KalmanForm
 
 from ....widgets import Scrollable
+from ...frame_widgets.scrollable import _Gaps
+from ...frame_widgets.flow_layout import FlowLayout
 from ...frame_widgets.important_buttons import AbortAllNetworkActions, ChooseShownNetworkActionForms
+
+# The card column width: a wider panel adds columns rather than stretching
+# cards much past CARD_MAX_WIDTH. Max is about twice min so a full row always
+# fills edge to edge (see FlowLayout) - the leftover when no more min-width
+# cards fit never exceeds the room the row's cards have to grow.
+CARD_MIN_WIDTH = 240
+CARD_MAX_WIDTH = 480
 
 FORM_CLASSES = {
     "wifi": WifiForm,
@@ -65,12 +74,26 @@ class Builder(Panel):
                 continue
             self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
 
-        for i, form in enumerate(self.forms.values()):
-            self.scrollable.grid_layout.addWidget(form, i, 0)
+        # Cards flow left to right and wrap to new rows, so the panel shows
+        # more at once and uses extra width when it's pulled wide (see
+        # FlowLayout). They sit in a gap-painting host, so the deepest
+        # material still shows between them like any other panel content
+        # (see Scrollable._Gaps). Each card is capped to a readable column
+        # width so a wide panel makes more columns rather than wider cards.
+        style = context.style
+        self.cards_host = _Gaps(style)
+        style.set_material(self.cards_host, "none")
+        self.flow = FlowLayout(self.cards_host, margin=0,
+                               hspacing=style.igap, vspacing=style.igap)
+        for form in self.forms.values():
+            form.setMinimumWidth(CARD_MIN_WIDTH)
+            form.setMaximumWidth(CARD_MAX_WIDTH)
+            self.flow.addWidget(form)
+        self.scrollable.grid_layout.addWidget(self.cards_host, 0, 0)
         self.shown_forms = None  # network_action_forms_shown as of the last refresh_forms
         self.refresh_forms()
         self.scrollable.columnconfigure(0, weight=1)
-        self.scrollable.add_deadspace("grid")
+        self.scrollable.grid_layout.setRowStretch(1, 1)  # deadspace below the cards
         self.context.animation_manager.add_callback(f"network_action_forms_{id(self)}", self.refresh_forms)
 
         self.menu_bar.add_important(ChooseShownNetworkActionForms)

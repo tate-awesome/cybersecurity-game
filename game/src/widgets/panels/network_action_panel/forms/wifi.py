@@ -19,7 +19,7 @@ class WifiForm(BaseForm):
     '''
     def __init__(self, master: QWidget, context: Context):
 
-        super().__init__(master, context, key="wifi")
+        super().__init__(master, context, key="wifi", flat=True)
         # Stopped last on page-exit cleanup (ProcessManager.abort_all): other
         # processes' teardown (e.g. ArpSpoofer restoring ARP tables) needs
         # working networking, so switching networks back must happen after.
@@ -150,7 +150,13 @@ class WifiForm(BaseForm):
         if missing is not None:
             set_text(self.process_button, self.label(missing))
         else:
+            # Wifi's button is a network toggle, not a process - it keeps its
+            # own "Connect to device"/"Connect to home" wording rather than
+            # the generic Start/Stop.
             set_text(self.process_button, self.stop_process_text if on_device else self.start_process_text)
+        # The button is width-capped in the flat card, so its longer guidance
+        # labels ("Enter both networks") elide - keep the full text on hover.
+        self.process_button.setToolTip(self.process_button.text())
 
         if on_device:
             status = self.status_on_text

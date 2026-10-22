@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792652919.162565,
-    "seen": 1792652992.1613111,
-    "ast_hash": "e4a03d7d811a90ecb3c440b352f8b913",
+    "mtime": 1792658679.6014452,
+    "seen": 1792658799.7579653,
+    "ast_hash": "91f0234614ed1c7ffd43c19aa8151c22",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -228,15 +228,15 @@
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default.json": {
-    "mtime": 1792652902.8487525,
-    "seen": 1792652992.1659536,
-    "ast_hash": "c4050291f7280ea6d3c874344adbd733",
+    "mtime": 1792658679.599446,
+    "seen": 1792658799.7626517,
+    "ast_hash": "5c38163f4e89c0c0de86f8040ddc3aec",
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default_notes.json": {
-    "mtime": 1792657890.4219227,
-    "seen": 1792657898.2772422,
-    "ast_hash": "08bdcb5dd37a24b780a976d759703f66",
+    "mtime": 1792658679.600445,
+    "seen": 1792658799.7626543,
+    "ast_hash": "bebd244f5afeb4096559a8729fc83019",
     "semantic_hash": ""
   },
   "game/dist.py": {
@@ -732,9 +732,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/network_diagram.py": {
-    "mtime": 1792658314.7624173,
-    "seen": 1792658351.049263,
-    "ast_hash": "9243394da9d69e33f88e7ad9eea75d34",
+    "mtime": 1792658744.9426682,
+    "seen": 1792658799.7787032,
+    "ast_hash": "d3aa756bc86eb61a445c160df86a0ed7",
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/pooled_canvas.py": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {
-    "mtime": 1792650530.1257331,
-    "seen": 1792650585.2982693,
-    "ast_hash": "087e58714373d66227bd900c00457044",
+    "mtime": 1792658679.599446,
+    "seen": 1792658799.7956085,
+    "ast_hash": "cac52a35a9228385d30abc72afaa0f77",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/packet_console/_builder.py": {
@@ -1278,9 +1278,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/__init__.py": {
-    "mtime": 1792650530.1097147,
-    "seen": 1792650585.2832863,
-    "ast_hash": "6523f942cf394d8d16546d7a46265fab",
+    "mtime": 1792658679.5983565,
+    "seen": 1792658799.7804296,
+    "ast_hash": "24db1965c473cec30c101ec7d4b5c922",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
@@ -1905,6 +1905,12 @@
     "mtime": 1792656350.6664524,
     "seen": 1792656683.8352234,
     "ast_hash": "67d18254902b844688c9a32e6aae7364",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/frame_widgets/important_buttons/toggle_network_graph_ring_view.py": {
+    "mtime": 1792658677.9031284,
+    "seen": 1792658799.7901697,
+    "ast_hash": "f814d544ed7e63eee251001c3007e4a5",
     "semantic_hash": ""
   }
 }

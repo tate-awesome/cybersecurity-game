@@ -7,7 +7,7 @@ from ...base_form import BaseForm
 class ArpForm(BaseForm):
     def __init__(self, master: QWidget, context: Context):
 
-        super().__init__(master, context, key="arp")
+        super().__init__(master, context, key="arp", flat=True)
         self.process = self.get_process(ArpSpoofer)
 
         self.add_header()

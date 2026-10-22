@@ -1,8 +1,48 @@
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+                               QSizePolicy, QToolButton, QWidget)
 from collections.abc import Callable
 from ...app_core import Context
 from ...network.process import Process
+
+
+class ElidingLabel(QLabel):
+    '''
+    A label that shows "…" instead of hard-clipping when it's narrower than
+    its text, and keeps the full text as a tooltip. Used for flat card
+    titles, which share their row with the button and so can run out of room
+    in a narrow card. It still *prefers* its full width (so the card grows to
+    fit the title up to the card's max width), but reports a tiny minimum so
+    it can shrink and elide once the card is capped or the panel is narrow.
+    '''
+
+    def __init__(self, text: str = "", parent: QWidget | None = None):
+        super().__init__(text, parent)
+        self._full_text = text
+        self.setToolTip(text)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+
+    def sizeHint(self) -> QSize:
+        # Report the FULL text's width, not the elided text currently shown -
+        # otherwise the card would keep shrinking to fit its own ellipsis.
+        # This is what lets the layout size columns to the widest real title.
+        return QSize(self.fontMetrics().horizontalAdvance(self._full_text) + 2,
+                     super().sizeHint().height())
+
+    def minimumSizeHint(self) -> QSize:
+        # A plain QLabel's minimum is its full text width, which would keep
+        # the card from ever shrinking the title. Allow it down to an
+        # ellipsis' width so the row can give the title whatever's left.
+        return QSize(self.fontMetrics().horizontalAdvance("…") + 4,
+                     super().minimumSizeHint().height())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        elided = self.fontMetrics().elidedText(self._full_text, Qt.TextElideMode.ElideRight, self.width())
+        # QLabel.setText (not self.setText) - this is display-only, the full
+        # text is kept in _full_text for the next resize and the tooltip.
+        QLabel.setText(self, elided)
 
 class BaseForm(QWidget):
     '''
@@ -21,11 +61,20 @@ class BaseForm(QWidget):
     process or AP actually confirms - which may lag behind the click for
     network-backed forms, or land immediately for local processes.
     '''
-    def __init__(self, master: QWidget, context: Context, process_noun: str = "Process", key: str | None = None):
+    def __init__(self, master: QWidget, context: Context, process_noun: str = "Process", key: str | None = None,
+                 flat: bool = False):
         '''
         process_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
         key, if given, selects the "network_action_forms"/"network_action_panels" i18n text
         for this form instead of building plain text from process_noun.
+
+        flat (network_action_panel only) gives the card the compact layout:
+        the header, a status dot and the start/stop button share one row
+        (no separate status line), each entry's prompt becomes its
+        placeholder, and the card can be minimized to hide its entries. The
+        grid is still the layout underneath - the header bar and each entry
+        just span all its columns - so forms that add their own grid rows
+        (e.g. ap_connect's connection label) keep working unchanged.
         '''
         super().__init__(master)
 
@@ -33,7 +82,17 @@ class BaseForm(QWidget):
         self.context = context
         self.key = key
         self.process_noun = process_noun
+        self.flat = flat
         self.has_process_button = False
+
+        # Flat-layout widgets, filled in by add_header/add_labeled_entry/
+        # add_process_row as the form builds itself.
+        self.header_bar: QWidget | None = None
+        self.header_bar_layout: QHBoxLayout | None = None
+        self.status_dot: QLabel | None = None
+        self.caret_button: QToolButton | None = None
+        self._entry_widgets: list[QWidget] = []  # per-entry rows, for minimize
+        self._minimized = False
 
         self.style.set_material(self, "card")
 
@@ -61,6 +120,16 @@ class BaseForm(QWidget):
             self.status_off_text = f"{self.process_noun} is off"
             self.start_process_text = f"Start {self.process_noun}"
             self.stop_process_text = f"Stop {self.process_noun}"
+
+        # The flat button restates only the verb, with a play/stop glyph -
+        # what it acts on is already the card's title. The full label text
+        # ("Start Spoofer") stays the button text everywhere else.
+        if self.flat:
+            self.start_button_text = f"{self.style.icon('player-play')}  Start"
+            self.stop_button_text = f"{self.style.icon('square')}  Stop"
+        else:
+            self.start_button_text = self.start_process_text
+            self.stop_button_text = self.stop_process_text
 
         self.current_row = 0
         self.entry_index = 0
@@ -140,6 +209,8 @@ class BaseForm(QWidget):
         if text is None:
             assert self.key is not None, "add_header() with no text requires key to be set"
             text = str(self.context.labels.get(f"hacking_forms_{self.key}"))
+        if self.flat:
+            return self._add_flat_header(text)
         self.header = QLabel(text)
         self.header.setFont(self.style.get_font())
         # columnSpan=-1 spans to the layout's actual last column (as
@@ -152,6 +223,72 @@ class BaseForm(QWidget):
         # edge.
         self.grid_layout.addWidget(self.header, self.current_row, 0, 1, -1, Qt.AlignmentFlag.AlignCenter)
         self.current_row += 1
+
+    def _add_flat_header(self, text: str):
+        '''
+        The flat card's top row: a status dot, the left-aligned title, then
+        (appended later) a minimize caret and the start/stop button. The row
+        is one widget spanning every grid column, so entries and any extra
+        rows a form adds still sit below it in the grid as usual.
+        '''
+        self.header_bar = QWidget()
+        self.header_bar_layout = QHBoxLayout(self.header_bar)
+        self.header_bar_layout.setContentsMargins(0, 0, 0, 0)
+        self.header_bar_layout.setSpacing(self.style.igap // 2)
+
+        # Status dot - idle until the process confirms it's running (see
+        # _refresh_status_dot). "⬤" is drawn in the dot's text color, which
+        # set_tone keeps on the theme's good/muted material.
+        self.status_dot = QLabel("⬤")
+        self.status_dot.setFont(self.style.get_font("small"))
+        self.style.set_tone(self.status_dot, "muted")
+        self.header_bar_layout.addWidget(self.status_dot)
+
+        self.header = ElidingLabel(text)
+        header_font = QFont(self.style.get_font("default"))
+        header_font.setBold(True)
+        self.header.setFont(header_font)
+        self.header.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        # The title takes the row's slack (stretch 1) and elides when there
+        # isn't enough, so the caret and button stay pinned to the right.
+        self.header_bar_layout.addWidget(self.header, 1)
+
+        self.grid_layout.addWidget(self.header_bar, self.current_row, 0, 1, -1)
+        self.current_row += 1
+        return self.header
+
+    def _ensure_caret(self):
+        '''
+        Adds the minimize caret to the header the first time the card gets
+        an entry - entry-less cards never grow one, so they stay as small as
+        a minimized card already is.
+        '''
+        if self.caret_button is not None or self.header_bar_layout is None:
+            return
+        self.caret_button = QToolButton()
+        self.caret_button.setAutoRaise(True)
+        self.caret_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.caret_button.setFont(self.style.get_font("icon"))
+        self.caret_button.setText(self.style.icon("chevron-down"))
+        self.caret_button.setToolTip("Hide inputs")
+        self.caret_button.clicked.connect(lambda checked=False: self.toggle_minimized())
+        # Sits just left of where the start/stop button lands (added last).
+        self.header_bar_layout.addWidget(self.caret_button)
+
+    def toggle_minimized(self, minimized: bool | None = None):
+        '''Collapses/expands the card's entry rows (flat cards only).'''
+        if not self.flat:
+            return
+        self._minimized = (not self._minimized) if minimized is None else minimized
+        for widget in self._entry_widgets:
+            widget.setVisible(not self._minimized)
+        if self.caret_button is not None:
+            self.caret_button.setText(self.style.icon("chevron-right" if self._minimized else "chevron-down"))
+            self.caret_button.setToolTip("Show inputs" if self._minimized else "Hide inputs")
+
+    def _refresh_status_dot(self, running: bool):
+        if self.status_dot is not None:
+            self.style.set_tone(self.status_dot, "good" if running else "muted")
 
     def add_label_row(self, label_slot: str, label_keys: list[str]) -> list[QLabel]:
         column = 0
@@ -185,18 +322,29 @@ class BaseForm(QWidget):
         label_widget = QLabel(label)
         label_widget.setFont(self.style.get_font())
         label_widget.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.grid_layout.addWidget(label_widget, self.current_row, 1)
 
         entry = QLineEdit()
         entry.setAlignment(Qt.AlignmentFlag.AlignLeft)
         entry.setFont(self.style.get_font())
-        # QLineEdit's default horizontal size policy is Expanding - even
-        # sitting in column 2 (stretch=0, see __init__), its own policy
-        # still lets it balloon to fill whatever room that column ends up
-        # with. A fixed width overrides that, and fixed_width_wrapper keeps
-        # it from also locking the whole column to that width.
-        entry.setFixedWidth(self.style.igap * 16)
-        self.grid_layout.addWidget(self.fixed_width_wrapper(entry), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
+
+        if self.flat:
+            # Flat card: the prompt lives inside the entry as placeholder
+            # text, and the entry spans the card full-width. Tracked so the
+            # minimize caret can hide it. The label widget is still returned
+            # for callers that unpack it, just never placed.
+            entry.setPlaceholderText(label.rstrip(":").strip())
+            self.grid_layout.addWidget(entry, self.current_row, 0, 1, -1)
+            self._entry_widgets.append(entry)
+            self._ensure_caret()
+        else:
+            self.grid_layout.addWidget(label_widget, self.current_row, 1)
+            # QLineEdit's default horizontal size policy is Expanding - even
+            # sitting in column 2 (stretch=0, see __init__), its own policy
+            # still lets it balloon to fill whatever room that column ends up
+            # with. A fixed width overrides that, and fixed_width_wrapper keeps
+            # it from also locking the whole column to that width.
+            entry.setFixedWidth(self.style.igap * 16)
+            self.grid_layout.addWidget(self.fixed_width_wrapper(entry), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
         self.entries.append(entry)
         self.current_row += 1
         if not autosave:
@@ -258,6 +406,16 @@ class BaseForm(QWidget):
         - overridden by forms that lay that row out differently (e.g.
         CombinedTable, which has more buttons beside it).
         '''
+        if self.flat:
+            # The button is a full-width bar across the bottom of the card,
+            # below the entries. The header row carries only the dot, title
+            # and minimize caret; the status line is dropped - the dot and
+            # the button's own icon carry the state instead. process_status
+            # is kept as a detached label so configure_on/off can still set
+            # its text without special-casing.
+            self.process_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            self.grid_layout.addWidget(self.process_button, self.current_row, 0, 1, -1)
+            return
         self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
         if self.key is not None:
             self.grid_layout.addWidget(self.process_status, self.current_row, 1, 1, 1)
@@ -284,7 +442,8 @@ class BaseForm(QWidget):
         '''
         if self.key is not None:
             self.context.states.set("game_progress", self.key, value=1)
-        self.process_button.setText(self.stop_process_text)
+        self.process_button.setText(self.stop_button_text)
+        self._refresh_status_dot(True)
         self._disconnect_process_button()
         # Unset the confirmed state so the next poll always reconciles the
         # button, even if start_process() fails and status_func() reports
@@ -298,13 +457,15 @@ class BaseForm(QWidget):
         self._disconnect_process_button()
         self.wire_button(self.process_button, self.click_stop)
         self._process_button_connected = True
-        self.process_button.setText(self.stop_process_text)
+        self.process_button.setText(self.stop_button_text)
         self.process_status.setText(self.status_on_text)
+        self._refresh_status_dot(True)
 
     def click_stop(self):
         if not self.has_process_button:
             return
-        self.process_button.setText(self.start_process_text)
+        self.process_button.setText(self.start_button_text)
+        self._refresh_status_dot(False)
         self._disconnect_process_button()
         self.process_confirmed_state = None
         self.process_button.repaint()
@@ -314,8 +475,9 @@ class BaseForm(QWidget):
         self._disconnect_process_button()
         self.wire_button(self.process_button, self.click_start)
         self._process_button_connected = True
-        self.process_button.setText(self.start_process_text)
+        self.process_button.setText(self.start_button_text)
         self.process_status.setText(self.status_off_text)
+        self._refresh_status_dot(False)
 
     def _disconnect_process_button(self):
         # Tracked explicitly rather than relying on disconnect() to raise

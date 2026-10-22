@@ -14,7 +14,7 @@ class KalmanForm(BaseForm):
     '''
 
     def __init__(self, master: QWidget, context: Context):
-        super().__init__(master, context, key="kalman")
+        super().__init__(master, context, key="kalman", flat=True)
 
         self.add_header()
 

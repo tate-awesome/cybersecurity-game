@@ -7,7 +7,7 @@ from ...base_form import BaseForm
 class DosForm(BaseForm):
     def __init__(self, master: QWidget, context: Context):
 
-        super().__init__(master, context, key="dos")
+        super().__init__(master, context, key="dos", flat=True)
         self.process = self.get_process(Denier)
 
         self.add_header()

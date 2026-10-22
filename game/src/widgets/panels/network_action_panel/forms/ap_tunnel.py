@@ -12,7 +12,7 @@ class APTunnelForm(BaseForm):
     '''
 
     def __init__(self, master: QWidget, context: Context):
-        super().__init__(master, context, key="ap_tunnel")
+        super().__init__(master, context, key="ap_tunnel", flat=True)
 
         self.add_header()
 

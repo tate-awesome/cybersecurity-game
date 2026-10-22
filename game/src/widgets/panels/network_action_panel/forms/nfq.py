@@ -6,7 +6,7 @@ from ...base_form import BaseForm
 class NFQForm(BaseForm):
     def __init__(self, master: QWidget, context: Context):
 
-        super().__init__(master, context, key="nfq")
+        super().__init__(master, context, key="nfq", flat=True)
         self.process = self.get_process(NetFilterQueue)
 
         self.header = self.add_header()

@@ -17,7 +17,7 @@ class APConnectForm(BaseForm):
     '''
 
     def __init__(self, master: QWidget, context: Context):
-        super().__init__(master, context, key="ap_connect")
+        super().__init__(master, context, key="ap_connect", flat=True)
         # get_process() registers under this form's key - which has to be
         # the shared poller's key, or this would start a second poller.
         assert self.key == AP_POLLER_KEY
