@@ -38,6 +38,7 @@
             "arp": ["192.168.4.2", "192.168.4.10"],
             "dos": ["192.168.4.2", "192.168.4.10"]
         },
+        "packet_console": {"filter": "-to:broadcast observer:dos,sniff"},
         "packet_columns": {
             "time_word": 1,
             "number": 2,

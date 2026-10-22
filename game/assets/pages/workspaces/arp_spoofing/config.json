@@ -18,6 +18,7 @@
     "settings": {
         "available": {"sniff": 1, "wifi": 1, "nmap": 1, "arp": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1, "nmap": 1},
+        "packet_console": {"filter": "proto:arp,modbus"},
         "packet_columns": {
             "time_word": 1,
             "number": 2,
