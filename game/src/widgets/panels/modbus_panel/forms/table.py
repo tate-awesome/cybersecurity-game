@@ -14,7 +14,7 @@ class MitmTable(BaseForm):
         self.grid_layout.setColumnStretch(2, 1)
         self.grid_layout.setColumnStretch(3, 1)
 
-        self.add_header("ModBus Readings")
+        self.add_header("Readings")
 
         # Create value table entries
         self.rows = {}

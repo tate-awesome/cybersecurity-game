@@ -163,7 +163,7 @@ class RegistersExample(Panel):
         form = BaseForm(None, context)
         for column in range(4):
             form.grid_layout.setColumnStretch(column, 1)
-        form.add_header("ModBus Readings")
+        form.add_header("Readings")
         for row in [("Variable", "Received", "Sent", "Source"), *self.ROWS]:
             for column, text in enumerate(row):
                 label = QLabel(text)

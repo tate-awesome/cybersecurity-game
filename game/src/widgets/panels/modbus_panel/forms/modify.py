@@ -14,7 +14,7 @@ class Modify(BaseForm):
         self.grid_layout.setColumnStretch(1, 1)
         self.grid_layout.setColumnStretch(2, 1)
 
-        self.add_header("ModBus Modifiers")
+        self.add_header("Modifiers")
 
         # Create value table entries
         self.rows = {}
