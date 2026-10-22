@@ -134,6 +134,12 @@
         "modify": 0
     },
 
+    "form_order": {
+        "network_action_forms_shown": [],
+        "modbus_table_forms_shown": [],
+        "defender_modbus_forms_shown": []
+    },
+
     "modbus_packet_modify_enabled": 0,
 
     "model_panels": {

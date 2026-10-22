@@ -328,6 +328,15 @@
                 "packet_columns_available": {
                     "type": "object"
                 },
+                "form_order": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "available": {
                     "type": "object"
                 },

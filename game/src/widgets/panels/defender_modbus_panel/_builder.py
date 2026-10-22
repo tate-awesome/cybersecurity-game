@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget
 from ....app_core import Context
 from ..panel import Panel
+from ...frame_widgets.important_buttons.checkbox_overlay.checkbox_overlay import form_order
 
 from .forms.mode import ModeForm
 from .forms.sliders import SlidersForm
@@ -28,6 +29,7 @@ class Builder(Panel):
     SETTINGS = (
         "available",
         "defender_modbus_forms_shown",
+        "form_order",
     )
 
     def __init__(self, master: QWidget, context: Context):
@@ -66,9 +68,9 @@ class Builder(Panel):
         frame, so it only acts (and scrolls back to the top) when that changed.
         '''
         shown = dict(self.context.states.get("defender_modbus_forms_shown"))
-        order = list(shown)
-        # dict == ignores key order; a drag in the Show Forms overlay changes
-        # only the order, so compare that separately and re-grid on a change.
+        order = form_order(self.context, "defender_modbus_forms_shown")
+        # A drag in the overlay changes only the order (see form_order), not
+        # which keys are "1"/"0", so compare that separately.
         if shown == self.shown_forms and order == self._shown_order:
             return
         self.shown_forms = shown

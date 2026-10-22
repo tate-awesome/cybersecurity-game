@@ -4,6 +4,21 @@ from ...drag_drop import DragHandle, DragPayload, ListZone
 from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 
+def form_order(context: Context, state_key: str) -> list[str]:
+    '''
+    state_key's keys in the order they're laid out: as listed in
+    form_order[state_key] (written by a drag in a reorderable
+    CheckboxOverlay), then any it doesn't list, in the category's own order.
+    Kept apart from the category itself, as a list, since a page's settings
+    are merged over _packages/_default.json, which keeps its own key order -
+    a list is saved and merged whole.
+    '''
+    keys = list(context.states.get(state_key))
+    listed = context.states.get("form_order").get(state_key) or []
+    ordered = [key for key in listed if key in keys]
+    return ordered + [key for key in keys if key not in ordered]
+
+
 class CheckboxOverlay:
     '''
     Binds a button to open and close an overlay listing one chip per key in a
@@ -14,9 +29,8 @@ class CheckboxOverlay:
     category from its own animation callback and follows along.
 
     With reorderable=True the chips can be dragged to reorder them, and the
-    new order is written back as the key order of the same settings category
-    (mutated in place, so the checkboxes' autosave keeps working); a panel
-    that lays its forms out in that category's order then follows the drag.
+    new order is written to form_order[state_key]; a panel that lays its
+    forms out in that order (see form_order) then follows the drag.
 
     Used for hacking-panel and modbus-panel form visibility - those only
     ever differed in which settings category to read/write (state_key) and
@@ -67,7 +81,7 @@ class CheckboxOverlay:
 
         box_slots = self.context.states.get(self.state_key)
         available_forms: dict[str, int] = self.context.states.get(self.visibility_key) if self.visibility_key else None
-        for key in box_slots:
+        for key in form_order(self.context, self.state_key):
             if available_forms and (key not in available_forms or available_forms[key] == 0 or available_forms[key] == "0"):
                 print(f"Form is invisible: {key!r}")
                 continue
@@ -95,9 +109,7 @@ class CheckboxOverlay:
         value = box_slots[key]
         checkbox.setChecked(value == "1" or value == 1)
         # Stored as "1"/"0" - the convention this settings data already uses
-        # everywhere else. box_slots is the live category dict; a reorder
-        # mutates that same dict in place (see persist_order), so this keeps
-        # writing to the right place afterwards.
+        # everywhere else. box_slots is the live category dict.
         def autosave(checked: bool, value=box_slots, key=key):
             value[key] = "1" if checked else "0"
         checkbox.toggled.connect(autosave)
@@ -124,16 +136,9 @@ class CheckboxOverlay:
 
     def persist_order(self):
         '''
-        Rewrites the settings category's key order to the chips' order,
-        mutating the live dict in place (clear + re-insert) so the checkboxes'
-        autosave closures - which hold that same dict - keep working. Keys
-        with no chip (filtered-out/unavailable forms) keep their value and
-        trail the end.
+        Writes the chips' order to form_order[state_key] - every key, those
+        with no chip (unavailable forms) keeping their place after them.
         '''
-        live = self.context.states.get(self.state_key)
-        ordered = {chip.key: live.get(chip.key, "0") for chip in self.zone.items}
-        for existing_key, existing_value in live.items():
-            if existing_key not in ordered:
-                ordered[existing_key] = existing_value
-        live.clear()
-        live.update(ordered)
+        chips = [chip.key for chip in self.zone.items]
+        rest = [key for key in form_order(self.context, self.state_key) if key not in chips]
+        self.context.states.get("form_order")[self.state_key] = chips + rest

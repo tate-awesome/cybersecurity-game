@@ -34,6 +34,7 @@
         "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: combined, table, modify. Defender ModBus forms: mode, sliders. Models are offered per model panel instead - see model_panels. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"combined\" (live register values with their modifiers beside them), \"table\" (live register values) and \"modify\" (rewriting values in transit).",
         "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
+        "form_order": "The order each panel lays its forms out in, per *_forms_shown category: a list of its keys, top (or first) to last. Students change this by dragging the chips in Sort Cards or Show Forms. An empty list, or any key it leaves out, keeps the order the category itself lists.",
         "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
@@ -611,6 +612,20 @@
             "modbus_word": {
                 "description": "ModBus: \"registers = values\" in one column.",
                 "details": "For ModBus packets, shows \"registers = values\" in one readable column, combining the variables and values columns."
+            }
+        },
+        "form_order": {
+            "network_action_forms_shown": {
+                "description": "The network action cards' order, as a list of their keys. Empty keeps the default order.",
+                "details": "The order of the network action panel's cards, as a list of form keys (wifi, nmap, arp, ...). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Cards."
+            },
+            "modbus_table_forms_shown": {
+                "description": "The ModBus table panel forms' order, as a list of their keys. Empty keeps the default order.",
+                "details": "The order of the ModBus table panel's forms, as a list of keys (combined, table, modify). Forms it leaves out follow in their default order. Students change it by dragging chips in Show Forms."
+            },
+            "defender_modbus_forms_shown": {
+                "description": "The defender ModBus panel forms' order, as a list of their keys. Empty keeps the default order.",
+                "details": "The order of the defender ModBus panel's forms, as a list of keys (mode, sliders). Forms it leaves out follow in their default order. Students change it by dragging chips in Show Forms."
             }
         },
         "packet_columns_available": {

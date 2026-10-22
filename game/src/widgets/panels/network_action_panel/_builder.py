@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget
 from ....app_core import Context
 from ..panel import Panel
+from ...frame_widgets.important_buttons.checkbox_overlay.checkbox_overlay import form_order
 
 from .forms.arp import ArpForm
 from .forms.nmap import NmapForm
@@ -51,6 +52,7 @@ class Builder(Panel):
     SETTINGS = (
         "available",
         "network_action_forms_shown",
+        "form_order",
         "network_action_form_inputs",
         "game_progress",
         "modbus_registers",
@@ -106,13 +108,13 @@ class Builder(Panel):
         '''
         Shows/hides and reorders forms to match network_action_forms_shown -
         polled every frame, so it only acts (and scrolls back to the top) when
-        that changed. The card order follows the settings' key order, which
-        the Sort Cards overlay rewrites when a chip is dragged.
+        that changed. The card order follows form_order, which the Sort
+        Cards overlay rewrites when a chip is dragged.
         '''
         shown = dict(self.context.states.get("network_action_forms_shown"))
-        order = list(shown)
-        # dict == ignores key order, so compare the order separately - a drag
-        # in the overlay changes only the order, not which keys are "1"/"0".
+        order = form_order(self.context, "network_action_forms_shown")
+        # A drag in the overlay changes only the order (see form_order), not
+        # which keys are "1"/"0", so compare that separately.
         if shown == self.shown_forms and order == self._shown_order:
             return
         self.shown_forms = shown
