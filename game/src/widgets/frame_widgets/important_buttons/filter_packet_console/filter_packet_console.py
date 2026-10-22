@@ -5,8 +5,8 @@ from .filter_overlay import FilterOverlay
 
 class FilterPacketConsole(ImportantButton):
     '''
-    Opens the packet filter editor (packet_filter_checkboxes/entries) - the
-    packet console follows the setting.
+    Opens the packet filter editor (packet_console "filter" - see
+    FilterOverlay) - the packet console follows the setting.
     '''
     LABEL = "menu_bar_buttons_filters_overlay"
 

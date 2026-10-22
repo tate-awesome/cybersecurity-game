@@ -38,13 +38,11 @@
         "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
-        "packet_console": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph (not saved - a workspace always opens with its own default). \"summary\" is the plain-language description of the current packet filter.",
+        "packet_console": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph (not saved - a workspace always opens with its own default). \"filter\": the packet console's filter, as the Filters overlay writes it.",
+        "packet_filter_available": "Which parts of the Filters overlay students get: a section (\"section.hosts\"), a field (\"proto\") or one option (\"proto:tcp\"), set to 0 to take it away. Everything is offered by default, so a workspace only lists what it takes away. Developers set it from the overlay itself, in developer mode.",
         "requested_packet_treeview_clear": "Set to 1 to ask the packet console to clear its rows and re-read the packet buffer through its current filter; the console sets it back to 0 once done. Clear Data and filter changes set it - leave it 0.",
         "requested_status_console_clear": "Set to 1 to ask the status console to clear its text; it sets this back to 0 once done. The clear buttons set it - leave it 0.",
         "status_console": "\"scroll\": \"live\" keeps the status console following new lines as they arrive, \"free\" stops it so the student can scroll back (lines that arrive meanwhile aren't shown).",
-        "packet_filter_categories": "How the packet filter's checkboxes are grouped, and which checkboxes each group has.",
-        "packet_filter_checkboxes": "Which packet filters start out ticked (1). Nothing ticked shows every packet.",
-        "packet_filter_entries": "What starts out typed into the packet filter's text boxes, like an address to filter by.",
         "packet_columns": "Which packet console columns are shown, and in what order: each column's place from the left (1 is the leftmost), or 0 for not shown. Students change this by dragging fields into the tray in the Columns overlay.",
         "packet_columns_available": "Which fields the Columns overlay offers students at all (1 = offered). Every field is offered by default, so a workspace only lists what it takes away. A column students aren't given doesn't show even if packet_columns places it."
     },
@@ -397,119 +395,15 @@
                 "description": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph.",
                 "details": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph so students can study what's on screen. Students switch between the two themselves. Pausing isn't saved - a workspace always opens with this setting's value."
             },
-            "summary": {
-                "description": "The plain-language description of the current packet filter, shown to the student.",
-                "details": "The plain-language description of the current packet filter, shown to the student. The filter overlay rewrites it whenever the filter changes, so there's rarely a reason to set it here."
-            },
-            "function": {
-                "description": "The packet filter as Python code, rebuilt by the filter overlay. Leave this alone.",
-                "details": "The current packet filter as Python code, rebuilt by the filter overlay from the checkboxes and address box. The game runs it as code, so leave it alone and set the filter through packet_filter_checkboxes instead."
-            },
-            "secret explanation for awful coding practice": {
-                "description": "A developer note, not a setting.",
-                "details": "A developer note explaining why the filter above is stored as code. It isn't a setting and nothing reads it."
+            "filter": {
+                "description": "The packet console's filter, e.g. proto:modbus dir:in - empty shows every packet.",
+                "details": "The packet console's filter, as the Filters overlay's boxes write it or a student types it: field:value terms (several values split by commas match any of them), side by side to require all of them, - in front to hide matches, and or / parentheses for anything else. Set it to start a lesson focused on the traffic that matters; students can still change it."
             }
         },
-        "packet_filter_categories": {
-            "hack": {
-                "description": "Checkboxes in the \"which tool caught it\" group. One per line.",
-                "details": "The checkboxes in the filter overlay's \"which tool caught it\" group, one per line. Each name must also be a key in packet_filter_checkboxes."
-            },
-            "layers": {
-                "description": "Checkboxes in the protocol layer group. One per line.",
-                "details": "The checkboxes in the filter overlay's protocol layer group, one per line. Each name must also be a key in packet_filter_checkboxes."
-            },
-            "direction": {
-                "description": "Checkboxes in the direction group. One per line.",
-                "details": "The checkboxes in the filter overlay's direction group, one per line. Each name must also be a key in packet_filter_checkboxes."
-            }
-        },
-        "packet_filter_checkboxes": {
-            "nmap": {
-                "description": "Show packets from the Nmap scan.",
-                "details": "Ticked, the packet console shows packets caught by the Nmap scan. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "arp": {
-                "description": "Show packets caught by ARP spoofing.",
-                "details": "Ticked, the packet console shows packets caught by ARP spoofing. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "dos": {
-                "description": "Show packets from the denial of service attack.",
-                "details": "Ticked, the packet console shows packets caught by the denial of service attack. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "sniff": {
-                "description": "Show packets caught by sniffing.",
-                "details": "Ticked, the packet console shows packets caught by sniffing. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "nfq": {
-                "description": "Show packets caught by the packet interceptor.",
-                "details": "Ticked, the packet console shows packets caught by the packet interceptor. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "pcap": {
-                "description": "Show packets loaded from a capture file.",
-                "details": "Ticked, the packet console shows packets caught by a capture file loaded with the pcap button. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "TCP": {
-                "description": "Show TCP packets.",
-                "details": "Ticked, the packet console shows TCP packets - most ordinary traffic, including ModBus over TCP. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "ARP": {
-                "description": "Show ARP packets.",
-                "details": "Ticked, the packet console shows ARP packets - the address lookups that ARP spoofing abuses. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "UDP": {
-                "description": "Show UDP packets.",
-                "details": "Ticked, the packet console shows UDP packets - connectionless traffic such as DNS. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "DNS": {
-                "description": "Show DNS packets.",
-                "details": "Ticked, the packet console shows DNS packets - name lookups. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "misc": {
-                "description": "Not in any group in packet_filter_categories, so it has no checkbox and does nothing.",
-                "details": "Isn't listed in any group in packet_filter_categories, so the filter overlay never shows a checkbox for it and its value does nothing. Kept so the two settings stay in step."
-            },
-            "MODBUSADUREQUEST": {
-                "description": "Show ModBus requests.",
-                "details": "Ticked, the packet console shows every ModBus request. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "MODBUSADURESPONSE": {
-                "description": "Show ModBus responses.",
-                "details": "Ticked, the packet console shows every ModBus response. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "MODBUSPDU03READHOLDINGREGISTERSREQUEST": {
-                "description": "Show ModBus read holding registers requests.",
-                "details": "Ticked, the packet console shows ModBus read holding registers requests - a device asking for register values. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": {
-                "description": "Show ModBus read holding registers responses.",
-                "details": "Ticked, the packet console shows ModBus read holding registers responses - the register values coming back. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "MODBUSPDU06WRITESINGLEREGISTERREQUEST": {
-                "description": "Show ModBus write single register requests.",
-                "details": "Ticked, the packet console shows ModBus write single register requests - a device setting a value, the packets worth rewriting. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": {
-                "description": "Show ModBus write single register responses.",
-                "details": "Ticked, the packet console shows ModBus write single register responses - confirmations of a write. Ticked boxes in the same group widen the filter; boxes in different groups narrow it. Nothing ticked shows every packet."
-            },
-            "out": {
-                "description": "Show packets this computer sent.",
-                "details": "Ticked, the packet console shows packets this computer sent. Ticked boxes in the same group widen the filter; boxes in different groups narrow it."
-            },
-            "in": {
-                "description": "Show packets this computer received.",
-                "details": "Ticked, the packet console shows packets this computer received. Ticked boxes in the same group widen the filter; boxes in different groups narrow it."
-            },
-            "other": {
-                "description": "Not in any group in packet_filter_categories, so it has no checkbox and does nothing.",
-                "details": "Isn't listed in any group in packet_filter_categories, so the filter overlay never shows a checkbox for it and its value does nothing. Kept so the two settings stay in step."
-            }
-        },
-        "packet_filter_entries": {
-            "address_filter": {
-                "description": "Only show packets to or from this address. Empty shows every address.",
-                "details": "Only packets whose source or destination IP or MAC address contains this text are shown; separate several addresses with |. Empty shows every packet. Pre-fill it to focus a lesson on one device's traffic."
+        "packet_filter_available": {
+            "*": {
+                "description": "0 takes this section, field or option out of the Filters overlay for students.",
+                "details": "Keys are a section (\"section.hosts\", \"section.type\", \"section.modbus\", \"section.meta\"), a field (\"proto\", \"modbus.reg\"...) or one option (\"proto:tcp\"). Set to 0, students don't see it in the Filters overlay - a filter that uses it still works. Developers set this from the overlay in developer mode: the checkboxes by each section and field, and an option's fourth click."
             }
         },
         "packet_columns": {
@@ -763,7 +657,7 @@
         },
         "packet_panel": {
             "name": "Sniffed Packet Treeview",
-            "details": "What it does: A scrolling table of every captured packet, one row each, with a filter overlay (by tool, protocol layer, direction and address), a column picker, a pause button and a button to clear the capture. While paused, selecting a row shows that packet in full in the Sniffed Host Network.\n\nWhere its data comes from: Packets captured by any attacker tool in Actions, or loaded from a capture file with the menu bar.\n\nWhat it affects: Pausing it also pauses the Sniffed Host Network, since both follow packet_console.mode, and the selected row decides which packet the Host Network shows in full. Filtering only changes what this panel shows - it never drops traffic.\n\nSettings: packet_columns, packet_console, packet_filter_categories, packet_filter_checkboxes and packet_filter_entries."
+            "details": "What it does: A scrolling table of every captured packet, one row each, with a filter overlay (by host, protocol, ModBus command and register, tool and direction - or typed as text), a column picker, a pause button and a button to clear the capture. While paused, selecting a row shows that packet in full in the Sniffed Host Network.\n\nWhere its data comes from: Packets captured by any attacker tool in Actions, or loaded from a capture file with the menu bar.\n\nWhat it affects: Pausing it also pauses the Sniffed Host Network, since both follow packet_console.mode, and the selected row decides which packet the Host Network shows in full. Filtering only changes what this panel shows - it never drops traffic.\n\nSettings: packet_columns, packet_columns_available, packet_console (its filter) and packet_filter_available."
         },
         "network_graph_panel": {
             "name": "Sniffed Host Network",

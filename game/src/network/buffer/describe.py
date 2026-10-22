@@ -243,6 +243,33 @@ def frame_kind(pkt: Packet) -> str:
     return layer.name
 
 
+
+# Tags (for the filter's ICMP, ARP and Wi-Fi boxes)
+def tags(pkt: Packet) -> list[str]:
+    '''What kind of ICMP, ARP or Wi-Fi packet it is, as "kind:what" tags - see packet_filter's icmp:, arp: and wifi:.'''
+    found = []
+    if pkt.haslayer(ICMP):
+        kind = {8: "ping", 0: "reply", 3: "unreachable", 11: "expired"}.get(pkt[ICMP].type)
+        if kind:
+            found.append(f"icmp:{kind}")
+    if pkt.haslayer(ARP):
+        arp = pkt[ARP]
+        if arp.psrc == arp.pdst:
+            found.append("arp:gratuitous")
+        if arp.op == 2:
+            found.append("arp:reply")
+        elif arp.op == 1 and arp.psrc != arp.pdst:
+            found.append("arp:request")
+    if pkt.haslayer(EAPOL) and pkt[EAPOL].type == 3:
+        found.append("wifi:handshake")
+    if pkt.haslayer(Dot11):
+        for layers, kind in (((Dot11Beacon,), "beacon"), ((Dot11ProbeReq, Dot11ProbeResp), "probe"),
+                             ((Dot11Auth,), "auth"), ((Dot11AssoReq, Dot11AssoResp, Dot11ReassoReq), "assoc"),
+                             ((Dot11Deauth, Dot11Disas), "deauth")):
+            if any(pkt.haslayer(layer) for layer in layers):
+                found.append(f"wifi:{kind}")
+    return found
+
 # Summary (plain English)
 def name(address: str) -> str:
     return "everyone on the network" if address.lower() in BROADCASTS else address

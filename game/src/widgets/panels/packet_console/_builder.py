@@ -2,11 +2,12 @@ from .treeview import PacketTreeview
 from ....app_core import Context
 from ...frame_widgets.important_buttons import (ChooseShownPacketConsoleColumns, ClearAllCapturedBufferData,
                                                  FilterPacketConsole, PausePacketConsole)
-from ...frame_widgets.important_buttons.filter_packet_console.filter_overlay import compile_packet_filter
 from ...frame_widgets.important_buttons.packet_columns.columns_overlay import shown_columns
 from ..panel import Panel
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget
 from ....network.buffer.meta_packet import MetaPacket
+from ....network.buffer.packet_filter import FilterError, compile_filter, parse
 
 class Builder(Panel):
     KEY = "packet_panel"
@@ -17,9 +18,8 @@ class Builder(Panel):
         "packet_columns",
         "packet_columns_available",
         "packet_console",
-        "packet_filter_categories",
-        "packet_filter_checkboxes",
-        "packet_filter_entries",
+        "packet_filter_available",
+        "modbus_registers",
         "requested_packet_treeview_clear",
     )
     def __init__(self, master: QWidget, context: Context):
@@ -41,31 +41,44 @@ class Builder(Panel):
 
         # Printing Flags
         self.jump_to_bottom = True
-        self.paused = False  # whether print_tick last saw packet_console "mode" as "paused"
-
-        # Reset print pointer on refresh
-        self.buffer.reset_packet_cursor()
+        # This console's own place in the packet buffer: the last packet
+        # number it has read - and, while paused, the newest packet when it
+        # paused, which it reads no further than (see print_tick)
+        self.cursor = 0
+        self.frozen_at: int | None = None
+        # The filter text as of the last tick, and the function it compiled to
+        self.filter_text: str | None = None
+        self.filter = lambda mpkt: True
 
         # Start printing loop
         self.context.animation_manager.add_callback(f"packet_panel_{id(self)}", self.print_tick)
 
     def print_tick(self):
         '''
-        Called every frame: follows packet_columns, then - unless packet_console
-        "mode" is "paused" (see PausePacketConsole) - adds packets that arrived
-        since the last tick and pass the current filter (see FilterPacketConsole).
+        Called every frame: follows packet_columns and the filter, then adds
+        the packets that arrived since the last tick and pass the filter.
+
+        Paused (packet_console "mode" - see PausePacketConsole), it reads no
+        further than the newest packet when it paused, but still follows
+        the filter: a change re-reads every packet up to then through the
+        new one. Unpaused, it catches up on what arrived meanwhile.
         '''
         self.refresh_columns()
+        if self.context.states.get("requested_packet_treeview_clear") in (1, "1"):
+            # The clear buttons empty the buffer too - so this starts over on an empty one
+            self.context.states.set("requested_packet_treeview_clear", value=0)
+            self.frozen_at = None
+            self.restart()
+        self.refresh_filter()
 
         if self.context.states.get("packet_console", "mode") == "paused":
-            if not self.paused:
-                self.paused = True
+            if self.frozen_at is None:
+                self.frozen_at = self.buffer.latest_number()
                 self.select_child()
-            return
-        self.paused = False
+        else:
+            self.frozen_at = None
 
-        # Get new packets
-        packets = self.buffer.get_new_packets(compile_packet_filter(self.context), max_return=1000)
+        packets, self.cursor = self.buffer.read(self.filter, after=self.cursor, up_to=self.frozen_at, max_return=1000)
         if not packets:
             return
 
@@ -80,8 +93,38 @@ class Builder(Panel):
             self.treeview.trim_oldest(overflow_count)
 
         # Auto scroll
-        if self.jump_to_bottom:
+        if self.jump_to_bottom and self.frozen_at is None:
             self.treeview.scroll_to_bottom()
+
+    def refresh_filter(self):
+        '''
+        Compiles packet_console "filter" (see packet_filter) when it changed,
+        and starts the rows over through it. A filter that can't be read
+        (only possible typed into a config by hand - the overlay only saves
+        ones that can) shows every packet.
+        '''
+        text = str(self.context.states.get("packet_console").get("filter") or "")
+        if text == self.filter_text:
+            return
+        self.filter_text = text
+        try:
+            self.filter = compile_filter(parse(text), self.context)
+        except FilterError as error:
+            print(f"Packet filter {text!r} can't be read, so it's off: {error}")
+            self.filter = lambda mpkt: True
+        self.restart()
+
+    def restart(self):
+        '''Clears the rows, to read the buffer again from its start (up to where it paused, if paused).'''
+        self.treeview.clear()
+        self.cursor = 0
+        if self.frozen_at is not None:
+            # Keep the packet that was selected, if the new filter still shows it
+            QTimer.singleShot(0, self, self.reselect)
+
+    def reselect(self):
+        if self.buffer.selected_number is not None:
+            self.treeview.select(str(self.buffer.selected_number))
 
     # Treeview
     def submit_packet(self, packet: MetaPacket):

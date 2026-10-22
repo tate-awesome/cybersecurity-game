@@ -14,7 +14,6 @@ class PacketBuffer:
         self.buffer = deque(maxlen=self.max_size)
         self.context = context
         self.lock = Lock()
-        self.last_displayed = 0
         self.window_type_pps = deque(maxlen=self.max_size)
 
         self.rate_history = deque(maxlen=300)
@@ -27,7 +26,6 @@ class PacketBuffer:
             self.window_type_pps.clear()
             self.buffer.clear()
             self.number = 1
-            self.last_displayed = 0
 
     def put(self, mpkt: MetaPacket):
         with self.lock:
@@ -78,34 +76,36 @@ class PacketBuffer:
                     return mpkt
         return None
 
-    def get_new_packets(self, filter_func, max_return: int = 1000) -> list:
-        new_packets = []
+    def read(self, filter_func, after: int, up_to: int | None = None, max_return: int = 1000) -> tuple[list, int]:
+        '''
+        The packets numbered after `after` (and up to `up_to`, if given) that
+        pass filter_func, oldest first - the newest max_return of them - and
+        the highest number it looked at, for the reader's next `after`. Each
+        reader (a packet console) keeps its own place, so one console's
+        filter or pause never moves another's.
+        '''
+        found = []
+        looked_to = after
         with self.lock:
-            # Scan backward starting from the newest packets (right side of deque)
+            # Newest first: everything at or before `after` has been read already
             for meta_packet in reversed(self.buffer):
-                if meta_packet.get("number") > self.last_displayed:
-                    # Apply the lambda filter function directly
-                    if filter_func(meta_packet):
-                        new_packets.append(meta_packet)
-                        
-                        # Stop scanning early if we hit our maximum GUI display threshold
-                        if len(new_packets) >= max_return:
-                            break
-                else:
-                    # Sequential order guarantee: Everything before this is already displayed.
+                number = meta_packet.get("number")
+                if number <= after:
                     break
+                if up_to is not None and number > up_to:
+                    continue
+                looked_to = max(looked_to, number)
+                if filter_func(meta_packet):
+                    found.append(meta_packet)
+                    if len(found) >= max_return:
+                        break
+        found.reverse()
+        return found, looked_to
 
-        if new_packets:
-            # Restore chronological order (oldest to newest)
-            new_packets.reverse()
-            # Update the cursor to track the absolute highest packet ID processed
-            self.last_displayed = max(p.get("number") for p in new_packets)
-
-        return new_packets
-
-    def reset_packet_cursor(self):
+    def latest_number(self) -> int:
+        '''The number of the newest packet so far - 0 with none.'''
         with self.lock:
-            self.last_displayed = 0
+            return self.number - 1
 
     def get_first_packet_time(self, pkt: Packet) -> float:
         if self.first_packet_time is None:

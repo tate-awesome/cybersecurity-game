@@ -52,6 +52,7 @@ class MetaPacket:
         "time_word",        # pkt.time to 4 decimels
         "summary",          # one plain-English sentence about the packet (see describe.summary)
         "info",             # Wireshark-style Info text (see describe.info)
+        "tags",             # what kind of ICMP/ARP/Wi-Fi packet it is, for the filter: ["arp:reply"] (see describe.tags)
         "src",              # source IP, or MAC without an IP layer
         "dst",              # destination IP, or MAC without an IP layer
         "src_port",         # TCP/UDP source port, or "-"
@@ -76,7 +77,7 @@ class MetaPacket:
     }
 
     # The fields set_described works out from the scapy packet
-    DESCRIBED = {"src", "dst", "src_port", "dst_port", "service", "tcp_flags", "ttl", "payload_length", "info"}
+    DESCRIBED = {"src", "dst", "src_port", "dst_port", "service", "tcp_flags", "ttl", "payload_length", "info", "tags"}
 
     LOCAL_MAC = _resolve_local_mac()
     BROADCAST_MAC = "ff:ff:ff:ff:ff:ff"
@@ -214,23 +215,24 @@ class MetaPacket:
         self.data["number"] = number
         return self
 
-    def get_column_value(self, column_name: str):
-        output = self.get(column_name)
-        if output is None and column_name in self.DESCRIBED and self.get("pkt") is not None:
-            # From a recording made before these fields existed - describe it now, once
+    def described(self, key: str) -> Any:
+        '''
+        get, but a field set_described works out (DESCRIBED) that a packet
+        from a recording made before it existed lacks is worked out now, once.
+        '''
+        output = self.get(key)
+        if output is None and key in self.DESCRIBED and self.get("pkt") is not None:
             self.set_described(self.get("pkt"))
             self.update_modbus_word()
-            output = self.get(column_name)
+            output = self.get(key)
+        return output
+
+    def get_column_value(self, column_name: str):
+        output = self.described(column_name)
         if output is None:
             return f"None of this {column_name}"
-        return self.get(column_name)
+        return output
 
-    def matches(self, category: str, requirement: str):
-        '''
-        Returns whether the given requirement is true given a primary key string found in settings.json - "packet_filter_columns".
-        '''
-        return requirement in self.get(category)
-    
     def set_modbus_information(self) -> None:
         # return variables, values, command string
         # Return command
@@ -298,10 +300,12 @@ class MetaPacket:
             self.set("payload_length", str(describe.payload_length(pkt)))
             self.set("info", describe.info(pkt))
             self.set("summary", describe.summary(pkt))
+            self.set("tags", describe.tags(pkt))
         except Exception as error:
             print(f"Couldn't describe packet {pkt.summary()!r}: {error!r}")
             for key in ("src", "dst", "src_port", "dst_port", "service", "tcp_flags", "ttl", "payload_length"):
                 self.data.setdefault(key, "-")
+            self.data.setdefault("tags", [])
             self.set("info", pkt.summary())
             self.set("summary", pkt.summary())
 

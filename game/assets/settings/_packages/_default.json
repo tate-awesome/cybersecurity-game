@@ -355,68 +355,13 @@
 
     "packet_console": {
         "mode": "live",
-        "summary": "Currently filtering for any packets.",
-        "function": "lambda mpkt: True",
-        "secret explanation for awful coding practice": "This is just the default filter on startup. It gets changed to eval() of itself"
+        "filter": ""
     },
+    "packet_filter_available": {},
     "requested_packet_treeview_clear": 0,
     "requested_status_console_clear": 0,
     "status_console": {
         "scroll": "live"
-    },
-
-    "packet_filter_categories": {
-        "hack": [
-            "nmap",
-            "arp",
-            "dos",
-            "sniff",
-            "nfq",
-            "pcap"
-        ],
-        "layers": [
-            "TCP",
-            "ARP",
-            "UDP",
-            "DNS",
-            "MODBUSADUREQUEST",
-            "MODBUSADURESPONSE",
-            "MODBUSPDU03READHOLDINGREGISTERSREQUEST",
-            "MODBUSPDU03READHOLDINGREGISTERSRESPONSE",
-            "MODBUSPDU06WRITESINGLEREGISTERREQUEST",
-            "MODBUSPDU06WRITESINGLEREGISTERRESPONSE"
-        ],
-        "direction": [
-            "in",
-            "out"
-        ]
-    },
-
-    "packet_filter_checkboxes": {
-        "nmap": 0,
-        "arp": 0,
-        "dos": 0,
-        "sniff": 0,
-        "nfq": 0,
-        "pcap": 0,
-        "TCP": 0,
-        "ARP": 0,
-        "UDP": 0,
-        "DNS": 0,
-        "misc": 0,
-        "MODBUSADUREQUEST": 0,
-        "MODBUSADURESPONSE": 0,
-        "MODBUSPDU03READHOLDINGREGISTERSREQUEST": 0,
-        "MODBUSPDU03READHOLDINGREGISTERSRESPONSE": 0,
-        "MODBUSPDU06WRITESINGLEREGISTERREQUEST": 0,
-        "MODBUSPDU06WRITESINGLEREGISTERRESPONSE": 0,
-        "out": 0,
-        "in": 0,
-        "other": 0
-    },
-
-    "packet_filter_entries": {
-        "address_filter": ""
     },
 
     "packet_columns": {

@@ -313,14 +313,11 @@
                 "status_console": {
                     "type": "object"
                 },
-                "packet_filter_categories": {
-                    "type": "object"
-                },
-                "packet_filter_checkboxes": {
-                    "type": "object"
-                },
-                "packet_filter_entries": {
-                    "type": "object"
+                "packet_filter_available": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
                 },
                 "packet_columns": {
                     "type": "object"
