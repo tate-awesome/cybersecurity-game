@@ -702,9 +702,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/core/draw.py": {
-    "mtime": 1792651746.9390154,
-    "seen": 1792651906.4556596,
-    "ast_hash": "28b8e8cba5c19994f5371ac20c9b7262",
+    "mtime": 1792653819.14114,
+    "seen": 1792653965.9395316,
+    "ast_hash": "ab6c1b32183c6e251401b96c5ceceda9",
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/core/transforms.py": {
@@ -732,9 +732,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/network_diagram.py": {
-    "mtime": 1792652889.9033487,
-    "seen": 1792652992.1816735,
-    "ast_hash": "c876ef5d3b52bcdb94bd38a6bfe6dc2e",
+    "mtime": 1792655012.2818804,
+    "seen": 1792655041.2060573,
+    "ast_hash": "97702e5fe536af1d9afa1650463e03a2",
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/pooled_canvas.py": {

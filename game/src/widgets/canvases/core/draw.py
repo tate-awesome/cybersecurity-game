@@ -129,25 +129,28 @@ class Draw:
         edge/corner. Text with several lines lines up on its anchored side
         (left for a west one, right for an east one, centered otherwise).
         '''
-        if anchor not in ("center", "n", "s", "e", "w", "nw", "ne", "sw", "se"):
-            raise ValueError(f"Unsupported text anchor: {anchor}")
-        side = "" if anchor == "center" else anchor  # ("center" has an n and an e in it)
-        if "w" in side:
+        rect = self.text_rect(x, y, *self.text_size(text, font), anchor)
+        if "w" in anchor and anchor != "center":
             align = Qt.AlignmentFlag.AlignLeft
-        elif "e" in side:
+        elif "e" in anchor and anchor != "center":
             align = Qt.AlignmentFlag.AlignRight
         else:
             align = Qt.AlignmentFlag.AlignHCenter
-        width, height = self.text_size(text, font)
-
-        left = x if "w" in side else x - width if "e" in side else x - width / 2
-        top = y if "n" in side else y - height if "s" in side else y - height / 2
-        rect = QRectF(left, top, width, height)
 
         painter = self.canvas.painter
         painter.setFont(font)
         painter.setPen(QColor(color))
         painter.drawText(rect, align | Qt.AlignmentFlag.AlignTop, text)
+
+    @staticmethod
+    def text_rect(x: float, y: float, width: float, height: float, anchor: str = "center") -> QRectF:
+        '''The box of the given size pinned to (x, y) by anchor, as _draw_text pins text.'''
+        if anchor not in ("center", "n", "s", "e", "w", "nw", "ne", "sw", "se"):
+            raise ValueError(f"Unsupported text anchor: {anchor}")
+        side = "" if anchor == "center" else anchor  # ("center" has an n and an e in it)
+        left = x if "w" in side else x - width if "e" in side else x - width / 2
+        top = y if "n" in side else y - height if "s" in side else y - height / 2
+        return QRectF(left, top, width, height)
 
     def text_size(self, text: str, font) -> tuple[float, float]:
         '''The (width, height) _draw_text takes up for text - every line of it.'''
