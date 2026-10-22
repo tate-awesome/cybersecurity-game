@@ -123,7 +123,7 @@ class Builder(Panel):
         for key in shown:
             if key not in self.forms:
                 # This lesson's available_forms doesn't include this form -
-                # nothing to show/hide, and the "Show Forms" overlay still
+                # nothing to show/hide, and the Sort Cards overlay still
                 # lists every form regardless of what a given lesson offers.
                 continue
             if self.context.states.get("network_action_forms_shown", key) == "1" or self.context.states.get("network_action_forms_shown", key) == 1:

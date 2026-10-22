@@ -69,6 +69,11 @@ class CheckboxOverlay:
         category_label = QLabel(self.category_label)
         category_label.setFont(med)
         category_layout.addWidget(category_label)
+        if self.reorderable:
+            hint = QLabel(self.context.labels.get("form_overlay_hint"))
+            hint.setFont(self.style.get_font("small"))
+            self.style.set_tone(hint, "muted")
+            category_layout.addWidget(hint)
 
         # The chips live in a drop zone so they can be dragged to reorder (see
         # DragHandle / ListZone). It accepts only this overlay's own kind, so

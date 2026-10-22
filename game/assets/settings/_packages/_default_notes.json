@@ -30,11 +30,11 @@
         "network_hosts": "Nicknames and hiding for the network graph's hosts (devices, by MAC address), e.g. {\"b8:27:eb:44:10:9a\": {\"nickname\": \"PLC\", \"hide\": 0}}. Students edit this with Configure Hosts.",
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
-        "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Show Forms. A form only appears if \"available\" also offers it.",
+        "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Sort Cards. A form only appears if \"available\" also offers it.",
         "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: combined, table, modify. Defender ModBus forms: mode, sliders. Models are offered per model panel instead - see model_panels. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"combined\" (live register values with their modifiers beside them), \"table\" (live register values) and \"modify\" (rewriting values in transit).",
         "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
-        "form_order": "The order each panel lays its forms out in, per *_forms_shown category: a list of its keys, top (or first) to last. Students change this by dragging the chips in Sort Cards or Show Forms. An empty list, or any key it leaves out, keeps the order the category itself lists.",
+        "form_order": "The order each panel lays its forms out in, per *_forms_shown category: a list of its keys, top (or first) to last. Students change this by dragging the chips in Sort Cards or Sort Forms. An empty list, or any key it leaves out, keeps the order the category itself lists.",
         "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
@@ -621,11 +621,11 @@
             },
             "modbus_table_forms_shown": {
                 "description": "The ModBus table panel forms' order, as a list of their keys. Empty keeps the default order.",
-                "details": "The order of the ModBus table panel's forms, as a list of keys (combined, table, modify). Forms it leaves out follow in their default order. Students change it by dragging chips in Show Forms."
+                "details": "The order of the ModBus table panel's forms, as a list of keys (combined, table, modify). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Forms."
             },
             "defender_modbus_forms_shown": {
                 "description": "The defender ModBus panel forms' order, as a list of their keys. Empty keeps the default order.",
-                "details": "The order of the defender ModBus panel's forms, as a list of keys (mode, sliders). Forms it leaves out follow in their default order. Students change it by dragging chips in Show Forms."
+                "details": "The order of the defender ModBus panel's forms, as a list of keys (mode, sliders). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Forms."
             }
         },
         "packet_columns_available": {
@@ -637,7 +637,7 @@
         "available": {
             "wifi": {
                 "description": "Network action form: Wi-Fi.",
-                "details": "Offers the Wi-Fi network action form in this workspace. It still needs network_action_forms_shown.wifi to start out visible; otherwise students can show it with Show Forms."
+                "details": "Offers the Wi-Fi network action form in this workspace. It still needs network_action_forms_shown.wifi to start out visible; otherwise students can show it with Sort Cards."
             },
             "nmap": {
                 "description": "Network action form: Nmap scan.",
@@ -707,7 +707,7 @@
         "_note": "Every panel a workspace layout can use, in the order the Layout tab lists them: its name, and details shown as its tooltip - what it does, where its data comes from, and what it affects. When you add a panel to widgets.PANELS, add it here too.",
         "network_action_panel": {
             "name": "Actions",
-            "details": "What it does: The forms that run network tools: the attacker tools (Wi-Fi, Nmap, ARP spoofing, denial of service, sniffing, packet interceptor) and the defender's AP forms (AP connect, encryption, AP tunnel, Kalman filter). Students can show or hide forms with Show Forms.\n\nWhere its data comes from: What the student types into each form. The attacker tools run on this computer; the AP forms send commands to the access point.\n\nWhat it affects: Almost everything else. The attacker tools fill the packet buffer every Sniffed panel reads, and the packet interceptor rewrites ModBus values in transit. AP connect starts the polling every Polled panel reads, and encryption/AP tunnel change what an attacker can see. Every tool writes progress to the Status Message Textarea.\n\nSettings: available and network_action_forms_shown pick the forms; network_action_form_inputs pre-fills them; modbus_registers and modbus_packet_modify_enabled control what the interceptor rewrites."
+            "details": "What it does: The forms that run network tools: the attacker tools (Wi-Fi, Nmap, ARP spoofing, denial of service, sniffing, packet interceptor) and the defender's AP forms (AP connect, encryption, AP tunnel, Kalman filter). Students can show or hide forms with Sort Cards.\n\nWhere its data comes from: What the student types into each form. The attacker tools run on this computer; the AP forms send commands to the access point.\n\nWhat it affects: Almost everything else. The attacker tools fill the packet buffer every Sniffed panel reads, and the packet interceptor rewrites ModBus values in transit. AP connect starts the polling every Polled panel reads, and encryption/AP tunnel change what an attacker can see. Every tool writes progress to the Status Message Textarea.\n\nSettings: available and network_action_forms_shown pick the forms; network_action_form_inputs pre-fills them; modbus_registers and modbus_packet_modify_enabled control what the interceptor rewrites."
         },
         "modbus_table_panel": {
             "name": "Sniffed Modbus Table",
@@ -735,7 +735,7 @@
         },
         "defender_modbus_panel": {
             "name": "Defender Sliders",
-            "details": "What it does: The defender's AP controls, as forms students can show or hide with Show Forms: a read-only display of the AP's current mode (submarine or HVAC), and filter-tuning sliders for that mode, which switch groups automatically when the mode changes.\n\nWhere its data comes from: The mode and current filter settings the access point reports, polled over the AP connect form's connection in Actions.\n\nWhat it affects: The sliders send new filtering thresholds to the AP, which changes when the Flags light up and how the AP filters the readings every Polled panel shows.\n\nSettings: available.mode/sliders offer the forms; defender_modbus_forms_shown picks which start out shown."
+            "details": "What it does: The defender's AP controls, as forms students can show or hide with Sort Forms: a read-only display of the AP's current mode (submarine or HVAC), and filter-tuning sliders for that mode, which switch groups automatically when the mode changes.\n\nWhere its data comes from: The mode and current filter settings the access point reports, polled over the AP connect form's connection in Actions.\n\nWhat it affects: The sliders send new filtering thresholds to the AP, which changes when the Flags light up and how the AP filters the readings every Polled panel shows.\n\nSettings: available.mode/sliders offer the forms; defender_modbus_forms_shown picks which start out shown."
         },
         "defender_stripchart_panel": {
             "name": "Polled ModBus StripCharts",
