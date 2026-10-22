@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-22)
 
 ## Corpus Check
-- 307 files · ~249,830 words
+- 307 files · ~249,826 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dc4aa85b`
+- Built from commit: `16774726`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -559,7 +559,7 @@ Nodes (11): ShiftWheelSlider, BaseForm, APConnectForm, APTunnelForm, ArpForm, Do
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `Process`, `InputManager`, `style.py`, `PageManager`, `pyside6_qtcore`, `important_buttons/__init__.py`, `Router`, `GoForwardToNextPage`, `Panel`, `time`, `ShiftWheel`, `CheckboxOverlay`, `Performance`, `LocalizationManager`, `host.py`, `.reset_page`, `Json`, `KeyBinds`, `docking.py`, `Canvas`, `menu_bar.py`, `PrivilegedHelper`, `Preferences`, `config_editor.py`, `pyside6_qtwidgets`, `AnimationManager`, `FileStream`, `.start_session`, `Overlay`, `Style`?**
-  _High betweenness centrality (0.242) - this node is a cross-community bridge._
+  _High betweenness centrality (0.247) - this node is a cross-community bridge._
 - **Are the 14 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 14 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `ModBus Man-in-the-Middle Attack Exercise`, `Three-column Minimizable Panel Layout`, `Status Log Panel` to the rest of the system?**
@@ -567,7 +567,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `.__init__` be split into smaller, more focused modules?**
   _Cohesion score 0.06025641025641026 - nodes in this community are weakly interconnected._
 - **Why does `Style` connect `Style` to `SettingsSection`, `ContextManager`, `style.py`, `.start_session`, `._build_stylesheet`, `menu_bar.py`, `.theme_family`, `.set_theme`, `.css`, `important_buttons/__init__.py`, `.discard_changes`, `Overlay`, `time`, `.restyle`?**
-  _High betweenness centrality (0.088) - this node is a cross-community bridge._
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `Style` (e.g. with `ContextManager` and `SettingsSection`) actually correct?**
   _`Style` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `MetaPacket` be split into smaller, more focused modules?**

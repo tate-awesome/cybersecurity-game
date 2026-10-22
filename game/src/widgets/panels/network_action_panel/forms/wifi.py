@@ -112,15 +112,14 @@ class WifiForm(BaseForm):
         pass
 
     def _set_entry_dot(self, dot, connected: bool, switching: bool):
-        '''Green when on that network, yellow while switching, else blank.'''
+        '''Green when on that network, yellow while switching, else muted grey.'''
         if switching:
-            self.style.set_tone(dot, "warning")
-            dot.setText("⬤")
+            tone = "warning"
         elif connected:
-            self.style.set_tone(dot, "good")
-            dot.setText("⬤")
+            tone = "good"
         else:
-            dot.setText("")  # blank, but keeps its reserved width (see add_labeled_entry)
+            tone = "muted"
+        self.style.set_tone(dot, tone)
 
     def disconnect_to_home(self):
         '''Stop = go back home, or post that home is missing if it can't.'''
