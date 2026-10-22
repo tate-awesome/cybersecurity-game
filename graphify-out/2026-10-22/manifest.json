@@ -732,9 +732,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/network_diagram.py": {
-    "mtime": 1792656605.1711824,
-    "seen": 1792656683.8303835,
-    "ast_hash": "bf281f2bf98cb74f1e929a19bbebd16b",
+    "mtime": 1792656991.219792,
+    "seen": 1792657008.2190185,
+    "ast_hash": "ac0be774c9030b37825cbd1ca08ddb29",
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/pooled_canvas.py": {

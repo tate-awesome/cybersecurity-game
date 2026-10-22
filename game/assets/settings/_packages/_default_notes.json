@@ -36,7 +36,7 @@
         "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
         "modbus_registers": "Settings for each ModBus register (hreg_1 to hreg_15): \"show\" puts it in the table and charts; \"nickname\" and \"units\" name it; \"factor\" scales raw values for display; \"modify\" lets the interceptor rewrite it, using \"multiplier\" and \"offset\". \"label\" is its labels key.",
-        "packet_console": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph. \"summary\" is the plain-language description of the current packet filter.",
+        "packet_console": "\"mode\": \"live\" shows packets as they arrive, \"paused\" freezes the packet console and network graph (not saved - a workspace always opens with its own default). \"summary\" is the plain-language description of the current packet filter.",
         "requested_packet_treeview_clear": "Set to 1 to ask the packet console to clear its rows and re-read the packet buffer through its current filter; the console sets it back to 0 once done. Clear Data and filter changes set it - leave it 0.",
         "requested_status_console_clear": "Set to 1 to ask the status console to clear its text; it sets this back to 0 once done. The clear buttons set it - leave it 0.",
         "status_console": "\"scroll\": \"live\" keeps the status console following new lines as they arrive, \"free\" stops it so the student can scroll back (lines that arrive meanwhile aren't shown).",
@@ -392,7 +392,7 @@
         "packet_console": {
             "mode": {
                 "description": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph.",
-                "details": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph so students can study what's on screen. Students switch between the two themselves."
+                "details": "\"live\" shows packets as they arrive; \"paused\" freezes the packet console and network graph so students can study what's on screen. Students switch between the two themselves. Pausing isn't saved - a workspace always opens with this setting's value."
             },
             "summary": {
                 "description": "The plain-language description of the current packet filter, shown to the student.",

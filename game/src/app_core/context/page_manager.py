@@ -1,4 +1,4 @@
-
+import copy
 import json
 import shutil
 from pathlib import Path
@@ -23,6 +23,10 @@ class PageManager:
 
     SCHEMA_VERSION = 1
     FOLDER_CONFIG = "config.json"
+    # Settings paths that only last while the page is open - never
+    # autosaved, and ignored in saves from before they were left out. A
+    # workspace always opens with the packet console live, never paused.
+    UNSAVED_SETTINGS = (("packet_console", "mode"),)
 
     def __init__(self, context: "Context"):
         self.context: Context = context
@@ -334,7 +338,7 @@ class PageManager:
         saved_path = self.context.paths.user_pages / key / "config.json"
         if saved_path.is_file():
             saved = self.context.json.load(saved_path)
-            self.context.json.deep_merge(config["settings"], saved.get("settings"))
+            self.context.json.deep_merge(config["settings"], self.without_unsaved(saved.get("settings")))
             # A rearranged layout (see DockArea) - only if it still holds
             # exactly the page's own panels, so one saved before the page's
             # defaults gained or lost a panel is dropped rather than half-applied
@@ -397,7 +401,7 @@ class PageManager:
         saved: dict = {}
 
         page_default = self.context.states.with_default(default.get("settings"))
-        settings = self.context.json.diff(page_default, self.context.states.data)
+        settings = self.without_unsaved(self.context.json.diff(page_default, self.context.states.data))
         if settings:
             saved["settings"] = settings
 
@@ -417,6 +421,28 @@ class PageManager:
             self.context.json.save_to_file(saved, path)
         else:
             path.unlink(missing_ok=True)
+
+    def without_unsaved(self, settings: dict | None) -> dict | None:
+        '''
+        A copy of settings without UNSAVED_SETTINGS - and without any dict
+        that leaves empty, so a diff with nothing else in it stays empty.
+        '''
+        if not isinstance(settings, dict):
+            return settings
+        settings = copy.deepcopy(settings)
+        for path in self.UNSAVED_SETTINGS:
+            parents = [settings]
+            for key in path[:-1]:
+                child = parents[-1].get(key)
+                if not isinstance(child, dict):
+                    break
+                parents.append(child)
+            else:
+                parents[-1].pop(path[-1], None)
+                for parent, key in zip(reversed(parents[:-1]), reversed(path[:-1])):
+                    if parent[key] == {}:
+                        del parent[key]
+        return settings
 
     def pane_weights_match(self, default: dict | None, live: dict, tolerance: float = 0.02) -> bool:
         '''
