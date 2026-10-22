@@ -771,8 +771,12 @@ class Style:
                 border: {outline};
                 gridline-color: {c["field"]};
             }}
-            QTreeWidget::item:selected, QTreeView::item:selected, QTableWidget::item:selected, QTableView::item:selected {{
+            QTableWidget::item:selected, QTableView::item:selected {{
                 background-color: {m("selection")};
+                color: {c["accent_text"]};
+            }}
+            QTreeWidget::item:selected, QTreeView::item:selected {{
+                background-color: {m("row_selection")};
                 color: {c["accent_text"]};
             }}
             QSlider::groove:horizontal {{

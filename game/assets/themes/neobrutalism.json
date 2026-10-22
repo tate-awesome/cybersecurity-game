@@ -208,6 +208,16 @@
                 "opacity": 1.0
             }
         },
+        "row_selection": {
+            "dark": {
+                "color": "#a3e635",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#a3e635",
+                "opacity": 1.0
+            }
+        },
         "scrollbar": {
             "dark": {
                 "color": "#ffd23f",

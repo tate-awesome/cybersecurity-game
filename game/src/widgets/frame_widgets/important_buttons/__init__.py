@@ -64,6 +64,9 @@ from .clear_all_captured_buffer_data import ClearAllCapturedBufferData
 from .edit_modbus_register_display.edit_modbus_register_display import EditModbusRegisterDisplay
 from .settings_overlays.select_register_preset import SelectRegisterPreset
 
+# Network graph
+from .edit_network_hosts.edit_network_hosts import EditNetworkHosts
+
 # Debug
 from .delete_all_user_data import DeleteAllUserData
 from .delete_all_workspace_saved_data import DeleteAllWorkspaceSavedData

@@ -129,7 +129,8 @@ MATERIAL_SOURCES: dict[str, tuple[str, float]] = {
     "tab_selected": ("accent", 1.0),     # the selected tab
     "table_header": ("widget", 0.5),     # table and tree headers
     "alternate_row": ("widget", 0.5),    # every other row of tables and trees - like "field"
-    "selection": ("accent", 1.0),        # selected rows and items
+    "selection": ("accent", 1.0),        # selected items, and cells of tables
+    "row_selection": ("accent", 1.0),    # selected rows of trees - the packet console's
     "scrollbar": ("scrollbar", 1.0),     # scrollbar handles
     "tooltip": ("panel", 1.0),           # tooltips
     "footer": ("widget", 1.0),           # the bar along the bottom of the window
@@ -180,6 +181,7 @@ MAX_BUTTON_RADIUS = 24
 # In order - each can come from one made before it.
 INHERITED: dict[str, tuple[str, float, float | None]] = {
     "menu_bar_text": ("text", 0.0, None),
+    "row_selection": ("selection", 0.0, None),
     "button_hover": ("button", 0.15, None),
     "button_border": ("button", 0.0, 0.0),
     "button_text": ("accent_text", 0.0, None),

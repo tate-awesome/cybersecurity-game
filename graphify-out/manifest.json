@@ -120,21 +120,21 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792646855.3482158,
-    "seen": 1792647486.0418255,
-    "ast_hash": "6328cf70ff9ac880c75680d39f7931fb",
+    "mtime": 1792650481.7859845,
+    "seen": 1792650585.2609508,
+    "ast_hash": "37f6f600f486b331944d425124644cb0",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
-    "mtime": 1792646855.3482158,
-    "seen": 1792647486.0418265,
-    "ast_hash": "56be2d7f4095cd1625adfd236ea616c5",
+    "mtime": 1792648139.582337,
+    "seen": 1792649830.3649724,
+    "ast_hash": "3b9a1c87eaadb7b9ad446592d48af63e",
     "semantic_hash": ""
   },
   "game/assets/labels/test.json": {
-    "mtime": 1792646855.3482158,
-    "seen": 1792647486.0418282,
-    "ast_hash": "662d4afdad19f2c857bf32f013d795ed",
+    "mtime": 1792648139.5873394,
+    "seen": 1792649830.364974,
+    "ast_hash": "1f0d4a164c9ef92268766a1e240375e2",
     "semantic_hash": ""
   },
   "game/assets/pages/404.json": {
@@ -192,8 +192,8 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/attacker_suite/config.json": {
-    "mtime": 1792646855.3542573,
-    "seen": 1792647486.0418422,
+    "mtime": 1792648568.393427,
+    "seen": 1792649830.3665802,
     "ast_hash": "b9c314aa8bd919056c0248cd26817414",
     "semantic_hash": ""
   },
@@ -210,14 +210,14 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_hvac/config.json": {
-    "mtime": 1792646855.3582623,
-    "seen": 1792647486.0418556,
+    "mtime": 1792648572.2877321,
+    "seen": 1792649830.3679175,
     "ast_hash": "8979d45950bd25e30d73ea742630d7b8",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_submarine/config.json": {
-    "mtime": 1792646855.3880596,
-    "seen": 1792647486.0418591,
+    "mtime": 1792648573.5492313,
+    "seen": 1792649830.3682146,
     "ast_hash": "a4db0f7c4b107f61707b8422de758731",
     "semantic_hash": ""
   },
@@ -228,15 +228,15 @@
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default.json": {
-    "mtime": 1792646855.3880596,
-    "seen": 1792647486.0418644,
-    "ast_hash": "ffe274176e1b04f5c95285783df79492",
+    "mtime": 1792650471.2828302,
+    "seen": 1792650585.265705,
+    "ast_hash": "3eb0f982c50606b5f273323e6ab987f5",
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default_notes.json": {
-    "mtime": 1792646855.3880596,
-    "seen": 1792647486.0418658,
-    "ast_hash": "cf0f4a81df8febec50237cdb970eda36",
+    "mtime": 1792650471.2838316,
+    "seen": 1792650585.2657077,
+    "ast_hash": "d5714d7861a730e6399fd92a7c46fe98",
     "semantic_hash": ""
   },
   "game/dist.py": {
@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/style.py": {
-    "mtime": 1792646855.4082215,
-    "seen": 1792647486.0419054,
-    "ast_hash": "5eaf2b91962be743bb3360894809032a",
+    "mtime": 1792649816.9677165,
+    "seen": 1792649830.3733006,
+    "ast_hash": "09e8cd54c16eec367c4c1599ea3a042b",
     "semantic_hash": ""
   },
   "game/src/app_core/router.py": {
@@ -432,9 +432,9 @@
     "semantic_hash": ""
   },
   "game/src/network/buffer/channels/network_graph.py": {
-    "mtime": 1791876696.1604905,
-    "seen": 1792647486.0419247,
-    "ast_hash": "e904dc2370d0a4b913616d51413a6244",
+    "mtime": 1792650964.077459,
+    "seen": 1792651012.4738414,
+    "ast_hash": "5e815fe93f0a86abc240a131e56bb998",
     "semantic_hash": ""
   },
   "game/src/network/buffer/channels/packet.py": {
@@ -732,9 +732,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/network_diagram.py": {
-    "mtime": 1792646855.4380627,
-    "seen": 1792647486.0419905,
-    "ast_hash": "19fec415d96810550fba955b6f100db9",
+    "mtime": 1792650976.1761227,
+    "seen": 1792651012.4824088,
+    "ast_hash": "24c9fc34c354729577240429b30eb471",
     "semantic_hash": ""
   },
   "game/src/widgets/canvases/pooled_canvas.py": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/base_form.py": {
-    "mtime": 1792646855.4873226,
-    "seen": 1792647486.0420895,
-    "ast_hash": "4566f64063c7c07f5b86dcfdcd7c7c55",
+    "mtime": 1792648094.2695124,
+    "seen": 1792649830.3966753,
+    "ast_hash": "7488b35687b032ee61b9d550aa7c2b06",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_console/_builder.py": {
@@ -882,21 +882,21 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/modbus_panel/_builder.py": {
-    "mtime": 1792646855.4880526,
-    "seen": 1792647486.0420997,
-    "ast_hash": "84d45a87ba5b465efa28230cec545b98",
+    "mtime": 1792648139.5322173,
+    "seen": 1792649830.3976924,
+    "ast_hash": "4114da57d9a2e48144f062539546340d",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/modbus_panel/forms/modify.py": {
-    "mtime": 1792646952.6025734,
-    "seen": 1792647486.042101,
-    "ast_hash": "3ea52b7df58d6acd4f882d36428f4758",
+    "mtime": 1792648771.2330353,
+    "seen": 1792649830.3976963,
+    "ast_hash": "622000fbbc6849a87e98f6b529491716",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/modbus_panel/forms/table.py": {
-    "mtime": 1791876696.2232277,
-    "seen": 1792647486.0421023,
-    "ast_hash": "d3600532ca9823766204e37adfa1c8ed",
+    "mtime": 1792649122.6668098,
+    "seen": 1792649830.3976989,
+    "ast_hash": "ffcc92ec4ac9ed10167076eec6c1f19b",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/_builder.py": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {
-    "mtime": 1792646855.498204,
-    "seen": 1792647486.042115,
-    "ast_hash": "09a211085f317f0ff1d2ca38888056ee",
+    "mtime": 1792650530.1257331,
+    "seen": 1792650585.2982693,
+    "ast_hash": "087e58714373d66227bd900c00457044",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/packet_console/_builder.py": {
@@ -1134,8 +1134,8 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/defender_hvac_communication_channels/config.json": {
-    "mtime": 1792646855.3542573,
-    "seen": 1792647486.0418432,
+    "mtime": 1792648570.0262034,
+    "seen": 1792649830.3665829,
     "ast_hash": "207b3fd7d6179fbf85be14d74090b2a8",
     "semantic_hash": ""
   },
@@ -1158,8 +1158,8 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/defender_submarine_communication_channels/config.json": {
-    "mtime": 1792646855.3582623,
-    "seen": 1792647486.0418477,
+    "mtime": 1792648571.1922195,
+    "seen": 1792649830.367029,
     "ast_hash": "a4380f3db03311b84de52b84fae32d92",
     "semantic_hash": ""
   },
@@ -1278,9 +1278,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/__init__.py": {
-    "mtime": 1792646855.4380627,
-    "seen": 1792647486.0420055,
-    "ast_hash": "8cab21c7937a016f7c8e1053254d1bac",
+    "mtime": 1792650530.1097147,
+    "seen": 1792650585.2832863,
+    "ast_hash": "6523f942cf394d8d16546d7a46265fab",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
@@ -1674,15 +1674,15 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/themes.py": {
-    "mtime": 1792646855.4082215,
-    "seen": 1792647486.0419068,
-    "ast_hash": "20fe1d90e648f67a5092f790808aeeb1",
+    "mtime": 1792649816.966715,
+    "seen": 1792649830.373303,
+    "ast_hash": "9991db650e3e6759c363932faa1d3f62",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/examples.py": {
-    "mtime": 1792646855.4880526,
-    "seen": 1792647486.0420973,
-    "ast_hash": "71d014430c699fce0f8a17e9bd6e7a56",
+    "mtime": 1792650428.5184124,
+    "seen": 1792650585.2957742,
+    "ast_hash": "7139034ae34e87dbff83cbe7691601fd",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/go_forward_to_next_page.py": {
@@ -1752,9 +1752,9 @@
     "semantic_hash": ""
   },
   "game/assets/themes/neobrutalism.json": {
-    "mtime": 1792646855.3981318,
-    "seen": 1792647486.0418808,
-    "ast_hash": "56a9fcec73306e0a844749897f81e48a",
+    "mtime": 1792649816.9687169,
+    "seen": 1792649830.3703454,
+    "ast_hash": "d74fd3852253be801b898b4148cffeb6",
     "semantic_hash": ""
   },
   "game/assets/themes/webcore.json": {
@@ -1881,6 +1881,30 @@
     "mtime": 1792646855.3880596,
     "seen": 1792647486.0418613,
     "ast_hash": "b7206a386ff496c9f6e9b4000dac6162",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/panels/modbus_panel/forms/combined.py": {
+    "mtime": 1792649137.4821522,
+    "seen": 1792649830.3976943,
+    "ast_hash": "de8a759d8394fb76317fbab06f74b0c7",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/panels/modbus_panel/forms/numbers.py": {
+    "mtime": 1792649109.1946409,
+    "seen": 1792649830.3976974,
+    "ast_hash": "46b0832b995fae07708c6fbdcb0c0add",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/frame_widgets/important_buttons/edit_network_hosts/edit_network_hosts.py": {
+    "mtime": 1792650507.7555206,
+    "seen": 1792650585.2862935,
+    "ast_hash": "e3ded6cbe096bcc3bc50191dd70ff0e8",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/frame_widgets/important_buttons/edit_network_hosts/host_overlay.py": {
+    "mtime": 1792650539.125739,
+    "seen": 1792650585.2862966,
+    "ast_hash": "ed3199dc334e34a31cf11cba8b4213d8",
     "semantic_hash": ""
   }
 }

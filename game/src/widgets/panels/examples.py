@@ -76,7 +76,10 @@ class SampleNetwork:
     def __init__(self, own_mac: str):
         self.macs = [own_mac, "a4:cf:12:8e:01:3c", "b8:27:eb:44:10:9a", "3c:71:bf:02:7d:e1", "dc:a6:32:5f:88:04"]
 
-    def get_host_positions(self) -> dict:
+    def get_hosts(self) -> tuple[list[str], list[str], dict[str, list[str]]]:
+        return list(self.macs), [], {mac: [] for mac in self.macs}
+
+    def get_host_positions(self, hidden: set[str] = frozenset()) -> dict:
         count = len(self.macs)
         return {mac: (math.cos(2 * math.pi * i / count), math.sin(2 * math.pi * i / count)) for i, mac in enumerate(self.macs)}
 
