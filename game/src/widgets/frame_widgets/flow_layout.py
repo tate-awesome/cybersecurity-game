@@ -105,18 +105,16 @@ class FlowLayout(QLayout):
         vspace = self.verticalSpacing()
         avail = max(effective.width(), 1)
 
-        # One uniform card width for the whole panel, matching the widest
-        # card so none of them has to truncate its title: pick as many
-        # columns as the widest card's preferred width allows, then widen
-        # every card evenly to fill the row exactly (so a full row never ends
-        # in a gap). The even width lands at or above the widest card's
-        # preference and at or below the max (about twice the min), so all
-        # cards read the same size and the widest still fits.
+        # One uniform card width for the whole panel. The column count is
+        # how many cards fit at their minimum width, so a wide panel always
+        # makes more columns rather than one over-wide card. Every card then
+        # takes an even share of the width (so a full row fills edge to edge
+        # with no trailing gap) capped at the max - which, being about twice
+        # the min, is always enough room to swallow the leftover, so the cap
+        # only bites when there's a single column wider than a card should be.
         unit_min = max(self._card_min(item) for item in items)
         unit_max = min(self._card_max(item) for item in items)
-        widest = max(min(item.sizeHint().width(), unit_max) for item in items)
-        unit_pref = max(unit_min, widest)
-        cols = max(1, (avail + hspace) // (unit_pref + hspace))
+        cols = max(1, (avail + hspace) // (unit_min + hspace))
         inner = avail - (cols - 1) * hspace  # width the cards themselves share
         width = min(inner // cols, unit_max)
         # Spread any rounding remainder one pixel at a time across the row's
