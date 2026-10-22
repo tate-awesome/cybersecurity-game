@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default_notes.json": {
-    "mtime": 1792652902.850256,
-    "seen": 1792652992.1659558,
-    "ast_hash": "1b7e8aa0d8368cea8317d447a4323ee1",
+    "mtime": 1792657890.4219227,
+    "seen": 1792657898.2772422,
+    "ast_hash": "08bdcb5dd37a24b780a976d759703f66",
     "semantic_hash": ""
   },
   "game/dist.py": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/page_manager.py": {
-    "mtime": 1792646855.4042182,
-    "seen": 1792647486.0418987,
-    "ast_hash": "3e61c5daf736b05120c123f97c02c3d1",
+    "mtime": 1792657855.5126922,
+    "seen": 1792657873.1448028,
+    "ast_hash": "2ab742c7ff02c383893da281bba52b29",
     "semantic_hash": ""
   },
   "game/src/app_core/context/paths.py": {

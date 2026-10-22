@@ -1,6 +1,5 @@
 {
   "4": "InputManager",
-  "11": "PageManager",
   "21": "NetworkMesh",
   "24": "FindBar",
   "42": "LocalizationManager",
@@ -25,7 +24,5 @@
   "166": "virtual/__init__.py",
   "172": "CLAUDE.md",
   "175": "._scan_for_networks",
-  "176": ".load_page_config",
-  "182": ".authored_weights",
   "207": "WifiForm"
 }

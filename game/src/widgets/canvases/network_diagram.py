@@ -46,9 +46,11 @@ def _edge_distance(half_size: tuple[float, float], ux: float, uy: float) -> floa
 class Table:
     '''
     The cells hosts sit in, as many columns and rows as fit the pane, in the
-    order they fill: from the middle out, each one across the middle from
-    the one before. Then cells past the pane's edges, which are drawn
-    pulled in so just PEEK of a chip shows (further-out ones stack on them).
+    order they fill: the middle, then always the cell farthest from those
+    before it (see spread_order), so the hosts are spread evenly however
+    many there are. Then cells past the pane's edges, from the middle of
+    each edge out, which are drawn pulled in so just PEEK of a chip shows
+    (further-out ones stack on them).
     '''
     def __init__(self, width: float, height: float, padding: float, chip_size: tuple[float, float],
                  pitch: tuple[float, float], gap_height: float, count: int):
@@ -92,7 +94,31 @@ class Table:
                         placed.add(each)
             return ordered
 
-        self.cells = fill_order([(column, row) for column in range(self.columns) for row in range(self.rows)])
+        def spread_order(cells):
+            '''
+            The middle first, then each time the cell farthest from every
+            one before it - corners, then the middles of the edges, then
+            the gaps between - so however many are filled, they're spread
+            about evenly. Ties go to the one farthest from the cell just
+            before (across from it), then fill_order's.
+            '''
+            def gap(a, b):
+                return math.hypot((a[0] - b[0]) * pitch_x, (a[1] - b[1]) * pitch_y)
+            remaining = fill_order(cells)
+            rank = {cell: i for i, cell in enumerate(remaining)}
+            ordered = [remaining.pop(0)]
+            nearest = {cell: gap(cell, ordered[0]) for cell in remaining}
+            while remaining:
+                last = ordered[-1]
+                cell = max(remaining, key=lambda cell: (round(nearest[cell], 3), round(gap(cell, last), 3),
+                                                        -rank[cell]))
+                remaining.remove(cell)
+                ordered.append(cell)
+                for other in remaining:
+                    nearest[other] = min(nearest[other], gap(other, cell))
+            return ordered
+
+        self.cells = spread_order([(column, row) for column in range(self.columns) for row in range(self.rows)])
         # Cells this far in the list and on are past the pane's edges
         self.inside = len(self.cells)
         ring = 1
@@ -150,6 +176,9 @@ class NetworkDiagramCanvas(Canvas):
         # and the one each hidden host was last in
         self.cell_of: dict[str, int] = {}
         self.last_cell: dict[str, int] = {}
+        # The table, and what it was last worked out from (see place)
+        self.table: Table | None = None
+        self.table_args: tuple | None = None
 
         def label_size(text):
             '''The (width, height) of an IP label's box - its text and the padding around it.'''
@@ -178,8 +207,13 @@ class NetworkDiagramCanvas(Canvas):
             for mac in list(self.cell_of):
                 if mac not in shown_set:
                     self.last_cell[mac] = self.cell_of.pop(mac)
-            table = Table(self.width(), self.height(), self.camera.padding, chip_size, pitch, gap_height,
+            # Only worked out again when the pane's size or the cells needed change
+            table_args = (self.width(), self.height(), self.camera.padding, chip_size, pitch, gap_height,
                           max([len(shown) + 1] + [cell + 1 for cell in self.cell_of.values()]))
+            if table_args != self.table_args:
+                self.table_args = table_args
+                self.table = Table(*table_args)
+            table = self.table
             taken = {cell: mac for mac, cell in self.cell_of.items()}
 
             # The first cell is the access point's - anyone else there (in
