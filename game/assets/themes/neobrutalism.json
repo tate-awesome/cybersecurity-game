@@ -354,10 +354,10 @@
         },
         "warning": {
             "dark": {
-                "color": "#f49d06"
+                "color": "#ecad00"
             },
             "light": {
-                "color": "#ffc44f"
+                "color": "#986d00"
             }
         },
         "bad": {
@@ -386,10 +386,10 @@
         },
         "hot": {
             "dark": {
-                "color": "#fa6b47"
+                "color": "#f86e36"
             },
             "light": {
-                "color": "#f9471a"
+                "color": "#fd5500"
             }
         },
         "cold": {

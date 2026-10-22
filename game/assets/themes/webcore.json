@@ -359,7 +359,7 @@
         },
         "chart_5": {
             "dark": {
-                "color": "#e60000"
+                "color": "#fe3125"
             },
             "light": {
                 "color": "#ff1a1a"
@@ -367,7 +367,7 @@
         },
         "chart_6": {
             "dark": {
-                "color": "#5959ff"
+                "color": "#717dff"
             },
             "light": {
                 "color": "#1a1aff"
@@ -383,7 +383,7 @@
         },
         "chart_8": {
             "dark": {
-                "color": "#e60073"
+                "color": "#f82881"
             },
             "light": {
                 "color": "#ff1a8c"
@@ -410,7 +410,7 @@
                 "color": "#ff2b24"
             },
             "light": {
-                "color": "#eb0800"
+                "color": "#eb0700"
             }
         },
         "hot": {

@@ -417,7 +417,7 @@
                 "color": "#d4ad11"
             },
             "light": {
-                "color": "#92770c"
+                "color": "#847504"
             }
         },
         "chart_6": {
@@ -433,7 +433,7 @@
                 "color": "#11d4c4"
             },
             "light": {
-                "color": "#0b897e"
+                "color": "#00878e"
             }
         },
         "chart_8": {
@@ -462,18 +462,18 @@
         },
         "bad": {
             "dark": {
-                "color": "#f54640"
+                "color": "#f74841"
             },
             "light": {
-                "color": "#ce110b"
+                "color": "#ce100b"
             }
         },
         "hot": {
             "dark": {
-                "color": "#da350b"
+                "color": "#d12711"
             },
             "light": {
-                "color": "#e4370c"
+                "color": "#f03e48"
             }
         },
         "cold": {
@@ -502,7 +502,7 @@
         },
         "muted_text": {
             "dark": {
-                "color": "#828892"
+                "color": "#828993"
             },
             "light": {
                 "color": "#5f6673"

@@ -530,10 +530,10 @@
         },
         "chart_1": {
             "dark": {
-                "color": "#c25af6"
+                "color": "#d17bff"
             },
             "light": {
-                "color": "#a20ced"
+                "color": "#a106eb"
             }
         },
         "chart_2": {
@@ -541,15 +541,15 @@
                 "color": "#0bb8da"
             },
             "light": {
-                "color": "#077288"
+                "color": "#067187"
             }
         },
         "chart_3": {
             "dark": {
-                "color": "#f5409a"
+                "color": "#ff6bad"
             },
             "light": {
-                "color": "#cb0b6b"
+                "color": "#ca076a"
             }
         },
         "chart_4": {
@@ -557,7 +557,7 @@
                 "color": "#dab80b"
             },
             "light": {
-                "color": "#7c6807"
+                "color": "#7a6604"
             }
         },
         "chart_5": {
@@ -565,79 +565,79 @@
                 "color": "#0bda73"
             },
             "light": {
-                "color": "#067940"
+                "color": "#02773f"
             }
         },
         "chart_6": {
             "dark": {
-                "color": "#5188f6"
+                "color": "#6b9eff"
             },
             "light": {
-                "color": "#0f5bf2"
+                "color": "#0d5af1"
             }
         },
         "chart_7": {
             "dark": {
-                "color": "#f3531e"
+                "color": "#ff764e"
             },
             "light": {
-                "color": "#c2380a"
+                "color": "#bf3505"
             }
         },
         "chart_8": {
             "dark": {
-                "color": "#50da0b"
+                "color": "#82f21f"
             },
             "light": {
-                "color": "#2d7906"
+                "color": "#753d00"
             }
         },
         "good": {
             "dark": {
-                "color": "#06e04e"
+                "color": "#09e14f"
             },
             "light": {
-                "color": "#036624"
+                "color": "#005b1f"
             }
         },
         "warning": {
             "dark": {
-                "color": "#e09006"
+                "color": "#e1c041"
             },
             "light": {
-                "color": "#7a4e03"
+                "color": "#6e4500"
             }
         },
         "bad": {
             "dark": {
-                "color": "#fb7874"
+                "color": "#ffada8"
             },
             "light": {
-                "color": "#b10a05"
+                "color": "#a10000"
             }
         },
         "hot": {
             "dark": {
-                "color": "#f94d22"
+                "color": "#ff7655"
             },
             "light": {
-                "color": "#c72c05"
+                "color": "#c62b04"
             }
         },
         "cold": {
             "dark": {
-                "color": "#068eef"
+                "color": "#3da4ff"
             },
             "light": {
-                "color": "#056cb5"
+                "color": "#016ab3"
             }
         },
         "incoming": {
             "dark": {
-                "color": "#c25af6"
+                "color": "#d17bff"
             },
             "light": {
-                "color": "#a20ced"
+                "color": "#a106eb"
             }
         },
         "outgoing": {
@@ -645,15 +645,15 @@
                 "color": "#0bb8da"
             },
             "light": {
-                "color": "#077288"
+                "color": "#067187"
             }
         },
         "muted_text": {
             "dark": {
-                "color": "#9ea2b9"
+                "color": "#bdc1d9"
             },
             "light": {
-                "color": "#5d4d78"
+                "color": "#564671"
             }
         }
     }

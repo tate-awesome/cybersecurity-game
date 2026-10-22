@@ -776,7 +776,7 @@
         },
         "chart_4": {
             "dark": {
-                "color": "#e2129d"
+                "color": "#ee27a7"
             },
             "light": {
                 "color": "#e0129b"
@@ -787,12 +787,12 @@
                 "color": "#d4ad11"
             },
             "light": {
-                "color": "#90750c"
+                "color": "#796600"
             }
         },
         "chart_6": {
             "dark": {
-                "color": "#9655f1"
+                "color": "#9e5ffb"
             },
             "light": {
                 "color": "#7c2bee"
@@ -803,12 +803,12 @@
                 "color": "#11d4a4"
             },
             "light": {
-                "color": "#0b8668"
+                "color": "#008572"
             }
         },
         "chart_8": {
             "dark": {
-                "color": "#ed2121"
+                "color": "#f8312c"
             },
             "light": {
                 "color": "#ed1d1d"
@@ -816,31 +816,31 @@
         },
         "good": {
             "dark": {
-                "color": "#0bda50"
+                "color": "#2be054"
             },
             "light": {
-                "color": "#06742b"
+                "color": "#02722a"
             }
         },
         "warning": {
             "dark": {
-                "color": "#da8e0b"
+                "color": "#d19900"
             },
             "light": {
-                "color": "#8a5a07"
+                "color": "#885804"
             }
         },
         "bad": {
             "dark": {
-                "color": "#f65651"
+                "color": "#ff776e"
             },
             "light": {
-                "color": "#cb110b"
+                "color": "#c70604"
             }
         },
         "hot": {
             "dark": {
-                "color": "#e4370c"
+                "color": "#ef421d"
             },
             "light": {
                 "color": "#e1370c"
@@ -848,7 +848,7 @@
         },
         "cold": {
             "dark": {
-                "color": "#0b84da"
+                "color": "#0f86dc"
             },
             "light": {
                 "color": "#0b7bcb"
@@ -872,10 +872,10 @@
         },
         "muted_text": {
             "dark": {
-                "color": "#7f939f"
+                "color": "#8fa4b0"
             },
             "light": {
-                "color": "#406783"
+                "color": "#406682"
             }
         }
     }

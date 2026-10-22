@@ -362,7 +362,7 @@
                 "color": "#d4ad11"
             },
             "light": {
-                "color": "#92770c"
+                "color": "#847504"
             }
         },
         "chart_6": {
@@ -378,7 +378,7 @@
                 "color": "#11d4c4"
             },
             "light": {
-                "color": "#0b897e"
+                "color": "#00878e"
             }
         },
         "chart_8": {
@@ -415,10 +415,10 @@
         },
         "hot": {
             "dark": {
-                "color": "#da350b"
+                "color": "#d32828"
             },
             "light": {
-                "color": "#e4370c"
+                "color": "#f13e42"
             }
         },
         "cold": {
