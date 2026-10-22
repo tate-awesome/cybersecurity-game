@@ -264,7 +264,7 @@
                 "color": "#000000"
             }
         },
-        "menu_bar_text": {
+        "accent_text": {
             "dark": {
                 "color": "#000000"
             },
@@ -272,7 +272,7 @@
                 "color": "#000000"
             }
         },
-        "accent_text": {
+        "menu_bar_text": {
             "dark": {
                 "color": "#000000"
             },
@@ -334,6 +334,70 @@
             },
             "light": {
                 "color": "#ffe27a"
+            }
+        },
+        "muted_text": {
+            "dark": {
+                "color": "#b1b0b2"
+            },
+            "light": {
+                "color": "#707070"
+            }
+        },
+        "good": {
+            "dark": {
+                "color": "#06e04e"
+            },
+            "light": {
+                "color": "#03862f"
+            }
+        },
+        "warning": {
+            "dark": {
+                "color": "#f49d06"
+            },
+            "light": {
+                "color": "#ffc44f"
+            }
+        },
+        "bad": {
+            "dark": {
+                "color": "#fc908d"
+            },
+            "light": {
+                "color": "#ea0e06"
+            }
+        },
+        "incoming": {
+            "dark": {
+                "color": "#f76697"
+            },
+            "light": {
+                "color": "#f4256a"
+            }
+        },
+        "outgoing": {
+            "dark": {
+                "color": "#4c9bf6"
+            },
+            "light": {
+                "color": "#2585f4"
+            }
+        },
+        "hot": {
+            "dark": {
+                "color": "#fa6b47"
+            },
+            "light": {
+                "color": "#f9471a"
+            }
+        },
+        "cold": {
+            "dark": {
+                "color": "#1d9df9"
+            },
+            "light": {
+                "color": "#068cec"
             }
         },
         "chart_1": {
@@ -398,70 +462,6 @@
             },
             "light": {
                 "color": "#f314e0"
-            }
-        },
-        "good": {
-            "dark": {
-                "color": "#06e04e"
-            },
-            "light": {
-                "color": "#03862f"
-            }
-        },
-        "warning": {
-            "dark": {
-                "color": "#f49d06"
-            },
-            "light": {
-                "color": "#a26804"
-            }
-        },
-        "bad": {
-            "dark": {
-                "color": "#fc908d"
-            },
-            "light": {
-                "color": "#ea0e06"
-            }
-        },
-        "hot": {
-            "dark": {
-                "color": "#fa6b47"
-            },
-            "light": {
-                "color": "#f9471a"
-            }
-        },
-        "cold": {
-            "dark": {
-                "color": "#1d9df9"
-            },
-            "light": {
-                "color": "#068cec"
-            }
-        },
-        "incoming": {
-            "dark": {
-                "color": "#f76697"
-            },
-            "light": {
-                "color": "#f4256a"
-            }
-        },
-        "outgoing": {
-            "dark": {
-                "color": "#4c9bf6"
-            },
-            "light": {
-                "color": "#2585f4"
-            }
-        },
-        "muted_text": {
-            "dark": {
-                "color": "#b1b0b2"
-            },
-            "light": {
-                "color": "#707070"
             }
         }
     }

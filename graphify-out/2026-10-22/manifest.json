@@ -960,9 +960,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/forms/wifi.py": {
-    "mtime": 1792672921.1669905,
-    "seen": 1792673044.4745743,
-    "ast_hash": "004b774ca07bd7220b5f42e94620f8d7",
+    "mtime": 1792675045.5330768,
+    "seen": 1792675089.0182683,
+    "ast_hash": "6fdfed884b5b6466362c246ab62ce99d",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {

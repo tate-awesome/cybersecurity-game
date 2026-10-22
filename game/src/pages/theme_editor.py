@@ -20,7 +20,88 @@ GALLERY_ROW_HEIGHT = 340
 UNSAVED_MARK = " *"
 
 
-class ThemeEditorPage(SettingsPage):
+class MaterialEditor:
+    '''
+    The Materials tab's rows: each material's color, and its opacity if the
+    theme allows transparency, for the mode being edited - shared by the
+    theme editor and the developers' material editor popup (see
+    MaterialEditorPopup). Mixed into something that has style, slider,
+    new_tab and section like a SettingsPage's.
+    '''
+
+    def build_materials_tab(self):
+        '''
+        Every material for the mode being edited: surfaces with their
+        opacity (if the theme allows transparency), each kind of button -
+        its corners and its own materials - then text and lines.
+        '''
+        style = self.style
+        editable = style.is_editable()
+        tab = self.new_tab("materials")
+        kinds = {kind: [kind, f"{kind}_hover", f"{kind}_border", f"{kind}_text", f"{kind}_hover_text"] for kind in BUTTON_KINDS}
+        in_kinds = {name for names in kinds.values() for name in names}
+        self.material_rows(self.section(tab, "materials"), [name for name in MATERIALS if name not in INK_MATERIALS and name not in in_kinds])
+        for kind, names in kinds.items():
+            section = self.section(tab, f"{kind}s")
+            radius = self.slider(style.button_radius(kind), 0, MAX_BUTTON_RADIUS, "px",
+                                 lambda value, kind=kind: style.set_button_radius(kind, value))
+            radius.setEnabled(editable)
+            section.row("theme_editor_rows_button_radius", radius, "theme_editor_row_notes_button_radius")
+            self.material_rows(section, names)
+        self.material_rows(self.section(tab, "ink_materials"),
+                           [name for name in INK_MATERIALS if name not in in_kinds and name not in DATA_MATERIALS])
+        self.material_rows(self.section(tab, "data_materials"), list(DATA_MATERIALS))
+
+    def material_rows(self, section: "SettingsSection", names: list[str]):
+        '''A row in section for each named material, in the mode being edited.'''
+        style = self.style
+        mode = style.current_theme.partition("_")[0]
+        for name in names:
+            with_opacity = style.allows_transparency() and name not in INK_MATERIALS
+            control = self.material_control(name, style.theme_materials()[name][mode], with_opacity)
+            control.setEnabled(style.is_editable())
+            section.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
+
+    def material_control(self, name: str, entry: dict, with_opacity: bool) -> QWidget:
+        '''A material's color - click it to pick another - and, with_opacity, how solid it is.'''
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        swatch = QPushButton()
+        swatch.setFont(self.style.get_font("mono"))
+        swatch.setObjectName(f"_swatch_{id(swatch)}")
+        self.paint_swatch(swatch, entry["color"])
+        swatch.clicked.connect(lambda checked=False: self.pick_color(name, swatch))
+        layout.addWidget(swatch, 1)
+        if with_opacity:
+            layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
+                                         lambda value: self.style.set_material_value(name, opacity=value / 100)), 1)
+        return row
+
+    @staticmethod
+    def paint_swatch(swatch: QPushButton, color: str):
+        '''The button showing a material's color: filled with it, its hex code on it in black or white, whichever reads.'''
+        text = "#000000" if QColor(color).lightnessF() > 0.55 else "#ffffff"
+        swatch.setText(color)
+        swatch.setStyleSheet(f"QPushButton#{swatch.objectName()} {{ background-color: {color}; color: {text};"
+                             f" border: 1px solid {text}; }}")
+
+    def pick_color(self, name: str, swatch: QPushButton):
+        '''Picks a material's color - shown everywhere while picking, and put back if cancelled.'''
+        original = swatch.text()
+        dialog = QColorDialog(QColor(original), self)
+
+        def preview(color: QColor):
+            self.style.set_material_value(name, color=color.name())
+            self.paint_swatch(swatch, color.name())
+        dialog.currentColorChanged.connect(preview)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            preview(dialog.selectedColor())
+        else:
+            preview(QColor(original))
+
+
+class ThemeEditorPage(MaterialEditor, SettingsPage):
     '''
     Makes and edits themes (see themes.py). The menu bar picks the theme
     to edit - any built-in one or the user's own - and has New Theme (a
@@ -220,77 +301,6 @@ class ThemeEditorPage(SettingsPage):
         frame = self.slider(style.setting("panel_frame"), 0, MAX_PANEL_FRAME, "px", lambda value: style.set_setting("panel_frame", value))
         frame.setEnabled(editable)
         section.row("theme_editor_rows_panel_frame", frame, "theme_editor_row_notes_panel_frame")
-
-    def build_materials_tab(self):
-        '''
-        Every material for the mode being edited: surfaces with their
-        opacity (if the theme allows transparency), each kind of button -
-        its corners and its own materials - then text and lines.
-        '''
-        style = self.style
-        editable = style.is_editable()
-        tab = self.new_tab("materials")
-        kinds = {kind: [kind, f"{kind}_hover", f"{kind}_border", f"{kind}_text", f"{kind}_hover_text"] for kind in BUTTON_KINDS}
-        in_kinds = {name for names in kinds.values() for name in names}
-        self.material_rows(self.section(tab, "materials"), [name for name in MATERIALS if name not in INK_MATERIALS and name not in in_kinds])
-        for kind, names in kinds.items():
-            section = self.section(tab, f"{kind}s")
-            radius = self.slider(style.button_radius(kind), 0, MAX_BUTTON_RADIUS, "px",
-                                 lambda value, kind=kind: style.set_button_radius(kind, value))
-            radius.setEnabled(editable)
-            section.row("theme_editor_rows_button_radius", radius, "theme_editor_row_notes_button_radius")
-            self.material_rows(section, names)
-        self.material_rows(self.section(tab, "ink_materials"),
-                           [name for name in INK_MATERIALS if name not in in_kinds and name not in DATA_MATERIALS])
-        self.material_rows(self.section(tab, "data_materials"), list(DATA_MATERIALS))
-
-    def material_rows(self, section: "SettingsSection", names: list[str]):
-        '''A row in section for each named material, in the mode being edited.'''
-        style = self.style
-        mode = style.current_theme.partition("_")[0]
-        for name in names:
-            with_opacity = style.allows_transparency() and name not in INK_MATERIALS
-            control = self.material_control(name, style.theme_materials()[name][mode], with_opacity)
-            control.setEnabled(style.is_editable())
-            section.row(f"theme_materials_{name}", control, f"theme_materials_notes_{name}")
-
-    def material_control(self, name: str, entry: dict, with_opacity: bool) -> QWidget:
-        '''A material's color - click it to pick another - and, with_opacity, how solid it is.'''
-        row = QWidget()
-        layout = QHBoxLayout(row)
-        layout.setContentsMargins(0, 0, 0, 0)
-        swatch = QPushButton()
-        swatch.setFont(self.style.get_font("mono"))
-        swatch.setObjectName(f"_swatch_{id(swatch)}")
-        self.paint_swatch(swatch, entry["color"])
-        swatch.clicked.connect(lambda checked=False: self.pick_color(name, swatch))
-        layout.addWidget(swatch, 1)
-        if with_opacity:
-            layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
-                                         lambda value: self.style.set_material_value(name, opacity=value / 100)), 1)
-        return row
-
-    @staticmethod
-    def paint_swatch(swatch: QPushButton, color: str):
-        '''The button showing a material's color: filled with it, its hex code on it in black or white, whichever reads.'''
-        text = "#000000" if QColor(color).lightnessF() > 0.55 else "#ffffff"
-        swatch.setText(color)
-        swatch.setStyleSheet(f"QPushButton#{swatch.objectName()} {{ background-color: {color}; color: {text};"
-                             f" border: 1px solid {text}; }}")
-
-    def pick_color(self, name: str, swatch: QPushButton):
-        '''Picks a material's color - shown everywhere while picking, and put back if cancelled.'''
-        original = swatch.text()
-        dialog = QColorDialog(QColor(original), self)
-
-        def preview(color: QColor):
-            self.style.set_material_value(name, color=color.name())
-            self.paint_swatch(swatch, color.name())
-        dialog.currentColorChanged.connect(preview)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            preview(dialog.selectedColor())
-        else:
-            preview(QColor(original))
 
     # Gallery
     def build_gallery(self) -> QScrollArea:

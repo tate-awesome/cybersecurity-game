@@ -71,6 +71,7 @@ from .edit_network_hosts.edit_network_hosts import EditNetworkHosts
 from .delete_all_user_data import DeleteAllUserData
 from .delete_all_workspace_saved_data import DeleteAllWorkspaceSavedData
 from .open_workspace_editor import OpenWorkspaceEditor
+from .open_material_editor import OpenMaterialEditor
 from .configure_this_workspace import ConfigureThisWorkspace
 from .save_layout_as_default import SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault
 from .settings_overlays.edit_workspace_availability import EditWorkspaceAvailability
