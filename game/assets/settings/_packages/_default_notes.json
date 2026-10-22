@@ -26,7 +26,7 @@
         "strip_chart_colors": "Colors for the strip charts: background and grid, one color per plotted line in \"paths\", and the live-value markers in \"heads\".",
         "strip_chart_auto_fit": "1 starts every strip chart (Register Graphs, Variable Graphs, the network graph's rate chart) in fit mode, zoomed to fit the recent data. Students can toggle it.",
         "strip_chart_auto_fit_max_seconds": "How many seconds of history fit mode shows at most.",
-        "network_hosts": "Nicknames and hiding for the network graph's hosts, under \"macs\" and \"ips\" by address, e.g. {\"macs\": {\"b8:27:eb:44:10:9a\": {\"nickname\": \"PLC\", \"hide\": 0}}}. A host is hidden if its MAC is, or every IP seen on it is. Students edit this with Configure Hosts.",
+        "network_hosts": "Nicknames and hiding for the network graph's hosts (devices, by MAC address), e.g. {\"b8:27:eb:44:10:9a\": {\"nickname\": \"PLC\", \"hide\": 0}}. Students edit this with Configure Hosts.",
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Show Forms. A form only appears if \"available\" also offers it.",

@@ -77,10 +77,7 @@
 
     "strip_chart_auto_fit_max_seconds": 60,
 
-    "network_hosts": {
-        "macs": {},
-        "ips": {}
-    },
+    "network_hosts": {},
 
     "game_progress": {
         "wifi": 0,

@@ -6,18 +6,23 @@ from PySide6.QtWidgets import QCheckBox, QFrame, QGridLayout, QLabel, QLineEdit,
 
 class HostOverlay:
     '''
-    Binds a button to open and close an overlay with a row for every MAC
-    and IP address the network graph has seen (context.buffer.network),
-    editing its nickname and hide fields in context.states["network_hosts"].
-    It only writes context.states - the network graph polls them every
-    frame and follows along.
+    Binds a button to open and close an overlay with a row for every host
+    (device - MAC address) the network graph has seen
+    (context.buffer.network), with the IPs seen on it, editing its nickname
+    and hide fields in context.states["network_hosts"]. It only writes
+    context.states - the network graph polls them every frame and follows
+    along.
 
-    An address only gets an entry in network_hosts once one of its fields
-    is edited, so the saved setting doesn't fill up with every host ever seen.
+    A search box above the rows narrows them to the MACs, IPs or nicknames
+    containing what's typed - and the Select/Clear All buttons only touch
+    the rows still showing.
+
+    A MAC only gets an entry in network_hosts once one of its fields is
+    edited, so the saved setting doesn't fill up with every host ever seen.
     '''
     # Past this share of the screen's height, the rows scroll
     MAX_SCREEN_HEIGHT = 0.7
-    # An address's fields before it's edited
+    # A MAC's fields before it's edited
     DEFAULTS = {"nickname": "", "hide": "0"}
 
     def __init__(self, button: QPushButton, context: Context):
@@ -36,11 +41,9 @@ class HostOverlay:
         grid.setVerticalSpacing(self.style.cgap * 2)
         grid.setHorizontalSpacing(self.style.igap)
 
-        macs, ips, host_ips = self.context.buffer.network.get_hosts()
-        # The other way around too, for the IP rows' "Seen with"
-        ip_hosts = {ip: [mac for mac in macs if ip in host_ips.get(mac, [])] for ip in ips}
+        macs, host_ips = self.context.buffer.network.get_hosts()
 
-        if not macs and not ips:
+        if not macs:
             label = QLabel(self.context.labels.get("network_hosts_none_seen"))
             label.setFont(med)
             grid.addWidget(label, 0, 0)
@@ -62,48 +65,48 @@ class HostOverlay:
 
         nick_entries = []
         hide_checkboxes = []
+        # Each row's widgets and the text the search looks through besides
+        # its nickname (see search)
+        rows = []
 
-        # Address Rows, MACs then IPs, each under its section's name
-        sections = (("macs", macs, host_ips), ("ips", ips, ip_hosts))
-        for kind, addresses, seen_with in sections:
-            section_label = QLabel(self.context.labels.get(f"network_hosts_sections_{kind}"))
-            section_label.setFont(med)
-            grid.addWidget(section_label, row, col)
+        # Host Rows
+        for mac in macs:
+            ips = host_ips.get(mac, [])
+            mac_label = QLabel(mac)
+            mac_label.setFont(mono)
+            grid.addWidget(mac_label, row, col)
+            col += 1
+            ips_label = QLabel("\n".join(ips))
+            ips_label.setFont(mono)
+            grid.addWidget(ips_label, row, col)
+            col += 1
+            # "nickname": "",
+            nick_entry = QLineEdit()
+            nick_entry.setFont(med)
+            grid.addWidget(nick_entry, row, col)
+            self.enrich_entry(nick_entry, mac, "nickname")
+            nick_entries.append(nick_entry)
+            col += 1
+            # "hide": "0"
+            hide_checkbox = QCheckBox()
+            grid.addWidget(hide_checkbox, row, col)
+            self.enrich_checkbox(hide_checkbox, mac, "hide")
+            hide_checkboxes.append(hide_checkbox)
+
+            rows.append(((mac_label, ips_label, nick_entry, hide_checkbox), nick_entry, " ".join([mac] + ips)))
+            col = 0
             row += 1
 
-            for address in addresses:
-                address_label = QLabel(address)
-                address_label.setFont(mono)
-                grid.addWidget(address_label, row, col)
-                col += 1
-                seen_label = QLabel("\n".join(seen_with.get(address, [])))
-                seen_label.setFont(mono)
-                grid.addWidget(seen_label, row, col)
-                col += 1
-                # "nickname": "",
-                nick_entry = QLineEdit()
-                nick_entry.setFont(med)
-                grid.addWidget(nick_entry, row, col)
-                self.enrich_entry(nick_entry, kind, address, "nickname")
-                nick_entries.append(nick_entry)
-                col += 1
-                # "hide": "0"
-                hide_checkbox = QCheckBox()
-                grid.addWidget(hide_checkbox, row, col)
-                self.enrich_checkbox(hide_checkbox, kind, address, "hide")
-                hide_checkboxes.append(hide_checkbox)
-
-                col = 0
-                row += 1
-
-        # Do All buttons
+        # Do All buttons, for the rows the search left showing
         def connect(button, function):
             button.clicked.connect(lambda checked=False, function=function: function())
+        def shown(widgets):
+            return [widget for widget in widgets if not widget.isHidden()]
 
         # Reset All
         def reset_all():
-            self.clear_entries(nick_entries)
-            self.deselect_all(hide_checkboxes)
+            self.clear_entries(shown(nick_entries))
+            self.deselect_all(shown(hide_checkboxes))
         button = QPushButton("Reset All")
         button.setFont(med)
         connect(button, reset_all)
@@ -112,20 +115,23 @@ class HostOverlay:
         # Nicknames
         button = QPushButton("Clear All")
         button.setFont(med)
-        connect(button, lambda: self.clear_entries(nick_entries))
+        connect(button, lambda: self.clear_entries(shown(nick_entries)))
         grid.addWidget(button, row + 1, col)
         col += 1
         # Hide
         button = QPushButton("Select All")
         button.setFont(med)
-        connect(button, lambda: self.select_all(hide_checkboxes))
+        connect(button, lambda: self.select_all(shown(hide_checkboxes)))
         grid.addWidget(button, row, col)
         button = QPushButton("Deselect All")
         button.setFont(med)
-        connect(button, lambda: self.deselect_all(hide_checkboxes))
+        connect(button, lambda: self.deselect_all(shown(hide_checkboxes)))
         grid.addWidget(button, row + 1, col)
+        # The menu keeps its size while searching - the space the hidden
+        # rows leave goes below the rest, instead of between them
+        grid.setRowStretch(row + 2, 1)
 
-        # A busy network has more addresses than fit on screen
+        # A busy network has more hosts than fit on screen
         scroll = QScrollArea()
         self.style.set_material(scroll, "none")
         scroll.setWidget(frame)
@@ -138,43 +144,60 @@ class HostOverlay:
         scrollbar_width = scroll.verticalScrollBar().sizeHint().width()
         scroll.setFixedSize(content.width() + (scrollbar_width if content.height() > max_height else 0),
                             min(content.height(), max_height))
-        overlay.layout().addWidget(scroll)
 
-    def save(self, kind: str, address: str, key: str, value: str):
+        # Above the scrolling rows, so it stays put while they scroll
+        search_entry = QLineEdit()
+        search_entry.setFont(med)
+        search_entry.setPlaceholderText(self.context.labels.get("network_hosts_search"))
+        search_entry.setClearButtonEnabled(True)
+        search_entry.textChanged.connect(lambda text: self.search(text, rows))
+        overlay.layout().addWidget(search_entry)
+        overlay.layout().addWidget(scroll)
+        search_entry.setFocus()
+
+    def search(self, text: str, rows: list):
+        '''Shows just the rows whose MAC, IPs or nickname contain text (any case).'''
+        text = text.strip().lower()
+        for widgets, nick_entry, searched in rows:
+            matches = text in searched.lower() or text in nick_entry.text().lower()
+            for widget in widgets:
+                widget.setVisible(matches)
+
+    def save(self, mac: str, key: str, value: str):
         '''
-        Sets one of this address's fields in network_hosts - giving it an
-        entry first if it has none, unless the value is the default anyway.
+        Sets one of this MAC's fields in network_hosts - giving it an entry
+        first if it has none, unless the value is the default anyway.
         '''
-        saved = self.context.states.get("network_hosts", kind)
-        if address not in saved:
+        saved = self.context.states.get("network_hosts")
+        if mac not in saved:
             if value == self.DEFAULTS[key]:
                 return
-            saved[address] = dict(self.DEFAULTS)
-        saved[address][key] = value
+            saved[mac] = dict(self.DEFAULTS)
+        saved[mac][key] = value
 
-    def saved(self, kind: str, address: str, key: str):
-        return self.context.states.get("network_hosts", kind).get(address, {}).get(key, self.DEFAULTS[key])
+    def saved(self, mac: str, key: str):
+        return self.context.states.get("network_hosts").get(mac, {}).get(key, self.DEFAULTS[key])
 
-    def enrich_entry(self, entry: QLineEdit, kind: str, address: str, key: str):
+    def enrich_entry(self, entry: QLineEdit, mac: str, key: str):
         # Bind autosave
-        def autosave(text, kind=kind, address=address, key=key):
-            self.save(kind, address, key, text)
+        def autosave(text, mac=mac, key=key):
+            self.save(mac, key, text)
         entry.textEdited.connect(autosave)
         # clear_entries needs to trigger this same save when it sets text
         # programmatically, since textEdited (deliberately) doesn't fire for that.
         entry.autosave = lambda: autosave(entry.text())
 
         # Load saved entry input
-        entry.setText(str(self.saved(kind, address, key)))
+        entry.setText(str(self.saved(mac, key)))
 
-    def enrich_checkbox(self, checkbox: QCheckBox, kind: str, address: str, key: str):
+    def enrich_checkbox(self, checkbox: QCheckBox, mac: str, key: str):
         # Load previous input before connecting, so restoring it doesn't itself trigger autosave
-        value = self.saved(kind, address, key)
+        value = self.saved(mac, key)
         checkbox.setChecked(value == "1" or value == 1)
 
         # Stored as "1"/"0", like every other checkbox setting
-        def autosave(checked: bool, kind=kind, address=address, key=key):
-            self.save(kind, address, key, "1" if checked else "0")
+        def autosave(checked: bool, mac=mac, key=key):
+            self.save(mac, key, "1" if checked else "0")
         checkbox.toggled.connect(autosave)
 
     def select_all(self, checkboxes: list[QCheckBox]):

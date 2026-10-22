@@ -42,10 +42,8 @@ class NetworkGraph:
     def reset(self):
         self.host_order = []
         self._host_set = set()
-        # Every IP seen, in order, and the IPs seen on each MAC - a packet's
-        # IP source/destination counts for its MAC source/destination
-        self.ip_order = []
-        self._ip_set = set()
+        # The IPs seen on each MAC, in the order first seen - a packet's IP
+        # source/destination counts for its MAC source/destination
         self.host_ips = {}
         self.arrows_this_tick = {}
         # Read again on every reset (Clear Data), as joining a network changes it
@@ -69,16 +67,13 @@ class NetworkGraph:
         # MetaPacket uses "-" for a packet with no IP layer
         if not ip_addr or ip_addr == "-":
             return
-        if ip_addr not in self._ip_set:
-            self._ip_set.add(ip_addr)
-            self.ip_order.append(ip_addr)
         if ip_addr not in self.host_ips[mac_addr]:
             self.host_ips[mac_addr].append(ip_addr)
 
-    def get_hosts(self) -> tuple[list[str], list[str], dict[str, list[str]]]:
-        '''Every MAC seen, every IP seen (both in the order first seen), and the IPs seen on each MAC.'''
+    def get_hosts(self) -> tuple[list[str], dict[str, list[str]]]:
+        '''Every MAC seen, in the order first seen, and the IPs seen on each.'''
         with self.lock:
-            return list(self.host_order), list(self.ip_order), {mac: list(ips) for mac, ips in self.host_ips.items()}
+            return list(self.host_order), {mac: list(ips) for mac, ips in self.host_ips.items()}
 
     def get_access_point(self) -> str | None:
         '''

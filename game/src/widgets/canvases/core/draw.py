@@ -125,33 +125,43 @@ class Draw:
         '''
         anchor follows Tk's create_text convention this was ported from -
         "center" (Tk's own default when none is given) pins the text's
-        center to (x, y); "n"/"w"/"nw"/"ne"/"sw"/"se" pin that edge/corner.
+        center to (x, y); "n"/"s"/"e"/"w"/"nw"/"ne"/"sw"/"se" pin that
+        edge/corner. Text with several lines lines up on its anchored side
+        (left for a west one, right for an east one, centered otherwise).
         '''
-        metrics = QFontMetricsF(font)
-        width = metrics.horizontalAdvance(text)
-        height = metrics.height()
-
-        if anchor == "center":
-            rect = QRectF(x - width / 2, y - height / 2, width, height)
-        elif anchor == "n":
-            rect = QRectF(x - width / 2, y, width, height)
-        elif anchor == "w":
-            rect = QRectF(x, y - height / 2, width, height)
-        elif anchor == "nw":
-            rect = QRectF(x, y, width, height)
-        elif anchor == "ne":
-            rect = QRectF(x - width, y, width, height)
-        elif anchor == "sw":
-            rect = QRectF(x, y - height, width, height)
-        elif anchor == "se":
-            rect = QRectF(x - width, y - height, width, height)
-        else:
+        if anchor not in ("center", "n", "s", "e", "w", "nw", "ne", "sw", "se"):
             raise ValueError(f"Unsupported text anchor: {anchor}")
+        side = "" if anchor == "center" else anchor  # ("center" has an n and an e in it)
+        if "w" in side:
+            align = Qt.AlignmentFlag.AlignLeft
+        elif "e" in side:
+            align = Qt.AlignmentFlag.AlignRight
+        else:
+            align = Qt.AlignmentFlag.AlignHCenter
+        width, height = self.text_size(text, font)
+
+        left = x if "w" in side else x - width if "e" in side else x - width / 2
+        top = y if "n" in side else y - height if "s" in side else y - height / 2
+        rect = QRectF(left, top, width, height)
 
         painter = self.canvas.painter
         painter.setFont(font)
         painter.setPen(QColor(color))
-        painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, text)
+        painter.drawText(rect, align | Qt.AlignmentFlag.AlignTop, text)
+
+    def text_size(self, text: str, font) -> tuple[float, float]:
+        '''The (width, height) _draw_text takes up for text - every line of it.'''
+        metrics = QFontMetricsF(font)
+        lines = text.split("\n")
+        return max(metrics.horizontalAdvance(line) for line in lines), metrics.height() * len(lines)
+
+    def _draw_rounded_rect(self, coords, radius: float, fill: str | None = None, outline: str | None = None, width: float = 1):
+        painter = self.canvas.painter
+        x1, y1, x2, y2 = coords
+        rect = QRectF(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+        painter.setPen(QPen(QColor(outline), width) if outline else Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill) if fill else Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(rect, radius, radius)
 
     def line(self, points: list[tuple[float, float]], line_color: str, thickness=2):
         '''
