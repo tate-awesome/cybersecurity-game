@@ -14,13 +14,13 @@ class FlowLayout(QLayout):
     action panel shows/hides forms in place - see its Builder), so a hidden
     card leaves no gap.
 
-    Within a row the cards are stretched to fill its full width (each between
-    its own minimum and maximum width), so a full row never leaves a trailing
-    gap - which holds as long as the cards' maximum width is about twice their
-    minimum (then whatever space is left when no more cards fit is always
-    less than the room the row's cards have left to grow). Every card in a row
-    is also given the row's tallest card's height, so a row reads as one band.
-    Only the last row, if it can't be filled, is left ragged.
+    The cards are laid out in columns, filling each column top to bottom
+    before moving to the next one (so reading order is top-to-bottom then
+    left-to-right). Every card keeps its own natural height - nothing is
+    stretched to line up with its neighbours - so columns end at ragged but
+    honest heights. All columns share one width that fills the panel edge to
+    edge (each between the cards' minimum and maximum width); a trailing gap
+    is avoided as long as the maximum width is about twice the minimum.
 
     The width-dependent height is reported through heightForWidth, which a
     vertical scroll area honours.
@@ -104,51 +104,43 @@ class FlowLayout(QLayout):
         hspace = self.horizontalSpacing()
         vspace = self.verticalSpacing()
         avail = max(effective.width(), 1)
+        count = len(items)
 
-        # One uniform card width for the whole panel. The column count is
-        # how many cards fit at their minimum width, so a wide panel always
-        # makes more columns rather than one over-wide card. Every card then
-        # takes an even share of the width (so a full row fills edge to edge
-        # with no trailing gap) capped at the max - which, being about twice
-        # the min, is always enough room to swallow the leftover, so the cap
-        # only bites when there's a single column wider than a card should be.
+        # One uniform column width for the whole panel. The column count is
+        # how many cards fit at their minimum width (never more than there
+        # are cards), so a wide panel makes more columns rather than one
+        # over-wide card. The columns then share the width evenly (filling it
+        # edge to edge with no trailing gap) capped at the max - which, being
+        # about twice the min, is always enough room to swallow the leftover,
+        # so the cap only bites when a column would be wider than a card
+        # should be.
         unit_min = max(self._card_min(item) for item in items)
         unit_max = min(self._card_max(item) for item in items)
         cols = max(1, (avail + hspace) // (unit_min + hspace))
-        inner = avail - (cols - 1) * hspace  # width the cards themselves share
+        cols = min(cols, count)
+        inner = avail - (cols - 1) * hspace  # width the columns themselves share
         width = min(inner // cols, unit_max)
-        # Spread any rounding remainder one pixel at a time across the row's
-        # columns, so a full row's cards reach edge to edge.
+        # Spread any rounding remainder one pixel at a time across the
+        # columns, so a full row of columns reaches edge to edge.
         remainder = inner - width * cols if width < unit_max else 0
 
+        # Fill each column top to bottom before the next: the first `rows`
+        # cards go down column 0, the next `rows` down column 1, and so on.
+        rows = (count + cols - 1) // cols
+        total_height = 0
         x = effective.x()
-        y = effective.y()
-        col = 0
-        row_items: list[tuple[QLayoutItem, int, int]] = []  # (item, x, width)
+        for col in range(cols):
+            col_width = width + (1 if col < remainder else 0)
+            y = effective.y()
+            for item in items[col * rows:(col + 1) * rows]:
+                h = item.sizeHint().height()
+                if not test_only:
+                    item.setGeometry(QRect(x, y, col_width, h))
+                y += h + vspace
+            total_height = max(total_height, y - vspace)
+            x += col_width + hspace
 
-        def flush_row():
-            nonlocal y
-            if not row_items:
-                return
-            row_height = max(it.sizeHint().height() for it, _, _ in row_items)
-            if not test_only:
-                for it, ix, iw in row_items:
-                    it.setGeometry(QRect(ix, y, iw, row_height))
-            y += row_height + vspace
-            row_items.clear()
-
-        for index, item in enumerate(items):
-            if col == cols:
-                flush_row()
-                x = effective.x()
-                col = 0
-            w = width + (1 if col < remainder else 0)
-            row_items.append((item, x, w))
-            x += w + hspace
-            col += 1
-        flush_row()
-
-        return y - vspace - rect.y() + margins.bottom()
+        return total_height - rect.y() + margins.bottom()
 
     def _smart_spacing(self) -> int:
         parent = self.parent()
