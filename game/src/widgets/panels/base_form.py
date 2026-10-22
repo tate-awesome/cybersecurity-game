@@ -6,6 +6,14 @@ from collections.abc import Callable
 from ...app_core import Context
 from ...network.process import Process
 
+# A process's lifecycle as a flat card shows it. is_stopping takes priority
+# over is_starting over is_running, so a process only has to flag the
+# transitional phases during their window (see Process.is_starting).
+PHASE_STOPPED = "stopped"
+PHASE_STARTING = "starting"
+PHASE_RUNNING = "running"
+PHASE_STOPPING = "stopping"
+
 
 class ElidingLabel(QLabel):
     '''
@@ -62,7 +70,7 @@ class BaseForm(QWidget):
     network-backed forms, or land immediately for local processes.
     '''
     def __init__(self, master: QWidget, context: Context, process_noun: str = "Process", key: str | None = None,
-                 flat: bool = False):
+                 flat: bool = False, title_dot: bool = True):
         '''
         process_noun is used like "start sniffer" "start DoS attack" "stopping NFQ" "ARP Spoofer is running" "NFQ is on"
         key, if given, selects the "network_action_forms"/"network_action_panels" i18n text
@@ -83,6 +91,7 @@ class BaseForm(QWidget):
         self.key = key
         self.process_noun = process_noun
         self.flat = flat
+        self.title_dot = title_dot
         self.has_process_button = False
 
         # Flat-layout widgets, filled in by add_header/add_labeled_entry/
@@ -92,6 +101,7 @@ class BaseForm(QWidget):
         self.status_dot: QLabel | None = None
         self.caret_button: QToolButton | None = None
         self._entry_widgets: list[QWidget] = []  # per-entry rows, for minimize
+        self.entry_dots: list[QLabel] = []  # a per-entry status dot, when asked for
         self._minimized = False
 
         self.style.set_material(self, "card")
@@ -127,11 +137,19 @@ class BaseForm(QWidget):
         if self.flat:
             self.start_button_text = f"{self.style.icon('player-play')}  Start"
             self.stop_button_text = f"{self.style.icon('square')}  Stop"
+            # Shown while the process is between states (see the phase model).
+            self.starting_button_text = "Starting"
+            self.stopping_button_text = "Stopping"
             # Shown on the start button while any entry is still empty.
             self.input_needed_text = f"{self.style.icon('alert-triangle')}  Input"
         else:
             self.start_button_text = self.start_process_text
             self.stop_button_text = self.stop_process_text
+            # Non-flat (modbus) keeps its old optimistic look: the button jumps
+            # to the target state's text immediately, with no dedicated
+            # transitional wording.
+            self.starting_button_text = self.stop_process_text
+            self.stopping_button_text = self.start_process_text
             self.input_needed_text = self.start_process_text
 
         self.current_row = 0
@@ -240,12 +258,15 @@ class BaseForm(QWidget):
         self.header_bar_layout.setSpacing(self.style.igap // 2)
 
         # Status dot - idle until the process confirms it's running (see
-        # _refresh_status_dot). "⬤" is drawn in the dot's text color, which
-        # set_tone keeps on the theme's good/muted material.
-        self.status_dot = QLabel("⬤")
-        self.status_dot.setFont(self.style.get_font("small"))
-        self.style.set_tone(self.status_dot, "muted")
-        self.header_bar_layout.addWidget(self.status_dot)
+        # _set_dot_tone). "⬤" is drawn in the dot's text color, which set_tone
+        # keeps on the theme's material: muted off, yellow mid-transition,
+        # green running. A form can opt out (title_dot=False, e.g. wifi, which
+        # shows per-entry dots instead).
+        if self.title_dot:
+            self.status_dot = QLabel("⬤")
+            self.status_dot.setFont(self.style.get_font("small"))
+            self.style.set_tone(self.status_dot, "muted")
+            self.header_bar_layout.addWidget(self.status_dot)
 
         self.header = ElidingLabel(text)
         header_font = QFont(self.style.get_font("default"))
@@ -289,9 +310,10 @@ class BaseForm(QWidget):
             self.caret_button.setText(self.style.icon("chevron-right" if self._minimized else "chevron-down"))
             self.caret_button.setToolTip("Show inputs" if self._minimized else "Hide inputs")
 
-    def _refresh_status_dot(self, running: bool):
+    def _set_dot_tone(self, tone: str):
+        '''Colors the title status dot (if this card has one) - see _add_flat_header.'''
         if self.status_dot is not None:
-            self.style.set_tone(self.status_dot, "good" if running else "muted")
+            self.style.set_tone(self.status_dot, tone)
 
     def add_label_row(self, label_slot: str, label_keys: list[str]) -> list[QLabel]:
         column = 0
@@ -310,12 +332,15 @@ class BaseForm(QWidget):
         self.current_row += 1
         return output
 
-    def add_labeled_entry(self, label: str, autosave: bool = True):
+    def add_labeled_entry(self, label: str, autosave: bool = True, dot: bool = False):
         '''
         Adds a labeled entry for the curent row in the form.
         With autosave, the entry saves and reloads its text input from the
         page's states - without, the form fills and saves it itself (e.g.
         WifiForm's, which live in app-wide preferences instead).
+        With dot (flat cards only), a status dot sits to the left of the
+        entry, collected in self.entry_dots for the form to color (wifi uses
+        one per network to show which it's on).
         Requires `key` to have been set (network_action_forms forms only).
         '''
 
@@ -336,8 +361,25 @@ class BaseForm(QWidget):
             # minimize caret can hide it. The label widget is still returned
             # for callers that unpack it, just never placed.
             entry.setPlaceholderText(label.rstrip(":").strip())
-            self.grid_layout.addWidget(entry, self.current_row, 0, 1, -1)
-            self._entry_widgets.append(entry)
+            if dot:
+                row = QWidget()
+                row_layout = QHBoxLayout(row)
+                row_layout.setContentsMargins(0, 0, 0, 0)
+                row_layout.setSpacing(self.style.igap // 2)
+                entry_dot = QLabel("⬤")
+                entry_dot.setFont(self.style.get_font("small"))
+                self.style.set_tone(entry_dot, "muted")
+                # Fixed to the glyph's width so blanking it (empty text) still
+                # reserves the space - the entries stay aligned either way.
+                entry_dot.setFixedWidth(entry_dot.fontMetrics().horizontalAdvance("⬤"))
+                self.entry_dots.append(entry_dot)
+                row_layout.addWidget(entry_dot)
+                row_layout.addWidget(entry, 1)
+                self.grid_layout.addWidget(row, self.current_row, 0, 1, -1)
+                self._entry_widgets.append(row)
+            else:
+                self.grid_layout.addWidget(entry, self.current_row, 0, 1, -1)
+                self._entry_widgets.append(entry)
             self._ensure_caret()
         else:
             self.grid_layout.addWidget(label_widget, self.current_row, 1)
@@ -367,7 +409,9 @@ class BaseForm(QWidget):
 
         return label_widget, entry
 
-    def add_process_row(self, start_func: Callable, stop_func: Callable, status_func: Callable[[], bool], default_status: str = ""):
+    def add_process_row(self, start_func: Callable, stop_func: Callable, status_func: Callable[[], bool],
+                        default_status: str = "", starting_func: Callable[[], bool] | None = None,
+                        stopping_func: Callable[[], bool] | None = None):
 
         if self.has_process_button:
             return
@@ -383,10 +427,15 @@ class BaseForm(QWidget):
         self.start_process = start_func
         self.stop_process = stop_func
         self.status_func = status_func
+        # The transitional-phase checks: taken as given, else from the Process
+        # behind status_func (so forms don't have to pass them), else never.
+        process = getattr(status_func, "__self__", None)
+        self.starting_func = starting_func or (process.is_starting if isinstance(process, Process) else (lambda: False))
+        self.stopping_func = stopping_func or (process.is_stopping if isinstance(process, Process) else (lambda: False))
 
-        # Confirmed state as of the last refresh (None forces the first
-        # refresh below to configure the button/status regardless of state)
-        self.process_confirmed_state = None
+        # Phase as of the last refresh (None forces the first refresh below to
+        # configure the button/status regardless of state)
+        self.process_phase = None
         self.refresh_process_button()
 
         # Return submits the form - a no-op for modbus_panel forms, which never populate self.entries
@@ -414,8 +463,8 @@ class BaseForm(QWidget):
             # below the entries. The header row carries only the dot, title
             # and minimize caret; the status line is dropped - the dot and
             # the button's own icon carry the state instead. process_status
-            # is kept as a detached label so configure_on/off can still set
-            # its text without special-casing.
+            # is kept as a detached label so apply_phase can still set its
+            # text without special-casing.
             self.process_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.grid_layout.addWidget(self.process_button, self.current_row, 0, 1, -1)
             return
@@ -428,19 +477,59 @@ class BaseForm(QWidget):
 
     def refresh_process_button(self):
         '''
-        Refresh the process button based on the current process status.
+        Reconcile the button, status text and indicator dot with the process's
+        current phase (see Process.is_starting / the PHASE_* constants). Polled,
+        so the optimistic text/dot a click sets gets corrected once the process
+        confirms the new state.
         '''
-        running = bool(self.status_func())
-        if running != self.process_confirmed_state:
-            self.process_confirmed_state = running
-            if running:
-                self.configure_on()
-            else:
-                self.configure_off()
-        # While off, a flat card warns on the button when an entry is still
-        # empty - polled, since entries are edited after configure_off ran.
-        if self.flat and not running:
+        phase = self.current_phase()
+        if phase != self.process_phase:
+            self.process_phase = phase
+            self.apply_phase(phase)
+        # While stopped, a flat card warns on the button when an entry is still
+        # empty - polled, since entries are edited after apply_phase ran.
+        if self.flat and phase == PHASE_STOPPED:
             self.refresh_input_warning()
+
+    def current_phase(self) -> str:
+        '''stopping > starting > running > stopped - see the PHASE_* constants.'''
+        if self.stopping_func():
+            return PHASE_STOPPING
+        if self.starting_func():
+            return PHASE_STARTING
+        if self.status_func():
+            return PHASE_RUNNING
+        return PHASE_STOPPED
+
+    def apply_phase(self, phase: str):
+        '''
+        Sets the button text + click action, the (non-flat) status label, and
+        the dot's color for a phase. Running is green and offers Stop, stopped
+        is muted and offers Start, and the two transitions are yellow: starting
+        offers Stop (cancel), stopping offers Start.
+        '''
+        self._disconnect_process_button()
+        if phase == PHASE_RUNNING:
+            self.wire_button(self.process_button, self.click_stop)
+            self.process_button.setText(self.stop_button_text)
+            self.process_status.setText(self.status_on_text)
+            self._set_dot_tone("good")
+        elif phase == PHASE_STARTING:
+            self.wire_button(self.process_button, self.click_stop)  # click cancels the start
+            self.process_button.setText(self.starting_button_text)
+            self.process_status.setText(self.status_on_text)
+            self._set_dot_tone("warning")
+        elif phase == PHASE_STOPPING:
+            self.wire_button(self.process_button, self.click_start)
+            self.process_button.setText(self.stopping_button_text)
+            self.process_status.setText(self.status_off_text)
+            self._set_dot_tone("warning")
+        else:  # PHASE_STOPPED
+            self.wire_button(self.process_button, self.click_start)
+            self.process_button.setText(self.start_button_text)
+            self.process_status.setText(self.status_off_text)
+            self._set_dot_tone("muted")
+        self._process_button_connected = True
 
     def entries_filled(self) -> bool:
         '''Whether every entry on this form has (non-whitespace) text.'''
@@ -458,47 +547,27 @@ class BaseForm(QWidget):
             self.process_button.setText(text)
 
     def click_start(self):
-        '''
-        Optimistically set the process button to the "stop" state and call
-        '''
+        '''Optimistically show the "starting" state, then kick off the start.'''
         if self.key is not None:
             self.context.states.set("game_progress", self.key, value=1)
-        self.process_button.setText(self.stop_button_text)
-        self._refresh_status_dot(True)
+        self.process_button.setText(self.starting_button_text)
+        self._set_dot_tone("warning")
         self._disconnect_process_button()
-        # Unset the confirmed state so the next poll always reconciles the
-        # button, even if start_process() fails and status_func() reports
-        # the same value it did before this click (e.g. still False) -
-        # otherwise refresh_process_button sees "no change" and never fires.
-        self.process_confirmed_state = None
+        # Clear the confirmed phase so the next poll always reconciles, even if
+        # start_process() fails and the phase reads the same as before the click.
+        self.process_phase = None
         self.process_button.repaint()  # paint the optimistic text now, in case start_process() blocks briefly
         self.start_process()
-
-    def configure_on(self):
-        self._disconnect_process_button()
-        self.wire_button(self.process_button, self.click_stop)
-        self._process_button_connected = True
-        self.process_button.setText(self.stop_button_text)
-        self.process_status.setText(self.status_on_text)
-        self._refresh_status_dot(True)
 
     def click_stop(self):
         if not self.has_process_button:
             return
-        self.process_button.setText(self.start_button_text)
-        self._refresh_status_dot(False)
+        self.process_button.setText(self.stopping_button_text)
+        self._set_dot_tone("warning")
         self._disconnect_process_button()
-        self.process_confirmed_state = None
+        self.process_phase = None
         self.process_button.repaint()
         self.stop_process()
-
-    def configure_off(self):
-        self._disconnect_process_button()
-        self.wire_button(self.process_button, self.click_start)
-        self._process_button_connected = True
-        self.process_button.setText(self.start_button_text)
-        self.process_status.setText(self.status_off_text)
-        self._refresh_status_dot(False)
 
     def _disconnect_process_button(self):
         # Tracked explicitly rather than relying on disconnect() to raise

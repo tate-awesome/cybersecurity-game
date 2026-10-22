@@ -73,9 +73,13 @@ class ArpSpoofer(Process):
         self.target_ip = target_ip
         self.host_ip = host_ip
 
-        self.target_mac = self.get_mac(target_ip)
-        self.host_mac = self.get_mac(host_ip)
-        
+        # Don't resolve the MACs here - get_mac blocks for up to its srp
+        # timeout, which on the GUI thread would freeze the app while the
+        # victims answer. Leave them None and let tick() (on its own timer
+        # thread) resolve them; is_starting() reports the wait until it has.
+        self.target_mac = None
+        self.host_mac = None
+
         self.running = True
 
         self.tick()
@@ -83,6 +87,10 @@ class ArpSpoofer(Process):
 
     def is_running(self):
         return self.running
+
+    def is_starting(self):
+        '''Running, but still waiting on one or both victims' MAC addresses.'''
+        return self.running and (self.target_mac is None or self.host_mac is None)
 
     def stop(self):
 

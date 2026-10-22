@@ -42,6 +42,14 @@ class WifiBaseClass(Process):
         self._stop_queued = False
         self._mismatch_since: float | None = None
 
+    def is_starting(self) -> bool:
+        '''Mid-switch toward the device (a connect in flight).'''
+        return self._connecting and self._starting
+
+    def is_stopping(self) -> bool:
+        '''Mid-switch back home (a disconnect/restore in flight).'''
+        return self._connecting and not self._starting
+
     def _unwatch_active_connection(self):
         '''
         No-op by default. Linux overrides this to release its NM signal

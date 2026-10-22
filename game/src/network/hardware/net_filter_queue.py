@@ -14,6 +14,10 @@ class NetFilterQueueBaseClass(Process):
         super().__init__(buffer, context)
 
         self.running = False
+        # Set True once the worker thread has finished its setup (iptables
+        # rules + queue bind on Linux, WinDivert open on Windows) and is
+        # actually filtering - is_starting() reports the window before that.
+        self._established = False
         # Only meaningfully set once start() is called - declared here so
         # their type is known throughout the class (see stop()).
         self.stop_event: threading.Event | None = None
@@ -21,6 +25,10 @@ class NetFilterQueueBaseClass(Process):
 
     def is_running(self):
         return self.running
+
+    def is_starting(self):
+        '''Started, but the worker is still setting up (queue not bound yet).'''
+        return self.running and not self._established
 
     def stop(self):
         if not self.is_running():
@@ -41,6 +49,7 @@ class NetFilterQueueBaseClass(Process):
             self.stop_event = None
             self.thread = None
             self.running = False
+            self._established = False
             self.buffer.put("nfq", "Stopped NFQ")
 
     def modify_mpkt(self, mpkt: MetaPacket) -> tuple[Packet, bool]:

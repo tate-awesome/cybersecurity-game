@@ -16,5 +16,27 @@ class Process:
         self.buffer = buffer
         self.context = context
 
+    def is_running(self) -> bool:
+        '''Whether the process is active (started and not stopped). Subclasses override.'''
+        return False
+
+    def is_starting(self) -> bool:
+        '''
+        Whether the process is between being asked to start and reaching its
+        steady running state - e.g. resolving addresses, or waiting for a
+        first response. Takes priority over is_running when a card decides how
+        to show it (a yellow indicator), so it only has to be True during that
+        window. Default False: a process with no startup delay never reports it.
+        '''
+        return False
+
+    def is_stopping(self) -> bool:
+        '''
+        Whether the process is between being asked to stop and being fully
+        stopped. Like is_starting, it only needs to be True during that
+        window. Default False.
+        '''
+        return False
+
     def stop(self):
         pass

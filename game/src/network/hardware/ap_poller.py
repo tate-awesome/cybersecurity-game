@@ -39,6 +39,10 @@ class APPoller(Process):
     def is_running(self) -> bool:
         return self.running
 
+    def is_starting(self) -> bool:
+        '''Polling, but no response from the AP yet - waiting to connect.'''
+        return self.running and not self.connected
+
     def start(self):
         if self.running:
             self.buffer.put("ap_connect", "AP polling is already running")

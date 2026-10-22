@@ -21,7 +21,9 @@ class WifiForm(BaseForm):
     '''
     def __init__(self, master: QWidget, context: Context):
 
-        super().__init__(master, context, key="wifi", flat=True)
+        # No title dot: wifi is a switch, not an on/off process, so its state
+        # shows as a dot next to each network entry instead (see below).
+        super().__init__(master, context, key="wifi", flat=True, title_dot=False)
         # Stopped last on page-exit cleanup (ProcessManager.abort_all): other
         # processes' teardown (e.g. ArpSpoofer restoring ARP tables) needs
         # working networking, so switching networks back must happen after.
@@ -30,8 +32,11 @@ class WifiForm(BaseForm):
 
         self.add_header()
 
-        _, self.home_entry = self.add_labeled_entry(self.label("home"), autosave=False)
-        _, self.device_entry = self.add_labeled_entry(self.label("device"), autosave=False)
+        # Each entry gets a dot: green when that network is the one we're on,
+        # blank when not, both yellow while switching (see refresh_process_button).
+        _, self.home_entry = self.add_labeled_entry(self.label("home"), autosave=False, dot=True)
+        _, self.device_entry = self.add_labeled_entry(self.label("device"), autosave=False, dot=True)
+        self.home_dot, self.device_dot = self.entry_dots
         self.device_entry.setText(self.preferences.get("wifi_device") or "")
         self.home_entry.setText(self.default_home())
         for entry in (self.home_entry, self.device_entry):
@@ -106,6 +111,17 @@ class WifiForm(BaseForm):
         # including the shared "Input" caution, so skip the base's pass.
         pass
 
+    def _set_entry_dot(self, dot, connected: bool, switching: bool):
+        '''Green when on that network, yellow while switching, else blank.'''
+        if switching:
+            self.style.set_tone(dot, "warning")
+            dot.setText("⬤")
+        elif connected:
+            self.style.set_tone(dot, "good")
+            dot.setText("⬤")
+        else:
+            dot.setText("")  # blank, but keeps its reserved width (see add_labeled_entry)
+
     def disconnect_to_home(self):
         '''Stop = go back home, or post that home is missing if it can't.'''
         if not self.process.home_network:
@@ -161,8 +177,13 @@ class WifiForm(BaseForm):
         set_read_only(self.home_entry, switching or (paired and on_home))
         set_enabled(self.process_button, not switching)
 
+        # Dots by the entries: green on the one we're on, both yellow while
+        # switching, blank otherwise.
+        self._set_entry_dot(self.home_dot, connected=on_home, switching=switching)
+        self._set_entry_dot(self.device_dot, connected=on_device, switching=switching)
+
         if switching:
-            return  # leave the optimistic text set by the click
+            return  # leave the base's "Starting"/"Stopping" text
         if not self.entries_filled():
             # Same caution as every other card when an entry is empty.
             text = self.input_needed_text

@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/base_form.py": {
-    "mtime": 1792663731.6074607,
-    "seen": 1792663901.3101995,
-    "ast_hash": "b06e72405d4f4ddb196a9b47010fa3ef",
+    "mtime": 1792667314.019127,
+    "seen": 1792667406.6840012,
+    "ast_hash": "8add084757fdfbf8dfd961752752995d",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_console/_builder.py": {
@@ -960,9 +960,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/forms/wifi.py": {
-    "mtime": 1792666300.2763088,
-    "seen": 1792666375.7990627,
-    "ast_hash": "614234160f6ff54d0b46107c012f0533",
+    "mtime": 1792667387.1436176,
+    "seen": 1792667406.6879349,
+    "ast_hash": "ba64b398c66d7a6e319cc856b7172f65",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {

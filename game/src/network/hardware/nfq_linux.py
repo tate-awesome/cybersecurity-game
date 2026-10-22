@@ -88,6 +88,8 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         stop_r, stop_w = os.pipe()
         poller.register(stop_r, select.POLLIN)
         self.buffer.put("nfq", "Starting NFQ")
+        # Setup is done and the queues are bound - no longer "starting".
+        self._established = True
         try:
             while not stop_event.is_set():
                 events = poller.poll(500)

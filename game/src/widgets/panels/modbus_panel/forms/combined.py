@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
 from .....app_core import Context
 from ....frame_widgets.important_buttons.edit_modbus_register_display.variable_overlay import VariableOverlay
-from ...base_form import BaseForm
+from ...base_form import BaseForm, PHASE_RUNNING, PHASE_STOPPED
 from .numbers import NUMBER_ALIGNMENT, TEXT_ALIGNMENT, align_decimals, format_number
 
 COLUMNS = ["register", "units", "in", "multiplier", "offset", "out", "type"]
@@ -120,13 +120,12 @@ class CombinedTable(BaseForm):
         layout.addWidget(self.process_status)
         self.grid_layout.addWidget(row, self.current_row, 0, 1, -1)
 
-    def configure_on(self):
-        super().configure_on()
-        self.style.set_tone(self.process_status, "good")
-
-    def configure_off(self):
-        super().configure_off()
-        self.style.set_tone(self.process_status, "muted")
+    def apply_phase(self, phase: str):
+        super().apply_phase(phase)
+        # This card shows its status label, so tint it to match the phase:
+        # green running, yellow mid-transition, muted stopped.
+        tone = "good" if phase == PHASE_RUNNING else "muted" if phase == PHASE_STOPPED else "warning"
+        self.style.set_tone(self.process_status, tone)
 
     # Registers
 

@@ -111,6 +111,8 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             self.running = False
             return
 
+        # The divert handle is open and we're about to filter - no longer "starting".
+        self._established = True
         self.pump(self.w, stop_event)
 
         if self.w.is_open:
