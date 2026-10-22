@@ -3,6 +3,7 @@ from ....app_core import Context
 from ...frame_widgets.important_buttons import (ChooseShownPacketConsoleColumns, ClearAllCapturedBufferData,
                                                  FilterPacketConsole, PausePacketConsole)
 from ...frame_widgets.important_buttons.filter_packet_console.filter_overlay import compile_packet_filter
+from ...frame_widgets.important_buttons.packet_columns.columns_overlay import shown_columns
 from ..panel import Panel
 from PySide6.QtWidgets import QWidget
 from ....network.buffer.meta_packet import MetaPacket
@@ -13,6 +14,7 @@ class Builder(Panel):
     # the workspace editor lists it under each of them
     SETTINGS = (
         "packet_columns",
+        "packet_columns_available",
         "packet_console",
         "packet_filter_categories",
         "packet_filter_checkboxes",
@@ -26,7 +28,7 @@ class Builder(Panel):
         #  self.create_filter_boxes(menu_frame)
 
         self.treeview = PacketTreeview(self, context)
-        self.shown_columns = None  # packet_columns as of the last refresh_columns
+        self.shown_columns = None  # the columns shown, in order, as of the last refresh_columns
         self.refresh_columns()
         self.treeview.bind_select(self.on_select)
 
@@ -86,20 +88,15 @@ class Builder(Panel):
         self.treeview.submit(str(packet.get("number")), values)
 
     def refresh_columns(self):
-        '''Shows the columns ticked in packet_columns - only acts when that changed.'''
-        shown = dict(self.context.states.get("packet_columns"))
+        '''
+        Shows the columns in packet_columns' tray, in its order, but only
+        those students are given (see shown_columns) - only acts when that changed.
+        '''
+        shown = shown_columns(self.context)
         if shown == self.shown_columns:
             return
         self.shown_columns = shown
-
-        active_columns = []
-
-        for key in shown:
-
-            if self.context.states.get("packet_columns", key) == "1" or self.context.states.get("packet_columns", key) == 1:
-                active_columns.append(key)
-
-        self.treeview.set_visible_columns(active_columns)
+        self.treeview.set_visible_columns(shown)
 
     # Selection
     def on_select(self, event=None):

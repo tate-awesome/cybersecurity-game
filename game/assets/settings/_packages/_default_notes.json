@@ -44,7 +44,8 @@
         "packet_filter_categories": "How the packet filter's checkboxes are grouped, and which checkboxes each group has.",
         "packet_filter_checkboxes": "Which packet filters start out ticked (1). Nothing ticked shows every packet.",
         "packet_filter_entries": "What starts out typed into the packet filter's text boxes, like an address to filter by.",
-        "packet_columns": "Which packet console columns are shown (1). Students can change this with Show Columns."
+        "packet_columns": "Which packet console columns are shown, and in what order: each column's place from the left (1 is the leftmost), or 0 for not shown. Students change this by dragging fields into the tray in the Columns overlay.",
+        "packet_columns_available": "Which fields the Columns overlay offers students at all (1 = offered). Every field is offered by default, so a workspace only lists what it takes away. A column students aren't given doesn't show even if packet_columns places it."
     },
     "settings_keys": {
         "_note": "Two explanations per key inside each settings field, shown by the Workspace Config Editor: \"description\" in the Description column beside the key, and the longer \"details\" as a tooltip on the key's name. Nested like _default.json; a \"*\" entry covers every key at that level that has no entry of its own (e.g. every hreg_N). A nested object's own \"_note\" explains its heading.",
@@ -610,6 +611,12 @@
             "modbus_word": {
                 "description": "ModBus: \"registers = values\" in one column.",
                 "details": "For ModBus packets, shows \"registers = values\" in one readable column, combining the variables and values columns."
+            }
+        },
+        "packet_columns_available": {
+            "*": {
+                "description": "1 offers this field in the Columns overlay; 0 takes it away, from the overlay and the packet console.",
+                "details": "Whether students get this field at all. Off, it isn't in the Columns overlay's buffet or tray, and the packet console doesn't show it even if packet_columns places it. In developer mode the overlay shows every field, each with a checkbox for this; Save Current Columns as Default writes it here."
             }
         },
         "available": {

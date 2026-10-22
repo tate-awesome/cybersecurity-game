@@ -1,5 +1,5 @@
-from PySide6.QtCore import QMargins, QRect, QSize, Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget
+from PySide6.QtCore import QMargins, QPoint, QRect, QSize, Qt
+from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget, QWidgetItem
 
 
 QWIDGETSIZE_MAX = (1 << 24) - 1  # Qt's "no maximum" sentinel for widget sizes
@@ -159,3 +159,85 @@ class FlowLayout(QLayout):
         if parent.isWidgetType():
             return parent.style().pixelMetric(parent.style().PixelMetric.PM_LayoutHorizontalSpacing, None, parent)
         return 0
+
+
+class WrapLayout(QLayout):
+    '''
+    Lays its widgets out left to right at their own size, wrapping to a new
+    row when the next one wouldn't fit - like words in a paragraph, for rows
+    of chips. Unlike FlowLayout, nothing is stretched and the order reads
+    across, then down.
+
+    Its height depends on its width (heightForWidth). Its size hint uses
+    its widget's fixed width when it has one, so a popup that sizes itself
+    to its contents (an Overlay) gets the wrapped height up front.
+    '''
+
+    def __init__(self, parent: QWidget | None = None, spacing: int = 0):
+        super().__init__(parent)
+        self._items: list[QLayoutItem] = []
+        self.setSpacing(spacing)
+        self.setContentsMargins(QMargins(0, 0, 0, 0))
+
+    def addItem(self, item: QLayoutItem):
+        self._items.append(item)
+
+    def insertWidget(self, index: int, widget: QWidget):
+        '''Like QBoxLayout.insertWidget - so a DropZone can lay its items out with this.'''
+        self.addChildWidget(widget)
+        self._items.insert(max(0, min(index, len(self._items))), QWidgetItem(widget))
+        self.invalidate()
+
+    def count(self) -> int:
+        return len(self._items)
+
+    def itemAt(self, index: int) -> QLayoutItem | None:
+        if 0 <= index < len(self._items):
+            return self._items[index]
+        return None
+
+    def takeAt(self, index: int) -> QLayoutItem | None:
+        if 0 <= index < len(self._items):
+            return self._items.pop(index)
+        return None
+
+    def expandingDirections(self) -> Qt.Orientation:
+        return Qt.Orientation(0)
+
+    def hasHeightForWidth(self) -> bool:
+        return True
+
+    def heightForWidth(self, width: int) -> int:
+        return self._do_layout(QRect(0, 0, width, 0), test_only=True)
+
+    def setGeometry(self, rect: QRect):
+        super().setGeometry(rect)
+        self._do_layout(rect, test_only=False)
+
+    def sizeHint(self) -> QSize:
+        return self.minimumSize()
+
+    def minimumSize(self) -> QSize:
+        size = QSize()
+        for item in self._items:
+            size = size.expandedTo(item.minimumSize())
+        parent = self.parentWidget()
+        if parent is not None and parent.minimumWidth() == parent.maximumWidth():
+            # The widget's own margins (padding) aren't the layout's to fill
+            margins = parent.contentsMargins()
+            width = parent.maximumWidth() - margins.left() - margins.right()
+            size = QSize(width, self.heightForWidth(width))
+        return size
+
+    def _do_layout(self, rect: QRect, test_only: bool) -> int:
+        space = self.spacing()
+        x, y, row_height = rect.x(), rect.y(), 0
+        for item in self._items:
+            hint = item.sizeHint()
+            if x > rect.x() and x + hint.width() > rect.right() + 1:
+                x, y, row_height = rect.x(), y + row_height + space, 0
+            if not test_only:
+                item.setGeometry(QRect(QPoint(x, y), hint))
+            x += hint.width() + space
+            row_height = max(row_height, hint.height())
+        return y + row_height - rect.y()

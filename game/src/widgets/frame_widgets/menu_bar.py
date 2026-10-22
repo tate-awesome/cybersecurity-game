@@ -7,7 +7,7 @@ from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUs
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
                                 OpenAccessPointConfigInBrowser, OpenMaterialEditor, OpenSettingsPage, OpenWorkspaceEditor,
                                 RefreshCurrentPage, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
-                                SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleWorkspaceBackground,
+                                SavePacketColumnsAsDefault, SelectBackground, SelectColorTheme, ToggleDebugLabels, ToggleWorkspaceBackground,
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
@@ -68,7 +68,7 @@ RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor, OpenMaterialEditor,
                          ConfigureThisWorkspace, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
-                         EditWorkspaceAvailability, ToggleDebugLabels]),
+                         SavePacketColumnsAsDefault, EditWorkspaceAvailability, ToggleDebugLabels]),
     ],
 }
 RIGHT_ZONE_ICONS: dict[str, str] = {

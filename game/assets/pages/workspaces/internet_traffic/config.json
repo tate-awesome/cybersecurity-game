@@ -22,14 +22,7 @@
     "settings": {
         "available": {"sniff": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1},
-        "packet_columns": {
-            "time_word": 1,
-            "number": 1,
-            "observer": 1,
-            "direction": 1,
-            "protocol": 1,
-            "modbus_word": 1
-        }
+        "packet_columns": {"time_word": 2, "number": 1, "length": 6, "ip_src": 3, "ip_dst": 4, "protocol": 5}
     },
 
     "title": "internet_traffic_workspace",

@@ -18,10 +18,10 @@ class CheckboxOverlay:
     (mutated in place, so the checkboxes' autosave keeps working); a panel
     that lays its forms out in that category's order then follows the drag.
 
-    Used for hacking-panel form visibility, modbus-panel form visibility, and
-    packet-console column visibility - those only ever differed in which
-    settings category to read/write (state_key) and what to title the column
-    (category_label).
+    Used for hacking-panel and modbus-panel form visibility - those only
+    ever differed in which settings category to read/write (state_key) and
+    what to title the column (category_label). Packet-console columns have
+    their own overlay (see PacketColumnsOverlay).
 
     Each chip is labeled with the labels key "<label_group>_<key>";
     label_group defaults to state_key.

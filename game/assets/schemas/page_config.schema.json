@@ -325,6 +325,9 @@
                 "packet_columns": {
                     "type": "object"
                 },
+                "packet_columns_available": {
+                    "type": "object"
+                },
                 "available": {
                     "type": "object"
                 },

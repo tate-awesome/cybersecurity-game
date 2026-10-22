@@ -35,7 +35,7 @@ from .load_settings_preset_file import LoadSettingsPresetFile
 from .checkbox_overlay.choose_shown_network_action_forms import ChooseShownNetworkActionForms
 from .checkbox_overlay.choose_shown_modbus_table_forms import ChooseShownModbusTableForms
 from .checkbox_overlay.choose_shown_defender_modbus_forms import ChooseShownDefenderModbusForms
-from .checkbox_overlay.choose_shown_packet_console_columns import ChooseShownPacketConsoleColumns
+from .packet_columns.choose_shown_packet_console_columns import ChooseShownPacketConsoleColumns
 
 # Style
 from .toggle_light_dark_mode import ToggleLightDarkMode
@@ -74,6 +74,7 @@ from .open_workspace_editor import OpenWorkspaceEditor
 from .open_material_editor import OpenMaterialEditor
 from .configure_this_workspace import ConfigureThisWorkspace
 from .save_layout_as_default import SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault
+from .packet_columns.save_columns_as_default import SavePacketColumnsAsDefault
 from .settings_overlays.edit_workspace_availability import EditWorkspaceAvailability
 from .toggle_debug_labels import ToggleDebugLabels
 

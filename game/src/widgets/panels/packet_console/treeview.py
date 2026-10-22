@@ -88,7 +88,12 @@ class PacketTreeview:
     # Columns
     # ------------------------------------------------------------------
     def set_visible_columns(self, columns):
+        '''Shows just these columns, left to right in this order - the rest are hidden after them.'''
         visible = set(columns)
+        header = self._tree.header()
+        for position, col in enumerate(columns):
+            if col in self.columns:
+                header.moveSection(header.visualIndex(self.columns.index(col)), position)
         for i, col in enumerate(self.columns):
             self._tree.setColumnHidden(i, col not in visible)
 

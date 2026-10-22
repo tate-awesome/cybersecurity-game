@@ -40,7 +40,7 @@ SETTING_TABS: list[tuple[str, list[str] | list[tuple[str, list[str]]]]] = [
         ("Attacker Options", ["modbus_packet_modify_enabled", "network_action_form_inputs"]),
         ("Modbus Registers", ["modbus_registers"]),
         ("Packet Console", ["packet_console", "packet_filter_categories", "packet_filter_checkboxes",
-                            "packet_filter_entries", "packet_columns"]),
+                            "packet_filter_entries", "packet_columns", "packet_columns_available"]),
     ]),
     ("Defender Options", []),
     ("Appearance", ["model_sprites", "model_colors", "strip_chart_sprites", "strip_chart_colors",

@@ -441,6 +441,34 @@
         "modbus_word": 0
     },
 
+    "packet_columns_available": {
+        "time_word": 1,
+        "number": 1,
+        "length": 1,
+        "observer": 1,
+        "hack": 1,
+        "purpose": 1,
+        "mac_src": 1,
+        "mac_dst": 1,
+        "ip_src": 1,
+        "ip_dst": 1,
+        "direction": 1,
+        "protocol": 1,
+        "layers_word": 1,
+        "summary": 1,
+        "mac_word": 1,
+        "ip_word": 1,
+        "variables": 1,
+        "values": 1,
+        "command": 1,
+        "command_type": 1,
+        "is_modbus": 1,
+        "is_useful": 1,
+        "is_primary": 1,
+        "command_word": 1,
+        "modbus_word": 1
+    },
+
     "available": {
         "wifi": 0,
         "nmap": 0,

@@ -18,8 +18,8 @@ floating over the window, not the system's drag and drop, so it works the
 same on every platform and window system (and as root under sudo, where
 the system's can't reach the window).
 
-ListZone (a column, by index) is the zone so far. A "slot" is whatever a
-zone's slot_at returns, so a zone that docks - say, by which edge of a
+ListZone (a column, by index) and RowZone (rows that wrap, by index) are
+the zones so far. A "slot" is whatever a zone's slot_at returns, so a zone that docks - say, by which edge of a
 pane the drop is near - only needs its own slot_at and indicator_rect, and
 its owner reads that slot.
 '''
@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractScrollArea, QAbstractSp
                                QGraphicsOpacityEffect, QLabel, QLineEdit, QVBoxLayout, QWidget)
 
 from ...app_core import Context
+from .flow_layout import WrapLayout
 
 # How thick the line showing where a drop lands is, the soft glow around it, and the dots capping its ends
 INDICATOR_WIDTH = 4
@@ -189,7 +190,8 @@ class _Indicator(QWidget):
     '''
     The line showing where a drop lands, floating over a zone's items so
     none of them can cover it: an accent line in a soft glow, with a dot
-    at each end. Its line runs along its middle, end to end.
+    at each end. Its line runs along its middle, end to end - across, or
+    down for a line taller than it's wide (between two items in a row).
     '''
 
     def __init__(self, zone: "DropZone"):
@@ -197,12 +199,14 @@ class _Indicator(QWidget):
         self.style = zone.style
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.style.set_material(self, "none")
+        self.vertical = False
         self.hide()
 
     def place(self, line: QRect):
         '''Covers line, with room around it for the glow and the dots.'''
         pad = max(INDICATOR_GLOW, INDICATOR_CAP) // 2
-        self.setGeometry(line.adjusted(0, -pad, 0, pad))
+        self.vertical = line.height() > line.width()
+        self.setGeometry(line.adjusted(-pad, 0, pad, 0) if self.vertical else line.adjusted(0, -pad, 0, pad))
         self.show()
         self.raise_()
         self.update()
@@ -211,19 +215,24 @@ class _Indicator(QWidget):
         color = QColor(self.style.color("accent"))
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        y = self.height() / 2
         r = INDICATOR_CAP / 2
-        left, right = r, self.width() - r
+        if self.vertical:
+            x = self.width() / 2
+            ends = [(x, r), (x, self.height() - r)]
+        else:
+            y = self.height() / 2
+            ends = [(r, y), (self.width() - r, y)]
+        (x1, y1), (x2, y2) = ends
         glow = QColor(color)
         glow.setAlpha(70)
         for line_color, width in ((glow, INDICATOR_GLOW), (color, INDICATOR_WIDTH)):
             pen = QPen(line_color, width)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
-            painter.drawLine(int(left), int(y), int(right), int(y))
+            painter.drawLine(int(x1), int(y1), int(x2), int(y2))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(color)
-        for x in (left, right):
+        for x, y in ends:
             painter.drawEllipse(int(x - r), int(y - r), INDICATOR_CAP, INDICATOR_CAP)
         painter.end()
 
@@ -317,3 +326,56 @@ class ListZone(DropZone):
         else:
             y = self.items[-1].geometry().bottom() + (gap - INDICATOR_WIDTH) // 2 + 1
         return QRect(0, max(0, min(y, self.height() - INDICATOR_WIDTH)), self.width(), INDICATOR_WIDTH)
+
+
+class RowZone(DropZone):
+    '''
+    Items left to right at their own size, wrapping onto new rows (see
+    WrapLayout) - for chips. A slot is the index a drop would insert at,
+    found in the row nearest the mouse; the indicator is a line in the gap
+    before that item (or after the last one in its row). Empty, it keeps a
+    row's height, so there's still somewhere to drop.
+
+    Give it a fixed width, so its wrapped height is known before it's
+    shown (see WrapLayout.minimumSize).
+    '''
+
+    def __init__(self, context: Context, zone_id: str, accepts: set[str], spacing: int | None = None):
+        super().__init__(context, zone_id, accepts)
+        WrapLayout(self, context.style.igap if spacing is None else spacing)
+        self.setMinimumHeight(self.fontMetrics().height() * 2)
+
+    def slot_at(self, pos: QPoint) -> int:
+        if not self.items:
+            return 0
+        # The row nearest the mouse (rows share their top edge)...
+        tops = sorted({widget.geometry().top() for widget in self.items})
+        def distance(top: int) -> int:
+            row = [w.geometry() for w in self.items if w.geometry().top() == top]
+            bottom = max(g.bottom() for g in row)
+            return 0 if top <= pos.y() <= bottom else min(abs(pos.y() - top), abs(pos.y() - bottom))
+        top = min(tops, key=distance)
+        # ...then the first item in it past the mouse, or just after the row
+        last = 0
+        for index, widget in enumerate(self.items):
+            if widget.geometry().top() != top:
+                continue
+            if pos.x() < widget.geometry().center().x():
+                return index
+            last = index + 1
+        return last
+
+    def indicator_rect(self, slot: int) -> QRect:
+        if not self.items:
+            return QRect(0, (self.height() - INDICATOR_WIDTH) // 2, self.width(), INDICATOR_WIDTH)
+        gap = self.layout().spacing()
+        # Before the item at slot - unless that starts a new row and the
+        # slot follows the row above, when it's after the item before it
+        before = self.items[slot - 1].geometry() if slot > 0 else None
+        if slot < len(self.items) and (before is None or self.items[slot].geometry().top() == before.top()):
+            at = self.items[slot].geometry()
+            x = at.left() - (gap + INDICATOR_WIDTH) // 2
+        else:
+            at = before
+            x = at.right() + (gap - INDICATOR_WIDTH) // 2 + 1
+        return QRect(max(0, min(x, self.width() - INDICATOR_WIDTH)), at.top(), INDICATOR_WIDTH, at.height())
