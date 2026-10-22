@@ -87,6 +87,39 @@ class NMapper(Process):
                 hostname_str = f"({hostname})" if hostname else "(No Hostname)"
                 self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
 
+        self.apply_nicknames(nm)
+
+    def apply_nicknames(self, nm):
+        '''
+        Nicknames each host found (in network_hosts, by MAC - see the network
+        graph's Configure Hosts) after its hostname, or else the maker nmap
+        reads from its MAC. Its MAC comes from the scan when nmap could see
+        it (a privileged scan on the same network), or else from the IPs the
+        network graph has seen on each MAC. Hosts already nicknamed keep theirs.
+        '''
+        _, host_ips = self.context.buffer.network.get_hosts()
+        ip_macs = {}
+        for mac, ips in host_ips.items():
+            for ip in ips:
+                ip_macs.setdefault(ip, mac)
+
+        nicknames = self.context.states.get("network_hosts")
+        for host in nm.all_hosts():
+            if nm[host].state() != 'up':
+                continue
+            mac = nm[host].get('addresses', {}).get('mac')
+            vendor = nm[host].get('vendor', {}).get(mac, "") if mac else ""
+            mac = mac.lower() if mac else ip_macs.get(host)
+            name = nm[host].hostname() or vendor
+            if not mac or not name:
+                continue
+            # Same fields Configure Hosts gives an address once it's edited
+            entry = nicknames.setdefault(mac, {"nickname": "", "hide": "0"})
+            if entry.get("nickname"):
+                continue
+            entry["nickname"] = name
+            self.buffer.put("nmap", f"Nicknamed {mac} ({host}): {name}")
+
     def get_active_iface(self):
         active_iface = ""
         self.interface_manager = self.InterfaceManager()
