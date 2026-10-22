@@ -1,6 +1,10 @@
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QLabel, QWidget
 from .....app_core import Context
 from ...base_form import BaseForm
+from .numbers import NUMBER_ALIGNMENT, TEXT_ALIGNMENT, align_decimals, format_number
+
+# Each column's kind, for its alignment - see numbers
+NUMBER_COLUMNS = {"incoming", "outgoing"}
 
 class MitmTable(BaseForm):
     def __init__(self, master: QWidget, context: Context):
@@ -19,7 +23,8 @@ class MitmTable(BaseForm):
         # Create value table entries
         self.rows = {}
 
-        self.add_label_row("modbus_table", ["name", "in", "out", "source"])
+        headers = self.add_label_row("modbus_table", ["name", "in", "out", "source"])
+        self.align_row(headers)
 
         for key in self.context.states.get_registers():
             labels = self.add_label_row("modbus_table", ["-", "-", "-", "-"])
@@ -28,10 +33,15 @@ class MitmTable(BaseForm):
             self.rows[key]["incoming"] = labels[1]
             self.rows[key]["outgoing"] = labels[2]
             self.rows[key]["source"] = labels[3]
+            self.align_row(labels)
 
         self.context.animation_manager.add_callback(f"modbus_table_{id(self)}", self.refresh_values)
         self.refresh_registers()
         self.context.animation_manager.add_callback(f"modbus_table_registers_{id(self)}", self.refresh_registers)
+
+    def align_row(self, labels: list[QLabel]):
+        for label, name in zip(labels, ["name", "incoming", "outgoing", "source"]):
+            label.setAlignment(NUMBER_ALIGNMENT if name in NUMBER_COLUMNS else TEXT_ALIGNMENT)
 
     def refresh_registers(self):
         '''
@@ -71,43 +81,37 @@ class MitmTable(BaseForm):
             if not widget.isHidden():
                 widget.hide()
 
-    def format_number(self, value: float, decimals: int = 2) -> str:
-        value = round(value, decimals)
-        if value == 0:
-            value = 0.00
-        return f"{value:.{decimals}f}".rstrip("0").rstrip(".")
-
     def refresh_values(self):
-        for key in self.rows:
-            this_row = self.rows[key]
-            in_str = "-"
-            out_str = "-"
-            command = "-"
+        texts = {}
+        for key, this_row in self.rows.items():
+            if this_row["name"].isHidden():
+                continue
             factor_str = self.context.states.get_register(key, "factor")
-            factor = 1.0
             try:
-                f = float(factor_str)
-                factor = f
-            except:
+                factor = float(factor_str)
+            except (TypeError, ValueError):
                 message = "err: factor"
-                this_row["incoming"].setText(message)
-                this_row["outgoing"].setText(message)
-                this_row["source"].setText(message)
+                texts[key] = {"incoming": message, "outgoing": message, "source": message}
                 continue
 
             # TODO switch to a get dump type of thing where it dumps all the changed values
 
             in_value = self.buffer.get_single(key, "in")
-            if in_value is not None:
-                in_str = self.format_number(in_value*factor)
-
             out_value = self.buffer.get_single(key, "out")
-            if out_value is not None:
-                out_str = self.format_number(out_value*factor)
+            texts[key] = {
+                "incoming": "-" if in_value is None else format_number(in_value*factor),
+                "outgoing": "-" if out_value is None else format_number(out_value*factor),
+                "source": self.buffer.get_command(key) or "-",
+            }
 
-            if com := self.buffer.get_command(key):
-                command = com
+        # Line up each number column's decimal points across the shown rows
+        for column in NUMBER_COLUMNS:
+            aligned = align_decimals([row[column] for row in texts.values()])
+            for row, text in zip(texts.values(), aligned):
+                row[column] = text
 
-            this_row["incoming"].setText(in_str)
-            this_row["outgoing"].setText(out_str)
-            this_row["source"].setText(command)
+        for key, row in texts.items():
+            for name, text in row.items():
+                label = self.rows[key][name]
+                if label.text() != text:
+                    label.setText(text)

@@ -3,8 +3,13 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidg
 from .....app_core import Context
 from ....frame_widgets.important_buttons.edit_modbus_register_display.variable_overlay import VariableOverlay
 from ...base_form import BaseForm
+from .numbers import NUMBER_ALIGNMENT, TEXT_ALIGNMENT, align_decimals, format_number
 
 COLUMNS = ["register", "units", "in", "multiplier", "offset", "out", "type"]
+# Each label column's kind, for its alignment - see numbers (the entries'
+# headers stay centered over them)
+TEXT_COLUMNS = {"register", "units", "type"}
+NUMBER_COLUMNS = {"in", "out"}
 
 class CombinedTable(BaseForm):
     '''
@@ -25,7 +30,11 @@ class CombinedTable(BaseForm):
         self.grid_layout.setColumnStretch(0, 2)
 
         headers = self.add_label_row("modbus_combined", COLUMNS)
-        headers[COLUMNS.index("units")].setAlignment(Qt.AlignmentFlag.AlignLeft)
+        for header, column in zip(headers, COLUMNS):
+            if column in TEXT_COLUMNS:
+                header.setAlignment(TEXT_ALIGNMENT)
+            elif column in NUMBER_COLUMNS:
+                header.setAlignment(NUMBER_ALIGNMENT)
         self.add_divider()
 
         self.rows = {}
@@ -65,10 +74,10 @@ class CombinedTable(BaseForm):
         row = {}
         cells = []
 
-        def label(name: str, alignment: Qt.AlignmentFlag):
+        def label(name: str):
             label = QLabel("-")
             label.setFont(self.style.get_font("mono"))
-            label.setAlignment(alignment)
+            label.setAlignment(NUMBER_ALIGNMENT if name in NUMBER_COLUMNS else TEXT_ALIGNMENT)
             self.grid_layout.addWidget(label, self.current_row, len(cells))
             cells.append(label)
             row[name] = label
@@ -86,14 +95,13 @@ class CombinedTable(BaseForm):
             cells.append(wrapper)
             row[name] = entry
 
-        left = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        label("register", left)
-        label("units", left)
-        label("in", Qt.AlignmentFlag.AlignCenter)
+        label("register")
+        label("units")
+        label("in")
         entry("multiplier")
         entry("offset")
-        label("out", Qt.AlignmentFlag.AlignCenter)
-        label("type", Qt.AlignmentFlag.AlignCenter)
+        label("out")
+        label("type")
 
         self.rows[key] = row
         self.row_cells[key] = cells
@@ -184,21 +192,33 @@ class CombinedTable(BaseForm):
     # Values
 
     def refresh_values(self):
+        texts = {}
         for key, row in self.rows.items():
             if row["in"].isHidden():
                 continue
             try:
                 factor = float(self.context.states.get_register(key, "factor"))
             except (TypeError, ValueError):
-                for name in ("in", "out", "type"):
-                    self.set_text(row[name], "err: factor")
+                texts[key] = {name: "err: factor" for name in ("in", "out", "type")}
                 continue
 
             in_value = self.buffer.get_single(key, "in")
-            self.set_text(row["in"], "-" if in_value is None else self.format_number(in_value * factor))
             out_value = self.buffer.get_single(key, "out")
-            self.set_text(row["out"], "-" if out_value is None else self.format_number(out_value * factor))
-            self.set_text(row["type"], self.command_type(self.buffer.get_command(key)))
+            texts[key] = {
+                "in": "-" if in_value is None else format_number(in_value * factor),
+                "out": "-" if out_value is None else format_number(out_value * factor),
+                "type": self.command_type(self.buffer.get_command(key)),
+            }
+
+        # Line up each number column's decimal points across the shown rows
+        for column in NUMBER_COLUMNS:
+            aligned = align_decimals([row[column] for row in texts.values()])
+            for row, text in zip(texts.values(), aligned):
+                row[column] = text
+
+        for key, row in texts.items():
+            for name, text in row.items():
+                self.set_text(self.rows[key][name], text)
 
     def command_type(self, command: str | None) -> str:
         '''"Read Response" -> R, "Write Request" -> W (see MetaPacket's command_word).'''
@@ -208,12 +228,6 @@ class CombinedTable(BaseForm):
         if verb in ("read", "write"):
             return self.context.labels.get(f"modbus_combined_{verb}")
         return command
-
-    def format_number(self, value: float, decimals: int = 2) -> str:
-        value = round(value, decimals)
-        if value == 0:
-            value = 0.00
-        return f"{value:.{decimals}f}".rstrip("0").rstrip(".")
 
     # Modify process
 
