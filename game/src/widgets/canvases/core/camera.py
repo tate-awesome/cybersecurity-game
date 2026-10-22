@@ -11,6 +11,9 @@ class Camera:
         self.canvas = canvas
         self.world_bounds = world_bounds
         self.padding = 0
+        # Extra room a canvas keeps around the world for what it draws outside
+        # it, e.g. the map's grid numbers (see Draw.grid_label_margin)
+        self.label_margin = 0.0
         self.update_padding()
 
         # Current Camera zoom (accessed by Draw)
@@ -24,7 +27,7 @@ class Camera:
 
     def update_padding(self):
         base = min(self.canvas.width(), self.canvas.height())
-        self.padding = max(base * 0.025, 10)
+        self.padding = max(base * 0.025, 10) + self.label_margin
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       TRANSFORMERS

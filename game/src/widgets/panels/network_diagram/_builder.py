@@ -4,7 +4,7 @@ from ...canvases.network_diagram import NetworkDiagramCanvas
 from ...canvases.strip_chart import StripChart
 from ... import Panes
 from ..panel import Panel
-from ...frame_widgets.important_buttons import EditNetworkHosts, ToggleNetworkGraphRingView
+from ...frame_widgets.important_buttons import EditNetworkHosts, ToggleNetworkGraphRingView, ToggleStripChartAutoFit
 
 class Builder(Panel):
     KEY = "network_graph_panel"
@@ -49,7 +49,8 @@ class Builder(Panel):
         def factor():
             return 1.0
         self.rate_chart = StripChart(right_frame, context, (0, 0), title, units, factor,
-                                      lambda: {"": list(self.buffer.get_window_type_pps())})
+                                      lambda: {"": list(self.buffer.get_window_type_pps())},
+                                      min_max=2)
         self.rate_chart.start_animation()
 
         self.selected_text = QPlainTextEdit()
@@ -61,6 +62,7 @@ class Builder(Panel):
 
         self.menu_bar.add_important(EditNetworkHosts)
         self.menu_bar.add_important(ToggleNetworkGraphRingView)
+        self.menu_bar.add_important(ToggleStripChartAutoFit)
         self.menu_bar.minimize_button(panes)
 
         self.current_mode = "live"

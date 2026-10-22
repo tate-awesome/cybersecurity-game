@@ -21,17 +21,19 @@ class DefenderWorldMap(Canvas):
         def frame_callback():
             color = context.style.color
             self.draw.background(color("widget"))
-            self.draw.grid_lines(color("border"), color("accent"), color("muted_text"))
+            self.draw.grid_lines(color("border"), color("accent"), color("text"), color("widget"))
 
             positions = self.map_buffer.get_path("client_clean")
-            if len(positions) < 1:
-                return
-            self.draw.line(positions, color("incoming"))
+            rows = []
+            if positions:
+                self.draw.line(positions, color("incoming"))
+                bearing = self.modbus.get_single("theta", "client_clean")
+                if bearing is not None:
+                    self.draw.boat(positions[-1], bearing, color("incoming"), color("text"))
+                rows.append((context.labels.get("map_legend_client"), color("incoming"),
+                             self.draw.coordinates(positions[-1])))
 
-            bearing = self.modbus.get_single("theta", "client_clean")
-            if bearing is None:
-                return
-            self.draw.boat(positions[-1], bearing, color("incoming"), color("text"))
+            self.draw.map_crosshairs(self.hover_pos, rows, color("text"), color("widget"))
 
         self.set_frame_callback(frame_callback)
         self.start_animation()

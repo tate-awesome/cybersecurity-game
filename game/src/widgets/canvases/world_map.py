@@ -31,7 +31,8 @@ class WorldMap(Canvas):
                 self.draw.background(color("ocean"))
 
             if sprite_enabled("grid_lines"):
-                self.draw.grid_lines(color("grid_lines"), color("grid_axes"), color("grid_numbers"))
+                self.draw.grid_lines(color("grid_lines"), color("grid_axes"), color("grid_numbers"),
+                                     color("ocean"), sprite_enabled("grid_numbers"))
 
             if sprite_enabled("path_in"):
                 positions = self.buffer.get_simple_path("in")
@@ -46,6 +47,20 @@ class WorldMap(Canvas):
                 bearing = self.buffer.get_bearing("out")
                 position = self.buffer.get_position("out")
                 self.draw.boat(position, bearing, color("boat_out_fill"), color("boat_out_outline"))
+
+            # Drawn last so the crosshairs sit on top: a legend row per boat whose
+            # label (its name) or position (its coordinates) is switched on
+            rows = []
+            for direction in ("in", "out"):
+                show_label = sprite_enabled(f"boat_{direction}_label")
+                show_position = sprite_enabled(f"boat_{direction}_position")
+                position = self.buffer.get_position(direction)
+                if position is None or not (show_label or show_position):
+                    continue
+                rows.append((context.labels.get(f"map_legend_{direction}") if show_label else "",
+                             color(f"boat_{direction}_fill"),
+                             self.draw.coordinates(position) if show_position else ""))
+            self.draw.map_crosshairs(self.hover_pos, rows, color("grid_numbers"), color("ocean"))
 
         
         self.set_frame_callback(frame_callback)

@@ -55,6 +55,11 @@ class Canvas(QWidget):
         self.draw = Draw(self, context, self.camera)
         self.painter: QPainter | None = None  # live only during paintEvent
 
+        # The cursor, for crosshairs (see Draw.map_crosshairs) - recorded only,
+        # the animation loop's next frame picks it up (as in StripChartBase)
+        self.hover_pos = None
+        self.setMouseTracking(True)
+
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       Animation Controls
@@ -116,10 +121,14 @@ class Canvas(QWidget):
             self.update()
 
     def mouseMoveEvent(self, event):
+        pos = event.position()
+        self.hover_pos = (pos.x(), pos.y())
         if event.buttons() & Qt.MouseButton.LeftButton:
-            pos = event.position()
             self.camera.do_pan(pos.x(), pos.y())
             self.update()
+
+    def leaveEvent(self, event):
+        self.hover_pos = None
 
     def wheelEvent(self, event):
         pos = event.position()

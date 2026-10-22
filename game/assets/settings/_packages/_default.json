@@ -25,7 +25,7 @@
         "ocean": "widget",
         "grid_lines": "border",
         "grid_axes": "accent",
-        "grid_numbers": "muted_text",
+        "grid_numbers": "text",
         "path_in": "incoming",
         "boat_in_fill": "incoming",
         "boat_in_outline": "text",
@@ -56,7 +56,7 @@
         "background": "widget",
         "grid_lines": "border",
         "grid_axes": "accent",
-        "grid_numbers": "muted_text",
+        "grid_numbers": "text",
         "paths": [
             "chart_1",
             "chart_2",

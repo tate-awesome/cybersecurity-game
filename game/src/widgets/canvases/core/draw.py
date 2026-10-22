@@ -6,6 +6,9 @@ import math, time
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFontMetricsF, QPen, QPolygonF
 
+# Pixels between the map's grid and its numbers, and between the cursor and its crosshair labels
+GRID_LABEL_GAP = 4
+
 class Draw:
     '''
     Contains helper functions for drawing objects in world space.
@@ -203,7 +206,15 @@ class Draw:
         self._draw_line(points, line_color, 2)
 
 
-    def grid_lines(self, lines_color="white", axes_color="red", numbers_color="#3a6070"):
+    def grid_lines(self, lines_color="white", axes_color="red", numbers_color="#3a6070",
+                   background_color: str | None = None, numbers: bool = True):
+        # Leaves room beside the world for the numbers - set before anything
+        # this frame is placed, and only redone when the font changes
+        margin = self.grid_label_margin() if numbers else 0.0
+        if margin != self.camera.label_margin:
+            self.camera.label_margin = margin
+            self.camera.update_padding()
+
         for i in range(0, 210, 10):
             h_line = [(0, i), (200, i)]
             v_line = t.rotate(h_line, math.pi/2, (i, i))
@@ -216,18 +227,153 @@ class Draw:
             self._draw_line(h_line, color, 0.5)
             self._draw_line(v_line, color, 0.5)
 
-            # Draw labels every 20 units using already-transformed coordinates
-            if i % 20 == 0:
-                # h_line goes from (0,i) to (200,i) — use its left end for the Y axis label
-                # v_line goes from (i,0) to (i,200) — use its top end for the X axis label
-                x_pixel = v_line[0][0]   # x position of vertical line = X axis label position
-                y_pixel = h_line[0][1]   # y position of horizontal line = Y axis label position
+        if numbers:
+            self.grid_numbers(numbers_color, background_color)
 
-                # X axis label — sits above the top of each vertical line
-                font = self.context.style.get_font("chart_numbers")
-                self._draw_text(x_pixel, v_line[0][1] + 10, str(i), font, numbers_color)
-                # Y axis label — sits to the left of each horizontal line
-                self._draw_text(h_line[0][0] - 16, y_pixel, str(i), font, numbers_color)
+    def grid_label_margin(self) -> float:
+        '''
+        Room the grid numbers need beside the world (under it and left of it),
+        for the camera's padding (see Camera.label_margin) - so the unzoomed
+        map's numbers sit wholly inside the canvas.
+        '''
+        width, height = self.text_size("200", self.context.style.get_font("chart_numbers"))
+        return GRID_LABEL_GAP + max(width, height)
+
+    def _grid_number_anchors(self, font) -> tuple[float, float, bool, bool]:
+        '''
+        (row_y, column_x, row_pinned, column_pinned): the center line of the x
+        numbers' row under the grid and the right edge of the y numbers' column
+        left of it - each pinned inside the canvas once the grid's edge leaves
+        it (zoomed in or panned), so the numbers stay on screen.
+        '''
+        w, h = self.canvas.width(), self.canvas.height()
+        width, height = self.text_size("200", font)
+        left, bottom = self.camera.world_to_canvas([(0, 0)])[0]
+        row_y = bottom + GRID_LABEL_GAP + height / 2
+        column_x = left - GRID_LABEL_GAP
+        pinned_row_y = min(max(row_y, GRID_LABEL_GAP + height / 2), h - GRID_LABEL_GAP - height / 2)
+        pinned_column_x = min(max(column_x, GRID_LABEL_GAP + width), w - GRID_LABEL_GAP)
+        return pinned_row_y, pinned_column_x, pinned_row_y != row_y, pinned_column_x != column_x
+
+    def grid_numbers(self, color: str, background_color: str | None = None):
+        '''
+        Numbers every 20 units, x under the grid and y left of it (see
+        _grid_number_anchors), on a background_color backdrop while pinned
+        over the map. One partly off the canvas, or that would land on another
+        (the two rows meet in a corner once both are pinned), is skipped.
+        '''
+        font = self.context.style.get_font("chart_numbers")
+        row_y, column_x, row_pinned, column_pinned = self._grid_number_anchors(font)
+        canvas_rect = QRectF(0, 0, self.canvas.width(), self.canvas.height())
+
+        drawn = []
+        def place(x, y, text, anchor, pinned):
+            rect = self.text_rect(x, y, *self.text_size(text, font), anchor)
+            if not canvas_rect.contains(rect) or any(rect.intersects(other) for other in drawn):
+                return
+            drawn.append(rect)
+            if pinned and background_color:
+                self.canvas.painter.fillRect(rect.adjusted(-2, 0, 2, 0), self._opaque(background_color))
+            self._draw_text(x, y, text, font, color, anchor)
+
+        for i in range(0, 210, 20):
+            x, y = self.camera.world_to_canvas([(i, i)])[0]
+            place(x, row_y, str(i), "center", row_pinned)
+            place(column_x, y, str(i), "e", column_pinned)
+
+    def map_crosshairs(self, cursor_pos: tuple[float, float] | None, rows: list[tuple[str, str, str]],
+                       text_color: str, background_color: str):
+        '''
+        Draws a mouse-following crosshair, like the strip charts': over the
+        grid, lines from the cursor to the x and y numbers with the cursor's
+        coordinates over them; anywhere on the canvas, a legend beside the
+        cursor - one row per (legend_text, color, value_text) in rows, reading
+        legend name, color square, value. An empty legend_text or value_text
+        leaves that part out.
+        '''
+        if cursor_pos is None:
+            return
+        cx, cy = cursor_pos
+        wx, wy = self.camera.canvas_to_world([cursor_pos])[0]
+        (x0, y0), (x1, y1) = self.camera.world_bounds
+        font = self.context.style.get_font("chart_numbers")
+
+        if x0 <= wx <= x1 and y0 <= wy <= y1:
+            row_y, column_x, _, _ = self._grid_number_anchors(font)
+            self._draw_line((column_x, cy, cx, cy), text_color, 1)
+            self._draw_line((cx, row_y, cx, cy), text_color, 1)
+            # Kept wholly on the canvas - a readout can be wider than the numbers it sits over
+            x_text, y_text = f"{wx:.1f}", f"{wy:.1f}"
+            x_width = self.text_size(x_text, font)[0]
+            x_center = min(max(cx, GRID_LABEL_GAP + x_width / 2), self.canvas.width() - GRID_LABEL_GAP - x_width / 2)
+            y_right = max(column_x, GRID_LABEL_GAP + self.text_size(y_text, font)[0])
+            self._text_with_background(x_center, row_y, x_text, "center", font, text_color, background_color)
+            self._text_with_background(y_right, cy, y_text, "e", font, text_color, background_color)
+
+        if rows:
+            self._draw_legend(cx, cy, rows, font, text_color, background_color)
+
+    def _draw_legend(self, cx: float, cy: float, rows: list[tuple[str, str, str]], font,
+                     text_color: str, background_color: str):
+        '''
+        The crosshair legend (see map_crosshairs): up and to the left of the
+        cursor like the strip charts', flipped right/down where that would
+        leave the canvas.
+        '''
+        metrics = QFontMetricsF(font)
+        row_height = metrics.height()
+        pad, gap = 2, 4
+        square_size = max(row_height - 6, 6)
+        legend_width = max(metrics.horizontalAdvance(legend) for legend, _, _ in rows)
+        value_width = max(metrics.horizontalAdvance(value) for _, _, value in rows)
+        legend_col = legend_width + gap if legend_width else 0
+        value_col = gap + value_width if value_width else 0
+        box_width = legend_col + square_size + value_col
+        box_height = row_height * len(rows)
+
+        right = cx - GRID_LABEL_GAP - pad
+        if right - box_width - pad < 0:
+            right = cx + GRID_LABEL_GAP + pad + box_width
+        bottom = cy - GRID_LABEL_GAP - pad
+        if bottom - box_height - pad < 0:
+            bottom = cy + GRID_LABEL_GAP + pad + box_height
+        left, top = right - box_width, bottom - box_height
+
+        self.canvas.painter.fillRect(QRectF(left - pad, top - pad, box_width + 2 * pad, box_height + 2 * pad),
+                                     self._opaque(background_color))
+        square_left = left + legend_col
+        for i, (legend, color, value) in enumerate(rows):
+            row_center = top + row_height * i + row_height / 2
+            if legend:
+                self._draw_text(left, row_center, legend, font, text_color, "w")
+            square_top = row_center - square_size / 2
+            self._draw_rect((square_left, square_top, square_left + square_size, square_top + square_size),
+                            fill=color, outline=text_color)
+            if value:
+                self._draw_text(square_left + square_size + gap, row_center, value, font, text_color, "w")
+
+    def _text_with_background(self, x: float, y: float, text: str, anchor: str, font,
+                              text_color: str, background_color: str):
+        '''_draw_text on a background_color box, so it reads over whatever is under it.'''
+        rect = self.text_rect(x, y, *self.text_size(text, font), anchor)
+        self.canvas.painter.fillRect(rect.adjusted(-2, 0, 2, 0), self._opaque(background_color))
+        self._draw_text(x, y, text, font, text_color, anchor)
+
+    @staticmethod
+    def _opaque(color: str) -> QColor:
+        '''
+        color made solid, for a backdrop: the map's background is often a
+        see-through theme color (e.g. "widget"), which would let whatever is
+        under the backdrop show through it.
+        '''
+        solid = QColor(color)
+        solid.setAlpha(255)
+        return solid
+
+    @staticmethod
+    def coordinates(position: tuple[float, float]) -> str:
+        '''A world position as the crosshair legend shows it: "(x, y)".'''
+        return f"({position[0]:.1f}, {position[1]:.1f})"
 
     def boat(self, position: tuple[float, float], bearing: float, fill_color="gray", line_color="black", scale=2.0):
         the_boat = [

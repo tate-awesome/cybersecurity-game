@@ -119,7 +119,7 @@ class Draw:
 # --------------------------------------------------------------------------------------------------------------------------
 
     def strip_chart_layout(self, history_lists: list[list[tuple[float, float]]], factor: float,
-                           wall_now: float | None = None) -> StripChartLayout:
+                           wall_now: float | None = None, min_max: float | None = None) -> StripChartLayout:
         '''
         Computes the plot area, x (time) ticks, and y (value) ticks for this frame.
         Time scaling/offset are resolved first to find the visible time window, then
@@ -127,6 +127,8 @@ class Draw:
 
         wall_now is "now" in the histories' own time coordinates - when not given,
         the packet clock is used (seconds since the first captured packet).
+
+        min_max, if given, keeps the value axis spanning at least [0, min_max].
         '''
         camera = self.camera
 
@@ -222,9 +224,12 @@ class Draw:
                     visible_units.append(value * factor)
 
         if visible_units:
-            y_tick_values, y_step = t.nice_ticks(min(visible_units), max(visible_units), Y_TARGET_TICK_COUNT)
+            low, high = min(visible_units), max(visible_units)
         else:
-            y_tick_values, y_step = t.nice_ticks(0.0, 1.0, Y_TARGET_TICK_COUNT)
+            low, high = 0.0, 1.0
+        if min_max is not None:
+            low, high = min(low, 0.0), max(high, min_max)
+        y_tick_values, y_step = t.nice_ticks(low, high, Y_TARGET_TICK_COUNT)
 
         y_decimals = t.decimals_for_step(y_step)
         min_unit, max_unit = y_tick_values[0], y_tick_values[-1]

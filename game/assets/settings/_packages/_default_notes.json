@@ -20,7 +20,7 @@
         "background": "Optional. The moving background behind the panels, e.g. {\"visual\": \"network_mesh\", \"blur\": 6}. false turns it off; leave it out for the usual drifting network with no traffic."
     },
     "settings_fields": {
-        "model_sprites": "Which parts of the model canvases are drawn (1 = drawn). Submarine map: ocean, grid_lines, path_in and boat_in (the other submarine keys aren't used yet). HVAC house: background through indicator. Turn these on in any workspace that shows those models.",
+        "model_sprites": "Which parts of the model canvases are drawn (1 = drawn). Submarine map: ocean, grid_lines, grid_numbers, path_in, boat_in, and the boat_*_label/boat_*_position legend rows (path_out and boat_out aren't used yet). HVAC house: background through indicator. Turn these on in any workspace that shows those models.",
         "model_colors": "Colors for the model canvases, as theme color names (\"field\", \"red\", ...) or hex codes. Submarine map: ocean through boat_out_outline. HVAC house: background through hotness.",
         "strip_chart_sprites": "Not used by the game yet.",
         "strip_chart_colors": "Colors for the strip charts: background and grid, one color per plotted line in \"paths\", and the live-value markers in \"heads\".",
@@ -66,28 +66,28 @@
                 "details": "Meant to switch the commanded vessel's trail on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
             },
             "boat_in_label": {
-                "description": "Not used yet - meant for a label beside the reported vessel.",
-                "details": "Meant to switch a label beside the reported vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+                "description": "Submarine map: the reported vessel's name in the mouse legend.",
+                "details": "While the mouse is over the map, a crosshair follows it with a legend beside it: a row per vessel with its name, a square in its fill color, and its coordinates. This switches the reported (incoming) vessel's name in that row; with it and boat_in_position both off, the row is left out. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
             },
             "boat_out_label": {
-                "description": "Not used yet - meant for a label beside the commanded vessel.",
-                "details": "Meant to switch a label beside the commanded vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+                "description": "Submarine map: the commanded vessel's name in the mouse legend.",
+                "details": "Switches the commanded (outgoing) vessel's name in the legend that follows the mouse over the map (see boat_in_label); with it and boat_out_position both off, the row is left out. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
             },
             "boat_in_position": {
-                "description": "Not used yet - meant for a coordinate readout for the reported vessel.",
-                "details": "Meant to switch a coordinate readout for the reported vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+                "description": "Submarine map: the reported vessel's (x, y) in the mouse legend.",
+                "details": "Switches the reported (incoming) vessel's coordinates in the legend that follows the mouse over the map (see boat_in_label). Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
             },
             "boat_out_position": {
-                "description": "Not used yet - meant for a coordinate readout for the commanded vessel.",
-                "details": "Meant to switch a coordinate readout for the commanded vessel on and off separately. Nothing reads this key yet, so it has no effect. For now boat_in draws both vessels and path_in draws both trails."
+                "description": "Submarine map: the commanded vessel's (x, y) in the mouse legend.",
+                "details": "Switches the commanded (outgoing) vessel's coordinates in the legend that follows the mouse over the map (see boat_in_label). Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
             },
             "grid_numbers": {
-                "description": "Not used yet - the grid numbers come with grid_lines.",
-                "details": "Meant to switch the numbers along the submarine map's grid on and off separately. Nothing reads this key yet, so it has no effect. For now grid_lines draws the grid, its axes and its numbers together."
+                "description": "Submarine map: the numbers along the grid (with grid_lines on).",
+                "details": "Draws the coordinate numbers under and left of the submarine map's grid. Zoomed or panned so the grid's edge leaves the map, they stay pinned to the map's edge. They're drawn with the grid, so grid_lines must be on too. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
             },
             "grid_lines": {
-                "description": "Submarine map: the coordinate grid, its center axes and its numbers.",
-                "details": "Draws the coordinate grid over the ocean, along with its two center axes and the coordinate numbers. It gives students a sense of scale and direction as the vessel moves. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
+                "description": "Submarine map: the coordinate grid and its center axes.",
+                "details": "Draws the coordinate grid over the ocean, along with its two center axes (and, with grid_numbers on, its numbers). It gives students a sense of scale and direction as the vessel moves. Only the sniffed submarine map reads this - the AP-polled map draws itself without these settings."
             },
             "ocean": {
                 "description": "Submarine map: the water background.",
@@ -140,8 +140,8 @@
                 "details": "Color of the two center axes through the submarine map's origin, drawn over the grid so the zero lines stand out. Only the sniffed submarine map uses it."
             },
             "grid_numbers": {
-                "description": "Submarine map: grid number color.",
-                "details": "Color of the coordinate numbers along the submarine map's grid. It needs good contrast with the ocean color to stay readable. Only the sniffed submarine map uses it."
+                "description": "Submarine map: text color.",
+                "details": "Color of the submarine map's text - the coordinate numbers along its grid and the mouse crosshair and its legend. It needs good contrast with the ocean color to stay readable. Only the sniffed submarine map uses it."
             },
             "path_in": {
                 "description": "Submarine map: trail color behind the reported (incoming) vessel.",
@@ -212,8 +212,8 @@
                 "details": "Color of the strip charts' axis lines, drawn over the grid."
             },
             "grid_numbers": {
-                "description": "Axis number color.",
-                "details": "Color of the time and value numbers along the strip charts' axes. It needs good contrast with the chart background."
+                "description": "Text color.",
+                "details": "Color of the strip charts' text - the numbers along their axes, the title, axis labels and the mouse crosshair. It needs good contrast with the chart background."
             },
             "paths": {
                 "description": "One color per plotted line, used in order. One color per line in this box.",
