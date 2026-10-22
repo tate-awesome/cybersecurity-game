@@ -11,4 +11,4 @@ class ChooseShownNetworkActionForms(PanelButton):
 
     def __init__(self, context: Context):
         super().__init__(context)
-        CheckboxOverlay(self, context, "network_action_forms_shown", "Show Forms", "available", label_group="hacking_forms")
+        CheckboxOverlay(self, context, "network_action_forms_shown", "Show Forms", "available", label_group="hacking_forms", reorderable=True)

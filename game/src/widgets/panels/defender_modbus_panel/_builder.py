@@ -56,6 +56,7 @@ class Builder(Panel):
         minimize_button = self.menu_bar.minimize_button(self.scrollable)
 
         self.shown_forms = None  # defender_modbus_forms_shown as of the last refresh_forms
+        self._shown_order = None  # its key order as of the last refresh_forms
         self.refresh_forms()
         self.context.animation_manager.add_callback(f"defender_modbus_forms_{id(self)}", self.refresh_forms)
 
@@ -65,9 +66,15 @@ class Builder(Panel):
         frame, so it only acts (and scrolls back to the top) when that changed.
         '''
         shown = dict(self.context.states.get("defender_modbus_forms_shown"))
-        if shown == self.shown_forms:
+        order = list(shown)
+        # dict == ignores key order; a drag in the Show Forms overlay changes
+        # only the order, so compare that separately and re-grid on a change.
+        if shown == self.shown_forms and order == self._shown_order:
             return
         self.shown_forms = shown
+        self._shown_order = order
+        for row, key in enumerate(k for k in order if k in self.forms):
+            self.scrollable.grid_layout.addWidget(self.forms[key], row, 0)
         for key in shown:
             if key not in self.forms:
                 continue

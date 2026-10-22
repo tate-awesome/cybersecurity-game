@@ -91,6 +91,7 @@ class Builder(Panel):
             self.flow.addWidget(form)
         self.scrollable.grid_layout.addWidget(self.cards_host, 0, 0)
         self.shown_forms = None  # network_action_forms_shown as of the last refresh_forms
+        self._shown_order = None  # its key order as of the last refresh_forms
         self.refresh_forms()
         self.scrollable.columnconfigure(0, weight=1)
         self.scrollable.grid_layout.setRowStretch(1, 1)  # deadspace below the cards
@@ -103,13 +104,20 @@ class Builder(Panel):
 
     def refresh_forms(self):
         '''
-        Shows/hides forms to match network_action_forms_shown - polled every
-        frame, so it only acts (and scrolls back to the top) when that changed.
+        Shows/hides and reorders forms to match network_action_forms_shown -
+        polled every frame, so it only acts (and scrolls back to the top) when
+        that changed. The card order follows the settings' key order, which
+        the Sort Cards overlay rewrites when a chip is dragged.
         '''
         shown = dict(self.context.states.get("network_action_forms_shown"))
-        if shown == self.shown_forms:
+        order = list(shown)
+        # dict == ignores key order, so compare the order separately - a drag
+        # in the overlay changes only the order, not which keys are "1"/"0".
+        if shown == self.shown_forms and order == self._shown_order:
             return
         self.shown_forms = shown
+        self._shown_order = order
+        self.flow.set_order([self.forms[key] for key in order if key in self.forms])
         for key in shown:
             if key not in self.forms:
                 # This lesson's available_forms doesn't include this form -

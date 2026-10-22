@@ -36,6 +36,16 @@ class FlowLayout(QLayout):
     def addItem(self, item: QLayoutItem):
         self._items.append(item)
 
+    def set_order(self, widgets: list[QWidget]):
+        '''
+        Reorders the laid-out items to match `widgets` (any item whose widget
+        isn't listed keeps its relative place at the end), then relays out.
+        Lets a panel reflow its cards to a new order without rebuilding them.
+        '''
+        rank = {id(w): i for i, w in enumerate(widgets)}
+        self._items.sort(key=lambda item: rank.get(id(item.widget()), len(rank)))
+        self.invalidate()
+
     def count(self) -> int:
         return len(self._items)
 

@@ -11,4 +11,4 @@ class ChooseShownModbusTableForms(PanelButton):
 
     def __init__(self, context: Context):
         super().__init__(context)
-        CheckboxOverlay(self, context, "modbus_table_forms_shown", "Show Forms", "available", label_group="modbus_forms")
+        CheckboxOverlay(self, context, "modbus_table_forms_shown", "Show Forms", "available", label_group="modbus_forms", reorderable=True)
