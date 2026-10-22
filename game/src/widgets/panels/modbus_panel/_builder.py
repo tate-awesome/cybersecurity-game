@@ -4,11 +4,13 @@ from ..panel import Panel
 
 from .forms.table import MitmTable
 from .forms.modify import Modify
+from .forms.combined import CombinedTable
 
 from ....widgets import Scrollable
 from ...frame_widgets.important_buttons import ChooseShownModbusTableForms, ClearModbusAndModelData, EditModbusRegisterDisplay, SelectRegisterPreset
 
 FORM_CLASSES = {
+    "combined": CombinedTable,
     "table": MitmTable,
     "modify": Modify
 }

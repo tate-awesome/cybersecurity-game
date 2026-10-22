@@ -125,6 +125,7 @@
     },
 
     "modbus_table_forms_shown": {
+        "combined": 0,
         "table": 0,
         "modify": 0
     },
@@ -447,6 +448,7 @@
         "encryption": 0,
         "ap_tunnel": 0,
         "kalman": 0,
+        "combined": 0,
         "table": 0,
         "modify": 0,
         "mode": 0,

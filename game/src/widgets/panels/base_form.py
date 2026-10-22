@@ -226,15 +226,7 @@ class BaseForm(QWidget):
         self.process_status.setFont(self.style.get_font())
         self.process_button = QPushButton("")
         self.process_button.setFont(self.style.get_font())
-
-        if self.key is not None:
-            self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            self.grid_layout.addWidget(self.process_status, self.current_row, 1, 1, 1)
-            self.grid_layout.addWidget(self.fixed_width_wrapper(self.process_button), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
-        else:
-            self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            self.grid_layout.addWidget(self.process_status, self.current_row, 0, 1, 2)
-            self.grid_layout.addWidget(self.fixed_width_wrapper(self.process_button), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
+        self.place_process_row()
 
         # Set function definitions
         self.start_process = start_func
@@ -259,6 +251,19 @@ class BaseForm(QWidget):
         # gets reconciled with reality once the underlying process or AP
         # actually confirms the new state.
         self.context.animation_manager.add_callback(f"process_button_{id(self)}", self.refresh_process_button)
+
+    def place_process_row(self):
+        '''
+        Puts process_status and process_button into the grid on current_row
+        - overridden by forms that lay that row out differently (e.g.
+        CombinedTable, which has more buttons beside it).
+        '''
+        self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        if self.key is not None:
+            self.grid_layout.addWidget(self.process_status, self.current_row, 1, 1, 1)
+        else:
+            self.grid_layout.addWidget(self.process_status, self.current_row, 0, 1, 2)
+        self.grid_layout.addWidget(self.fixed_width_wrapper(self.process_button), self.current_row, 2, Qt.AlignmentFlag.AlignRight)
 
     def refresh_process_button(self):
         '''
