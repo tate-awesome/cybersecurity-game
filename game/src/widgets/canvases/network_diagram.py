@@ -31,6 +31,8 @@ FLAT_ARROW = 0.2
 COLUMN_GAP = 6
 # How much of a chip past the pane's edge still shows (see Table)
 PEEK = 14
+# Ring view: space kept between the middle chip and the ring's
+RING_GAP = 8
 # Space before an arrowhead
 ARROW_GAP = 3
 # The widest an IP gets - the table leaves room for one by every chip
@@ -159,6 +161,11 @@ class NetworkDiagramCanvas(Canvas):
     edges (when the table's full) moves in to fill it - and gets it back
     when it's shown again if it's still free. Laid out in pixels rather
     than world space - zooming and panning still apply on top.
+
+    The network_graph_view setting (ToggleNetworkGraphRingView) switches to
+    ring view instead: the access point in the middle and the rest around
+    it (see ring_spots), where chips can overlap - so the hosts in the
+    packets shown are drawn on top.
     '''
 
     def __init__(self, master: QWidget, context: Context):
@@ -247,6 +254,30 @@ class NetworkDiagramCanvas(Canvas):
                 taken[empty[0]] = mac
             return table
 
+        def ring_spots(shown, access_point):
+            '''
+            Ring view: the access point in the middle and every other host
+            evenly around an ellipse that fills the pane (leaving room for a
+            label over or under each chip) - but never so small that a chip
+            on it runs into the middle one. Chips next to each other on it
+            can overlap; the ones in the packets shown are drawn on top.
+            '''
+            middle_x, middle_y = self.width() / 2, self.height() / 2
+            padding = self.camera.padding
+            radius_x = max(middle_x - padding - chip_half[0], chip_size[0] + RING_GAP)
+            radius_y = max(middle_y - padding - chip_half[1] - slot_height, chip_size[1] + RING_GAP)
+            spots = {}
+            ring_hosts = [mac for mac in shown if mac != access_point]
+            if access_point in shown:
+                spots[access_point] = (middle_x, middle_y)
+            elif len(ring_hosts) == 1:
+                # A lone host takes the middle, unless the access point has it
+                return {ring_hosts[0]: (middle_x, middle_y)}
+            for i, mac in enumerate(ring_hosts):
+                angle = 2 * math.pi * i / len(ring_hosts)
+                spots[mac] = (middle_x + radius_x * math.cos(angle), middle_y - radius_y * math.sin(angle))
+            return spots
+
         def draw_chip(center, name, font, outline, color):
             # Fixed pixel size regardless of zoom, unlike Draw.circle()
             # (a world-space radius that would scale with it)
@@ -306,7 +337,10 @@ class NetworkDiagramCanvas(Canvas):
                 if mac not in host_ips:
                     del self.last_cell[mac]
             shown = [mac for mac in macs if setting(mac, "hide") not in (1, "1")]
-            table = place(shown, self.network.get_access_point())
+            access_point = self.network.get_access_point()
+            # Placed in the table even in ring view, so it's just as it was when switched back
+            table = place(shown, access_point)
+            ring = context.states.get("network_graph_view") == "ring"
             nicknames = {mac: setting(mac, "nickname") for mac in shown}
 
             def receivers(src, dst):
@@ -339,8 +373,10 @@ class NetworkDiagramCanvas(Canvas):
 
             # Each shown host's chip center, zoomed and panned like
             # everything else the camera shows
-            order = list(self.cell_of)
-            centers = dict(zip(order, t.zoom_and_pan([table.spots[self.cell_of[mac]] for mac in order],
+            spots = ring_spots(shown, access_point) if ring else \
+                {mac: table.spots[cell] for mac, cell in self.cell_of.items()}
+            order = list(spots)
+            centers = dict(zip(order, t.zoom_and_pan([spots[mac] for mac in order],
                                                      self.camera.scale, tuple(self.camera.offset))))
 
             # Arrows first, so the labels and chips sit on top of them - and
@@ -365,13 +401,15 @@ class NetworkDiagramCanvas(Canvas):
             def color_of(mac):
                 return "outgoing" if mac == self.mac_address else "incoming"
 
-            # A label goes on the side of its chip fewer arrows leave from -
-            # with as many either way, under it, unless there's a host in the
-            # cell under it. Each gap between rows holds one label, so if the
-            # side it wants is taken, the other; hosts claim them in the
-            # table's order, the access point first.
+            # A label goes on the side of its chip fewer arrows leave from.
+            # In the table, with as many either way, under it, unless there's
+            # a host in the cell under it - and each gap between rows holds
+            # one label, so if the side it wants is taken, the other; hosts
+            # claim them in the table's order, the access point first. On the
+            # ring, with as many either way, away from the middle.
             occupied = {table.cells[cell] for cell in self.cell_of.values()}
             used_gaps = set()
+            labels = {}
             for mac in sorted(centers, key=lambda mac: self.cell_of[mac]):
                 # One line, all the gap between rows holds - a router forwards
                 # packets for many outside IPs at once, so the first, then
@@ -380,8 +418,13 @@ class NetworkDiagramCanvas(Canvas):
                 if not ips:
                     continue
                 text = ips[0] + (f" +{len(ips) - 1}" if len(ips) > 1 else "")
-                column, row = table.cells[self.cell_of[mac]]
                 top_ends, bottom_ends = arrow_ends[mac]
+                if ring:
+                    above = top_ends < bottom_ends if top_ends != bottom_ends \
+                        else centers[mac][1] < self.height() / 2
+                    labels[mac] = (text, above)
+                    continue
+                column, row = table.cells[self.cell_of[mac]]
                 if top_ends == bottom_ends:
                     above_first = (column, row + 1) in occupied
                 else:
@@ -392,11 +435,21 @@ class NetworkDiagramCanvas(Canvas):
                     sides.reverse()
                 above, gap = next((side for side in sides if side[1] not in used_gaps), sides[0])
                 used_gaps.add(gap)
-                draw_label(centers[mac], text, above, color_of(mac))
+                labels[mac] = (text, above)
 
-            for mac, center in centers.items():
+            # The hosts in the packets shown go on top, each label just under
+            # its chip - on the ring, where chips can pile up, that's how the
+            # ones that matter right now stay in sight
+            involved = set()
+            for mpkt in shown_packets:
+                if mpkt.get("mac_src") in centers:
+                    involved.add(mpkt.get("mac_src"))
+                    involved.update(receivers(mpkt.get("mac_src"), mpkt.get("mac_dst")))
+            for mac in sorted(centers, key=lambda mac: mac in involved):
+                if mac in labels:
+                    draw_label(centers[mac], *labels[mac], color_of(mac))
                 nickname = nicknames.get(mac)
-                draw_chip(center, display_name(nickname) if nickname else mac[-8:],
+                draw_chip(centers[mac], display_name(nickname) if nickname else mac[-8:],
                           nickname_font if nickname else node_font,
                           NICKNAME_CHIP_OUTLINE if nickname else CHIP_OUTLINE, color_of(mac))
 

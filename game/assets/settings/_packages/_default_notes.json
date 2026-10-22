@@ -26,6 +26,7 @@
         "strip_chart_colors": "Colors for the strip charts: background and grid, one color per plotted line in \"paths\", and the live-value markers in \"heads\".",
         "strip_chart_auto_fit": "1 starts every strip chart (Register Graphs, Variable Graphs, the network graph's rate chart) in fit mode, zoomed to fit the recent data. Students can toggle it.",
         "strip_chart_auto_fit_max_seconds": "How many seconds of history fit mode shows at most.",
+        "network_graph_view": "How the network graph lays its hosts out: \"table\" (each in its own cell, staying put) or \"ring\" (around the access point, with the hosts in the current packets drawn on top). Students switch with the graph's Ring View / Table View button.",
         "network_hosts": "Nicknames and hiding for the network graph's hosts (devices, by MAC address), e.g. {\"b8:27:eb:44:10:9a\": {\"nickname\": \"PLC\", \"hide\": 0}}. Students edit this with Configure Hosts.",
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",

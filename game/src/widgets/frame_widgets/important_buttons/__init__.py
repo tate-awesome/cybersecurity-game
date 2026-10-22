@@ -78,6 +78,7 @@ from .toggle_debug_labels import ToggleDebugLabels
 
 # Panel menu bars only
 from .toggle_strip_chart_auto_fit import ToggleStripChartAutoFit
+from .toggle_network_graph_ring_view import ToggleNetworkGraphRingView
 from .abort_all_network_actions import AbortAllNetworkActions
 from .pause_packet_console import PausePacketConsole
 from .free_scroll_status_console import FreeScrollStatusConsole

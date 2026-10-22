@@ -79,6 +79,8 @@
 
     "network_hosts": {},
 
+    "network_graph_view": "table",
+
     "game_progress": {
         "wifi": 0,
         "nmap": 0,
