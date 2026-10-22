@@ -1,10 +1,10 @@
-from scapy.all import Packet, IP, Ether
+from scapy.all import Packet, IP, IPv6
 from scapy.arch import get_if_hwaddr, get_working_if
 import uuid
 from scapy.contrib.modbus import *
 from typing import Any
 
-from . import describe
+from . import describe, link as links
 
 
 def _resolve_local_mac() -> str:
@@ -41,11 +41,11 @@ class MetaPacket:
         "purpose",          # packet purpose str, from put()
         "mac_src",          # pkt.mac_src
         "mac_dst",          # pkt.mac_dst
-        "ip_src",           # pkt.ip_src
-        "ip_dst",           # pkt.ip_dst
+        "ip_src",           # IPv4 or IPv6 source, or "-"
+        "ip_dst",           # IPv4 or IPv6 destination, or "-"
         "direction",        # in or out
         "layers",           # pkt.layers list
-        "protocol",         # pkt.layers[-1] str
+        "protocol",         # the innermost layer that says what the packet is (see describe.protocol)
         "observer",         # hack observer: any hack, prerouting nfq, postrouting nfq
         "layers_word",      # pkt.layers joined by " / "
         "length",           # len(pkt)
@@ -101,10 +101,13 @@ class MetaPacket:
         self.set("purpose", purpose)
 
         # Addressing information
-        self.set("mac_src", pkt[Ether].src if pkt.haslayer(Ether) else "-")
-        self.set("mac_dst", pkt[Ether].dst if pkt.haslayer(Ether) else "-")
-        self.set("ip_src", pkt[IP].src if pkt.haslayer(IP) else "-")
-        self.set("ip_dst", pkt[IP].dst if pkt.haslayer(IP) else "-")
+        # Hardware addresses from whatever framed it - Ethernet II, 802.3, Wi-Fi... (see link)
+        mac_src, mac_dst = links.hardware_addresses(pkt)
+        self.set("mac_src", mac_src)
+        self.set("mac_dst", mac_dst)
+        ip = pkt[IP] if pkt.haslayer(IP) else pkt[IPv6] if pkt.haslayer(IPv6) else None
+        self.set("ip_src", ip.src if ip is not None else "-")
+        self.set("ip_dst", ip.dst if ip is not None else "-")
 
         # Direction information
         if dir == "in":
@@ -128,7 +131,7 @@ class MetaPacket:
         # Layer information
         layers = [class_name.__name__.upper() for class_name in pkt.layers()]
         self.set("layers", layers)
-        self.set("protocol", layers[-1])
+        self.set("protocol", describe.protocol(pkt))
 
         # Observer information
         if hack == "nfq" and dir == "send":
@@ -148,8 +151,8 @@ class MetaPacket:
         self.set("time_word", f"{time:.4f}")
         self.set_described(pkt)
         self.update_modbus_word() # updated from transaction manager
-        self.set("mac_word", f"{self.get("mac_src")} → {self.get("mac_dst")}" if pkt.haslayer(Ether) else "-")
-        self.set("ip_word", f"{self.get("ip_src")} → {self.get("ip_dst")}" if pkt.haslayer(IP) else "-")
+        self.set("mac_word", f"{mac_src} → {mac_dst}" if mac_src != "-" or mac_dst != "-" else "-")
+        self.set("ip_word", f"{self.get("ip_src")} → {self.get("ip_dst")}" if ip is not None else "-")
 
     def set(self, key: str, value):
         if key not in self.KEYS:
@@ -170,19 +173,23 @@ class MetaPacket:
     def _dissect(self) -> Packet | None:
         if self._raw is None:
             return None
-        pkt = (IP if self._raw[0] >> 4 == 4 else Ether)(self._raw) if self._link == "ip" else Ether(self._raw)
+        pkt = links.dissect(self._raw, self._link)
         if self._abs_time is not None:
             pkt.time = self._abs_time  # scapy stamps "now" otherwise - keep the capture time
         return pkt
 
-    def to_payload(self, link: str = "ether") -> dict:
+    def to_payload(self, link: str | None = None) -> dict:
         '''
         A picklable snapshot for sending across the helper connection (see
         network/helper): every computed field, the raw bytes, and the
         absolute capture time - everything except the live scapy packet,
         which the receiving side dissects only on demand (see from_payload).
+        link is how to dissect the raw bytes again (see link) - by default,
+        what this packet was framed in.
         '''
         pkt = self.data.get("pkt")
+        if link is None:
+            link = self._link if self._raw is not None or pkt is None else links.link_of(pkt)
         raw = self._raw if self._raw is not None else (bytes(pkt) if pkt is not None else b"")
         abs_time = self._abs_time if self._abs_time is not None else (float(pkt.time) if pkt is not None else 0.0)
         data = {key: value for key, value in self.data.items() if key != "pkt"}

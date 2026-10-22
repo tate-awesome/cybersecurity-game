@@ -1,7 +1,7 @@
 import os
 import threading
 
-from scapy.all import Ether, IP
+from ..buffer.link import dissect
 
 
 from ..process import Process
@@ -128,10 +128,7 @@ class Replay(Process):
 
         raw_packet = schema.raw_bytes(record)
 
-        if record.get("link") == "ip":
-            pkt = IP(raw_packet)
-        else:
-            pkt = Ether(raw_packet)
+        pkt = dissect(raw_packet, record.get("link") or "ether")
 
         # Parsing a packet from raw bytes resets .time to "now".
         # Restore the originally recorded timestamp, if one was saved,

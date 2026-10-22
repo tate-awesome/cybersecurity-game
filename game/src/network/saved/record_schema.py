@@ -76,13 +76,13 @@ def packet_from_meta(mpkt, snaplen: int | None = None) -> dict | None:
     link = getattr(mpkt, "_link", None)
     t = getattr(mpkt, "_abs_time", None)
     if raw is None:
+        from ..buffer.link import link_of  # here - this module stays free of scapy
         pkt = mpkt.get("pkt")
         if pkt is None:
             return None
         raw = bytes(pkt)
         t = float(pkt.time)
-        # IP-only packets come from the NFQ queue; everything else is Ethernet
-        link = "ip" if mpkt.get("hack") == "nfq" else "ether"
+        link = link_of(pkt)
     return packet(raw, t, mpkt.get("hack"), mpkt.get("purpose"), mpkt.get("direction"),
                   link or "ether", bool(mpkt.get("is_modbus")), snaplen)
 

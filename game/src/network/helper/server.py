@@ -23,7 +23,7 @@ import threading
 import time
 
 from multiprocessing.connection import Client
-from scapy.all import Ether, Packet
+from scapy.all import Packet
 
 from ..buffer.meta_packet import MetaPacket
 from .registry import build_capability
@@ -48,8 +48,7 @@ class _BufferShim:
 
     def put(self, source: str, purpose: str, data: Packet | None = None, direction: str | None = None):
         if isinstance(data, Packet):
-            link = "ether" if data.haslayer(Ether) else "ip"
-            payload = MetaPacket(data, 0.0, 0, source, purpose, direction).to_payload(link=link)
+            payload = MetaPacket(data, 0.0, 0, source, purpose, direction).to_payload()
             item = ("pkt", source, purpose, payload, direction)
         else:
             item = ("status", source, purpose, None, direction)
