@@ -339,33 +339,18 @@ class Style:
             return self.material(material).name(QColor.NameFormat.HexArgb)
         return self._colors[material]
 
+    # Packet console column widths before scaling, by packet_columns key - any other is 100
+    COLUMN_WIDTHS = {
+        "time_word": 90, "time_delta": 90, "number": 70, "length": 70, "payload_length": 90, "observer": 120,
+        "hack": 80, "purpose": 200, "direction": 90, "protocol": 110, "layers_word": 250, "service": 90,
+        "src": 140, "dst": 140, "src_host": 150, "dst_host": 150, "src_port": 80, "dst_port": 80,
+        "ip_src": 120, "ip_dst": 120, "ip_word": 260, "mac_src": 150, "mac_dst": 150, "mac_word": 320,
+        "tcp_flags": 110, "ttl": 60, "info": 420, "summary": 520, "command": 240, "command_type": 120,
+        "command_word": 130, "variables": 200, "values": 200, "modbus_word": 300,
+    }
+
     def get_column_width(self, column_name):
-        match column_name:
-            case "time":
-                return int(120*self.get_scale_correction())
-            case "number":
-                return int(70*self.get_scale_correction())
-            case "length":
-                return int(80*self.get_scale_correction())
-            case "observer":
-                return int(120*self.get_scale_correction())
-            case "transaction_word":
-                return int(100*self.get_scale_correction())
-            case "transaction_ip":
-                return int(450*self.get_scale_correction())
-            case "transaction_mac":
-                return int(450*self.get_scale_correction())
-            case "layers":
-                return int(250*self.get_scale_correction())
-            case "protocol":
-                return int(100*self.get_scale_correction())
-            case "purpose":
-                return int(200*self.get_scale_correction())
-            case "summary":
-                return int(600*self.get_scale_correction())
-            case "modbus":
-                return int(400*self.get_scale_correction())
-        return 100
+        return int(self.COLUMN_WIDTHS.get(column_name, 100) * self.get_scale_correction())
 
     def get_scrollbar_size(self):
         return 12 * self.get_scale_correction()

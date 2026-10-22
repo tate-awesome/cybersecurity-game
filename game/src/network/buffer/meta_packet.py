@@ -4,6 +4,8 @@ import uuid
 from scapy.contrib.modbus import *
 from typing import Any
 
+from . import describe
+
 
 def _resolve_local_mac() -> str:
     '''
@@ -48,7 +50,17 @@ class MetaPacket:
         "layers_word",      # pkt.layers joined by " / "
         "length",           # len(pkt)
         "time_word",        # pkt.time to 4 decimels
-        "summary",          # pkt.summary
+        "summary",          # one plain-English sentence about the packet (see describe.summary)
+        "info",             # Wireshark-style Info text (see describe.info)
+        "src",              # source IP, or MAC without an IP layer
+        "dst",              # destination IP, or MAC without an IP layer
+        "src_port",         # TCP/UDP source port, or "-"
+        "dst_port",         # TCP/UDP destination port, or "-"
+        "service",          # well-known port's service name: "ModBus", "DNS", ... or "-"
+        "tcp_flags",        # "SYN, ACK", ... or "-"
+        "ttl",              # IP time to live (IPv6 hop limit), or "-"
+        "payload_length",   # bytes above TCP/UDP
+        "time_delta",       # seconds since the previous packet in the buffer, to 4 decimals (set by PacketBuffer)
         "direction_word",   # "Sent" or "Received"
         "mac_word",         # mac_src -> mac_dst
         "ip_word",          # ip_src -> ip_dst
@@ -62,6 +74,9 @@ class MetaPacket:
         "command_word",     # str - "Write Request" or "Read Response"
         "modbus_word"       # str - "variable list = value list"
     }
+
+    # The fields set_described works out from the scapy packet
+    DESCRIBED = {"src", "dst", "src_port", "dst_port", "service", "tcp_flags", "ttl", "payload_length", "info"}
 
     LOCAL_MAC = _resolve_local_mac()
     BROADCAST_MAC = "ff:ff:ff:ff:ff:ff"
@@ -126,13 +141,13 @@ class MetaPacket:
 
         # Modbus information - sometimes updated from the outside
         self.set_modbus_information()
-        self.update_modbus_word() # updated from transaction manager
 
         # Additional information
         self.set("layers_word", "/".join(self.get("layers")))
         self.set("length", str(len(pkt)))
         self.set("time_word", f"{time:.4f}")
-        self.set("summary", pkt.summary())
+        self.set_described(pkt)
+        self.update_modbus_word() # updated from transaction manager
         self.set("mac_word", f"{self.get("mac_src")} → {self.get("mac_dst")}" if pkt.haslayer(Ether) else "-")
         self.set("ip_word", f"{self.get("ip_src")} → {self.get("ip_dst")}" if pkt.haslayer(IP) else "-")
 
@@ -194,6 +209,11 @@ class MetaPacket:
 
     def get_column_value(self, column_name: str):
         output = self.get(column_name)
+        if output is None and column_name in self.DESCRIBED and self.get("pkt") is not None:
+            # From a recording made before these fields existed - describe it now, once
+            self.set_described(self.get("pkt"))
+            self.update_modbus_word()
+            output = self.get(column_name)
         if output is None:
             return f"None of this {column_name}"
         return self.get(column_name)
@@ -251,12 +271,48 @@ class MetaPacket:
         self.set("is_useful", is_useful_modbus)
         self.set("is_primary", False)
 
+    def set_described(self, pkt: Packet) -> None:
+        '''
+        The fields describe works out from the scapy packet - addresses,
+        ports, flags, and the Info and Summary text. A packet describe
+        can't make sense of still gets scapy's own summary rather than
+        stopping the capture.
+        '''
+        try:
+            src, dst = describe.endpoints(pkt)
+            sport, dport = describe.ports(pkt)
+            self.set("src", src)
+            self.set("dst", dst)
+            self.set("src_port", str(sport) if sport is not None else "-")
+            self.set("dst_port", str(dport) if dport is not None else "-")
+            self.set("service", describe.service(pkt))
+            self.set("tcp_flags", describe.tcp_flags(pkt))
+            self.set("ttl", describe.ttl(pkt))
+            self.set("payload_length", str(describe.payload_length(pkt)))
+            self.set("info", describe.info(pkt))
+            self.set("summary", describe.summary(pkt))
+        except Exception as error:
+            print(f"Couldn't describe packet {pkt.summary()!r}: {error!r}")
+            for key in ("src", "dst", "src_port", "dst_port", "service", "tcp_flags", "ttl", "payload_length"):
+                self.data.setdefault(key, "-")
+            self.set("info", pkt.summary())
+            self.set("summary", pkt.summary())
+
     def update_modbus_word(self) -> None:
+        '''
+        modbus_word, and a ModBus packet's Info and Summary - again whenever
+        the TransactionManager fills in a response's registers. Built from
+        this packet's fields only, never the scapy packet, which a packet
+        from the helper only dissects on demand (see get).
+        '''
         if self.get("is_modbus"):
             values_strings = []
             for num in self.get("values"):
                 values_strings.append(f"{num:.2f}")
             modbus_word = f"{", ".join(self.get("variables"))} = {", ".join(values_strings)}"
+            fields = (self.get("command"), self.get("command_type"), self.get("variables"), self.get("values"))
+            self.set("info", describe.modbus_info(*fields))
+            self.set("summary", describe.modbus_summary(self.get("src") or "-", self.get("dst") or "-", *fields))
         else:
             modbus_word = "-"
         self.set("modbus_word", modbus_word)

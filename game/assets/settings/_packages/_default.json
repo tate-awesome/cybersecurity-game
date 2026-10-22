@@ -444,7 +444,19 @@
         "is_useful": 0,
         "is_primary": 0,
         "command_word": 0,
-        "modbus_word": 0
+        "modbus_word": 0,
+        "src": 0,
+        "dst": 0,
+        "src_host": 0,
+        "dst_host": 0,
+        "src_port": 0,
+        "dst_port": 0,
+        "service": 0,
+        "tcp_flags": 0,
+        "ttl": 0,
+        "payload_length": 0,
+        "time_delta": 0,
+        "info": 0
     },
 
     "packet_columns_available": {
@@ -472,7 +484,19 @@
         "is_useful": 1,
         "is_primary": 1,
         "command_word": 1,
-        "modbus_word": 1
+        "modbus_word": 1,
+        "src": 1,
+        "dst": 1,
+        "src_host": 1,
+        "dst_host": 1,
+        "src_port": 1,
+        "dst_port": 1,
+        "service": 1,
+        "tcp_flags": 1,
+        "ttl": 1,
+        "payload_length": 1,
+        "time_delta": 1,
+        "info": 1
     },
 
     "available": {

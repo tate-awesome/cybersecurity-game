@@ -33,6 +33,8 @@ class PacketBuffer:
         with self.lock:
             mpkt.set("number", self.number)
             self.number += 1
+            previous = self.buffer[-1].get("time") if self.buffer else mpkt.get("time")
+            mpkt.set("time_delta", f"{mpkt.get('time') - previous:.4f}")
             self.buffer.append(mpkt)
 
             bucket = float(int(mpkt.get("time")))

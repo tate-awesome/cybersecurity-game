@@ -9,8 +9,9 @@ from ...overlay import Overlay
 # The buffet's groups, each field in the order it's listed in there. A
 # column in packet_columns that isn't listed here goes in the first group.
 COLUMN_CATEGORIES: dict[str, list[str]] = {
-    "packet": ["number", "time_word", "length", "protocol", "layers_word", "summary"],
-    "addresses": ["ip_word", "ip_src", "ip_dst", "mac_word", "mac_src", "mac_dst"],
+    "packet": ["number", "time_word", "time_delta", "length", "protocol", "info", "summary", "layers_word"],
+    "addresses": ["src", "dst", "src_host", "dst_host", "ip_word", "ip_src", "ip_dst", "mac_word", "mac_src", "mac_dst"],
+    "transport": ["src_port", "dst_port", "service", "tcp_flags", "ttl", "payload_length"],
     "capture": ["direction", "hack", "observer", "purpose"],
     "modbus": ["modbus_word", "command_word", "command", "command_type", "variables", "values",
                "is_modbus", "is_useful", "is_primary"],

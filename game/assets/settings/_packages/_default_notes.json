@@ -566,8 +566,8 @@
                 "details": "Shows every protocol layer in the packet, joined with \"/\", like Ether/IP/TCP. More detail than the protocol column."
             },
             "summary": {
-                "description": "Scapy's one-line summary of the packet.",
-                "details": "Shows Scapy's one-line summary of each packet - a compact technical description of the whole thing."
+                "description": "One plain-English sentence about what the packet does.",
+                "details": "Shows one plain-English sentence per packet - who's asking whom for what, or what's being sent, e.g. \"10.0.0.2 asks to open a connection to 10.0.0.9 on port 502 (ModBus).\" Written for students who don't read protocols yet; Info is the technical version."
             },
             "mac_word": {
                 "description": "Source and destination MAC as \"source -> destination\".",
@@ -612,6 +612,54 @@
             "modbus_word": {
                 "description": "ModBus: \"registers = values\" in one column.",
                 "details": "For ModBus packets, shows \"registers = values\" in one readable column, combining the variables and values columns."
+            },
+            "src": {
+                "description": "Source address: the IP, or the MAC for packets with no IP layer (like ARP).",
+                "details": "Where the packet came from: its IP address, or its hardware (MAC) address if it has no IP address - like Wireshark's Source column."
+            },
+            "dst": {
+                "description": "Destination address: the IP, or the MAC for packets with no IP layer.",
+                "details": "Where the packet is going: its IP address, or its hardware (MAC) address if it has no IP address."
+            },
+            "src_host": {
+                "description": "The sender's nickname from network_hosts (by MAC), else the Source address.",
+                "details": "The sending device's nickname from Configure Hosts, or its address if it has none - so you can tell the PLC from the laptop at a glance."
+            },
+            "dst_host": {
+                "description": "The receiver's nickname from network_hosts (by MAC), else the Destination address.",
+                "details": "The receiving device's nickname from Configure Hosts, or its address if it has none."
+            },
+            "src_port": {
+                "description": "TCP/UDP source port, or - for other packets.",
+                "details": "The port the packet left from. Programs pick a port to talk on; the server's side is usually a well-known number like 502 for ModBus."
+            },
+            "dst_port": {
+                "description": "TCP/UDP destination port, or - for other packets.",
+                "details": "The port the packet is going to - often says which service it's for, like 502 for ModBus or 443 for secure web."
+            },
+            "service": {
+                "description": "The well-known service from the ports (ModBus, DNS, HTTP, ...), or -.",
+                "details": "Which well-known service the conversation is with, worked out from its ports: ModBus, DNS, HTTPS and so on."
+            },
+            "tcp_flags": {
+                "description": "TCP flags, like SYN, ACK - or - for non-TCP packets.",
+                "details": "The TCP flags set on the packet. SYN starts a connection, ACK confirms data arrived, FIN ends a connection and RST cuts it off. A flood of SYNs can be a scan or an attack."
+            },
+            "ttl": {
+                "description": "IP time to live (IPv6 hop limit), or -.",
+                "details": "Time to live: how many more routers the packet may pass through before it's dropped. Different systems start at different numbers, so it can hint at what sent it."
+            },
+            "payload_length": {
+                "description": "Bytes above TCP/UDP - the application's own data.",
+                "details": "How many bytes of actual data the packet carries, not counting its headers. 0 means it's only managing the connection."
+            },
+            "time_delta": {
+                "description": "Seconds since the previous packet in the capture, to 4 decimals.",
+                "details": "Seconds since the packet before it. Tiny gaps between many packets can mean a flood."
+            },
+            "info": {
+                "description": "Wireshark-style Info text: ARP questions, ping ids, DNS queries, TCP ports/flags/sequence numbers, ModBus functions and registers.",
+                "details": "What the packet is, the way Wireshark's Info column says it - short and technical, like \"Who has 10.0.0.5? Tell 10.0.0.1\" or the TCP ports and flags."
             }
         },
         "form_order": {

@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792680714.849486,
-    "seen": 1792680858.6426632,
-    "ast_hash": "e9e6f9b6bae631a19265f1ea1d0d24b2",
+    "mtime": 1792683984.961614,
+    "seen": 1792684032.522411,
+    "ast_hash": "192280793d932071469afe5e06514359",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default_notes.json": {
-    "mtime": 1792683894.2314003,
-    "seen": 1792683937.520903,
-    "ast_hash": "398f6f8b2af9737ad0755e1fd7127738",
+    "mtime": 1792684001.6483715,
+    "seen": 1792684032.5271854,
+    "ast_hash": "e4ea534d32d594f129546a6c914b7985",
     "semantic_hash": ""
   },
   "game/dist.py": {
@@ -900,9 +900,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/_builder.py": {
-    "mtime": 1792683898.9339404,
-    "seen": 1792683937.5528677,
-    "ast_hash": "37b99afa1e47f62c4f77d5c7170dae17",
+    "mtime": 1792684001.6483715,
+    "seen": 1792684032.5589635,
+    "ast_hash": "d5281a1f714a1c8e7a4db18dfb8daeac",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_action_panel/forms/ap_connect.py": {
@@ -1308,27 +1308,27 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/checkbox_overlay/checkbox_overlay.py": {
-    "mtime": 1792683874.0285752,
-    "seen": 1792683937.5397923,
-    "ast_hash": "b03083f8e81db7e5c9e294d1ce5267f9",
+    "mtime": 1792683984.977231,
+    "seen": 1792684032.5458615,
+    "ast_hash": "3dff34328528f5b4930f98143ffbcb41",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/checkbox_overlay/choose_shown_defender_modbus_forms.py": {
-    "mtime": 1792671575.8902059,
-    "seen": 1792673044.465184,
-    "ast_hash": "4274a11d61329ad6a92112a59e2d8b6a",
+    "mtime": 1792683984.961614,
+    "seen": 1792684032.5458636,
+    "ast_hash": "4d8789b5afd153c5d93df363eeed0a0b",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/checkbox_overlay/choose_shown_modbus_table_forms.py": {
-    "mtime": 1792671575.891217,
-    "seen": 1792673044.4651859,
-    "ast_hash": "1a17cbc8edf5a08757e0cc081e8a867c",
+    "mtime": 1792683984.961614,
+    "seen": 1792684032.5458653,
+    "ast_hash": "d53a0b980c70ced2a511123366fe6185",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/checkbox_overlay/choose_shown_network_action_forms.py": {
-    "mtime": 1792671575.8922026,
-    "seen": 1792673044.4651875,
-    "ast_hash": "00dbe5838e2b553eb6021499221c8bd2",
+    "mtime": 1792683984.977231,
+    "seen": 1792684032.5458665,
+    "ast_hash": "a031228818a0a20b26e5d8fc3d13cfd4",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/clear_all_captured_buffer_data.py": {
