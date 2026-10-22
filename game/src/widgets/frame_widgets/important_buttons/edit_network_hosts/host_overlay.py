@@ -1,5 +1,6 @@
 from .....app_core import Context
 from ...overlay import Overlay
+from .....network.buffer.channels.network_graph import MAX_NICKNAME_LENGTH
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QFrame, QGridLayout, QLabel, QLineEdit, QPushButton, QScrollArea
 
@@ -83,6 +84,8 @@ class HostOverlay:
             # "nickname": "",
             nick_entry = QLineEdit()
             nick_entry.setFont(med)
+            # As long as fits a chip on the network graph
+            nick_entry.setMaxLength(MAX_NICKNAME_LENGTH)
             grid.addWidget(nick_entry, row, col)
             self.enrich_entry(nick_entry, mac, "nickname")
             nick_entries.append(nick_entry)

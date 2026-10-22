@@ -70,21 +70,33 @@ class SampleHVAC:
         return 1
 
 
+class SamplePacket:
+    '''Just the fields of a MetaPacket the network graph reads.'''
+
+    def __init__(self, mac_src: str, mac_dst: str, ip_src: str = "-", ip_dst: str = "-"):
+        self.fields = {"mac_src": mac_src, "mac_dst": mac_dst, "ip_src": ip_src, "ip_dst": ip_dst}
+
+    def get(self, key: str):
+        return self.fields[key]
+
+
 class SampleNetwork:
-    '''Five hosts in a ring - this machine among them - with traffic between a few.'''
+    '''Five hosts - this machine among them, and the access point in the middle - with traffic between a few.'''
 
     def __init__(self, own_mac: str):
         self.macs = [own_mac, "a4:cf:12:8e:01:3c", "b8:27:eb:44:10:9a", "3c:71:bf:02:7d:e1", "dc:a6:32:5f:88:04"]
+        self.packets = [SamplePacket(self.macs[0], self.macs[1], "192.168.4.2", "192.168.4.1"),
+                        SamplePacket(self.macs[2], self.macs[1]),
+                        SamplePacket(self.macs[0], self.macs[3])]
 
     def get_hosts(self) -> tuple[list[str], dict[str, list[str]]]:
         return list(self.macs), {mac: [] for mac in self.macs}
 
-    def get_host_positions(self, hidden: set[str] = frozenset()) -> dict:
-        count = len(self.macs)
-        return {mac: (math.cos(2 * math.pi * i / count), math.sin(2 * math.pi * i / count)) for i, mac in enumerate(self.macs)}
+    def get_access_point(self) -> str | None:
+        return self.macs[1]
 
     def get_arrows_this_tick(self) -> dict:
-        return {"a": (self.macs[0], self.macs[1]), "b": (self.macs[2], self.macs[1]), "c": (self.macs[0], self.macs[3])}
+        return {packet: [packet.get("mac_src"), packet.get("mac_dst")] for packet in self.packets}
 
 
 class SamplePackets:

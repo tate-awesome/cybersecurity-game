@@ -6,6 +6,7 @@ import scapy.all as scapy
 from scapy.all import get_if_addr, get_working_if, get_if_hwaddr
 import netifaces
 from ..process import Process
+from ..buffer.channels.network_graph import MAX_NICKNAME_LENGTH
 import nmap, socket
 
 class NMapper(Process):
@@ -117,6 +118,8 @@ class NMapper(Process):
             entry = nicknames.setdefault(mac, {"nickname": "", "hide": "0"})
             if entry.get("nickname"):
                 continue
+            # Cut to fit a chip - "Raspberry Pi Trading" reads as "Raspberry Pi"
+            name = name[:MAX_NICKNAME_LENGTH].strip()
             entry["nickname"] = name
             self.buffer.put("nmap", f"Nicknamed {mac} ({host}): {name}")
 

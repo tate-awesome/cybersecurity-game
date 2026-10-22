@@ -1,7 +1,6 @@
 from ..meta_packet import MetaPacket
 from multiprocessing import Lock
 import ipaddress
-import math
 from scapy.all import conf
 from .packet import PacketBuffer
 
@@ -11,6 +10,10 @@ if TYPE_CHECKING:
 
 # The exercises' access point (see OpenAccessPointConfigInBrowser)
 EXERCISE_AP_IP = "192.168.4.1"
+# The longest a host's nickname (network_hosts) can be: 1.5 times the 8
+# characters of a MAC's last 3 bytes ("aa:bb:cc"), which the network graph
+# shows for a host without one - so every host fits the same size chip
+MAX_NICKNAME_LENGTH = 12
 
 
 def _default_gateway_ip() -> str | None:
@@ -99,30 +102,3 @@ class NetworkGraph:
             output = self.arrows_this_tick.copy()
             self.arrows_this_tick.clear()
             return output
-
-    def get_host_positions(self, hidden: set[str] = frozenset()) -> dict:
-        '''
-        Each shown MAC's spot on a circle - hidden ones are left out, and the
-        rest spread to fill it. The access point (see get_access_point) goes
-        in the middle, since every host talks through it.
-        '''
-        access_point = self.get_access_point()
-        with self.lock:
-            hosts = [mac for mac in self.host_order if mac not in hidden]
-
-        positions = {}
-        if access_point in hosts:
-            hosts.remove(access_point)
-            positions[access_point] = (0.0, 0.0)
-        n = len(hosts)
-        if n == 0:
-            return positions
-        # A lone host takes the middle, unless the access point already has it
-        if n == 1 and not positions:
-            positions[hosts[0]] = (0.0, 0.0)
-            return positions
-
-        for i, mac in enumerate(hosts):
-            angle = 2 * math.pi * i / n
-            positions[mac] = (math.cos(angle), math.sin(angle))
-        return positions
