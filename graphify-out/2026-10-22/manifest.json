@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1792671575.8442316,
-    "seen": 1792673044.4481428,
-    "ast_hash": "3cf13cffb9c340fd254ea5ad5a4c9053",
+    "mtime": 1792675311.4695594,
+    "seen": 1792675395.1428711,
+    "ast_hash": "854f3dfe90896131eaa9cf1ff93dceff",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -792,9 +792,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1792671575.8972232,
-    "seen": 1792673044.4733198,
-    "ast_hash": "a0f9a47a2e446ccae465788afa86bf5b",
+    "mtime": 1792675309.8059652,
+    "seen": 1792675395.176988,
+    "ast_hash": "100a24faab5092f4c753ec2531dd82ba",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -1278,9 +1278,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/__init__.py": {
-    "mtime": 1792671575.8872442,
-    "seen": 1792673044.4650161,
-    "ast_hash": "24db1965c473cec30c101ec7d4b5c922",
+    "mtime": 1792675298.9369159,
+    "seen": 1792675395.1665115,
+    "ast_hash": "b6edd6cd8dd30ac0776f2badb5b8a209",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
@@ -1650,9 +1650,9 @@
     "semantic_hash": ""
   },
   "game/src/pages/theme_editor.py": {
-    "mtime": 1792646855.437322,
-    "seen": 1792647486.0419793,
-    "ast_hash": "c903952b3367e8d39ecbbdfaa5598cc0",
+    "mtime": 1792675265.4568505,
+    "seen": 1792675395.1630528,
+    "ast_hash": "cd6753aa0fe3f45df5eee6e5732c4df3",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/import_themes.py": {
@@ -1917,6 +1917,18 @@
     "mtime": 1792671575.886214,
     "seen": 1792673044.4650116,
     "ast_hash": "f6e5d6c4a05a9c628ff6cef7ff591a33",
+    "semantic_hash": ""
+  },
+  "game/src/pages/material_editor.py": {
+    "mtime": 1792675375.1095705,
+    "seen": 1792675395.1626122,
+    "ast_hash": "d6284f3faf96854239d0910663f8a31e",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/frame_widgets/important_buttons/open_material_editor.py": {
+    "mtime": 1792675293.497138,
+    "seen": 1792675395.1719813,
+    "ast_hash": "0e25e37d63185bd67d991974e380ede3",
     "semantic_hash": ""
   }
 }
