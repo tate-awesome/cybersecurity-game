@@ -14,10 +14,10 @@ class WifiForm(BaseForm):
     WifiBaseClass.is_running), so the button points at where it switches to:
     "-> Device" when home, "-> Home" when on the device. Switching either way
     needs both networks (there'd be no getting back otherwise), so until
-    they're both entered the button shows a caution "Enter WiFi" and a click
-    posts which one is missing to the wifi log instead of switching. Once both
-    are saved, the entry for whichever network you're on is read-only - a
-    fact, not a choice - and both are while switching.
+    they're both entered the button shows the shared caution "Input" and a
+    click posts which one is missing to the wifi log instead of switching.
+    Once both are saved, the entry for whichever network you're on is
+    read-only - a fact, not a choice - and both are while switching.
     '''
     def __init__(self, master: QWidget, context: Context):
 
@@ -101,6 +101,11 @@ class WifiForm(BaseForm):
             return
         self.process.start(self.device_entry.text())
 
+    def refresh_input_warning(self):
+        # Wifi sets its own button text each poll (see refresh_process_button),
+        # including the shared "Input" caution, so skip the base's pass.
+        pass
+
     def disconnect_to_home(self):
         '''Stop = go back home, or post that home is missing if it can't.'''
         if not self.process.home_network:
@@ -158,8 +163,9 @@ class WifiForm(BaseForm):
 
         if switching:
             return  # leave the optimistic text set by the click
-        if self.missing(on_device) is not None:
-            text = f"{self.style.icon('alert-triangle')}  Enter WiFi"
+        if not self.entries_filled():
+            # Same caution as every other card when an entry is empty.
+            text = self.input_needed_text
         else:
             # The arrow points at where a click would take you.
             text = f"{self.style.icon('arrow-right')}  {'Home' if on_device else 'Device'}"

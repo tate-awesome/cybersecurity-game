@@ -127,9 +127,12 @@ class BaseForm(QWidget):
         if self.flat:
             self.start_button_text = f"{self.style.icon('player-play')}  Start"
             self.stop_button_text = f"{self.style.icon('square')}  Stop"
+            # Shown on the start button while any entry is still empty.
+            self.input_needed_text = f"{self.style.icon('alert-triangle')}  Input"
         else:
             self.start_button_text = self.start_process_text
             self.stop_button_text = self.stop_process_text
+            self.input_needed_text = self.start_process_text
 
         self.current_row = 0
         self.entry_index = 0
@@ -428,13 +431,31 @@ class BaseForm(QWidget):
         Refresh the process button based on the current process status.
         '''
         running = bool(self.status_func())
-        if running == self.process_confirmed_state:
+        if running != self.process_confirmed_state:
+            self.process_confirmed_state = running
+            if running:
+                self.configure_on()
+            else:
+                self.configure_off()
+        # While off, a flat card warns on the button when an entry is still
+        # empty - polled, since entries are edited after configure_off ran.
+        if self.flat and not running:
+            self.refresh_input_warning()
+
+    def entries_filled(self) -> bool:
+        '''Whether every entry on this form has (non-whitespace) text.'''
+        return all(entry.text().strip() for entry in self.entries)
+
+    def refresh_input_warning(self):
+        '''
+        Flat start button: "⚠ Input" while any entry is empty, else the normal
+        start text. No-op for a card with no entries (nothing to fill).
+        '''
+        if not self.flat or not self.entries:
             return
-        self.process_confirmed_state = running
-        if running:
-            self.configure_on()
-        else:
-            self.configure_off()
+        text = self.start_button_text if self.entries_filled() else self.input_needed_text
+        if self.process_button.text() != text:
+            self.process_button.setText(text)
 
     def click_start(self):
         '''
