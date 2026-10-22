@@ -938,7 +938,6 @@ class _Peek(QWidget):
             closed()
 
 
-@dataclass
 class _ShadowWatch(QObject):
     '''Repaints a DockArea's shadows whenever one of its panels moves, resizes, shows or hides (see DockArea.paintEvent).'''
 
@@ -954,6 +953,7 @@ class _ShadowWatch(QObject):
         return False
 
 
+@dataclass
 class DropTarget:
     '''
     Where a held panel would land: kind "tab" (into leaf node_id's tabs at
