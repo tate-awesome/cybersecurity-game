@@ -359,10 +359,27 @@ class PageManager:
 
         config["layout"] = self.layout_tree(config.get("layout_shape"), config["layout_weights"])
         self.context.states.load(config["settings"])
-        # Host nicknames live in preferences now, across workspaces - one saved
-        # here before they moved is taken in there (and left out of the next autosave)
-        self.context.preferences.adopt_hosts(self.context.states.data.pop("network_hosts", None))
+        self.split_off_nicknames()
         return config
+
+    def split_off_nicknames(self):
+        '''
+        Host nicknames live in preferences, across workspaces (see
+        Preferences.host_nicknames); "network_hosts" keeps only which hosts
+        this workspace hides. A nickname saved here from before is taken in
+        there, then left out - so the next autosave holds just the hiding.
+        '''
+        hosts = self.context.states.data.get("network_hosts")
+        if not isinstance(hosts, dict):
+            return
+        self.context.preferences.adopt_nicknames(hosts)
+        for mac, entry in list(hosts.items()):
+            if str(mac).count(":") != 5 or not isinstance(entry, dict):
+                del hosts[mac]
+                continue
+            entry.pop("nickname", None)
+            if entry.get("hide") in (None, "", 0, "0"):
+                del hosts[mac]
 
     def layout_ids(self, tree: dict) -> set[str]:
         '''Every pane id below the top group of a layout_tree - its groups, tab stacks and panels.'''

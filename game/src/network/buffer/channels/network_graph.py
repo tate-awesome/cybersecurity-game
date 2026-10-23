@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 # The exercises' access point (see OpenAccessPointConfigInBrowser)
 EXERCISE_AP_IP = "192.168.4.1"
-# The longest a host's nickname (Preferences.network_hosts) can be: 1.5 times the 8
+# The longest a host's nickname (Preferences.host_nicknames) can be: 1.5 times the 8
 # characters of a MAC's last 3 bytes ("aa:bb:cc"), which the network graph
 # shows for a host without one - so every host fits the same size chip
 MAX_NICKNAME_LENGTH = 12
@@ -43,7 +43,7 @@ class NetworkGraph:
         self.reset()
 
     def reset(self):
-        '''Forgets every host seen (Clear Data, Clear Hosts, leaving a workspace) - nicknames are kept, in preferences.'''
+        '''Forgets every host seen (Clear Data, Clear Hosts, leaving a workspace) - nicknames (in preferences) and hiding are kept.'''
         with self.lock:
             self.host_order = []
             self._host_set = set()

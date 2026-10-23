@@ -10,16 +10,17 @@ class HostOverlay:
     Binds a button to open and close an overlay with a row for every host
     (device - MAC address) the network graph has seen
     (context.buffer.network), with the IPs seen on it, editing its nickname
-    and hide fields - kept in preferences, across workspaces (see
-    Preferences.network_hosts). The network graph polls them every frame
-    and follows along.
+    - kept in preferences, across workspaces (see Preferences.host_nicknames)
+    - and whether this workspace's network graph hides it
+    (context.states["network_hosts"]). The network graph polls them every
+    frame and follows along.
 
     A search box above the rows narrows them to the MACs, IPs or nicknames
     containing what's typed - and the Select/Clear All buttons only touch
     the rows still showing.
 
-    A MAC only gets an entry once one of its fields is edited, so
-    preferences don't fill up with every host ever seen.
+    A MAC only gets an entry once it's given a nickname or hidden, so
+    neither fills up with every host ever seen.
     '''
     # Past this share of the screen's height, the rows scroll
     MAX_SCREEN_HEIGHT = 0.7
@@ -167,11 +168,25 @@ class HostOverlay:
                 widget.setVisible(matches)
 
     def save(self, mac: str, key: str, value: str):
-        '''Sets one of this MAC's fields (see Preferences.set_host_field).'''
-        self.context.preferences.set_host_field(mac, key, value)
+        '''
+        Sets one of this MAC's fields: its nickname in preferences, or
+        whether it's hidden in this workspace's network_hosts - giving it an
+        entry there first if it has none, unless it's not hidden anyway.
+        '''
+        if key == "nickname":
+            self.context.preferences.set_host_nickname(mac, value)
+            return
+        hidden = self.context.states.get("network_hosts")
+        if mac not in hidden:
+            if value == self.DEFAULTS[key]:
+                return
+            hidden[mac] = {}
+        hidden[mac][key] = value
 
     def saved(self, mac: str, key: str):
-        return self.context.preferences.host_field(mac, key)
+        if key == "nickname":
+            return self.context.preferences.host_nickname(mac)
+        return self.context.states.get("network_hosts").get(mac, {}).get(key, self.DEFAULTS[key])
 
     def enrich_entry(self, entry: QLineEdit, mac: str, key: str):
         # Bind autosave

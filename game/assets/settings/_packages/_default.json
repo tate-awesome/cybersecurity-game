@@ -80,6 +80,7 @@
 
     "network_graph_view": "table",
 
+    "network_hosts": {},
     "game_progress": {
         "wifi": 0,
         "nmap": 0,

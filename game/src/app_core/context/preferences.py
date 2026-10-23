@@ -94,6 +94,10 @@ class Preferences:
             del self.data[key]
         if retired:
             self.save()
+        # Nicknames were briefly kept here with hiding, as "network_hosts" - just the nicknames stay
+        if "network_hosts" in self.data:
+            self.adopt_nicknames(self.data.pop("network_hosts"))
+            self.save()
         # Written out if missing, so it's there to find and flip in the file
         if "is_developer" not in self.data:
             self.data["is_developer"] = DEFAULT_IS_DEVELOPER
@@ -140,64 +144,55 @@ class Preferences:
         self.data[key] = value
         self.save()
 
-    # Hosts
-    HOST_DEFAULTS = {"nickname": "", "hide": "0"}
+    # Host nicknames
+    def host_nicknames(self) -> dict:
+        '''
+        Every host's (device's) nickname, by lower-case MAC -
+        {"b8:27:eb:44:10:9a": "PLC"} - kept across workspaces and sessions,
+        since a device is the same device in every lesson. Whether the
+        network graph hides a host is each workspace's own (its
+        "network_hosts" setting). Change one with set_host_nickname, which saves.
+        '''
+        names = self.data.get("host_nicknames")
+        if not isinstance(names, dict):
+            names = self.data["host_nicknames"] = {}
+        return names
 
-    def network_hosts(self) -> dict:
-        '''
-        Nicknames and hiding for hosts (devices), by lower-case MAC -
-        {"b8:27:eb:44:10:9a": {"nickname": "PLC", "hide": "0"}} - kept across
-        workspaces and sessions, since a device is the same device in every
-        lesson. Read it freely; change it with set_host_field, which saves.
-        '''
-        hosts = self.data.get("network_hosts")
-        if not isinstance(hosts, dict):
-            hosts = self.data["network_hosts"] = {}
-        return hosts
+    def host_nickname(self, mac: str) -> str:
+        return str(self.host_nicknames().get(str(mac).lower()) or "")
 
-    def host_field(self, mac: str, key: str):
-        entry = self.network_hosts().get(str(mac).lower())
-        return (entry or {}).get(key, self.HOST_DEFAULTS[key])
-
-    def set_host_field(self, mac: str, key: str, value, save: bool = True):
-        '''
-        Sets one of a host's fields - giving it an entry first if it has
-        none, unless the value is the default anyway, so the file doesn't
-        fill up with every host ever seen.
-        '''
-        hosts = self.network_hosts()
-        mac = str(mac).lower()
-        if mac not in hosts:
-            if value == self.HOST_DEFAULTS[key]:
-                return
-            hosts[mac] = dict(self.HOST_DEFAULTS)
-        hosts[mac][key] = value
+    def set_host_nickname(self, mac: str, name: str, save: bool = True):
+        '''Gives a host a nickname - or, empty, takes it away.'''
+        names = self.host_nicknames()
+        mac, name = str(mac).lower(), str(name)
+        if name:
+            names[mac] = name
+        else:
+            names.pop(mac, None)
         if save:
             self.save()
 
-    def adopt_hosts(self, entries) -> None:
+    def adopt_nicknames(self, entries) -> bool:
         '''
-        Takes in nicknames and hiding a workspace saved before they moved
-        here (its "network_hosts" setting) - a host's entry here wins, but a
-        missing nickname is filled in. Anything not keyed by a MAC (older
-        "macs"/"ips" groupings, "-") is dropped.
+        Takes in the nicknames from {mac: {"nickname": ...}} entries - a
+        workspace's "network_hosts" setting from before nicknames moved
+        here. A nickname here already wins. Entries not keyed by a MAC
+        (older "macs"/"ips" groupings, "-") are skipped. Returns whether
+        any were taken in (it saves if so).
         '''
         if not isinstance(entries, dict):
-            return
-        hosts, changed = self.network_hosts(), False
+            return False
+        names, changed = self.host_nicknames(), False
         for mac, entry in entries.items():
             mac = str(mac).lower()
-            if mac.count(":") != 5 or not isinstance(entry, dict) or not ("nickname" in entry or "hide" in entry):
+            if mac.count(":") != 5 or not isinstance(entry, dict) or not entry.get("nickname"):
                 continue
-            mine = hosts.get(mac)
-            if mine is None:
-                hosts[mac] = {"nickname": str(entry.get("nickname") or ""), "hide": str(entry.get("hide", "0"))}
-                changed = True
-            elif not mine.get("nickname") and entry.get("nickname"):
-                mine["nickname"] = str(entry["nickname"])
+            if not names.get(mac):
+                names[mac] = str(entry["nickname"])
                 changed = True
         if changed:
             self.save()
+        return changed
 
     def clear(self):
         self.data.clear()
@@ -230,7 +225,7 @@ class Preferences:
             "fade_out": DEFAULT_FADE_OUT,  # toggled on the General tab (see Router.quit)
             "keybinds": {},         # set on the settings page (see KeyBinds.rebind) - empty means keybinds.DEFAULT_KEYBINDS
             "debug_labels": False,  # toggled by ToggleDebugLabels (see LocalizationManager.is_debug)
-            "network_hosts": {},    # host nicknames and hiding, by MAC (see network_hosts)
+            "host_nicknames": {},   # host nicknames, by MAC (see host_nicknames)
             # Set from the Wi-Fi form's entries (see WifiForm) - app-wide, since
             # there's only the one Wi-Fi radio whichever page switches it
             "wifi_home": "",

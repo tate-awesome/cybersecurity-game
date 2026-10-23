@@ -17,6 +17,7 @@ class Builder(Panel):
         "strip_chart_colors",
         "strip_chart_auto_fit",
         "strip_chart_auto_fit_max_seconds",
+        "network_hosts",
         "network_graph_view",
     )
     def __init__(self, master, context: Context):

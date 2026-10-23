@@ -135,11 +135,11 @@ class Builder(Panel):
         '''
         A packet's value for a column - its own field, but for the host
         columns, which name a device by its nickname from Configure Hosts
-        (Preferences.network_hosts, by MAC) when it has one, else by its address.
+        (Preferences.host_nicknames, by MAC) when it has one, else by its address.
         '''
         if column in ("src_host", "dst_host"):
             end = column[:3]
-            nickname = context.preferences.host_field(packet.get(f"mac_{end}") or "", "nickname")
+            nickname = context.preferences.host_nickname(packet.get(f"mac_{end}") or "")
             return nickname or packet.get(end)
         return packet.get_column_value(column)
 

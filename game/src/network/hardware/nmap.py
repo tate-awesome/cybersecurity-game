@@ -114,11 +114,11 @@ class NMapper(Process):
             name = nm[host].hostname() or vendor
             if not mac or not name:
                 continue
-            if preferences.host_field(mac, "nickname"):
+            if preferences.host_nickname(mac):
                 continue
             # Cut to fit a chip - "Raspberry Pi Trading" reads as "Raspberry Pi"
             name = name[:MAX_NICKNAME_LENGTH].strip()
-            preferences.set_host_field(mac, "nickname", name)
+            preferences.set_host_nickname(mac, name)
             self.buffer.put("nmap", f"Nicknamed {mac} ({host}): {name}")
 
     def get_active_iface(self):

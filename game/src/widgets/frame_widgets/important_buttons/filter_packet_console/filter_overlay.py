@@ -594,7 +594,7 @@ class FilterOverlay(QObject):
         those that have one, then their IP addresses, then their MACs.
         '''
         macs, host_ips = self.context.buffer.network.get_hosts()
-        nicknames = {self.context.preferences.host_field(mac, "nickname") for mac in macs} - {""}
+        nicknames = {self.context.preferences.host_nickname(mac) for mac in macs} - {""}
         ips = {ip for found in host_ips.values() for ip in found}
 
         def ip_order(ip: str):

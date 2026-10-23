@@ -27,6 +27,7 @@
         "strip_chart_auto_fit": "1 starts every strip chart (Register Graphs, Variable Graphs, the network graph's rate chart) in fit mode, zoomed to fit the recent data. Students can toggle it.",
         "strip_chart_auto_fit_max_seconds": "How many seconds of history fit mode shows at most.",
         "network_graph_view": "How the network graph lays its hosts out: \"table\" (each in its own cell, staying put) or \"ring\" (around the access point, with the hosts in the current packets drawn on top). Students switch with the graph's Ring View / Table View button.",
+        "network_hosts": "Which of the network graph's hosts (devices, by MAC address) this workspace hides, e.g. {\"b8:27:eb:44:10:9a\": {\"hide\": \"1\"}}. Students change it with Configure Hosts. Nicknames aren't kept here - they're the student's own, kept in their preferences across every workspace.",
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Sort Cards. A form only appears if \"available\" also offers it.",
@@ -221,6 +222,18 @@
             "heads": {
                 "description": "Colors of the live-value markers at the end of each line, used in order.",
                 "details": "Colors of the live-value markers drawn at the newest point of each line, used in order. They show where the latest reading sits on the chart."
+            }
+        },
+        "network_hosts": {
+            "*": {
+                "_note": {
+                    "description": "One host, by its MAC address.",
+                    "details": "Settings for the host (device) with this MAC address, in this workspace's network graph."
+                },
+                "hide": {
+                    "description": "\"1\" hides this host from the network graph in this workspace.",
+                    "details": "\"1\" leaves this host out of the network graph in this workspace - handy for background devices that crowd it. Its packets still show in the packet console. Students change it with Configure Hosts."
+                }
             }
         },
         "game_progress": {
