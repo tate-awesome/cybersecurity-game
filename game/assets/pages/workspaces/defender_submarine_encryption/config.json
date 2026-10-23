@@ -31,6 +31,7 @@
             "modbus_model_panel_1": {
                 "available": {
                     "sniffed_hvac_house": 0,
+                    "sniffed_hvac_chart": 0,
                     "ap_polled_hvac_chart": 0,
                     "sniffed_submarine_map": 0,
                     "ap_polled_submarine_map": 1
@@ -39,6 +40,7 @@
             "modbus_model_panel_2": {
                 "available": {
                     "sniffed_hvac_house": 0,
+                    "sniffed_hvac_chart": 0,
                     "ap_polled_submarine_map": 0,
                     "ap_polled_hvac_chart": 0,
                     "sniffed_submarine_map": 1

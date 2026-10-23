@@ -67,6 +67,16 @@ class HouseBuffer:
             output = self.convert(variable, output)
         return output
 
+    def get_history(self, variable: str, direction: str) -> list[tuple[float, float]]:
+        '''
+        Returns every (time, value) sample for the given variable and direction, converted to its
+        units, or an empty list if it isn't an HVAC variable.
+        '''
+        if variable not in self.variables:
+            return []
+        history = self.modbuffer.get_history(self.variables[variable], direction)
+        return [(t, self.convert(variable, raw)) for t, raw in history]
+
     # House getters
     def get_heater(self, direction: str) -> float:
         '''

@@ -339,6 +339,10 @@
                         "description": "1 offers the HVAC house in this panel.",
                         "details": "Offers the HVAC house in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons."
                     },
+                    "sniffed_hvac_chart": {
+                        "description": "1 offers the HVAC chart in this panel.",
+                        "details": "Offers the HVAC temperature chart in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It looks like the defender HVAC chart, but it's drawn from ModBus traffic this computer sniffed or intercepted, so it belongs in attacker lessons. Its dashed line is the temperature forwarded on to the controller rather than a setpoint, since sniffed traffic has none."
+                    },
                     "ap_polled_submarine_map": {
                         "description": "1 offers the defender submarine map in this panel.",
                         "details": "Offers the defender submarine map in this panel's dropdown - or, if it's the only model on, makes the panel show just that. It's drawn from what the AP reports over the AP connect form's connection, so it belongs in defender lessons."

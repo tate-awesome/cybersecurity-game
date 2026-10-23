@@ -147,6 +147,7 @@
             "available": {
                 "sniffed_submarine_map": 1,
                 "sniffed_hvac_house": 1,
+                "sniffed_hvac_chart": 1,
                 "ap_polled_submarine_map": 1,
                 "ap_polled_hvac_chart": 1
             },
@@ -158,6 +159,7 @@
             "available": {
                 "sniffed_submarine_map": 1,
                 "sniffed_hvac_house": 1,
+                "sniffed_hvac_chart": 1,
                 "ap_polled_submarine_map": 1,
                 "ap_polled_hvac_chart": 1
             },
@@ -169,6 +171,7 @@
             "available": {
                 "sniffed_submarine_map": 1,
                 "sniffed_hvac_house": 1,
+                "sniffed_hvac_chart": 1,
                 "ap_polled_submarine_map": 1,
                 "ap_polled_hvac_chart": 1
             },
@@ -180,6 +183,7 @@
             "available": {
                 "sniffed_submarine_map": 1,
                 "sniffed_hvac_house": 1,
+                "sniffed_hvac_chart": 1,
                 "ap_polled_submarine_map": 1,
                 "ap_polled_hvac_chart": 1
             },
@@ -191,6 +195,7 @@
             "available": {
                 "sniffed_submarine_map": 1,
                 "sniffed_hvac_house": 1,
+                "sniffed_hvac_chart": 1,
                 "ap_polled_submarine_map": 1,
                 "ap_polled_hvac_chart": 1
             },

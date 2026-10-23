@@ -286,12 +286,13 @@
                                 "properties": {
                                     "sniffed_submarine_map": {"enum": [0, 1]},
                                     "sniffed_hvac_house": {"enum": [0, 1]},
+                                    "sniffed_hvac_chart": {"enum": [0, 1]},
                                     "ap_polled_submarine_map": {"enum": [0, 1]},
                                     "ap_polled_hvac_chart": {"enum": [0, 1]}
                                 }
                             },
                             "start_on": {
-                                "enum": ["", "sniffed_submarine_map", "sniffed_hvac_house", "ap_polled_submarine_map", "ap_polled_hvac_chart"]
+                                "enum": ["", "sniffed_submarine_map", "sniffed_hvac_house", "sniffed_hvac_chart", "ap_polled_submarine_map", "ap_polled_hvac_chart"]
                             },
                             "show_auto_switch_checkbox": {"enum": [0, 1]},
                             "auto_switch_on_poll": {"enum": [0, 1]}

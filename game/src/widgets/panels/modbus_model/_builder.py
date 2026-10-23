@@ -5,6 +5,7 @@ from ...canvases.house import House
 from ...canvases.world_map import WorldMap
 from ...canvases.defender_world_map import DefenderWorldMap
 from ...canvases.defender_hvac_chart import DefenderHVACChart
+from ...canvases.sniffed_hvac_chart import SniffedHVACChart
 from ..panel import Panel
 
 MODELS = {
@@ -13,6 +14,7 @@ MODELS = {
     # these comes first.
     "sniffed_submarine_map": WorldMap,
     "sniffed_hvac_house": House,
+    "sniffed_hvac_chart": SniffedHVACChart,
     "ap_polled_submarine_map": DefenderWorldMap,
     "ap_polled_hvac_chart": DefenderHVACChart,
 }
