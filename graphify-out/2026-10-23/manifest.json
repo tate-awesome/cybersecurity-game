@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/network_diagram/_builder.py": {
-    "mtime": 1792737144.3007345,
-    "seen": 1792737281.831165,
-    "ast_hash": "4ff30764a9eee77482f95d790f206531",
+    "mtime": 1792738791.6938283,
+    "seen": 1792738806.2509682,
+    "ast_hash": "f3fec2ce70b9f268c385e5908215f077",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/packet_console/_builder.py": {
@@ -1872,9 +1872,9 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/start_here/config.json": {
-    "mtime": 1792700606.2215867,
-    "seen": 1792735894.2378883,
-    "ast_hash": "827778f6648d75ce22ddddadc0fc4cc6",
+    "mtime": 1792738660.8174388,
+    "seen": 1792738806.2141056,
+    "ast_hash": "2855b3778c581e766514b522ea0b98dd",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/modbus_panel/forms/combined.py": {

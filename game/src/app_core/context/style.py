@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication, QComboBox, QStyledItemDelegate, QWid
 import darkdetect
 
 from .themes import (BUTTON_KINDS, COLOR_NAMES, DATA_MATERIALS, INK_MATERIALS, MATERIALS, STYLE_DEFAULTS, THEME_MODES, button_radius,
-                     gradient_points, is_hex, read_theme, resolve_materials, style_setting, theme_file)
+                     gradient_points, is_hex, read_theme, resolve_materials, style_setting, theme_file, theme_modes)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -364,9 +364,14 @@ class Style:
     def apply_theme(self, theme_name: str):
         '''
         Applies a theme ("<mode>_<family>") to every widget, in place (see
-        restyle) - nothing needs rebuilding.
+        restyle) - nothing needs rebuilding. A theme with only one mode (see
+        theme_modes) is always in that one, whichever mode was asked for.
         '''
         mode, _, family = theme_name.partition("_")
+        modes = self.theme_modes(family)
+        if mode not in modes:
+            mode = modes[0]
+            theme_name = f"{mode}_{family}"
         app = QApplication.instance()
         # First - the materials (see material) are the current theme's
         self.current_theme = theme_name
@@ -1203,7 +1208,7 @@ class Style:
             number += 1
             stem = f"{self._file_stem(label)}_{number}"
         info = {"label": label if number == 1 else f"{label} {number}"}
-        for key in ("note", "transparency", "button_radius", "menu_button_radius", *STYLE_DEFAULTS):
+        for key in ("note", "transparency", "modes", "button_radius", "menu_button_radius", *STYLE_DEFAULTS):
             if key in self.preset_info[source]:
                 info[key] = self.preset_info[source][key]
         self._write_theme(folder / f"{stem}.json", {"info": info, "materials": copy.deepcopy(self.materials[source])})
@@ -1334,6 +1339,10 @@ class Style:
         '''The current theme's family - its file's name (see IMPORTED_PREFIX for the user's own).'''
         return self.current_theme.partition("_")[2]
 
+    def theme_modes(self, family: str | None = None) -> tuple[str, ...]:
+        '''Which modes a theme has (see themes.theme_modes) - the current one's by default.'''
+        return theme_modes(self.preset_info.get(family or self.theme_family(), {}))
+
     def preset_name(self, family: str) -> str:
         '''A preset family's shown name - noting a derived side.'''
         info = self.preset_info[family]
@@ -1388,8 +1397,11 @@ class Style:
     def toggle_mode(self):
         '''
         Toggles between the light and dark variant of the current theme's
-        color family (e.g. dark_teal <-> light_teal).
+        color family (e.g. dark_teal <-> light_teal) - nothing for a theme
+        with only one mode (see theme_modes).
         '''
+        if len(self.theme_modes()) < 2:
+            return
         current_mode, _, family = self.current_theme.partition("_")
         target_mode = "light" if current_mode == "dark" else "dark"
         self.set_theme(f"{target_mode}_{family}")

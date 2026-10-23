@@ -276,11 +276,12 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         description.setEnabled(editable)
         section.row("theme_editor_rows_description", description, "theme_editor_row_notes_description")
 
-        # Not an edit - which mode is shown, so it works on built-in themes too
+        # Not an edit - which mode is shown, so it works on built-in themes too.
+        # Off for a theme with only one mode (see Style.theme_modes)
         dark = style.current_theme.partition("_")[0] == "dark"
-        section.row("theme_editor_rows_dark_mode", self.checkbox(
-            dark, lambda on: style.set_theme(f"{'dark' if on else 'light'}_{style.theme_family()}")),
-            "theme_editor_row_notes_dark_mode")
+        mode_box = self.checkbox(dark, lambda on: style.set_theme(f"{'dark' if on else 'light'}_{style.theme_family()}"))
+        mode_box.setEnabled(len(style.theme_modes()) > 1)
+        section.row("theme_editor_rows_dark_mode", mode_box, "theme_editor_row_notes_dark_mode")
 
         transparency = self.checkbox(style.allows_transparency(), style.set_transparency)
         transparency.setEnabled(editable)

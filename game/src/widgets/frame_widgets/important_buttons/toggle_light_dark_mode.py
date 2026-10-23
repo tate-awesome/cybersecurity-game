@@ -10,6 +10,10 @@ class ToggleLightDarkMode(ToggleButton):
     the theme itself, so it follows a mode changed anywhere else too. When
     the system (darkdetect) prefers the mode it switches to, the label says
     so, and the tooltip names the system's mode.
+
+    A theme with only one mode (see Style.theme_modes) has nothing to switch
+    to - the button is off, says which mode the theme is in ("Dark Mode
+    Only"), and its tooltip says to pick another theme for the other.
     '''
     LABEL = "menu_bar_buttons_switch_to_dark_mode_button"
     ACTIVE_LABEL = "menu_bar_buttons_switch_to_light_mode_button"
@@ -18,9 +22,27 @@ class ToggleLightDarkMode(ToggleButton):
     def is_active(self) -> bool:
         return self.context.style.current_theme.startswith("dark")
 
+    def theme_only_mode(self) -> str | None:
+        '''The current theme's one mode, if it only has one - else None.'''
+        modes = self.context.style.theme_modes()
+        return modes[0] if len(modes) == 1 else None
+
+    def sync_state(self):
+        super().sync_state()
+        # A one-mode theme can replace one with both without the mode changing
+        if self.theme_only_mode() != self.only_mode:
+            self.show_state()
+
     def show_state(self):
         super().show_state()
         labels = self.context.labels
+        self.only_mode = self.theme_only_mode()
+        self.setEnabled(self.only_mode is None)
+        if self.only_mode is not None:
+            if self.icons is None:
+                self.setText(labels.get(f"menu_bar_buttons_{self.only_mode}_mode_only_button"))
+            self.setToolTip(labels.get(f"menu_bar_tooltips_toggle_button_{self.only_mode}_only"))
+            return
         # Read on every state change, not every frame - darkdetect can spawn a
         # process (gsettings on Linux). None when the system has no preference
         system_dark = darkdetect.isDark()

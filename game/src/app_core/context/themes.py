@@ -17,7 +17,8 @@ description - for copied themes, where it came from), "transparency"
 each kind of button's corner radius in px ("button_radius" and
 "menu_button_radius" - see BUTTON_KINDS), and for bundled themes a
 "kind" ("original" or "copied") and which modes are "derived" rather
-than copied (see Style.preset_name).
+than copied (see Style.preset_name). A theme with only one mode lists it
+in "modes" (e.g. ["dark"] - see theme_modes); left out, it has both.
 
 Panels are made of three materials, from the top down (and any page
 can use them the same way):
@@ -362,6 +363,13 @@ def button_radius(info: dict, kind: str) -> int:
     if isinstance(radius, (int, float)) and not isinstance(radius, bool):
         return int(min(MAX_BUTTON_RADIUS, max(0, radius)))
     return DEFAULT_BUTTON_RADIUS
+
+
+def theme_modes(info: dict) -> tuple[str, ...]:
+    '''Which of THEME_MODES a theme has, from its info (see read_theme) - its "modes", or both if it names none.'''
+    modes = info.get("modes")
+    given = tuple(mode for mode in THEME_MODES if mode in modes) if isinstance(modes, list) else ()
+    return given or THEME_MODES
 
 
 def read_theme(data) -> dict | None:
