@@ -73,6 +73,14 @@ class Builder(Panel):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self.fit_direction()
+
+    def showEvent(self, event):
+        # A page opening sends its first resize before it's visible, which fit_direction skips
+        super().showEvent(event)
+        self.fit_direction()
+
+    def fit_direction(self):
         # Like the HVAC house (see canvases.house): side by side when wide, stacked when tall
         if self.panes.isVisible():
             self.panes.set_direction("horizontal" if self.panes.width() >= self.panes.height() else "vertical")
