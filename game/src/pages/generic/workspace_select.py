@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHB
                                QTextBrowser, QVBoxLayout, QWidget)
 
 from ...app_core import Context
-from ...app_core.context.style import PANEL_BORDER_WIDTH
 from ...widgets import Scrollable
 from ...widgets.panels.panel import paint_panel
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPOUT_MARK
@@ -175,8 +174,8 @@ class SummaryDrawer(QFrame):
         '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the bar's padding.'''
         style = self.style
         left, top, right, bottom = style.panel_margins()
-        frame = style.setting("panel_frame") + PANEL_BORDER_WIDTH
-        self.layout().setContentsMargins(left + frame, top + PANEL_BORDER_WIDTH, right + frame, bottom + frame)
+        frame = style.setting("panel_frame") + style.PANEL_BORDER_WIDTH
+        self.layout().setContentsMargins(left + frame, top + style.PANEL_BORDER_WIDTH, right + frame, bottom + frame)
         # The title lines up with the card's text below it
         self.bar.layout().setContentsMargins(max(0, style.igap * 2 - frame), style.igap, 0, style.igap)
         self.update()

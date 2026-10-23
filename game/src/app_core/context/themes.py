@@ -51,23 +51,45 @@ as it did before they existed (see STYLE_DEFAULTS):
     "panel_radius"     panels' corner radius in px
     "panel_frame"      px of the panel material around a panel's contents
                        (left, right and below - its menu bar is above)
+    "panel_border_width" px - panels' outlines
+    "panel_gap"        px between a page's panels (left out: the usual gap)
     "panel_shadow"     a shadow around each panel: {"x", "y", "blur" (px),
                        "dark": {"color", "opacity"}, "light": {...}} -
                        blur 0 is a hard shadow, x = y = 0 a glow
+    "panel_light"      a second one, the same shape - in a light color, the
+                       other way from the shadow, it's the lit edge of a
+                       panel lit from one side
     "line_width"       px - the outlines of buttons, fields, tables and tabs
     "bevel"            true draws 3D outlines - raised buttons, panels and
                        headers, sunken fields (an old desktop's look)
     "button_shadow"    px - a hard shadow below and right of each button,
                        in its outline's color, that it presses into
+    "button_lift"      px - how far buttons seem to stand off the surface:
+                       a soft shadow below and right of each, and a lit
+                       top and left edge (see Style.lift_button)
     "font_family"      the font for the interface's text (not consoles)
     "bold_buttons"     true makes buttons' text bold
     "scrollbar_radius" px - scrollbar handles' corners (left out: round ends)
     "scrollbar_inset"  px of track left around each scrollbar handle
     "scrollbar_outline" true outlines scrollbar handles like fields
+    "card_outline"     true outlines cards like fields, so cards the same
+                       color as what's around them still stand apart
     "noise_gradient"   a slowly drifting gradient laid out by a noise map,
                        over the window's color, behind the background
                        visual: {"dark": ["#rrggbb", ...], "light": [...]} -
                        the gradient's colors, 2 to 5
+    "grain"            0-100 - a paper-like speckle over the page and its
+                       surfaces (see Style.TEXTURE_MATERIALS), this strong
+    "grain_stretch"    1-16 - how many times wider than tall each speck of
+                       grain is: streaks, like wood's
+    "scanlines"        0-100 - dark lines across the whole window, over
+                       everything on it, like an old CRT's - this strong
+                       (see Scanlines)
+    "line_colors"      {"dark": ["#rrggbb", ...], "light": [...]} - plain
+                       buttons and panels' outlines each take one of these
+                       instead of the theme's one (see Style.line_color),
+                       like the lines on a metro map - each panel's
+                       buttons the same one as its outline
 
 Older files had a "palette" of named colors per mode that materials
 pointed into (or, older still, no materials - just the palette's modes at
@@ -214,16 +236,25 @@ STYLE_DEFAULTS: dict = {
     "background_blur": None,
     "panel_radius": 10,
     "panel_frame": 6,
+    "panel_border_width": 2,
+    "panel_gap": None,
     "panel_shadow": None,
+    "panel_light": None,
     "line_width": 1,
     "bevel": False,
     "button_shadow": 0,
+    "button_lift": 0,
     "font_family": None,
     "bold_buttons": False,
     "scrollbar_radius": None,
     "scrollbar_inset": 0,
     "scrollbar_outline": False,
+    "card_outline": False,
     "noise_gradient": None,
+    "grain": 0,
+    "grain_stretch": 1,
+    "scanlines": 0,
+    "line_colors": None,
 }
 MAX_PANEL_RADIUS = 24
 MAX_PANEL_FRAME = 16
@@ -280,7 +311,7 @@ def style_setting(info: dict, key: str):
     '''One of STYLE_DEFAULTS from a theme's info (see read_theme) - its default if missing or the wrong type.'''
     default = STYLE_DEFAULTS[key]
     value = info.get(key, default)
-    if key in ("background", "bevel", "bold_buttons", "scrollbar_outline"):
+    if key in ("background", "bevel", "bold_buttons", "scrollbar_outline", "card_outline"):
         return value if isinstance(value, bool) else default
     if key == "font_family":
         return value if isinstance(value, str) and value.strip() else None
@@ -289,7 +320,12 @@ def style_setting(info: dict, key: str):
             return None
         colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:5] for mode in THEME_MODES}
         return colors if all(len(c) >= 2 for c in colors.values()) else None
-    if key == "panel_shadow":
+    if key == "line_colors":
+        if not isinstance(value, dict):
+            return None
+        colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:8] for mode in THEME_MODES}
+        return colors if all(colors.values()) else None
+    if key in ("panel_shadow", "panel_light"):
         if not isinstance(value, dict):
             return None
         numbers = {name: value.get(name, 0) for name in ("x", "y", "blur")}
@@ -307,7 +343,9 @@ def style_setting(info: dict, key: str):
         return default
     limits = {"background_blur": (0, MAX_BACKGROUND_BLUR), "panel_radius": (0, MAX_PANEL_RADIUS),
               "panel_frame": (0, MAX_PANEL_FRAME),
-              "line_width": (1, 4), "button_shadow": (0, 8), "scrollbar_radius": (0, 12), "scrollbar_inset": (0, 4)}[key]
+              "line_width": (1, 4), "button_shadow": (0, 8), "scrollbar_radius": (0, 12), "scrollbar_inset": (0, 4), "grain": (0, 100),
+              "grain_stretch": (1, 16), "scanlines": (0, 100), "button_lift": (0, 12),
+              "panel_border_width": (1, 8), "panel_gap": (0, 48)}[key]
     return int(min(limits[1], max(limits[0], value)))
 
 

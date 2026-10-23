@@ -4,7 +4,6 @@ from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
-from ..app_core.context.style import PANEL_BORDER_WIDTH
 
 
 class PopupWindow(QDialog):
@@ -59,8 +58,8 @@ class PopupWindow(QDialog):
         '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the title's padding.'''
         style = self.style
         left, top, right, bottom = style.panel_margins()
-        frame = style.setting("panel_frame") + PANEL_BORDER_WIDTH
-        self.drawer.setContentsMargins(left + frame, top + PANEL_BORDER_WIDTH, right + frame, bottom + frame)
+        frame = style.setting("panel_frame") + style.PANEL_BORDER_WIDTH
+        self.drawer.setContentsMargins(left + frame, top + style.PANEL_BORDER_WIDTH, right + frame, bottom + frame)
         self.title.setContentsMargins(max(0, style.igap * 2 - frame), style.igap, style.igap, style.igap)
         self.update()
 

@@ -70,6 +70,9 @@ class Panes(QSplitter):
         in_panel = master.property("material") == "panel"
         self.setHandleWidth(style.igap)
         def sheet():
+            if not in_panel:
+                # Between a page's panels - as wide as the theme says (see Style.panel_gap)
+                self.setHandleWidth(style.panel_gap())
             color = "transparent" if transparent or in_panel else style.css("window")
             width = f" width: {style.setting('panel_frame')}px; height: {style.setting('panel_frame')}px;" if in_panel else ""
             return (f"QSplitter::handle {{ background-color: {color};{width} }}"

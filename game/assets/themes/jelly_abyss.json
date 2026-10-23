@@ -1,0 +1,670 @@
+{
+    "label": "Jelly Abyss",
+    "kind": "original",
+    "note": "Deep-sea glass: pitch black, dark glass panels with a faint sheen and an iridescent rim - cyan, violet, pink and amber, like a jellyfish in the dark - glowing softly, and glass buttons rimmed the same way.",
+    "modes": [
+        "dark"
+    ],
+    "font_family": "Segoe UI",
+    "panel_frame": 7,
+    "line_width": 1,
+    "background_blur": 20,
+    "panel_shadow": {
+        "x": 2,
+        "y": 3,
+        "blur": 16,
+        "dark": {
+            "color": "#8a5cff",
+            "opacity": 0.35
+        },
+        "light": {
+            "color": "#8a5cff",
+            "opacity": 0.35
+        }
+    },
+    "panel_light": {
+        "x": -2,
+        "y": -2,
+        "blur": 10,
+        "dark": {
+            "color": "#5fe8ff",
+            "opacity": 0.22
+        },
+        "light": {
+            "color": "#5fe8ff",
+            "opacity": 0.22
+        }
+    },
+    "button_radius": 10,
+    "menu_button_radius": 10,
+    "panel_radius": 14,
+    "panel_gap": 12,
+    "materials": {
+        "window": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 1.0
+            }
+        },
+        "panel": {
+            "dark": {
+                "color": "#06070c",
+                "opacity": 0.72,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#141b2e",
+                            0.62
+                        ],
+                        [
+                            0.45,
+                            "#05060a",
+                            0.74
+                        ],
+                        [
+                            1,
+                            "#160d26",
+                            0.62
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#06070c",
+                "opacity": 0.72,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#141b2e",
+                            0.62
+                        ],
+                        [
+                            0.45,
+                            "#05060a",
+                            0.74
+                        ],
+                        [
+                            1,
+                            "#160d26",
+                            0.62
+                        ]
+                    ]
+                }
+            }
+        },
+        "panel_border": {
+            "dark": {
+                "color": "#a17bff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#7ff3ff",
+                            0.9
+                        ],
+                        [
+                            0.35,
+                            "#a17bff",
+                            0.85
+                        ],
+                        [
+                            0.7,
+                            "#ff8ad8",
+                            0.85
+                        ],
+                        [
+                            1,
+                            "#ffcf7a",
+                            0.9
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#a17bff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#7ff3ff",
+                            0.9
+                        ],
+                        [
+                            0.35,
+                            "#a17bff",
+                            0.85
+                        ],
+                        [
+                            0.7,
+                            "#ff8ad8",
+                            0.85
+                        ],
+                        [
+                            1,
+                            "#ffcf7a",
+                            0.9
+                        ]
+                    ]
+                }
+            }
+        },
+        "card": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 0.45
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 0.45
+            }
+        },
+        "field": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 0.6
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 0.6
+            }
+        },
+        "button": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.05
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.05
+            }
+        },
+        "button_hover": {
+            "dark": {
+                "color": "#a17bff",
+                "opacity": 0.22
+            },
+            "light": {
+                "color": "#a17bff",
+                "opacity": 0.22
+            }
+        },
+        "button_border": {
+            "dark": {
+                "color": "#a17bff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#7ff3ff",
+                            0.55
+                        ],
+                        [
+                            0.35,
+                            "#a17bff",
+                            0.5
+                        ],
+                        [
+                            0.7,
+                            "#ff8ad8",
+                            0.5
+                        ],
+                        [
+                            1,
+                            "#ffcf7a",
+                            0.55
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#a17bff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#7ff3ff",
+                            0.55
+                        ],
+                        [
+                            0.35,
+                            "#a17bff",
+                            0.5
+                        ],
+                        [
+                            0.7,
+                            "#ff8ad8",
+                            0.5
+                        ],
+                        [
+                            1,
+                            "#ffcf7a",
+                            0.55
+                        ]
+                    ]
+                }
+            }
+        },
+        "menu_button": {
+            "dark": {
+                "color": "#ffffff",
+                "opacity": 0.04
+            },
+            "light": {
+                "color": "#ffffff",
+                "opacity": 0.04
+            }
+        },
+        "menu_button_hover": {
+            "dark": {
+                "color": "#a17bff",
+                "opacity": 0.2
+            },
+            "light": {
+                "color": "#a17bff",
+                "opacity": 0.2
+            }
+        },
+        "menu_button_border": {
+            "dark": {
+                "color": "#a17bff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#7ff3ff",
+                            0.55
+                        ],
+                        [
+                            0.35,
+                            "#a17bff",
+                            0.5
+                        ],
+                        [
+                            0.7,
+                            "#ff8ad8",
+                            0.5
+                        ],
+                        [
+                            1,
+                            "#ffcf7a",
+                            0.55
+                        ]
+                    ]
+                }
+            },
+            "light": {
+                "color": "#a17bff",
+                "opacity": 1.0,
+                "gradient": {
+                    "angle": 45,
+                    "stops": [
+                        [
+                            0,
+                            "#7ff3ff",
+                            0.55
+                        ],
+                        [
+                            0.35,
+                            "#a17bff",
+                            0.5
+                        ],
+                        [
+                            0.7,
+                            "#ff8ad8",
+                            0.5
+                        ],
+                        [
+                            1,
+                            "#ffcf7a",
+                            0.55
+                        ]
+                    ]
+                }
+            }
+        },
+        "overlay": {
+            "dark": {
+                "color": "#05060b",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#05060b",
+                "opacity": 1.0
+            }
+        },
+        "overlay_card": {
+            "dark": {
+                "color": "#0c0e18",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#0c0e18",
+                "opacity": 1.0
+            }
+        },
+        "tab": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 0.45
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 0.45
+            }
+        },
+        "tab_selected": {
+            "dark": {
+                "color": "#6a4bd8",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#6a4bd8",
+                "opacity": 1.0
+            }
+        },
+        "table_header": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 0.45
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 0.45
+            }
+        },
+        "alternate_row": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 0.6
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 0.6
+            }
+        },
+        "selection": {
+            "dark": {
+                "color": "#6a4bd8",
+                "opacity": 0.85
+            },
+            "light": {
+                "color": "#6a4bd8",
+                "opacity": 0.85
+            }
+        },
+        "row_selection": {
+            "dark": {
+                "color": "#6a4bd8",
+                "opacity": 0.85
+            },
+            "light": {
+                "color": "#6a4bd8",
+                "opacity": 0.85
+            }
+        },
+        "scrollbar": {
+            "dark": {
+                "color": "#3a3466",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#3a3466",
+                "opacity": 1.0
+            }
+        },
+        "tooltip": {
+            "dark": {
+                "color": "#05060b",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#05060b",
+                "opacity": 1.0
+            }
+        },
+        "footer": {
+            "dark": {
+                "color": "#000000",
+                "opacity": 1.0
+            },
+            "light": {
+                "color": "#000000",
+                "opacity": 1.0
+            }
+        },
+        "text": {
+            "dark": {
+                "color": "#e4e9ff"
+            },
+            "light": {
+                "color": "#e4e9ff"
+            }
+        },
+        "field_text": {
+            "dark": {
+                "color": "#e4e9ff"
+            },
+            "light": {
+                "color": "#e4e9ff"
+            }
+        },
+        "accent_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "menu_bar_text": {
+            "dark": {
+                "color": "#e4e9ff"
+            },
+            "light": {
+                "color": "#e4e9ff"
+            }
+        },
+        "button_text": {
+            "dark": {
+                "color": "#e4e9ff"
+            },
+            "light": {
+                "color": "#e4e9ff"
+            }
+        },
+        "button_hover_text": {
+            "dark": {
+                "color": "#e4e9ff"
+            },
+            "light": {
+                "color": "#e4e9ff"
+            }
+        },
+        "menu_button_text": {
+            "dark": {
+                "color": "#e4e9ff"
+            },
+            "light": {
+                "color": "#e4e9ff"
+            }
+        },
+        "menu_button_hover_text": {
+            "dark": {
+                "color": "#ffffff"
+            },
+            "light": {
+                "color": "#ffffff"
+            }
+        },
+        "accent": {
+            "dark": {
+                "color": "#7ff3ff"
+            },
+            "light": {
+                "color": "#7ff3ff"
+            }
+        },
+        "border": {
+            "dark": {
+                "color": "#2a2c44"
+            },
+            "light": {
+                "color": "#2a2c44"
+            }
+        },
+        "scrollbar_hover": {
+            "dark": {
+                "color": "#6b6e85"
+            },
+            "light": {
+                "color": "#6b6e85"
+            }
+        },
+        "muted_text": {
+            "dark": {
+                "color": "#7e828e"
+            },
+            "light": {
+                "color": "#7e828e"
+            }
+        },
+        "good": {
+            "dark": {
+                "color": "#7dffb0"
+            },
+            "light": {
+                "color": "#7dffb0"
+            }
+        },
+        "warning": {
+            "dark": {
+                "color": "#ffcf7a"
+            },
+            "light": {
+                "color": "#ffcf7a"
+            }
+        },
+        "bad": {
+            "dark": {
+                "color": "#ff6f8a"
+            },
+            "light": {
+                "color": "#ff6f8a"
+            }
+        },
+        "incoming": {
+            "dark": {
+                "color": "#7ff3ff"
+            },
+            "light": {
+                "color": "#7ff3ff"
+            }
+        },
+        "outgoing": {
+            "dark": {
+                "color": "#ff8ad8"
+            },
+            "light": {
+                "color": "#ff8ad8"
+            }
+        },
+        "hot": {
+            "dark": {
+                "color": "#f87171"
+            },
+            "light": {
+                "color": "#f87171"
+            }
+        },
+        "cold": {
+            "dark": {
+                "color": "#60a5fa"
+            },
+            "light": {
+                "color": "#60a5fa"
+            }
+        },
+        "chart_1": {
+            "dark": {
+                "color": "#7ff3ff"
+            },
+            "light": {
+                "color": "#7ff3ff"
+            }
+        },
+        "chart_2": {
+            "dark": {
+                "color": "#b38cff"
+            },
+            "light": {
+                "color": "#b38cff"
+            }
+        },
+        "chart_3": {
+            "dark": {
+                "color": "#ff8ad8"
+            },
+            "light": {
+                "color": "#ff8ad8"
+            }
+        },
+        "chart_4": {
+            "dark": {
+                "color": "#ffcf7a"
+            },
+            "light": {
+                "color": "#ffcf7a"
+            }
+        },
+        "chart_5": {
+            "dark": {
+                "color": "#7dffb0"
+            },
+            "light": {
+                "color": "#7dffb0"
+            }
+        },
+        "chart_6": {
+            "dark": {
+                "color": "#6aa8ff"
+            },
+            "light": {
+                "color": "#6aa8ff"
+            }
+        },
+        "chart_7": {
+            "dark": {
+                "color": "#2dd4bf"
+            },
+            "light": {
+                "color": "#2dd4bf"
+            }
+        },
+        "chart_8": {
+            "dark": {
+                "color": "#f87171"
+            },
+            "light": {
+                "color": "#f87171"
+            }
+        }
+    }
+}

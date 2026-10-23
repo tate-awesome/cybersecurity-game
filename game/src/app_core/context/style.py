@@ -1,12 +1,14 @@
 import copy
 import json
+import random
 import re
+import zlib
 from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QLinearGradient
-from PySide6.QtWidgets import QApplication, QComboBox, QStyledItemDelegate, QWidget
+from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QImage, QLinearGradient
+from PySide6.QtWidgets import QApplication, QComboBox, QGraphicsDropShadowEffect, QPushButton, QStyledItemDelegate, QWidget
 import darkdetect
 
 from .themes import (BUTTON_KINDS, COLOR_NAMES, DATA_MATERIALS, INK_MATERIALS, MATERIALS, STYLE_DEFAULTS, THEME_MODES, button_radius,
@@ -29,7 +31,8 @@ PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
 # start, and Reset Theme, use. Imported themes (see IMPORTED_PREFIX) join
 # them in the selector; every other preset is only in the theme editor.
 CURATED_THEMES: list[str] = ["acrylic", "glassmorphism", "frutiger_aero", "cybercore", "neobrutalism", "webcore",
-                             "flat", "kimbie_dark"]
+                             "flat", "kimbie_dark", "animal_well", "metro", "void", "cyberpunk", "snaptic_lavender",
+                             "snaptic_chrome", "paper_soft", "paper_soft_lit", "paper_soft_sharp", "swatch", "jelly_abyss"]
 # The user's own themes - <family>.json files in user_data/themes, the same
 # shape as assets/themes' (imported, or made in the theme editor - see
 # Style.new_theme) - are named "imported.<file name>", so one can never
@@ -47,11 +50,22 @@ IMPORTED_PREFIX = "imported."
 SPECIAL_MATERIALS = ("none",)
 # A label's tone (see Style.set_tone) -> the theme's data color for it
 TONES = {"muted": "muted_text", "good": "good", "warning": "warning", "bad": "bad"}
-PANEL_BORDER_WIDTH = 2
 # The color names (see themes.COLOR_NAMES) color() hands back see-through,
 # at their material's opacity - so canvases and other hand-drawn widgets
 # naming them follow the theme (e.g. a "field" chart background)
 SEE_THROUGH_COLORS = ("panel", "widget", "field")
+# The surfaces a theme's texture - its grain (see themes.STYLE_DEFAULTS) -
+# covers: the page and the panels and overlays laid on it. Not what's
+# inside them: cards and fields would stack another layer of it on the
+# panel's. Hand-painted panels and the page background lay it on
+# themselves (see texture_brush)
+TEXTURE_MATERIALS = ("window", "panel", "overlay", "footer")
+# The texture's tile, px square - repeated, so it's never redrawn
+TEXTURE_SIZE = 128
+# How many line colors (see themes.STYLE_DEFAULTS' "line_colors") a button
+# or panel can be given - each takes one by its "line" property (see
+# _DressedWidgets), and a theme with fewer repeats them
+LINE_SLOTS = 8
 # The animated page background (see Page.add_background), each saved as a
 # preference like the theme: which visual plays (a widgets.visuals.VISUALS
 # key, "cycle", or NO_BACKGROUND), whether it moves, whether it's detailed
@@ -134,6 +148,65 @@ class _StyledComboItems(QObject):
             watched.setProperty("styled_items", True)
             watched.setItemDelegate(QStyledItemDelegate(watched))
         return False
+
+
+class _DressedWidgets(QObject):
+    '''
+    What the stylesheet can't do alone, done to each widget as it's styled
+    (every widget is again on every theme change):
+
+    - a line (see Style.line_color) for each panel, in turn, and each plain
+      button: its panel's, or, outside any panel, one by its text - so the
+      same button is always the same color. Only themes with "line_colors"
+      show them, but they're given out anyway, so a theme change needs
+      nothing redone
+    - a soft shadow under each plain button, in a theme with "button_lift"
+      (see Style.lift_button) - taken away again in one without
+    '''
+
+    def __init__(self, style: "Style"):
+        super().__init__()
+        self.style = style
+        self.panels = 0
+
+    def eventFilter(self, watched, event):
+        if event.type() != QEvent.Type.Polish:
+            return False
+        if isinstance(watched, QPushButton) and self.style.is_plain_button(watched):
+            if watched.property("line") is None:
+                panel = self.panel_of(watched)
+                self.restyle(watched, self.panel_line(panel) if panel is not None
+                             else zlib.crc32(watched.text().encode()) % LINE_SLOTS)
+            self.style.lift_button(watched)
+        elif self.is_panel(watched):
+            self.panel_line(watched)
+        return False
+
+    @staticmethod
+    def is_panel(widget: QWidget) -> bool:
+        return widget.property("material") == "panel" and bool(widget.property("outlined"))
+
+    def panel_of(self, widget: QWidget) -> QWidget | None:
+        '''The panel widget is in, if any.'''
+        parent = widget.parentWidget()
+        while parent is not None and not self.is_panel(parent):
+            parent = parent.parentWidget()
+        return parent
+
+    def panel_line(self, panel: QWidget) -> int:
+        '''A panel's line - given the next one now, if it hasn't one yet (its buttons can be styled before it is).'''
+        if panel.property("line") is None:
+            self.restyle(panel, self.panels % LINE_SLOTS)
+            self.panels += 1
+        return panel.property("line")
+
+    @staticmethod
+    def restyle(widget: QWidget, line: int):
+        widget.setProperty("line", line)
+        # Already styled without it - property selectors are matched at polish
+        qt_style = QWidget.style(widget)
+        qt_style.unpolish(widget)
+        qt_style.polish(widget)
 
 
 class Style:
@@ -489,6 +562,8 @@ class Style:
         if not hasattr(self, "_combo_items"):
             self._combo_items = _StyledComboItems(app)
             app.installEventFilter(self._combo_items)
+            self._dressed = _DressedWidgets(self)
+            app.installEventFilter(self._dressed)
         app.setStyleSheet(self._build_stylesheet())
         # Links in text (workspace summaries, notes) - stylesheets can't color them
         palette = app.palette()
@@ -624,7 +699,7 @@ class Style:
             QPushButton:hover {{ background-color: {at_opacity("widget", "button")}; border-color: {c["accent"]}; }}
             QPushButton:pressed {{ background-color: {at_opacity("root", "button")}; border-color: {c["accent"]}; }}'''
         else:
-            buttons = "".join(self._button_rules(kind, shaded) for kind in BUTTON_KINDS)
+            buttons = "".join(self._button_rules(kind, shaded) for kind in BUTTON_KINDS) + self._line_rules()
         # Disabled buttons of every kind look alike, whatever the theme: no
         # face of their own, just a dashed outline - still a button, plainly
         # not one to press - and text dimmed only as far as it still reads (see disabled_text).
@@ -649,10 +724,12 @@ class Style:
         bevel = self.setting("bevel")
         line = self.setting("line_width")
         outline = self.bevel(c["border"], raised=False) if bevel else f"{line}px solid {c['border']}"
+        # Cards outlined like fields, if the theme says (see themes.STYLE_DEFAULTS)
+        card_outline = f'*[material="card"] {{ border: {outline}; }}' if self.setting("card_outline") else ""
         header_border = self.bevel(c["widget"]) if bevel else outline
         tab_shape = f"border: {self.bevel(c['widget'])}; border-bottom: none;" if bevel else ""
         panel_border = (self.bevel(self.color("panel_border")) if bevel
-                        else f"{PANEL_BORDER_WIDTH}px solid {m('panel_border')}")
+                        else f"{self.PANEL_BORDER_WIDTH}px solid {m('panel_border')}")
         # Scrollbars (see themes.STYLE_DEFAULTS): a handle inset in its track, pill-shaped unless the theme says
         inset = self.setting("scrollbar_inset")
         thickness = max(2, scroll_w - 2 * inset)
@@ -819,6 +896,7 @@ class Style:
             *[rounded="true"] {{ border-radius: {self.PANEL_RADIUS}px; }}
             *[outlined="true"] {{ border: {panel_border}; }}
             *[shadowed="true"] {{ margin: {top}px {right}px {bottom}px {left}px; }}
+            {card_outline}
             {" ".join(extras)}
             {" ".join(extras_after)}
         '''
@@ -846,6 +924,13 @@ class Style:
             border = (f"border: {line}px solid {self.css(f'{kind}_border')};"
                       f" border-right-width: {line + depth}px; border-bottom-width: {line + depth}px; margin: 0px;")
             pressed = f"border-right-width: {line}px; border-bottom-width: {line}px; margin: {depth}px 0px 0px {depth}px;"
+        elif self.setting("button_lift"):
+            # Standing off the surface (see lift_button): its top and left edge catch the light,
+            # its bottom and right fall away - the other way round while pressed in
+            face = self.color(kind)
+            lit, unlit = self._shade(face, 0.7), self._shade(face, -0.12)
+            border = f"border: {line}px solid; border-color: {lit} {unlit} {unlit} {lit};"
+            pressed = f"border-color: {unlit} {lit} {lit} {unlit};"
         else:
             border = f"border: {line}px solid {self.css(f'{kind}_border')};"
             pressed = ""
@@ -898,8 +983,128 @@ class Style:
         button.setProperty("button_kind", "menu")
 
     def _material_rules(self) -> str:
-        '''Each material's background, for widgets set_material gave it.'''
-        return "\n".join(f'*[material="{name}"] {{ background-color: {self.css(name)}; }}' for name in MATERIALS)
+        '''Each material's background, for widgets set_material gave it - with the theme's texture, if it has one.'''
+        texture = self.texture_image()
+        image = f' background-image: url("{texture.as_posix()}");' if texture is not None else ""
+        return "\n".join(f'*[material="{name}"] {{ background-color: {self.css(name)};{image if name in TEXTURE_MATERIALS else ""} }}'
+                         for name in MATERIALS)
+
+    def _texture_key(self) -> tuple[int, int] | None:
+        '''What the theme's texture is made of - its grain and grain_stretch - or None without one.'''
+        grain = self.setting("grain")
+        return (grain, self.setting("grain_stretch")) if grain else None
+
+    def texture_image(self) -> Path | None:
+        '''
+        The theme's texture (see TEXTURE_MATERIALS) as a tiling image file,
+        for stylesheets - made the first time it's needed. None without one.
+        Its grain is light and dark specks, each see-through by up to its
+        strength, stretched sideways into streaks by grain_stretch.
+        '''
+        key = self._texture_key()
+        if key is None:
+            return None
+        grain, stretch = key
+        path = self.context.paths.user_cache / f"texture_{grain}_{stretch}.png"
+        if path.is_file():
+            return path
+        self.context.paths.generate_path(path.parent)
+        # Seeded, so the speckle is the same every time
+        rng = random.Random(TEXTURE_SIZE)
+        image = QImage(TEXTURE_SIZE, TEXTURE_SIZE, QImage.Format.Format_ARGB32)
+        # Each row's specks, stretch px apart, blended into each other between -
+        # wrapping round, so the tile's edges meet
+        count = max(1, round(TEXTURE_SIZE / stretch))
+        for y in range(TEXTURE_SIZE):
+            # Lighter (> 0) or darker (< 0): mostly faint, a few strong
+            specks = [rng.gauss(0, 0.2) for _ in range(count)]
+            for x in range(TEXTURE_SIZE):
+                position = x * count / TEXTURE_SIZE
+                index, along = int(position), position - int(position)
+                value = specks[index] * (1 - along) + specks[(index + 1) % count] * along
+                speck = QColor("#ffffff" if value > 0 else "#000000")
+                # At 100, the strongest are about half see-through
+                speck.setAlphaF(min(1.0, abs(value) * grain / 100))
+                image.setPixelColor(x, y, speck)
+        image.save(str(path))
+        return path
+
+    def texture_brush(self) -> QBrush | None:
+        '''The theme's texture (see texture_image) as a brush, for hand-painted surfaces - None without one.'''
+        key = self._texture_key()
+        if key is None:
+            return None
+        # Read once per texture - it's asked for on every paint
+        if getattr(self, "_texture_brush", (None, None))[0] != key:
+            self._texture_brush = (key, QBrush(QImage(str(self.texture_image()))))
+        return self._texture_brush[1]
+
+    # What the stylesheet can't do alone (see _DressedWidgets)
+    @staticmethod
+    def is_plain_button(button: QPushButton) -> bool:
+        '''Whether a button is dressed by the theme's button rules alone - not a menu button, or one with its own look (a bare icon, say).'''
+        return button.property("button_kind") != "menu" and not button.styleSheet()
+
+    def line_color(self, line: int) -> str | None:
+        '''The color of one of LINE_SLOTS lines in the current mode (see themes.STYLE_DEFAULTS' "line_colors") - None without them.'''
+        colors = self.setting("line_colors")
+        if colors is None:
+            return None
+        colors = colors[self.current_theme.partition("_")[0]]
+        return colors[line % len(colors)]
+
+    def _line_rules(self) -> str:
+        '''
+        Plain buttons and panels' outlines in their line's color (see
+        line_color) - nothing without line colors. A button's face is the
+        line's color at the button material's opacity, its outline the line's
+        color solid, and its text whichever of the theme's reads on the face.
+        '''
+        if self.line_color(0) is None:
+            return ""
+        opacity = self.material("button").alphaF()
+        under = self.on_card("card")
+        rules = []
+        for line in range(LINE_SLOTS):
+            color = self.line_color(line)
+            selector = f'QPushButton[line="{line}"]'
+
+            def face(shade: float) -> str:
+                qcolor = QColor(self._shade(color, shade) if shade else color)
+                qcolor.setAlphaF(opacity)
+                return self._css(qcolor)
+            text = self.readable_on(self._mix(under, color, opacity))
+            rules.append(f'''
+            {selector} {{ background-color: {face(0)}; border-color: {color}; color: {text}; }}
+            {selector}:hover {{ background-color: {face(0.15)}; color: {text}; }}
+            {selector}:pressed {{ background-color: {face(-0.1)}; }}
+            *[outlined="true"][line="{line}"] {{ border-color: {color}; }}''')
+        return "".join(rules)
+
+    def lift_button(self, button: QPushButton):
+        '''
+        Gives a plain button the soft shadow of a theme with "button_lift"
+        (see themes.STYLE_DEFAULTS) - below and right, the way the panels'
+        shadow falls (the stylesheet lights its top and left edge) - or
+        takes it away in a theme without one.
+        '''
+        lift = self.setting("button_lift")
+        effect = button.graphicsEffect()
+        if not lift:
+            if effect is not None and effect.property("lift"):
+                button.setGraphicsEffect(None)
+            return
+        if effect is None or not effect.property("lift"):
+            effect = QGraphicsDropShadowEffect(button)
+            effect.setProperty("lift", True)
+            button.setGraphicsEffect(effect)
+        shadows = self.panel_shadows()
+        # As strong as the panels' shadow, so the light falls the same on both
+        color = QColor(shadows[0]["color"] if shadows else "#000000")
+        color.setAlphaF(shadows[0]["opacity"] if shadows else 0.35)
+        effect.setColor(color)
+        effect.setBlurRadius(lift * 3)
+        effect.setOffset(lift * 0.5, lift * 0.8)
 
     # Materials
     def theme_materials(self) -> dict[str, dict[str, dict]]:
@@ -977,23 +1182,38 @@ class Style:
         '''Panels' corner radius in px, from the theme ("panel_radius").'''
         return self.setting("panel_radius")
 
-    def panel_shadow(self) -> dict | None:
-        '''The theme's shadow around panels in the current mode - {"x", "y", "blur", "color", "opacity"} - or None.'''
-        shadow = self.setting("panel_shadow")
-        if shadow is None:
-            return None
+    @property
+    def PANEL_BORDER_WIDTH(self) -> int:
+        '''Panels' outlines' width in px, from the theme ("panel_border_width").'''
+        return self.setting("panel_border_width")
+
+    def panel_gap(self) -> int:
+        '''The gap between a page's panels in px - the theme's "panel_gap", or the usual gap if it hasn't one.'''
+        gap = self.setting("panel_gap")
+        return self.igap if gap is None else gap
+
+    def panel_shadows(self) -> list[dict]:
+        '''
+        The theme's shadow around panels, then its lit edge (see
+        themes.STYLE_DEFAULTS' "panel_light"), in the current mode - each
+        {"x", "y", "blur", "color", "opacity"} - leaving out either it hasn't.
+        '''
         mode = self.current_theme.partition("_")[0]
-        if shadow[mode]["opacity"] <= 0:
-            return None
-        return {"x": shadow["x"], "y": shadow["y"], "blur": shadow["blur"], **shadow[mode]}
+        shadows = []
+        for key in ("panel_shadow", "panel_light"):
+            shadow = self.setting(key)
+            if shadow is not None and shadow[mode]["opacity"] > 0:
+                shadows.append({"x": shadow["x"], "y": shadow["y"], "blur": shadow["blur"], **shadow[mode]})
+        return shadows
 
     def panel_margins(self) -> tuple[int, int, int, int]:
-        '''Room around each panel for its shadow (see panel_shadow) - left, top, right, bottom, in px.'''
-        shadow = self.panel_shadow()
-        if shadow is None:
-            return 0, 0, 0, 0
-        blur, x, y = shadow["blur"], shadow["x"], shadow["y"]
-        return max(0, blur - x), max(0, blur - y), max(0, blur + x), max(0, blur + y)
+        '''Room around each panel for its shadows (see panel_shadows) - left, top, right, bottom, in px.'''
+        margins = (0, 0, 0, 0)
+        for shadow in self.panel_shadows():
+            blur, x, y = shadow["blur"], shadow["x"], shadow["y"]
+            room = (max(0, blur - x), max(0, blur - y), max(0, blur + x), max(0, blur + y))
+            margins = tuple(max(a, b) for a, b in zip(margins, room))
+        return margins
 
     def background_shown(self, menu: bool = False, workspace: bool = False) -> bool:
         '''

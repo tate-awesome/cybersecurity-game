@@ -446,6 +446,10 @@ class VisualBackground(QWidget):
             # A half-size blurred frame gets stretched back up smoothly
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             painter.drawImage(self.rect(), self.frame)
+            # The theme's texture over the visual, as over the page (see Style.texture_brush)
+            texture = self.style.texture_brush()
+            if texture is not None:
+                painter.fillRect(self.rect(), texture)
         finally:
             painter.end()
 
