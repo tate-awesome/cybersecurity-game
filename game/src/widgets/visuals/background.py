@@ -68,7 +68,31 @@ def paint_noise_gradient(painter: QPainter, width: int, height: int, colors: lis
     value = sum(weight * value_noise(lattice, u * cells + t * dx, v * cells + t * dy)
                 for lattice, (weight, cells, (dx, dy)) in zip(NOISE_LATTICES, NOISE_OCTAVES))
     # Summed noise bunches up around the middle - stretched, so every color gets its share
-    value = np.clip((value - 0.5) * 1.8 + 0.5, 0.0, 1.0)
+    _paint_through(painter, width, height, np.clip((value - 0.5) * 1.8 + 0.5, 0.0, 1.0), colors)
+
+
+def paint_plasma(painter: QPainter, width: int, height: int, colors: list[str], t: float):
+    '''
+    A gradient through colors filling a width x height area, laid out by a
+    plasma - sine waves running in different directions, rippling through
+    each other as t (seconds) passes - so the colors run in bands that
+    curl and drift.
+    '''
+    if width <= 0 or height <= 0:
+        return
+    w = NOISE_COLUMNS
+    h = max(4, round(w * height / width))
+    x, y = np.arange(w)[None, :] / w * 6.0, np.arange(h)[:, None] / w * 6.0
+    # A slowly wandering centre for the rings, so they don't just pulse in place
+    cx, cy = 3.0 + 1.5 * np.sin(t * 0.07), 2.0 + 1.2 * np.cos(t * 0.05)
+    value = (np.sin(x * 0.9 + t * 0.21) + np.sin(y * 1.1 - t * 0.17) + np.sin((x + y) * 0.6 + t * 0.13)
+             + np.sin(np.hypot(x - cx, y - cy) * 1.4 - t * 0.25))
+    _paint_through(painter, width, height, (value / 4 + 1) / 2, colors)
+
+
+def _paint_through(painter: QPainter, width: int, height: int, value: np.ndarray, colors: list[str]):
+    '''Fills width x height with value (h x w, 0-1) mapped through colors, evenly spaced, stretched smoothly to fit.'''
+    h, w = value.shape
     stops = np.array([QColor(c).getRgb()[:3] for c in colors], dtype=float)
     position = value * (len(stops) - 1)
     index = np.minimum(position.astype(int), len(stops) - 2)
@@ -420,18 +444,21 @@ class VisualBackground(QWidget):
     def fill_base(self, painter: QPainter, width: int, height: int):
         '''
         What the visual is drawn over: the theme's window color - or its
-        gradient, if it has one (see Style.brush) - or its noise gradient,
-        if it has one (see paint_noise_gradient).
+        gradient, if it has one (see Style.brush) - or its noise gradient or
+        plasma, if it has one (see paint_noise_gradient and paint_plasma).
         '''
         rect = QRectF(0, 0, width, height)
         brush = self.style.brush("window", rect)
         if brush.gradient() is not None:
             painter.fillRect(rect, self.style.color("root", opaque=True))
         painter.fillRect(rect, brush)
+        mode = self.style.current_theme.partition("_")[0]
         noise = self.style.setting("noise_gradient")
         if noise:
-            paint_noise_gradient(painter, width, height, noise[self.style.current_theme.partition("_")[0]],
-                                 time.perf_counter())
+            paint_noise_gradient(painter, width, height, noise[mode], time.perf_counter())
+        plasma = self.style.setting("plasma")
+        if plasma:
+            paint_plasma(painter, width, height, plasma[mode], time.perf_counter())
 
     # Qt events
     def paintEvent(self, event):

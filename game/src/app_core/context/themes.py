@@ -78,6 +78,9 @@ as it did before they existed (see STYLE_DEFAULTS):
                        over the window's color, behind the background
                        visual: {"dark": ["#rrggbb", ...], "light": [...]} -
                        the gradient's colors, 2 to 5
+    "plasma"           the same, but laid out by a plasma - waves rippling
+                       through each other - instead: {"dark": [...],
+                       "light": [...]}, 2 to 7 colors (see paint_plasma)
     "grain"            0-100 - a paper-like speckle over the page and its
                        surfaces (see Style.TEXTURE_MATERIALS), this strong
     "grain_stretch"    1-16 - how many times wider than tall each speck of
@@ -251,6 +254,7 @@ STYLE_DEFAULTS: dict = {
     "scrollbar_outline": False,
     "card_outline": False,
     "noise_gradient": None,
+    "plasma": None,
     "grain": 0,
     "grain_stretch": 1,
     "scanlines": 0,
@@ -315,10 +319,11 @@ def style_setting(info: dict, key: str):
         return value if isinstance(value, bool) else default
     if key == "font_family":
         return value if isinstance(value, str) and value.strip() else None
-    if key == "noise_gradient":
+    if key in ("noise_gradient", "plasma"):
         if not isinstance(value, dict):
             return None
-        colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:5] for mode in THEME_MODES}
+        most = 5 if key == "noise_gradient" else 7
+        colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:most] for mode in THEME_MODES}
         return colors if all(len(c) >= 2 for c in colors.values()) else None
     if key == "line_colors":
         if not isinstance(value, dict):
