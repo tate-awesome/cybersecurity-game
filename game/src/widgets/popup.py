@@ -82,7 +82,8 @@ class PopupWindow(QDialog):
     def paintEvent(self, event):
         from .panels.panel import paint_panel  # here - panels import this package
         painter = QPainter(self)
-        paint_panel(painter, self.style, self.width(), self.height(), on_window=True)
+        # Outlined like an overlay, so it stands apart from the page under it (see Style.floating_outline)
+        paint_panel(painter, self.style, self.width(), self.height(), on_window=True, outline=self.style.floating_outline())
         painter.end()
 
     # Moved by its title, as there's no system frame to drag

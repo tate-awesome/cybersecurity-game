@@ -74,6 +74,10 @@ as it did before they existed (see STYLE_DEFAULTS):
     "scrollbar_outline" true outlines scrollbar handles like fields
     "card_outline"     true outlines cards like fields, so cards the same
                        color as what's around them still stand apart
+    "overlay_outline"  how what floats over the page - overlays and popup
+                       windows - stands apart from it: "accent" (an outline
+                       in the accent color) or "shadow" (a soft drop shadow,
+                       for themes built on neutral greys)
     "noise_gradient"   a slowly drifting gradient laid out by a noise map,
                        over the window's color, behind the background
                        visual: {"dark": ["#rrggbb", ...], "light": [...]} -
@@ -257,6 +261,7 @@ STYLE_DEFAULTS: dict = {
     "scrollbar_inset": 0,
     "scrollbar_outline": False,
     "card_outline": False,
+    "overlay_outline": "accent",
     "noise_gradient": None,
     "plasma": None,
     "abyss": None,
@@ -324,6 +329,8 @@ def style_setting(info: dict, key: str):
         return value if isinstance(value, bool) else default
     if key == "font_family":
         return value if isinstance(value, str) and value.strip() else None
+    if key == "overlay_outline":
+        return value if value in ("accent", "shadow") else default
     if key in ("noise_gradient", "plasma", "abyss"):
         if not isinstance(value, dict):
             return None

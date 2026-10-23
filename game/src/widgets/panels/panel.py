@@ -35,7 +35,7 @@ def surface_shadow(style, width: int, height: int) -> QImage | None:
     image.fill(Qt.GlobalColor.transparent)
     painter = QPainter(image)
     for shadow in shadows:
-        painter.drawImage(0, 0, _one_shadow(shadow, body, width, height, radius))
+        painter.drawImage(0, 0, blurred_shape(shadow, body, width, height, radius))
     painter.end()
     painter = QPainter(image)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -51,8 +51,12 @@ def surface_shadow(style, width: int, height: int) -> QImage | None:
 
 
 
-def _one_shadow(shadow: dict, body: QRectF, width: int, height: int, radius: int) -> QImage:
-    '''One of surface_shadow's shadows: body's rounded shape in its color, offset and blurred, on a width x height image.'''
+def blurred_shape(shadow: dict, body: QRectF, width: int, height: int, radius: int) -> QImage:
+    '''
+    A shadow ({"x", "y", "blur", "color", "opacity"}) of body's rounded
+    shape, offset and blurred, on a width x height image - one of
+    surface_shadow's, or an overlay's (see Overlay.paintEvent).
+    '''
     color = QColor(shadow["color"])
     color.setAlphaF(shadow["opacity"])
     blur = shadow["blur"]
@@ -74,14 +78,16 @@ def _one_shadow(shadow: dict, body: QRectF, width: int, height: int, radius: int
     return image
 
 
-def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False, shadowed: bool = True):
+def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False, shadowed: bool = True,
+                outline: QColor | None = None):
     '''
     Paints a panel-like surface width x height px by hand - the theme's
     shadow, its panel material in its rounded shape, and its outline (or
     raised bevel) - inside the room Style.panel_margins leaves. on_window
     first lays down the page's window material under it, for a surface
     nothing else is under (a popup window), so it looks as it would on a page.
-    shadowed=False leaves the shadow, and the room for it, out - for a
+    outline replaces the panels' own (e.g. a popup window's - see
+    Style.floating_outline). shadowed=False leaves the shadow, and the room for it, out - for a
     surface something else draws the shadow of (see DockArea.paintEvent).
     '''
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -101,7 +107,7 @@ def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bo
     texture = style.texture_brush()
     if texture is not None:
         painter.fillPath(path, texture)
-    outline = style.material("panel_border")
+    outline = outline or style.material("panel_border")
     if style.setting("bevel"):
         # Raised, like the theme's panels (see Style.bevel)
         base = outline.name()

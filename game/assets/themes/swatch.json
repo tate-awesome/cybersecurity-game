@@ -21,6 +21,7 @@
     },
     "scrollbar_inset": 3,
     "panel_frame": 8,
+    "overlay_outline": "shadow",
     "noise_gradient": {
         "dark": [
             "#0d1416",

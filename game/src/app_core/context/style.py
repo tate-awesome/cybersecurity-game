@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QImage, QLinearGradient
+from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QImage, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import QApplication, QComboBox, QGraphicsDropShadowEffect, QPushButton, QStyledItemDelegate, QWidget
 import darkdetect
 
@@ -148,6 +148,44 @@ class _StyledComboItems(QObject):
             watched.setProperty("styled_items", True)
             watched.setItemDelegate(QStyledItemDelegate(watched))
         return False
+
+
+class _ComboLists(QObject):
+    '''
+    Opens every combo box's list as one of the app's overlays (see
+    ChoiceList) instead of Qt's own popup - on a click (on its arrow, if
+    it can be typed in), F4, Alt+Up/Down, or Space if it can't be typed in.
+    Each combo box keeps its one list, made the first time it opens.
+    '''
+
+    def __init__(self, context: "Context"):
+        super().__init__()
+        self.context = context
+        self.lists: dict[int, QWidget] = {}
+
+    def eventFilter(self, watched, event):
+        if not isinstance(watched, QComboBox) or not watched.isEnabled():
+            return False
+        kind = event.type()
+        if kind == QEvent.Type.MouseButtonPress:
+            opens = event.button() == Qt.MouseButton.LeftButton
+        elif kind == QEvent.Type.KeyPress:
+            key, alt = event.key(), bool(event.modifiers() & Qt.KeyboardModifier.AltModifier)
+            opens = (key == Qt.Key.Key_F4 or (alt and key in (Qt.Key.Key_Up, Qt.Key.Key_Down))
+                     or (key == Qt.Key.Key_Space and not watched.isEditable()))
+        else:
+            return False
+        if opens:
+            self.open(watched)
+        return opens
+
+    def open(self, combo: QComboBox):
+        from ...widgets.frame_widgets.choice_list import ChoiceList  # here - widgets import this package
+        key = id(combo)
+        if key not in self.lists:
+            self.lists[key] = ChoiceList(self.context, combo)
+            combo.destroyed.connect(lambda *_: self.lists.pop(key, None))
+        self.lists[key].click_open()
 
 
 class _DressedWidgets(QObject):
@@ -564,6 +602,8 @@ class Style:
             app.installEventFilter(self._combo_items)
             self._dressed = _DressedWidgets(self)
             app.installEventFilter(self._dressed)
+            self._combo_lists = _ComboLists(self.context)
+            app.installEventFilter(self._combo_lists)
         app.setStyleSheet(self._build_stylesheet())
         # Links in text (workspace summaries, notes) - stylesheets can't color them
         palette = app.palette()
@@ -724,6 +764,11 @@ class Style:
         bevel = self.setting("bevel")
         line = self.setting("line_width")
         outline = self.bevel(c["border"], raised=False) if bevel else f"{line}px solid {c['border']}"
+        # Overlays stand apart from the page by an accent outline - or, in a theme
+        # that floats them on a shadow instead, by that alone (see Overlay.paintEvent)
+        overlay_border = "none" if self.overlay_shadow() else f"2px solid {c['accent']}"
+        # Fields' corners follow the buttons', up to a point - a pill-shaped field reads as a button
+        field_radius = 0 if bevel else min(self.button_radius(), 8)
         # Cards outlined like fields, if the theme says (see themes.STYLE_DEFAULTS)
         card_outline = f'*[material="card"] {{ border: {outline}; }}' if self.setting("card_outline") else ""
         header_border = self.bevel(c["widget"]) if bevel else outline
@@ -788,9 +833,11 @@ class Style:
                 background-color: {m("field")};
                 color: {c["field_text"]};
                 border: {outline};
-                border-radius: {0 if bevel else 4}px;
+                border-radius: {field_radius}px;
                 padding: 4px;
             }}
+            QComboBox::drop-down {{ border: none; width: 22px; }}
+            QComboBox::down-arrow {{ image: url("{self.mark_image("chevron", c["field_text"]).as_posix()}"); width: 10px; height: 10px; }}
             QPlainTextEdit, QTextEdit {{ background-color: {m("card")}; }}
             QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{ border-color: {c["accent"]}; }}
             QLineEdit:read-only {{ background-color: transparent; }}
@@ -817,12 +864,13 @@ class Style:
                 width: 16px;
                 height: 16px;
                 border: {outline};
-                border-radius: {0 if bevel else 3}px;
+                border-radius: {min(field_radius, 4)}px;
                 background-color: {m("field")};
             }}
             QCheckBox::indicator:checked {{
                 background-color: {c["accent"]};
                 border-color: {c["accent"]};
+                image: url("{self.mark_image("check", self.readable_on(c["accent"])).as_posix()}");
             }}
             QHeaderView {{ background-color: transparent; }}
             QHeaderView::section {{
@@ -891,7 +939,7 @@ class Style:
             QAbstractScrollArea::corner {{ background: {m("field")}; border: none; }}
             *[material="panel"] QAbstractScrollArea {{ border: none; border-radius: 0px; }}
             {self._material_rules()}
-            *[material="overlay"] {{ border: 2px solid {c["accent"]}; }}
+            *[material="overlay"] {{ border: {overlay_border}; }}
             *[material="none"] {{ background-color: transparent; border: none; }}
             *[rounded="true"] {{ border-radius: {self.PANEL_RADIUS}px; }}
             *[outlined="true"] {{ border: {panel_border}; }}
@@ -938,9 +986,14 @@ class Style:
         # where pressing looks like nothing, gets a bar in the accent color on
         # its left, its padding giving up the room so its text stays put
         bar = 3
-        selected = pressed or (f"border-left: {line + bar}px solid {self.color('accent')};"
-                               f" padding-left: {max(0, 11 - bar)}px;")
+        accent_bar = f"border-left: {line + bar}px solid {self.color('accent')}; padding-left: {max(0, 11 - bar)}px;"
+        selected = pressed or accent_bar
         selected_rule = (f"{selector}:checked {{ {selected} }}") if checked else ""
+        if kind == "button":
+            # The current one in a list of choices (see mark_choice) - hovered, pressed in if
+            # pressing shows, and always the accent bar, so it stands out in every theme
+            selected_rule = (f'QPushButton[choice="true"]:checked {{ background-color: {self.css("button_hover")};'
+                             f' color: {self.color("button_hover_text")}; {pressed} {accent_bar} }}')
         return f'''
             {selector} {{
                 background-color: {self.css(kind)};
@@ -1039,11 +1092,63 @@ class Style:
             self._texture_brush = (key, QBrush(QImage(str(self.texture_image()))))
         return self._texture_brush[1]
 
+    def mark_image(self, mark: str, color: str) -> Path:
+        '''
+        A small mark for the stylesheet, in color - "chevron" (a combo box's
+        arrow) or "check" (a checked checkbox's tick) - as an image file,
+        made the first time it's needed. Drawn, not a font's glyph, so
+        it's the same in every theme's font.
+        '''
+        path = self.context.paths.user_cache / f"mark_{mark}_{color.lstrip('#')}.png"
+        if path.is_file():
+            return path
+        self.context.paths.generate_path(path.parent)
+        # Drawn at twice the size it's shown, so it stays crisp scaled down
+        image = QImage(24, 24, QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(QColor(color), 3.2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        points = [QPointF(4, 8), QPointF(12, 16), QPointF(20, 8)] if mark == "chevron" else [QPointF(4, 12.5), QPointF(9.5, 18), QPointF(20, 6)]
+        painter.drawPolyline(points)
+        painter.end()
+        image.save(str(path))
+        return path
+
+    def overlay_shadow(self) -> dict | None:
+        '''
+        The drop shadow overlays and popup windows float on, in a theme whose
+        "overlay_outline" is "shadow" - {"x", "y", "blur", "color", "opacity"} -
+        or None, in one that outlines them in the accent color instead.
+        '''
+        if self.setting("overlay_outline") != "shadow":
+            return None
+        dark = self.current_theme.startswith("dark")
+        return {"x": 0, "y": 6, "blur": 18, "color": "#000000", "opacity": 0.55 if dark else 0.24}
+
+    def floating_outline(self) -> QColor | None:
+        '''A popup window's outline (see PopupWindow): the accent color - or None, for the panels' own, in a theme that floats it on a shadow.'''
+        return None if self.overlay_shadow() else self.material("accent")
+
+    @staticmethod
+    def mark_choice(button: QPushButton, chosen: bool):
+        '''Makes button one of a list of choices - the current one, if chosen - shown marked like a selected menu button.'''
+        button.setProperty("choice", True)
+        button.setCheckable(True)
+        button.setChecked(chosen)
+
     # What the stylesheet can't do alone (see _DressedWidgets)
     @staticmethod
     def is_plain_button(button: QPushButton) -> bool:
-        '''Whether a button is dressed by the theme's button rules alone - not a menu button, or one with its own look (a bare icon, say).'''
-        return button.property("button_kind") != "menu" and not button.styleSheet()
+        '''
+        Whether a button is dressed by the theme's button rules alone - not a
+        menu button, one of a list of choices (see mark_choice - its mark
+        has to stand out), or one with its own look (a bare icon, say).
+        '''
+        return button.property("button_kind") != "menu" and not button.property("choice") and not button.styleSheet()
 
     def line_color(self, line: int) -> str | None:
         '''The color of one of LINE_SLOTS lines in the current mode (see themes.STYLE_DEFAULTS' "line_colors") - None without them.'''

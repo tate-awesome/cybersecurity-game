@@ -34,6 +34,7 @@
     "background": false,
     "font_family": "Segoe UI",
     "panel_gap": 20,
+    "overlay_outline": "shadow",
     "materials": {
         "window": {
             "dark": {

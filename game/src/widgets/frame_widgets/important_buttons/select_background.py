@@ -18,8 +18,7 @@ class SelectBackground(SettingsOverlayButton):
         for key, name in background_choices(self.context).items():
             button = backgrounds.button(name, lambda key=key: self.apply(overlay, key),
                                         labels.get(f"visual_descriptions_{key}"))
-            button.setCheckable(True)
-            button.setChecked(key == style.background_visual)
+            style.mark_choice(button, key == style.background_visual)
 
     def apply(self, overlay: Overlay, key: str):
         overlay.close_chain()
