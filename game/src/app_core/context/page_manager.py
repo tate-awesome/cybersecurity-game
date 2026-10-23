@@ -359,6 +359,9 @@ class PageManager:
 
         config["layout"] = self.layout_tree(config.get("layout_shape"), config["layout_weights"])
         self.context.states.load(config["settings"])
+        # Host nicknames live in preferences now, across workspaces - one saved
+        # here before they moved is taken in there (and left out of the next autosave)
+        self.context.preferences.adopt_hosts(self.context.states.data.pop("network_hosts", None))
         return config
 
     def layout_ids(self, tree: dict) -> set[str]:

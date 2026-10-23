@@ -22,7 +22,7 @@ overlay just can't show it in its boxes.
 
 FIELDS lists every field the overlay offers, by section. Host values match
 part of an IP or MAC address, or of a nickname from Configure Hosts
-(network_hosts); a pair is two hosts, "A<>B", matching traffic between them
+(Preferences.network_hosts); a pair is two hosts, "A<>B", matching traffic between them
 either way (an empty side matches anyone); register values match a register
 (hreg_4), or part of its nickname (modbus_registers).
 '''
@@ -324,9 +324,7 @@ def compile_filter(tree, context) -> Callable[[object], bool]:
     states = context.states
 
     def nickname(mac: str) -> str:
-        hosts = states.get("network_hosts")
-        entry = hosts.get(mac) or hosts.get(mac.lower()) or {}
-        return str(entry.get("nickname") or "").lower()
+        return str(context.preferences.host_field(mac, "nickname") or "").lower()
 
     def end_matches(value: str, ip: str, mac: str) -> bool:
         value = value.lower()

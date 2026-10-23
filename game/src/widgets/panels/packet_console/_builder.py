@@ -14,7 +14,6 @@ class Builder(Panel):
     # The settings keys (see _packages/_default.json) this panel reads or writes -
     # the workspace editor lists it under each of them
     SETTINGS = (
-        "network_hosts",
         "packet_columns",
         "packet_columns_available",
         "packet_console",
@@ -128,21 +127,19 @@ class Builder(Panel):
 
     # Treeview
     def submit_packet(self, packet: MetaPacket):
-        hosts = self.context.states.get("network_hosts")
-        values = [self.column_value(packet, col, hosts) for col in self.treeview.columns]
+        values = [self.column_value(packet, col, self.context) for col in self.treeview.columns]
         self.treeview.submit(str(packet.get("number")), values)
 
     @staticmethod
-    def column_value(packet: MetaPacket, column: str, hosts: dict):
+    def column_value(packet: MetaPacket, column: str, context: Context):
         '''
         A packet's value for a column - its own field, but for the host
         columns, which name a device by its nickname from Configure Hosts
-        (network_hosts, by MAC) when it has one, else by its address.
+        (Preferences.network_hosts, by MAC) when it has one, else by its address.
         '''
         if column in ("src_host", "dst_host"):
             end = column[:3]
-            mac = str(packet.get(f"mac_{end}") or "").lower()
-            nickname = (hosts.get(mac) or {}).get("nickname") if isinstance(hosts, dict) else None
+            nickname = context.preferences.host_field(packet.get(f"mac_{end}") or "", "nickname")
             return nickname or packet.get(end)
         return packet.get_column_value(column)
 

@@ -14,8 +14,6 @@ from ...overlay import Overlay
 
 # A box's states, in the order a click steps through them (see CycleBox)
 NEUTRAL, INCLUDE, EXCLUDE, HIDDEN = "neutral", "include", "exclude", "hidden"
-# Host addresses that mean "everyone", always offered in the host comboboxes
-SPECIAL_ADDRESSES = ("ff:ff:ff:ff:ff:ff", "255.255.255.255", "0.0.0.0")
 # How wide a host or register combobox is, in average characters - and each of a pair's two
 COMBO_WIDTH_CHARS = 16
 PAIR_COMBO_WIDTH_CHARS = 12
@@ -590,24 +588,14 @@ class FilterOverlay(QObject):
         return combos
 
     def host_options(self) -> list[str]:
-        '''Every host seen: nicknames, then IP addresses, MAC addresses, and the addresses that mean everyone.'''
-        ips, macs = set(), set()
-        packets = self.context.buffer.packets
-        with packets.lock:
-            seen = list(packets.buffer)
-        for mpkt in seen:
-            for side in ("src", "dst"):
-                ip, mac = mpkt.get(f"ip_{side}"), mpkt.get(f"mac_{side}")
-                if ip and ip != "-":
-                    ips.add(ip)
-                if mac and mac != "-":
-                    macs.add(mac.lower())
-        nicknames = set()
-        for mac, entry in self.context.states.get("network_hosts").items():
-            if isinstance(entry, dict) and "nickname" in entry and ":" in mac:
-                macs.add(mac.lower())
-                if entry.get("nickname"):
-                    nicknames.add(entry["nickname"])
+        '''
+        The hosts seen this session - the network graph's, since the
+        workspace opened or its hosts were last cleared: the nicknames of
+        those that have one, then their IP addresses, then their MACs.
+        '''
+        macs, host_ips = self.context.buffer.network.get_hosts()
+        nicknames = {self.context.preferences.host_field(mac, "nickname") for mac in macs} - {""}
+        ips = {ip for found in host_ips.values() for ip in found}
 
         def ip_order(ip: str):
             try:
@@ -615,9 +603,7 @@ class FilterOverlay(QObject):
                 return (address.version, int(address))
             except ValueError:
                 return (9, 0)
-        specials = [address for address in SPECIAL_ADDRESSES]
-        return (sorted(nicknames, key=str.lower) + sorted(ips - set(specials), key=ip_order)
-                + sorted(macs - set(specials)) + specials)
+        return sorted(nicknames, key=str.lower) + sorted(ips, key=ip_order) + sorted({mac.lower() for mac in macs} - {"-"})
 
     def register_options(self) -> list[str]:
         registers = self.context.states.get("modbus_registers")

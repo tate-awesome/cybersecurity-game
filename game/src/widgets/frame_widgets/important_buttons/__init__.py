@@ -66,6 +66,7 @@ from .settings_overlays.select_register_preset import SelectRegisterPreset
 
 # Network graph
 from .edit_network_hosts.edit_network_hosts import EditNetworkHosts
+from .clear_network_hosts import ClearNetworkHosts
 
 # Debug
 from .delete_all_user_data import DeleteAllUserData

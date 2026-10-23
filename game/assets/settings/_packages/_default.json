@@ -77,7 +77,6 @@
 
     "strip_chart_auto_fit_max_seconds": 60,
 
-    "network_hosts": {},
 
     "network_graph_view": "table",
 

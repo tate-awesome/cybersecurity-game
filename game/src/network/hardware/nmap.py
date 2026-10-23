@@ -104,7 +104,7 @@ class NMapper(Process):
             for ip in ips:
                 ip_macs.setdefault(ip, mac)
 
-        nicknames = self.context.states.get("network_hosts")
+        preferences = self.context.preferences
         for host in nm.all_hosts():
             if nm[host].state() != 'up':
                 continue
@@ -114,13 +114,11 @@ class NMapper(Process):
             name = nm[host].hostname() or vendor
             if not mac or not name:
                 continue
-            # Same fields Configure Hosts gives an address once it's edited
-            entry = nicknames.setdefault(mac, {"nickname": "", "hide": "0"})
-            if entry.get("nickname"):
+            if preferences.host_field(mac, "nickname"):
                 continue
             # Cut to fit a chip - "Raspberry Pi Trading" reads as "Raspberry Pi"
             name = name[:MAX_NICKNAME_LENGTH].strip()
-            entry["nickname"] = name
+            preferences.set_host_field(mac, "nickname", name)
             self.buffer.put("nmap", f"Nicknamed {mac} ({host}): {name}")
 
     def get_active_iface(self):

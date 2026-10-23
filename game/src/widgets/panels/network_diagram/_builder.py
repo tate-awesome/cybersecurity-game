@@ -4,7 +4,8 @@ from ...canvases.network_diagram import NetworkDiagramCanvas
 from ...canvases.strip_chart import StripChart
 from ... import Panes
 from ..panel import Panel
-from ...frame_widgets.important_buttons import EditNetworkHosts, ToggleNetworkGraphRingView, ToggleStripChartAutoFit
+from ...frame_widgets.important_buttons import (ClearNetworkHosts, EditNetworkHosts, ToggleNetworkGraphRingView,
+                                                 ToggleStripChartAutoFit)
 
 class Builder(Panel):
     KEY = "network_graph_panel"
@@ -16,7 +17,6 @@ class Builder(Panel):
         "strip_chart_colors",
         "strip_chart_auto_fit",
         "strip_chart_auto_fit_max_seconds",
-        "network_hosts",
         "network_graph_view",
     )
     def __init__(self, master, context: Context):
@@ -61,6 +61,7 @@ class Builder(Panel):
         self.selected_text.hide()
 
         self.menu_bar.add_important(EditNetworkHosts)
+        self.menu_bar.add_important(ClearNetworkHosts)
         self.menu_bar.add_important(ToggleNetworkGraphRingView)
         self.menu_bar.add_important(ToggleStripChartAutoFit)
         self.menu_bar.minimize_button(panes)

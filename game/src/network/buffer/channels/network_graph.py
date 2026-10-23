@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 # The exercises' access point (see OpenAccessPointConfigInBrowser)
 EXERCISE_AP_IP = "192.168.4.1"
-# The longest a host's nickname (network_hosts) can be: 1.5 times the 8
+# The longest a host's nickname (Preferences.network_hosts) can be: 1.5 times the 8
 # characters of a MAC's last 3 bytes ("aa:bb:cc"), which the network graph
 # shows for a host without one - so every host fits the same size chip
 MAX_NICKNAME_LENGTH = 12
@@ -43,14 +43,16 @@ class NetworkGraph:
         self.reset()
 
     def reset(self):
-        self.host_order = []
-        self._host_set = set()
-        # The IPs seen on each MAC, in the order first seen - a packet's IP
-        # source/destination counts for its MAC source/destination
-        self.host_ips = {}
-        self.arrows_this_tick = {}
-        # Read again on every reset (Clear Data), as joining a network changes it
-        self.gateway_ips = [ip for ip in (_default_gateway_ip(), EXERCISE_AP_IP) if ip]
+        '''Forgets every host seen (Clear Data, Clear Hosts, leaving a workspace) - nicknames are kept, in preferences.'''
+        with self.lock:
+            self.host_order = []
+            self._host_set = set()
+            # The IPs seen on each MAC, in the order first seen - a packet's IP
+            # source/destination counts for its MAC source/destination
+            self.host_ips = {}
+            self.arrows_this_tick = {}
+            # Read again on every reset, as joining a network changes it
+            self.gateway_ips = [ip for ip in (_default_gateway_ip(), EXERCISE_AP_IP) if ip]
 
 
     def put(self, mpkt: MetaPacket):

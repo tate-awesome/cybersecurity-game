@@ -142,7 +142,7 @@ class NetworkDiagramCanvas(Canvas):
     A packet to the broadcast MAC gets an arrow to every other host shown.
 
     Hosts are devices - MACs - each a chip with its name inside: its
-    nickname in network_hosts (edited by EditNetworkHosts), or else the last
+    nickname in Preferences.network_hosts (edited by EditNetworkHosts), or else the last
     3 bytes of its MAC (the device's own part - the first 3 only name its
     maker) - in bold, with a heavier outline, for a nickname, so the hosts
     only known by MAC fade into the background. Every chip is the same
@@ -327,9 +327,8 @@ class NetworkDiagramCanvas(Canvas):
         def frame_callback():
             self.draw.background(context.style.color("widget"))
 
-            settings = context.states.get("network_hosts")
             def setting(mac, key):
-                return settings.get(mac, {}).get(key)
+                return context.preferences.host_field(mac, key)
 
             macs, host_ips = self.network.get_hosts()
             # Forget hosts that are gone altogether (Clear Data)

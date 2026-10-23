@@ -119,6 +119,9 @@ class ContextManager:
         if save:
             self.save_page()
         self.process_manager.abort_all()
+        # The hosts seen belong to the workspace being left - the next starts
+        # its network graph (and the filter's host lists) afresh
+        self.buffer.network.reset()
 
     def save_page(self):
         '''

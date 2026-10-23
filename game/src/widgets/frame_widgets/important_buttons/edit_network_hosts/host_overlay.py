@@ -10,16 +10,16 @@ class HostOverlay:
     Binds a button to open and close an overlay with a row for every host
     (device - MAC address) the network graph has seen
     (context.buffer.network), with the IPs seen on it, editing its nickname
-    and hide fields in context.states["network_hosts"]. It only writes
-    context.states - the network graph polls them every frame and follows
-    along.
+    and hide fields - kept in preferences, across workspaces (see
+    Preferences.network_hosts). The network graph polls them every frame
+    and follows along.
 
     A search box above the rows narrows them to the MACs, IPs or nicknames
     containing what's typed - and the Select/Clear All buttons only touch
     the rows still showing.
 
-    A MAC only gets an entry in network_hosts once one of its fields is
-    edited, so the saved setting doesn't fill up with every host ever seen.
+    A MAC only gets an entry once one of its fields is edited, so
+    preferences don't fill up with every host ever seen.
     '''
     # Past this share of the screen's height, the rows scroll
     MAX_SCREEN_HEIGHT = 0.7
@@ -167,19 +167,11 @@ class HostOverlay:
                 widget.setVisible(matches)
 
     def save(self, mac: str, key: str, value: str):
-        '''
-        Sets one of this MAC's fields in network_hosts - giving it an entry
-        first if it has none, unless the value is the default anyway.
-        '''
-        saved = self.context.states.get("network_hosts")
-        if mac not in saved:
-            if value == self.DEFAULTS[key]:
-                return
-            saved[mac] = dict(self.DEFAULTS)
-        saved[mac][key] = value
+        '''Sets one of this MAC's fields (see Preferences.set_host_field).'''
+        self.context.preferences.set_host_field(mac, key, value)
 
     def saved(self, mac: str, key: str):
-        return self.context.states.get("network_hosts").get(mac, {}).get(key, self.DEFAULTS[key])
+        return self.context.preferences.host_field(mac, key)
 
     def enrich_entry(self, entry: QLineEdit, mac: str, key: str):
         # Bind autosave
