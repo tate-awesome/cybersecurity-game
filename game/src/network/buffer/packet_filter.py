@@ -22,8 +22,9 @@ overlay just can't show it in its boxes.
 
 FIELDS lists every field the overlay offers, by section. Host values match
 part of an IP or MAC address, or of a nickname from Configure Hosts
-(network_hosts); register values match a register (hreg_4), or part of its
-nickname (modbus_registers).
+(network_hosts); a pair is two hosts, "A<>B", matching traffic between them
+either way (an empty side matches anyone); register values match a register
+(hreg_4), or part of its nickname (modbus_registers).
 '''
 import re
 from dataclasses import dataclass
@@ -291,6 +292,19 @@ def conjugate(state: dict[str, dict[str, list[str]]]) -> str:
 
 
 # Matching packets
+PAIR_SEPARATOR = "<>"
+
+
+def split_pair(value: str) -> tuple[str, str]:
+    '''A pair value's two hosts - "A<>B" is ("A", "B"); one without the separator is one host, talking to anyone.'''
+    first, _, second = value.partition(PAIR_SEPARATOR)
+    return first.strip(), second.strip()
+
+
+def join_pair(first: str, second: str) -> str:
+    return f"{first.strip()}{PAIR_SEPARATOR}{second.strip()}"
+
+
 def is_broadcast(mpkt) -> bool:
     '''Sent to everyone on the network (broadcast) or to a group (multicast).'''
     mac = str(mpkt.get("mac_dst") or "").lower()
@@ -390,9 +404,15 @@ def compile_filter(tree, context) -> Callable[[object], bool]:
                                     for key in ("info", "summary", "src", "dst", "protocol"))
         _, name, values = node
         if name == "pair":
-            # Both ends must be one of these hosts - traffic among them
-            return lambda mpkt: (any(end_matches(value, *end(mpkt, "src")) for value in values)
-                                 and any(end_matches(value, *end(mpkt, "dst")) for value in values))
+            # Each value is two hosts, "A<>B": traffic between them, either way
+            ends = [split_pair(value) for value in values]
+
+            def between(mpkt, first: str, second: str) -> bool:
+                src, dst = end(mpkt, "src"), end(mpkt, "dst")
+                def side(value, address):
+                    return not value or end_matches(value, *address)
+                return (side(first, src) and side(second, dst)) or (side(second, src) and side(first, dst))
+            return lambda mpkt: any(between(mpkt, first, second) for first, second in ends)
         match = matchers[name]
         return lambda mpkt: any(match(mpkt, value) for value in values)
 
