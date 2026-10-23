@@ -81,6 +81,10 @@ as it did before they existed (see STYLE_DEFAULTS):
     "plasma"           the same, but laid out by a plasma - waves rippling
                        through each other - instead: {"dark": [...],
                        "light": [...]}, 2 to 7 colors (see paint_plasma)
+    "abyss"            a deep-sea night in these colors, over the window's
+                       color: soft glows drifting, specks twinkling, faint
+                       diagram lines - {"dark": [...], "light": [...]}, 2
+                       to 7 colors (see paint_abyss)
     "grain"            0-100 - a paper-like speckle over the page and its
                        surfaces (see Style.TEXTURE_MATERIALS), this strong
     "grain_stretch"    1-16 - how many times wider than tall each speck of
@@ -255,6 +259,7 @@ STYLE_DEFAULTS: dict = {
     "card_outline": False,
     "noise_gradient": None,
     "plasma": None,
+    "abyss": None,
     "grain": 0,
     "grain_stretch": 1,
     "scanlines": 0,
@@ -319,7 +324,7 @@ def style_setting(info: dict, key: str):
         return value if isinstance(value, bool) else default
     if key == "font_family":
         return value if isinstance(value, str) and value.strip() else None
-    if key in ("noise_gradient", "plasma"):
+    if key in ("noise_gradient", "plasma", "abyss"):
         if not isinstance(value, dict):
             return None
         most = 5 if key == "noise_gradient" else 7
