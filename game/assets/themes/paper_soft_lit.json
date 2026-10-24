@@ -12,21 +12,19 @@
         "x": 7,
         "y": 9,
         "blur": 20,
-        "dark": {
+        "light": {
             "color": "#6e6e7e",
-            "opacity": 0.22
-        },
-        "light": null
+            "opacity": 0.13
+        }
     },
     "panel_light": {
         "x": -6,
         "y": -6,
         "blur": 14,
-        "dark": {
+        "light": {
             "color": "#ffffff",
             "opacity": 0.8
-        },
-        "light": null
+        }
     },
     "button_lift": 2,
     "panel_frame": 10,

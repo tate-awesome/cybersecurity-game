@@ -13,11 +13,10 @@
         "x": 0,
         "y": 8,
         "blur": 22,
-        "dark": {
+        "light": {
             "color": "#7a7a88",
-            "opacity": 0.2
-        },
-        "light": null
+            "opacity": 0.12
+        }
     },
     "transparency": false,
     "background": false,

@@ -12,11 +12,10 @@
         "x": 0,
         "y": 4,
         "blur": 10,
-        "dark": {
+        "light": {
             "color": "#50506a",
             "opacity": 0.25
-        },
-        "light": null
+        }
     },
     "font_family": "Bahnschrift",
     "button_radius": 2,

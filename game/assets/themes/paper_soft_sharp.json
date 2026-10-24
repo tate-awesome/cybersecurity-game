@@ -10,14 +10,17 @@
     "panel_radius": 0,
     "scrollbar_radius": 0,
     "panel_shadow": {
-        "x": 7,
-        "y": 9,
-        "blur": 20,
+        "x": 4,
+        "y": 4,
+        "blur": 4,
         "dark": {
-            "color": "#6e6e7e",
-            "opacity": 0.22
+            "color": "#000000",
+            "opacity": 0.55
         },
-        "light": null
+        "light": {
+            "color": "#000000",
+            "opacity": 0.24
+        }
     },
     "panel_light": {
         "x": -6,
@@ -25,9 +28,12 @@
         "blur": 14,
         "dark": {
             "color": "#ffffff",
-            "opacity": 0.8
+            "opacity": 0.6
         },
-        "light": null
+        "light": {
+            "color": "#ffffff",
+            "opacity": 0.8
+        }
     },
     "button_lift": 2,
     "panel_frame": 10,

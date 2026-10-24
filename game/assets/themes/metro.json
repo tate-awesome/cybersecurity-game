@@ -36,6 +36,19 @@
     "panel_radius": 0,
     "panel_frame": 4,
     "line_width": 2,
+    "panel_shadow": {
+        "x": 0,
+        "y": 0,
+        "blur": 18,
+        "dark": {
+            "color": "#000000",
+            "opacity": 0.55
+        },
+        "light": {
+            "color": "#000000",
+            "opacity": 0.24
+        }
+    },
     "materials": {
         "window": {
             "dark": {

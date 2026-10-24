@@ -78,6 +78,11 @@ as it did before they existed (see STYLE_DEFAULTS):
                        windows - stands apart from it: "accent" (an outline
                        in the accent color) or "shadow" (a soft drop shadow,
                        for themes built on neutral greys)
+    "overlay_shadow"   that drop shadow, shaped like "panel_shadow" (left
+                       out: OVERLAY_SHADOW)
+    "popup_shadow"     popup windows' shadow, shaped like "panel_shadow" -
+                       left out, they have the panels' (see
+                       Style.popup_shadows)
     "noise_gradient"   a slowly drifting gradient laid out by a noise map,
                        over the window's color, behind the background
                        visual: {"dark": ["#rrggbb", ...], "light": [...]} -
@@ -86,8 +91,8 @@ as it did before they existed (see STYLE_DEFAULTS):
                        through each other - instead: {"dark": [...],
                        "light": [...]}, 2 to 7 colors (see paint_plasma)
     "abyss"            a deep-sea night in these colors, over the window's
-                       color: soft glows drifting, specks twinkling, faint
-                       diagram lines - {"dark": [...], "light": [...]}, 2
+                       color: soft glows drifting, specks twinkling -
+                       {"dark": [...], "light": [...]}, 2
                        to 7 colors (see paint_abyss)
     "grain"            0-100 - a paper-like speckle over the page and its
                        surfaces (see Style.TEXTURE_MATERIALS), this strong
@@ -262,6 +267,8 @@ STYLE_DEFAULTS: dict = {
     "scrollbar_outline": False,
     "card_outline": False,
     "overlay_outline": "accent",
+    "overlay_shadow": None,
+    "popup_shadow": None,
     "noise_gradient": None,
     "plasma": None,
     "abyss": None,
@@ -273,6 +280,14 @@ STYLE_DEFAULTS: dict = {
 MAX_PANEL_RADIUS = 24
 MAX_PANEL_FRAME = 16
 MAX_BACKGROUND_BLUR = 64
+# How far a shadow (see "panel_shadow") can be offset, or blurred, in px
+MAX_SHADOW_REACH = 48
+MAX_BUTTON_SHADOW = 8
+MAX_BUTTON_LIFT = 12
+# The drop shadow overlays float on in a theme with "overlay_outline"
+# "shadow" but no "overlay_shadow" of its own
+OVERLAY_SHADOW = {"x": 0, "y": 6, "blur": 18,
+                  "dark": {"color": "#000000", "opacity": 0.55}, "light": {"color": "#000000", "opacity": 0.24}}
 
 HEX_PATTERN = re.compile(r"#[0-9a-fA-F]{6}")
 
@@ -342,13 +357,13 @@ def style_setting(info: dict, key: str):
             return None
         colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:8] for mode in THEME_MODES}
         return colors if all(colors.values()) else None
-    if key in ("panel_shadow", "panel_light"):
+    if key in ("panel_shadow", "panel_light", "overlay_shadow", "popup_shadow"):
         if not isinstance(value, dict):
             return None
         numbers = {name: value.get(name, 0) for name in ("x", "y", "blur")}
         if not all(isinstance(n, (int, float)) and not isinstance(n, bool) for n in numbers.values()):
             return None
-        shadow = {name: int(min(48, max(-48, n))) for name, n in numbers.items()}
+        shadow = {name: int(min(MAX_SHADOW_REACH, max(-MAX_SHADOW_REACH, n))) for name, n in numbers.items()}
         shadow["blur"] = max(0, shadow["blur"])
         for mode in THEME_MODES:
             entry = value.get(mode) if isinstance(value.get(mode), dict) else {}
@@ -360,8 +375,8 @@ def style_setting(info: dict, key: str):
         return default
     limits = {"background_blur": (0, MAX_BACKGROUND_BLUR), "panel_radius": (0, MAX_PANEL_RADIUS),
               "panel_frame": (0, MAX_PANEL_FRAME),
-              "line_width": (1, 4), "button_shadow": (0, 8), "scrollbar_radius": (0, 12), "scrollbar_inset": (0, 4), "grain": (0, 100),
-              "grain_stretch": (1, 16), "scanlines": (0, 100), "button_lift": (0, 12),
+              "line_width": (1, 4), "button_shadow": (0, MAX_BUTTON_SHADOW), "scrollbar_radius": (0, 12), "scrollbar_inset": (0, 4), "grain": (0, 100),
+              "grain_stretch": (1, 16), "scanlines": (0, 100), "button_lift": (0, MAX_BUTTON_LIFT),
               "panel_border_width": (1, 8), "panel_gap": (0, 48)}[key]
     return int(min(limits[1], max(limits[0], value)))
 

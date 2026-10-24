@@ -1,23 +1,64 @@
+import copy
 from collections.abc import Callable
 from typing import ClassVar
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel,
-                               QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QColorDialog, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel,
+                               QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QTabWidget, QVBoxLayout, QWidget)
 
-from ..app_core.context.themes import (BUTTON_KINDS, DATA_MATERIALS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
-                                      MAX_PANEL_FRAME, MAX_PANEL_RADIUS)
+from ..app_core.context.themes import (BUTTON_KINDS, DATA_MATERIALS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_LIFT,
+                                      MAX_BUTTON_RADIUS, MAX_BUTTON_SHADOW, MAX_PANEL_FRAME, MAX_PANEL_RADIUS, MAX_SHADOW_REACH,
+                                      OVERLAY_SHADOW)
+from .. import widgets
 from ..widgets import MenuBar, popup
 from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
-from ..widgets.panels.examples import EXAMPLE_PANELS
+from .generic.title import TitlePage
+from .generic.workspace_select import WorkspaceSelectPage
 from .settings import SettingsPage
 
 
-# How tall each row of the gallery's grid is (a panel spanning two rows gets both, and the gap)
-GALLERY_ROW_HEIGHT = 340
+# How tall each row of the panels preview's grid is, and how many panels across it
+PANEL_ROW_HEIGHT = 360
+PANEL_COLUMNS = 2
+# The pages the other preview tabs show (see ThemeEditorPage.build_preview)
+START_PAGE = "start"
+WORKSPACE_SELECT_PAGE = "title/select_workspace"
 # Shown after the name of a theme with unsaved edits
 UNSAVED_MARK = " *"
+# What a shadow turned on in the Shadows tab starts as (see ThemeEditorPage.turn_shadow) -
+# a lit edge in white, up and left, the way panels are lit
+NEW_SHADOWS = {
+    "panel_shadow": OVERLAY_SHADOW,
+    "panel_light": {"x": -6, "y": -6, "blur": 14, "dark": {"color": "#ffffff", "opacity": 0.6}, "light": {"color": "#ffffff", "opacity": 0.8}},
+    "overlay_shadow": OVERLAY_SHADOW,
+    "popup_shadow": OVERLAY_SHADOW,
+}
+
+
+class LookOnly(QObject):
+    '''
+    Makes a page shown as a preview (see ThemeEditorPage.build_preview)
+    look-only: hovering it still shows, and its lists still scroll, but
+    clicks and keys never reach it - its buttons would otherwise leave the
+    theme editor, or the app.
+    '''
+
+    BLOCKED = (QEvent.Type.MouseButtonPress, QEvent.Type.MouseButtonRelease, QEvent.Type.MouseButtonDblClick,
+               QEvent.Type.KeyPress, QEvent.Type.KeyRelease)
+
+    def __init__(self, page: QWidget):
+        super().__init__(page)
+        self.page = page
+        QApplication.instance().installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if event.type() not in self.BLOCKED or not isinstance(watched, QWidget):
+            return False
+        try:
+            return watched is self.page or self.page.isAncestorOf(watched)
+        except RuntimeError:  # the page is being deleted
+            return False
 
 
 class MaterialEditor:
@@ -71,7 +112,7 @@ class MaterialEditor:
         swatch.setFont(self.style.get_font("mono"))
         swatch.setObjectName(f"_swatch_{id(swatch)}")
         self.paint_swatch(swatch, entry["color"])
-        swatch.clicked.connect(lambda checked=False: self.pick_color(name, swatch))
+        swatch.clicked.connect(lambda checked=False: self.pick_color(swatch, lambda color: self.style.set_material_value(name, color=color)))
         layout.addWidget(swatch, 1)
         if with_opacity:
             layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
@@ -86,13 +127,13 @@ class MaterialEditor:
         swatch.setStyleSheet(f"QPushButton#{swatch.objectName()} {{ background-color: {color}; color: {text};"
                              f" border: 1px solid {text}; }}")
 
-    def pick_color(self, name: str, swatch: QPushButton):
-        '''Picks a material's color - shown everywhere while picking, and put back if cancelled.'''
+    def pick_color(self, swatch: QPushButton, apply: Callable[[str], None]):
+        '''Picks another color for swatch - applied ("#rrggbb") as it's picked, so it shows everywhere, and put back if cancelled.'''
         original = swatch.text()
         dialog = QColorDialog(QColor(original), self)
 
         def preview(color: QColor):
-            self.style.set_material_value(name, color=color.name())
+            apply(color.name())
             self.paint_swatch(swatch, color.name())
         dialog.currentColorChanged.connect(preview)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -110,13 +151,13 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
     but only the user's own can be changed.
 
     On the left, tabs: General (name, description, which mode is being
-    edited, and whether the theme allows transparency) and Materials (each
+    edited, and whether the theme allows transparency), Materials (each
     kind of widget's color, and its opacity if the theme allows
-    transparency - for the mode being edited). Edits
-    show at once, everywhere; Save writes them to the theme's file. On the
-    right, a scrolling grid of example panels (see widgets.panels.examples)
-    - every kind of panel body with made-up data - so each change shows on
-    everything it touches.
+    transparency - for the mode being edited) and Shadows (every shadow the
+    theme draws - see build_shadows_tab). Edits show at once, everywhere;
+    Save writes them to the theme's file. On the right, tabs previewing the
+    real thing (see build_preview): one of every panel, the start menu and
+    the workspace selector - so each change shows on everything it touches.
     '''
 
     LABEL_WIDTH = 170
@@ -125,6 +166,8 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
     TITLE = "theme_editor"
 
     selected_tab: ClassVar[int] = 0
+    # The preview tab showing (see build_preview) - kept for the next time the page opens
+    preview_tab: ClassVar[int] = 0
 
     # Menu bar
     def add_menu_bar_entries(self, menu_bar: MenuBar):
@@ -237,12 +280,13 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         row.setSpacing(self.style.igap)
         self.layout().addLayout(row, 1)
         row.addWidget(self.tabs)
-        self.gallery = self.build_gallery()
-        row.addWidget(self.gallery, 1)
+        self.preview = self.build_preview()
+        row.addWidget(self.preview, 1)
 
     def build_tabs(self):
         self.build_general_tab()
         self.build_materials_tab()
+        self.build_shadows_tab()
         # As wide as the widest tab's rows need (their names' length depends on the
         # language and font), plus the scrollbar - the gallery gets the rest
         content = max(self.tabs.widget(index).widget().sizeHint().width() for index in range(self.tabs.count()))
@@ -303,9 +347,128 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         frame.setEnabled(editable)
         section.row("theme_editor_rows_panel_frame", frame, "theme_editor_row_notes_panel_frame")
 
-    # Gallery
-    def build_gallery(self) -> QScrollArea:
-        '''The example panels in a grid (see examples.EXAMPLE_PANELS), under a note saying what they are.'''
+    def build_shadows_tab(self):
+        '''
+        Every shadow the theme draws, each in its section: around panels,
+        their lit edge, under overlays and popup windows - each one's
+        offset and blur, and its color and opacity in the mode being edited
+        (see shadow_rows) - and buttons' lift and hard shadow.
+        '''
+        style = self.style
+        editable = style.is_editable()
+        tab = self.new_tab("shadows")
+
+        for key in ("panel_shadow", "panel_light"):
+            section = self.section(tab, key)
+            on = self.checkbox(style.setting(key) is not None, lambda on, key=key: self.turn_shadow(key, on))
+            on.setEnabled(editable)
+            section.row("theme_editor_rows_shadow_on", on, f"theme_editor_row_notes_{key}_on")
+            self.shadow_rows(section, key, editable and style.setting(key) is not None)
+
+        section = self.section(tab, "overlay_shadow")
+        outline = self.dropdown({value: self.labels.get(f"theme_editor_overlay_outline_{value}") for value in ("accent", "shadow")},
+                                style.setting("overlay_outline"), lambda value: style.set_setting("overlay_outline", value))
+        outline.setEnabled(editable)
+        section.row("theme_editor_rows_overlay_outline", outline, "theme_editor_row_notes_overlay_outline")
+        self.shadow_rows(section, "overlay_shadow", editable and style.setting("overlay_outline") == "shadow")
+        # A combo box's list opens as an overlay (see ChoiceList)
+        example = QComboBox()
+        example.setFont(style.get_font())
+        example.addItems([self.labels.get(f"theme_editor_example_choice_{number}") for number in range(1, 4)])
+        section.row("theme_editor_rows_try_overlay", example, "theme_editor_row_notes_try_overlay")
+
+        section = self.section(tab, "popup_shadow")
+        own = style.setting("popup_shadow") is not None
+        same = self.checkbox(not own, self.share_popup_shadow)
+        same.setEnabled(editable)
+        section.row("theme_editor_rows_popup_same", same, "theme_editor_row_notes_popup_same")
+        self.shadow_rows(section, "popup_shadow", editable and own)
+        section.row("theme_editor_rows_try_popup",
+                    self.button("theme_editor_try_popup", lambda: popup.message(self, self.context, self.labels.get("theme_editor_example_popup"))),
+                    "theme_editor_row_notes_try_popup")
+
+        section = self.section(tab, "button_shadows")
+        for key, most in (("button_lift", MAX_BUTTON_LIFT), ("button_shadow", MAX_BUTTON_SHADOW)):
+            slider = self.slider(style.setting(key), 0, most, "px", lambda value, key=key: style.set_setting(key, value), live=False)
+            slider.setEnabled(editable)
+            section.row(f"theme_editor_rows_{key}", slider, f"theme_editor_row_notes_{key}")
+
+    def shadow_rows(self, section: "SettingsSection", key: str, editable: bool):
+        '''
+        section's rows for one of the theme's shadows (see
+        Style.shadow_setting): how far across and down it falls and how
+        blurred it is, then its color and opacity in the mode being edited.
+        A shadow the theme hasn't shows what it would start as (see NEW_SHADOWS).
+        '''
+        style = self.style
+        shadow = style.shadow_setting(key) or NEW_SHADOWS[key]
+        # Applied once let go - each change restyles everything (see Style.set_setting)
+        for name, least in (("x", -MAX_SHADOW_REACH), ("y", -MAX_SHADOW_REACH), ("blur", 0)):
+            slider = self.slider(shadow[name], least, MAX_SHADOW_REACH, "px",
+                                 lambda value, name=name: self.edit_shadow(key, **{name: value}), live=False)
+            slider.setEnabled(editable)
+            section.row(f"theme_editor_rows_shadow_{name}", slider, f"theme_editor_row_notes_shadow_{name}")
+        entry = shadow[style.current_theme.partition("_")[0]]
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        swatch = QPushButton()
+        swatch.setFont(style.get_font("mono"))
+        swatch.setObjectName(f"_swatch_{id(swatch)}")
+        self.paint_swatch(swatch, entry["color"])
+        # The tabs aren't built again while picking - the swatch has to outlive the picker
+        swatch.clicked.connect(lambda checked=False: self.pick_color(swatch, lambda color: self.edit_shadow(key, rebuild=False, color=color)))
+        layout.addWidget(swatch, 1)
+        layout.addWidget(self.slider(round(entry["opacity"] * 100), 0, 100, "%",
+                                     lambda value: self.edit_shadow(key, opacity=value / 100), live=False), 1)
+        row.setEnabled(editable)
+        section.row("theme_editor_rows_shadow_color", row, "theme_editor_row_notes_shadow_color")
+
+    def edit_shadow(self, key: str, rebuild: bool = True, **changes):
+        '''
+        Changes one of the theme's shadows (see shadow_rows): "x", "y" and
+        "blur" in both modes, "color" and "opacity" in the mode being
+        edited. rebuild=False keeps the tabs as they are (see rebuild_tabs).
+        '''
+        style = self.style
+        shadow = copy.deepcopy(style.shadow_setting(key) or NEW_SHADOWS[key])
+        mode = style.current_theme.partition("_")[0]
+        for name, value in changes.items():
+            (shadow if name in ("x", "y", "blur") else shadow[mode])[name] = value
+        style.set_setting(key, shadow)
+        if not rebuild:
+            self.rebuild_timer.stop()
+
+    def turn_shadow(self, key: str, on: bool):
+        '''Gives the theme one of its panel shadows (see NEW_SHADOWS) - or takes it away.'''
+        self.style.set_setting(key, copy.deepcopy(NEW_SHADOWS[key]) if on else None)
+
+    def share_popup_shadow(self, same: bool):
+        '''Gives popup windows the panels' shadow - or their own, starting as a copy of it.'''
+        style = self.style
+        style.set_setting("popup_shadow", None if same else copy.deepcopy(style.shadow_setting("popup_shadow") or NEW_SHADOWS["popup_shadow"]))
+
+    # Preview
+    def build_preview(self) -> QTabWidget:
+        '''
+        Tabs showing the theme on the real thing: one of every panel (see
+        build_panels_preview), and the start menu and the workspace
+        selector - look-only (see LookOnly), as their buttons would leave
+        the theme editor.
+        '''
+        tabs = QTabWidget()
+        tabs.setFont(self.style.get_font("default"))
+        tabs.addTab(self.build_panels_preview(), self.labels.get("theme_editor_preview_panels"))
+        for page_class, key, name in ((TitlePage, START_PAGE, "start"), (WorkspaceSelectPage, WORKSPACE_SELECT_PAGE, "workspaces")):
+            page = page_class(self.context, key, preview=True)
+            LookOnly(page)
+            tabs.addTab(page, self.labels.get(f"theme_editor_preview_{name}"))
+        tabs.setCurrentIndex(min(type(self).preview_tab, tabs.count() - 1))
+        tabs.currentChanged.connect(lambda index: setattr(type(self), "preview_tab", index))
+        return tabs
+
+    def build_panels_preview(self) -> QScrollArea:
+        '''One of every panel (see widgets.PANELS) in a grid, under a note saying what they are.'''
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -314,7 +477,7 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         self.style.set_material(body, "none")
         column = QVBoxLayout(body)
         column.setSpacing(self.style.igap)
-        column.setContentsMargins(0, 0, self.style.igap, 0)
+        column.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
 
         note = QLabel(self.labels.get("theme_editor_gallery_note"))
         note.setFont(self.style.get_font("small"))
@@ -323,20 +486,17 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
 
         grid = QGridLayout()
         grid.setSpacing(self.style.igap)
-        rows = max(row + row_span for _, (row, _, row_span, _) in EXAMPLE_PANELS)
-        columns = max(col + col_span for _, (_, col, _, col_span) in EXAMPLE_PANELS)
-        for row in range(rows):
-            grid.setRowMinimumHeight(row, GALLERY_ROW_HEIGHT)
-        for col in range(columns):
+        for col in range(PANEL_COLUMNS):
             grid.setColumnStretch(col, 1)
-        for panel_class, (row, col, row_span, col_span) in EXAMPLE_PANELS:
+        for index, key in enumerate(widgets.PANELS):
             # Panels add themselves to their master's layout
             cell = QWidget()
             cell.setLayout(QVBoxLayout())
             cell.layout().setContentsMargins(0, 0, 0, 0)
-            cell.setFixedHeight(row_span * GALLERY_ROW_HEIGHT + (row_span - 1) * self.style.igap)
-            grid.addWidget(cell, row, col, row_span, col_span)
-            panel_class(cell, self.context)
+            cell.setFixedHeight(PANEL_ROW_HEIGHT)
+            grid.addWidget(cell, index // PANEL_COLUMNS, index % PANEL_COLUMNS)
+            # The first copy's id, as in a layout - a panel set up per copy (the ModBus models) needs one
+            widgets.panel(key, cell, self.context, panel_id=f"{key}_1")
         column.addLayout(grid)
         column.addStretch(1)
         scroll.setWidget(body)

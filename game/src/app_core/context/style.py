@@ -11,7 +11,7 @@ from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QImage, QLinearG
 from PySide6.QtWidgets import QApplication, QComboBox, QGraphicsDropShadowEffect, QPushButton, QStyledItemDelegate, QWidget
 import darkdetect
 
-from .themes import (BUTTON_KINDS, COLOR_NAMES, DATA_MATERIALS, INK_MATERIALS, MATERIALS, STYLE_DEFAULTS, THEME_MODES, button_radius,
+from .themes import (BUTTON_KINDS, COLOR_NAMES, DATA_MATERIALS, INK_MATERIALS, MATERIALS, OVERLAY_SHADOW, STYLE_DEFAULTS, THEME_MODES, button_radius,
                      gradient_points, is_hex, read_theme, resolve_materials, style_setting, theme_file, theme_modes)
 
 from typing import TYPE_CHECKING
@@ -1120,14 +1120,14 @@ class Style:
 
     def overlay_shadow(self) -> dict | None:
         '''
-        The drop shadow overlays and popup windows float on, in a theme whose
-        "overlay_outline" is "shadow" - {"x", "y", "blur", "color", "opacity"} -
-        or None, in one that outlines them in the accent color instead.
+        The drop shadow overlays float on (and popup windows' outline gives
+        way to - see floating_outline), in a theme whose "overlay_outline"
+        is "shadow" - {"x", "y", "blur", "color", "opacity"}, in the current
+        mode - or None, in one that outlines them in the accent color instead.
         '''
         if self.setting("overlay_outline") != "shadow":
             return None
-        dark = self.current_theme.startswith("dark")
-        return {"x": 0, "y": 6, "blur": 18, "color": "#000000", "opacity": 0.55 if dark else 0.24}
+        return self.in_mode(self.shadow_setting("overlay_shadow"))
 
     def floating_outline(self) -> QColor | None:
         '''A popup window's outline (see PopupWindow): the accent color - or None, for the panels' own, in a theme that floats it on a shadow.'''
@@ -1297,28 +1297,54 @@ class Style:
         gap = self.setting("panel_gap")
         return self.igap if gap is None else gap
 
+    def shadow_setting(self, key: str) -> dict | None:
+        '''
+        One of the theme's shadows (see themes.STYLE_DEFAULTS' "panel_shadow")
+        as it shows, in both modes - "overlay_shadow" left out is
+        themes.OVERLAY_SHADOW, and "popup_shadow" left out is the panels'.
+        None for a shadow it hasn't.
+        '''
+        shadow = self.setting(key)
+        if shadow is None and key == "overlay_shadow":
+            return copy.deepcopy(OVERLAY_SHADOW)
+        if shadow is None and key == "popup_shadow":
+            return self.setting("panel_shadow")
+        return shadow
+
+    def in_mode(self, shadow: dict) -> dict:
+        '''A shadow setting (see shadow_setting) in the current mode: {"x", "y", "blur", "color", "opacity"}.'''
+        return {"x": shadow["x"], "y": shadow["y"], "blur": shadow["blur"], **shadow[self.current_theme.partition("_")[0]]}
+
+    def _shadows(self, keys: tuple[str, ...]) -> list[dict]:
+        '''The named shadow settings in the current mode, in order - leaving out any the theme hasn't, or can't be seen.'''
+        shadows = [self.in_mode(shadow) for shadow in map(self.shadow_setting, keys) if shadow is not None]
+        return [shadow for shadow in shadows if shadow["opacity"] > 0]
+
     def panel_shadows(self) -> list[dict]:
         '''
         The theme's shadow around panels, then its lit edge (see
         themes.STYLE_DEFAULTS' "panel_light"), in the current mode - each
         {"x", "y", "blur", "color", "opacity"} - leaving out either it hasn't.
         '''
-        mode = self.current_theme.partition("_")[0]
-        shadows = []
-        for key in ("panel_shadow", "panel_light"):
-            shadow = self.setting(key)
-            if shadow is not None and shadow[mode]["opacity"] > 0:
-                shadows.append({"x": shadow["x"], "y": shadow["y"], "blur": shadow["blur"], **shadow[mode]})
-        return shadows
+        return self._shadows(("panel_shadow", "panel_light"))
 
-    def panel_margins(self) -> tuple[int, int, int, int]:
-        '''Room around each panel for its shadows (see panel_shadows) - left, top, right, bottom, in px.'''
+    def popup_shadows(self) -> list[dict]:
+        '''Like panel_shadows, for popup windows: their own shadow (the panels', unless the theme has "popup_shadow"), then the panels' lit edge.'''
+        return self._shadows(("popup_shadow", "panel_light"))
+
+    @staticmethod
+    def shadow_margins(shadows: list[dict]) -> tuple[int, int, int, int]:
+        '''Room around a surface for shadows (see panel_shadows) - left, top, right, bottom, in px.'''
         margins = (0, 0, 0, 0)
-        for shadow in self.panel_shadows():
+        for shadow in shadows:
             blur, x, y = shadow["blur"], shadow["x"], shadow["y"]
             room = (max(0, blur - x), max(0, blur - y), max(0, blur + x), max(0, blur + y))
             margins = tuple(max(a, b) for a, b in zip(margins, room))
         return margins
+
+    def panel_margins(self) -> tuple[int, int, int, int]:
+        '''Room around each panel for its shadows (see panel_shadows) - left, top, right, bottom, in px.'''
+        return self.shadow_margins(self.panel_shadows())
 
     def background_shown(self, menu: bool = False, workspace: bool = False) -> bool:
         '''

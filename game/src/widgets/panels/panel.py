@@ -12,20 +12,21 @@ _SHADOWS: dict[tuple, QImage] = {}
 _MAX_SHADOWS = 64
 
 
-def surface_shadow(style, width: int, height: int) -> QImage | None:
+def surface_shadow(style, width: int, height: int, shadows: list[dict] | None = None) -> QImage | None:
     '''
-    The theme's shadows (see Style.panel_shadows) for a panel-like surface
-    width x height px, drawn inside the room Style.panel_margins leaves
-    around it - its rounded shape, offset and blurred, once per shadow,
-    with the surface's own area cut out so a see-through one isn't darkened
-    by it (like CSS's box-shadow). Cached - see _SHADOWS. For panels, and
-    anything dressed like one (e.g. the workspace select page's summary card).
+    The theme's shadows (see Style.panel_shadows - or shadows, if given)
+    for a panel-like surface width x height px, drawn inside the room
+    Style.shadow_margins leaves for them around it - its rounded shape,
+    offset and blurred, once per shadow, with the surface's own area cut
+    out so a see-through one isn't darkened by it (like CSS's box-shadow).
+    Cached - see _SHADOWS. For panels, and anything dressed like one (e.g.
+    the workspace select page's summary card, or a popup window).
     '''
-    shadows = style.panel_shadows()
+    shadows = style.panel_shadows() if shadows is None else shadows
     if not shadows or width <= 0 or height <= 0:
         return None
     radius = style.PANEL_RADIUS
-    margins = style.panel_margins()
+    margins = style.shadow_margins(shadows)
     key = (width, height, radius, margins, tuple(tuple(sorted(shadow.items())) for shadow in shadows))
     if key in _SHADOWS:
         return _SHADOWS[key]
@@ -79,7 +80,7 @@ def blurred_shape(shadow: dict, body: QRectF, width: int, height: int, radius: i
 
 
 def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False, shadowed: bool = True,
-                outline: QColor | None = None):
+                outline: QColor | None = None, shadows: list[dict] | None = None):
     '''
     Paints a panel-like surface width x height px by hand - the theme's
     shadow, its panel material in its rounded shape, and its outline (or
@@ -87,14 +88,16 @@ def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bo
     first lays down the page's window material under it, for a surface
     nothing else is under (a popup window), so it looks as it would on a page.
     outline replaces the panels' own (e.g. a popup window's - see
-    Style.floating_outline). shadowed=False leaves the shadow, and the room for it, out - for a
+    Style.floating_outline), and shadows the panels' (e.g. a popup
+    window's - see Style.popup_shadows). shadowed=False leaves the shadow, and the room for it, out - for a
     surface something else draws the shadow of (see DockArea.paintEvent).
     '''
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    shadow = surface_shadow(style, width, height) if shadowed else None
+    shadows = style.panel_shadows() if shadows is None else shadows
+    shadow = surface_shadow(style, width, height, shadows) if shadowed else None
     if shadow is not None:
         painter.drawImage(0, 0, shadow)
-    left, top, right, bottom = style.panel_margins() if shadowed else (0, 0, 0, 0)
+    left, top, right, bottom = style.shadow_margins(shadows) if shadowed else (0, 0, 0, 0)
     half = style.PANEL_BORDER_WIDTH / 2
     body = QRectF(left + half, top + half, width - left - right - 2 * half, height - top - bottom - 2 * half)
     radius = style.PANEL_RADIUS

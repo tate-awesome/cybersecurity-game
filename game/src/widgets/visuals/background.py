@@ -2,8 +2,8 @@ import math
 import time
 
 import numpy as np
-from PySide6.QtCore import QEvent, QLineF, QObject, QPointF, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPen, QRadialGradient
+from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QRadialGradient
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ...app_core import Context
@@ -92,29 +92,20 @@ def paint_plasma(painter: QPainter, width: int, height: int, colors: list[str], 
 
 # An abyss's layout (see paint_abyss), in 0-1 of the area, seeded so it's
 # the same every time. Glows: (x, y, size, drift phase). Specks: (x, y,
-# radius px, twinkle rate, phase, haloed). Diagram marks: ("rule", x, y,
-# length) with ticks, ("box", x, y, w, h), or ("text", x, y, lines) -
-# short dashes stacked like a caption
+# radius px, twinkle rate, phase, haloed)
 _ABYSS_RNG = np.random.default_rng(23)
 ABYSS_GLOWS = [(x, y, s, p) for x, y, s, p in zip(_ABYSS_RNG.uniform(0.1, 0.9, 5), _ABYSS_RNG.uniform(0.1, 0.9, 5),
                                                   _ABYSS_RNG.uniform(0.22, 0.42, 5), _ABYSS_RNG.uniform(0, 6.3, 5))]
 ABYSS_SPECKS = [(x, y, r, rate, p, halo) for x, y, r, rate, p, halo in zip(
     _ABYSS_RNG.uniform(0, 1, 240), _ABYSS_RNG.uniform(0, 1, 240), _ABYSS_RNG.choice([0.6, 0.9, 1.2, 1.8], 240, p=[0.4, 0.3, 0.2, 0.1]),
     _ABYSS_RNG.uniform(0.3, 1.4, 240), _ABYSS_RNG.uniform(0, 6.3, 240), _ABYSS_RNG.random(240) < 0.08)]
-ABYSS_MARKS = ([("rule", x, y, length) for x, y, length in zip(_ABYSS_RNG.uniform(0, 0.8, 9), _ABYSS_RNG.uniform(0.04, 0.96, 9),
-                                                                 _ABYSS_RNG.uniform(0.08, 0.3, 9))]
-               + [("box", x, y, w, h) for x, y, w, h in zip(_ABYSS_RNG.uniform(0.02, 0.85, 5), _ABYSS_RNG.uniform(0.05, 0.85, 5),
-                                                             _ABYSS_RNG.uniform(0.05, 0.12, 5), _ABYSS_RNG.uniform(0.04, 0.1, 5))]
-               + [("text", x, y, int(n)) for x, y, n in zip(_ABYSS_RNG.uniform(0.02, 0.88, 10), _ABYSS_RNG.uniform(0.04, 0.92, 10),
-                                                            _ABYSS_RNG.integers(2, 6, 10))])
 
 
 def paint_abyss(painter: QPainter, width: int, height: int, colors: list[str], t: float):
     '''
     A deep-sea night over a width x height area, in colors, as t (seconds)
     passes: big soft glows drifting slowly, like jellyfish lit from inside,
-    specks twinkling across it - a few with a halo - and faint white
-    diagram marks over it all, like an annotated specimen plate.
+    specks twinkling across it - a few with a halo.
     '''
     if width <= 0 or height <= 0:
         return
@@ -147,27 +138,6 @@ def paint_abyss(painter: QPainter, width: int, height: int, colors: list[str], t
         color.setAlphaF(twinkle)
         painter.setBrush(color)
         painter.drawEllipse(centre, radius * scale, radius * scale)
-    line = QColor("#ffffff")
-    line.setAlphaF(0.13)
-    pen = QPen(line, 1)
-    pen.setCosmetic(True)
-    painter.setPen(pen)
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    for mark in ABYSS_MARKS:
-        if mark[0] == "rule":
-            _, x, y, length = mark
-            painter.drawLine(QLineF(x * width, y * height, (x + length) * width, y * height))
-            for tick in np.arange(x, x + length, 0.02):
-                painter.drawLine(QLineF(tick * width, y * height, tick * width, y * height - 4 * scale))
-        elif mark[0] == "box":
-            _, x, y, w, h = mark
-            painter.drawRect(QRectF(x * width, y * height, w * width, h * height))
-        else:
-            _, x, y, lines = mark
-            for row in range(lines):
-                # Ragged, like lines of text
-                length = (0.05 + 0.04 * ((row * 7 + int(x * 100)) % 5) / 4) * width
-                painter.drawLine(QLineF(x * width, y * height + row * 6 * scale, x * width + length, y * height + row * 6 * scale))
     painter.restore()
 
 
