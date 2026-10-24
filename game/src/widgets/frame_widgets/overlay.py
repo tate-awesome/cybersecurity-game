@@ -45,7 +45,8 @@ class Overlay(QWidget):
 
     def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south",
                  closed_text: str | None = None, open_text: str | None = None, trigger_texts: bool = True):
-        super().__init__(master, Qt.WindowType.Popup)
+        # Frameless as well, or Windows fills the see-through room for a shadow in black
+        super().__init__(master, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         # Only what paintEvent draws - room for a shadow stays see-through
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         # The side it opens on by itself - and the side it last opened on,
