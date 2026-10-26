@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1793049047.0023153,
-    "seen": 1793049058.1362884,
-    "ast_hash": "316ab966428c3fa3fa80beb972761b26",
+    "mtime": 1793049321.9343965,
+    "seen": 1793049342.226069,
+    "ast_hash": "3c3805b913e1559644b20f4436b44c63",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -318,21 +318,21 @@
     "semantic_hash": ""
   },
   "game/assets/schemas/page_config.schema.json": {
-    "mtime": 1793047911.6166418,
-    "seen": 1793048370.710433,
-    "ast_hash": "e277358bcb413e90acecd09cb7251a1a",
+    "mtime": 1793049321.9303966,
+    "seen": 1793049342.2278974,
+    "ast_hash": "139e5d17422b84171090d567e31a2748",
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default.json": {
-    "mtime": 1793049047.0023153,
-    "seen": 1793049058.137682,
-    "ast_hash": "4518c4e7ea848566d13c28776beb48ef",
+    "mtime": 1793049321.9303966,
+    "seen": 1793049342.227902,
+    "ast_hash": "a1e8ac9322b8be8ec9898983be1d33ba",
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default_notes.json": {
-    "mtime": 1793049047.0023153,
-    "seen": 1793049058.1376832,
-    "ast_hash": "82fdd5ce6cc9657548f1ce13698e8c7f",
+    "mtime": 1793049321.9343965,
+    "seen": 1793049342.2279043,
+    "ast_hash": "42b92794318c475d4d2ae05393b36b96",
     "semantic_hash": ""
   },
   "game/assets/settings/register_presets/default.json": {
@@ -888,9 +888,9 @@
     "semantic_hash": ""
   },
   "game/src/pages/demo/config_editor.py": {
-    "mtime": 1793047911.6286416,
-    "seen": 1793048370.7105157,
-    "ast_hash": "984c0b2b5d01e1cbc92dc0c2afb7bef7",
+    "mtime": 1793049321.9303966,
+    "seen": 1793049342.2318442,
+    "ast_hash": "011737bfb6b058172bb994b7444e36a7",
     "semantic_hash": ""
   },
   "game/src/pages/demo/layout_editor.py": {
@@ -1128,9 +1128,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/__init__.py": {
-    "mtime": 1793047911.6326416,
-    "seen": 1793048370.7105508,
-    "ast_hash": "48c8c7c30179bf3189101d7104fddd24",
+    "mtime": 1793049321.9303966,
+    "seen": 1793049342.2334743,
+    "ast_hash": "4ad8d069be897ea9fa3096291ef72dae",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/important_buttons/_base_button.py": {
@@ -1560,9 +1560,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/menu_bar.py": {
-    "mtime": 1793047911.6366415,
-    "seen": 1793048370.7106075,
-    "ast_hash": "7831eb29f818c6be8587d53c94593e46",
+    "mtime": 1793049321.9303966,
+    "seen": 1793049342.237187,
+    "ast_hash": "328c3a1b488228308941b29fd940ff2f",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/overlay.py": {
@@ -1632,9 +1632,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_flag_panel/_builder.py": {
-    "mtime": 1792525730.2917397,
-    "seen": 1793048370.710617,
-    "ast_hash": "e3a5ff25e936b06258c3b836906139d7",
+    "mtime": 1793049285.1629217,
+    "seen": 1793049342.2376502,
+    "ast_hash": "93fdf90e03f7c403eec9dff322551592",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_modbus_panel/_builder.py": {
@@ -1971,6 +1971,24 @@
     "mtime": 1791411917.4675386,
     "seen": 1793048370.7106624,
     "ast_hash": "e2947090fc8975badd4f1bc1a84d24e1",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/frame_widgets/important_buttons/checkbox_overlay/choose_shown_defender_flag_forms.py": {
+    "mtime": 1793049321.9103968,
+    "seen": 1793049342.233716,
+    "ast_hash": "ad966d0cb92514d57407ad9559b5d910",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/panels/defender_flag_panel/forms/flags.py": {
+    "mtime": 1793049269.4791458,
+    "seen": 1793049342.2376525,
+    "ast_hash": "2e88f716e67795e20d7c39e295a59a12",
+    "semantic_hash": ""
+  },
+  "game/src/widgets/panels/defender_flag_panel/forms/kalman.py": {
+    "mtime": 1793049269.4791458,
+    "seen": 1793049342.2376537,
+    "ast_hash": "f9be93a93673f284109ec3c6dcaf6891",
     "semantic_hash": ""
   }
 }

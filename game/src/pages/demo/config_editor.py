@@ -30,12 +30,19 @@ NUMBER_FIELDS = {"factor", "multiplier", "offset", "strip_chart_auto_fit_max_sec
 # choices follow that panel's available models - see model_panel_dropdown.)
 SETTING_DROPDOWNS: dict[tuple, list[str]] = {}
 
+# A panel's forms are switched on and off in two groups - "available" (offered
+# at all) and its "<category>_forms_shown" (starts out shown) - and ordered in
+# "form_order". PANEL_FORMS in SETTING_TABS stands for all three, shown as one
+# section per panel instead: its form_order, then each form with both of its
+# switches beside each other (see build_panel_forms_sections).
+FORMS_SHOWN_SUFFIX = "_forms_shown"
+PANEL_FORMS = "<panel forms>"
+
 # The settings tabs and the _default.json groups each one holds - or, for a tab
 # with sub-tabs, its (sub-tab, groups) pairs. Anything not listed here goes
 # to the last tab, so a new setting is never left out.
 SETTING_TABS: list[tuple[str, list[str] | list[tuple[str, list[str]]]]] = [
-    ("Panel Availability", ["available", "network_action_forms_shown", "modbus_table_forms_shown",
-                            "defender_modbus_forms_shown", "defender_flag_forms_shown", "form_order", "model_panels"]),
+    ("Panel Availability", [PANEL_FORMS, "model_panels"]),
     ("Attacker Options", [
         ("Attacker Options", ["modbus_packet_modify_enabled", "network_action_form_inputs"]),
         ("Modbus Registers", ["modbus_registers"]),
@@ -324,6 +331,11 @@ class ConfigEditor(Page):
                 if isinstance(value, dict):
                     walk(value, depth + 1)
         walk(self.default_settings, 0)
+        # The panel forms sections' rows, two levels in (see build_panel_forms_sections)
+        for name in self.default_settings:
+            if name.endswith(FORMS_SHOWN_SUFFIX):
+                text = Rows.INDENT * 2 + name
+                widest = max(widest, metrics.horizontalAdvance(text), bold_metrics.horizontalAdvance(text))
         return max(self.LABEL_WIDTH, widest + self.style.igap * 2)
 
     def workspace_name(self, key: str) -> str:
@@ -601,6 +613,8 @@ class ConfigEditor(Page):
             return entries if entries and isinstance(entries[0], tuple) else []
         listed = {name for _, entries in SETTING_TABS
                   for name in ([name for _, names in pages(entries) for name in names] or entries)}
+        if PANEL_FORMS in listed:
+            listed |= {"available", "form_order"} | set(self.forms_shown_categories())
         self.settings_forms: dict[str, TopLayout] = {}
         for title, entries in SETTING_TABS:
             if not pages(entries):
@@ -620,9 +634,12 @@ class ConfigEditor(Page):
 
     def build_settings_page(self, title: str, names: list[str]):
         '''The settings groups named, in _default.json's order, on the tab self.form belongs to.'''
+        panel_forms = PANEL_FORMS in names
         names = [name for name in self.default_settings if name in names]
-        if not names:
+        if not names and not panel_forms:
             self.section(title, "No settings here yet.")
+        if panel_forms:
+            self.build_panel_forms_sections()
         for name in names:
             self.build_setting_section(name, self.default_settings[name])
             self.settings_forms[name] = self.form
@@ -639,6 +656,63 @@ class ConfigEditor(Page):
             self.add_setting_rows(rows, (name,), default, depth=0)
         else:
             self.add_setting_row(rows, (name,), default, depth=0)
+
+    def forms_shown_categories(self) -> list[str]:
+        return [name for name in self.default_settings if name.endswith(FORMS_SHOWN_SUFFIX)]
+
+    def build_panel_forms_sections(self):
+        '''
+        One section per panel with forms, in place of separate available,
+        *_forms_shown and form_order sections: the panel's form_order, then
+        each of its forms, indented under it, with its available and
+        *_forms_shown switches beside each other. Each section is keyed by
+        the panel's key in setting_frames, so it's sorted and noted by
+        whether the layout has that panel (see setting_users). Any form not
+        in a *_forms_shown category, or category no panel lists in SETTINGS,
+        still gets a section.
+        '''
+        available = self.default_settings.get("available", {})
+        order = self.default_settings.get("form_order", {})
+        covered = set()
+        for category in self.forms_shown_categories():
+            panel_key = next((key for key, panel_class in PANELS.items()
+                              if category in getattr(panel_class, "SETTINGS", ())), category)
+            panel_note = self.notes.get("panels", {}).get(panel_key, {})
+            title = f"{panel_note['name']} ({panel_key})" if "name" in panel_note else panel_key
+            explanation = (f"This panel's forms: whether each is offered at all (available) and starts out shown "
+                           f"({category}), and their order (form_order). Hover over a key for its explanation.")
+            rows = self.panel_section(panel_key, title, explanation)
+            rows.heading(panel_key, tooltip=panel_note.get("details", ""))
+            if category in order:
+                self.add_setting_row(rows, ("form_order", category), order[category], depth=1, label="form_order")
+            for form, shown_default in self.default_settings[category].items():
+                rows.heading(form, depth=1, description=self.key_notes(("available", form))[0])
+                if form in available:
+                    self.add_setting_row(rows, ("available", form), available[form], depth=2, label="available")
+                    covered.add(form)
+                self.add_setting_row(rows, (category, form), shown_default, depth=2, label=category)
+        leftover = [form for form in available if form not in covered]
+        if leftover:
+            rows = self.panel_section("available", "available", self.notes.get("settings_fields", {}).get("available", ""))
+            for form in leftover:
+                self.add_setting_row(rows, ("available", form), available[form], depth=0)
+
+    def panel_section(self, key: str, title: str, explanation: str) -> "Rows":
+        '''A settings section for build_panel_forms_sections, registered under key like a settings group's.'''
+        usage = QLabel()
+        usage.setWordWrap(True)
+        self.usage_labels[key] = usage
+        rows = self.section(title, explanation, note=usage)
+        self.setting_frames[key] = rows.grid.parentWidget()
+        self.settings_forms[key] = self.form
+        rows.setting_header()
+        return rows
+
+    def setting_users(self, name: str, panels: list[str]) -> list[str]:
+        '''The panels in panels using a settings section - by SETTINGS, or a panel forms section's own panel.'''
+        if name in PANELS:
+            return [name] if name in panels else []
+        return [panel for panel in panels if name in getattr(PANELS.get(panel), "SETTINGS", ())]
 
     def add_setting_rows(self, rows: "Rows", path: tuple, default: dict, depth: int):
         for key, item_default in default.items():
@@ -686,13 +760,18 @@ class ConfigEditor(Page):
         panels = self.layout_panels()
         self.show_layout_model_panels()
         for name, label in getattr(self, "usage_labels", {}).items():
-            users = [panel for panel in panels if name in getattr(PANELS.get(panel), "SETTINGS", ())]
+            users = self.setting_users(name, panels)
             font = QFont(self.style.get_font("small"))   # a copy - get_font's font is shared
-            if users:
+            if name in PANELS:
+                # A panel forms section (see build_panel_forms_sections) - used only by its own panel
+                label.setText("This panel is in this layout" if users else "This panel isn't in this layout")
+            elif users:
                 label.setText("Used by panels: " + ", ".join(users))
-                label.setStyleSheet("")
             else:
                 label.setText("Not used by any panel in this layout")
+            if users:
+                label.setStyleSheet("")
+            else:
                 font.setItalic(True)
                 text = QColor(self.style.color("text"))
                 label.setStyleSheet(f"color: rgba({text.red()}, {text.green()}, {text.blue()}, 150);")
@@ -776,10 +855,15 @@ class ConfigEditor(Page):
             return
         names = list(self.default_settings)
         def in_layout(name):
-            return sum(1 for panel in panels if name in getattr(PANELS.get(panel), "SETTINGS", ()))
+            return len(self.setting_users(name, panels))
         def overall(name):
+            if name in PANELS:
+                return 1
             return sum(1 for panel_class in PANELS.values() if name in getattr(panel_class, "SETTINGS", ()))
-        order = sorted(frames, key=lambda name: (-in_layout(name), -overall(name), names.index(name)))
+        def position(name):
+            # Panel forms sections stand where "available" would, in build order among themselves
+            return names.index(name) if name in names else names.index("available")
+        order = sorted(frames, key=lambda name: (-in_layout(name), -overall(name), position(name)))
         for form in {id(form): form for form in self.settings_forms.values()}.values():
             tab_order = [name for name in order if self.settings_forms[name] is form]
             for position, name in enumerate(tab_order):
@@ -796,17 +880,17 @@ class ConfigEditor(Page):
             node = node[key]
         return True, node
 
-    def add_setting_row(self, rows: "Rows", path: tuple, default, depth: int):
+    def add_setting_row(self, rows: "Rows", path: tuple, default, depth: int, label: str | None = None):
         '''
-        One setting: its key, its _default.json value, and - if the
-        workspace's config has the key ("touched") - a Clear button and its
-        input; otherwise ("untouched") just an Edit button.
+        One setting: its key (or label in its place), its _default.json
+        value, and - if the workspace's config has the key ("touched") - a
+        Clear button and its input; otherwise ("untouched") just an Edit button.
         '''
         touched, value = self.config_value(path)
         widget, reader = self.leaf(path, default, value if touched else default)
         cell = SettingCell(self, path, widget, reader, default, touched)
         description, details = self.key_notes(path)
-        cell.label = rows.add(path[-1], cell, depth=depth, tooltip=details, description=description,
+        cell.label = rows.add(label or path[-1], cell, depth=depth, tooltip=details, description=description,
                               default_text=SettingCell.describe(path[-1], default))
         cell.show_state()
         self.setting_cells.append(cell)
