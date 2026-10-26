@@ -2,7 +2,7 @@
     "_note": [
         "# Defender Lesson 6: Submarine Passive Filtering",
         "## Summary",
-        "A classic tool utilized by physics based models to verify the validity of communicated data is passive filtering. In the submarine system, a kalman filter is used to predict the next step of the system before it happens. This prediction is compared to the sensor reads from the next step to judge wether there has been a spoofed input.",
+        "A classic tool utilized by physics based models to verify the validity of communicated data is passive filtering. In the submarine system, a kalman filter is used to predict the next step of the system before it happens. This prediction is compared to the sensor reads from the next step to judge whether there has been a spoofed input.",
         "In this lesson you will learn how the submarine system uses an extended kalman filter to threshold sensor values to verify the validity of data.",
         "## Objectives",
         "- Understand what passive filtering is\n- Understand what an extended kalman filter does\n- Understand the difference between a 1-dimensional and extended kalman filter\n- Understand what each of the detection flags monitor\n- Understand how the prediction of noise in the filter changes the accuracy of the state flag\n- Understand how an ekf can be used for more than just thresholding error detection\n- Understand how removing filtering from a noisy system can affect its control loop",
@@ -28,7 +28,14 @@
 
     "settings": {
         "model_panels": {
-            "modbus_model_panel_1": {"available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "sniffed_hvac_chart": 0, "ap_polled_hvac_chart": 0}}
+            "modbus_model_panel_1": {
+                "available": {
+                    "sniffed_submarine_map": 0,
+                    "sniffed_hvac_house": 0,
+                    "sniffed_hvac_chart": 0,
+                    "ap_polled_hvac_chart": 0
+                }
+            }
         },
         "available": {"kalman": 1, "sliders": 1, "ap_connect": 1},
         "network_action_forms_shown": {"kalman": 1, "ap_connect": 1},
@@ -36,9 +43,7 @@
     },
 
     "title": "defender_submarine_passive_filtering_workspace",
-    "menu_bar": [
-        "ap_config_button"
-    ],
+    "menu_bar": ["ap_config_button"],
 
     "layout_shape": {
         "v_panes_1": [
