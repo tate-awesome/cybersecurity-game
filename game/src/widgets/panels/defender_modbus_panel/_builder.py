@@ -4,7 +4,7 @@ from ..panel import Panel
 from ...frame_widgets.important_buttons.checkbox_overlay.checkbox_overlay import form_order
 
 from .forms.mode import ModeForm
-from .forms.sliders import SlidersForm
+from .forms.sliders import HVACSlidersForm, SlidersForm, SubmarineSlidersForm
 
 from ....widgets import Scrollable
 from ...frame_widgets.important_buttons import ChooseShownDefenderModbusForms
@@ -12,6 +12,8 @@ from ...frame_widgets.important_buttons import ChooseShownDefenderModbusForms
 FORM_CLASSES = {
     "mode": ModeForm,
     "sliders": SlidersForm,
+    "sliders_submarine": SubmarineSlidersForm,
+    "sliders_hvac": HVACSlidersForm,
 }
 
 

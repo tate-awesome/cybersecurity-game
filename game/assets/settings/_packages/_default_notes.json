@@ -33,7 +33,7 @@
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Sort Cards. A form only appears if \"available\" also offers it.",
         "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: combined, table, modify. Defender ModBus forms: mode, sliders. Models are offered per model panel instead - see model_panels. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"combined\" (live register values with their modifiers beside them), \"table\" (live register values) and \"modify\" (rewriting values in transit).",
-        "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\" and \"sliders\".",
+        "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\", \"sliders\", \"sliders_submarine\" and \"sliders_hvac\".",
         "form_order": "The order each panel lays its forms out in, per *_forms_shown category: a list of its keys, top (or first) to last. Students change this by dragging the chips in Sort Cards or Sort Forms. An empty list, or any key it leaves out, keeps the order the category itself lists.",
         "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
@@ -583,7 +583,7 @@
             },
             "defender_modbus_forms_shown": {
                 "description": "The defender ModBus panel forms' order, as a list of their keys. Empty keeps the default order.",
-                "details": "The order of the defender ModBus panel's forms, as a list of keys (mode, sliders). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Forms."
+                "details": "The order of the defender ModBus panel's forms, as a list of keys (mode, sliders, sliders_submarine, sliders_hvac). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Forms."
             }
         },
         "packet_columns_available": {
@@ -648,6 +648,14 @@
             "sliders": {
                 "description": "Defender ModBus panel form: filter-tuning sliders.",
                 "details": "Offers the defender ModBus panel's filter-tuning sliders for the AP's current mode. It still needs defender_modbus_forms_shown.sliders."
+            },
+            "sliders_submarine": {
+                "description": "Defender ModBus panel form: submarine filter-tuning sliders.",
+                "details": "Offers the defender ModBus panel's submarine filter-tuning sliders, which stay on the submarine settings whatever mode the AP is in. It still needs defender_modbus_forms_shown.sliders_submarine."
+            },
+            "sliders_hvac": {
+                "description": "Defender ModBus panel form: HVAC filter-tuning sliders.",
+                "details": "Offers the defender ModBus panel's HVAC filter-tuning sliders, which stay on the HVAC settings whatever mode the AP is in. It still needs defender_modbus_forms_shown.sliders_hvac."
             }
         },
         "defender_modbus_forms_shown": {
@@ -658,6 +666,14 @@
             "sliders": {
                 "description": "The filter-tuning sliders for the AP's current mode.",
                 "details": "Starts the filter-tuning sliders shown. They adjust the AP's filtering thresholds for whichever mode it's in, and switch groups automatically when the mode changes. Also needs available.sliders."
+            },
+            "sliders_submarine": {
+                "description": "The submarine filter-tuning sliders, whatever mode the AP is in.",
+                "details": "Starts the submarine filter-tuning sliders shown. Unlike sliders, they never switch to HVAC when the AP's mode changes. Also needs available.sliders_submarine."
+            },
+            "sliders_hvac": {
+                "description": "The HVAC filter-tuning sliders, whatever mode the AP is in.",
+                "details": "Starts the HVAC filter-tuning sliders shown. Unlike sliders, they never switch to submarine when the AP's mode changes. Also needs available.sliders_hvac."
             }
         }
     },
@@ -693,7 +709,7 @@
         },
         "defender_modbus_panel": {
             "name": "Defender Sliders",
-            "details": "What it does: The defender's AP controls, as forms students can show or hide with Sort Forms: a read-only display of the AP's current mode (submarine or HVAC), and filter-tuning sliders for that mode, which switch groups automatically when the mode changes.\n\nWhere its data comes from: The mode and current filter settings the access point reports, polled over the AP connect form's connection in Actions.\n\nWhat it affects: The sliders send new filtering thresholds to the AP, which changes when the Flags light up and how the AP filters the readings every Polled panel shows.\n\nSettings: available.mode/sliders offer the forms; defender_modbus_forms_shown picks which start out shown."
+            "details": "What it does: The defender's AP controls, as forms students can show or hide with Sort Forms: a read-only display of the AP's current mode (submarine or HVAC), and filter-tuning sliders for that mode, which switch groups automatically when the mode changes, or sliders locked to submarine or HVAC.\n\nWhere its data comes from: The mode and current filter settings the access point reports, polled over the AP connect form's connection in Actions.\n\nWhat it affects: The sliders send new filtering thresholds to the AP, which changes when the Flags light up and how the AP filters the readings every Polled panel shows.\n\nSettings: available.mode/sliders/sliders_submarine/sliders_hvac offer the forms; defender_modbus_forms_shown picks which start out shown."
         },
         "defender_stripchart_panel": {
             "name": "Polled ModBus StripCharts",

@@ -37,12 +37,21 @@ class SlidersForm(BaseForm):
     back from there.
     '''
 
+    # None follows the AP's mode; True/False locks the form to the submarine/
+    # HVAC group whatever mode the AP is in (see SubmarineSlidersForm/
+    # HVACSlidersForm).
+    LOCKED_MODE: bool | None = None
+
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, process_noun="Sliders")
 
+        self._submarine_mode = True if self.LOCKED_MODE is None else self.LOCKED_MODE
+        self._has_submarine = self.LOCKED_MODE in (None, True)
+        self._has_hvac = self.LOCKED_MODE in (None, False)
+
         # Retitled per mode like DefenderV0/HVACView's "SUBMARINE SETTINGS"/
         # "HVAC SETTINGS" sections - see refresh.
-        self.add_header("Submarine Settings")
+        self.add_header("Submarine Settings" if self._submarine_mode else "HVAC Settings")
 
         self._syncing = False
 
@@ -52,23 +61,28 @@ class SlidersForm(BaseForm):
         self.grid_layout.addWidget(body, self.current_row, 0, 1, 3)
         self.current_row += 1
 
-        self.submarine_frame, self.submarine_sliders, self.submarine_labels = self._build_group(
-            body, SUBMARINE_SLIDER_DEFS, self._push_submarine)
-        self.hvac_frame, self.hvac_sliders, self.hvac_labels = self._build_group(
-            body, HVAC_SLIDER_DEFS, self._push_hvac)
+        if self._has_submarine:
+            self.submarine_frame, self.submarine_sliders, self.submarine_labels = self._build_group(
+                body, SUBMARINE_SLIDER_DEFS, self._push_submarine)
+        if self._has_hvac:
+            self.hvac_frame, self.hvac_sliders, self.hvac_labels = self._build_group(
+                body, HVAC_SLIDER_DEFS, self._push_hvac)
 
         reset_button = QPushButton("Reset Filters")
         reset_button.setFont(self.style.get_font())
         self.wire_button(reset_button, self.reset_defaults)
         body.layout().addWidget(reset_button)
 
-        self._submarine_mode = True
-        self.hvac_frame.hide()
+        if self.LOCKED_MODE is None:
+            self.hvac_frame.hide()
 
         # Both pages push their defaults on load (DefenderV0's
-        # _post_slider_settings, HVACView's _push_hvac_controls).
-        self._push_submarine()
-        self._push_hvac()
+        # _post_slider_settings, HVACView's _push_hvac_controls) - a locked
+        # form only pushes its own group's.
+        if self._has_submarine:
+            self._push_submarine()
+        if self._has_hvac:
+            self._push_hvac()
 
         self.context.animation_manager.add_callback(f"DefenderSlidersForm_{id(self)}", self.refresh)
 
@@ -158,6 +172,20 @@ class SlidersForm(BaseForm):
             self._push_hvac()
 
     def refresh(self):
+        if self.LOCKED_MODE is None:
+            self._follow_mode()
+
+        # Both groups sync every tick whichever one is showing, like the
+        # original page (HVACView synced its sliders even while hidden) - so
+        # the moment the AP switches modes, the newly shown group already
+        # holds the AP's current values instead of whatever it last showed.
+        if self._has_submarine:
+            self._sync_submarine()
+        if self._has_hvac:
+            self._sync_hvac()
+
+    def _follow_mode(self):
+        '''Shows whichever group matches the AP's current mode.'''
         submarine_mode = ap_commands.submarine_mode(self.context.buffer)
 
         if submarine_mode != self._submarine_mode:
@@ -169,13 +197,6 @@ class SlidersForm(BaseForm):
             else:
                 self.submarine_frame.hide()
                 self.hvac_frame.show()
-
-        # Both groups sync every tick whichever one is showing, like the
-        # original page (HVACView synced its sliders even while hidden) - so
-        # the moment the AP switches modes, the newly shown group already
-        # holds the AP's current values instead of whatever it last showed.
-        self._sync_submarine()
-        self._sync_hvac()
 
     def _sync_submarine(self):
         # Never yank a slider out from under the user mid-drag, and wait
@@ -194,3 +215,13 @@ class SlidersForm(BaseForm):
         status = self.context.buffer.defender_status
         values = {field: status.expected(reported) for field, reported in ap_commands.HVAC_SLIDER_FIELDS.items()}
         self._set_group(HVAC_SLIDER_DEFS, self.hvac_sliders, self.hvac_labels, values)
+
+
+class SubmarineSlidersForm(SlidersForm):
+    '''SlidersForm locked to the submarine group, whatever mode the AP is in.'''
+    LOCKED_MODE = True
+
+
+class HVACSlidersForm(SlidersForm):
+    '''SlidersForm locked to the HVAC group, whatever mode the AP is in.'''
+    LOCKED_MODE = False

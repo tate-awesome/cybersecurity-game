@@ -628,6 +628,8 @@
     "modbus_table_-": "-",
     "defender_modbus_forms_mode": "Operation Mode",
     "defender_modbus_forms_sliders": "Filter Settings",
+    "defender_modbus_forms_sliders_submarine": "Submarine Filter Settings",
+    "defender_modbus_forms_sliders_hvac": "HVAC Filter Settings",
     "defender_modbus_readout_name": "Variable",
     "defender_modbus_readout_client_clean": "Client",
     "defender_modbus_readout_client_noisy": "Client (Noisy)",
