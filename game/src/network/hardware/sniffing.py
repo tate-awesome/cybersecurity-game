@@ -27,6 +27,7 @@ class Sniffer(Process):
 
         try:
             self.sniffer.start()
+            self.buffer.put("sniff", "Sniffer is running.")
         except Exception as e:
             self.buffer.put("sniff", f"Failed to start sniffer: {e}")
 

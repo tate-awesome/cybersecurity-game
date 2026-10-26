@@ -24,6 +24,9 @@ class ArpSpoofer(Process):
         self.host_ip: str | None = None
         self.target_mac: str | None = None
         self.host_mac: str | None = None
+        # So the "now intercepting" confirmation (see tick) is logged once per
+        # run, when both MACs are first resolved - not on every tick after.
+        self._announced_active = False
 
 
 
@@ -50,6 +53,11 @@ class ArpSpoofer(Process):
                 self.host_mac = self.get_mac(self.host_ip)
             else:
                 self.spoof(self.host_ip, self.host_mac, self.target_ip)
+
+            # Both victims answered - the spoof is now actually in effect.
+            if self.target_mac is not None and self.host_mac is not None and not self._announced_active:
+                self._announced_active = True
+                self.buffer.put("arp", f"ARP Spoof active: now intercepting traffic between {self.target_ip} and {self.host_ip}.")
         except Exception as e:
             self.buffer.put("arp", f"Error during ARP spoof tick: {e}")
 
@@ -79,6 +87,7 @@ class ArpSpoofer(Process):
         # thread) resolve them; is_starting() reports the wait until it has.
         self.target_mac = None
         self.host_mac = None
+        self._announced_active = False
 
         self.running = True
 

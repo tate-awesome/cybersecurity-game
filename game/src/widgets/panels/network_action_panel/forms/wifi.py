@@ -30,6 +30,16 @@ class WifiForm(BaseForm):
         self.process = self.get_process(Wifi, tags=["stop_last"])
         self.preferences = context.preferences
 
+        # A network switch isn't an on/off process, so the base's "Starting"/
+        # "Stopping" wording reads oddly here. Show where the switch is headed
+        # instead - the same destination-arrow convention the idle button uses
+        # (see refresh_process_button). apply_phase picks these up for the
+        # starting/stopping phases, and the switch leaves them up (it returns
+        # early in refresh_process_button while _connecting).
+        arrow = self.style.icon("arrow-right")
+        self.starting_button_text = f"{arrow}  Device…"
+        self.stopping_button_text = f"{arrow}  Home…"
+
         self.add_header()
 
         # Each entry gets a dot: green when that network is the one we're on,
@@ -182,7 +192,7 @@ class WifiForm(BaseForm):
         self._set_entry_dot(self.device_dot, connected=on_device, switching=switching)
 
         if switching:
-            return  # leave the base's "Starting"/"Stopping" text
+            return  # leave the base's "→ Device…"/"→ Home…" switch text
         if not self.entries_filled():
             # Same caution as every other card when an entry is empty.
             text = self.input_needed_text

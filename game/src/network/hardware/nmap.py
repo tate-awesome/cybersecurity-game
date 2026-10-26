@@ -89,6 +89,7 @@ class NMapper(Process):
                 self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
 
         self.apply_nicknames(nm)
+        self.buffer.put("nmap", "Scan complete.")
 
     def apply_nicknames(self, nm):
         '''

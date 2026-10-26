@@ -113,6 +113,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
         # The divert handle is open and we're about to filter - no longer "starting".
         self._established = True
+        self.buffer.put("nfq", "NFQ is now filtering packets.")
         self.pump(self.w, stop_event)
 
         if self.w.is_open:
