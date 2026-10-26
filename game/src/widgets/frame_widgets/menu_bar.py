@@ -45,7 +45,7 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
     "workspace_button_group": [
         ("reload", ["clear_inputs_button", "reset_layout_button", "reset_button"]),
         ("customize", ["preset_button"]),
-        ("show_hide", ["network_forms_button", "modbus_forms_button", "defender_forms_button", "packet_columns_button"]),
+        ("show_hide", ["network_forms_button", "modbus_forms_button", "defender_forms_button", "defender_flag_forms_button", "packet_columns_button"]),
     ],
     "links_button_group": [
         ("links", ["ap_config_button"]),

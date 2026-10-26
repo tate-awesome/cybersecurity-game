@@ -115,6 +115,7 @@
                     "network_forms_button",
                     "modbus_forms_button",
                     "defender_forms_button",
+                    "defender_flag_forms_button",
                     "packet_columns_button",
                     "ap_config_button"
                 ]
@@ -339,6 +340,9 @@
                     "type": "object"
                 },
                 "defender_modbus_forms_shown": {
+                    "type": "object"
+                },
+                "defender_flag_forms_shown": {
                     "type": "object"
                 }
             }

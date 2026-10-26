@@ -137,7 +137,8 @@
     "form_order": {
         "network_action_forms_shown": [],
         "modbus_table_forms_shown": [],
-        "defender_modbus_forms_shown": []
+        "defender_modbus_forms_shown": [],
+        "defender_flag_forms_shown": []
     },
 
     "modbus_packet_modify_enabled": 0,
@@ -466,7 +467,13 @@
         "mode": 0,
         "sliders": 0,
         "sliders_submarine": 0,
-        "sliders_hvac": 0
+        "sliders_hvac": 0,
+        "flags": 1,
+        "flags_submarine": 0,
+        "flags_hvac": 0,
+        "flags_kalman": 1,
+        "flags_kalman_submarine": 0,
+        "flags_kalman_hvac": 0
     },
 
     "defender_modbus_forms_shown": {
@@ -474,5 +481,14 @@
         "sliders": 0,
         "sliders_submarine": 0,
         "sliders_hvac": 0
+    },
+
+    "defender_flag_forms_shown": {
+        "flags": 1,
+        "flags_submarine": 0,
+        "flags_hvac": 0,
+        "flags_kalman": 1,
+        "flags_kalman_submarine": 0,
+        "flags_kalman_hvac": 0
     }
 }

@@ -35,6 +35,7 @@ from .load_settings_preset_file import LoadSettingsPresetFile
 from .checkbox_overlay.choose_shown_network_action_forms import ChooseShownNetworkActionForms
 from .checkbox_overlay.choose_shown_modbus_table_forms import ChooseShownModbusTableForms
 from .checkbox_overlay.choose_shown_defender_modbus_forms import ChooseShownDefenderModbusForms
+from .checkbox_overlay.choose_shown_defender_flag_forms import ChooseShownDefenderFlagForms
 from .packet_columns.choose_shown_packet_console_columns import ChooseShownPacketConsoleColumns
 
 # Style
@@ -103,6 +104,7 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     "network_forms_button": ChooseShownNetworkActionForms,
     "modbus_forms_button": ChooseShownModbusTableForms,
     "defender_forms_button": ChooseShownDefenderModbusForms,
+    "defender_flag_forms_button": ChooseShownDefenderFlagForms,
     "packet_columns_button": ChooseShownPacketConsoleColumns,
     # View
     "model_style_button": EditModelStyle,

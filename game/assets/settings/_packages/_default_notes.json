@@ -31,9 +31,10 @@
         "game_progress": "Records which network forms the student has started. Not read by the game yet.",
         "network_action_form_inputs": "What starts out typed into each network action form's text boxes, in order (e.g. \"arp\": [target IP, host IP]).",
         "network_action_forms_shown": "Which network action forms start out shown (1). Students can change this with Sort Cards. A form only appears if \"available\" also offers it.",
-        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: combined, table, modify. Defender ModBus forms: mode, sliders. Models are offered per model panel instead - see model_panels. A form also needs its *_forms_shown entry to start out showing.",
+        "available": "What this workspace offers at all (1 = offered). Network action forms: wifi, nmap, arp, dos, sniff, nfq, ap_connect, encryption, ap_tunnel, kalman. ModBus table forms: combined, table, modify. Defender ModBus forms: mode, sliders, sliders_submarine, sliders_hvac. Flags panel forms: flags, flags_submarine, flags_hvac, flags_kalman, flags_kalman_submarine, flags_kalman_hvac. Models are offered per model panel instead - see model_panels. A form also needs its *_forms_shown entry to start out showing.",
         "modbus_table_forms_shown": "Which ModBus table panel forms start out shown: \"combined\" (live register values with their modifiers beside them), \"table\" (live register values) and \"modify\" (rewriting values in transit).",
         "defender_modbus_forms_shown": "Which defender ModBus panel forms start out shown: \"mode\", \"sliders\", \"sliders_submarine\" and \"sliders_hvac\".",
+        "defender_flag_forms_shown": "Which Flags panel forms start out shown: \"flags\" and \"flags_kalman\" (on by default, following the AP's mode), and their submarine- or HVAC-locked versions \"flags_submarine\", \"flags_hvac\", \"flags_kalman_submarine\" and \"flags_kalman_hvac\".",
         "form_order": "The order each panel lays its forms out in, per *_forms_shown category: a list of its keys, top (or first) to last. Students change this by dragging the chips in Sort Cards or Sort Forms. An empty list, or any key it leaves out, keeps the order the category itself lists.",
         "model_panels": "Each Model and Source Configurable Visualizers panel's own settings, under its layout id (modbus_model_panel_1 to modbus_model_panel_5 - a layout holds at most 5): which models it offers, which it starts on, and its Auto-Switch checkbox. Every model and Auto-Switch are on by default, so a workspace only lists what it turns off. A panel with one model shows just that model, with no dropdown or checkbox.",
         "modbus_packet_modify_enabled": "1 lets the packet interceptor rewrite ModBus values in transit, using each register's multiplier and offset. Students turn this on and off from the modify form.",
@@ -584,6 +585,10 @@
             "defender_modbus_forms_shown": {
                 "description": "The defender ModBus panel forms' order, as a list of their keys. Empty keeps the default order.",
                 "details": "The order of the defender ModBus panel's forms, as a list of keys (mode, sliders, sliders_submarine, sliders_hvac). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Forms."
+            },
+            "defender_flag_forms_shown": {
+                "description": "The Flags panel forms' order, as a list of their keys. Empty keeps the default order.",
+                "details": "The order of the Flags panel's forms, as a list of keys (flags, flags_submarine, flags_hvac, flags_kalman, flags_kalman_submarine, flags_kalman_hvac). Forms it leaves out follow in their default order. Students change it by dragging chips in Sort Forms."
             }
         },
         "packet_columns_available": {
@@ -656,6 +661,30 @@
             "sliders_hvac": {
                 "description": "Defender ModBus panel form: HVAC filter-tuning sliders.",
                 "details": "Offers the defender ModBus panel's HVAC filter-tuning sliders, which stay on the HVAC settings whatever mode the AP is in. It still needs defender_modbus_forms_shown.sliders_hvac."
+            },
+            "flags": {
+                "description": "Flags panel form: error-detection flags.",
+                "details": "Offers the Flags panel's error-detection flags for the AP's current mode. On by default. It still needs defender_flag_forms_shown.flags."
+            },
+            "flags_submarine": {
+                "description": "Flags panel form: submarine error-detection flags.",
+                "details": "Offers the Flags panel's submarine error-detection flags, which stay on submarine whatever mode the AP is in. It still needs defender_flag_forms_shown.flags_submarine."
+            },
+            "flags_hvac": {
+                "description": "Flags panel form: HVAC error-detection flag.",
+                "details": "Offers the Flags panel's HVAC error-detection flag, which stays on HVAC whatever mode the AP is in. It still needs defender_flag_forms_shown.flags_hvac."
+            },
+            "flags_kalman": {
+                "description": "Flags panel form: Kalman filter status and toggle.",
+                "details": "Offers the Flags panel's Kalman filter status and toggle for the AP's current mode. On by default. It still needs defender_flag_forms_shown.flags_kalman."
+            },
+            "flags_kalman_submarine": {
+                "description": "Flags panel form: submarine Kalman filter status and toggle.",
+                "details": "Offers the Flags panel's submarine Kalman filter status and toggle, which stay on submarine's filter whatever mode the AP is in. It still needs defender_flag_forms_shown.flags_kalman_submarine."
+            },
+            "flags_kalman_hvac": {
+                "description": "Flags panel form: HVAC Kalman filter status and toggle.",
+                "details": "Offers the Flags panel's HVAC Kalman filter status and toggle, which stay on HVAC's filter whatever mode the AP is in. It still needs defender_flag_forms_shown.flags_kalman_hvac."
             }
         },
         "defender_modbus_forms_shown": {
@@ -674,6 +703,32 @@
             "sliders_hvac": {
                 "description": "The HVAC filter-tuning sliders, whatever mode the AP is in.",
                 "details": "Starts the HVAC filter-tuning sliders shown. Unlike sliders, they never switch to submarine when the AP's mode changes. Also needs available.sliders_hvac."
+            }
+        },
+        "defender_flag_forms_shown": {
+            "flags": {
+                "description": "The error-detection flags for the AP's current mode.",
+                "details": "Starts the error-detection flags shown, lit when a reading crosses its filtering threshold. They switch between submarine and HVAC automatically when the mode changes. On by default. Also needs available.flags."
+            },
+            "flags_submarine": {
+                "description": "The submarine error-detection flags, whatever mode the AP is in.",
+                "details": "Starts the submarine error-detection flags shown. Unlike flags, they never switch to HVAC when the AP's mode changes. Also needs available.flags_submarine."
+            },
+            "flags_hvac": {
+                "description": "The HVAC error-detection flag, whatever mode the AP is in.",
+                "details": "Starts the HVAC error-detection flag shown. Unlike flags, it never switches to submarine when the AP's mode changes. Also needs available.flags_hvac."
+            },
+            "flags_kalman": {
+                "description": "The Kalman filter status and toggle for the AP's current mode.",
+                "details": "Starts the Kalman filter status and toggle shown. They act on submarine's or HVAC's Kalman filter, whichever mode the AP is in. On by default. Also needs available.flags_kalman."
+            },
+            "flags_kalman_submarine": {
+                "description": "The submarine Kalman filter status and toggle, whatever mode the AP is in.",
+                "details": "Starts the submarine Kalman filter status and toggle shown. Unlike flags_kalman, they always act on submarine's filter. Also needs available.flags_kalman_submarine."
+            },
+            "flags_kalman_hvac": {
+                "description": "The HVAC Kalman filter status and toggle, whatever mode the AP is in.",
+                "details": "Starts the HVAC Kalman filter status and toggle shown. Unlike flags_kalman, they always act on HVAC's filter. Also needs available.flags_kalman_hvac."
             }
         }
     },
@@ -721,7 +776,7 @@
         },
         "defender_flag_panel": {
             "name": "Flags",
-            "details": "What it does: The AP's error-detection flags for its current mode - lit when a reading crosses its filtering threshold - plus the Kalman filter's status and an on/off toggle for it.\n\nWhere its data comes from: Flags and filter status the AP reports, polled over the AP connect form's connection in Actions.\n\nWhat it affects: The Kalman toggle sends a command to the AP, changing how it filters the readings every Polled panel shows. Submarine and HVAC mode each keep their own Kalman setting on the AP."
+            "details": "What it does: The AP's error-detection flags - lit when a reading crosses its filtering threshold - plus the Kalman filter's status and an on/off toggle for it, as forms students can show or hide with Sort Forms. Each follows the AP's current mode, or comes in a version locked to submarine or HVAC.\n\nWhere its data comes from: Flags and filter status the AP reports, polled over the AP connect form's connection in Actions.\n\nWhat it affects: The Kalman toggle sends a command to the AP, changing how it filters the readings every Polled panel shows. Submarine and HVAC mode each keep their own Kalman setting on the AP.\n\nSettings: available.flags/flags_submarine/flags_hvac/flags_kalman/flags_kalman_submarine/flags_kalman_hvac offer the forms (flags and flags_kalman are on by default); defender_flag_forms_shown picks which start out shown."
         }
     }
 }

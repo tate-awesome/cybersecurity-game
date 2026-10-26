@@ -1,110 +1,110 @@
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QWidget
 from ....app_core import Context
-from ....network.hardware import ap_commands
 from ... import Scrollable
 from ..panel import Panel
+from ...frame_widgets.important_buttons.checkbox_overlay.checkbox_overlay import form_order
 
-# (defender_status key, display label) - DefenderV0's SUBMARINE_FLAG_DEFS/
-# HVAC_FLAG_DEFS, keyed by the status the poll unpacker actually writes.
-SUBMARINE_FLAGS = [
-    ("state_anomaly", "State Filtering Threshold Surpassed"),
-    ("speed_anomaly", "Speed Filtering Threshold Surpassed"),
-    ("rudder_anomaly", "Rudder Filtering Threshold Surpassed"),
-]
-HVAC_FLAGS = [
-    ("hvac_anomaly", "State Filtering Threshold Surpassed"),
-]
+from .forms.flags import FlagsForm, HVACFlagsForm, SubmarineFlagsForm
+from .forms.kalman import HVACKalmanToggleForm, KalmanToggleForm, SubmarineKalmanToggleForm
+
+from ...frame_widgets.important_buttons import ChooseShownDefenderFlagForms
+
+FORM_CLASSES = {
+    "flags": FlagsForm,
+    "flags_submarine": SubmarineFlagsForm,
+    "flags_hvac": HVACFlagsForm,
+    "flags_kalman": KalmanToggleForm,
+    "flags_kalman_submarine": SubmarineKalmanToggleForm,
+    "flags_kalman_hvac": HVACKalmanToggleForm,
+}
 
 
 class Builder(Panel):
     '''
     DefenderV0's middle pane minus its packet log (that's
-    defender_console_panel): the error-detection flags for whichever mode
-    the AP is in, and the Kalman filter status and toggle for that mode
-    (submarine's or HVAC's - the AP keeps them separately), like the
-    original page's middle pane and HVACView respectively.
-    Reads and commands everything through context.buffer.defender_status.
+    defender_console_panel), as forms: the error-detection flags and the
+    Kalman filter status and toggle, each either following the AP's mode
+    or locked to submarine or HVAC. Reads and commands everything through
+    context.buffer.defender_status.
     '''
 
     KEY = "defender_flag_panel"
+
+    # The settings keys (see _packages/_default.json) this panel reads or writes -
+    # the workspace editor lists it under each of them
+    SETTINGS = (
+        "available",
+        "defender_flag_forms_shown",
+        "form_order",
+    )
 
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, self.KEY)
 
         self.scrollable = Scrollable(self, context)
+
+        self.available_forms: dict[str, int] = self.context.states.get("available")
+        if self.available_forms is None:
+            self.available_forms = list(FORM_CLASSES.keys())
+
+        self.forms = {}
+        for key in FORM_CLASSES:
+            if key not in self.available_forms or self.available_forms[key] in (0, "0"):
+                print(f"Form is invisible: {key!r}")
+                continue
+            self.forms[key] = FORM_CLASSES[key](self.scrollable, context)
+
+        for i, form in enumerate(self.forms.values()):
+            self.scrollable.grid_layout.addWidget(form, i, 0)
         self.scrollable.columnconfigure(0, weight=1)
-
-        self.submarine_section, self.submarine_dots = self._build_flags("SUBMARINE ERROR DETECTION FLAGS", SUBMARINE_FLAGS)
-        self.hvac_section, self.hvac_dots = self._build_flags("HVAC ERROR DETECTION FLAG", HVAC_FLAGS)
-        self.kalman_section = self._build_kalman()
-
-        for row, section in enumerate([self.submarine_section, self.hvac_section, self.kalman_section]):
-            self.scrollable.grid_layout.addWidget(section, row, 0)
         self.scrollable.add_deadspace("grid")
+
+        self.menu_bar.add_important(ChooseShownDefenderFlagForms)
 
         self.menu_bar.minimize_button(self.scrollable)
 
-        self._submarine_mode = None
-        self.context.animation_manager.add_callback(f"DefenderFlagPanel_{id(self)}", self.refresh)
-        self.refresh()
+        self.shown_forms = None  # defender_flag_forms_shown as of the last refresh_forms
+        self._shown_order = None  # its key order as of the last refresh_forms
+        self.refresh_forms()
+        self.context.animation_manager.add_callback(f"defender_flag_forms_{id(self)}", self.refresh_forms)
 
-    def _section(self, title: str) -> QWidget:
-        section = QWidget()
-        self.style.set_material(section, "card")
-        layout = QVBoxLayout(section)
-        layout.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
-        layout.setSpacing(4)
-        label = QLabel(title)
-        label.setFont(self.style.get_font())
-        layout.addWidget(label)
-        return section
+    def refresh_forms(self):
+        '''
+        Shows/hides forms to match defender_flag_forms_shown - polled every
+        frame, so it only acts (and scrolls back to the top) when that changed.
+        '''
+        shown = dict(self.context.states.get("defender_flag_forms_shown"))
+        order = form_order(self.context, "defender_flag_forms_shown")
+        # A drag in the overlay changes only the order (see form_order), not
+        # which keys are "1"/"0", so compare that separately.
+        if shown == self.shown_forms and order == self._shown_order:
+            return
+        self.shown_forms = shown
+        self._shown_order = order
+        for row, key in enumerate(k for k in order if k in self.forms):
+            self.scrollable.grid_layout.addWidget(self.forms[key], row, 0)
+        for key in shown:
+            if key not in self.forms:
+                continue
+            state = self.context.states.get("defender_flag_forms_shown", key)
+            if state == "1" or state == 1:
+                self.show_form(key)
+            else:
+                self.hide_form(key)
+        self.scrollable.top()
 
-    def _build_flags(self, title: str, defs) -> tuple[QWidget, dict[str, QLabel]]:
-        section = self._section(title)
-        dots = {}
-        for key, text in defs:
-            row = QWidget()
-            row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            section.layout().addWidget(row)
+    def hide_form(self, name: str):
+        if name not in self.forms:
+            raise KeyError(f"No defender_flag_panel form named {name!r} (check 'defender_flag_forms_shown' in settings)")
+        form = self.forms[name]
+        if form.isHidden():
+            return
+        form.hide()
 
-            dot = QLabel("●")
-            dot.setFont(self.style.get_font("small"))
-            self.style.set_tone(dot, "muted")
-            row_layout.addWidget(dot)
-
-            label = QLabel(text)
-            label.setFont(self.style.get_font("small"))
-            row_layout.addWidget(label, 1)
-            dots[key] = dot
-        return section, dots
-
-    def _build_kalman(self) -> QWidget:
-        section = self._section("KALMAN FILTER")
-
-        self.kalman_label = QLabel("")
-        self.kalman_label.setFont(self.style.get_font())
-        section.layout().addWidget(self.kalman_label)
-
-        button = QPushButton("Toggle Kalman Filter")
-        button.setFont(self.style.get_font())
-        button.clicked.connect(lambda checked=False: ap_commands.set_kalman(
-            self.context.buffer, not ap_commands.kalman_enabled(self.context.buffer)))
-        section.layout().addWidget(button)
-        return section
-
-    def refresh(self):
-        buffer = self.context.buffer
-        submarine_mode = ap_commands.submarine_mode(buffer)
-        if submarine_mode != self._submarine_mode:
-            self._submarine_mode = submarine_mode
-            self.submarine_section.setVisible(submarine_mode)
-            self.hvac_section.setVisible(not submarine_mode)
-
-        for key, dot in (self.submarine_dots | self.hvac_dots).items():
-            raised = bool(buffer.defender_status.get(key, False))
-            self.style.set_tone(dot, "bad" if raised else "muted")
-
-        on = ap_commands.kalman_enabled(buffer)
-        self.kalman_label.setText("Status: ON" if on else "Status: OFF")
-        self.style.set_tone(self.kalman_label, "good" if on else "muted")
+    def show_form(self, name: str):
+        if name not in self.forms:
+            raise KeyError(f"No defender_flag_panel form named {name!r} (check 'defender_flag_forms_shown' in settings)")
+        form = self.forms[name]
+        if not form.isHidden():
+            return
+        form.show()

@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "game/assets/labels/_default.json": {
-    "mtime": 1793047911.5446427,
-    "seen": 1793048370.7104013,
-    "ast_hash": "3a304d4c3d6a7c595194c2b7379643a0",
+    "mtime": 1793049047.0023153,
+    "seen": 1793049058.1362884,
+    "ast_hash": "316ab966428c3fa3fa80beb972761b26",
     "semantic_hash": ""
   },
   "game/assets/labels/spanish.json": {
@@ -324,15 +324,15 @@
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default.json": {
-    "mtime": 1793047911.6166418,
-    "seen": 1793048370.710434,
-    "ast_hash": "b286fed47958c2f7384dde2678c01036",
+    "mtime": 1793049047.0023153,
+    "seen": 1793049058.137682,
+    "ast_hash": "4518c4e7ea848566d13c28776beb48ef",
     "semantic_hash": ""
   },
   "game/assets/settings/_packages/_default_notes.json": {
-    "mtime": 1793047911.6166418,
-    "seen": 1793048370.7104347,
-    "ast_hash": "1b120af0736b31f2207b089c0a396572",
+    "mtime": 1793049047.0023153,
+    "seen": 1793049058.1376832,
+    "ast_hash": "82fdd5ce6cc9657548f1ce13698e8c7f",
     "semantic_hash": ""
   },
   "game/assets/settings/register_presets/default.json": {
@@ -1638,9 +1638,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_modbus_panel/_builder.py": {
-    "mtime": 1793047911.6366415,
-    "seen": 1793048370.7106178,
-    "ast_hash": "b024f7a8cfd4cfc8ebc167025b486924",
+    "mtime": 1793049032.6145198,
+    "seen": 1793049058.1474304,
+    "ast_hash": "4d895f11d7a59715e3111814c00b534f",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_modbus_panel/forms/mode.py": {
@@ -1650,9 +1650,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_modbus_panel/forms/sliders.py": {
-    "mtime": 1792435957.846909,
-    "seen": 1793048370.7106194,
-    "ast_hash": "346ee5808a667b286c4bd32bd75674bc",
+    "mtime": 1793049032.6145198,
+    "seen": 1793049058.147482,
+    "ast_hash": "e78d61fc237a6bb9fe753dddf8b898cb",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_stripchart_panel/_builder.py": {

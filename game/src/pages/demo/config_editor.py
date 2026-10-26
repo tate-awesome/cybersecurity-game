@@ -35,7 +35,7 @@ SETTING_DROPDOWNS: dict[tuple, list[str]] = {}
 # to the last tab, so a new setting is never left out.
 SETTING_TABS: list[tuple[str, list[str] | list[tuple[str, list[str]]]]] = [
     ("Panel Availability", ["available", "network_action_forms_shown", "modbus_table_forms_shown",
-                            "defender_modbus_forms_shown", "form_order", "model_panels"]),
+                            "defender_modbus_forms_shown", "defender_flag_forms_shown", "form_order", "model_panels"]),
     ("Attacker Options", [
         ("Attacker Options", ["modbus_packet_modify_enabled", "network_action_form_inputs"]),
         ("Modbus Registers", ["modbus_registers"]),
