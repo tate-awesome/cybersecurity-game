@@ -107,7 +107,7 @@ def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bo
         painter.fillPath(path, QColor(style.color("window", opaque=True)))
         painter.fillPath(path, style.brush("window", body))
     painter.fillPath(path, style.brush("panel", body))
-    texture = style.texture_brush()
+    texture = style.surface_texture_brush()
     if texture is not None:
         painter.fillPath(path, texture)
     outline = outline or style.material("panel_border")

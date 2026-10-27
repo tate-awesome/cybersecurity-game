@@ -1,35 +1,26 @@
 {
-    "label": "Paper - Soft Sharp",
+    "label": "Paper",
     "kind": "original",
-    "note": "Soft Lit with square corners: the same light from the top left on sharp-edged panels and buttons.",
+    "note": "Soft, lit from the top left: each panel's top and left edge glows and its shadow falls gently down and right, and the buttons are lighter than what they stand on, with a lit edge and a soft shadow of their own.",
     "modes": [
         "light"
     ],
-    "button_radius": 0,
-    "menu_button_radius": 0,
-    "panel_radius": 0,
-    "scrollbar_radius": 0,
+    "button_radius": 16,
+    "menu_button_radius": 16,
+    "panel_radius": 18,
     "panel_shadow": {
-        "x": 4,
-        "y": 4,
-        "blur": 4,
-        "dark": {
-            "color": "#000000",
-            "opacity": 0.55
-        },
+        "x": 7,
+        "y": 9,
+        "blur": 20,
         "light": {
-            "color": "#000000",
-            "opacity": 0.24
+            "color": "#6e6e7e",
+            "opacity": 0.13
         }
     },
     "panel_light": {
         "x": -6,
         "y": -6,
         "blur": 14,
-        "dark": {
-            "color": "#ffffff",
-            "opacity": 0.6
-        },
         "light": {
             "color": "#ffffff",
             "opacity": 0.8

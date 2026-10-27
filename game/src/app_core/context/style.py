@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication, QComboBox, QGraphicsDropShadowEffect
 import darkdetect
 
 from .themes import (BUTTON_KINDS, COLOR_NAMES, DATA_MATERIALS, INK_MATERIALS, MATERIALS, OVERLAY_SHADOW, STYLE_DEFAULTS, THEME_MODES, button_radius,
-                     gradient_points, is_hex, read_theme, resolve_materials, style_setting, theme_file, theme_modes)
+                     gradient_points, is_hex, mode_info, read_theme, resolve_materials, style_setting, theme_file, theme_modes)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -30,9 +30,7 @@ PRESET_INFO: dict[str, dict] = {"blue": {"label": "Blue", "kind": "original"}}
 # good, so these are the ones that do). The first is the theme a fresh
 # start, and Reset Theme, use. Imported themes (see IMPORTED_PREFIX) join
 # them in the selector; every other preset is only in the theme editor.
-CURATED_THEMES: list[str] = ["acrylic", "glassmorphism", "frutiger_aero", "cybercore", "neobrutalism", "webcore",
-                             "flat", "kimbie_dark", "animal_well", "metro", "void", "cyberpunk", "snaptic_lavender",
-                             "snaptic_chrome", "paper_soft", "paper_soft_lit", "paper_soft_sharp", "swatch", "jelly_abyss"]
+CURATED_THEMES: list[str] = ["acrylic", "glassmorphism", "opal", "hacker", "tinker", "metro", "chrome", "paper", "swatch"]
 # The user's own themes - <family>.json files in user_data/themes, the same
 # shape as assets/themes' (imported, or made in the theme editor - see
 # Style.new_theme) - are named "imported.<file name>", so one can never
@@ -58,7 +56,8 @@ SEE_THROUGH_COLORS = ("panel", "widget", "field")
 # covers: the page and the panels and overlays laid on it. Not what's
 # inside them: cards and fields would stack another layer of it on the
 # panel's. Hand-painted panels and the page background lay it on
-# themselves (see texture_brush)
+# themselves (see texture_brush). A theme can keep it on the page alone
+# ("grain_surfaces" - see surface_texture_brush)
 TEXTURE_MATERIALS = ("window", "panel", "overlay", "footer")
 # The texture's tile, px square - repeated, so it's never redrawn
 TEXTURE_SIZE = 128
@@ -1039,7 +1038,8 @@ class Style:
         '''Each material's background, for widgets set_material gave it - with the theme's texture, if it has one.'''
         texture = self.texture_image()
         image = f' background-image: url("{texture.as_posix()}");' if texture is not None else ""
-        return "\n".join(f'*[material="{name}"] {{ background-color: {self.css(name)};{image if name in TEXTURE_MATERIALS else ""} }}'
+        textured = TEXTURE_MATERIALS if self.setting("grain_surfaces") else ("window",)
+        return "\n".join(f'*[material="{name}"] {{ background-color: {self.css(name)};{image if name in textured else ""} }}'
                          for name in MATERIALS)
 
     def _texture_key(self) -> tuple[int, int] | None:
@@ -1081,6 +1081,10 @@ class Style:
                 image.setPixelColor(x, y, speck)
         image.save(str(path))
         return path
+
+    def surface_texture_brush(self) -> QBrush | None:
+        '''texture_brush for what's laid on the page - None in a theme that keeps its grain on the page alone ("grain_surfaces").'''
+        return self.texture_brush() if self.setting("grain_surfaces") else None
 
     def texture_brush(self) -> QBrush | None:
         '''The theme's texture (see texture_image) as a brush, for hand-painted surfaces - None without one.'''
@@ -1259,26 +1263,38 @@ class Style:
 
     def button_radius(self, kind: str = "button") -> int:
         '''The current theme's corner radius for one of themes.BUTTON_KINDS, in px.'''
-        return button_radius(self.preset_info.get(self.theme_family(), {}), kind)
+        return button_radius(self.theme_info(), kind)
 
     def set_button_radius(self, kind: str, radius: int):
         '''The current theme's corner radius for one of themes.BUTTON_KINDS.'''
         if not self.is_editable() or radius == self.button_radius(kind):
             return
-        self.preset_info[self.theme_family()][f"{kind}_radius"] = int(radius)
+        self._settings_home(f"{kind}_radius")[f"{kind}_radius"] = int(radius)
         self._edited(self.theme_family())
+
+    def theme_info(self, family: str | None = None) -> dict:
+        '''A theme's info (the current one's, by default) as it is in the current mode (see themes.mode_info).'''
+        if not hasattr(self, "current_theme"):
+            return self.preset_info.get(family or "blue", {})
+        return mode_info(self.preset_info.get(family or self.theme_family(), {}), self.current_theme.partition("_")[0])
+
+    def _settings_home(self, key: str) -> dict:
+        '''Where an edit to one of the current theme's settings goes - its mode's "mode_settings", if that sets it there.'''
+        info = self.preset_info[self.theme_family()]
+        overrides = info.get("mode_settings")
+        overrides = overrides.get(self.current_theme.partition("_")[0]) if isinstance(overrides, dict) else None
+        return overrides if isinstance(overrides, dict) and key in overrides else info
 
     # The theme's other look settings (see themes.STYLE_DEFAULTS)
     def setting(self, key: str, family: str | None = None):
-        '''One of themes.STYLE_DEFAULTS for a theme (the current one, by default).'''
-        family = family or (self.theme_family() if hasattr(self, "current_theme") else "blue")
-        return style_setting(self.preset_info.get(family, {}), key)
+        '''One of themes.STYLE_DEFAULTS for a theme (the current one, by default), in the current mode.'''
+        return style_setting(self.theme_info(family), key)
 
     def set_setting(self, key: str, value):
         '''Changes one of the current theme's look settings (see themes.STYLE_DEFAULTS) - restyled at once.'''
         if not self.is_editable() or value == self.setting(key):
             return
-        self.preset_info[self.theme_family()][key] = value
+        self._settings_home(key)[key] = value
         self._edited(self.theme_family(), notify=True)
         self.apply_background()
 
@@ -1371,7 +1387,7 @@ class Style:
 
     def allows_transparency(self, family: str | None = None) -> bool:
         '''Whether a theme (the current one, by default) lets surfaces be see-through at all ("transparency" - see themes.py).'''
-        return self.preset_info.get(family or self.theme_family(), {}).get("transparency", True) is not False
+        return self.theme_info(family).get("transparency", True) is not False
 
     # Surfaces
     def load_preferred_surfaces(self):
@@ -1559,9 +1575,9 @@ class Style:
             number += 1
             stem = f"{self._file_stem(label)}_{number}"
         info = {"label": label if number == 1 else f"{label} {number}"}
-        for key in ("note", "transparency", "modes", "button_radius", "menu_button_radius", *STYLE_DEFAULTS):
+        for key in ("note", "transparency", "modes", "button_radius", "menu_button_radius", "mode_settings", *STYLE_DEFAULTS):
             if key in self.preset_info[source]:
-                info[key] = self.preset_info[source][key]
+                info[key] = copy.deepcopy(self.preset_info[source][key])
         self._write_theme(folder / f"{stem}.json", {"info": info, "materials": copy.deepcopy(self.materials[source])})
         self.load_imported_themes()
         family = IMPORTED_PREFIX + stem
@@ -1598,7 +1614,7 @@ class Style:
         '''Whether the current theme allows see-through surfaces at all (see allows_transparency).'''
         if not self.is_editable() or on == self.allows_transparency():
             return
-        self.preset_info[self.theme_family()]["transparency"] = on
+        self._settings_home("transparency")["transparency"] = on
         self._edited(self.theme_family(), notify=True)
 
     def set_material_value(self, name: str, color: str | None = None, opacity: float | None = None):

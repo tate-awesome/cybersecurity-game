@@ -98,6 +98,8 @@ as it did before they existed (see STYLE_DEFAULTS):
                        surfaces (see Style.TEXTURE_MATERIALS), this strong
     "grain_stretch"    1-16 - how many times wider than tall each speck of
                        grain is: streaks, like wood's
+    "grain_surfaces"   false keeps the grain on the page background alone,
+                       off the panels and overlays laid on it
     "scanlines"        0-100 - dark lines across the whole window, over
                        everything on it, like an old CRT's - this strong
                        (see Scanlines)
@@ -106,6 +108,10 @@ as it did before they existed (see STYLE_DEFAULTS):
                        instead of the theme's one (see Style.line_color),
                        like the lines on a metro map - each panel's
                        buttons the same one as its outline
+
+"mode_settings" overrides any of these - and "transparency" and the
+button radii - in one mode: {"light": {"bevel": true, ...}, "dark": {...}}
+(see mode_info), for a theme whose two modes are built differently.
 
 Older files had a "palette" of named colors per mode that materials
 pointed into (or, older still, no materials - just the palette's modes at
@@ -274,6 +280,7 @@ STYLE_DEFAULTS: dict = {
     "abyss": None,
     "grain": 0,
     "grain_stretch": 1,
+    "grain_surfaces": True,
     "scanlines": 0,
     "line_colors": None,
 }
@@ -340,7 +347,7 @@ def style_setting(info: dict, key: str):
     '''One of STYLE_DEFAULTS from a theme's info (see read_theme) - its default if missing or the wrong type.'''
     default = STYLE_DEFAULTS[key]
     value = info.get(key, default)
-    if key in ("background", "bevel", "bold_buttons", "scrollbar_outline", "card_outline"):
+    if key in ("background", "bevel", "bold_buttons", "scrollbar_outline", "card_outline", "grain_surfaces"):
         return value if isinstance(value, bool) else default
     if key == "font_family":
         return value if isinstance(value, str) and value.strip() else None
@@ -433,6 +440,13 @@ def button_radius(info: dict, kind: str) -> int:
     if isinstance(radius, (int, float)) and not isinstance(radius, bool):
         return int(min(MAX_BUTTON_RADIUS, max(0, radius)))
     return DEFAULT_BUTTON_RADIUS
+
+
+def mode_info(info: dict, mode: str) -> dict:
+    '''A theme's info (see read_theme) as it is in mode - with that mode's "mode_settings" over the rest.'''
+    overrides = info.get("mode_settings")
+    overrides = overrides.get(mode) if isinstance(overrides, dict) else None
+    return {**info, **overrides} if isinstance(overrides, dict) else info
 
 
 def theme_modes(info: dict) -> tuple[str, ...]:
