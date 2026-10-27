@@ -208,7 +208,7 @@ class Preferences:
             "background_fps": DEFAULT_BACKGROUND_FPS,
             "background_hidden": list(DEFAULT_BACKGROUND_HIDDEN),  # chosen on the visuals demo page
             "background_workspace_frozen": DEFAULT_BACKGROUND_WORKSPACE_FROZEN,  # on the Graphics tab
-            "background_workspace_disabled": DEFAULT_BACKGROUND_WORKSPACE_DISABLED,  # in quick settings and on the Graphics tab
+            "background_workspace_disabled": DEFAULT_BACKGROUND_WORKSPACE_DISABLED,  # on the Graphics tab
             # Set on the settings page's Performance tab (see Performance.set)
             "ui_fps": DEFAULT_UI_FPS,
             "antialiasing": DEFAULT_ANTIALIASING,
