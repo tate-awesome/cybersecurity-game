@@ -1,5 +1,7 @@
+import html
+
 from PySide6.QtCore import QEvent, QObject, QPoint, QTimer, Qt
-from PySide6.QtGui import QFont, QFontMetrics
+from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import QApplication, QCheckBox, QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .....app_core import Context
@@ -18,9 +20,8 @@ COLUMN_CATEGORIES: dict[str, list[str]] = {
 }
 # What a chip's drag carries (see DragPayload) - only this modal's zones take it
 CHIP_KIND = "packet_column"
-# How wide the buffet and tray are, and the description beside them, in average characters
+# How wide the buffet and tray are, in average characters
 CHIPS_WIDTH_CHARS = 64
-DESCRIPTION_WIDTH_CHARS = 28
 
 
 def column_position(value) -> int:
@@ -63,8 +64,8 @@ class PacketColumnsModal(QObject):
     COLUMN_CATEGORIES), above a tray of the columns that show. Dragging a
     chip into the tray shows that column, and the tray's order, left to
     right, is the console's; dragging it back out (or clicking a chip)
-    moves it across. Pointing at a chip describes its field, in the panel
-    on the right.
+    moves it across. A chip's tooltip describes its field (see describe),
+    and the buffet and tray's own how it all works.
 
     The buffet is one drop target (a BinZone): while a tray chip is over
     it, it fades, rather than showing a place to drop, since a chip always
@@ -107,12 +108,9 @@ class PacketColumnsModal(QObject):
         keys = [key for key in columns if self.developer or is_column_available(self.context, key)]
         chips_width = self.char_width(CHIPS_WIDTH_CHARS)
 
-        body = QHBoxLayout()
-        body.setSpacing(style.igap)
-        self.modal.body.addLayout(body)
         chips_column = QVBoxLayout()
         chips_column.setSpacing(gap)
-        body.addLayout(chips_column)
+        self.modal.body.addLayout(chips_column)
 
         # The buffet: one area to drop on (it fades while a tray chip is
         # over it), wherever in it the chip goes back to its own group (see
@@ -140,8 +138,11 @@ class PacketColumnsModal(QObject):
         self.tray.dropped.connect(self.on_tray_drop)
         chips_column.addWidget(self.tray)
         chips_column.addStretch(1)
-
-        body.addWidget(self.build_description())
+        # Shown anywhere in them that has no tooltip of its own - not on a chip
+        hint = (f"<b>{html.escape(self.labels.get('packet_column_overlay_hint_title'))}</b>"
+                f"<p>{html.escape(self.labels.get('packet_column_overlay_hint'))}</p>")
+        buffet.setToolTip(hint)
+        self.tray.setToolTip(hint)
 
         self.chips = {key: self.make_chip(key, font) for key in keys}
         in_tray = [key for key in tray_columns(self.context) if key in self.chips]
@@ -150,7 +151,6 @@ class PacketColumnsModal(QObject):
                 self.send_home(self.chips[key])
         for key in in_tray:
             self.tray.insert(self.chips[key], len(self.tray.items))
-        self.describe(None)
 
     def heading(self, label_key: str) -> QLabel:
         label = QLabel(self.labels.get(label_key))
@@ -160,42 +160,6 @@ class PacketColumnsModal(QObject):
 
     def char_width(self, chars: int) -> int:
         return QFontMetrics(self.style.get_font()).averageCharWidth() * chars
-
-    def build_description(self) -> QFrame:
-        '''The panel on the right, describing the field under the mouse (see describe).'''
-        style = self.style
-        panel = QFrame()
-        style.set_material(panel, "card", rounded=True, outlined=True)
-        panel.setFixedWidth(self.char_width(DESCRIPTION_WIDTH_CHARS))
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(style.igap, style.igap, style.igap, style.igap)
-        layout.setSpacing(style.cgap * 2)
-
-        self.description_name = QLabel()
-        name_font = QFont(style.get_font())
-        name_font.setBold(True)
-        self.description_name.setFont(name_font)
-        self.description_name.setWordWrap(True)
-        layout.addWidget(self.description_name)
-
-        self.description_category = QLabel()
-        self.description_category.setFont(style.get_font("small"))
-        style.set_tone(self.description_category, "muted")
-        layout.addWidget(self.description_category)
-
-        self.description_text = QLabel()
-        self.description_text.setFont(style.get_font())
-        self.description_text.setWordWrap(True)
-        self.description_text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.description_text)
-
-        self.description_hidden = QLabel(self.labels.get("packet_column_overlay_unavailable"))
-        self.description_hidden.setFont(style.get_font("small"))
-        self.description_hidden.setWordWrap(True)
-        style.set_tone(self.description_hidden, "muted")
-        layout.addWidget(self.description_hidden)
-        layout.addStretch(1)
-        return panel
 
     def make_chip(self, key: str, font) -> QFrame:
         chip = QFrame()
@@ -218,12 +182,13 @@ class PacketColumnsModal(QObject):
             available.setToolTip(self.labels.get("packet_column_overlay_available_tooltip"))
             def autosave(checked: bool, key=key):
                 self.context.states.get("packet_columns_available")[key] = 1 if checked else 0
-                self.describe(key)
+                self.describe(chip)
             available.toggled.connect(autosave)
             layout.addWidget(available)
 
         # The checkbox is INTERACTIVE, so pressing it toggles rather than
         # starting a drag (or a click - see eventFilter)
+        self.describe(chip)
         chip.drag = DragHandle(chip, lambda chip=chip: DragPayload(CHIP_KIND, chip.key, self.zone_of(chip).zone_id))
         for widget in [chip, *chip.findChildren(QWidget)]:
             if not isinstance(widget, INTERACTIVE):
@@ -236,9 +201,7 @@ class PacketColumnsModal(QObject):
         chip = self.chip_of(watched)
         if chip is None:
             return False
-        if kind == QEvent.Type.Enter:
-            self.describe(chip.key)
-        elif kind == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+        if kind == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
             self.pressed = chip
             self.pressed_at = event.globalPosition().toPoint()
         elif kind == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
@@ -257,19 +220,15 @@ class PacketColumnsModal(QObject):
             widget = widget.parentWidget()
         return widget
 
-    def describe(self, key: str | None):
-        '''Shows what key's field is in the description panel - or, with None, how the modal works.'''
-        if key is None:
-            self.description_name.setText(self.labels.get("packet_column_overlay_hint_title"))
-            self.description_category.hide()
-            self.description_text.setText(self.labels.get("packet_column_overlay_hint"))
-            self.description_hidden.hide()
-            return
-        self.description_name.setText(self.labels.get(f"packet_columns_{key}"))
-        self.description_category.setText(self.labels.get(f"packet_column_categories_{column_category(key)}"))
-        self.description_category.show()
-        self.description_text.setText(self.labels.get(f"packet_column_descriptions_{key}"))
-        self.description_hidden.setVisible(self.developer and not is_column_available(self.context, key))
+    def describe(self, chip: QFrame):
+        '''Puts what chip's field is in its tooltip (rich text) - and, for developers, if students don't get it.'''
+        key, labels = chip.key, self.labels
+        tooltip = (f"<b>{html.escape(labels.get(f'packet_columns_{key}'))}</b>"
+                   f"<br><small>{html.escape(labels.get(f'packet_column_categories_{column_category(key)}'))}</small>"
+                   f"<p>{html.escape(labels.get(f'packet_column_descriptions_{key}'))}</p>")
+        if self.developer and not is_column_available(self.context, key):
+            tooltip += f"<p><small>{html.escape(labels.get('packet_column_overlay_unavailable'))}</small></p>"
+        chip.setToolTip(tooltip)
 
     # Moving chips
     def zone_of(self, chip: QFrame) -> RowZone:
@@ -322,4 +281,4 @@ class PacketColumnsModal(QObject):
         live = self.context.states.get("packet_columns")
         for key in live:
             live[key] = tray.index(key) + 1 if key in tray else 0
-        self.modal.adjustSize()
+        self.modal.fit_contents()

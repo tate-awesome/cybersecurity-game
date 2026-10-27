@@ -1,22 +1,25 @@
 from collections.abc import Callable
 
-from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
+from PySide6.QtCore import QEasingCurve, QEvent, QPoint, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
 from ..app_core.context.style import PANEL_BORDER_WIDTH
+from ..app_core.transitions import PopupEntrance
 
 
 class Scrim(QWidget):
     '''
     A dim veil over a whole window while a ModalWindow is open over it - so
     the modal stands out on any theme, however much its panel looks like
-    the ones behind it. Follows the window's size.
+    the ones behind it. Follows the window's size. strength fades it in
+    (0 to 1), along with its modal (see ModalWindow.reveal).
     '''
     COLOR = QColor(0, 0, 0, 110)
 
     def __init__(self, window: QWidget):
         super().__init__(window)
+        self.strength = 1.0
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         window.installEventFilter(self)
         self.setGeometry(window.rect())
@@ -28,9 +31,15 @@ class Scrim(QWidget):
             self.setGeometry(watched.rect())
         return False
 
+    def set_strength(self, strength: float):
+        self.strength = strength
+        self.update()
+
     def paintEvent(self, event):
+        color = QColor(self.COLOR)
+        color.setAlphaF(color.alphaF() * self.strength)
         painter = QPainter(self)
-        painter.fillRect(self.rect(), self.COLOR)
+        painter.fillRect(self.rect(), color)
         painter.end()
 
 
@@ -134,19 +143,64 @@ class ModalWindow(PopupWindow):
     A PopupWindow that blocks the window behind it, and dims it (see Scrim)
     while it's open. A button opening one shows MODAL_MARK
     (ImportantButton.OPENS = "modal").
+
+    It arrives as one thing, with its dimming (see reveal) - not the
+    dimming at once, then the window coming in after it.
     '''
+
+    # Like WindowReveal's: how long it stays see-through, until it's
+    # painted and done sizing itself (an editor may again, just after
+    # it's shown), then how long it fades in for
+    REVEAL_DELAY_MS = 50
+    REVEAL_MS = 160
 
     def __init__(self, master: QWidget, context: Context, title: str):
         super().__init__(master, context, title)
         self.setModal(True)  # block interactions with the main window
         self._scrim: Scrim | None = None
+        self._reveal: QVariantAnimation | None = None
 
     def showEvent(self, event):
+        # Sent before it's on screen, so its first frame is already see-through
         if self._scrim is None and self.parentWidget() is not None:
             self._scrim = Scrim(self.parentWidget().window())
+        self.reveal()
         super().showEvent(event)
 
+    def reveal(self):
+        '''
+        Keeps it and its dimming see-through for a moment, then fades them
+        in together. Windows shows a new window blank, and animates it
+        opening, before Qt paints it - both happen out of sight this way.
+        Where window opacity doesn't work (see PopupEntrance), it just shows.
+        '''
+        if not PopupEntrance.supports_fade():
+            return
+        self.setWindowOpacity(0.0)
+        if self._scrim is not None:
+            self._scrim.set_strength(0.0)
+        if self._reveal is not None:
+            self._reveal.stop()
+        animation = QVariantAnimation(self)
+        animation.setStartValue(0.0)
+        animation.setEndValue(1.0)
+        # Animations off (see Performance.page_transitions) - all at once, still out of sight at first
+        animation.setDuration(self.REVEAL_MS if self.context.performance.page_transitions else 0)
+        animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        animation.valueChanged.connect(self._reveal_step)
+        animation.finished.connect(lambda: self._reveal_step(1.0))
+        self._reveal = animation
+        QTimer.singleShot(self.REVEAL_DELAY_MS, animation, animation.start)
+
+    def _reveal_step(self, value: float):
+        self.setWindowOpacity(value)
+        if self._scrim is not None:
+            self._scrim.set_strength(value)
+
     def hideEvent(self, event):
+        if self._reveal is not None:
+            self._reveal.stop()
+            self._reveal = None
         if self._scrim is not None:
             self._scrim.deleteLater()
             self._scrim = None
@@ -165,6 +219,28 @@ class ButtonModal(ModalWindow):
         super().__init__(context.root, context, title)
         self.add_button(context.labels.get("modal_close"), self.accept)
         self.finished.connect(lambda *_: self.deleteLater())
+
+    def show(self):
+        self.fit_contents()  # first - or show() would adjustSize (see fit_contents)
+        super().show()
+
+    def fit_contents(self):
+        '''
+        Sizes it to its contents, as far as the screen goes - after they
+        change, too, around the same middle (so it doesn't jump to one
+        side), back onto the screen if that grew it past an edge. Not
+        adjustSize, which caps a window at 2/3 of the screen, cutting a
+        wide editor off.
+        '''
+        screen = self.screen().availableGeometry()
+        width = min(self.sizeHint().width(), screen.width())
+        height = self.heightForWidth(width) if self.hasHeightForWidth() else self.sizeHint().height()
+        middle = self.geometry().center()
+        self.resize(width, min(max(height, self.minimumSizeHint().height()), screen.height()))
+        if self.isVisible():
+            x, y = middle.x() - self.width() // 2, middle.y() - self.height() // 2
+            self.move(max(screen.left(), min(x, screen.right() - self.width())),
+                      max(screen.top(), min(y, screen.bottom() - self.height())))
 
 
 def message(master: QWidget, context: Context, message: str):

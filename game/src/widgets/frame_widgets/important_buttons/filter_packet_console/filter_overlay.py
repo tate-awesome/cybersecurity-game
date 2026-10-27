@@ -1,8 +1,9 @@
 import copy
+import html
 import ipaddress
 import re
 
-from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, QStringListModel, Qt, QTimer, Signal
+from PySide6.QtCore import QObject, QPointF, QRectF, QStringListModel, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel,
                                QPushButton, QScrollArea, QVBoxLayout, QWidget)
@@ -18,15 +19,12 @@ NEUTRAL, INCLUDE, EXCLUDE, HIDDEN = "neutral", "include", "exclude", "hidden"
 # How wide a host or register combobox is, in average characters - and each of a pair's two
 COMBO_WIDTH_CHARS = 16
 PAIR_COMBO_WIDTH_CHARS = 12
-# How wide the description panel on the right is, in average characters
-DESCRIPTION_WIDTH_CHARS = 30
 # How long typing in the filter text waits for a pause before reading it
 TYPING_PAUSE_MS = 300
 # A field with more options than this splits them into columns, by section
 OPTIONS_PER_COLUMN = {"type": 8, "meta": 3}
 # Room the modal leaves for everything but its boxes (title, filter text,
-# buttons, margins and shadow; the description panel beside them) when
-# capping their size to the screen - see fit
+# buttons, margins and shadow) when capping their size to the screen - see fit
 CHROME_HEIGHT = 400
 CHROME_WIDTH = 140
 
@@ -316,9 +314,9 @@ class FilterModal(QObject):
     students, and each section and field has a checkbox for the same
     (packet_filter_available) - what's taken away isn't built for them.
 
-    A panel on the right describes the section, field or option under the
-    mouse: what it is, how a packet is checked against it, and how it's
-    written in the filter (see describe).
+    Each section, field and option's tooltip describes it: what it is, how
+    a packet is checked against it, and how it's written in the filter
+    (see description) - and the boxes' own, between them, how it all works.
     '''
 
     def __init__(self, context: Context):
@@ -379,11 +377,9 @@ class FilterModal(QObject):
         self.scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
         self.scroll.setWidget(self.boxes)
-        body = QHBoxLayout()
-        body.setSpacing(style.igap)
-        body.addWidget(self.scroll, 0, Qt.AlignmentFlag.AlignTop)
-        body.addWidget(self.build_description())
-        column.addLayout(body)
+        # Shown anywhere in them that has no tooltip of its own
+        self.boxes.setToolTip(self.description(None))
+        column.addWidget(self.scroll, 0, Qt.AlignmentFlag.AlignLeft)
         sections = {name: self.section(name) for name in ("hosts", "type", "modbus", "meta")}
         if sections["hosts"]:
             boxes.addWidget(sections["hosts"])
@@ -432,7 +428,6 @@ class FilterModal(QObject):
         column.addLayout(footer)
 
         self.read_text(save=False)
-        self.describe(None)
         self.fit()
 
     def muted(self, text: str, wrap: bool = False) -> QLabel:
@@ -446,7 +441,7 @@ class FilterModal(QObject):
         '''
         A section's name (bold, in the text color) or a field's (small and
         muted, like a column header) - for developers, a checkbox for whether
-        students get it. Pointing at it describes it (see describe).
+        students get it. Its tooltip describes it (see description).
         '''
         font = QFont(self.style.get_font())
         font.setBold(True)
@@ -464,14 +459,9 @@ class FilterModal(QObject):
         return widget
 
     def watch(self, widget: QWidget, topic: tuple):
-        '''Describes topic in the panel on the right whenever the mouse comes onto widget.'''
-        widget.filter_topic = topic
-        widget.installEventFilter(self)
-
-    def eventFilter(self, watched, event):
-        if event.type() == QEvent.Type.Enter and hasattr(watched, "filter_topic"):
-            self.describe(watched.filter_topic)
-        return False
+        '''Describes topic in widget's tooltip (see description) - ahead of any it has already (a developer's checkbox's).'''
+        own = widget.toolTip()
+        widget.setToolTip(self.description(topic) + (f"<p><small>{html.escape(own)}</small></p>" if own else ""))
 
     def card(self, name: str) -> tuple[QFrame, QVBoxLayout]:
         card = QFrame()
@@ -683,59 +673,25 @@ class FilterModal(QObject):
         '''
         try:
             hint = self.boxes.sizeHint()
-            panel = self.description["title"].parentWidget().width()
         except RuntimeError:
             return  # closed meanwhile
         screen = self.modal.screen().availableGeometry()
-        room_width = max(400, screen.width() - panel - CHROME_WIDTH)
-        room_height = max(200, screen.height() - CHROME_HEIGHT)
+        room_width = max(400, screen.width() - CHROME_WIDTH)
         bar = self.scroll.verticalScrollBar().sizeHint().width()
         width = min(hint.width(), room_width)
+        room_height = max(200, screen.height() - CHROME_HEIGHT)
         height = min(hint.height() + (bar if width < hint.width() else 0), room_height)
         width = min(hint.width() + (bar if height < hint.height() else 0), room_width)
         self.scroll.setFixedSize(width, height)
-        self.modal.adjustSize()
+        self.modal.fit_contents()
 
     # Describing what's under the mouse
-    def build_description(self) -> QFrame:
-        '''The panel on the right, describing the section, field or option under the mouse (see describe).'''
-        style = self.style
-        panel = QFrame()
-        style.set_material(panel, "card", rounded=True, outlined=True)
-        panel.setFixedWidth(QFontMetrics(style.get_font()).averageCharWidth() * DESCRIPTION_WIDTH_CHARS)
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(style.igap, style.igap, style.igap, style.igap)
-        layout.setSpacing(style.cgap * 3)
-        bold = QFont(style.get_font())
-        bold.setBold(True)
-        self.description: dict[str, QLabel] = {}
-        for key, font, tone in (("title", bold, None), ("place", style.get_font("small"), "muted"),
-                                ("about_heading", style.get_font("small"), "muted"), ("about", style.get_font(), None),
-                                ("checked_heading", style.get_font("small"), "muted"), ("checked", style.get_font(), None),
-                                ("typed_heading", style.get_font("small"), "muted"), ("typed", style.get_font("mono"), None),
-                                ("combine", style.get_font("small"), "muted")):
-            label = QLabel()
-            label.setFont(font)
-            label.setWordWrap(True)
-            label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            if tone:
-                style.set_tone(label, tone)
-            if key == "typed":
-                label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            if key.endswith("_heading"):
-                label.setText(self.labels.get(f"packet_filter_describe_{key[:-len('_heading')]}"))
-                label.setContentsMargins(0, style.cgap * 3, 0, 0)
-            layout.addWidget(label)
-            self.description[key] = label
-        layout.addStretch(1)
-        return panel
-
-    def describe(self, topic: tuple | None):
+    def description(self, topic: tuple | None) -> str:
         '''
-        Fills the description panel for topic - ("section", name), ("field",
-        name, value or None) - or, with None, says how the modal works.
-        For an option: what it is, how the field checks a packet, and how
-        it's written to show (and hide) it.
+        A tooltip (rich text) describing topic - ("section", name), ("field",
+        name, value or None) - or, with None, how the modal works. For an
+        option: what it is, how the field checks a packet, and how it's
+        written to show (and hide) it.
         '''
         labels, parts = self.labels, {}
         if topic is None:
@@ -768,12 +724,17 @@ class FilterModal(QObject):
             parts["checked"] = labels.get(f"packet_filter_eval_{key}")
             if field.kind == "combo" or len(field.values) > 1:
                 parts["combine"] = labels.get("packet_filter_describe_combine")
-        for key, label in self.description.items():
-            if key.endswith("_heading"):
-                label.setVisible(bool(parts.get(key[:-len("_heading")])))
-            else:
-                label.setText(parts.get(key, ""))
-                label.setVisible(bool(parts.get(key)))
+        text = {key: html.escape(value).replace("\n", "<br>") for key, value in parts.items() if value}
+        tooltip = f"<b>{text['title']}</b>"
+        if "place" in text:
+            tooltip += f"<br><small>{text['place']}</small>"
+        tooltip += f"<p>{text['about']}</p>" if "about" in text else ""
+        for key in ("checked", "typed"):
+            if key in text:
+                value = f"<code>{text[key]}</code>" if key == "typed" else text[key]
+                tooltip += f"<p><i>{html.escape(labels.get(f'packet_filter_describe_{key}'))}:</i> {value}</p>"
+        tooltip += f"<p><small>{text['combine']}</small></p>" if "combine" in text else ""
+        return tooltip
 
     def paste(self):
         '''Puts the clipboard's filter in place of the one in the text box, and reads it at once.'''
