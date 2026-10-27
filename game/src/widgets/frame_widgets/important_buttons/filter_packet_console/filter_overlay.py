@@ -12,6 +12,7 @@ from .....app_core import Context
 from .....network.buffer.packet_filter import (BY_NAME, FIELDS, FilterError, conjugate, empty_state, join_pair, parse,
                                                 quote, split_pair, to_state)
 from ....modal import ButtonModal
+from ...flow_layout import WrapLayout
 from ...text_area import TextArea
 
 # A box's states, in the order a click steps through them (see CycleBox)
@@ -23,6 +24,9 @@ PAIR_COMBO_WIDTH_CHARS = 12
 TYPING_PAUSE_MS = 300
 # A field with more options than this splits them into columns, by section
 OPTIONS_PER_COLUMN = {"type": 8, "meta": 3}
+# Sections whose fields wrap onto another line rather than make the boxes
+# wider than the rest (see section) - hosts' four comboboxes side by side are
+SECTIONS_THAT_WRAP = {"hosts"}
 # Room the modal leaves for everything but its boxes (title, filter text,
 # buttons, margins and shadow) when capping their size to the screen - see fit
 CHROME_HEIGHT = 400
@@ -383,19 +387,22 @@ class FilterModal(QObject):
         sections = {name: self.section(name) for name in ("hosts", "type", "modbus", "meta")}
         if sections["hosts"]:
             boxes.addWidget(sections["hosts"])
-        # Type over Meta, beside ModBus
-        lower = QHBoxLayout()
-        lower.setSpacing(style.igap)
-        boxes.addLayout(lower)
+        # Type over Meta, beside ModBus - or under, where they don't fit side by side
+        lower = QWidget()
+        style.set_material(lower, "none")
+        self.lower = WrapLayout(lower, style.igap)
+        boxes.addWidget(lower)
         for names in (("type", "meta"), ("modbus",)):
-            stack = QVBoxLayout()
+            holder = QWidget()
+            style.set_material(holder, "none")
+            stack = QVBoxLayout(holder)
+            stack.setContentsMargins(0, 0, 0, 0)
             stack.setSpacing(style.igap)
             for name in names:
                 if sections[name]:
                     stack.addWidget(sections[name])
             stack.addStretch(1)
-            lower.addLayout(stack)
-        lower.addStretch(1)
+            self.lower.addWidget(holder)
         boxes.addStretch(1)
 
         column.addWidget(self.muted(self.labels.get("packet_filter_overlay_text")))
@@ -506,9 +513,16 @@ class FilterModal(QObject):
                 row += max(1, (len(self.field_options(field)) + 1) // 2)
             layout.addLayout(grid)
             return card
-        # Every other section: a column per field, side by side
-        row = QHBoxLayout()
-        row.setSpacing(self.style.igap * 2)
+        # Every other section: a column per field, side by side - wrapping, for some
+        wraps = name in SECTIONS_THAT_WRAP
+        if wraps:
+            # Laid out at its width, not its own - which is just its widest field (see fit)
+            flow = QWidget()
+            self.style.set_material(flow, "none")
+            row = WrapLayout(flow, self.style.igap * 2)
+        else:
+            row = QHBoxLayout()
+            row.setSpacing(self.style.igap * 2)
         for field in fields:
             field_column = QVBoxLayout()
             field_column.setSpacing(self.style.cgap * 3)
@@ -533,9 +547,18 @@ class FilterModal(QObject):
                     # A one-option field's option is its heading - its checkbox goes under it
                     field_column.addWidget(self.field_heading(field))
             field_column.addStretch(1)
-            row.addLayout(field_column)
-        row.addStretch(1)
-        layout.addLayout(row)
+            if wraps:
+                holder = QWidget()
+                self.style.set_material(holder, "none")
+                holder.setLayout(field_column)
+                row.addWidget(holder)
+            else:
+                row.addLayout(field_column)
+        if wraps:
+            layout.addWidget(flow)
+        else:
+            row.addStretch(1)
+            layout.addLayout(row)
         return card
 
     def field_heading(self, field) -> QWidget:
@@ -667,22 +690,29 @@ class FilterModal(QObject):
 
     def fit(self):
         '''
-        Sizes the boxes' scroll area to the boxes - but no bigger than the
-        screen leaves room for, scrolling the rest - then the modal to
-        its contents.
+        Sizes the boxes' scroll area to the boxes - as wide as Type and
+        ModBus side by side, but no bigger than the screen leaves room for:
+        narrower, they wrap (and so do SECTIONS_THAT_WRAP), and the boxes
+        scroll down. Then the modal to its contents.
         '''
         try:
             hint = self.boxes.sizeHint()
+            items = [self.lower.itemAt(i).sizeHint().width() for i in range(self.lower.count())]
         except RuntimeError:
             return  # closed meanwhile
+        # The wrapping layouts' own widths are just their widest piece
+        wide = max(hint.width(), sum(items) + self.lower.spacing() * (len(items) - 1))
         screen = self.modal.screen().availableGeometry()
         room_width = max(400, screen.width() - CHROME_WIDTH)
-        bar = self.scroll.verticalScrollBar().sizeHint().width()
-        width = min(hint.width(), room_width)
         room_height = max(200, screen.height() - CHROME_HEIGHT)
-        height = min(hint.height() + (bar if width < hint.width() else 0), room_height)
-        width = min(hint.width() + (bar if height < hint.height() else 0), room_width)
-        self.scroll.setFixedSize(width, height)
+        bar = self.scroll.verticalScrollBar().sizeHint().width()
+        width = min(wide, room_width)
+        tall = self.boxes.heightForWidth(width) if self.boxes.hasHeightForWidth() else hint.height()
+        if tall > room_height:
+            # The scrollbar takes from the boxes' width - they're laid out (and wrap) in what's left
+            width = min(wide + bar, room_width)
+            tall = self.boxes.heightForWidth(width - bar)
+        self.scroll.setFixedSize(width, min(tall, room_height))
         self.modal.fit_contents()
 
     # Describing what's under the mouse
