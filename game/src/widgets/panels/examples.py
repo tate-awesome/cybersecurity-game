@@ -14,7 +14,7 @@ Titles are "menu_bar_titles_example_<name>" labels.
 import math
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QSlider, QTableWidget,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QLabel, QLineEdit, QPushButton, QSlider, QTableWidget,
                                QTableWidgetItem, QTabWidget, QWidget)
 
 from ...app_core import Context
@@ -26,6 +26,7 @@ from ..frame_widgets.scrollable import Scrollable
 from .base_form import BaseForm
 from .packet_console.treeview import PacketTreeview
 from .panel import Panel
+from ..frame_widgets.text_area import TextArea
 
 # How many seconds of history the sample strip charts hold
 CHART_SECONDS = 60
@@ -159,10 +160,10 @@ class StatusExample(Panel):
     def __init__(self, master: QWidget, context: Context):
         super().__init__(master, context, "example_status")
         self.menu_bar.add_checkbox("Auto-Scroll", True)
-        text = QPlainTextEdit("\n\n".join(self.LINES))
+        text = TextArea("\n\n".join(self.LINES))
         text.setFont(self.style.get_font("mono"))
         text.setReadOnly(True)
-        text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        text.setLineWrapMode(TextArea.LineWrapMode.NoWrap)
         self.layout().addWidget(text, 1)
 
 
@@ -325,6 +326,7 @@ class TabsExample(Panel):
         table.setFont(self.style.get_font("mono"))
         table.setHorizontalHeaderLabels(["Host", "MAC", "Vendor", "Open Ports"])
         table.setAlternatingRowColors(True)
+        table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)  # glides (see SmoothWheel)
         table.horizontalHeader().setStretchLastSection(True)
         for row, host in enumerate(self.HOSTS):
             for column, text in enumerate(host):
@@ -333,7 +335,7 @@ class TabsExample(Panel):
         table.selectRow(1)
         tabs.addTab(table, "Hosts")
 
-        notes = QPlainTextEdit("Target: the AP's Modbus server on 192.168.4.10:502.\n\n"
+        notes = TextArea("Target: the AP's Modbus server on 192.168.4.10:502.\n\n"
                                "Holding register 3 is the boat's speed - rewrite it in transit and watch the map drift.")
         notes.setFont(self.style.get_font())
         tabs.addTab(notes, "Notes")

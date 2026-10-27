@@ -1,10 +1,11 @@
 from PySide6.QtCore import QEvent, QPoint, QRect, Qt
 from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit,
                                QPushButton, QScrollArea, QStackedWidget, QTabWidget, QTextBrowser, QTreeWidget, QWidget)
 import shiboken6
 
 from ...app_core import Context
+from .text_area import TextArea
 
 
 class FindField(QLineEdit):
@@ -125,7 +126,7 @@ class FindBar(QFrame):
                     for row, item in enumerate(self.tree_items(widget)):
                         if needle in item.text(0).lower():
                             found.append((order + (row,), tab, widget, item))
-                elif isinstance(widget, (QLineEdit, QPlainTextEdit)):
+                elif isinstance(widget, (QLineEdit, TextArea)):
                     if widget.parent() is not None and isinstance(widget.parent(), QComboBox):
                         continue
                     text = (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).lower()
@@ -200,7 +201,7 @@ class FindBar(QFrame):
             scroll.ensureWidgetVisible(widget, 50, 120)
         length = len(self.field.text())
 
-        if isinstance(where, int) and isinstance(widget, QPlainTextEdit):
+        if isinstance(where, int) and isinstance(widget, TextArea):
             cursor = widget.textCursor()
             cursor.setPosition(where)
             cursor.setPosition(where + length, QTextCursor.MoveMode.KeepAnchor)

@@ -3,6 +3,7 @@ from ...network.process_manager import ProcessManager
 from ...network.buffer import Buffer
 from .click_manager import ClickManager
 from .shift_wheel import ShiftWheel
+from .smooth_wheel import SmoothWheel
 from .animation_manager import AnimationManager
 from .preferences import Preferences
 from .performance import Performance
@@ -39,6 +40,8 @@ class ContextManager:
         self.style: Style = Style(self)
         # Shift+wheel moves things sideways, everywhere (see ShiftWheel)
         self.shift_wheel: ShiftWheel = ShiftWheel()
+        # The plain wheel glides instead of jumping, everywhere (see SmoothWheel)
+        self.smooth_wheel: SmoothWheel = SmoothWheel(self)
 
         self.start_session()
         self.start_page()

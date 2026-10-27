@@ -34,6 +34,8 @@ class PacketTreeview:
         tree.setHeaderLabels([self.context.labels.get(f"packet_columns_{col}") for col in self.columns])
         tree.setRootIsDecorated(False)  # flat table, no expand arrows - matches show="headings"
         tree.setUniformRowHeights(True)
+        # By pixel, not row, so the wheel can glide it (see SmoothWheel)
+        tree.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 

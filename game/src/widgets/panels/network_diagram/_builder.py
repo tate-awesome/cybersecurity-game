@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QGridLayout, QPlainTextEdit
+from PySide6.QtWidgets import QGridLayout
 from ....app_core import Context
 from ...canvases.network_diagram import NetworkDiagramCanvas
 from ...canvases.strip_chart import StripChart
 from ... import Panes
 from ..panel import Panel
+from ...frame_widgets.text_area import TextArea
 from ...frame_widgets.important_buttons import (ClearNetworkHosts, EditNetworkHosts, ToggleNetworkGraphRingView,
                                                  ToggleStripChartAutoFit)
 
@@ -54,10 +55,10 @@ class Builder(Panel):
                                       min_max=2)
         self.rate_chart.start_animation()
 
-        self.selected_text = QPlainTextEdit()
+        self.selected_text = TextArea()
         self.selected_text.setFont(self.style.get_font("mono"))
         self.selected_text.setReadOnly(True)
-        self.selected_text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        self.selected_text.setLineWrapMode(TextArea.LineWrapMode.NoWrap)
         right_frame.grid_layout.addWidget(self.selected_text, 0, 0)
         self.selected_text.hide()
 

@@ -1,7 +1,7 @@
 from PySide6.QtGui import QTextCursor
-from PySide6.QtWidgets import QPlainTextEdit
 from ....app_core import Context
 from ...frame_widgets.important_buttons import FreeScrollStatusConsole
+from ...frame_widgets.text_area import TextArea
 from ..panel import Panel
 
 class Builder(Panel):
@@ -54,10 +54,10 @@ class Builder(Panel):
 
     # Text box
     def create_text_box(self, parent):
-        textbox = QPlainTextEdit()
+        textbox = TextArea()
         textbox.setFont(self.style.get_font("mono"))
         textbox.setReadOnly(True)
-        textbox.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        textbox.setLineWrapMode(TextArea.LineWrapMode.NoWrap)
         # Stretch 1: see Scrollable.__init__ for why (same Panel-body/
         # trailing-filler interaction).
         parent.layout().addWidget(textbox, 1)

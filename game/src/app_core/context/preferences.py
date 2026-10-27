@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, TypedDict
-from .performance import (DEFAULT_ANTIALIASING, DEFAULT_PAGE_TRANSITIONS, DEFAULT_PERFORMANCE_LOG,
+from .performance import (DEFAULT_ANTIALIASING, DEFAULT_PAGE_TRANSITIONS, DEFAULT_SMOOTH_SCROLLING, DEFAULT_PERFORMANCE_LOG,
                           DEFAULT_PERFORMANCE_OVERLAY, DEFAULT_UI_FPS)
 from .style import (DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED, DEFAULT_BACKGROUND_FPS,
                     DEFAULT_BACKGROUND_HIDDEN, DEFAULT_BACKGROUND_VISUAL, DEFAULT_BACKGROUND_WORKSPACE_DISABLED,
@@ -53,6 +53,7 @@ class PreferencesData(TypedDict, total=False):
     ui_fps: int
     antialiasing: bool
     page_transitions: bool
+    smooth_scrolling: bool
     performance_overlay: bool
     performance_log: bool
     network_helper: bool
@@ -212,6 +213,7 @@ class Preferences:
             "ui_fps": DEFAULT_UI_FPS,
             "antialiasing": DEFAULT_ANTIALIASING,
             "page_transitions": DEFAULT_PAGE_TRANSITIONS,
+            "smooth_scrolling": DEFAULT_SMOOTH_SCROLLING,
             "performance_overlay": DEFAULT_PERFORMANCE_OVERLAY,  # also F3 (see KeyBinds)
             "performance_log": DEFAULT_PERFORMANCE_LOG,
             "network_helper": DEFAULT_NETWORK_HELPER,  # toggled on the Performance tab (see PrivilegedHelper)

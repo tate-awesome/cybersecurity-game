@@ -242,6 +242,9 @@ class SettingsPage(Page):
         rendering.row("settings_page_rows_page_transitions",
                       self.checkbox(performance.page_transitions, lambda on: performance.set(page_transitions=on)),
                       "settings_page_row_notes_page_transitions")
+        rendering.row("settings_page_rows_smooth_scrolling",
+                      self.checkbox(performance.smooth_scrolling, lambda on: performance.set(smooth_scrolling=on)),
+                      "settings_page_row_notes_smooth_scrolling")
         # No background is always frozen - nothing to animate (see Style.background_frozen)
         freeze = self.checkbox(style.background_frozen(), lambda on: style.set_background(animate=not on))
         freeze.setEnabled(style.background_visual != NO_BACKGROUND)

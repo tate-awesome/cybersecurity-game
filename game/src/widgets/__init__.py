@@ -10,6 +10,7 @@ from .frame_widgets.docking import DockArea, TabbedPane
 from .frame_widgets.scrollable import Scrollable
 from .frame_widgets.overlay import Overlay
 from .frame_widgets.shift_wheel_slider import ShiftWheelSlider
+from .frame_widgets.text_area import TextArea
 
 from .panels.panel import Panel as GenericPanel
 from .panels.network_action_panel._builder import Builder as HackingPanel

@@ -4,11 +4,11 @@ from typing import ClassVar
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QGridLayout, QHBoxLayout, QLabel,
-                               QLineEdit, QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
+                               QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
 from ..app_core.context.themes import (BUTTON_KINDS, DATA_MATERIALS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
                                       MAX_PANEL_FRAME, MAX_PANEL_RADIUS)
-from ..widgets import MenuBar, popup
+from ..widgets import MenuBar, TextArea, popup
 from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
@@ -269,7 +269,7 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         name.setEnabled(editable)
         section.row("theme_editor_rows_name", name, "theme_editor_row_notes_name")
 
-        description = QPlainTextEdit(info.get("note", ""))
+        description = TextArea(info.get("note", ""))
         description.setFont(style.get_font())
         description.setFixedHeight(style.igap * 12)
         description.textChanged.connect(lambda: style.set_theme_info(note=description.toPlainText()))

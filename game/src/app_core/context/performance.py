@@ -17,6 +17,7 @@ DEFAULT_UI_FPS = 10
 UI_FPS_RANGE = (1, 60)
 DEFAULT_ANTIALIASING = True
 DEFAULT_PAGE_TRANSITIONS = True
+DEFAULT_SMOOTH_SCROLLING = True
 DEFAULT_PERFORMANCE_OVERLAY = False
 DEFAULT_PERFORMANCE_LOG = False
 
@@ -73,7 +74,8 @@ class Performance:
 
     Settings (saved as preferences, like Style's): the UI framerate (the
     shared AnimationManager's tick), antialiasing on canvases and the
-    background, page transitions, and the two ways to see measurements -
+    background, page transitions, smooth scrolling (see SmoothWheel),
+    and the two ways to see measurements -
     an on-screen overlay (also F3) and console logging.
 
     Measurements are only taken while one of those is on (`measuring`),
@@ -113,6 +115,7 @@ class Performance:
         "ui_fps": ("ui_fps", int),
         "antialiasing": ("antialiasing", bool),
         "page_transitions": ("page_transitions", bool),
+        "smooth_scrolling": ("smooth_scrolling", bool),
         "overlay_enabled": ("performance_overlay", bool),
         "log_enabled": ("performance_log", bool),
     }
@@ -122,6 +125,7 @@ class Performance:
         self.ui_fps: int = DEFAULT_UI_FPS
         self.antialiasing: bool = DEFAULT_ANTIALIASING
         self.page_transitions: bool = DEFAULT_PAGE_TRANSITIONS
+        self.smooth_scrolling: bool = DEFAULT_SMOOTH_SCROLLING
         self.overlay_enabled: bool = DEFAULT_PERFORMANCE_OVERLAY
         self.log_enabled: bool = DEFAULT_PERFORMANCE_LOG
 
@@ -147,7 +151,7 @@ class Performance:
         self.apply()
 
     def set(self, ui_fps: int | None = None, antialiasing: bool | None = None, page_transitions: bool | None = None,
-            overlay: bool | None = None, log: bool | None = None):
+            smooth_scrolling: bool | None = None, overlay: bool | None = None, log: bool | None = None):
         '''Changes settings - applied at once, and saved.'''
         if ui_fps is not None:
             self.ui_fps = min(UI_FPS_RANGE[1], max(UI_FPS_RANGE[0], int(ui_fps)))
@@ -155,6 +159,8 @@ class Performance:
             self.antialiasing = antialiasing
         if page_transitions is not None:
             self.page_transitions = page_transitions
+        if smooth_scrolling is not None:
+            self.smooth_scrolling = smooth_scrolling
         if overlay is not None:
             self.overlay_enabled = overlay
         if log is not None:

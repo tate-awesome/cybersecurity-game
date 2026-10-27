@@ -5,12 +5,13 @@ import re
 from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, QStringListModel, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter, QFrame, QGridLayout, QHBoxLayout, QLabel,
-                               QPlainTextEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget)
+                               QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
 from .....app_core import Context
 from .....network.buffer.packet_filter import (BY_NAME, FIELDS, FilterError, conjugate, empty_state, join_pair, parse,
                                                 quote, split_pair, to_state)
 from ...overlay import Overlay
+from ...text_area import TextArea
 
 # A box's states, in the order a click steps through them (see CycleBox)
 NEUTRAL, INCLUDE, EXCLUDE, HIDDEN = "neutral", "include", "exclude", "hidden"
@@ -407,7 +408,7 @@ class FilterOverlay(QObject):
         boxes.addStretch(1)
 
         column.addWidget(self.muted(self.labels.get("packet_filter_overlay_text")))
-        self.editor = QPlainTextEdit()
+        self.editor = TextArea()
         self.editor.setFont(style.get_font("mono"))
         self.editor.setFixedHeight(QFontMetrics(style.get_font("mono")).lineSpacing() * 2 + style.igap * 2)
         self.editor.setPlainText(self.text())

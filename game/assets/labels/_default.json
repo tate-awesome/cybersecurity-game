@@ -991,6 +991,8 @@
     "settings_page_row_notes_antialiasing": "Smooth the edges of lines and text in charts, maps and the background. Off draws faster but jagged.",
     "settings_page_rows_page_transitions": "Transitions",
     "settings_page_row_notes_page_transitions": "Animate changing pages and opening popups. Off switches instantly.",
+    "settings_page_rows_smooth_scrolling": "Smooth Scrolling",
+    "settings_page_row_notes_smooth_scrolling": "Glide when scrolling with the mouse wheel. Off jumps a few lines at a time.",
     "settings_page_rows_freeze_background": "Freeze Background",
     "settings_page_row_notes_freeze_background": "Hold the background still instead of animating it - lighter on slower computers.",
     "settings_page_rows_freeze_workspace_background": "Freeze Background in Workspaces",

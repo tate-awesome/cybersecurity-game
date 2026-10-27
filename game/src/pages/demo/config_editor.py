@@ -7,14 +7,14 @@ from collections.abc import Callable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-                               QPlainTextEdit, QScrollArea, QTabWidget, QVBoxLayout, QWidget)
+                               QScrollArea, QTabWidget, QVBoxLayout, QWidget)
 
 from ...app_core import Context
 from ...pages.page import Page
 from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
-from ...widgets import MenuBar, PANELS, popup
+from ...widgets import MenuBar, PANELS, TextArea, popup
 from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
@@ -967,9 +967,9 @@ class ConfigEditor(Page):
             return int(number) if number == int(number) and "." not in text() else number
         return entry, read
 
-    def text_area(self, text: str, rows: int | None) -> tuple[QPlainTextEdit, Callable[[], str]]:
+    def text_area(self, text: str, rows: int | None) -> tuple[TextArea, Callable[[], str]]:
         '''A multi-line text box, rows lines tall - or growing to fill its space if rows is None.'''
-        editor = QPlainTextEdit(text)
+        editor = TextArea(text)
         editor.setFont(self.style.get_font("default"))
         if rows is not None:
             editor.setFixedHeight(self.fontMetrics().lineSpacing() * rows + 16)
@@ -1208,7 +1208,7 @@ class SettingCell(QWidget):
         widget.blockSignals(True)
         if isinstance(widget, QCheckBox):
             widget.setChecked(default in (1, "1", True))
-        elif isinstance(widget, QPlainTextEdit):
+        elif isinstance(widget, TextArea):
             widget.setPlainText("\n".join(str(item) for item in default))
         elif isinstance(widget, QComboBox):
             # Choices with data (start_on's) are matched by it, plain ones by text
