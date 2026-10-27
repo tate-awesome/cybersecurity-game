@@ -13,7 +13,7 @@ from ..app_core.context.preferences import DEFAULT_FADE_IN, DEFAULT_FADE_OUT
 from ..app_core.context.style import (BACKGROUND_FPS_RANGE, DEFAULT_BACKGROUND_ANIMATE, DEFAULT_BACKGROUND_DETAILED,
                                       DEFAULT_BACKGROUND_FPS, DEFAULT_BACKGROUND_VISUAL,
                                       DEFAULT_BACKGROUND_WORKSPACE_DISABLED, DEFAULT_BACKGROUND_WORKSPACE_FROZEN,
-                                      NO_BACKGROUND, PANEL_BORDER_WIDTH)
+                                      NO_BACKGROUND)
 from ..widgets import MenuBar
 from ..widgets.visuals import background_choices
 from ..widgets.frame_widgets.important_buttons import (DeleteAllUserData, DeleteAllWorkspaceSavedData, ImportThemes, LinkToPage,
@@ -533,7 +533,7 @@ class SettingsSection(QFrame):
 
         # Along the drawer's top
         top = QVBoxLayout()
-        top.setContentsMargins(style.igap * 2 - PANEL_BORDER_WIDTH, style.igap, style.igap * 2, style.igap)
+        top.setContentsMargins(style.igap * 2 - style.PANEL_BORDER_WIDTH, style.igap, style.igap * 2, style.igap)
         top.setSpacing(2)
         layout.addLayout(top)
         title = labels.get(f"settings_page_sections_{name}")
@@ -566,8 +566,8 @@ class SettingsSection(QFrame):
 
     def fit_frame(self):
         '''The drawer's frame around the card - the theme's "panel_frame" px left, right and below (see Panel.fit_frame).'''
-        frame = self.style.setting("panel_frame") + PANEL_BORDER_WIDTH
-        self.drawer_layout.setContentsMargins(frame, PANEL_BORDER_WIDTH, frame, frame)
+        frame = self.style.setting("panel_frame") + self.style.PANEL_BORDER_WIDTH
+        self.drawer_layout.setContentsMargins(frame, self.style.PANEL_BORDER_WIDTH, frame, frame)
 
     def row(self, name: str, control: QWidget, note: str):
         '''A setting: its name (labels key), its control, and what it does (labels key).'''

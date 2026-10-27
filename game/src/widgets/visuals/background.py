@@ -2,8 +2,8 @@ import math
 import time
 
 import numpy as np
-from PySide6.QtCore import QEvent, QObject, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QCursor, QImage, QPainter
+from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QRadialGradient
 from PySide6.QtWidgets import QApplication, QWidget
 
 from ...app_core import Context
@@ -68,7 +68,82 @@ def paint_noise_gradient(painter: QPainter, width: int, height: int, colors: lis
     value = sum(weight * value_noise(lattice, u * cells + t * dx, v * cells + t * dy)
                 for lattice, (weight, cells, (dx, dy)) in zip(NOISE_LATTICES, NOISE_OCTAVES))
     # Summed noise bunches up around the middle - stretched, so every color gets its share
-    value = np.clip((value - 0.5) * 1.8 + 0.5, 0.0, 1.0)
+    _paint_through(painter, width, height, np.clip((value - 0.5) * 1.8 + 0.5, 0.0, 1.0), colors)
+
+
+def paint_plasma(painter: QPainter, width: int, height: int, colors: list[str], t: float):
+    '''
+    A gradient through colors filling a width x height area, laid out by a
+    plasma - sine waves running in different directions, rippling through
+    each other as t (seconds) passes - so the colors run in bands that
+    curl and drift.
+    '''
+    if width <= 0 or height <= 0:
+        return
+    w = NOISE_COLUMNS
+    h = max(4, round(w * height / width))
+    x, y = np.arange(w)[None, :] / w * 6.0, np.arange(h)[:, None] / w * 6.0
+    # A slowly wandering centre for the rings, so they don't just pulse in place
+    cx, cy = 3.0 + 1.5 * np.sin(t * 0.07), 2.0 + 1.2 * np.cos(t * 0.05)
+    value = (np.sin(x * 0.9 + t * 0.21) + np.sin(y * 1.1 - t * 0.17) + np.sin((x + y) * 0.6 + t * 0.13)
+             + np.sin(np.hypot(x - cx, y - cy) * 1.4 - t * 0.25))
+    _paint_through(painter, width, height, (value / 4 + 1) / 2, colors)
+
+
+# An abyss's layout (see paint_abyss), in 0-1 of the area, seeded so it's
+# the same every time. Glows: (x, y, size, drift phase). Specks: (x, y,
+# radius px, twinkle rate, phase, haloed)
+_ABYSS_RNG = np.random.default_rng(23)
+ABYSS_GLOWS = [(x, y, s, p) for x, y, s, p in zip(_ABYSS_RNG.uniform(0.1, 0.9, 5), _ABYSS_RNG.uniform(0.1, 0.9, 5),
+                                                  _ABYSS_RNG.uniform(0.22, 0.42, 5), _ABYSS_RNG.uniform(0, 6.3, 5))]
+ABYSS_SPECKS = [(x, y, r, rate, p, halo) for x, y, r, rate, p, halo in zip(
+    _ABYSS_RNG.uniform(0, 1, 240), _ABYSS_RNG.uniform(0, 1, 240), _ABYSS_RNG.choice([0.6, 0.9, 1.2, 1.8], 240, p=[0.4, 0.3, 0.2, 0.1]),
+    _ABYSS_RNG.uniform(0.3, 1.4, 240), _ABYSS_RNG.uniform(0, 6.3, 240), _ABYSS_RNG.random(240) < 0.08)]
+
+
+def paint_abyss(painter: QPainter, width: int, height: int, colors: list[str], t: float):
+    '''
+    A deep-sea night over a width x height area, in colors, as t (seconds)
+    passes: big soft glows drifting slowly, like jellyfish lit from inside,
+    specks twinkling across it - a few with a halo.
+    '''
+    if width <= 0 or height <= 0:
+        return
+    painter.save()
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(Qt.PenStyle.NoPen)
+    side = min(width, height)
+    for index, (x, y, size, phase) in enumerate(ABYSS_GLOWS):
+        centre = QPointF((x + 0.05 * math.sin(t * 0.031 + phase)) * width, (y + 0.04 * math.cos(t * 0.027 + phase)) * height)
+        glow = QRadialGradient(centre, size * side)
+        color = QColor(colors[index % len(colors)])
+        for at, alpha in ((0.0, 0.26), (0.35, 0.12), (1.0, 0.0)):
+            color.setAlphaF(alpha)
+            glow.setColorAt(at, color)
+        painter.setBrush(glow)
+        painter.drawEllipse(centre, size * side, size * side)
+    # Specks are px across whatever the size, so they stay specks
+    scale = max(1.0, side / 600)
+    for index, (x, y, radius, rate, phase, halo) in enumerate(ABYSS_SPECKS):
+        color = QColor(colors[index % len(colors)])
+        twinkle = 0.25 + 0.75 * (0.5 + 0.5 * math.sin(t * rate + phase))
+        centre = QPointF(x * width, y * height)
+        if halo:
+            glow = QRadialGradient(centre, radius * 6 * scale)
+            for at, alpha in ((0.0, 0.5 * twinkle), (1.0, 0.0)):
+                color.setAlphaF(alpha)
+                glow.setColorAt(at, color)
+            painter.setBrush(glow)
+            painter.drawEllipse(centre, radius * 6 * scale, radius * 6 * scale)
+        color.setAlphaF(twinkle)
+        painter.setBrush(color)
+        painter.drawEllipse(centre, radius * scale, radius * scale)
+    painter.restore()
+
+
+def _paint_through(painter: QPainter, width: int, height: int, value: np.ndarray, colors: list[str]):
+    '''Fills width x height with value (h x w, 0-1) mapped through colors, evenly spaced, stretched smoothly to fit.'''
+    h, w = value.shape
     stops = np.array([QColor(c).getRgb()[:3] for c in colors], dtype=float)
     position = value * (len(stops) - 1)
     index = np.minimum(position.astype(int), len(stops) - 2)
@@ -421,17 +496,24 @@ class VisualBackground(QWidget):
         '''
         What the visual is drawn over: the theme's window color - or its
         gradient, if it has one (see Style.brush) - or its noise gradient,
-        if it has one (see paint_noise_gradient).
+        plasma or abyss, if it has one (see paint_noise_gradient, paint_plasma
+        and paint_abyss).
         '''
         rect = QRectF(0, 0, width, height)
         brush = self.style.brush("window", rect)
         if brush.gradient() is not None:
             painter.fillRect(rect, self.style.color("root", opaque=True))
         painter.fillRect(rect, brush)
+        mode = self.style.current_theme.partition("_")[0]
         noise = self.style.setting("noise_gradient")
         if noise:
-            paint_noise_gradient(painter, width, height, noise[self.style.current_theme.partition("_")[0]],
-                                 time.perf_counter())
+            paint_noise_gradient(painter, width, height, noise[mode], time.perf_counter())
+        plasma = self.style.setting("plasma")
+        if plasma:
+            paint_plasma(painter, width, height, plasma[mode], time.perf_counter())
+        abyss = self.style.setting("abyss")
+        if abyss:
+            paint_abyss(painter, width, height, abyss[mode], time.perf_counter())
 
     # Qt events
     def paintEvent(self, event):
@@ -446,6 +528,10 @@ class VisualBackground(QWidget):
             # A half-size blurred frame gets stretched back up smoothly
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             painter.drawImage(self.rect(), self.frame)
+            # The theme's texture over the visual, as over the page (see Style.texture_brush)
+            texture = self.style.texture_brush()
+            if texture is not None:
+                painter.fillRect(self.rect(), texture)
         finally:
             painter.end()
 

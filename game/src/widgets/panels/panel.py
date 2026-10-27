@@ -4,7 +4,6 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QRegion
 from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 from ...app_core import Context
-from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .. import MenuBar
 
 # Rendered panel shadows (see surface_shadow), by everything that shapes
@@ -13,25 +12,52 @@ _SHADOWS: dict[tuple, QImage] = {}
 _MAX_SHADOWS = 64
 
 
-def surface_shadow(style, width: int, height: int) -> QImage | None:
+def surface_shadow(style, width: int, height: int, shadows: list[dict] | None = None) -> QImage | None:
     '''
-    The theme's shadow (see Style.panel_shadow) for a panel-like surface
-    width x height px, drawn inside the room Style.panel_margins leaves
-    around it - its rounded shape, offset and blurred, with the surface's
-    own area cut out so a see-through one isn't darkened by it (like CSS's
-    box-shadow). Cached - see _SHADOWS. For panels, and anything dressed
-    like one (e.g. the workspace select page's summary card).
+    The theme's shadows (see Style.panel_shadows - or shadows, if given)
+    for a panel-like surface width x height px, drawn inside the room
+    Style.shadow_margins leaves for them around it - its rounded shape,
+    offset and blurred, once per shadow, with the surface's own area cut
+    out so a see-through one isn't darkened by it (like CSS's box-shadow).
+    Cached - see _SHADOWS. For panels, and anything dressed like one (e.g.
+    the workspace select page's summary card, or a popup window).
     '''
-    shadow = style.panel_shadow()
-    if shadow is None or width <= 0 or height <= 0:
+    shadows = style.panel_shadows() if shadows is None else shadows
+    if not shadows or width <= 0 or height <= 0:
         return None
     radius = style.PANEL_RADIUS
-    margins = style.panel_margins()
-    key = (width, height, radius, margins, tuple(sorted(shadow.items())))
+    margins = style.shadow_margins(shadows)
+    key = (width, height, radius, margins, tuple(tuple(sorted(shadow.items())) for shadow in shadows))
     if key in _SHADOWS:
         return _SHADOWS[key]
     left, top, right, bottom = margins
     body = QRectF(left, top, width - left - right, height - top - bottom)
+    image = QImage(width, height, QImage.Format.Format_ARGB32_Premultiplied)
+    image.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(image)
+    for shadow in shadows:
+        painter.drawImage(0, 0, blurred_shape(shadow, body, width, height, radius))
+    painter.end()
+    painter = QPainter(image)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(Qt.GlobalColor.black)
+    painter.drawRoundedRect(body, radius, radius)
+    painter.end()
+    if len(_SHADOWS) >= _MAX_SHADOWS:
+        _SHADOWS.clear()
+    _SHADOWS[key] = image
+    return image
+
+
+
+def blurred_shape(shadow: dict, body: QRectF, width: int, height: int, radius: int) -> QImage:
+    '''
+    A shadow ({"x", "y", "blur", "color", "opacity"}) of body's rounded
+    shape, offset and blurred, on a width x height image - one of
+    surface_shadow's, or an overlay's (see Overlay.paintEvent).
+    '''
     color = QColor(shadow["color"])
     color.setAlphaF(shadow["opacity"])
     blur = shadow["blur"]
@@ -50,36 +76,29 @@ def surface_shadow(style, width: int, height: int) -> QImage | None:
         from ..visuals.background import pyramid_blur  # here - visuals import panels' package
         image = pyramid_blur(image, max(1, round(math.log2(blur * scale))))
         image = image.scaled(width, height, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    painter = QPainter(image)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-    painter.setPen(Qt.PenStyle.NoPen)
-    painter.setBrush(Qt.GlobalColor.black)
-    painter.drawRoundedRect(body, radius, radius)
-    painter.end()
-    if len(_SHADOWS) >= _MAX_SHADOWS:
-        _SHADOWS.clear()
-    _SHADOWS[key] = image
     return image
 
 
-
-def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False, shadowed: bool = True):
+def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bool = False, shadowed: bool = True,
+                outline: QColor | None = None, shadows: list[dict] | None = None):
     '''
     Paints a panel-like surface width x height px by hand - the theme's
     shadow, its panel material in its rounded shape, and its outline (or
     raised bevel) - inside the room Style.panel_margins leaves. on_window
     first lays down the page's window material under it, for a surface
     nothing else is under (a popup window), so it looks as it would on a page.
-    shadowed=False leaves the shadow, and the room for it, out - for a
+    outline replaces the panels' own (e.g. a popup window's - see
+    Style.floating_outline), and shadows the panels' (e.g. a popup
+    window's - see Style.popup_shadows). shadowed=False leaves the shadow, and the room for it, out - for a
     surface something else draws the shadow of (see DockArea.paintEvent).
     '''
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    shadow = surface_shadow(style, width, height) if shadowed else None
+    shadows = style.panel_shadows() if shadows is None else shadows
+    shadow = surface_shadow(style, width, height, shadows) if shadowed else None
     if shadow is not None:
         painter.drawImage(0, 0, shadow)
-    left, top, right, bottom = style.panel_margins() if shadowed else (0, 0, 0, 0)
-    half = PANEL_BORDER_WIDTH / 2
+    left, top, right, bottom = style.shadow_margins(shadows) if shadowed else (0, 0, 0, 0)
+    half = style.PANEL_BORDER_WIDTH / 2
     body = QRectF(left + half, top + half, width - left - right - 2 * half, height - top - bottom - 2 * half)
     radius = style.PANEL_RADIUS
     path = QPainterPath()
@@ -88,17 +107,20 @@ def paint_panel(painter: QPainter, style, width: int, height: int, on_window: bo
         painter.fillPath(path, QColor(style.color("window", opaque=True)))
         painter.fillPath(path, style.brush("window", body))
     painter.fillPath(path, style.brush("panel", body))
-    outline = style.material("panel_border")
+    texture = style.texture_brush()
+    if texture is not None:
+        painter.fillPath(path, texture)
+    outline = outline or style.material("panel_border")
     if style.setting("bevel"):
         # Raised, like the theme's panels (see Style.bevel)
         base = outline.name()
         for color, lines in ((style._shade(base, 0.85), ((body.topLeft(), body.topRight()), (body.topLeft(), body.bottomLeft()))),
                              (style._shade(base, -0.55), ((body.bottomLeft(), body.bottomRight()), (body.topRight(), body.bottomRight())))):
-            painter.setPen(QPen(QColor(color), PANEL_BORDER_WIDTH))
+            painter.setPen(QPen(QColor(color), style.PANEL_BORDER_WIDTH))
             for start, end in lines:
                 painter.drawLine(start, end)
     else:
-        painter.setPen(QPen(outline, PANEL_BORDER_WIDTH))
+        painter.setPen(QPen(outline, style.PANEL_BORDER_WIDTH))
         painter.drawPath(path)
 
 
@@ -141,7 +163,6 @@ class Panel(QWidget):
     # Settings keys (from _packages/_default.json) this panel reads or writes.
     # The workspace editor uses them to show which panels in a layout use a setting.
     SETTINGS: tuple[str, ...] = ()
-    BORDER_WIDTH = PANEL_BORDER_WIDTH
 
     def __init__(self, master: QWidget, context: Context, menu_bar_label: str | None = None):
         super().__init__(master)
@@ -151,7 +172,7 @@ class Panel(QWidget):
         self.docked = False
 
         self.style.set_material(self, "panel", rounded=True, outlined=True)
-        # Room around it for the theme's shadow, if it has one (see Style.panel_shadow)
+        # Room around it for the theme's shadow, if it has one (see Style.panel_shadows)
         self.setProperty("shadowed", True)
         master.layout().addWidget(self)
 
@@ -280,7 +301,7 @@ class Panel(QWidget):
     def fit_shadow(self):
         '''After a theme change: room for the theme's shadow (or none), the border inset inside it, and the mask to match.'''
         left, top, right, bottom = self.margins()
-        width = self.BORDER_WIDTH
+        width = self.style.PANEL_BORDER_WIDTH
         super().layout().setContentsMargins(left + width, top + width, right + width, bottom + width)
         self.fit_frame()
         self.update_mask()
@@ -309,7 +330,7 @@ class Panel(QWidget):
         corners anyway (see fit_frame), and its menu bar has no
         background of its own.
         '''
-        if self.style.panel_shadow() is not None and not self.docked:
+        if self.style.panel_shadows() and not self.docked:
             self.clearMask()
             return
         path = QPainterPath()

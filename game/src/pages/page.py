@@ -58,7 +58,7 @@ class Page(QWidget):
         return menu_bar
 
     def add_background(self, config: dict, default: dict | None = None, menu: bool = False,
-                       workspace: bool = False) -> bool:
+                       workspace: bool = False, shared: bool = True) -> bool:
         '''
         Plays a procedural visual behind this page's content if its config
         has a "background": {
@@ -80,6 +80,9 @@ class Page(QWidget):
         "background"), only the user's preference can. workspace=True is for
         workspaces, which also follow the workspace freeze and disable
         preferences (see Style.background_frozen / background_shown).
+        shared=False plays a simulation of its own instead of carrying on
+        the one every page shares - for a page shown inside another (see
+        ThemeEditorPage's previews), which would otherwise run it twice over.
         Call it before adding content that should be drawn on top.
         Returns whether a background was added.
         '''
@@ -96,7 +99,7 @@ class Page(QWidget):
             in_layout=False,
             blur=background.get("blur", 0.0),
             # Same running network from page to page, not a fresh one each time
-            shared=True,
+            shared=shared,
         )
         # Which visual (if any), whether it's animated and its frame rate are
         # the user's preferences (Style.background_*, set in quick settings

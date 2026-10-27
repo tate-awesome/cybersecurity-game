@@ -18,8 +18,7 @@ class SelectColorTheme(SettingsOverlayButton):
         for family, name in style.theme_choices().items():
             button = themes.button(name, lambda family=family: self.apply(overlay, family),
                                    style.preset_info[family].get("note"))
-            button.setCheckable(True)
-            button.setChecked(family == style.theme_family())
+            style.mark_choice(button, family == style.theme_family())
 
     def apply(self, overlay: Overlay, family: str):
         # Close first - the theme change rebuilds the page, overlay and all

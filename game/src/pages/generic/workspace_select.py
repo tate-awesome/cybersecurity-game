@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHB
                                QTextBrowser, QVBoxLayout, QWidget)
 
 from ...app_core import Context
-from ...app_core.context.style import PANEL_BORDER_WIDTH
 from ...widgets import Scrollable
 from ...widgets.panels.panel import paint_panel
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPOUT_MARK
@@ -175,8 +174,8 @@ class SummaryDrawer(QFrame):
         '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the bar's padding.'''
         style = self.style
         left, top, right, bottom = style.panel_margins()
-        frame = style.setting("panel_frame") + PANEL_BORDER_WIDTH
-        self.layout().setContentsMargins(left + frame, top + PANEL_BORDER_WIDTH, right + frame, bottom + frame)
+        frame = style.setting("panel_frame") + style.PANEL_BORDER_WIDTH
+        self.layout().setContentsMargins(left + frame, top + style.PANEL_BORDER_WIDTH, right + frame, bottom + frame)
         # The title lines up with the card's text below it
         self.bar.layout().setContentsMargins(max(0, style.igap * 2 - frame), style.igap, 0, style.igap)
         self.update()
@@ -267,26 +266,32 @@ class WorkspaceSelectPage(Page):
 
     A _note can be one string or a list of markdown blocks, joined with
     blank lines between them.
+
+    key is the page to build (the router's current page, by default);
+    preview builds it to show inside another page (see ThemeEditorPage) -
+    without the menu bar, which is the window's title bar, and with a
+    background of its own.
     '''
 
     SIDEBAR_WIDTH = 380
     # The preference holding the workspace whose description was read last
     LAST_READ = "workspace_description"
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, key: str | None = None, preview: bool = False):
         super().__init__(context)
         self.labels = context.labels
 
-        key = context.router.current_page
+        key = key or context.router.current_page
         config = context.pages.load_page_config(key)
         self.selected_target: str | None = None
         # Each listed workspace's button, and the section header it's under (None outside any), in list order
         self.buttons: dict[str, tuple[WorkspaceButton, QPushButton | None]] = {}
         self.workspaces = context.pages.pages_in(config.get("link_folder", "workspaces"))
 
-        self.add_background(config, menu=True)
+        self.add_background(config, menu=True, shared=not preview)
 
-        self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
+        if not preview:
+            self.build_menu_bar(config.get("title", "_default"), config.get("menu_bar", []))
 
         body = QHBoxLayout()
         body.setSpacing(self.style.igap)

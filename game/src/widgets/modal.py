@@ -4,7 +4,6 @@ from PySide6.QtCore import QEasingCurve, QEvent, QPoint, Qt, QTimer, QVariantAni
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
-from ..app_core.context.style import PANEL_BORDER_WIDTH
 from ..app_core.transitions import PopupEntrance
 
 
@@ -92,11 +91,11 @@ class PopupWindow(QDialog):
         style.signals.changed.connect(self.fit)
 
     def fit(self):
-        '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the title's padding.'''
+        '''After a theme change: room for its shadow (see Style.popup_shadows), then its frame (see Panel.fit_frame), and the title's padding.'''
         style = self.style
-        left, top, right, bottom = style.panel_margins()
-        frame = style.setting("panel_frame") + PANEL_BORDER_WIDTH
-        self.drawer.setContentsMargins(left + frame, top + PANEL_BORDER_WIDTH, right + frame, bottom + frame)
+        left, top, right, bottom = style.shadow_margins(style.popup_shadows())
+        frame = style.setting("panel_frame") + style.PANEL_BORDER_WIDTH
+        self.drawer.setContentsMargins(left + frame, top + style.PANEL_BORDER_WIDTH, right + frame, bottom + frame)
         self.title.setContentsMargins(max(0, style.igap * 2 - frame), style.igap, style.igap, style.igap)
         self.update()
 
@@ -119,7 +118,9 @@ class PopupWindow(QDialog):
     def paintEvent(self, event):
         from .panels.panel import paint_panel  # here - panels import this package
         painter = QPainter(self)
-        paint_panel(painter, self.style, self.width(), self.height(), on_window=True)
+        # Outlined like an overlay, so it stands apart from the page under it (see Style.floating_outline)
+        paint_panel(painter, self.style, self.width(), self.height(), on_window=True, outline=self.style.floating_outline(),
+                    shadows=self.style.popup_shadows())
         painter.end()
 
     # Moved by its title, as there's no system frame to drag

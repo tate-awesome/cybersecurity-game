@@ -29,6 +29,7 @@ from ..pages.not_found import NotFound
 from ..widgets.frame_widgets.footer import Footer
 # The window controls for pages without a menu bar - outlive every page too
 from ..widgets.frame_widgets.window_chrome import CornerControls
+from ..widgets.frame_widgets.scanlines import Scanlines
 # What Esc opens on a page with a menu bar
 from ..widgets.frame_widgets.pause_menu import PauseMenu
 
@@ -92,6 +93,7 @@ class Router:
         self.footer = Footer(root, self.context)
         self.corner_controls = CornerControls(self.context)
         self.pause_menu = PauseMenu(self.context)
+        self.scanlines = Scanlines(self.context)
 
         self.register_discovered_pages()
 
@@ -203,6 +205,7 @@ class Router:
         # The new page's location, and any theme/zoom/label change it was rebuilt for
         self.footer.page_changed()
         self.corner_controls.page_changed()
+        self.scanlines.page_changed()
 
     def _clear_central_widget(self):
         '''

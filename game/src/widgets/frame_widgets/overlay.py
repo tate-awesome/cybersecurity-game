@@ -18,7 +18,12 @@ class Overlay(QWidget):
     The trigger button keeps its own text with a caret appended - down
     while closed, up while open - so every overlay button reads as one at a
     glance, and shows which overlay is open. closed_text/open_text replace
-    those whole texts instead (e.g. MenuBar's overflow button).
+    those whole texts instead (e.g. MenuBar's overflow button) - or, with
+    trigger_texts False, it's left alone (e.g. a combo box's list - see ChoiceList).
+
+    In a theme that floats overlays on a shadow (see Style.overlay_shadow),
+    the window has room for it around the overlay itself (see shadow_room),
+    left see-through.
 
     Opened from inside another overlay, it comes out the other way from
     that one - beside its button if the parent dropped down, below it if
@@ -41,8 +46,11 @@ class Overlay(QWidget):
     SCREENSHOT_DELAY_MS = 150
 
     def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south",
-                 closed_text: str | None = None, open_text: str | None = None):
-        super().__init__(master, Qt.WindowType.Popup)
+                 closed_text: str | None = None, open_text: str | None = None, trigger_texts: bool = True):
+        # Frameless as well, or Windows fills the see-through room for a shadow in black
+        super().__init__(master, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        # Only what paintEvent draws - room for a shadow stays see-through
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         # The side it opens on by itself - and the side it last opened on,
         # which differs when it opens from inside another overlay (see placement_anchor)
         self.anchor = anchor
@@ -50,9 +58,11 @@ class Overlay(QWidget):
         self.context = context
         self.style = context.style
         self.button = button
-        self.closed_text = closed_text or f"{button.text()} {self.CLOSED_MARKER}"
-        self.open_text = open_text or f"{button.text()} {self.OPEN_MARKER}"
-        button.setText(self.closed_text)
+        self.trigger_texts = trigger_texts
+        if trigger_texts:
+            self.closed_text = closed_text or f"{button.text()} {self.CLOSED_MARKER}"
+            self.open_text = open_text or f"{button.text()} {self.OPEN_MARKER}"
+            button.setText(self.closed_text)
         self.populate_func = populate_func
         self._parent_overlay: Overlay | None = None
         # The widget this was last opened from - the button, or the proxy
@@ -72,14 +82,34 @@ class Overlay(QWidget):
         # Its own "overlay" surface - see paintEvent for what shows through it
         self.style.set_material(self, "overlay")
         self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        self.fit_shadow_room()
 
         # Mouse moves while no button is held too, for _switch_to_hovered
         self.setMouseTracking(True)
-        button.clicked.connect(lambda checked=False: self._toggle())
+        if trigger_texts:
+            button.clicked.connect(lambda checked=False: self._toggle())
         # Lets a ButtonGroup tell which of its buttons open overlays of their own
         button.setProperty("opens_overlay", True)
         button.destroyed.connect(self._on_button_destroyed)
+
+    def shadow_room(self) -> tuple[int, int, int, int]:
+        '''Room around the overlay for the theme's shadow (see Style.overlay_shadow) - left, top, right, bottom px; none without one.'''
+        shadow = self.style.overlay_shadow()
+        if shadow is None:
+            return 0, 0, 0, 0
+        blur, x, y = shadow["blur"], shadow["x"], shadow["y"]
+        return max(0, blur - x), max(0, blur - y), max(0, blur + x), max(0, blur + y)
+
+    def body_rect(self) -> QRect:
+        '''The overlay itself - inside its shadow's room.'''
+        left, top, right, bottom = self.shadow_room()
+        return self.rect().adjusted(left, top, -right, -bottom)
+
+    def fit_shadow_room(self):
+        '''Its contents inset by igap, inside the room for the theme's shadow - redone on each open, for a theme changed since.'''
+        left, top, right, bottom = self.shadow_room()
+        gap = self.style.igap
+        self.layout().setContentsMargins(left + gap, top + gap, right + gap, bottom + gap)
 
     def _on_button_destroyed(self, *args):
         '''
@@ -121,9 +151,11 @@ class Overlay(QWidget):
         self._parent_overlay = active_popup if isinstance(active_popup, Overlay) and active_popup is not self else None
 
         self._close_unrelated_overlays()
+        self.fit_shadow_room()
         self.populate_func(self)
         self.setAttribute(Qt.WidgetAttribute.WA_NoMouseReplay, False)  # see mousePressEvent
-        self.button.setText(self.open_text)
+        if self.trigger_texts:
+            self.button.setText(self.open_text)
         self.adjustSize()
         # A click replayed from a menu bar overflow proxy (see
         # MenuBar._replay_click) lands on a button that's hidden while
@@ -192,6 +224,12 @@ class Overlay(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        body = self.body_rect()
+        shadow = self.style.overlay_shadow()
+        if shadow is not None:
+            from ..panels.panel import blurred_shape  # here - panels import this package
+            painter.drawImage(0, 0, blurred_shape(shadow, QRectF(body), self.width(), self.height(), 0))
+        painter.setClipRect(body)
         if self._behind is not None:
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             # Where the snapshot sits now - the window may have glided since
@@ -204,6 +242,7 @@ class Overlay(QWidget):
         # behind, the tint has to go on top of it anyway
         option = QStyleOption()
         option.initFrom(self)
+        option.rect = body
         # QWidget.style - self.style is the app's Style, not Qt's
         QWidget.style(self).drawPrimitive(QStyle.PrimitiveElement.PE_Widget, option, painter, self)
         painter.end()
@@ -334,7 +373,7 @@ class Overlay(QWidget):
             self._entrance.stop()
             self._entrance = None
         self._behind_timer.stop()
-        if self.button is not None:
+        if self.button is not None and self.trigger_texts:
             self.button.setText(self.closed_text)
         self._clear_contents()
         # A closed overlay taking any overlays opened *from inside it* down
@@ -457,6 +496,10 @@ class Overlay(QWidget):
 
         btn_center_x = btn_top_left.x() + btn_w / 2
         btn_center_y = btn_top_left.y() + btn_h / 2
+        # Placed by the overlay itself - its shadow's room hangs around it (see shadow_room)
+        room_left, room_top, room_right, room_bottom = self.shadow_room()
+        frame_w -= room_left + room_right
+        frame_h -= room_top + room_bottom
 
         # ---------------------------------------------------------
         # SOUTH: overlay below button
@@ -536,4 +579,4 @@ class Overlay(QWidget):
                 "Expected 'north', 'south', 'east', or 'west'."
             )
 
-        return QPoint(int(x), int(y))
+        return QPoint(int(x) - room_left, int(y) - room_top)

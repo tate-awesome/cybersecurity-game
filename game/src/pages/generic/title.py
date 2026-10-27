@@ -22,15 +22,19 @@ class TitlePage(Page):
 
     An optional config["background"] plays a procedural visual behind the
     menu - see Page.add_background.
+
+    key is the page to build (the router's current page, by default);
+    preview builds it to show inside another page (see ThemeEditorPage),
+    with a background of its own.
     '''
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, key: str | None = None, preview: bool = False):
         super().__init__(context)
 
-        key = context.router.current_page
+        key = key or context.router.current_page
         config = context.pages.load_page_config(key)
 
-        self.add_background(config, menu=True)
+        self.add_background(config, menu=True, shared=not preview)
 
         panel = TitleMenu(self, context, config.get("title", "_default"))
         for button in config.get("buttons", []):

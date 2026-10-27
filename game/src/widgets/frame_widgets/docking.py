@@ -41,7 +41,6 @@ from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedLayout, QVBoxLayout, QWidget
 
 from ...app_core import Context
-from ...app_core.context.style import PANEL_BORDER_WIDTH
 from .overlay import Overlay
 from .panes import Panes
 from .window_chrome import WindowBarButton, bar_button_height
@@ -345,7 +344,7 @@ def bar_inset(style) -> int:
     its border - the same both ways, open or minimized either way (see
     MenuBar.minimize_button and _SideStrip), so it never moves.
     '''
-    return PANEL_BORDER_WIDTH + 2 * style.cgap
+    return style.PANEL_BORDER_WIDTH + 2 * style.cgap
 
 
 def minimized_thickness(style, axis: str = "vertical") -> int:
@@ -1145,7 +1144,7 @@ class DockArea(QWidget):
         painter = QPainter(self)
         if not self.transparent:
             painter.fillRect(self.rect(), self.style.brush("window", QRectF(self.rect())))
-        surfaces = self.surfaces() if self.style.panel_shadow() is not None else []
+        surfaces = self.surfaces() if self.style.panel_shadows() else []
         if surfaces:
             radius = self.style.PANEL_RADIUS
             gaps = QPainterPath()
