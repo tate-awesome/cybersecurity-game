@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QImage, QLinearGradient, QPainter, QPen
+from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QFontInfo, QImage, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import QApplication, QComboBox, QGraphicsDropShadowEffect, QPushButton, QStyledItemDelegate, QWidget
 import darkdetect
 
@@ -384,13 +384,24 @@ class Style:
             return None
         # Every family text is drawn in - the fonts get_font names, and Qt's default
         for family in {"Arial", "Consolas", QApplication.font().family()}:
-            QFont.insertSubstitution(family, families[0])
+            QFont.insertSubstitution(Style._installed_family(family), families[0])
         return families[0]
+
+    @staticmethod
+    def _installed_family(family: str) -> str:
+        '''
+        The installed font family stands in for (on Linux, "Arial" is
+        an alias for Liberation Sans) - the one to give the icon font to.
+        Given to an alias, Qt would take the icon font as the alias itself:
+        text measured by its metrics, but drawn in the real font, whose
+        descenders hang past them and get cut off.
+        '''
+        return QFontInfo(QFont(family)).family()
 
     def _substitute_icons(self, family: str | None):
         '''A theme's own font (see themes.STYLE_DEFAULTS' "font_family") shows icons in text too - see _load_icon_font.'''
         if family and self.icon_family and family not in self._icon_substitutes:
-            QFont.insertSubstitution(family, self.icon_family)
+            QFont.insertSubstitution(self._installed_family(family), self.icon_family)
             self._icon_substitutes.add(family)
 
     def icon_css(self) -> str:

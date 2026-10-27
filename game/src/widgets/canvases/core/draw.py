@@ -143,7 +143,9 @@ class Draw:
         painter = self.canvas.painter
         painter.setFont(font)
         painter.setPen(QColor(color))
-        painter.drawText(rect, align | Qt.AlignmentFlag.AlignTop, text)
+        # Unclipped - a glyph reaching past the font's metrics (a fallback
+        # font's descender) would otherwise lose its bottom
+        painter.drawText(rect, align | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextDontClip, text)
 
     @staticmethod
     def text_rect(x: float, y: float, width: float, height: float, anchor: str = "center") -> QRectF:
@@ -157,9 +159,9 @@ class Draw:
 
     def text_size(self, text: str, font) -> tuple[float, float]:
         '''The (width, height) _draw_text takes up for text - every line of it.'''
-        metrics = QFontMetricsF(font)
-        lines = text.split("\n")
-        return max(metrics.horizontalAdvance(line) for line in lines), metrics.height() * len(lines)
+        # Laid out as drawText lays it out - lines a lineSpacing apart, not a height
+        size = QFontMetricsF(font).size(0, text)
+        return size.width(), size.height()
 
     def _draw_rounded_rect(self, coords, radius: float, fill: str | None = None, outline: str | None = None, width: float = 1):
         painter = self.canvas.painter

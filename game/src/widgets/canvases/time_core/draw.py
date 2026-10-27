@@ -112,7 +112,8 @@ class Draw:
         painter = self.canvas.painter
         painter.setFont(font)
         painter.setPen(QColor(color))
-        painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, text)
+        # Unclipped, like the other canvases' text (see core/draw.py's _draw_text)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextDontClip, text)
 
 # --------------------------------------------------------------------------------------------------------------------------
 #                                                       STRIP CHART AXES
