@@ -1,19 +1,47 @@
 from collections.abc import Callable
 
-from PySide6.QtCore import QPoint, Qt, QTimer
-from PySide6.QtGui import QPainter
+from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
+from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from ..app_core import Context
 from ..app_core.context.style import PANEL_BORDER_WIDTH
 
 
+class Scrim(QWidget):
+    '''
+    A dim veil over a whole window while a ModalWindow is open over it - so
+    the modal stands out on any theme, however much its panel looks like
+    the ones behind it. Follows the window's size.
+    '''
+    COLOR = QColor(0, 0, 0, 110)
+
+    def __init__(self, window: QWidget):
+        super().__init__(window)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        window.installEventFilter(self)
+        self.setGeometry(window.rect())
+        self.raise_()
+        self.show()
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.Resize:
+            self.setGeometry(watched.rect())
+        return False
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), self.COLOR)
+        painter.end()
+
+
 class PopupWindow(QDialog):
     '''
-    A modal popup window drawn like a panel instead of in the system's
-    window frame: the theme's shadow and corners, a drawer with the title
-    along its top (drag it to move the window), and a card inside with the
-    message (add to body) and a row of buttons (see add_button) - see
-    themes' module docstring. Escape closes it, like any dialog.
+    A window drawn like a panel instead of in the system's window frame:
+    the theme's shadow and corners, a drawer with the title along its top
+    (drag it to move the window), and a card inside with the message (add
+    to body) and a row of buttons (see add_button) - see themes' module
+    docstring. Escape closes it, like any dialog. The app stays usable
+    behind it - see ModalWindow for one that blocks it.
     '''
 
     MIN_WIDTH = 420
@@ -23,7 +51,6 @@ class PopupWindow(QDialog):
         self.context = context
         self.style = context.style
         style = self.style
-        self.setModal(True)  # block interactions with the main window
         self.setWindowTitle(title)
         # Only what paintEvent draws - the shadow's room stays see-through
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -102,23 +129,46 @@ class PopupWindow(QDialog):
         super().mouseReleaseEvent(event)
 
 
-class ButtonPopup(PopupWindow):
+class ModalWindow(PopupWindow):
     '''
-    A popup window for an editor too big for an Overlay, which drops out of
-    its button and can run off the screen: centered over the main window
+    A PopupWindow that blocks the window behind it, and dims it (see Scrim)
+    while it's open. A button opening one shows MODAL_MARK
+    (ImportantButton.OPENS = "modal").
+    '''
+
+    def __init__(self, master: QWidget, context: Context, title: str):
+        super().__init__(master, context, title)
+        self.setModal(True)  # block interactions with the main window
+        self._scrim: Scrim | None = None
+
+    def showEvent(self, event):
+        if self._scrim is None and self.parentWidget() is not None:
+            self._scrim = Scrim(self.parentWidget().window())
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        if self._scrim is not None:
+            self._scrim.deleteLater()
+            self._scrim = None
+        super().hideEvent(event)
+
+
+class ButtonModal(ModalWindow):
+    '''
+    A modal for an editor too big for an Overlay, which drops out of its
+    button and can run off the screen: centered over the main window
     instead, with a Close button. Made afresh by its button's click - fill
-    body, then show it - and deleted once closed. A button opening one shows
-    POPUP_MARK (ImportantButton.OPENS = "popup").
+    body, then show it - and deleted once closed.
     '''
 
     def __init__(self, context: Context, title: str):
         super().__init__(context.root, context, title)
-        self.add_button(context.labels.get("popup_close"), self.accept)
+        self.add_button(context.labels.get("modal_close"), self.accept)
         self.finished.connect(lambda *_: self.deleteLater())
 
 
 def message(master: QWidget, context: Context, message: str):
-        window = PopupWindow(master, context, "Help")
+        window = ModalWindow(master, context, "Help")
         window.add_text(message)
         window.add_button("Dismiss", window.accept)
         window.show()
@@ -129,7 +179,7 @@ def confirm_dialog(master: QWidget, context: Context, message: str, confirm_text
         A modal yes/no dialog: shows message, and calls confirm_func only if
         the user presses the confirm_text button.
         '''
-        window = PopupWindow(master, context, "Confirm")
+        window = ModalWindow(master, context, "Confirm")
         window.add_text(message)
 
         def confirm():

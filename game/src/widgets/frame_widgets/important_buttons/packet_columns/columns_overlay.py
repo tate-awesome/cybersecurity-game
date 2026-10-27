@@ -3,7 +3,7 @@ from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import QApplication, QCheckBox, QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .....app_core import Context
-from ....popup import ButtonPopup
+from ....modal import ButtonModal
 from ...drag_drop import INTERACTIVE, BinZone, DragHandle, DragPayload, RowZone
 
 # The buffet's groups, each field in the order it's listed in there. A
@@ -16,7 +16,7 @@ COLUMN_CATEGORIES: dict[str, list[str]] = {
     "modbus": ["modbus_word", "command_word", "command", "command_type", "variables", "values",
                "is_modbus", "is_useful", "is_primary"],
 }
-# What a chip's drag carries (see DragPayload) - only this popup's zones take it
+# What a chip's drag carries (see DragPayload) - only this modal's zones take it
 CHIP_KIND = "packet_column"
 # How wide the buffet and tray are, and the description beside them, in average characters
 CHIPS_WIDTH_CHARS = 64
@@ -57,9 +57,9 @@ def column_category(key: str) -> str:
     return next((category for category, keys in COLUMN_CATEGORIES.items() if key in keys), next(iter(COLUMN_CATEGORIES)))
 
 
-class PacketColumnsPopup(QObject):
+class PacketColumnsModal(QObject):
     '''
-    Opens the packet console's columns popup: a buffet of every field a column can show, as chips in groups (see
+    Opens the packet console's columns modal: a buffet of every field a column can show, as chips in groups (see
     COLUMN_CATEGORIES), above a tray of the columns that show. Dragging a
     chip into the tray shows that column, and the tray's order, left to
     right, is the console's; dragging it back out (or clicking a chip)
@@ -81,9 +81,9 @@ class PacketColumnsPopup(QObject):
     '''
 
     def __init__(self, context: Context):
-        popup = ButtonPopup(context, context.labels.get("packet_column_overlay_title"))
-        super().__init__(popup)  # goes with the popup
-        self.popup = popup
+        modal = ButtonModal(context, context.labels.get("packet_column_overlay_title"))
+        super().__init__(modal)  # goes with the modal
+        self.modal = modal
         self.context = context
         self.style = context.style
         self.labels = context.labels
@@ -95,7 +95,7 @@ class PacketColumnsPopup(QObject):
         self.pressed: QFrame | None = None
         self.pressed_at = QPoint()
         self.populate()
-        popup.show()
+        modal.show()
 
     # Building
     def populate(self):
@@ -109,7 +109,7 @@ class PacketColumnsPopup(QObject):
 
         body = QHBoxLayout()
         body.setSpacing(style.igap)
-        self.popup.body.addLayout(body)
+        self.modal.body.addLayout(body)
         chips_column = QVBoxLayout()
         chips_column.setSpacing(gap)
         body.addLayout(chips_column)
@@ -258,7 +258,7 @@ class PacketColumnsPopup(QObject):
         return widget
 
     def describe(self, key: str | None):
-        '''Shows what key's field is in the description panel - or, with None, how the popup works.'''
+        '''Shows what key's field is in the description panel - or, with None, how the modal works.'''
         if key is None:
             self.description_name.setText(self.labels.get("packet_column_overlay_hint_title"))
             self.description_category.hide()
@@ -317,9 +317,9 @@ class PacketColumnsPopup(QObject):
         self.changed()
 
     def changed(self):
-        '''Writes the tray's order to packet_columns (see the class docstring), and fits the popup to its chips again.'''
+        '''Writes the tray's order to packet_columns (see the class docstring), and fits the modal to its chips again.'''
         tray = [chip.key for chip in self.tray.items]
         live = self.context.states.get("packet_columns")
         for key in live:
             live[key] = tray.index(key) + 1 if key in tray else 0
-        self.popup.adjustSize()
+        self.modal.adjustSize()

@@ -1,7 +1,7 @@
 import json
 
 from .....app_core import Context
-from ....popup import confirm_dialog, message
+from ....modal import confirm_dialog, message
 from .._base_button import ImportantButton
 from .columns_overlay import is_column_available, tray_columns
 

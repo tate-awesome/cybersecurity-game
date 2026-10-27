@@ -1,4 +1,4 @@
-from ...popup import confirm_dialog
+from ...modal import confirm_dialog
 from ._base_button import ImportantButton
 from .reset_saved_workspace_layout import ResetSavedWorkspaceLayout
 

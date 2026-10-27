@@ -14,7 +14,7 @@ from ...pages.page import Page
 from ..generic.workspace_select import NoteBrowser, WorkspaceSelectPage
 from .layout_editor import LayoutEditor
 from ...widgets.frame_widgets.find_bar import FindBar
-from ...widgets import MenuBar, PANELS, TextArea, popup
+from ...widgets import MenuBar, PANELS, TextArea, modal
 from ...widgets.frame_widgets.menu_bar import MENU_BAR_GROUPS
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK
 from ...widgets.panels.modbus_model._builder import DEFENDER_MODELS, MODELS
@@ -346,7 +346,7 @@ class ConfigEditor(Page):
         if not self.dirty:
             action()
             return
-        popup.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
+        modal.confirm_dialog(self, self.context, "Discard your unsaved changes to this workspace?",
                              "Yes, discard", "No, keep editing", action)
 
     def open_workspace(self):

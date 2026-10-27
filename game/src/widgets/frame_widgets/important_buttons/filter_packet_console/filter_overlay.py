@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter, Q
 from .....app_core import Context
 from .....network.buffer.packet_filter import (BY_NAME, FIELDS, FilterError, conjugate, empty_state, join_pair, parse,
                                                 quote, split_pair, to_state)
-from ....popup import ButtonPopup
+from ....modal import ButtonModal
 from ...text_area import TextArea
 
 # A box's states, in the order a click steps through them (see CycleBox)
@@ -24,7 +24,7 @@ DESCRIPTION_WIDTH_CHARS = 30
 TYPING_PAUSE_MS = 300
 # A field with more options than this splits them into columns, by section
 OPTIONS_PER_COLUMN = {"type": 8, "meta": 3}
-# Room the popup leaves for everything but its boxes (title, filter text,
+# Room the modal leaves for everything but its boxes (title, filter text,
 # buttons, margins and shadow; the description panel beside them) when
 # capping their size to the screen - see fit
 CHROME_HEIGHT = 400
@@ -301,9 +301,9 @@ class ComboColumn(QWidget):
         self.add_row()
 
 
-class FilterPopup(QObject):
+class FilterModal(QObject):
     '''
-    Opens the packet filter editor, in a popup: checkboxes
+    Opens the packet filter editor, in a modal: checkboxes
     and comboboxes by section (see packet_filter.FIELDS), above the filter
     as text. Changing a box writes the text (see packet_filter.conjugate);
     pasting or typing a filter ticks the boxes to match (to_state) - or, for
@@ -322,9 +322,9 @@ class FilterPopup(QObject):
     '''
 
     def __init__(self, context: Context):
-        popup = ButtonPopup(context, context.labels.get("packet_filter_overlay_title"))
-        super().__init__(popup)  # goes with the popup
-        self.popup = popup
+        modal = ButtonModal(context, context.labels.get("packet_filter_overlay_title"))
+        super().__init__(modal)  # goes with the modal
+        self.modal = modal
         self.context = context
         self.style = context.style
         self.labels = context.labels
@@ -333,7 +333,7 @@ class FilterPopup(QObject):
         self.options: dict[str, dict[str, CycleOption]] = {}
         self.combos: dict[str, ComboColumn] = {}
         self.populate()
-        popup.show()
+        modal.show()
 
     # Settings
     def text(self) -> str:
@@ -365,9 +365,9 @@ class FilterPopup(QObject):
 
         column = QVBoxLayout()
         column.setSpacing(gap * 2)
-        self.popup.body.addLayout(column)
+        self.modal.body.addLayout(column)
 
-        # The boxes scroll if they'd make the popup taller than the screen (see fit)
+        # The boxes scroll if they'd make the modal taller than the screen (see fit)
         self.boxes = QWidget()
         style.set_material(self.boxes, "none")
         boxes = QVBoxLayout(self.boxes)
@@ -678,7 +678,7 @@ class FilterPopup(QObject):
     def fit(self):
         '''
         Sizes the boxes' scroll area to the boxes - but no bigger than the
-        screen leaves room for, scrolling the rest - then the popup to
+        screen leaves room for, scrolling the rest - then the modal to
         its contents.
         '''
         try:
@@ -686,7 +686,7 @@ class FilterPopup(QObject):
             panel = self.description["title"].parentWidget().width()
         except RuntimeError:
             return  # closed meanwhile
-        screen = self.popup.screen().availableGeometry()
+        screen = self.modal.screen().availableGeometry()
         room_width = max(400, screen.width() - panel - CHROME_WIDTH)
         room_height = max(200, screen.height() - CHROME_HEIGHT)
         bar = self.scroll.verticalScrollBar().sizeHint().width()
@@ -694,7 +694,7 @@ class FilterPopup(QObject):
         height = min(hint.height() + (bar if width < hint.width() else 0), room_height)
         width = min(hint.width() + (bar if height < hint.height() else 0), room_width)
         self.scroll.setFixedSize(width, height)
-        self.popup.adjustSize()
+        self.modal.adjustSize()
 
     # Describing what's under the mouse
     def build_description(self) -> QFrame:
@@ -733,7 +733,7 @@ class FilterPopup(QObject):
     def describe(self, topic: tuple | None):
         '''
         Fills the description panel for topic - ("section", name), ("field",
-        name, value or None) - or, with None, says how the popup works.
+        name, value or None) - or, with None, says how the modal works.
         For an option: what it is, how the field checks a packet, and how
         it's written to show (and hide) it.
         '''

@@ -35,7 +35,7 @@ class CheckboxOverlay:
     Used for hacking-panel and modbus-panel form visibility - those only
     ever differed in which settings category to read/write (state_key) and
     what to title the column (category_label). Packet-console columns have
-    their own popup (see PacketColumnsPopup).
+    their own modal (see PacketColumnsModal).
 
     Each chip is labeled with the labels key "<label_group>_<key>";
     label_group defaults to state_key.

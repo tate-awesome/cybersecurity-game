@@ -1,8 +1,8 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QWidget
 from .....app_core import Context
-from ....frame_widgets.important_buttons._base_button import POPUP_MARK
-from ....frame_widgets.important_buttons.edit_modbus_register_display.variable_overlay import VariablePopup
+from ....frame_widgets.important_buttons._base_button import MODAL_MARK
+from ....frame_widgets.important_buttons.edit_modbus_register_display.variable_overlay import VariableModal
 from ...base_form import BaseForm, PHASE_RUNNING, PHASE_STOPPED
 from .numbers import NUMBER_ALIGNMENT, TEXT_ALIGNMENT, align_decimals, format_number
 
@@ -47,9 +47,9 @@ class CombinedTable(BaseForm):
         for key in self.context.states.get_registers():
             self.add_register_row(key)
 
-        add_register = QPushButton(f'{self.context.labels.get("modbus_combined_add_register")} {POPUP_MARK}')
+        add_register = QPushButton(f'{self.context.labels.get("modbus_combined_add_register")} {MODAL_MARK}')
         add_register.setFont(self.style.get_font())
-        add_register.clicked.connect(lambda checked=False: VariablePopup(context))
+        add_register.clicked.connect(lambda checked=False: VariableModal(context))
         self.grid_layout.addWidget(self.fixed_width_wrapper(add_register), self.current_row, 0, 1, -1)
         self.current_row += 1
         self.add_divider()

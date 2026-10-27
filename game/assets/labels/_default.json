@@ -1225,7 +1225,7 @@
     "menu_bar_tooltips_theme_editor_selector": "The theme you're editing: the built-in ones, then your own. Built-in themes can only be looked at (except in developer mode) - make a new theme from one to change it.",
     "material_editor_title": "Material Editor",
     "material_editor_close": "Close",
-    "popup_close": "Close",
+    "modal_close": "Close",
     "theme_editor_copy_name": "{name} copy",
     "theme_editor_new_title": "New Theme",
     "theme_editor_new_prompt": "Start from:",

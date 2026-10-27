@@ -8,8 +8,8 @@ from PySide6.QtWidgets import (QColorDialog, QComboBox, QDialog, QGridLayout, QH
 
 from ..app_core.context.themes import (BUTTON_KINDS, DATA_MATERIALS, INK_MATERIALS, MATERIALS, MAX_BACKGROUND_BLUR, MAX_BUTTON_RADIUS,
                                       MAX_PANEL_FRAME, MAX_PANEL_RADIUS)
-from ..widgets import MenuBar, TextArea, popup
-from ..widgets.frame_widgets.important_buttons import POPUP_MARK, developer_text
+from ..widgets import MenuBar, TextArea, modal
+from ..widgets.frame_widgets.important_buttons import MODAL_MARK, developer_text
 from ..widgets.panels.examples import EXAMPLE_PANELS
 from .settings import SettingsPage
 
@@ -136,7 +136,7 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         # activated - only the user's picks, not refresh_menu_bar refilling it
         self.selector.activated.connect(lambda index: self.select_theme(self.selector.itemData(index)))
         self.new_button = menu_bar.add_button("theme_editor_new", self.new_theme)
-        self.new_button.setText(f"{self.new_button.text()} {POPUP_MARK}")
+        self.new_button.setText(f"{self.new_button.text()} {MODAL_MARK}")
         self.new_button.setToolTip(labels.get("menu_bar_tooltips_theme_editor_new"))
         self.built_in_button = None
         if self.context.preferences.is_developer():
@@ -188,14 +188,14 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         def discard():
             style.discard_changes(family)
             then()
-        popup.confirm_dialog(self, self.context, self.labels.get("theme_editor_discard").replace("{name}", name),
+        modal.confirm_dialog(self, self.context, self.labels.get("theme_editor_discard").replace("{name}", name),
                              self.labels.get("theme_editor_discard_confirm"), self.labels.get("theme_editor_discard_cancel"),
                              discard)
 
     def new_theme(self):
         '''Asks which theme to start from, then makes the user's own copy of it and switches to it.'''
         labels = self.labels
-        dialog = popup.PopupWindow(self, self.context, labels.get("theme_editor_new_title"))
+        dialog = modal.ModalWindow(self, self.context, labels.get("theme_editor_new_title"))
         dialog.add_text(labels.get("theme_editor_new_prompt"))
         source = QComboBox()
         source.setFont(self.style.get_font())
@@ -218,10 +218,10 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         def make():
             path = style.make_built_in(family)
             if path is not None:
-                popup.message(self, self.context, self.labels.get("theme_editor_made_built_in").replace("{path}", str(path)))
+                modal.message(self, self.context, self.labels.get("theme_editor_made_built_in").replace("{path}", str(path)))
         path = style.built_in_path(family)
         if path.exists():
-            popup.confirm_dialog(self, self.context, self.labels.get("theme_editor_replace_built_in").replace("{name}", path.name),
+            modal.confirm_dialog(self, self.context, self.labels.get("theme_editor_replace_built_in").replace("{name}", path.name),
                                  self.labels.get("theme_editor_replace_confirm"), self.labels.get("theme_editor_discard_cancel"),
                                  make)
         else:
@@ -257,7 +257,7 @@ class ThemeEditorPage(MaterialEditor, SettingsPage):
         tab = self.new_tab("general")
         section = self.section(tab, "theme_general")
         if not editable:
-            new = QPushButton(f"{self.labels.get('menu_bar_buttons_theme_editor_new')} {POPUP_MARK}")
+            new = QPushButton(f"{self.labels.get('menu_bar_buttons_theme_editor_new')} {MODAL_MARK}")
             new.setFont(style.get_font())
             new.clicked.connect(lambda checked=False: self.new_theme())
             section.row("theme_editor_rows_built_in", new, "theme_editor_row_notes_built_in")

@@ -11,14 +11,16 @@ DEVELOPER_MARK = Style.icon("bug")
 # After a button's label, where clicking it takes you (see ImportantButton.OPENS):
 # another page in the app, a file or folder (a file picker, or the folder
 # itself), a warning that asks before doing something that can't be undone,
-# a popup made for the purpose (help, a new workspace's details), or
-# somewhere outside the app (the browser)
+# a modal over the dimmed app (help, an editor - see ModalWindow), another
+# window over it (the material editor, a new workspace's details), or
+# somewhere outside the app (the browser). Modals and popups share a mark
 PAGE_MARK = Style.icon("arrow-right")
 FILE_MARK = Style.icon("folder")
 WARNING_MARK = Style.icon("alert-triangle")
-POPUP_MARK = Style.icon("layers-subtract")
+MODAL_MARK = Style.icon("layers-subtract")
+POPUP_MARK = MODAL_MARK
 POPOUT_MARK = Style.icon("external-link")
-OPENS_MARKS = {"page": PAGE_MARK, "file": FILE_MARK, "warning": WARNING_MARK, "popup": POPUP_MARK, "outside": POPOUT_MARK}
+OPENS_MARKS = {"page": PAGE_MARK, "file": FILE_MARK, "warning": WARNING_MARK, "modal": MODAL_MARK, "popup": POPUP_MARK, "outside": POPOUT_MARK}
 
 
 def developer_text(text: str) -> str:
@@ -50,7 +52,7 @@ class ImportantButton(WindowBarButton):
     '''
     LABEL = "menu_bar_buttons__default"
     TOOLTIP: str | None = None
-    # Where clicking it takes you - "page", "file", "warning", "popup" or
+    # Where clicking it takes you - "page", "file", "warning", "modal", "popup" or
     # "outside", shown with that one of OPENS_MARKS after the label (see
     # opens) - or None
     OPENS: str | None = None

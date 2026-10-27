@@ -6,7 +6,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 from ...app_core import Context
-from ...widgets import MenuBar, Scrollable, popup
+from ...widgets import MenuBar, Scrollable, modal
 from ...widgets.frame_widgets.drag_drop import DragHandle, DragPayload, DropZone, ListZone
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPUP_MARK, WARNING_MARK
 from ..page import Page
@@ -507,7 +507,7 @@ class WorkspaceSorter(Page):
         if not self.dirty:
             go()
             return
-        popup.confirm_dialog(self, self.context, self.labels.get("workspace_sorter_discard_question"),
+        modal.confirm_dialog(self, self.context, self.labels.get("workspace_sorter_discard_question"),
                              self.labels.get("workspace_sorter_discard_confirm"),
                              self.labels.get("workspace_sorter_discard_cancel"), go)
 

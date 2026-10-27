@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget
 from .....app_core import Context
 from .....network.hardware import ap_commands
-from .... import popup
+from .... import modal
 from ...base_form import BaseForm
 
 
@@ -26,10 +26,10 @@ class EncryptionForm(BaseForm):
         def start_encryption():
             key = self.key_entry.text().strip()
             if not key:
-                popup.message(self, self.context, "Please enter an encryption key before enabling encryption.")
+                modal.message(self, self.context, "Please enter an encryption key before enabling encryption.")
                 return
             if not key.isascii():
-                popup.message(self, self.context, "Encryption key must be ASCII.")
+                modal.message(self, self.context, "Encryption key must be ASCII.")
                 return
             ap_commands.set_encryption(self.context.buffer, True, key)
 

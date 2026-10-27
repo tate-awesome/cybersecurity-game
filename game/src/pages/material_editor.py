@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QScrollArea, QVBoxLayout, QWidget
 
 from ..app_core import Context
-from ..widgets.popup import PopupWindow
+from ..widgets.modal import PopupWindow
 from .settings import SettingsPage
 from .theme_editor import MaterialEditor
 
@@ -39,7 +39,6 @@ class MaterialEditorPopup(MaterialEditor, PopupWindow):
     def __init__(self, context: Context):
         super().__init__(context.root, context, context.labels.get("material_editor_title"))
         self.labels = context.labels
-        self.setModal(False)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         # On closing, not once deleted (later) - so opening it again right away makes a new one
         self.finished.connect(lambda *_: setattr(MaterialEditorPopup, "open_popup", None))

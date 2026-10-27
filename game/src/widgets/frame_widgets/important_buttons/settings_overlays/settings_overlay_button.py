@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLa
 from collections.abc import Callable
 from .....app_core import Context
 from .....app_core.context.style import Style
-from ....popup import ButtonPopup
+from ....modal import ButtonModal
 from ...overlay import Overlay
 from .._base_button import ImportantButton
 
@@ -234,25 +234,25 @@ class SettingsSection(QFrame):
 class SettingsOverlayButton(ImportantButton):
     '''
     A button opening an overlay of SettingsSection columns side by side -
-    subclasses build them in populate. With OPENS = "popup", a ButtonPopup
+    subclasses build them in populate. With OPENS = "modal", a ButtonModal
     instead, for settings too many to drop out of the button.
     '''
 
     def __init__(self, context: Context):
         super().__init__(context)
-        if self.OPENS != "popup":
+        if self.OPENS != "modal":
             Overlay(context.root, context, self, self.populate_overlay)
 
     def populate_overlay(self, overlay: Overlay):
         self.fill(overlay.layout(), overlay)
 
     def on_click(self):
-        if self.OPENS == "popup":
-            popup = ButtonPopup(self.context, self.context.labels.get(self.LABEL))
-            self.fill(popup.body, popup)
-            popup.show()
+        if self.OPENS == "modal":
+            modal = ButtonModal(self.context, self.context.labels.get(self.LABEL))
+            self.fill(modal.body, modal)
+            modal.show()
 
-    def fill(self, layout, window: Overlay | ButtonPopup):
+    def fill(self, layout, window: Overlay | ButtonModal):
         row = QHBoxLayout()
         row.setSpacing(self.context.style.igap)
         layout.addLayout(row)
@@ -264,5 +264,5 @@ class SettingsOverlayButton(ImportantButton):
         self.columns.addWidget(section, 0, Qt.AlignmentFlag.AlignTop)
         return section
 
-    def populate(self, window: Overlay | ButtonPopup):
+    def populate(self, window: Overlay | ButtonModal):
         pass

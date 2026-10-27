@@ -1,5 +1,5 @@
 from ....app_core import Context
-from ...popup import confirm_dialog
+from ...modal import confirm_dialog
 from ._base_button import ImportantButton
 
 
