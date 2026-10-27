@@ -1,7 +1,14 @@
 import random
+import zlib
 
+import numpy as np
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter, QRadialGradient
+
+
+# Which of a theme's visual colors each thing gets (see VisualPalette.pick) -
+# new every run, so they land differently each time the app opens
+COLOR_SEED = random.getrandbits(32)
 
 
 class VisualPalette:
@@ -10,9 +17,13 @@ class VisualPalette:
     with goes through color(), which scales its alpha by intensity - so one
     visual reads as a bold demo at intensity 1.0 and a quiet title-page
     background at ~0.3 without the visual itself knowing which it is.
+
+    A theme can hand it colors of its own ("visual_colors" - see
+    themes.py): each thing a visual highlights then gets one of them at
+    random, the same one for as long as it lives (see pick and split).
     '''
 
-    def __init__(self, background: str, foreground: str, accent: str, intensity: float = 1.0):
+    def __init__(self, background: str, foreground: str, accent: str, intensity: float = 1.0, colors: list[str] | None = None):
         self.background = QColor(background)
         self.foreground = QColor(foreground)
         self.accent = QColor(accent)
@@ -21,6 +32,7 @@ class VisualPalette:
         h, s, v, _ = self.accent.getHsvF()
         self.accent2 = QColor.fromHsvF((max(h, 0.0) + 0.5) % 1.0, s, v)
         self.intensity = intensity
+        self.colors = [QColor(color) for color in colors or ()]
 
     def color(self, name: str, alpha: float = 1.0) -> QColor:
         '''
@@ -33,10 +45,41 @@ class VisualPalette:
         '''
         The accent color rotated around the color wheel by offset (0-1), for
         visuals that need more distinct colors than accent/accent2 while
-        keeping the theme's saturation and brightness.
+        keeping the theme's saturation and brightness. In a theme with
+        visual colors, one of those instead - the same one for each offset.
         '''
+        if self.colors:
+            return self.pick(("hue", offset), alpha)
         h, s, v, _ = self.accent.getHsvF()
         return self.faded(QColor.fromHsvF((max(h, 0.0) + offset) % 1.0, s, v), alpha)
+
+    def pick(self, key, alpha: float = 1.0, name: str = "accent") -> QColor:
+        '''
+        The highlight for one thing, by a key that stays the same for as
+        long as it lives (an index, an id): one of the theme's visual
+        colors at random - or name's color, in a theme without them.
+        '''
+        if not self.colors:
+            return self.color(name, alpha)
+        return self.faded(self.colors[zlib.crc32(f"{COLOR_SEED}:{key}".encode()) % len(self.colors)], alpha)
+
+    def split(self, indices) -> list[tuple[int, np.ndarray]]:
+        '''
+        indices (of things drawn together - points, lines) grouped by which
+        of the theme's visual colors each gets, as (slot for slot_color,
+        the group's indices) - all in one group, in a theme without them.
+        '''
+        indices = np.asarray(indices, dtype=np.int64)
+        if not self.colors:
+            return [(0, indices)]
+        # A multiplicative hash's high bits, so neighbours don't take turns
+        slots = (((indices.astype(np.uint64) * np.uint64(2654435761) + np.uint64(COLOR_SEED)) & np.uint64(0xFFFFFFFF))
+                 >> np.uint64(16)) % np.uint64(len(self.colors))
+        return [(slot, indices[slots == slot]) for slot in range(len(self.colors)) if (slots == slot).any()]
+
+    def slot_color(self, slot: int, alpha: float = 1.0, name: str = "accent") -> QColor:
+        '''The color of one of split's groups - name's color, in a theme without visual colors.'''
+        return self.faded(self.colors[slot], alpha) if self.colors else self.color(name, alpha)
 
     def faded(self, color: QColor, alpha: float) -> QColor:
         color = QColor(color)

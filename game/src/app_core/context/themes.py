@@ -103,6 +103,10 @@ as it did before they existed (see STYLE_DEFAULTS):
     "scanlines"        0-100 - dark lines across the whole window, over
                        everything on it, like an old CRT's - this strong
                        (see Scanlines)
+    "visual_colors"    {"dark": ["#rrggbb", ...], "light": [...]} - what the
+                       background visual highlights things in instead of
+                       the accent: each thing one of these, at random (see
+                       VisualPalette.pick)
     "line_colors"      {"dark": ["#rrggbb", ...], "light": [...]} - plain
                        buttons and panels' outlines each take one of these
                        instead of the theme's one (see Style.line_color),
@@ -283,6 +287,7 @@ STYLE_DEFAULTS: dict = {
     "grain_surfaces": True,
     "scanlines": 0,
     "line_colors": None,
+    "visual_colors": None,
 }
 MAX_PANEL_RADIUS = 24
 MAX_PANEL_FRAME = 16
@@ -359,7 +364,7 @@ def style_setting(info: dict, key: str):
         most = 5 if key == "noise_gradient" else 7
         colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:most] for mode in THEME_MODES}
         return colors if all(len(c) >= 2 for c in colors.values()) else None
-    if key == "line_colors":
+    if key in ("line_colors", "visual_colors"):
         if not isinstance(value, dict):
             return None
         colors = {mode: [c.lower() for c in value.get(mode, []) if is_hex(c)][:8] for mode in THEME_MODES}

@@ -113,10 +113,11 @@ class Proximity(Visual):
             mouse_reach = self.reach * self.MOUSE_REACH
             to_mouse = np.hypot(x - mx, y - my)
             near = to_mouse < mouse_reach
-            pen = QPen(palette.color("accent", 0.5), self.LINE_WIDTH)
-            pen.setCapStyle(Qt.PenCapStyle.FlatCap)
-            painter.setPen(pen)
-            painter.drawLines([QLineF(mx, my, x[k], y[k]) for k in np.flatnonzero(near)])
+            for slot, group in palette.split(np.flatnonzero(near)):
+                pen = QPen(palette.slot_color(slot, 0.5), self.LINE_WIDTH)
+                pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+                painter.setPen(pen)
+                painter.drawLines([QLineF(mx, my, x[k], y[k]) for k in group])
 
         # Points
         dim = [QPointF(x[k], y[k]) for k in np.flatnonzero(~near)]
@@ -125,7 +126,8 @@ class Proximity(Visual):
         painter.setPen(node_pen)
         painter.drawPoints(dim)
         if near.any():
-            lit_pen = QPen(palette.color("accent", 0.95), self.LINE_WIDTH)
-            lit_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            painter.setPen(lit_pen)
-            painter.drawPoints([QPointF(x[k], y[k]) for k in np.flatnonzero(near)])
+            for slot, group in palette.split(np.flatnonzero(near)):
+                lit_pen = QPen(palette.slot_color(slot, 0.95), self.LINE_WIDTH)
+                lit_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                painter.setPen(lit_pen)
+                painter.drawPoints([QPointF(x[k], y[k]) for k in group])

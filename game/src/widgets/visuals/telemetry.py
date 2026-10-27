@@ -93,7 +93,7 @@ class Telemetry(Visual):
             painter.setPen(QPen(palette.color("foreground", 0.12), 1.0))
             painter.drawLine(QPointF(0, top + band), QPointF(self.width, top + band))
 
-            setpoint_pen = QPen(palette.color("accent2", 0.55), 1.4)
+            setpoint_pen = QPen(palette.pick((index, "setpoint"), 0.55, "accent2"), 1.4)
             setpoint_pen.setStyle(Qt.PenStyle.DashLine)
             value_path = QPainterPath()
             setpoint_path = QPainterPath()
@@ -121,9 +121,9 @@ class Telemetry(Visual):
 
             painter.setPen(setpoint_pen)
             painter.drawPath(setpoint_path)
-            painter.setPen(QPen(palette.color("accent", 0.9), 2.0))
+            painter.setPen(QPen(palette.pick(index, 0.9), 2.0))
             painter.drawPath(value_path)
 
             # Glowing "pen head" at the live value
-            draw_glow(painter, QPointF(self.width - 2, live_point.y()), 10.0, palette.color("accent", 1.0))
+            draw_glow(painter, QPointF(self.width - 2, live_point.y()), 10.0, palette.pick(index, 1.0))
             painter.setBrush(Qt.BrushStyle.NoBrush)

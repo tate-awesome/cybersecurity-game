@@ -220,7 +220,7 @@ class Kernel(Visual):
                 continue
             rect = self.node_rect(key)
             heat = self.heat[key]
-            border = palette.faded(palette.accent if heat > 0.05 else palette.foreground, 0.35 + 0.6 * heat)
+            border = palette.pick(key, 0.35 + 0.6 * heat) if heat > 0.05 else palette.color("foreground", 0.35 + 0.6 * heat)
             painter.setPen(QPen(border, 1.4 + heat))
             painter.setBrush(palette.color("background", 0.7))
             if kind == "route":

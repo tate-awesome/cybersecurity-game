@@ -202,8 +202,11 @@ class Constellation(Visual):
             index = np.flatnonzero(levels == level)
             if not len(index):
                 continue
-            tint = "accent" if self.detailed else "foreground"
-            pen = QPen(palette.color(tint, 0.25 + 0.75 * (level + 1) / self.ALPHA_LEVELS), 3.6)
-            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            painter.setPen(pen)
-            painter.drawPoints([QPointF(self.px[i], self.py[i]) for i in index])
+            alpha = 0.25 + 0.75 * (level + 1) / self.ALPHA_LEVELS
+            groups = palette.split(index) if self.detailed else [(None, index)]
+            for slot, group in groups:
+                color = palette.slot_color(slot, alpha) if self.detailed else palette.color("foreground", alpha)
+                pen = QPen(color, 3.6)
+                pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                painter.setPen(pen)
+                painter.drawPoints([QPointF(self.px[i], self.py[i]) for i in group])

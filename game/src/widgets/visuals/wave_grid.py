@@ -183,7 +183,7 @@ class WaveGrid(Visual):
             return QPen(palette.color("foreground", 0.08), self.DEAD_WIDTH)
         if self.detailed:
             t = (level - 1) / (top - 1)
-            return QPen(palette.color("accent", 0.45 + 0.45 * t), self.ACTIVE_WIDTH + (self.PEAK_WIDTH - self.ACTIVE_WIDTH) * t)
+            return QPen(palette.pick(level, 0.45 + 0.45 * t), self.ACTIVE_WIDTH + (self.PEAK_WIDTH - self.ACTIVE_WIDTH) * t)
         t = level / top
         return QPen(palette.color("foreground", 0.08 + 0.42 * t), self.DEAD_WIDTH + (self.PEAK_WIDTH - self.DEAD_WIDTH) * t)
 

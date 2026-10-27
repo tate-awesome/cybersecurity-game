@@ -437,8 +437,9 @@ class NetworkMesh(Visual):
                 if packet["hop"] >= len(packet["path"]) - 1:
                     break
             if packet["hop"] >= len(packet["path"]) - 1:
-                self.pings.append({"node": packet["path"][-1], "age": 0.0})
-                self.landed.append({"node": packet["path"][-1], "age": 0.0})
+                # Each keeps the packet's color (see VisualPalette.pick)
+                self.pings.append({"node": packet["path"][-1], "age": 0.0, "key": id(packet)})
+                self.landed.append({"node": packet["path"][-1], "age": 0.0, "key": id(packet)})
             else:
                 alive.append(packet)
         self.packets = alive
@@ -601,7 +602,7 @@ class NetworkMesh(Visual):
         for ping in self.pings if show_packets else ():
             progress = ping["age"] / self.PING_SECONDS
             radius = 4 + progress * (26 if ping["node"][0] == "router" else 16)
-            painter.setPen(QPen(palette.color("accent", 0.5 * (1.0 - progress)), 1.5))
+            painter.setPen(QPen(palette.pick(ping.get("key", id(ping)), 0.5 * (1.0 - progress)), 1.5))
             painter.drawEllipse(QPointF(*self.position(ping["node"])), radius, radius)
 
         # Nodes - spawning ones fade in, routers also swelling up to size
@@ -643,8 +644,8 @@ class NetworkMesh(Visual):
             t = packet["t"]
             # Fades in while lingering on its source, full strength once moving
             alpha = 1.0 - max(0.0, packet["linger"]) / self.LINGER_START if self.LINGER_START > 0 else 1.0
-            draw_glow(painter, QPointF(ax + (bx - ax) * t, ay + (by - ay) * t), self.PACKET_RADIUS, palette.color("accent", 0.95 * alpha))
+            draw_glow(painter, QPointF(ax + (bx - ax) * t, ay + (by - ay) * t), self.PACKET_RADIUS, palette.pick(id(packet), 0.95 * alpha))
         for landed in self.landed:
             # Delivered: sits on its destination host and fades out
             alpha = 1.0 - landed["age"] / self.LINGER_END
-            draw_glow(painter, QPointF(*self.position(landed["node"])), self.PACKET_RADIUS, palette.color("accent", 0.95 * alpha))
+            draw_glow(painter, QPointF(*self.position(landed["node"])), self.PACKET_RADIUS, palette.pick(landed["key"], 0.95 * alpha))

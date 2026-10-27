@@ -431,11 +431,13 @@ class VisualBackground(QWidget):
         self.invalidate()
 
     def palette_for_theme(self) -> VisualPalette:
+        colors = self.style.setting("visual_colors")
         return VisualPalette(
             self.style.color("root"),
             self.style.color("text"),
             self.style.color("accent"),
             self.intensity,
+            colors[self.style.current_theme.partition("_")[0]] if colors else None,
         )
 
     # Rendering

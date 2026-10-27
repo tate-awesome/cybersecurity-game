@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 from PySide6.QtCore import QLineF, QPointF, Qt
-from PySide6.QtGui import QPainter, QPen
+from PySide6.QtGui import QColor, QPainter, QPen
 
 from .base import Visual, VisualPalette
 
@@ -167,8 +167,15 @@ class VectorField(Visual):
         self.intro = None
 
     # Drawing
+    def groups(self, indices: np.ndarray, palette: VisualPalette) -> list[tuple[int, np.ndarray]]:
+        '''Vectors' tips by color - each its own, from the theme's visual colors, in detailed mode (see VisualPalette.split).'''
+        return palette.split(indices) if self.detailed else [(0, indices)]
+
+    def tint(self, slot: int, alpha: float, palette: VisualPalette) -> QColor:
+        '''A group of tips' color (see groups) - the accent, or plain foreground when not detailed.'''
+        return palette.slot_color(slot, alpha) if self.detailed else palette.color("foreground", alpha)
+
     def paint(self, painter: QPainter, palette: VisualPalette):
-        tint = "accent" if self.detailed else "foreground"
         tip_x, tip_y = self.base_x + self.vec_x, self.base_y + self.vec_y
         if self.intro is None:
             shown = np.arange(len(self.base_x))
@@ -189,20 +196,22 @@ class VectorField(Visual):
         painter.drawLines(lines)
 
         # Tips, so each line reads as a vector with a direction
-        tips = [QPointF(tip_x[i], tip_y[i]) for i in shown if self.intro is None or self.intro["phase"][i] == 2]
-        tip_pen = QPen(palette.color(tint, 0.75), 3.2)
-        tip_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        painter.setPen(tip_pen)
-        painter.drawPoints(tips)
+        tipped = shown if self.intro is None else shown[self.intro["phase"][shown] == 2]
+        for slot, group in self.groups(tipped, palette):
+            tip_pen = QPen(self.tint(slot, 0.75, palette), 3.2)
+            tip_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            painter.setPen(tip_pen)
+            painter.drawPoints([QPointF(tip_x[i], tip_y[i]) for i in group])
 
         if self.intro is not None:
             # The flying points, and the heads still tracing their vectors
             phase = self.intro["phase"]
             flying = np.flatnonzero((phase == 0) & (self.intro["delay"] <= 0))
             tracing = np.flatnonzero(phase == 1)
-            heads = [QPointF(self.intro["x"][i], self.intro["y"][i]) for i in flying]
-            heads += [QPointF(start_x[i], start_y[i]) for i in tracing]
-            head_pen = QPen(palette.color(tint, 0.95), 4.0)
-            head_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            painter.setPen(head_pen)
-            painter.drawPoints(heads)
+            for slot, group in self.groups(np.concatenate([flying, tracing]), palette):
+                heads = [QPointF(self.intro["x"][i], self.intro["y"][i]) if phase[i] == 0 else QPointF(start_x[i], start_y[i])
+                         for i in group]
+                head_pen = QPen(self.tint(slot, 0.95, palette), 4.0)
+                head_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                painter.setPen(head_pen)
+                painter.drawPoints(heads)

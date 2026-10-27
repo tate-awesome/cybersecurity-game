@@ -176,13 +176,13 @@ class Kalman(Visual):
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             for (ax, ay, stamp), (bx, by, _) in zip(points, points[1:]):
                 age = (self.time - stamp) / self.TRAIL_SECONDS
-                pen.setColor(palette.color("accent", 0.9 * (1.0 - age)))
+                pen.setColor(palette.pick(id(vessel), 0.9 * (1.0 - age)))
                 painter.setPen(pen)
                 painter.drawLine(QPointF(ax, ay), QPointF(bx, by))
 
             center = QPointF(ex, ey)
-            painter.setPen(QPen(palette.color("accent2", 0.5), 1.4))
-            painter.setBrush(palette.color("accent2", 0.08))
+            painter.setPen(QPen(palette.pick((id(vessel), "estimate"), 0.5, "accent2"), 1.4))
+            painter.setBrush(palette.pick((id(vessel), "estimate"), 0.08, "accent2"))
             radius = vessel["shown_radius"]
             painter.drawEllipse(center, radius, radius)
 
@@ -193,5 +193,5 @@ class Kalman(Visual):
                 hull.lineTo(QPointF(ex - ux * 6 + uy * 5, ey - uy * 6 - ux * 5))
                 hull.closeSubpath()
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(palette.color("accent", 1.0))
+                painter.setBrush(palette.pick(id(vessel), 1.0))
                 painter.drawPath(hull)
