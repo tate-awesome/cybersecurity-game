@@ -1,6 +1,6 @@
 from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer
 from PySide6.QtGui import QImage, QMouseEvent, QPainter
-from PySide6.QtWidgets import QApplication, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QPushButton, QStyle, QStyleOption, QVBoxLayout, QWidget
 from ...app_core import Context
 from ...app_core.context.style import Style
 from ...app_core.transitions import PopupEntrance
@@ -37,6 +37,8 @@ class Overlay(QWidget):
     # How often the frosted snapshot of what's behind is retaken while open
     # (see capture_behind) - the page underneath keeps animating
     BEHIND_REFRESH_MS = 100
+    # How long a screenshot waits for the right-click menu to leave the screen (see contextMenuEvent)
+    SCREENSHOT_DELAY_MS = 150
 
     def __init__(self, master: QWidget, context: Context, button: QPushButton, populate_func: "Callable[[Overlay], None]", anchor: str = "south",
                  closed_text: str | None = None, open_text: str | None = None):
@@ -404,6 +406,24 @@ class Overlay(QWidget):
             forwarded = QMouseEvent(event.type(), QPointF(receiver.mapFromGlobal(global_pos)), event.globalPosition(),
                                     event.button(), event.buttons(), event.modifiers())
             QApplication.sendEvent(receiver, forwarded)
+
+    def contextMenuEvent(self, event):
+        '''
+        A right click anywhere in it (that has no menu of its own): a menu
+        to screenshot the screen, overlays and all, to the clipboard. While
+        a popup's open it holds the keyboard, so the desktop's own
+        screenshot key (and Alt+Tab) can't get through.
+        '''
+        menu = QMenu(self)
+        menu.addAction(self.context.labels.get("overlay_screenshot"),
+                       lambda: QTimer.singleShot(self.SCREENSHOT_DELAY_MS, self._screenshot))
+        menu.exec(event.globalPos())
+
+    def _screenshot(self):
+        try:
+            QApplication.clipboard().setPixmap(self.screen().grabWindow(0))
+        except RuntimeError:
+            pass  # closed meanwhile
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:

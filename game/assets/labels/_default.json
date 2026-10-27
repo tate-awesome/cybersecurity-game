@@ -1226,6 +1226,7 @@
     "material_editor_title": "Material Editor",
     "material_editor_close": "Close",
     "modal_close": "Close",
+    "overlay_screenshot": "Screenshot to Clipboard",
     "theme_editor_copy_name": "{name} copy",
     "theme_editor_new_title": "New Theme",
     "theme_editor_new_prompt": "Start from:",
