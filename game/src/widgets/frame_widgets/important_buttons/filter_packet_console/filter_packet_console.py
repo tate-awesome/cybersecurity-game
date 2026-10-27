@@ -1,15 +1,14 @@
-from .....app_core import Context
 from .._base_button import ImportantButton
-from .filter_overlay import FilterOverlay
+from .filter_overlay import FilterPopup
 
 
 class FilterPacketConsole(ImportantButton):
     '''
     Opens the packet filter editor (packet_console "filter" - see
-    FilterOverlay) - the packet console follows the setting.
+    FilterPopup) - the packet console follows the setting.
     '''
     LABEL = "menu_bar_buttons_filters_overlay"
+    OPENS = "popup"
 
-    def __init__(self, context: Context):
-        super().__init__(context)
-        FilterOverlay(self, context)
+    def on_click(self):
+        FilterPopup(self.context)

@@ -22806,7 +22806,7 @@
       "file_type": "code",
       "norm_label": ".bar()",
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L86"
+      "source_location": "L89"
     },
     {
       "id": "game_src_app_core_context_smooth_wheel_smoothwheel_eventfilter",
@@ -22842,7 +22842,7 @@
       "file_type": "code",
       "norm_label": ".precise()",
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L75"
+      "source_location": "L78"
     },
     {
       "id": "game_src_widgets_frame_widgets_important_buttons_abort_all_network_actions_abortallnetworkactions_on_click",
@@ -47628,7 +47628,7 @@
       "source_location": "L16"
     },
     {
-      "id": "game_src_app_core_context_smooth_wheel_rationale_76",
+      "id": "game_src_app_core_context_smooth_wheel_rationale_79",
       "label": "Whether event is from a touchpad (or its momentum) - already smooth. Not told\u2026",
       "_origin": "ast",
       "community": 36,
@@ -47636,10 +47636,10 @@
       "file_type": "rationale",
       "norm_label": "whether event is from a touchpad (or its momentum) - already smooth. not told...",
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L76"
+      "source_location": "L79"
     },
     {
-      "id": "game_src_app_core_context_smooth_wheel_rationale_87",
+      "id": "game_src_app_core_context_smooth_wheel_rationale_90",
       "label": "The vertical scroll bar the wheel over watched would move, if it's one this\u2026",
       "_origin": "ast",
       "community": 36,
@@ -47647,7 +47647,7 @@
       "file_type": "rationale",
       "norm_label": "the vertical scroll bar the wheel over watched would move, if it's one this...",
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L87"
+      "source_location": "L90"
     },
     {
       "id": "game_src_widgets_frame_widgets_important_buttons_abort_all_network_actions",
@@ -116518,7 +116518,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L86",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -130669,7 +130669,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L75",
+      "source_location": "L78",
       "weight": 1.0
     },
     {
@@ -130680,7 +130680,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L86",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -152959,25 +152959,25 @@
       "weight": 1.0
     },
     {
-      "source": "game_src_app_core_context_smooth_wheel_rationale_76",
+      "source": "game_src_app_core_context_smooth_wheel_rationale_79",
       "target": "game_src_app_core_context_smooth_wheel_smoothwheel_precise",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L76",
+      "source_location": "L79",
       "weight": 1.0
     },
     {
-      "source": "game_src_app_core_context_smooth_wheel_rationale_87",
+      "source": "game_src_app_core_context_smooth_wheel_rationale_90",
       "target": "game_src_app_core_context_smooth_wheel_smoothwheel_bar",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/app_core/context/smooth_wheel.py",
-      "source_location": "L87",
+      "source_location": "L90",
       "weight": 1.0
     },
     {

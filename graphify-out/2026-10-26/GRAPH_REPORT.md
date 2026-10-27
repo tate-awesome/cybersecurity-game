@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-26)
 
 ## Corpus Check
-- 322 files · ~269,714 words
+- 322 files · ~269,740 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -535,7 +535,7 @@ Nodes (3): frame_callback(), sprite(), sprite_enabled()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `important_buttons/__init__.py`, `MenuBar`, `ClickManager`, `VisualPalette`, `widgets/__init__.py`, `Style`, `AnimationManager`, `ShiftWheel`, `defender_flag_panel/_builder.py`, `.restyle`, `SmoothWheel`, `ImportantButton`, `.apply`, `LocalizationManager`, `docking.py`, `ConfigureThisWorkspace`, `.start_session`, `Process`, `Preferences`, `.save_current_page`, `Performance`, `KeyBinds`, `popup.py`, `Router`, `InputManager`, `open_favorite_page.py`, `PageManager`, `LinkToPage`, `PrivilegedHelper`, `ProcessManager`, `Overlay`, `pyside6_qtcore`, `menu_bar.py`, `Json`, `threading`, `host.py`?**
-  _High betweenness centrality (0.247) - this node is a cross-community bridge._
+  _High betweenness centrality (0.251) - this node is a cross-community bridge._
 - **Are the 15 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 15 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `DOT11_SSID`, `WLAN_INTERFACE_INFO`, `WLAN_INTERFACE_INFO_LIST` to the rest of the system?**
@@ -543,7 +543,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `ContextManager` be split into smaller, more focused modules?**
   _Cohesion score 0.06606353881758889 - nodes in this community are weakly interconnected._
 - **Why does `Style` connect `Style` to `ContextManager`, `menu_bar.py`, `.restyle`, `._build_stylesheet`, `.apply_theme`, `important_buttons/__init__.py`, `.discard_changes`, `.start_session`, `open_favorite_page.py`, `.css`, `SettingsSection`, `Overlay`, `.theme_family`, `pyside6_qtcore`?**
-  _High betweenness centrality (0.090) - this node is a cross-community bridge._
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `Style` (e.g. with `ContextManager` and `SettingsSection`) actually correct?**
   _`Style` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `important_buttons/__init__.py` be split into smaller, more focused modules?**

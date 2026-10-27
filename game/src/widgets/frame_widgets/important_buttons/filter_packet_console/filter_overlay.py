@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QCompleter, Q
 from .....app_core import Context
 from .....network.buffer.packet_filter import (BY_NAME, FIELDS, FilterError, conjugate, empty_state, join_pair, parse,
                                                 quote, split_pair, to_state)
-from ...overlay import Overlay
+from ....popup import ButtonPopup
 from ...text_area import TextArea
 
 # A box's states, in the order a click steps through them (see CycleBox)
@@ -24,11 +24,11 @@ DESCRIPTION_WIDTH_CHARS = 30
 TYPING_PAUSE_MS = 300
 # A field with more options than this splits them into columns, by section
 OPTIONS_PER_COLUMN = {"type": 8, "meta": 3}
-# Room the overlay leaves for everything but its boxes (title, filter text,
-# buttons, margins; the description panel beside them) when capping their
-# size to the screen - see fit
-CHROME_HEIGHT = 340
-CHROME_WIDTH = 80
+# Room the popup leaves for everything but its boxes (title, filter text,
+# buttons, margins and shadow; the description panel beside them) when
+# capping their size to the screen - see fit
+CHROME_HEIGHT = 400
+CHROME_WIDTH = 140
 
 
 def label_key(field_name: str) -> str:
@@ -219,7 +219,7 @@ class ComboColumn(QWidget):
 
     def add_row(self, text: str = "", state: str = INCLUDE):
         # Parented from the start: showing a part of a parentless widget makes
-        # it a window of its own, and a new window closes the overlay (a popup)
+        # it a window of its own
         row = QWidget(self)
         layout = QHBoxLayout(row)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -289,7 +289,7 @@ class ComboColumn(QWidget):
             return  # already showing them - and the row being typed in stays put
         focused = QApplication.focusWidget()
         if focused is not None and self.isAncestorOf(focused):
-            # A deleted widget's focus would fall back to the main window, closing the overlay
+            # Rather than fall back to wherever, once the focused widget is deleted
             self.setFocus()
         for _, _, row in self.rows:
             row.deleteLater()
@@ -301,9 +301,9 @@ class ComboColumn(QWidget):
         self.add_row()
 
 
-class FilterOverlay(QObject):
+class FilterPopup(QObject):
     '''
-    Binds a button to open and close the packet filter editor: checkboxes
+    Opens the packet filter editor, in a popup: checkboxes
     and comboboxes by section (see packet_filter.FIELDS), above the filter
     as text. Changing a box writes the text (see packet_filter.conjugate);
     pasting or typing a filter ticks the boxes to match (to_state) - or, for
@@ -321,8 +321,10 @@ class FilterOverlay(QObject):
     written in the filter (see describe).
     '''
 
-    def __init__(self, button: QPushButton, context: Context):
-        super().__init__(button)
+    def __init__(self, context: Context):
+        popup = ButtonPopup(context, context.labels.get("packet_filter_overlay_title"))
+        super().__init__(popup)  # goes with the popup
+        self.popup = popup
         self.context = context
         self.style = context.style
         self.labels = context.labels
@@ -330,7 +332,8 @@ class FilterOverlay(QObject):
         self.state = empty_state()
         self.options: dict[str, dict[str, CycleOption]] = {}
         self.combos: dict[str, ComboColumn] = {}
-        self.overlay = Overlay(context.root, context, button, self.populate_overlay)
+        self.populate()
+        popup.show()
 
     # Settings
     def text(self) -> str:
@@ -354,25 +357,17 @@ class FilterOverlay(QObject):
         return self.developer or self.available(key)
 
     # Building
-    def populate_overlay(self, overlay: Overlay):
+    def populate(self):
         style = self.style
         self.developer = self.context.preferences.is_developer()
         self.options, self.combos, self.availability = {}, {}, []
         gap = style.cgap * 2
 
-        frame = QFrame()
-        # Part of the overlay's background - follows the "overlay" surface, not "widget"
-        style.set_material(frame, "overlay_card")
-        column = QVBoxLayout(frame)
-        column.setContentsMargins(style.igap, style.igap, style.igap, style.igap)
+        column = QVBoxLayout()
         column.setSpacing(gap * 2)
-        overlay.layout().addWidget(frame)
+        self.popup.body.addLayout(column)
 
-        title = QLabel(self.labels.get("packet_filter_overlay_title"))
-        title.setFont(style.get_font())
-        column.addWidget(title)
-
-        # The boxes scroll if they'd make the overlay taller than the screen (see fit)
+        # The boxes scroll if they'd make the popup taller than the screen (see fit)
         self.boxes = QWidget()
         style.set_material(self.boxes, "none")
         boxes = QVBoxLayout(self.boxes)
@@ -581,7 +576,7 @@ class FilterOverlay(QObject):
             placeholders = [self.labels.get("packet_filter_overlay_pair_left"), self.labels.get("packet_filter_overlay_pair_right")]
         else:
             options, placeholders = self.host_options(), [self.labels.get("packet_filter_overlay_host_placeholder")]
-        combos = ComboColumn(self.context, options, placeholders, lambda: QTimer.singleShot(0, self.overlay, self.fit),
+        combos = ComboColumn(self.context, options, placeholders, lambda: QTimer.singleShot(0, self, self.fit),
                              pair=field.name == "pair")
         self.watch(combos, ("field", field.name, None))
         combos.changed.connect(self.boxes_changed)
@@ -678,12 +673,12 @@ class FilterOverlay(QObject):
         for field, combos in self.combos.items():
             combos.set_values(state[field]["include"], state[field]["exclude"])
         self.loading = False
-        QTimer.singleShot(0, self.overlay, self.fit)
+        QTimer.singleShot(0, self, self.fit)
 
     def fit(self):
         '''
         Sizes the boxes' scroll area to the boxes - but no bigger than the
-        screen leaves room for, scrolling the rest - then the overlay to
+        screen leaves room for, scrolling the rest - then the popup to
         its contents.
         '''
         try:
@@ -691,7 +686,7 @@ class FilterOverlay(QObject):
             panel = self.description["title"].parentWidget().width()
         except RuntimeError:
             return  # closed meanwhile
-        screen = self.overlay.screen().availableGeometry()
+        screen = self.popup.screen().availableGeometry()
         room_width = max(400, screen.width() - panel - CHROME_WIDTH)
         room_height = max(200, screen.height() - CHROME_HEIGHT)
         bar = self.scroll.verticalScrollBar().sizeHint().width()
@@ -699,7 +694,7 @@ class FilterOverlay(QObject):
         height = min(hint.height() + (bar if width < hint.width() else 0), room_height)
         width = min(hint.width() + (bar if height < hint.height() else 0), room_width)
         self.scroll.setFixedSize(width, height)
-        self.overlay.adjustSize()
+        self.popup.adjustSize()
 
     # Describing what's under the mouse
     def build_description(self) -> QFrame:
@@ -738,7 +733,7 @@ class FilterOverlay(QObject):
     def describe(self, topic: tuple | None):
         '''
         Fills the description panel for topic - ("section", name), ("field",
-        name, value or None) - or, with None, says how the overlay works.
+        name, value or None) - or, with None, says how the popup works.
         For an option: what it is, how the field checks a packet, and how
         it's written to show (and hide) it.
         '''

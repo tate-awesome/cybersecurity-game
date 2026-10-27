@@ -1,4 +1,4 @@
-from ...overlay import Overlay
+from ....popup import ButtonPopup
 from .settings_overlay_button import SettingsOverlayButton
 
 
@@ -10,8 +10,9 @@ class EditModelStyle(SettingsOverlayButton):
     '''
     LABEL = "menu_bar_buttons_model_style_button"
     TOOLTIP = "menu_bar_tooltips_model_style_button"
+    OPENS = "popup"
 
-    def populate(self, overlay: Overlay):
+    def populate(self, window: ButtonPopup):
         states = self.context.states
 
         sprites = self.section("model_sprites")

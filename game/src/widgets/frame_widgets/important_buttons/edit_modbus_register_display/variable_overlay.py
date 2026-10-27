@@ -1,31 +1,35 @@
-from .....app_core import Context
-from ...overlay import Overlay
+from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QCheckBox, QFrame, QGridLayout, QLabel, QLineEdit, QPushButton
+from .....app_core import Context
+from ....popup import ButtonPopup
 
 
-class VariableOverlay:
+class VariablePopup(QObject):
     '''
-    Binds a button to open and close an overlay editing each modbus
-    register's show/nickname/factor/units/modify fields in
+    Opens a popup editing each modbus register's
+    show/nickname/factor/units/modify fields in
     context.states["modbus_registers"]. It only writes context.states - the
     ModBus table/modifier forms poll those fields from their own animation
     callbacks and follow along.
     '''
-    def __init__(self, button: QPushButton, context: Context):
+    def __init__(self, context: Context):
+        popup = ButtonPopup(context, context.labels.get("menu_bar_buttons_variables_overlay"))
+        super().__init__(popup)  # goes with the popup
         self.context = context
         self.style = context.style
-        self.overlay = Overlay(self.context.root, context, button, self.populate_overlay, "east")
+        self.populate(popup)
+        popup.show()
 
-    def populate_overlay(self, overlay: Overlay):
+    def populate(self, popup: ButtonPopup):
         med = self.style.get_font()
         frame = QFrame()
-        # Part of the overlay's background - follows the "overlay" surface, not "widget"
-        self.style.set_material(frame, "overlay_card")
+        # Part of the popup's card
+        self.style.set_material(frame, "none")
         grid = QGridLayout(frame)
-        grid.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        grid.setContentsMargins(0, 0, 0, 0)
         grid.setVerticalSpacing(self.style.cgap * 2)
         grid.setHorizontalSpacing(self.style.igap)
-        overlay.layout().addWidget(frame)
+        popup.body.addWidget(frame)
 
         row = 0
         col = 0

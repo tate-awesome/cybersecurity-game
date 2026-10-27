@@ -301,8 +301,8 @@ class Overlay(QWidget):
         button in the menu bar's own overflow popup) doesn't blow away
         that parent - only truly unrelated overlays get closed, matching
         the CTk version's lineage-aware global click listener. Every
-        overlay is parented to context.root (see CheckboxOverlay/
-        VariableOverlay/FilterOverlay), so that's searched rather than
+        overlay is parented to context.root (see CheckboxOverlay), so
+        that's searched rather than
         keeping a separate registry.
         '''
         lineage = self._lineage()

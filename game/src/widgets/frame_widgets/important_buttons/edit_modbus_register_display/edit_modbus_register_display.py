@@ -1,6 +1,5 @@
-from .....app_core import Context
 from .._base_button import ImportantButton
-from .variable_overlay import VariableOverlay
+from .variable_overlay import VariablePopup
 
 
 class EditModbusRegisterDisplay(ImportantButton):
@@ -11,7 +10,7 @@ class EditModbusRegisterDisplay(ImportantButton):
     '''
     LABEL = "menu_bar_buttons_variables_overlay"
     TOOLTIP = "menu_bar_tooltips_variables_overlay"
+    OPENS = "popup"
 
-    def __init__(self, context: Context):
-        super().__init__(context)
-        VariableOverlay(self, context)
+    def on_click(self):
+        VariablePopup(self.context)

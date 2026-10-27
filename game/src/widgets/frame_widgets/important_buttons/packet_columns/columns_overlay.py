@@ -1,10 +1,10 @@
 from PySide6.QtCore import QEvent, QObject, QPoint, QTimer, Qt
 from PySide6.QtGui import QFont, QFontMetrics
-from PySide6.QtWidgets import QApplication, QCheckBox, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QCheckBox, QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .....app_core import Context
+from ....popup import ButtonPopup
 from ...drag_drop import INTERACTIVE, BinZone, DragHandle, DragPayload, RowZone
-from ...overlay import Overlay
 
 # The buffet's groups, each field in the order it's listed in there. A
 # column in packet_columns that isn't listed here goes in the first group.
@@ -16,7 +16,7 @@ COLUMN_CATEGORIES: dict[str, list[str]] = {
     "modbus": ["modbus_word", "command_word", "command", "command_type", "variables", "values",
                "is_modbus", "is_useful", "is_primary"],
 }
-# What a chip's drag carries (see DragPayload) - only this overlay's zones take it
+# What a chip's drag carries (see DragPayload) - only this popup's zones take it
 CHIP_KIND = "packet_column"
 # How wide the buffet and tray are, and the description beside them, in average characters
 CHIPS_WIDTH_CHARS = 64
@@ -57,10 +57,9 @@ def column_category(key: str) -> str:
     return next((category for category, keys in COLUMN_CATEGORIES.items() if key in keys), next(iter(COLUMN_CATEGORIES)))
 
 
-class PacketColumnsOverlay(QObject):
+class PacketColumnsPopup(QObject):
     '''
-    Binds a button to open and close the packet console's columns overlay:
-    a buffet of every field a column can show, as chips in groups (see
+    Opens the packet console's columns popup: a buffet of every field a column can show, as chips in groups (see
     COLUMN_CATEGORIES), above a tray of the columns that show. Dragging a
     chip into the tray shows that column, and the tray's order, left to
     right, is the console's; dragging it back out (or clicking a chip)
@@ -81,8 +80,10 @@ class PacketColumnsOverlay(QObject):
     students get it.
     '''
 
-    def __init__(self, button: QPushButton, context: Context):
-        super().__init__(button)
+    def __init__(self, context: Context):
+        popup = ButtonPopup(context, context.labels.get("packet_column_overlay_title"))
+        super().__init__(popup)  # goes with the popup
+        self.popup = popup
         self.context = context
         self.style = context.style
         self.labels = context.labels
@@ -93,10 +94,11 @@ class PacketColumnsOverlay(QObject):
         # The chip a click started on, and where
         self.pressed: QFrame | None = None
         self.pressed_at = QPoint()
-        self.overlay = Overlay(context.root, context, button, self.populate_overlay)
+        self.populate()
+        popup.show()
 
     # Building
-    def populate_overlay(self, overlay: Overlay):
+    def populate(self):
         style = self.style
         font = style.get_font()
         gap = style.cgap * 2
@@ -105,21 +107,9 @@ class PacketColumnsOverlay(QObject):
         keys = [key for key in columns if self.developer or is_column_available(self.context, key)]
         chips_width = self.char_width(CHIPS_WIDTH_CHARS)
 
-        frame = QFrame()
-        # Part of the overlay's background - follows the "overlay" surface, not "widget"
-        style.set_material(frame, "overlay_card")
-        frame_layout = QVBoxLayout(frame)
-        frame_layout.setContentsMargins(style.igap, style.igap, style.igap, style.igap)
-        frame_layout.setSpacing(gap)
-        overlay.layout().addWidget(frame)
-
-        title = QLabel(self.labels.get("packet_column_overlay_title"))
-        title.setFont(font)
-        frame_layout.addWidget(title)
-
         body = QHBoxLayout()
         body.setSpacing(style.igap)
-        frame_layout.addLayout(body)
+        self.popup.body.addLayout(body)
         chips_column = QVBoxLayout()
         chips_column.setSpacing(gap)
         body.addLayout(chips_column)
@@ -257,7 +247,7 @@ class PacketColumnsOverlay(QObject):
             moved = (event.globalPosition().toPoint() - self.pressed_at).manhattanLength() if self.pressed is chip else 0
             if self.pressed is chip and chip.drag.dragging is None and moved < QApplication.startDragDistance():
                 # After this event - moving the chip reparents it
-                QTimer.singleShot(0, lambda chip=chip: self.toggle(chip))
+                QTimer.singleShot(0, self, lambda chip=chip: self.toggle(chip))
             self.pressed = None
         return False
 
@@ -268,7 +258,7 @@ class PacketColumnsOverlay(QObject):
         return widget
 
     def describe(self, key: str | None):
-        '''Shows what key's field is in the description panel - or, with None, how the overlay works.'''
+        '''Shows what key's field is in the description panel - or, with None, how the popup works.'''
         if key is None:
             self.description_name.setText(self.labels.get("packet_column_overlay_hint_title"))
             self.description_category.hide()
@@ -327,9 +317,9 @@ class PacketColumnsOverlay(QObject):
         self.changed()
 
     def changed(self):
-        '''Writes the tray's order to packet_columns (see the class docstring), and fits the overlay to its chips again.'''
+        '''Writes the tray's order to packet_columns (see the class docstring), and fits the popup to its chips again.'''
         tray = [chip.key for chip in self.tray.items]
         live = self.context.states.get("packet_columns")
         for key in live:
             live[key] = tray.index(key) + 1 if key in tray else 0
-        self.overlay.adjustSize()
+        self.popup.adjustSize()

@@ -102,6 +102,21 @@ class PopupWindow(QDialog):
         super().mouseReleaseEvent(event)
 
 
+class ButtonPopup(PopupWindow):
+    '''
+    A popup window for an editor too big for an Overlay, which drops out of
+    its button and can run off the screen: centered over the main window
+    instead, with a Close button. Made afresh by its button's click - fill
+    body, then show it - and deleted once closed. A button opening one shows
+    POPUP_MARK (ImportantButton.OPENS = "popup").
+    '''
+
+    def __init__(self, context: Context, title: str):
+        super().__init__(context.root, context, title)
+        self.add_button(context.labels.get("popup_close"), self.accept)
+        self.finished.connect(lambda *_: self.deleteLater())
+
+
 def message(master: QWidget, context: Context, message: str):
         window = PopupWindow(master, context, "Help")
         window.add_text(message)

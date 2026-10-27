@@ -1,4 +1,4 @@
-from ...overlay import Overlay
+from ....popup import ButtonPopup
 from .settings_overlay_button import SettingsOverlayButton
 
 
@@ -11,8 +11,9 @@ class EditStripChartStyle(SettingsOverlayButton):
     '''
     LABEL = "menu_bar_buttons_strip_chart_style_button"
     TOOLTIP = "menu_bar_tooltips_strip_chart_style_button"
+    OPENS = "popup"
 
-    def populate(self, overlay: Overlay):
+    def populate(self, window: ButtonPopup):
         states = self.context.states
 
         sprites = self.section("strip_chart_sprites")
