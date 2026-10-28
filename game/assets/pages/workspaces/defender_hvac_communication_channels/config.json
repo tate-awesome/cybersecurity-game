@@ -28,7 +28,15 @@
 
     "settings": {
         "model_panels": {
-            "modbus_model_panel_1": {"available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "sniffed_hvac_chart": 0, "ap_polled_submarine_map": 0}}
+            "modbus_model_panel_1": {
+                "available": {
+                    "sniffed_submarine_map": 0,
+                    "sniffed_hvac_house": 0,
+                    "sniffed_hvac_chart": 0,
+                    "ap_polled_submarine_map": 0,
+                    "ap_polled_hvac_chart": 1
+                }
+            }
         },
         "network_action_forms_shown": {"arp": 1, "sniff": 1, "ap_tunnel": 1, "ap_connect": 1},
         "available": {
@@ -39,35 +47,33 @@
             "ap_tunnel": 1,
             "nfq": 1,
             "table": 1,
-            "modify": 1
+            "modify": 1,
+            "flags_hvac": 1,
+            "flags_kalman": 0,
+            "flags": 0
         },
-        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
+        "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
+        "defender_flag_forms_shown": {"flags_hvac": 1, "flags": 0, "flags_kalman": 0}
     },
 
     "title": "defender_hvac_communication_channels_workspace",
-    "menu_bar": [
-        "ap_config_button"
-    ],
+    "menu_bar": ["ap_config_button"],
 
     "layout_shape": {
         "v_panes_1": [
             {
-                "h_panes_1": [
-                    "network_action_panel_1",
-                    "defender_console_panel_1",
-                    "modbus_model_panel_1"
-                ]
+                "h_panes_1": ["network_action_panel_1", "defender_console_panel_1", "modbus_model_panel_1"]
             },
-            {"h_panes_2": ["modbus_table_panel_1", "defender_stripchart_panel_1"]}
+            {"h_panes_2": ["modbus_table_panel_1", "defender_flag_panel_1"]}
         ]
     },
     "layout_weights": {
         "h_panes_1": 65,
-        "network_action_panel_1": 25,
-        "defender_console_panel_1": 41,
-        "modbus_model_panel_1": 33,
+        "network_action_panel_1": 32,
+        "defender_console_panel_1": 26,
+        "modbus_model_panel_1": 42,
         "h_panes_2": 35,
-        "modbus_table_panel_1": 68,
-        "defender_stripchart_panel_1": 68
+        "modbus_table_panel_1": 59,
+        "defender_flag_panel_1": 41
     }
 }
