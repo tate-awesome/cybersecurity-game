@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-28)
 
 ## Corpus Check
-- 323 files · ~275,703 words
+- 323 files · ~275,727 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f99295b1`
+- Built from commit: `6bf9cd2e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -583,7 +583,7 @@ Nodes (5): TitlePage, WorkspacePage, Page, TitleFooter, TitleMenu
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `pyside6_qtcore`, `CheckboxOverlay`, `ConfigureThisWorkspace`, `LinkToPage`, `Style`, `Page`, `AnimationManager`, `message`, `Visual`, `menu_bar.py`, `ModbusBuffer`, `time`, `MenuBar`, `quit_application.py`, `PacketBuffer`, `ShiftWheel`, `GoForwardToNextPage`, `_base_button.py`, `docking.py`, `LocalizationManager`, `widgets/__init__.py`, `edit_network_hosts.py`, `Preferences`, `Performance`, `KeyBinds`, `Router`, `InputManager`, `.setText`, `PageManager`, `confirm_dialog`, `PrivilegedHelper`, `ProcessManager`, `.start_session`, `Overlay`, `config_editor.py`, `Json`, `Process`, `host.py`?**
-  _High betweenness centrality (0.249) - this node is a cross-community bridge._
+  _High betweenness centrality (0.241) - this node is a cross-community bridge._
 - **Are the 15 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 15 INFERRED edges - model-reasoned connections that need verification._
 - **Should `pyside6_qtcore` be split into smaller, more focused modules?**

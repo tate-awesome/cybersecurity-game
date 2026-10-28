@@ -102,6 +102,8 @@ class StyleSignals(QObject):
 # The symbols solo buttons show (see Style.icon) - name -> codepoint in
 # ICON_FONT, a subset of Tabler Icons (MIT - see its license beside it) with
 # just these. Names are Tabler's own; to add one, subset it into the font too.
+# Its family is renamed "Cyber-ICS Icons" - under Tabler's own "tabler-icons",
+# a system-installed Tabler (another version, other codepoints) would win on Linux.
 ICON_FONT = "tabler-icons.ttf"
 ICONS: dict[str, int] = {
     "menu-2": 0xec42,
