@@ -1,11 +1,16 @@
-import sys
+import ctypes, sys
 
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from .router import Router
 from .transitions import FadeIn, WindowReveal
 from ..widgets import VisualBackground
+
+# Names the app to the OS for its taskbar entry (see App.set_icon) - the
+# Windows AppUserModelID, and on Linux the .desktop file's name
+APP_ID = "cybergame"
 
 
 class MainWindow(QMainWindow):
@@ -110,8 +115,13 @@ class App:
         its START_PAGE.
         '''
 
+        # Before any window exists - see set_icon
+        if sys.platform == "win32":
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+
         # Start a Qt app
         self.app = QApplication.instance() or QApplication(sys.argv)
+        self.app.setDesktopFileName(APP_ID)
 
         self.root = MainWindow()
         self.root.setWindowTitle(title)
@@ -120,6 +130,7 @@ class App:
         # Create the router, which will handle page navigation
         router = Router(self.root)
         context = router.context
+        self.set_icon(context)
         if context.preferences.is_fade_in():
             # The background color fades in on the desktop, the window shows
             # under it, then the first page comes in (see FadeIn). The page
@@ -140,6 +151,21 @@ class App:
 
         # Start the main loop
         sys.exit(self.app.exec())
+
+
+    def set_icon(self, context):
+        '''
+        The icon for every window, which is what the taskbar shows. On
+        Windows, run from source, the taskbar would group the window under
+        python.exe and show its icon instead - the AppUserModelID set before
+        the QApplication gives the game its own taskbar entry. On Linux, X11
+        takes the window icon as is; Wayland ignores it on most desktops and
+        looks up an installed .desktop file named by setDesktopFileName
+        instead (APP_ID.desktop), falling back to a generic icon without one.
+        '''
+        icon = QIcon(str(context.paths.icons / "app.png"))
+        if not icon.isNull():
+            self.app.setWindowIcon(icon)
 
 
     def set_geometry(self):

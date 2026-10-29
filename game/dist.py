@@ -76,6 +76,11 @@ def main():
 
     # sys.executable -m PyInstaller uses this venv's PyInstaller even if
     # the `pyinstaller` command isn't on PATH
+    # The executable's own icon, for Windows Explorer and shortcuts - the
+    # window and taskbar icon is set at runtime from assets/icons/app.png.
+    # Absolute, since PyInstaller resolves it from --specpath
+    icon = ["--icon", str(GAME_DIR / "assets" / "icons" / "app.ico")] if platform.system() == "Windows" else []
+
     print("Running PyInstaller...")
     result = subprocess.run(
         [
@@ -85,6 +90,7 @@ def main():
             "--noconfirm",
             "--clean",
             "--specpath", "build",  # keep the generated .spec out of game/
+            *icon,
             "main.py",
         ],
         cwd=GAME_DIR,

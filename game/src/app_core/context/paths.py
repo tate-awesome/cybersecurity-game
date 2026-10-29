@@ -50,6 +50,8 @@ class Paths:
         self.pages: Path = self.assets / "pages"
         # The icon font (see style.ICONS)
         self.fonts: Path = self.assets / "fonts"
+        # The window and taskbar icon (see App.set_icon)
+        self.icons: Path = self.assets / "icons"
 
         # Dynamically generated, read & write. _user_dirs is the single
         # source of truth for the user_data tree so DeleteAllUserData's

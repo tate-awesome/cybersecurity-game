@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "game/dist.py": {
-    "mtime": 1792646855.3981318,
-    "seen": 1793230548.7998111,
-    "ast_hash": "eae7b29caa3cbced465c26350fa30d75",
+    "mtime": 1793304109.7978542,
+    "seen": 1793304673.9724894,
+    "ast_hash": "d4610cfffa0023e3ef29000b4609d319",
     "semantic_hash": ""
   },
   "game/flusher.py": {
@@ -408,9 +408,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/app.py": {
-    "mtime": 1792646855.4031434,
-    "seen": 1793230548.7998168,
-    "ast_hash": "a9b7254de470d6ff0455f7487b297ab6",
+    "mtime": 1793304108.9651484,
+    "seen": 1793304673.9730647,
+    "ast_hash": "569b9917b5a4b694bc68da101ef37b17",
     "semantic_hash": ""
   },
   "game/src/app_core/context/animation_manager.py": {
@@ -474,9 +474,9 @@
     "semantic_hash": ""
   },
   "game/src/app_core/context/paths.py": {
-    "mtime": 1793220868.1351624,
-    "seen": 1793230548.799829,
-    "ast_hash": "aa2294ada06a65ad62dfb5685b7b4b6b",
+    "mtime": 1793304095.1624796,
+    "seen": 1793304673.9745438,
+    "ast_hash": "263c2478cd61c34644928e91a8bf6f81",
     "semantic_hash": ""
   },
   "game/src/app_core/context/performance.py": {
@@ -2007,6 +2007,12 @@
     "mtime": 1793230534.6976638,
     "seen": 1793230548.8000853,
     "ast_hash": "6605abf2312429d1ce6ff63ed7351924",
+    "semantic_hash": ""
+  },
+  "game/assets/icons/app.png": {
+    "mtime": 1793304368.989629,
+    "seen": 1793304674.012058,
+    "ast_hash": "56e6efb747d40da99305cb2c44158633",
     "semantic_hash": ""
   }
 }
