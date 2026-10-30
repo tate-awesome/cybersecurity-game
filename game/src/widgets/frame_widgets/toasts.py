@@ -29,7 +29,8 @@ from collections import deque
 
 from PySide6.QtCore import QEasingCurve, QElapsedTimer, QObject, QPoint, QPointF, QRect, QRectF, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QFrame, QGraphicsOpacityEffect, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel,
+                               QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
 from ... import STARTED
 from ...app_core import Context
@@ -50,6 +51,25 @@ def session_stamp(status_time: float) -> str:
     minutes, seconds = divmod(rest, 60)
     return f"{hours}:{minutes:02}:{seconds:02}"
 
+
+def page_tokens(current: int, total: int, edge: int = 1, around: int = 1) -> list[int | None]:
+    '''
+    The page numbers a navigator shows (0-based), Google-style: the first
+    and last edge pages, the current page and around it, and None for each
+    gap between them (an ellipsis) - e.g. current 5 of 12 -> [0, None, 3, 4,
+    5, None, 11].
+    '''
+    keep = set(range(edge)) | set(range(total - edge, total)) | set(range(current - around, current + around + 1))
+    pages = sorted(page for page in keep if 0 <= page < total)
+    tokens: list[int | None] = []
+    previous = -1
+    for page in pages:
+        if page - previous > 1:
+            tokens.append(None)
+        tokens.append(page)
+        previous = page
+    return tokens
+
 # How wide a toast's card is, px - the shadow's room comes on top
 TOAST_WIDTH = 380
 # At most this many up at once - one more sends the oldest into the bell at once
@@ -69,8 +89,18 @@ MOVE_MS = 220
 EAT_MS = 340
 POP_MS = 240
 POP_SCALE = 0.35
-# The bell's dropdown scrolls past this much of the window's height
+# The bell's dropdown's page of cards scrolls past this much of the window's height
 DROPDOWN_HEIGHT = 0.6
+# Statuses shown per page in the dropdown (see StatusBell.fill)
+DROPDOWN_PAGE_SIZE = 25
+# The dropdown's filter menu, in order: (label key, the kinds it shows)
+DROPDOWN_FILTERS: list[tuple[str, frozenset[str]]] = [
+    ("status_toasts_filter_all", frozenset({"status", "error", "report"})),
+    ("status_toasts_filter_errors", frozenset({"error"})),
+    ("status_toasts_filter_reports", frozenset({"report"})),
+    ("status_toasts_filter_errors_reports", frozenset({"error", "report"})),
+    ("status_toasts_filter_statuses", frozenset({"status"})),
+]
 # Where the stack can sit - (vertical, horizontal) - and where it starts:
 # at the top right, under the bell beside Quick Settings. Dragged somewhere (see Toast.mouseReleaseEvent),
 # it's saved for that page in preferences' PAGE_ANCHORS_PREFERENCE
@@ -601,12 +631,17 @@ class StatusBell(ImportantButton):
         self._pop: QVariantAnimation | None = None
         # The page menu bar it's on - set by it, which moves it (see MenuBar.place_bell)
         self.menu_bar = None
+        # The dropdown's current filter (an index into DROPDOWN_FILTERS) and
+        # page - the filter is kept between opens, the page resets on each open.
+        self._filter = 0
+        self._page = 0
         self.dropdown = Overlay(context.root, context, self, self.fill, trigger_texts=False)
         context.style.signals.changed.connect(self.update)
         context.toasts.bind_bell(self)
 
     def on_click(self):
         self.context.toasts.mark_seen()
+        self._page = 0
         self.dropdown.click_open()
 
     def pop(self):
@@ -666,30 +701,153 @@ class StatusBell(ImportantButton):
         painter.end()
 
     def fill(self, overlay: Overlay):
-        '''The dropdown: every status kept (see HISTORY_SIZE), newest first, each on the card its toast had.'''
+        '''
+        The dropdown: a filter menu, then a page of DROPDOWN_PAGE_SIZE
+        statuses (newest first, each on the card its toast had - see
+        ToastCard), then a page navigator. The filter and page are kept on
+        the bell (see __init__), so changing either rebuilds the page in
+        place (see render) rather than reopening.
+        '''
         context, style = self.context, self.context.style
-        history = list(self.context.toasts.history)
-        if not history:
-            empty = QLabel(context.labels.get("status_toasts_empty"))
-            empty.setFont(style.get_font())
-            overlay.layout().addWidget(empty)
-            return
-        column = QWidget()
-        rows = QVBoxLayout(column)
-        rows.setContentsMargins(0, 0, 0, 0)
-        cards = [ToastCard(context, status, opened=overlay.close_chain, selectable=True) for status in reversed(history)]
-        # As far apart as the toasts' cards (see Toasts.place) - their shadows' room overlapping
-        left, top, right, bottom = cards[0].shadow_room()
-        rows.setSpacing(max(0, style.igap - top - bottom))
-        for card in cards:
-            rows.addWidget(card)
-        column.setFixedWidth(cards[0].width())
+        labels = context.labels
+        # Newest first; snapshotted at open time, so a status arriving while
+        # it's open doesn't shift the paging underfoot.
+        statuses = list(reversed(self.context.toasts.history))
+
+        # Filter menu, behind a "Filter:" label so it reads as one
+        filter_row = QWidget()
+        filter_layout = QHBoxLayout(filter_row)
+        filter_layout.setContentsMargins(0, 0, 0, 0)
+        filter_layout.setSpacing(style.igap)
+        filter_label = QLabel(labels.get("status_toasts_filter_label"))
+        filter_label.setFont(style.get_font())
+        filter_layout.addWidget(filter_label)
+        combo = QComboBox()
+        combo.setFont(style.get_font())
+        for key, _ in DROPDOWN_FILTERS:
+            combo.addItem(labels.get(key))
+        combo.setCurrentIndex(min(self._filter, len(DROPDOWN_FILTERS) - 1))
+        filter_layout.addWidget(combo, 1)
+        filter_row.setFixedWidth(TOAST_WIDTH)
+        overlay.layout().addWidget(filter_row)
+
+        # The page of cards, scrollable within a capped height
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }")
-        scroll.setWidget(column)
-        height = min(column.sizeHint().height(), int(context.root.height() * DROPDOWN_HEIGHT))
-        scroll.setFixedSize(column.width() + scroll.verticalScrollBar().sizeHint().width(), height)
         overlay.layout().addWidget(scroll)
+
+        # Page navigator
+        nav = QWidget()
+        nav_row = QHBoxLayout(nav)
+        nav_row.setContentsMargins(0, 0, 0, 0)
+        nav_row.setSpacing(style.cgap * 2)
+        overlay.layout().addWidget(nav)
+
+        max_height = int(context.root.height() * DROPDOWN_HEIGHT)
+        # The card width, from the first one built - kept so an empty page's
+        # placeholder and the nav line up with it.
+        width = {"px": TOAST_WIDTH}
+
+        def shown() -> list[MetaStatus]:
+            kinds = DROPDOWN_FILTERS[self._filter][1]
+            return [status for status in statuses if status.kind in kinds]
+
+        def go(page: int):
+            self._page = page
+            render()
+
+        def render():
+            items = shown()
+            pages = max(1, math.ceil(len(items) / DROPDOWN_PAGE_SIZE))
+            self._page = max(0, min(self._page, pages - 1))
+            page_items = items[self._page * DROPDOWN_PAGE_SIZE:(self._page + 1) * DROPDOWN_PAGE_SIZE]
+
+            column = QWidget()
+            rows = QVBoxLayout(column)
+            rows.setContentsMargins(0, 0, 0, 0)
+            if page_items:
+                cards = [ToastCard(context, status, opened=overlay.close_chain, selectable=True) for status in page_items]
+                # Spaced like the toast stack (see Toasts.place), the cards' shadow room overlapping
+                _, top, _, bottom = cards[0].shadow_room()
+                rows.setSpacing(max(0, style.igap - top - bottom))
+                for card in cards:
+                    rows.addWidget(card)
+                width["px"] = cards[0].width()
+            else:
+                empty = QLabel(labels.get("status_toasts_empty"))
+                empty.setFont(style.get_font())
+                rows.addWidget(empty)
+            column.setFixedWidth(width["px"])
+            scroll.setWidget(column)
+            # A fixed height across pages (so the navigator stays put) when
+            # there's more than one; a single short page fits its contents.
+            content = column.sizeHint().height()
+            page_height = max_height if pages > 1 else min(content, max_height)
+            scroll.setFixedSize(width["px"] + scroll.verticalScrollBar().sizeHint().width(), page_height)
+            build_nav(pages)
+            overlay.refit()
+
+        def build_nav(pages: int):
+            while nav_row.count():
+                taken = nav_row.takeAt(0).widget()
+                if taken is not None:
+                    taken.deleteLater()
+            if pages <= 1:
+                nav.hide()
+                return
+            nav.show()
+            nav_row.addStretch()
+            nav_row.addWidget(self._nav_button(labels.get("status_toasts_prev"), self._page > 0, lambda: go(self._page - 1)))
+            for token in page_tokens(self._page, pages):
+                if token is None:
+                    dots = QLabel("…")
+                    dots.setFont(style.get_font())
+                    nav_row.addWidget(dots)
+                else:
+                    nav_row.addWidget(self._nav_button(str(token + 1), token != self._page,
+                                                       lambda p=token: go(p), current=token == self._page))
+            nav_row.addWidget(self._nav_button(labels.get("status_toasts_next"), self._page < pages - 1, lambda: go(self._page + 1)))
+            nav_row.addStretch()
+
+        def on_filter(index: int):
+            self._filter = index
+            self._page = 0
+            render()
+
+        combo.currentIndexChanged.connect(on_filter)
+        render()
+
+    def _nav_button(self, text: str, enabled: bool, clicked, current: bool = False) -> QPushButton:
+        '''
+        One page-navigator button (a page number, or Prev/Next) - uniform,
+        not in the theme's per-button line colors; the current page is the
+        accent and isn't clickable, ends (Prev/Next) go faint when disabled.
+        '''
+        style = self.context.style
+        button = QPushButton(text)
+        button.setFont(style.get_font("small"))
+        button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        button.setCursor(Qt.CursorShape.ArrowCursor if current else Qt.CursorShape.PointingHandCursor)
+        name = f"_nav_button_{id(button)}"
+        button.setObjectName(name)
+
+        def sheet() -> str:
+            pad = f"{style.cgap}px {style.igap}px"
+            if current:
+                return (f"QPushButton#{name} {{ background: {style.color('accent')}; color: {style.color('accent_text')};"
+                        f" border: none; border-radius: 6px; padding: {pad}; font-weight: bold; }}")
+            faint = QColor(style.color("text"))
+            faint.setAlpha(80)
+            return (f"QPushButton#{name} {{ background: transparent; color: {style.color('text')};"
+                    f" border: none; border-radius: 6px; padding: {pad}; }}"
+                    f" QPushButton#{name}:hover {{ color: {style.color('accent')}; }}"
+                    f" QPushButton#{name}:disabled {{ color: {faint.name(QColor.NameFormat.HexArgb)}; }}")
+        style.live_style(button, sheet)
+        # The current page isn't a link (you're on it); others navigate.
+        button.setEnabled(enabled and not current)
+        if not current:
+            button.clicked.connect(lambda checked=False: clicked())
+        return button

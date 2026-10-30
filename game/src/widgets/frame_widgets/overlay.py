@@ -179,6 +179,19 @@ class Overlay(QWidget):
         self.show()
         self._behind_timer.start()
 
+    def refit(self):
+        '''
+        Re-size to the current contents and re-place on the same side - for
+        contents that change while the overlay is open (e.g. the status
+        dropdown swapping pages or filters - see StatusBell.fill).
+        '''
+        if not self.isVisible():
+            return
+        self.adjustSize()
+        target = self._opened_from or self.button
+        if target is not None:
+            self.move(self.calculate_placement(self.placed_anchor, target))
+
     # See-through
     def capture_behind(self):
         '''
