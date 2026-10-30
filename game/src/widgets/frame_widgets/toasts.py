@@ -24,16 +24,31 @@ toasts are children of the main window, not of a page, so they ride over
 page changes - and each page's menu bar binds its own bell (see StatusBell).
 '''
 import math
+import time
 from collections import deque
 
 from PySide6.QtCore import QEasingCurve, QElapsedTimer, QObject, QPoint, QPointF, QRect, QRectF, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QFrame, QGraphicsOpacityEffect, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
+from ... import STARTED
 from ...app_core import Context
 from ...network.buffer.meta_status import MetaStatus
 from .important_buttons._base_button import ImportantButton, MODAL_MARK
 from .overlay import Overlay
+
+# The wall-clock instant this session's clock started, so a status's wall-clock
+# time (see StatusBuffer.put) converts to the same session time the footer
+# shows (perf_counter since STARTED) - see session_stamp.
+_SESSION_START_WALL = time.time() - time.perf_counter() + STARTED
+
+
+def session_stamp(status_time: float) -> str:
+    '''A status's time as session time, H:MM:SS - the same clock as the footer's.'''
+    elapsed = max(0, int(status_time - _SESSION_START_WALL))
+    hours, rest = divmod(elapsed, 3600)
+    minutes, seconds = divmod(rest, 60)
+    return f"{hours}:{minutes:02}:{seconds:02}"
 
 # How wide a toast's card is, px - the shadow's room comes on top
 TOAST_WIDTH = 380
@@ -108,7 +123,7 @@ def _escape(text: str) -> str:
 class NoticeContent(QWidget):
     '''
     What a toast (and a row of the bell's dropdown) shows of a status: a
-    small header - its kind and source - in its
+    small header - its kind, source and session time (see session_stamp) - in its
     kind's color, its text word for word, and for an error or report, a
     chip that opens the fix or the report. opened runs after the chip's click.
     selectable lets its text be selected, to copy a URL or a command - not
@@ -125,7 +140,7 @@ class NoticeContent(QWidget):
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(style.cgap * 2)
 
-        parts = [labels.get(f"status_toasts_kind_{status.kind}").upper(), status.hack]
+        parts = [labels.get(f"status_toasts_kind_{status.kind}").upper(), status.hack, session_stamp(status.time)]
         header = QLabel("  ·  ".join(parts))
         header.setTextFormat(Qt.TextFormat.PlainText)
         font = QFont(style.get_font("small"))

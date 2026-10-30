@@ -1,12 +1,10 @@
 {
   "31": "FindBar",
   "40": "LocalizationManager",
-  "65": "DefenderModbusBuffer",
   "70": "InputManager",
   "99": "palette_generator.py",
   "134": "Builder",
   "200": "PooledCanvasMixin",
   "230": "Telemetry",
-  "236": ".edit_workspace",
   "243": "virtual/__init__.py"
 }

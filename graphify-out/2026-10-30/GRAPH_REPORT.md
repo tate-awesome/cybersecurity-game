@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-30)
 
 ## Corpus Check
-- 342 files · ~285,444 words
+- 342 files · ~285,455 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 32 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
