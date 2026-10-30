@@ -58,9 +58,10 @@ class FileStream(Process):
             file = open(file_path, "w", encoding="utf-8")
             self.context.paths.lower_permissions(Path(file_path))
         except Exception as e:
-            self.buffer.put(
+            self.buffer.put_error(
                 "json",
-                f"Failed to open stream file: {e!s}"
+                f"Failed to open stream file: {e!s}",
+                "capture_file_failed",
             )
             return
 
@@ -160,9 +161,10 @@ class FileStream(Process):
         try:
             file.close()
         except Exception as e:
-            self.buffer.put(
+            self.buffer.put_error(
                 "json",
-                f"Failed to close stream file: {e!s}"
+                f"Failed to close stream file: {e!s}",
+                "capture_file_failed",
             )
 
         self._file = None
@@ -186,7 +188,8 @@ class FileStream(Process):
             file.write(schema.dumps(record))
             file.flush()
         except Exception as e:
-            self.buffer.put(
+            self.buffer.put_error(
                 "json",
-                f"Failed to write streamed packet: {e!s}"
+                f"Failed to write streamed packet: {e!s}",
+                "capture_file_failed",
             )

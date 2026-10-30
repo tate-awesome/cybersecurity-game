@@ -6,11 +6,12 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel,
 from .important_buttons import (ButtonGroup, ConfigureThisWorkspace, DeleteAllUserData, DeleteAllWorkspaceSavedData,
                                 EditWorkspaceAvailability, ImportantButton, LoadLocalizationLabelsFile, MENU_BAR_BUTTONS,
                                 OpenAccessPointConfigInBrowser, OpenMaterialEditor, OpenSettingsPage, OpenWorkspaceEditor,
-                                RefreshCurrentPage, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
+                                RefreshCurrentPage, SaveLayoutShapeAsDefault, SaveToastPositionAsDefault, SaveLayoutWeightsAsDefault,
                                 SavePacketColumnsAsDefault, SelectBackground, SelectColorTheme, ToggleDebugLabels,
                                 ToggleFullscreen, ToggleLightDarkMode)
 from .important_buttons.button_group import offered_sections
 from .overlay import Overlay
+from .toasts import StatusBell
 from .window_chrome import (SquareButtons, WindowBarButton, WindowControls, WindowDrag, bar_button_height, draw_window_bar_line,
                             window_bar_button_height, window_bar_height, window_bar_room)
 from collections.abc import Callable
@@ -34,7 +35,7 @@ MENU_BAR_GROUPS: dict[str, list[tuple[str | None, list[str]]]] = {
         ("load_fast", ["pcap_button", "load_json_fast_button"]),
         ("load_real_time", ["stream_pcap_button", "load_button"]),
         ("save", ["save_button", "stream_button"]),
-        ("current_capture", ["clear_status_button", "clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
+        ("current_capture", ["clear_packet_console_button", "clear_modbus_button", "clear_all_button"]),
     ],
     "modbus_button_group": [
         ("registers_and_models", ["registers_button", "register_preset_button"]),
@@ -63,7 +64,7 @@ assert sorted(MENU_BAR_BUTTON_ORDER) == sorted(MENU_BAR_BUTTONS), "every menu ba
 RIGHT_ZONE_GROUPS: dict[str, list[tuple[str | None, list[type[ImportantButton]]]]] = {
     "quick_settings_button_group": [
         ("general", [ToggleFullscreen, LoadLocalizationLabelsFile]),
-        ("appearance", [ToggleLightDarkMode, SelectColorTheme, SelectBackground]),
+        ("appearance", [ToggleLightDarkMode, SelectColorTheme, SelectBackground, SaveToastPositionAsDefault]),
         ("navigation", [OpenAccessPointConfigInBrowser, OpenSettingsPage]),
         ("debug_tools", [DeleteAllUserData, DeleteAllWorkspaceSavedData, OpenWorkspaceEditor, OpenMaterialEditor,
                          ConfigureThisWorkspace, SaveLayoutShapeAsDefault, SaveLayoutWeightsAsDefault,
@@ -279,6 +280,9 @@ class MenuBar(QFrame):
             for button in (self.bookmark, self.refresh):
                 self.row.addWidget(button, 0, Qt.AlignmentFlag.AlignVCenter)
                 self._fixed.append(button)
+            # Placed once the right zone is there (see place_bell)
+            self.bell = self.icon_button(StatusBell(context))
+            self.bell.menu_bar = self
         self.row.addStretch()
 
         # Button overflow overlay - see update_squashing/_populate_overflow_overlay.
@@ -301,6 +305,7 @@ class MenuBar(QFrame):
             self.right_zone = self.build_right_zone()
             self.row.addWidget(_RightZoneRoom(self, self.right_zone))
             self._fixed.append(self.right_zone)
+            self.place_bell()
             WindowDrag(self, context.root)
             context.root.fullscreen_changed.connect(self._on_fullscreen_changed)
             self._top_padding: int | None = None
@@ -345,11 +350,40 @@ class MenuBar(QFrame):
         row = QHBoxLayout(zone)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)  # Square buttons, side by side up to the window's corner (see SquareButtons)
-        row.addWidget(global_buttons(self.context))
+        self.global_buttons = global_buttons(self.context)
+        row.addWidget(self.global_buttons)
         # The whole height of the bar, up into the window's top right corner
         self.window_controls = WindowControls(self.context, zone)
         row.addWidget(self.window_controls)
         return zone
+
+    def place_bell(self):
+        '''
+        Puts the status bell (see toasts.StatusBell) after refresh - or, while
+        the toasts are stacked on the right (see Toasts.bell_on_right), at
+        the front of the right zone, beside Quick Settings, square like the
+        buttons there (see SquareButtons). Again whenever they're dragged
+        across (see Toasts.drop).
+        '''
+        bell = self.bell
+        if bell in self._fixed:
+            self._fixed.remove(bell)
+        if self.context.toasts.bell_on_right():
+            bell.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+            self.global_buttons.layout().insertWidget(0, bell)
+            height = self.global_buttons.height()
+            bell.setFixedWidth(height if height > 0 else self.global_buttons.sizeHint().height())
+        else:
+            bell.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+            bell.setMinimumWidth(0)
+            bell.setMaximumWidth(16777215)
+            self.row.insertWidget(self.row.indexOf(self.refresh) + 1, bell, 0, Qt.AlignmentFlag.AlignVCenter)
+            self._fixed.append(bell)
+        bell.show()
+        self.right_zone.updateGeometry()
+        self.updateGeometry()
+        if hasattr(self, "_entries"):
+            self._update_squashing()
 
     def icon_button(self, button: ImportantButton, icon: str | None = None, active_icon: str | None = None) -> ImportantButton:
         '''A solo button as a bare symbol - see icon_button.'''

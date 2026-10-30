@@ -365,10 +365,6 @@
     },
     "packet_filter_available": {},
     "requested_packet_treeview_clear": 0,
-    "requested_status_console_clear": 0,
-    "status_console": {
-        "scroll": "live"
-    },
 
     "packet_columns": {
         "time_word": 0,

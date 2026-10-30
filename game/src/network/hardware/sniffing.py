@@ -29,7 +29,7 @@ class Sniffer(Process):
             self.sniffer.start()
             self.buffer.put("sniff", "Sniffer is running.")
         except Exception as e:
-            self.buffer.put("sniff", f"Failed to start sniffer: {e}")
+            self.buffer.put_error("sniff", f"Failed to start sniffer: {e}", "sniffer_failed")
 
     def callback(self, pkt):
         try:

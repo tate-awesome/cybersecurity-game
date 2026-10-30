@@ -113,6 +113,7 @@ ICONS: dict[str, int] = {
     "bookmark-filled": 0xfa88,
     "settings": 0xeb20,
     "reload": 0xf3ae,
+    "bell": 0xea35,
     "info-circle": 0xeac5,
     "minus": 0xeaf2,
     "square": 0xeb2c,

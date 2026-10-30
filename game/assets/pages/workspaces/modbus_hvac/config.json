@@ -77,7 +77,7 @@
     "layout_shape": {
         "h_panes_1": [
             {"v_panes_1": ["network_action_panel_1", "modbus_table_panel_1"]},
-            {"v_panes_2": ["packet_panel_1", "activity_panel_1", "status_panel_1"]},
+            {"v_panes_2": ["packet_panel_1", "activity_panel_1"]},
             {"v_panes_3": ["modbus_model_panel_1", "modbus_chart_panel_1"]}
         ]
     },
@@ -88,7 +88,6 @@
         "v_panes_2": 3,
         "packet_panel_1": 3,
         "activity_panel_1": 3,
-        "status_panel_1": 3,
         "v_panes_3": 3,
         "modbus_model_panel_1": 2,
         "modbus_chart_panel_1": 2

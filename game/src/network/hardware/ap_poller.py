@@ -104,7 +104,7 @@ class APPoller(Process):
             else:
                 self.buffer.put(command.log_key, f"AP rejected {command.endpoint} (HTTP {resp.status_code})")
         except Exception as e:
-            self.buffer.put(command.log_key, f"Failed to reach AP: {e}")
+            self.buffer.put_error(command.log_key, f"Failed to reach AP: {e}", "ap_unreachable")
         status.finish_command(command, response)
         if response is not None and command.success_message:
             self.buffer.put(command.log_key, command.success_message)
@@ -126,4 +126,4 @@ class APPoller(Process):
         if self.connected and not was_connected:
             self.buffer.put("ap_connect", f"Connected to {self.url}")
         elif was_connected and not self.connected:
-            self.buffer.put("ap_connect", f"Lost connection to {self.url}")
+            self.buffer.put_error("ap_connect", f"Lost connection to {self.url}", "ap_unreachable")

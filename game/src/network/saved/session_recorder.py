@@ -122,8 +122,8 @@ class SessionRecorder:
     def record_poll(self, data: dict):
         self.record(schema.poll(data))
 
-    def record_status(self, src: str, msg: str):
-        self.record(schema.status(src, msg))
+    def record_status(self, src: str, msg: str, notice: dict | None = None):
+        self.record(schema.status(src, msg, notice=notice))
 
     def record_action(self, name: str, args: dict | None = None, actor: str | None = None):
         self.record(schema.action(name, args, actor or self.role))

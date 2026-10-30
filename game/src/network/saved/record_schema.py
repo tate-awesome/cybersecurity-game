@@ -91,8 +91,9 @@ def poll(data: dict, t: float | None = None) -> dict:
     return {"k": "poll", "t": t or time.time(), "data": data}
 
 
-def status(src: str, msg: str, t: float | None = None) -> dict:
-    return {"k": "status", "t": t or time.time(), "src": src, "msg": msg}
+def status(src: str, msg: str, t: float | None = None, notice: dict | None = None) -> dict:
+    '''notice: an error's or report's other fields (see Notice.to_dict) - left out for a plain status.'''
+    return {"k": "status", "t": t or time.time(), "src": src, "msg": msg, **(notice or {})}
 
 
 def action(name: str, args: dict | None = None, actor: str = "student", t: float | None = None) -> dict:

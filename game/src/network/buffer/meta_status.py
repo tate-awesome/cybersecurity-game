@@ -1,10 +1,22 @@
+from .notice import Notice
+
+
 class MetaStatus:
-    def __init__(self, hack: str, status: str, time: float, number: int):
+    '''
+    One status: a plain line (kind "status"), or an error or report (see
+    notice.py) - status is what the toast says either way.
+    '''
+    def __init__(self, hack: str, status: "str | Notice", time: float, number: int):
         self.hack = hack
-        self.status = status
+        self.notice = status if isinstance(status, Notice) else None
+        self.status = status.text if isinstance(status, Notice) else status
         self.time = time
         self.number = number
-    
+
+    @property
+    def kind(self) -> str:
+        return self.notice.kind if self.notice is not None else "status"
+
     def get_line(self, max_length=80) -> str:
         from datetime import datetime
 

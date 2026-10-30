@@ -2,6 +2,7 @@ import os
 import threading
 
 from ..buffer.link import dissect
+from ..buffer.notice import Notice
 
 
 from ..process import Process
@@ -77,9 +78,10 @@ class Replay(Process):
             with self._lock:
                 self._is_loading = False
 
-            self.buffer.put(
+            self.buffer.put_error(
                 "json",
-                f"Error during JSON loading: {e!s}"
+                f"Error during JSON loading: {e!s}",
+                "capture_file_failed",
             )
 
     def select_json_file(self):
@@ -154,7 +156,11 @@ class Replay(Process):
         elif kind == "poll":
             self.buffer.put_poll(record["data"])
         elif kind == "status":
-            self.buffer.put(record["src"], record["msg"])
+            notice = Notice.from_dict(record["msg"], record)
+            if notice is not None:
+                self.buffer.put_notice(record["src"], notice)
+            else:
+                self.buffer.put(record["src"], record["msg"])
         elif kind == "act":
             self.buffer.put("replay", f"[{record.get('actor', '?')}] {record['name']} {record.get('args') or ''}")
         elif kind == "mark":
@@ -277,7 +283,7 @@ class Replay(Process):
         except Exception as e:
             # Without this, an uncaught exception here would leave _is_loading
             # stuck True forever, permanently blocking future loads.
-            self.buffer.put("json", f"Error during JSON replay: {e}")
+            self.buffer.put_error("json", f"Error during JSON replay: {e}", "capture_file_failed")
         finally:
             self.buffer.recorder.paused = False
             self.reset_parameters()
@@ -386,9 +392,10 @@ class Replay(Process):
             )
 
         except Exception as e:
-            self.buffer.put(
+            self.buffer.put_error(
                 "json",
-                f"Failed to save JSON replay: {e!s}"
+                f"Failed to save JSON replay: {e!s}",
+                "capture_file_failed",
             )
 
     # ------------------------------------------------------------------

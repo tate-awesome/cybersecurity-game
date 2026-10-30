@@ -7,6 +7,7 @@ from scapy.all import get_if_addr, get_working_if, get_if_hwaddr
 import netifaces
 from ..process import Process
 from ..buffer.channels.network_graph import MAX_NICKNAME_LENGTH
+from ..buffer.notice import Report
 import nmap, socket, sys
 
 class NMapper(Process):
@@ -34,7 +35,7 @@ class NMapper(Process):
             try:
                 self.library_nmap()
             except Exception as e:
-                self.buffer.put("nmap", f"NMap scan failed: {e}")
+                self.buffer.put_error("nmap", f"NMap scan failed: {e}", "nmap_scan_failed")
             finally:
                 self._running = False
 
@@ -67,37 +68,43 @@ class NMapper(Process):
         except nmap.PortScannerError as e:
             if "not found" not in str(e):
                 raise
-            self.buffer.put("nmap", "NMap scan failed: the nmap program was not found.")
-            self.buffer.put("nmap", f"Please install nmap ({self.nmap_install_hint()}), then restart the game.")
+            self.buffer.put_error("nmap", f"NMap scan failed: the nmap program was not found. "
+                                          f"Please install nmap ({self.nmap_install_hint()}), then restart the game.",
+                                  "nmap_not_installed")
             return
         local_ip = self.get_local_ip()
         if local_ip is None:
-            self.buffer.put("nmap", "Could not determine local IP address (no network connection?). Aborting scan.")
+            self.buffer.put_error("nmap", "Could not determine local IP address (no network connection?). Aborting scan.",
+                                  "no_network_connection")
             return
         subnet = self.get_local_subnet(local_ip)
 
-        self.buffer.put("nmap", f"Local IP Found: {local_ip}")
-        self.buffer.put("nmap", f"Target Subnet Detected: {subnet}")
-        self.buffer.put("nmap", "Scanning for active hosts (this may take a few seconds)...")
+        self.buffer.put("nmap", f"Scanning {subnet} for active hosts (this may take a few seconds)...")
 
         try:
             # -sn: Ping scan (no port scan, host discovery only)
             # -PE: ICMP Echo Request
             nm.scan(hosts=subnet, arguments='-sn -PE')
         except Exception as e:
-            self.buffer.put("nmap", f"NMap scan failed: {e}")
+            self.buffer.put_error("nmap", f"NMap scan failed: {e}", "nmap_scan_failed")
             return
 
-        self.buffer.put("nmap", "--- Active Hosts Found ---")
-        # Iterate through all discovered up hosts
+        # The whole scan as one report - shown as one toast, not a line per host
+        hosts = []
         for host in nm.all_hosts():
             if nm[host].state() == 'up':
-                hostname = nm[host].hostname()
-                hostname_str = f"({hostname})" if hostname else "(No Hostname)"
-                self.buffer.put("nmap", f"IP Address: {host:<15} State: {nm[host].state():<5} Hostname: {hostname_str}")
+                hosts.append([host, nm[host].state(), nm[host].hostname() or "(No Hostname)"])
+        nicknamed = self.apply_nicknames(nm)
 
-        self.apply_nicknames(nm)
-        self.buffer.put("nmap", "Scan complete.")
+        report = Report("NMap Scan")
+        report.facts({"Local IP": local_ip, "Target subnet": subnet})
+        report.heading(f"Active hosts ({len(hosts)})")
+        report.table(["IP Address", "State", "Hostname"], hosts, empty="No active hosts found.")
+        if nicknamed:
+            report.heading("Nicknamed hosts")
+            report.table(["MAC", "IP Address", "Nickname"], nicknamed)
+        found = f"{len(hosts)} active host" + ("" if len(hosts) == 1 else "s")
+        self.buffer.put_report("nmap", f"Finished NMap scan: found {found}.", report)
 
     def nmap_install_hint(self) -> str:
         if sys.platform == "win32":
@@ -106,13 +113,14 @@ class NMapper(Process):
             return "brew install nmap"
         return "e.g. sudo apt install nmap"
 
-    def apply_nicknames(self, nm):
+    def apply_nicknames(self, nm) -> list[list[str]]:
         '''
         Nicknames each host found (in network_hosts, by MAC - see the network
         graph's Configure Hosts) after its hostname, or else the maker nmap
         reads from its MAC. Its MAC comes from the scan when nmap could see
         it (a privileged scan on the same network), or else from the IPs the
         network graph has seen on each MAC. Hosts already nicknamed keep theirs.
+        Returns each one it nicknamed - [mac, ip, nickname] - for the scan's report.
         '''
         _, host_ips = self.context.buffer.network.get_hosts()
         ip_macs = {}
@@ -121,6 +129,7 @@ class NMapper(Process):
                 ip_macs.setdefault(ip, mac)
 
         preferences = self.context.preferences
+        nicknamed = []
         for host in nm.all_hosts():
             if nm[host].state() != 'up':
                 continue
@@ -135,7 +144,8 @@ class NMapper(Process):
             # Cut to fit a chip - "Raspberry Pi Trading" reads as "Raspberry Pi"
             name = name[:MAX_NICKNAME_LENGTH].strip()
             preferences.set_host_nickname(mac, name)
-            self.buffer.put("nmap", f"Nicknamed {mac} ({host}): {name}")
+            nicknamed.append([mac, host, name])
+        return nicknamed
 
     def get_active_iface(self):
         active_iface = ""

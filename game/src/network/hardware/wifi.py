@@ -8,6 +8,7 @@ import threading
 import time
 
 from ..process import Process
+from ..buffer.notice import Report
 
 # A manual network switch (or a brief AP hiccup) doesn't jump cleanly from
 # the old SSID to the new one - there's normally a gap of a second or two
@@ -151,7 +152,7 @@ class WifiBaseClass(Process):
             if self._equal_ci(current, self.previous_network):
                 self.buffer.put("wifi", f"Already reconnected to '{current}' on its own.")
             else:
-                self.buffer.put("wifi", self._describe_lost_connection())
+                self.buffer.put_error("wifi", self._describe_lost_connection(), "wifi_connect_failed")
 
             self._unwatch_active_connection()
             self.is_connected = False
@@ -225,6 +226,52 @@ class WifiBaseClass(Process):
             self.buffer.put("wifi", f"Saved current connection: {self.previous_network}")
         else:
             self.buffer.put("wifi", "Not currently connected to any network; nothing to restore later.")
+
+    def _profile_matches(self, profile: str, ssid: str) -> bool:
+        '''
+        Whether a saved connection profile is the one for ssid - its name
+        exactly, as Windows names a profile after its SSID. Linux overrides
+        this, as NetworkManager auto-names profiles "Auto <SSID>".
+        '''
+        return self._equal_ci(ssid, profile)
+
+    def _find_target(self, match_name: str) -> "tuple[str, str] | None":
+        '''
+        Middle of _start_impl: finds the network in range matching
+        match_name, then its saved connection profile - (SSID, profile
+        name), or None, with an error saying which wasn't found. Everything
+        it looked through goes into one report of the networks detected.
+        '''
+        available = self.get_available_networks(match_name)
+        target_available = next((network for network in available if self._matches(network, match_name)), None)
+        report = Report("Wi-Fi Networks")
+        report.facts({"Device Name": match_name, "Matching network": target_available or "None found"})
+        report.heading(f"Available networks ({len(available)})")
+        report.bullets(available, empty="No networks in range.")
+        target_history = None
+        if target_available is not None:
+            history = self.get_network_history()
+            target_history = next((network for network in history if self._profile_matches(network, target_available)), None)
+            report.heading(f"Saved connections ({len(history)})")
+            report.bullets(history, empty="No saved connections.")
+        found = f"{len(available)} Wi-Fi network" + ("" if len(available) == 1 else "s")
+        self.buffer.put_report("wifi", f"Detected {found}.", report)
+
+        if target_available is None:
+            self.buffer.put_error("wifi", f"No matching available or historical network was found for '{match_name}'.",
+                                  "wifi_network_not_found")
+            return None
+        self.buffer.put("wifi", f"Found matching available connection: {target_available}")
+        if target_history is None:
+            self.buffer.put_error(
+                "wifi",
+                f"No matching available or historical network was found for '{match_name}' "
+                f"('{target_available}' is nearby but has no saved connection profile; connect to it manually once first).",
+                "wifi_no_saved_profile",
+            )
+            return None
+        self.buffer.put("wifi", f"Found matching historical connection: {target_history}")
+        return target_available, target_history
 
     def _run_start(self, match_name: str):
         try:

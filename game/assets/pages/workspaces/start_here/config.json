@@ -44,7 +44,7 @@
     "layout_shape": {
         "h_panes_5": [
             {"v_panes_7": ["network_action_panel_2", "hosts_panel_1", "activity_panel_1"]},
-            {"v_panes_6": ["packet_panel_1", "status_panel_1"]}
+            {"v_panes_6": ["packet_panel_1"]}
         ]
     },
     "layout_weights": {
@@ -53,7 +53,6 @@
         "hosts_panel_1": 41,
         "activity_panel_1": 41,
         "v_panes_6": 79,
-        "packet_panel_1": 80,
-        "status_panel_1": 20
+        "packet_panel_1": 80
     }
 }

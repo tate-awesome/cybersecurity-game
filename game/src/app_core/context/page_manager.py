@@ -93,6 +93,10 @@ class PageManager:
     PANE_GROUPS = {"h_panes": "horizontal", "v_panes": "vertical"}
     # A layout_shape item {"tabs_<n>": [panel ids]} - panels sharing one pane as tabs (see TabbedPane)
     TAB_STACK = "tabs"
+    # Panel types the game no longer has - left out of a layout quietly, as
+    # layouts saved before they went still name them (the status console
+    # gave way to the status toasts - see widgets/frame_widgets/toasts.py)
+    RETIRED_PANELS = {"status_panel"}
 
     def layout_tree(self, shape: dict | None, weights: dict | None = None) -> dict | None:
         '''
@@ -150,6 +154,9 @@ class PageManager:
             print(f"Layout group {group_id!r} should be a list, skipping its contents")
             contents = []
         for item in contents:
+            if isinstance(item, str) and self.panel_type(item) in self.RETIRED_PANELS:
+                seen.add(item)
+                continue
             if isinstance(item, str):
                 child_id, value = item, None
             elif isinstance(item, dict) and len(item) == 1:
@@ -195,6 +202,9 @@ class PageManager:
             return []
         tabs = []
         for item in contents:
+            if isinstance(item, str) and self.panel_type(item) in self.RETIRED_PANELS:
+                seen.add(item)
+                continue
             if not isinstance(item, str) or self.pane_group(item) or self.is_tab_stack(item):
                 print(f"Tab stack {stack_id!r} can only hold panel ids, not {item!r} - skipping it")
                 continue

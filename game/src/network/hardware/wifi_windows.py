@@ -294,14 +294,14 @@ class Wifi(WifiBaseClass):
 
     def _get_client(self):
         if _WLANAPI_IMPORT_ERROR is not None:
-            self.buffer.put("wifi", f"wlanapi.dll not available: {_WLANAPI_IMPORT_ERROR}")
+            self.buffer.put_error("wifi", f"wlanapi.dll not available: {_WLANAPI_IMPORT_ERROR}", "wifi_unavailable")
             return None
         if self._handle is None:
             negotiated_version = wintypes.DWORD()
             handle = wintypes.HANDLE()
             result = _wlanapi.WlanOpenHandle(2, None, ctypes.byref(negotiated_version), ctypes.byref(handle))
             if result != 0:
-                self.buffer.put("wifi", f"Failed to reach the WLAN AutoConfig service (is it running?): {ctypes.FormatError(result)}")
+                self.buffer.put_error("wifi", f"Failed to reach the WLAN AutoConfig service (is it running?): {ctypes.FormatError(result)}", "wifi_unavailable")
                 return None
             self._handle = handle
         return self._handle
@@ -386,19 +386,19 @@ class Wifi(WifiBaseClass):
         '''
         interface_guid = self._wifi_interface(client)
         if interface_guid is None:
-            self.buffer.put("wifi", "No Wi-Fi device found on this system.")
+            self.buffer.put_error("wifi", "No Wi-Fi device found on this system.", "no_wifi_device")
             return None
 
         radio_state = self._query_radio_state(client, interface_guid)
         if radio_state is None:
-            self.buffer.put("wifi", "Could not read the Wi-Fi radio state.")
+            self.buffer.put_error("wifi", "Could not read the Wi-Fi radio state.", "wifi_radio_off")
             return None
         hardware_on, software_on = radio_state
         if not hardware_on:
-            self.buffer.put("wifi", "Wi-Fi is disabled by a hardware switch/airplane mode.")
+            self.buffer.put_error("wifi", "Wi-Fi is disabled by a hardware switch/airplane mode.", "wifi_radio_off")
             return None
         if not software_on:
-            self.buffer.put("wifi", "Wi-Fi is turned off. Turn it on and try again.")
+            self.buffer.put_error("wifi", "Wi-Fi is turned off. Turn it on and try again.", "wifi_radio_off")
             return None
         return interface_guid
 
@@ -580,13 +580,13 @@ class Wifi(WifiBaseClass):
             (name for name in profile_names if self._equal_ci(name, ssid)), None,
         )
         if profile_name is None:
-            self.buffer.put("wifi", f"'{ssid}' is not a saved (historical) connection.")
+            self.buffer.put_error("wifi", f"'{ssid}' is not a saved (historical) connection.", "wifi_no_saved_profile")
             return False
 
         configured_ssid = self._profile_ssid(client, interface_guid, profile_name)
         in_range = any(self._equal_ci(configured_ssid, network) for network in self._get_available_networks(client, interface_guid))
         if not in_range:
-            self.buffer.put("wifi", f"'{ssid}' is not currently in range.")
+            self.buffer.put_error("wifi", f"'{ssid}' is not currently in range.", "wifi_network_not_found")
             return False
 
         outcome = {"ok": False, "message": None, "done": False}
@@ -628,9 +628,10 @@ class Wifi(WifiBaseClass):
             client, WLAN_NOTIFICATION_SOURCE_ACM, True, callback, None, None, ctypes.byref(prev_source),
         )
         if register_result != 0:
-            self.buffer.put(
+            self.buffer.put_error(
                 "wifi",
                 f"Failed to connect to '{ssid}': could not register for WLAN notifications ({ctypes.FormatError(register_result)})",
+                "wifi_connect_failed",
             )
             return False
 
@@ -658,7 +659,7 @@ class Wifi(WifiBaseClass):
         if outcome["ok"]:
             self.buffer.put("wifi", f"Connected to '{ssid}'.")
         else:
-            self.buffer.put("wifi", f"Failed to connect to '{ssid}': {outcome['message']}")
+            self.buffer.put_error("wifi", f"Failed to connect to '{ssid}': {outcome['message']}", "wifi_connect_failed")
         return outcome["ok"]
 
     def disconnect_current(self):
@@ -674,14 +675,14 @@ class Wifi(WifiBaseClass):
 
         interface_guid = self._wifi_interface(client)
         if interface_guid is None:
-            self.buffer.put("wifi", "No Wi-Fi device found on this system.")
+            self.buffer.put_error("wifi", "No Wi-Fi device found on this system.", "no_wifi_device")
             return
 
         result = _wlanapi.WlanDisconnect(client, ctypes.byref(interface_guid), None)
         if result == 0:
             self.buffer.put("wifi", "Disconnected.")
         else:
-            self.buffer.put("wifi", f"Failed to disconnect: {ctypes.FormatError(result)}")
+            self.buffer.put_error("wifi", f"Failed to disconnect: {ctypes.FormatError(result)}", "wifi_connect_failed")
 
     def _start_impl(self, match_name: str):
         '''
@@ -697,39 +698,10 @@ class Wifi(WifiBaseClass):
         self._note_restore_target(match_name)
         
         self.is_connected = True
-        available = self.get_available_networks(match_name)
-        self.buffer.put("wifi", "Available Networks:")
-        target_available = None
-        for network in available:
-            self.buffer.put("wifi", f"      {network}")
-            if self._matches(network, match_name):
-                target_available = network
-
-        if target_available is None:
-            self.buffer.put("wifi", f"No matching available or historical network was found for '{match_name}'.")
+        target = self._find_target(match_name)
+        if target is None:
             return
-        self.buffer.put("wifi", f"Found matching available connection: {target_available}")
-
-        history = self.get_network_history()
-        self.buffer.put("wifi", "Historical Connections:")
-        target_history = None
-        for network in history:
-            self.buffer.put("wifi", f"      {network}")
-            # Exact match, not substring: unlike NetworkManager (which
-            # auto-names profiles "Auto <SSID>"), Windows normally names a
-            # saved profile after the SSID verbatim, so there's no prefix to
-            # account for here.
-            if self._equal_ci(target_available, network):
-                target_history = network
-
-        if target_history is None:
-            self.buffer.put(
-                "wifi",
-                f"No matching available or historical network was found for '{match_name}' "
-                f"('{target_available}' is nearby but has no saved connection profile; connect to it manually once first).",
-            )
-            return
-        self.buffer.put("wifi", f"Found matching historical connection: {target_history}")
+        target_available, target_history = target
 
         self.buffer.put("wifi", f"Connecting to: {target_history}")
         # Flip to "running" now, before the connection attempt actually

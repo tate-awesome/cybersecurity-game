@@ -68,7 +68,7 @@
     "layout_shape": {
         "h_panes_1": [
             {"v_panes_1": ["network_action_panel_1", "defender_modbus_panel_1"]},
-            {"v_panes_2": ["defender_console_panel_1", "defender_flag_panel_1", "status_panel_1"]},
+            {"v_panes_2": ["defender_console_panel_1", "defender_flag_panel_1"]},
             {"v_panes_3": ["modbus_model_panel_1", "defender_stripchart_panel_1"]}
         ]
     },
@@ -79,7 +79,6 @@
         "v_panes_2": 3,
         "defender_console_panel_1": 3,
         "defender_flag_panel_1": 3,
-        "status_panel_1": 3,
         "v_panes_3": 3,
         "modbus_model_panel_1": 2,
         "defender_stripchart_panel_1": 2

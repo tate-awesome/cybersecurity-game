@@ -167,6 +167,13 @@ class PrivilegedHelper:
                 for kind, source, purpose, payload, direction in message["batch"]:
                     if kind == "pkt":
                         self.buffer.put_payload(source, purpose, payload, direction)
+                    elif kind == "notice":
+                        from ..buffer.notice import Notice  # here - this module stays free of the buffer's scapy imports
+                        notice = Notice.from_dict(purpose, payload)
+                        if notice is not None:
+                            self.buffer.put_notice(source, notice)
+                        else:
+                            self.buffer.put(source, purpose)
                     else:
                         self.buffer.put(source, purpose, None, direction)
             elif event == "status":

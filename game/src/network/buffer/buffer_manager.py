@@ -17,6 +17,7 @@ from .channels import (
     DefenderModbusBuffer, DefenderMapBuffer, DefenderStatusBuffer,
 )
 from .meta_packet import MetaPacket
+from .notice import Notice, Report
 from .channels.transaction_manager import TransactionManager
 from .poll_unpacker import _PollUnpacker
 from ..saved import Loader, Replay, FileStream, SessionRecorder
@@ -72,7 +73,6 @@ class Buffer:
         self.put_queue.clear()
         self.packets.reset()
         self.network.reset()
-        self.status.reset_cursor()
         self.modbus.reset()
         self.submarine.reset()
         self.hvac.reset()
@@ -142,6 +142,27 @@ class Buffer:
 
         return output
 
+    def put_error(self, source: str, message: str, fix: str) -> None:
+        '''
+        Puts an error: message is shown word for word, with a link to fix -
+        one of notice.FIXES, the assets/fixes/<fix>.md that says what to do about it.
+        '''
+        self.put_notice(source, Notice.error(message, fix))
+
+    def put_report(self, source: str, summary: str, report: Report) -> None:
+        '''
+        Puts a whole report at once - summary is the one line shown
+        ("Finished NMap scan: found 4 active hosts."), with a link to the
+        report itself. Bundle a report's lines into one Report rather than
+        putting them one by one (see notice.py).
+        '''
+        self.put_notice(source, Notice.report(summary, report))
+
+    def put_notice(self, source: str, notice: Notice) -> None:
+        if self.accept_puts:
+            with self.put_lock:
+                self.put_queue.append((source, notice, None, None))
+
     def put_payload(self, source: str, purpose: str, payload: dict, direction: str | None = None) -> None:
         '''
         The payload counterpart of put(): takes a MetaPacket.to_payload()
@@ -189,10 +210,13 @@ class Buffer:
         src: "out" or "in"
         '''
 
-        # Put status message in "status" buffer
-        if data is None and isinstance(purpose, str) and isinstance(source, str):
+        # Put status message (or error or report - see notice.py) in "status" buffer
+        if data is None and isinstance(purpose, (str, Notice)) and isinstance(source, str):
             self.status.put(source, purpose)
-            self.recorder.record_status(source, purpose)
+            if isinstance(purpose, Notice):
+                self.recorder.record_status(source, purpose.text, purpose.to_dict())
+            else:
+                self.recorder.record_status(source, purpose)
 
         if isinstance(data, MetaPacket):
             self.distribute_packet(data)

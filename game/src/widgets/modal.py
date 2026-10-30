@@ -1,8 +1,8 @@
 from collections.abc import Callable
 
 from PySide6.QtCore import QEasingCurve, QEvent, QPoint, Qt, QTimer, QVariantAnimation
-from PySide6.QtGui import QColor, QPainter
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtGui import QColor, QPainter, QTextFrameFormat, QTextTable
+from PySide6.QtWidgets import QDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QVBoxLayout, QWidget
 from ..app_core import Context
 from ..app_core.transitions import PopupEntrance
 
@@ -242,6 +242,42 @@ class ButtonModal(ModalWindow):
             x, y = middle.x() - self.width() // 2, middle.y() - self.height() // 2
             self.move(max(screen.left(), min(x, screen.right() - self.width())),
                       max(screen.top(), min(y, screen.bottom() - self.height())))
+
+
+class MarkdownModal(ButtonModal):
+    '''
+    A ButtonModal reading out a markdown document - a status toast's report,
+    or an error's fix (see toasts.open_notice) - scrolling past
+    HEIGHT of the window. Its links open in the browser.
+    '''
+
+    WIDTH = 620
+    HEIGHT = 0.7
+    # Room around a table's cells - Qt's markdown leaves them touching
+    CELL_PADDING = 6
+
+    def __init__(self, context: Context, title: str, markdown: str):
+        super().__init__(context, title)
+        style = context.style
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+        browser.setFont(style.get_font())
+        browser.setFrameShape(QFrame.Shape.NoFrame)
+        style.live_style(browser, lambda: f"QTextBrowser {{ background: transparent; border: none; color: {style.color('text')}; }}")
+        browser.setMarkdown(markdown)
+        for frame in browser.document().rootFrame().childFrames():
+            if isinstance(frame, QTextTable):
+                table = frame.format()
+                table.setCellPadding(self.CELL_PADDING)
+                table.setCellSpacing(0)
+                table.setBorderStyle(QTextFrameFormat.BorderStyle.BorderStyle_None)
+                frame.setFormat(table)
+        document = browser.document()
+        document.setTextWidth(self.WIDTH)
+        height = int(document.size().height()) + 2 * int(document.documentMargin())
+        browser.setFixedSize(self.WIDTH + browser.verticalScrollBar().sizeHint().width(),
+                             min(height, int(context.root.height() * self.HEIGHT)))
+        self.body.addWidget(browser)
 
 
 def message(master: QWidget, context: Context, message: str):

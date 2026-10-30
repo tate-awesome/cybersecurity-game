@@ -106,7 +106,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         try:
             self.w.open()
         except Exception as e:
-            self.buffer.put("nfq", f"Failed to open WinDivert (are you running as Administrator?): {e}")
+            self.buffer.put_error("nfq", f"Failed to open WinDivert (are you running as Administrator?): {e}", "windivert_failed")
             self.w = None
             self.running = False
             return

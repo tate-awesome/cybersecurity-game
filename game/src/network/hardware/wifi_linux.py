@@ -126,13 +126,13 @@ class Wifi(WifiBaseClass):
     def _get_client(self):
         self._pump_pending_events()
         if _NM_IMPORT_ERROR is not None:
-            self.buffer.put("wifi", f"python-gobject/libnm bindings not available: {_NM_IMPORT_ERROR}")
+            self.buffer.put_error("wifi", f"python-gobject/libnm bindings not available: {_NM_IMPORT_ERROR}", "wifi_unavailable")
             return None
         if self._client is None:
             try:
                 self._client = NM.Client.new(None)
             except GLib.Error as e:
-                self.buffer.put("wifi", f"Failed to reach NetworkManager (is it running?): {e.message}")
+                self.buffer.put_error("wifi", f"Failed to reach NetworkManager (is it running?): {e.message}", "wifi_unavailable")
                 return None
         return self._client
 
@@ -168,15 +168,15 @@ class Wifi(WifiBaseClass):
         after putting an explanatory status message.
         '''
         if not client.wireless_hardware_get_enabled():
-            self.buffer.put("wifi", "Wi-Fi is disabled by a hardware switch/airplane mode.")
+            self.buffer.put_error("wifi", "Wi-Fi is disabled by a hardware switch/airplane mode.", "wifi_radio_off")
             return None
         if not client.wireless_get_enabled():
-            self.buffer.put("wifi", "Wi-Fi is turned off. Turn it on and try again.")
+            self.buffer.put_error("wifi", "Wi-Fi is turned off. Turn it on and try again.", "wifi_radio_off")
             return None
 
         device = self._wifi_device(client)
         if device is None:
-            self.buffer.put("wifi", "No Wi-Fi device found on this system.")
+            self.buffer.put_error("wifi", "No Wi-Fi device found on this system.", "no_wifi_device")
             return None
         if device.get_state() == NM.DeviceState.UNMANAGED:
             self.buffer.put("wifi", "Wi-Fi device is not managed by NetworkManager.")
@@ -187,6 +187,10 @@ class Wifi(WifiBaseClass):
         return device
 
     @_in_nm_context
+    def _profile_matches(self, profile: str, ssid: str) -> bool:
+        # NetworkManager auto-names a profile "Auto <SSID>" - so the SSID anywhere in its name
+        return self._matches(profile, ssid)
+
     def get_network_history(self) -> list[str]:
         client = self._get_client()
         if client is None:
@@ -330,7 +334,7 @@ class Wifi(WifiBaseClass):
             None,
         )
         if connection is None:
-            self.buffer.put("wifi", f"'{ssid}' is not a saved (historical) connection.")
+            self.buffer.put_error("wifi", f"'{ssid}' is not a saved (historical) connection.", "wifi_no_saved_profile")
             return False
 
         configured_ssid = self._connection_ssid(connection)
@@ -401,7 +405,7 @@ class Wifi(WifiBaseClass):
         if outcome["ok"]:
             self.buffer.put("wifi", f"Connected to '{ssid}'.")
         else:
-            self.buffer.put("wifi", f"Failed to connect to '{ssid}': {outcome['message']}")
+            self.buffer.put_error("wifi", f"Failed to connect to '{ssid}': {outcome['message']}", "wifi_connect_failed")
         return outcome["ok"]
 
     @_in_nm_context
@@ -418,7 +422,7 @@ class Wifi(WifiBaseClass):
 
         device = self._wifi_device(client)
         if device is None:
-            self.buffer.put("wifi", "No Wi-Fi device found on this system.")
+            self.buffer.put_error("wifi", "No Wi-Fi device found on this system.", "no_wifi_device")
             return
 
         loop = GLib.MainLoop(self._nm_context)
@@ -438,7 +442,7 @@ class Wifi(WifiBaseClass):
         if outcome["ok"]:
             self.buffer.put("wifi", "Disconnected.")
         else:
-            self.buffer.put("wifi", f"Failed to disconnect: {outcome['message']}")
+            self.buffer.put_error("wifi", f"Failed to disconnect: {outcome['message']}", "wifi_connect_failed")
 
     @_in_nm_context
     def _start_impl(self, match_name: str):
@@ -454,35 +458,10 @@ class Wifi(WifiBaseClass):
 
         self._note_restore_target(match_name)
 
-        available = self.get_available_networks(match_name)
-        self.buffer.put("wifi", "Available Networks:")
-        target_available = None
-        for network in available:
-            self.buffer.put("wifi", f"      {network}")
-            if self._matches(network, match_name):
-                target_available = network
-
-        if target_available is None:
-            self.buffer.put("wifi", f"No matching available or historical network was found for '{match_name}'.")
+        target = self._find_target(match_name)
+        if target is None:
             return
-        self.buffer.put("wifi", f"Found matching available connection: {target_available}")
-
-        history = self.get_network_history()
-        self.buffer.put("wifi", "Historical Connections:")
-        target_history = None
-        for network in history:
-            self.buffer.put("wifi", f"      {network}")
-            if self._matches(network, target_available):
-                target_history = network
-
-        if target_history is None:
-            self.buffer.put(
-                "wifi",
-                f"No matching available or historical network was found for '{match_name}' "
-                f"('{target_available}' is nearby but has no saved connection profile; connect to it manually once first).",
-            )
-            return
-        self.buffer.put("wifi", f"Found matching historical connection: {target_history}")
+        target_available, target_history = target
 
         self.buffer.put("wifi", f"Connecting to: {target_history}")
         # Flip to "running" now, before the connection attempt actually

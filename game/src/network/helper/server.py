@@ -26,6 +26,7 @@ from multiprocessing.connection import Client
 from scapy.all import Packet
 
 from ..buffer.meta_packet import MetaPacket
+from ..buffer.notice import Notice, Report
 from .registry import build_capability
 
 FLUSH_INTERVAL = 0.06   # s between batches sent to the GUI
@@ -39,7 +40,8 @@ class _BufferShim:
     picklable item and batches it for the GUI, which feeds its own real
     Buffer (see host.PrivilegedHelper._reader). A live scapy packet becomes a
     MetaPacket.to_payload() snapshot - built here, on the helper's GIL;
-    a status (no packet) becomes a plain text item.
+    a status (no packet) becomes a plain text item, and an error or
+    report (see buffer/notice.py) its text and fields.
     '''
 
     def __init__(self):
@@ -55,6 +57,17 @@ class _BufferShim:
         with self._lock:
             self._batch.append(item)
         return None  # the GUI assigns packet numbers and builds transactions
+
+    def put_error(self, source: str, message: str, fix: str):
+        self.put_notice(source, Notice.error(message, fix))
+
+    def put_report(self, source: str, summary: str, report: Report):
+        self.put_notice(source, Notice.report(summary, report))
+
+    def put_notice(self, source: str, notice: Notice):
+        # Its text, and the rest as plain data (see Notice.to_dict) - rebuilt by the GUI
+        with self._lock:
+            self._batch.append(("notice", source, notice.text, notice.to_dict(), None))
 
     def drain(self) -> list[tuple]:
         with self._lock:

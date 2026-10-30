@@ -130,8 +130,7 @@
             {
                 "v_panes_2": [
                     "packet_panel_1",
-                    {"h_panes_2": ["hosts_panel_1", "activity_panel_1"]},
-                    "status_panel_1"
+                    {"h_panes_2": ["hosts_panel_1", "activity_panel_1"]}
                 ]
             },
             {"v_panes_3": ["modbus_model_panel_1", "modbus_chart_panel_1"]}
@@ -146,7 +145,6 @@
         "h_panes_2": 33,
         "hosts_panel_1": 50,
         "activity_panel_1": 50,
-        "status_panel_1": 33,
         "v_panes_3": 3,
         "modbus_model_panel_1": 2,
         "modbus_chart_panel_1": 2

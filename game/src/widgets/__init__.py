@@ -14,7 +14,6 @@ from .frame_widgets.text_area import TextArea
 
 from .panels.panel import Panel as GenericPanel
 from .panels.network_action_panel._builder import Builder as HackingPanel
-from .panels.status_console._builder import Builder as StatusConsole
 from .panels.packet_console._builder import Builder as PacketConsole
 from .panels.modbus_model._builder import Builder as ModbusModel
 from .panels.network_hosts._builder import Builder as NetworkHosts
@@ -35,7 +34,6 @@ PANELS = {
     PacketConsole.KEY: PacketConsole,
     NetworkHosts.KEY: NetworkHosts,
     NetworkActivity.KEY: NetworkActivity,
-    StatusConsole.KEY: StatusConsole,
     ModbusModel.KEY: ModbusModel,
     VariableMonitor.KEY: VariableMonitor,
     DefenderModbusPanel.KEY: DefenderModbusPanel,

@@ -63,6 +63,10 @@ class ContextManager:
         # (see network/helper). Created after the buffer, which it feeds.
         from ...network.helper import PrivilegedHelper
         self.helper: PrivilegedHelper = PrivilegedHelper(self)
+        # Shows every status the buffer gets as a toast, under each page's
+        # bell - over the window, outliving pages (see widgets/frame_widgets/toasts.py)
+        from ...widgets.frame_widgets.toasts import Toasts
+        self.toasts: Toasts = Toasts(self)
         self.style.load_preferred_surfaces()
         self.style.load_preferred_background()
         self.style.load_preferred_theme()

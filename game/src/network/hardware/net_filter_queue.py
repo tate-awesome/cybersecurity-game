@@ -44,7 +44,7 @@ class NetFilterQueueBaseClass(Process):
                     # bind may still be live. Leave state as running so
                     # is_running() stays truthful and a retry is possible,
                     # instead of silently reporting a clean stop.
-                    self.buffer.put("nfq", "NFQ worker did not stop in time; iptables rules may still be active")
+                    self.buffer.put_error("nfq", "NFQ worker did not stop in time; iptables rules may still be active", "nfq_failed")
                     return
             self.stop_event = None
             self.thread = None

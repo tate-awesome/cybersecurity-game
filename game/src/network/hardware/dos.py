@@ -59,9 +59,9 @@ class Denier(Process):
 				try:
 					self._start(target)
 				except Exception:
-					self.buffer.put("dos",f"Error while starting DoS attack on {target}")
+					self.buffer.put_error("dos",f"Error while starting DoS attack on {target}", "dos_failed")
 			else:
-				self.buffer.put("dos", f"Did not start DoS attack on \"{target}\"")
+				self.buffer.put_error("dos", f"Did not start DoS attack on \"{target}\"", "dos_failed")
 
 
 				

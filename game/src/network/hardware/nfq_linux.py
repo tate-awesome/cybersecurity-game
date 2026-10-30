@@ -99,13 +99,13 @@ class NetFilterQueue(NetFilterQueueBaseClass):
                         try:
                             nfq_in.run(False)
                         except Exception as e:
-                            self.buffer.put("nfq", f"Error processing PREROUTING queue: {e}")
+                            self.buffer.put_error("nfq", f"Error processing PREROUTING queue: {e}", "nfq_failed")
 
                     elif fd == qfd_out:
                         try:
                             nfq_out.run(False)
                         except Exception as e:
-                            self.buffer.put("nfq", f"Error processing POSTROUTING queue: {e}")
+                            self.buffer.put_error("nfq", f"Error processing POSTROUTING queue: {e}", "nfq_failed")
 
                     elif fd == stop_r:
                         stop_event.set()

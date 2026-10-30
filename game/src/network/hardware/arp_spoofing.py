@@ -42,14 +42,14 @@ class ArpSpoofer(Process):
         try:
             # Tell the target we are host
             if self.target_mac is None:
-                self.buffer.put("arp", f"Could not find MAC address for target IP {self.target_ip}. Searching again...")
+                self.buffer.put_error("arp", f"Could not find MAC address for target IP {self.target_ip}. Searching again...", "arp_host_not_found")
                 self.target_mac = self.get_mac(self.target_ip)
             else:
                 self.spoof(self.target_ip, self.target_mac, self.host_ip)
 
             # Tell the host we are target
             if self.host_mac is None:
-                self.buffer.put("arp", f"Could not find MAC address for host IP {self.host_ip}. Searching again...")
+                self.buffer.put_error("arp", f"Could not find MAC address for host IP {self.host_ip}. Searching again...", "arp_host_not_found")
                 self.host_mac = self.get_mac(self.host_ip)
             else:
                 self.spoof(self.host_ip, self.host_mac, self.target_ip)
@@ -59,7 +59,7 @@ class ArpSpoofer(Process):
                 self._announced_active = True
                 self.buffer.put("arp", f"ARP Spoof active: now intercepting traffic between {self.target_ip} and {self.host_ip}.")
         except Exception as e:
-            self.buffer.put("arp", f"Error during ARP spoof tick: {e}")
+            self.buffer.put_error("arp", f"Error during ARP spoof tick: {e}", "arp_spoof_failed")
 
         self.timer = threading.Timer(self.interval, self.tick)
         self.timer.start()
@@ -154,7 +154,7 @@ class ArpSpoofer(Process):
         source_mac = self.get_mac(source_ip)
 
         if destination_mac is None or source_mac is None:
-            self.buffer.put("arp", f"Could not find MAC address for {destination_ip} or {source_ip}. Cannot send restore packet.")
+            self.buffer.put_error("arp", f"Could not find MAC address for {destination_ip} or {source_ip}. Cannot send restore packet.", "arp_host_not_found")
             return
 
         packet = scapy.Ether(dst=destination_mac) / scapy.ARP(
@@ -194,10 +194,10 @@ class ArpSpoofer(Process):
                 self.buffer.put("arp", "IP forwarding enabled.")
                 self.forwarding_enabled = True
             except subprocess.CalledProcessError as e:
-                self.buffer.put("arp", f"Failed to enable IP forwarding: {e}")
+                self.buffer.put_error("arp", f"Failed to enable IP forwarding: {e}", "ip_forwarding")
 
         else:
-            self.buffer.put("arp", f"Running on an unidentified system: {self.os_name}. ARP spoofing may not work properly.")    
+            self.buffer.put_error("arp", f"Running on an unidentified system: {self.os_name}. ARP spoofing may not work properly.", "ip_forwarding")
 
     def disable_ip_forwarding(self):
         if self.os_name == "Linux":
@@ -218,4 +218,4 @@ class ArpSpoofer(Process):
                 self.buffer.put("arp", "IP forwarding disabled.")
                 self.forwarding_enabled = False
             except subprocess.CalledProcessError as e:
-                self.buffer.put("arp", f"Failed to disable IP forwarding: {e}")
+                self.buffer.put_error("arp", f"Failed to disable IP forwarding: {e}", "ip_forwarding")

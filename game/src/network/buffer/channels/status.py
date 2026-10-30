@@ -1,12 +1,15 @@
 '''
-The map buffer makes status messages available to the status console.
-It receives data from the worker's Put method
+The status buffer makes status messages available to the status toasts
+(see widgets/frame_widgets/toasts.py).
+It receives data from the worker's Put method - a plain line of text, or a
+Notice (an error or a report - see notice.py).
 
 '''
 from collections import deque
 from threading import Lock
 import time
 from ..meta_status import MetaStatus
+from ..notice import Notice
 
 class StatusBuffer:
     def __init__(self, max_size: int = 5000):
@@ -14,48 +17,31 @@ class StatusBuffer:
         self.buffer = deque(maxlen=self.max_size)
         self.lock = Lock()
         self.number = 1
-        self.last_displayed = 0
 
-    def put(self, source: str, purpose: str):
+    def put(self, source: str, purpose: "str | Notice"):
         current_time = time.time()
-        meta_status = MetaStatus(source, purpose, current_time, self.number)
         with self.lock:
-            self.buffer.append(meta_status)
-        self.number += 1
+            self.buffer.append(MetaStatus(source, purpose, current_time, self.number))
+            self.number += 1
 
-    def get_new_statuses(self) -> list[MetaStatus]:
+    def statuses_after(self, number: int) -> list[MetaStatus]:
+        '''
+        Every status numbered past number, oldest first - each reader keeps
+        its own place (the last number it read), so reading takes nothing
+        from anyone else.
+        '''
         new_statuses = []
-        
         with self.lock:
             # Scan backward from the newest items (right side of deque)
             for meta_status in reversed(self.buffer):
-                if meta_status.number > self.last_displayed:
-                    new_statuses.append(meta_status)
-                else:
+                if meta_status.number <= number:
                     # Because it's ordered, everything before this is older. Stop scanning!
                     break
-                    
-        if new_statuses:
-            # Reverse back to normal chronological order (oldest to newest)
-            new_statuses.reverse()
-            self.last_displayed = new_statuses[-1].number
-
+                new_statuses.append(meta_status)
+        new_statuses.reverse()
         return new_statuses
-
-    def get_new_lines(self) -> str:
-        statuses = self.get_new_statuses()
-        if len(statuses) == 0:
-            return ""
-        status_strings = [str(status) for status in statuses]
-        text_block = "\n\n".join(status_strings) + "\n\n"
-        return text_block
 
     def clear(self):
         '''Forgets every status so far - new ones keep numbering on from here.'''
         with self.lock:
             self.buffer.clear()
-
-    def reset_cursor(self):
-        with self.lock:
-            self.last_displayed = 0
-    

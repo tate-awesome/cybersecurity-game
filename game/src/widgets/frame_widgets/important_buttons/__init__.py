@@ -44,6 +44,7 @@ from .select_color_theme import SelectColorTheme
 from .open_theme_editor import OpenThemeEditor
 from .import_themes import ImportThemes
 from .select_background import SelectBackground
+from .save_toast_position_as_default import SaveToastPositionAsDefault
 from .settings_overlays.edit_background_choices import EditBackgroundChoices
 from .settings_overlays.edit_model_style import EditModelStyle
 from .settings_overlays.edit_strip_chart_style import EditStripChartStyle
@@ -55,7 +56,6 @@ from .stream_pcap_into_packet_buffer import StreamPcapIntoPacketBuffer
 from .stream_mcap_into_packet_buffer import StreamMcapIntoPacketBuffer
 from .save_current_packet_buffer_to_mcap import SaveCurrentPacketBufferToMcap
 from .stream_incoming_packets_to_mcap import StreamIncomingPacketsToMcap
-from .clear_status_console import ClearStatusConsole
 from .clear_packet_console import ClearPacketConsole
 from .clear_modbus_and_model_data import ClearModbusAndModelData
 from .clear_all_captured_buffer_data import ClearAllCapturedBufferData
@@ -84,7 +84,6 @@ from .toggle_strip_chart_auto_fit import ToggleStripChartAutoFit
 from .toggle_network_graph_ring_view import ToggleNetworkGraphRingView
 from .abort_all_network_actions import AbortAllNetworkActions
 from .pause_packet_console import PausePacketConsole
-from .free_scroll_status_console import FreeScrollStatusConsole
 from .filter_packet_console.filter_packet_console import FilterPacketConsole
 
 # The names a page config's "menu_bar" list uses - only the buttons that
@@ -115,7 +114,6 @@ MENU_BAR_BUTTONS: dict[str, type[ImportantButton]] = {
     "load_button": StreamMcapIntoPacketBuffer,
     "save_button": SaveCurrentPacketBufferToMcap,
     "stream_button": StreamIncomingPacketsToMcap,
-    "clear_status_button": ClearStatusConsole,
     "clear_packet_console_button": ClearPacketConsole,
     "clear_modbus_button": ClearModbusAndModelData,
     "clear_all_button": ClearAllCapturedBufferData,

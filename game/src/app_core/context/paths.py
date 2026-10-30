@@ -52,6 +52,8 @@ class Paths:
         self.fonts: Path = self.assets / "fonts"
         # The window and taskbar icon (see App.set_icon)
         self.icons: Path = self.assets / "icons"
+        # What to do about each error a status toast shows (see network/buffer/notice.py)
+        self.fixes: Path = self.assets / "fixes"
 
         # Dynamically generated, read & write. _user_dirs is the single
         # source of truth for the user_data tree so DeleteAllUserData's
