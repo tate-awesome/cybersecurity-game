@@ -103,14 +103,7 @@
             "ocean": 1
         },
         "packet_console": {"filter": "-to:broadcast"},
-        "packet_columns": {
-            "time_word": 1,
-            "number": 0,
-            "observer": 0,
-            "direction": 0,
-            "protocol": 0,
-            "modbus_word": 0
-        }
+        "packet_columns": {"time_word": 2, "number": 1, "protocol": 3, "summary": 4}
     },
 
     "title": "attacker_suite_workspace",
@@ -127,12 +120,7 @@
     "layout_shape": {
         "h_panes_1": [
             {"v_panes_1": ["network_action_panel_1", "modbus_table_panel_1"]},
-            {
-                "v_panes_2": [
-                    "packet_panel_1",
-                    {"h_panes_2": ["hosts_panel_1", "activity_panel_1"]}
-                ]
-            },
+            {"v_panes_2": ["packet_panel_1", {"h_panes_2": ["hosts_panel_1", "activity_panel_1"]}]},
             {"v_panes_3": ["modbus_model_panel_1", "modbus_chart_panel_1"]}
         ]
     },

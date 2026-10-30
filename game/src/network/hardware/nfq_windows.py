@@ -99,8 +99,6 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         # worker has exited can't race with the loop's own check of it.
         stop_event = self.stop_event
 
-        self.buffer.put("nfq", "Starting WinDivert")
-
         self.w = pydivert.WinDivert("true", layer=pydivert.Layer.NETWORK_FORWARD)
 
         try:
@@ -113,7 +111,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
 
         # The divert handle is open and we're about to filter - no longer "starting".
         self._established = True
-        self.buffer.put("nfq", "NFQ is now filtering packets.")
+        self.buffer.put("nfq", "NFQ is now filtering forwarded packets (WinDivert).")
         self.pump(self.w, stop_event)
 
         if self.w.is_open:

@@ -38,13 +38,6 @@ class EncryptionForm(BaseForm):
             self.key_entry.clear()
             self.context.states.get("network_action_form_inputs", self.key)[0] = ""
 
+        # The key is locked while encryption is on (not stopped) - see lock_entries
         self.add_process_row(start_encryption, stop_encryption,
-                             lambda: ap_commands.encryption_enabled(self.context.buffer))
-
-        self.context.animation_manager.add_callback(f"EncryptionForm_{id(self)}", self._refresh_entry)
-        self._refresh_entry()
-
-    def _refresh_entry(self):
-        enabled = not ap_commands.encryption_enabled(self.context.buffer)
-        if self.key_entry.isEnabled() != enabled:
-            self.key_entry.setEnabled(enabled)
+                             lambda: ap_commands.encryption_enabled(self.context.buffer), lock_entries=True)

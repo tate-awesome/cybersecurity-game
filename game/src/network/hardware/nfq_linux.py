@@ -58,9 +58,9 @@ class NetFilterQueue(NetFilterQueueBaseClass):
             result = subprocess.run(cmd, capture_output=True, text=True)
             print(result.stdout)
             print(result.stderr)
-        
-        self.buffer.put("nfq", "Adding iptables rule:")
-        self.buffer.put("nfq", f"sudo iptables -t mangle -A PREROUTING -i {active_iface} -p TCP -j NFQUEUE --queue-num 1")
+
+        # The iptables detail is folded into the single "filtering" status
+        # below rather than posted as its own line(s) - see the reference:
         # Part	Meaning
         # iptables	Configure Linux packet filtering rules
         # -t mangle	Use the mangle table (used for packet modification/inspection)
@@ -89,7 +89,7 @@ class NetFilterQueue(NetFilterQueueBaseClass):
         poller.register(stop_r, select.POLLIN)
         # Setup is done and the queues are bound - no longer "starting".
         self._established = True
-        self.buffer.put("nfq", "NFQ is now filtering packets.")
+        self.buffer.put("nfq", f"NFQ is now filtering TCP packets on {active_iface} (iptables mangle, queues 1 and 2).")
         try:
             while not stop_event.is_set():
                 events = poller.poll(500)

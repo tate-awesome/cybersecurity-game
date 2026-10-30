@@ -27,12 +27,20 @@ AP_POLLER_KEY = "ap_connect"
 
 class APPoller(Process):
 
+    # Give up connecting after this many seconds with no response from the AP
+    # (see _poll_once) - so a wrong URL or an AP that's off doesn't poll forever.
+    TIMEOUT_SECONDS = 10.0
+
     def __init__(self, buffer, context, url: str = "http://192.168.4.1", interval_ms: float = 2000):
         super().__init__(buffer, context)
         self.url = url
         self.interval_ms = interval_ms
         self.running = False
         self.connected = False
+        # Whether the AP has ever answered this run, and when to give up if it
+        # never has - the connect timeout (see _poll_once).
+        self._ever_connected = False
+        self._connect_deadline: float | None = None
         self._stop_event: threading.Event | None = None
         self._thread: threading.Thread | None = None
 
@@ -48,6 +56,8 @@ class APPoller(Process):
             self.buffer.put("ap_connect", "AP polling is already running")
             return
         self.running = True
+        self._ever_connected = False
+        self._connect_deadline = time.monotonic() + self.TIMEOUT_SECONDS
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._loop, daemon=True)
         # Learn HVAC's own encryption/AP tunnel/Kalman state up front.
@@ -127,3 +137,17 @@ class APPoller(Process):
             self.buffer.put("ap_connect", f"Connected to {self.url}")
         elif was_connected and not self.connected:
             self.buffer.put_error("ap_connect", f"Lost connection to {self.url}", "ap_unreachable")
+
+        if self.connected:
+            self._ever_connected = True
+            return
+        # Never connected yet - give up once we've waited past the timeout
+        # (parallel to ArpSpoofer's MAC timeout). Can't call stop() here: it
+        # joins this very thread. Clearing running and the stop event instead
+        # makes _loop exit and the form show stopped.
+        if not self._ever_connected and self._connect_deadline is not None and time.monotonic() >= self._connect_deadline:
+            self.buffer.put_error("ap_connect", f"Gave up connecting to {self.url} after {self.TIMEOUT_SECONDS:.0f} seconds. "
+                                                f"Check the AP URL and that you're on its network.", "ap_unreachable")
+            self.running = False
+            if self._stop_event is not None:
+                self._stop_event.set()

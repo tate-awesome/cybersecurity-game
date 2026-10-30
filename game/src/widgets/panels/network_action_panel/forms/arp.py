@@ -14,4 +14,7 @@ class ArpForm(BaseForm):
 
         _, entry1 = self.add_labeled_entry("Target IP:")
         _, entry2 = self.add_labeled_entry("Host IP:")
-        self.add_process_row(lambda: self.process.start(entry1.text(), entry2.text()), self.process.stop, self.process.is_running)
+        # Locked inputs for the run; the Starting button stays clickable so the
+        # wait for the victims' MACs can be cancelled.
+        self.add_process_row(lambda: self.process.start(entry1.text(), entry2.text()), self.process.stop,
+                             self.process.is_running, lock_entries=True)

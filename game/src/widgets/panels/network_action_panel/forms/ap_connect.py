@@ -48,7 +48,7 @@ class APConnectForm(BaseForm):
         def do_disconnect():
             self.process.stop()
 
-        self.add_process_row(do_connect, do_disconnect, self.process.is_running)
+        self.add_process_row(do_connect, do_disconnect, self.process.is_running, lock_entries=True)
 
         self.conn_label = QLabel("")
         self.conn_label.setFont(self.style.get_font("small"))

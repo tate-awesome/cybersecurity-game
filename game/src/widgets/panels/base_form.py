@@ -138,7 +138,8 @@ class BaseForm(QWidget):
             self.start_button_text = f"{self.style.icon('player-play')}  Start"
             self.stop_button_text = f"{self.style.icon('square')}  Stop"
             # Shown while the process is between states (see the phase model).
-            self.starting_button_text = "Starting"
+            # Starting reads "Cancel" - clicking it then cancels the start.
+            self.starting_button_text = "Cancel"
             self.stopping_button_text = "Stopping"
             # Shown, disabled, while a process that can't be stopped runs (see add_process_row's stoppable)
             self.running_button_text = "Running"
@@ -425,12 +426,16 @@ class BaseForm(QWidget):
 
     def add_process_row(self, start_func: Callable, stop_func: Callable, status_func: Callable[[], bool],
                         default_status: str = "", starting_func: Callable[[], bool] | None = None,
-                        stopping_func: Callable[[], bool] | None = None, stoppable: bool = True):
+                        stopping_func: Callable[[], bool] | None = None, stoppable: bool = True,
+                        lock_entries: bool = False):
         '''
         The form's start/stop button (and, unless flat, its status line).
         stoppable=False is for a process that runs to the end by itself
         (an nmap scan): while it runs, the button just says so, disabled,
         instead of offering a Stop that wouldn't do anything.
+        lock_entries makes this form's entries read-only whenever it isn't
+        stopped - its inputs are fixed for the run (arp, dos, encryption,
+        ap_connect).
         '''
 
         if self.has_process_button:
@@ -448,6 +453,7 @@ class BaseForm(QWidget):
         self.stop_process = stop_func
         self.status_func = status_func
         self.stoppable = stoppable
+        self.lock_entries = lock_entries
         # The transitional-phase checks: taken as given, else from the Process
         # behind status_func (so forms don't have to pass them), else never.
         process = getattr(status_func, "__self__", None)
@@ -567,6 +573,15 @@ class BaseForm(QWidget):
             self.process_status.setText(self.status_off_text)
             self._set_dot_tone("muted")
         self._process_button_connected = True
+        # Inputs are fixed for the run - editable only while fully stopped
+        if self.lock_entries:
+            self._set_entries_locked(phase != PHASE_STOPPED)
+
+    def _set_entries_locked(self, locked: bool):
+        '''Read-only (locked) or editable entries - see add_process_row's lock_entries.'''
+        for entry in self.entries:
+            if entry.isReadOnly() != locked:
+                entry.setReadOnly(locked)
 
     def entries_filled(self) -> bool:
         '''Whether every entry on this form has (non-whitespace) text.'''
