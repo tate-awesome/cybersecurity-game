@@ -7,12 +7,7 @@
         "## Objectives",
         "- Understand what a communication channel is\n- Understand what a communication protocol is \n- Understand the system flow of the MODBUS TCP channel\n- Understand the system flow of the HTTP channel\n- Understand how to utilize the HVAC system's redundant communication channels to divert an attack",
         "## Reading",
-        "*Securing Cyber-Physical Systems: A Hands-On Guide*",
-        "- TBD",
-        "## Videos",
-        "- TBD",
-        "## Where This Fits",
-        "**Next:** TBD"
+        "*Securing Cyber-Physical Systems: A Hands-On Guide*"
     ],
 
     "schema_version": 1,
@@ -38,7 +33,7 @@
                 }
             }
         },
-        "network_action_forms_shown": {"arp": 1, "sniff": 1, "ap_tunnel": 1, "ap_connect": 1},
+        "network_action_forms_shown": {"arp": 1, "sniff": 1, "ap_tunnel": 1, "ap_connect": 1, "nmap": 1},
         "available": {
             "ap_connect": 1,
             "arp": 1,
@@ -50,7 +45,8 @@
             "modify": 1,
             "flags_hvac": 1,
             "flags_kalman": 0,
-            "flags": 0
+            "flags": 0,
+            "nmap": 1
         },
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1},
         "defender_flag_forms_shown": {"flags_hvac": 1, "flags": 0, "flags_kalman": 0}
