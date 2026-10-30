@@ -8,11 +8,8 @@
         "- Understand what passive filtering is\n- Understand what an extended kalman filter does\n- Understand the difference between a 1-dimensional and extended kalman filter\n- Understand what each of the detection flags monitor\n- Understand how the prediction of noise in the filter changes the accuracy of the state flag\n- Understand how an ekf can be used for more than just thresholding error detection\n- Understand how removing filtering from a noisy system can affect its control loop",
         "## Reading",
         "*Securing Cyber-Physical Systems: A Hands-On Guide*",
-        "- TBD",
-        "## Videos",
-        "- TBD",
         "## Where This Fits",
-        "**Next:** TBD"
+        "**Next:** - Defender: Submarine Communication Channels"
     ],
 
     "schema_version": 1,

@@ -8,11 +8,8 @@
         "- Understand which variables control the movement of the submarine\n- Understand which variables track the position of the submarine\n- Understand which variables are owned by the Client\n- Understand which variables are owned by the Server\n- Understand what the Client computes\n- Understand what the Server computes",
         "## Reading",
         "*Securing Cyber-Physical Systems: A Hands-On Guide*",
-        "- TBD",
-        "## Videos",
-        "- TBD",
         "## Where This Fits",
-        "**Next:** TBD"
+        "**Next:** - Defender: Submarine Encryption"
     ],
 
     "schema_version": 1,
@@ -29,7 +26,12 @@
     "settings": {
         "model_panels": {
             "modbus_model_panel_1": {
-                "available": {"sniffed_submarine_map": 0, "sniffed_hvac_house": 0, "sniffed_hvac_chart": 0, "ap_polled_hvac_chart": 0}
+                "available": {
+                    "sniffed_submarine_map": 0,
+                    "sniffed_hvac_house": 0,
+                    "sniffed_hvac_chart": 0,
+                    "ap_polled_hvac_chart": 0
+                }
             }
         },
         "network_action_forms_shown": {"ap_connect": 1, "encryption": 1, "ap_tunnel": 1},
@@ -38,9 +40,7 @@
     },
 
     "title": "defender_submarine_system_workspace",
-    "menu_bar": [
-        "ap_config_button"
-    ],
+    "menu_bar": ["ap_config_button"],
 
     "layout_shape": {
         "v_panes_1": [
