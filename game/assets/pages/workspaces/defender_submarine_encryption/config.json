@@ -47,17 +47,13 @@
                 }
             }
         },
-        "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1, "ap_connect": 1, "wifi": 1},
-        "available": {"ap_connect": 1, "encryption": 1, "arp": 1, "sniff": 1, "mode": 1, "sliders": 1, "wifi": 1},
+        "network_action_forms_shown": {"arp": 1, "sniff": 1, "encryption": 1, "ap_connect": 1, "nmap": 1},
+        "available": {"ap_connect": 1, "encryption": 1, "arp": 1, "sniff": 1, "mode": 1, "sliders": 1, "nmap": 1},
         "defender_modbus_forms_shown": {"mode": 1, "sliders": 1}
     },
 
     "title": "defender_submarine_encryption_workspace",
-    "menu_bar": [
-        "model_style_button",
-        "strip_chart_style_button",
-        "ap_config_button"
-    ],
+    "menu_bar": ["model_style_button", "strip_chart_style_button", "ap_config_button"],
 
     "layout_shape": {
         "v_panes_1": [
