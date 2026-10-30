@@ -11,4 +11,5 @@ class NmapForm(BaseForm):
 
         self.add_header()
 
-        self.add_process_row(self.process.start, self.process.stop, self.process.is_running)
+        # A scan runs to the end by itself - there's nothing to stop
+        self.add_process_row(self.process.start, self.process.stop, self.process.is_running, stoppable=False)

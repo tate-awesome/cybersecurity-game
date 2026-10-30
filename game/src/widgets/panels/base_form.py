@@ -140,6 +140,8 @@ class BaseForm(QWidget):
             # Shown while the process is between states (see the phase model).
             self.starting_button_text = "Starting"
             self.stopping_button_text = "Stopping"
+            # Shown, disabled, while a process that can't be stopped runs (see add_process_row's stoppable)
+            self.running_button_text = "Running"
             # Shown on the start button while any entry is still empty.
             self.input_needed_text = f"{self.style.icon('alert-triangle')}  Input"
         else:
@@ -150,6 +152,7 @@ class BaseForm(QWidget):
             # transitional wording.
             self.starting_button_text = self.stop_process_text
             self.stopping_button_text = self.start_process_text
+            self.running_button_text = self.status_on_text
             self.input_needed_text = self.start_process_text
 
         self.current_row = 0
@@ -422,7 +425,13 @@ class BaseForm(QWidget):
 
     def add_process_row(self, start_func: Callable, stop_func: Callable, status_func: Callable[[], bool],
                         default_status: str = "", starting_func: Callable[[], bool] | None = None,
-                        stopping_func: Callable[[], bool] | None = None):
+                        stopping_func: Callable[[], bool] | None = None, stoppable: bool = True):
+        '''
+        The form's start/stop button (and, unless flat, its status line).
+        stoppable=False is for a process that runs to the end by itself
+        (an nmap scan): while it runs, the button just says so, disabled,
+        instead of offering a Stop that wouldn't do anything.
+        '''
 
         if self.has_process_button:
             return
@@ -438,6 +447,7 @@ class BaseForm(QWidget):
         self.start_process = start_func
         self.stop_process = stop_func
         self.status_func = status_func
+        self.stoppable = stoppable
         # The transitional-phase checks: taken as given, else from the Process
         # behind status_func (so forms don't have to pass them), else never.
         process = getattr(status_func, "__self__", None)
@@ -520,12 +530,20 @@ class BaseForm(QWidget):
     def apply_phase(self, phase: str):
         '''
         Sets the button text + click action, the (non-flat) status label, and
-        the dot's color for a phase. Running is green and offers Stop, stopped
+        the dot's color for a phase. Running is green and offers Stop (or, if
+        it can't be stopped, says it's running, disabled), stopped
         is muted and offers Start, and the two transitions are yellow: starting
         offers Stop (cancel), stopping offers Start.
         '''
         self._disconnect_process_button()
-        if phase == PHASE_RUNNING:
+        self.process_button.setEnabled(True)
+        if phase == PHASE_RUNNING and not self.stoppable:
+            self.wire_button(self.process_button, lambda: None)
+            self.process_button.setText(self.running_button_text)
+            self.process_button.setEnabled(False)
+            self.process_status.setText(self.status_on_text)
+            self._set_dot_tone("good")
+        elif phase == PHASE_RUNNING:
             self.wire_button(self.process_button, self.click_stop)
             self.process_button.setText(self.stop_button_text)
             self.process_status.setText(self.status_on_text)

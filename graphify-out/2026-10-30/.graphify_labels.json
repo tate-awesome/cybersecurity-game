@@ -5,7 +5,6 @@
   "70": "InputManager",
   "99": "palette_generator.py",
   "134": "Builder",
-  "166": "MaterialEditorPopup",
   "200": "PooledCanvasMixin",
   "230": "Telemetry",
   "236": ".edit_workspace",
