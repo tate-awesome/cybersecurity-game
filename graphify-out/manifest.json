@@ -204,15 +204,15 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/arp_spoofing/config.json": {
-    "mtime": 1793314411.6047685,
-    "seen": 1793314494.0612113,
-    "ast_hash": "5e32114cc95ac64a03f07dec710b6d54",
+    "mtime": 1793319585.2699876,
+    "seen": 1793320287.1300917,
+    "ast_hash": "5d8cb46a073667dad853b78712fa5ac2",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/attacker_suite/config.json": {
-    "mtime": 1793314411.6314912,
-    "seen": 1793314494.0612135,
-    "ast_hash": "f35e1e085a1fc28028b8db6f24b71a63",
+    "mtime": 1793319632.857274,
+    "seen": 1793320287.1300948,
+    "ast_hash": "f0136e0b5d3264901f86f383cdd0f567",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/defender_hvac_communication_channels/config.json": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_recon/config.json": {
-    "mtime": 1793314411.7473612,
-    "seen": 1793314494.0630076,
-    "ast_hash": "4455a59547f725e6c31ddc03a38155c0",
+    "mtime": 1793319599.9218528,
+    "seen": 1793320287.1322496,
+    "ast_hash": "7e9ab0dd194ac04a96066f67a2f84fc4",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/modbus_submarine/config.json": {
@@ -306,15 +306,15 @@
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/network_recon/config.json": {
-    "mtime": 1793314411.803709,
-    "seen": 1793314494.0630114,
-    "ast_hash": "4be433fb7e4ac682ba1be172ff5cc413",
+    "mtime": 1793319568.3218293,
+    "seen": 1793320287.1324227,
+    "ast_hash": "482a27729c3737cd96ba1c72b723c41e",
     "semantic_hash": ""
   },
   "game/assets/pages/workspaces/start_here/config.json": {
-    "mtime": 1793314411.8317432,
-    "seen": 1793314494.063013,
-    "ast_hash": "8705dbace41e53a4fa85cfed6840fc07",
+    "mtime": 1793314967.9768095,
+    "seen": 1793320287.1324255,
+    "ast_hash": "e46b13af6318c3f70ba96ab867df8bb2",
     "semantic_hash": ""
   },
   "game/assets/schemas/page_config.schema.json": {
@@ -1056,9 +1056,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/docking.py": {
-    "mtime": 1793220868.1450732,
-    "seen": 1793230548.7999358,
-    "ast_hash": "3be2a703e9af943640d661f286df2610",
+    "mtime": 1793320561.4292276,
+    "seen": 1793320595.3485038,
+    "ast_hash": "2accbda8b2eaa7ec2afa99b876e1ae30",
     "semantic_hash": ""
   },
   "game/src/widgets/frame_widgets/drag_drop.py": {

@@ -37,7 +37,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QRegion
 from PySide6.QtWidgets import QAbstractButton, QApplication, QHBoxLayout, QLabel, QPushButton, QStackedLayout, QVBoxLayout, QWidget
 
 from ...app_core import Context
@@ -776,9 +776,177 @@ class _SashGrip(QObject):
         if event.type() == QEvent.Type.MouseButtonPress:
             self.area.remember_open_sizes(self.area.collapsed())
             self.area.unpin_beside(watched)
+            splitter = watched.splitter()
+            self.area.sash_light.show_held([(splitter, splitter.indexOf(watched))])
         elif event.type() == QEvent.Type.MouseButtonRelease:
+            self.area.sash_light.show_held([])
             self.area.relayout_soon()
         return False
+
+
+class _SashLight(QWidget):
+    '''Over the whole layout, while dividers are held: each lit in the theme's accent, so it's clear which ones a drag moves.'''
+
+    def __init__(self, area: "DockArea"):
+        super().__init__(area)
+        self.area = area
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.hide()
+        self.held: list[tuple[Panes, int]] = []
+
+    def show_held(self, held: list[tuple[Panes, int]]):
+        self.held = held
+        if held:
+            self.setGeometry(self.area.rect())
+            self.show()
+            self.raise_()
+            self.update()
+        else:
+            self.hide()
+
+    def paintEvent(self, event):
+        style = self.area.style
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(style.color("accent")))
+        # A bar down the middle of each divider, as thick as half the gap
+        thickness = max(2, style.panel_gap() // 2)
+        for panes, index in self.held:
+            try:
+                handle = panes.handle(index)
+                rect = QRect(handle.mapTo(self.area, QPoint(0, 0)), handle.size())
+            except RuntimeError:
+                continue  # rebuilt meanwhile
+            if panes.orientation() == Qt.Orientation.Horizontal:
+                bar = QRectF(rect.center().x() + 0.5 - thickness / 2, rect.top(), thickness, rect.height())
+            else:
+                bar = QRectF(rect.left(), rect.center().y() + 0.5 - thickness / 2, rect.width(), thickness)
+            painter.drawRoundedRect(bar, thickness / 2, thickness / 2)
+        painter.end()
+
+
+class _SashCorners(QWidget):
+    '''
+    Lies over the gaps around the dividers' ends - where they meet each
+    other or the layout's edge, and the panels' rounded corners leave the
+    gap wider than any divider - up to the panels' edges. Dragging there
+    moves whichever dividers are nearest the mouse: at a corner, the ones
+    running each way, so a panel can be resized by its corner in one go.
+    Everywhere else, the dividers are dragged as they are.
+    '''
+
+    def __init__(self, area: "DockArea"):
+        super().__init__(area)
+        self.area = area
+        self.setMouseTracking(True)
+        self.hide()
+        # While dragging: each held divider's group, index, way it runs, and where it started
+        self.held: list[tuple[Panes, int, bool, int]] = []
+        self.pressed_at = QPoint()
+        self._fit_queued = False
+
+    def reach(self) -> int:
+        '''How near a divider the mouse grabs it, in px - past a panel's rounded corner.'''
+        return self.area.style.panel_gap() + self.area.style.PANEL_RADIUS
+
+    def fit_soon(self):
+        if not self._fit_queued:
+            self._fit_queued = True
+            QTimer.singleShot(0, self.fit)
+
+    def fit(self):
+        self._fit_queued = False
+        if self.held:
+            return  # refitted once it's let go
+        try:
+            reach = self.reach()
+            zones = QRegion()
+            for _, _, rect, horizontal in self.area.sashes():
+                if horizontal:
+                    ends = (QRect(rect.left() - reach, rect.top() - reach, rect.width() + 2 * reach, 2 * reach),
+                            QRect(rect.left() - reach, rect.bottom() + 1 - reach, rect.width() + 2 * reach, 2 * reach))
+                else:
+                    ends = (QRect(rect.left() - reach, rect.top() - reach, 2 * reach, rect.height() + 2 * reach),
+                            QRect(rect.right() + 1 - reach, rect.top() - reach, 2 * reach, rect.height() + 2 * reach))
+                for end in ends:
+                    zones = zones.united(end)
+            zones = zones.intersected(self.area.rect())
+            radius = self.area.style.PANEL_RADIUS
+            for rect in self.area.surfaces():
+                body = QPainterPath()
+                body.addRoundedRect(QRectF(rect), radius, radius)
+                zones = zones.subtracted(QRegion(body.toFillPolygon().toPolygon()))
+        except RuntimeError:
+            return  # deleted with its page
+        if zones.isEmpty():
+            self.hide()  # an empty mask would be no mask at all
+            return
+        self.setGeometry(self.area.rect())
+        self.setMask(zones)
+        self.show()
+        self.raise_()
+
+    def nearest(self, at: QPoint) -> list[tuple[Panes, int, bool]]:
+        '''The dividers within reach of at: each way, the nearest, and any carrying on its line (across a junction).'''
+        reach, gap = self.reach(), self.area.style.panel_gap()
+        sashes = self.area.sashes()
+        found = []
+        for way in (True, False):
+            near = []
+            for panes, index, rect, horizontal in sashes:
+                if horizontal != way:
+                    continue
+                distance = max(rect.left() - at.x(), at.x() - rect.right(), rect.top() - at.y(), at.y() - rect.bottom(), 0)
+                if distance <= reach:
+                    near.append((distance, panes, index, rect))
+            if not near:
+                continue
+            line = (lambda rect: rect.center().x()) if way else (lambda rect: rect.center().y())
+            closest = line(min(near, key=lambda found: found[0])[3])
+            found += [(panes, index, way) for _, panes, index, rect in near if abs(line(rect) - closest) <= gap]
+        return found
+
+    def point_at(self, found: list[tuple[Panes, int, bool]]):
+        ways = {way for _, _, way in found}
+        if len(ways) == 2:
+            self.setCursor(Qt.CursorShape.SizeAllCursor)
+        elif ways:
+            self.setCursor(Qt.CursorShape.SplitHCursor if True in ways else Qt.CursorShape.SplitVCursor)
+        else:
+            self.unsetCursor()
+
+    def mousePressEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton or self.area.root is None:
+            return super().mousePressEvent(event)
+        found = self.nearest(event.position().toPoint())
+        self.held = [(panes, index, way, panes.handle(index).pos().x() if way else panes.handle(index).pos().y())
+                     for panes, index, way in found]
+        self.pressed_at = event.globalPosition().toPoint()
+        # As pressing a divider itself does (see _SashGrip)
+        self.area.remember_open_sizes(self.area.collapsed())
+        for panes, index, _, _ in self.held:
+            self.area.unpin_beside(panes.handle(index))
+        self.area.sash_light.show_held([(panes, index) for panes, index, _, _ in self.held])
+
+    def mouseMoveEvent(self, event):
+        if not self.held:
+            self.point_at(self.nearest(event.position().toPoint()))
+            return
+        moved = event.globalPosition().toPoint() - self.pressed_at
+        for panes, index, way, start in self.held:
+            try:
+                panes.moveSplitter(start + (moved.x() if way else moved.y()), index)
+            except RuntimeError:
+                pass  # rebuilt meanwhile
+
+    def mouseReleaseEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton or not self.held:
+            return super().mouseReleaseEvent(event)
+        self.held = []
+        self.area.sash_light.show_held([])
+        self.area.relayout_soon()
+        self.fit_soon()
 
 
 class _Chip(QLabel):
@@ -949,6 +1117,7 @@ class _ShadowWatch(QObject):
     def eventFilter(self, watched, event):
         if event.type() in self.EVENTS:
             self.area.update()
+            self.area.sash_corners.fit_soon()
         return False
 
 
@@ -1006,6 +1175,8 @@ class DockArea(QWidget):
         self.shelf.hide()
         self.grip = _Grip(self)
         self.sash_grip = _SashGrip(self)
+        self.sash_corners = _SashCorners(self)
+        self.sash_light = _SashLight(self)
         # The panel being peeked at, its pane and its popup (see peek)
         self.peeking: tuple[str, TabbedPane, _Peek] | None = None
 
@@ -1104,7 +1275,7 @@ class DockArea(QWidget):
         # them, and the window's material too, if it's not (see paintEvent)
         panes = Panes(master, self.context, node["orientation"], len(children), divisors, False,
                       transparent=True, ids=[child["id"] for child in children])
-        panes.splitterMoved.connect(lambda *_, node=node: (self.sash_moved(node), self.changed.emit()))
+        panes.splitterMoved.connect(lambda *_, node=node: (self.sash_moved(node), self.changed.emit(), self.sash_corners.fit_soon(), self.sash_light.update()))
         for index in range(1, panes.count()):
             panes.handle(index).installEventFilter(self.sash_grip)
         self.splits[node["id"]] = panes
@@ -1131,6 +1302,19 @@ class DockArea(QWidget):
         docked = set(map(id, self.panels.values()))
         return [QRect(widget.mapTo(self, QPoint(0, 0)), widget.size()) for widget in self.host.findChildren(QWidget)
                 if (id(widget) in docked or isinstance(widget, (_SideStrip, _LentPlaceholder))) and widget.isVisibleTo(self)]
+
+    def sashes(self) -> list[tuple[Panes, int, QRect, bool]]:
+        '''Every divider showing: its group, its index, where it is here, and whether it's between side-by-side panes.'''
+        found = []
+        for panes in self.splits.values():
+            if not panes.isVisibleTo(self):
+                continue
+            horizontal = panes.orientation() == Qt.Orientation.Horizontal
+            for index in range(1, panes.count()):
+                handle = panes.handle(index)
+                if handle.isVisibleTo(self):
+                    found.append((panes, index, QRect(handle.mapTo(self, QPoint(0, 0)), handle.size()), horizontal))
+        return found
 
     def paintEvent(self, event):
         '''
@@ -1329,6 +1513,7 @@ class DockArea(QWidget):
         if self.root is not None and self.isVisible() and not self.testAttribute(Qt.WidgetAttribute.WA_PendingResizeEvent):
             # Even with nothing minimized: every pane's floor is its title bar (see lay_out_split)
             self.lay_out_minimized(self.collapsed())
+        self.sash_corners.fit_soon()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
