@@ -7,7 +7,7 @@ from scapy.all import get_if_addr, get_working_if, get_if_hwaddr
 import netifaces
 from ..process import Process
 from ..buffer.channels.network_graph import MAX_NICKNAME_LENGTH
-import nmap, socket
+import nmap, socket, sys
 
 class NMapper(Process):
     def __init__(self, buffer, context):
@@ -60,8 +60,16 @@ class NMapper(Process):
         return '.'.join(ip_parts)
 
     def library_nmap(self):
-        # Initialize scanner
-        nm = nmap.PortScanner()
+        # Initialize scanner - python-nmap only wraps the nmap program, so it
+        # fails here when nmap itself isn't installed (or isn't on PATH)
+        try:
+            nm = nmap.PortScanner()
+        except nmap.PortScannerError as e:
+            if "not found" not in str(e):
+                raise
+            self.buffer.put("nmap", "NMap scan failed: the nmap program was not found.")
+            self.buffer.put("nmap", f"Please install nmap ({self.nmap_install_hint()}), then restart the game.")
+            return
         local_ip = self.get_local_ip()
         if local_ip is None:
             self.buffer.put("nmap", "Could not determine local IP address (no network connection?). Aborting scan.")
@@ -90,6 +98,13 @@ class NMapper(Process):
 
         self.apply_nicknames(nm)
         self.buffer.put("nmap", "Scan complete.")
+
+    def nmap_install_hint(self) -> str:
+        if sys.platform == "win32":
+            return "download it from https://nmap.org/download.html"
+        if sys.platform == "darwin":
+            return "brew install nmap"
+        return "e.g. sudo apt install nmap"
 
     def apply_nicknames(self, nm):
         '''
