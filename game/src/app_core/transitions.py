@@ -1,64 +1,53 @@
 from collections.abc import Callable
 
-from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRect, QRectF, Qt, QTimer, QVariantAnimation
+from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRect, QSize, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPixmap, QRegion
 from PySide6.QtWidgets import QGraphicsEffect, QWidget
 
 
-class AppearEffect(QGraphicsEffect):
+class HideEffect(QGraphicsEffect):
     '''
-    Draws its widget faded and shifted by (dx, dy) - an entrance pose that
-    PageTransition eases back to fully opaque and in place.
+    Draws nothing - keeps a new page's item off screen while
+    PageTransition draws a picture of it in its place. Never asks for the
+    source pixmap, so it costs no offscreen pass.
     '''
-
-    def __init__(self, dx: float, dy: float):
-        super().__init__()
-        self.opacity = 0.0
-        self.dx, self.dy = dx, dy
-
-    def set_pose(self, opacity: float, dx: float, dy: float):
-        self.opacity, self.dx, self.dy = opacity, dx, dy
-        self.updateBoundingRect()
-        self.update()
-
-    def boundingRectFor(self, rect: QRectF) -> QRectF:
-        return rect.united(rect.translated(self.dx, self.dy))
 
     def draw(self, painter: QPainter):
-        if self.opacity <= 0.0:
-            return
-        if self.opacity >= 1.0 and not self.dx and not self.dy:
-            self.drawSource(painter)
-            return
-        # PySide6 drops sourcePixmap's offset out-parameter, so place the
-        # pixmap by the source's own bounding rect (logical coordinates,
-        # no padding - the two then line up exactly)
-        pixmap = self.sourcePixmap(Qt.CoordinateSystem.LogicalCoordinates, mode=QGraphicsEffect.PixmapPadMode.NoPad)
-        origin = self.sourceBoundingRect(Qt.CoordinateSystem.LogicalCoordinates).topLeft()
-        painter.save()
-        painter.setOpacity(self.opacity)
-        painter.drawPixmap(origin + QPointF(self.dx, self.dy), pixmap)
-        painter.restore()
+        pass
 
 
-class SnapshotOverlay(QWidget):
-    '''A picture of the page being left, drawn over the new one while it fades and drifts away.'''
+class Layer:
+    '''One picture on a TransitionOverlay, and its current pose.'''
 
-    def __init__(self, parent: QWidget, pixmap: QPixmap, origin: QPoint):
-        super().__init__(parent)
+    def __init__(self, pixmap: QPixmap | None, origin: QPoint, opacity: float = 0.0):
+        # None until it's taken (see PageTransition.capture)
         self.pixmap = pixmap
-        # Where the old page sat in the window
+        # Where its content sits in the window, at rest
         self.origin = QPointF(origin)
-        self.opacity = 1.0
-        self.dx = 0.0
+        self.opacity = opacity
+        self.dx = self.dy = 0.0
+
+
+class TransitionOverlay(QWidget):
+    '''
+    Pictures of page content - the page being left, the new page's items -
+    drawn over the window while they fade and drift. One widget paints
+    them all, so each frame is a single pass of plain pixmap draws rather
+    than an offscreen render of every widget that's moving.
+    '''
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.layers: list[Layer] = []
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def paintEvent(self, event):
-        if self.opacity <= 0.0:
-            return
         painter = QPainter(self)
-        painter.setOpacity(self.opacity)
-        painter.drawPixmap(self.origin + QPointF(self.dx, 0.0), self.pixmap)
+        for layer in self.layers:
+            if layer.pixmap is None or layer.opacity <= 0.0:
+                continue
+            painter.setOpacity(layer.opacity)
+            painter.drawPixmap(layer.origin + QPointF(layer.dx, layer.dy), layer.pixmap)
         painter.end()
 
 
@@ -74,6 +63,12 @@ class PageTransition:
     direction 0 (refresh - a theme or language change, say) just
     crossfades from a picture of the whole old page, since nothing moved.
 
+    Nothing live moves: the old content and each new item are pictures on
+    one TransitionOverlay, and the real items stay hidden (HideEffect)
+    until their picture lands, then take its place. A new item is pictured
+    as its own entrance begins - the page has been laid out and shown by
+    then, which it hasn't when this is made.
+
     One animation drives everything. stop() jumps straight to the end
     state, for when another page change interrupts this one.
     '''
@@ -85,6 +80,26 @@ class PageTransition:
     REFRESH_MS = 260    # whole-page crossfade on a refresh
     SLIDE = 28.0        # px of horizontal travel
     RISE = 10.0         # px new items rise into place
+
+    OUT_CURVE = QEasingCurve(QEasingCurve.Type.InOutQuad)
+    IN_CURVE = QEasingCurve(QEasingCurve.Type.OutCubic)
+
+    @staticmethod
+    def blank(widget: QWidget, size: QSize) -> QPixmap:
+        '''A transparent pixmap of size (logical px) at widget's screen's pixel ratio.'''
+        ratio = widget.devicePixelRatioF()
+        pixmap = QPixmap(size * ratio)
+        pixmap.setDevicePixelRatio(ratio)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        return pixmap
+
+    @staticmethod
+    def draw_content(target: QWidget, pixmap: QPixmap, offset: QPoint):
+        # DrawChildren only - the default also fills each target with
+        # its palette's window color (near-white in Fusion), which
+        # flashed as a light box behind labels and bars. Stylesheet
+        # backgrounds still paint, since those come from paintEvent.
+        target.render(pixmap, offset, QRegion(), QWidget.RenderFlag.DrawChildren)
 
     @staticmethod
     def snapshot(page: QWidget | None, direction: int) -> tuple[QPixmap, QPoint] | None:
@@ -99,42 +114,45 @@ class PageTransition:
         if direction == 0:
             return page.grab(), page.pos()
         targets = page.appear_targets() if hasattr(page, "appear_targets") else []
-        ratio = page.devicePixelRatioF()
-        pixmap = QPixmap(page.size() * ratio)
-        pixmap.setDevicePixelRatio(ratio)
-        pixmap.fill(Qt.GlobalColor.transparent)
+        pixmap = PageTransition.blank(page, page.size())
         for target in targets:
-            # DrawChildren only - the default also fills each target with
-            # its palette's window color (near-white in Fusion), which
-            # flashed as a light box behind labels and bars. Stylesheet
-            # backgrounds still paint, since those come from paintEvent.
-            target.render(pixmap, target.mapTo(page, QPoint(0, 0)), QRegion(), QWidget.RenderFlag.DrawChildren)
+            PageTransition.draw_content(target, pixmap, target.mapTo(page, QPoint(0, 0)))
         return pixmap, page.pos()
 
     def __init__(self, page: QWidget, snapshot: tuple[QPixmap, QPoint] | None, direction: int):
         self.direction = direction
-        self.overlay = None
-        if snapshot is not None:
-            # Covers the whole window and draws the picture where the old
-            # page was - the new page isn't laid out yet, so its own
-            # geometry can't be trusted here
-            window = page.parentWidget()
-            self.overlay = SnapshotOverlay(window, *snapshot)
-            self.overlay.setGeometry(window.rect())
-            self.overlay.show()
-            self.overlay.raise_()
+        self.page = page
+        self.laid_out = False
+        # Covers the whole window and draws each picture where its content
+        # sits - the new page isn't laid out yet, so its own geometry can't
+        # be trusted here
+        window = page.parentWidget()
+        self.overlay: TransitionOverlay | None = TransitionOverlay(window)
+        self.overlay.setGeometry(window.rect())
 
-        self.effects: list[tuple[QWidget, AppearEffect]] = []
+        self.outgoing: Layer | None = None
+        if snapshot is not None:
+            self.outgoing = Layer(*snapshot, opacity=1.0)
+            self.overlay.layers.append(self.outgoing)
+
+        # (stagger index, item, its HideEffect, its picture) for each new
+        # item still entering - the effect is held here too, or Python
+        # collects it out from under the item
+        self.entering: list[tuple[int, QWidget, HideEffect, Layer]] = []
         if direction != 0 and hasattr(page, "appear_targets"):
-            for target in page.appear_targets():
-                effect = AppearEffect(direction * self.SLIDE, self.RISE)
+            for index, target in enumerate(page.appear_targets()):
+                effect = HideEffect()
                 target.setGraphicsEffect(effect)
-                self.effects.append((target, effect))
+                layer = Layer(None, QPoint())
+                self.entering.append((index, target, effect, layer))
+                self.overlay.layers.append(layer)
+        self.overlay.show()
+        self.overlay.raise_()
 
         if direction == 0:
             total = self.REFRESH_MS
         else:
-            total = max(self.OUT_MS, self.IN_DELAY_MS + self.IN_MS + self.STAGGER_MS * max(0, len(self.effects) - 1))
+            total = max(self.OUT_MS, self.IN_DELAY_MS + self.IN_MS + self.STAGGER_MS * max(0, len(self.entering) - 1))
         self.animation = QVariantAnimation()
         self.animation.setStartValue(0.0)
         self.animation.setEndValue(float(total))
@@ -144,21 +162,52 @@ class PageTransition:
         self.step(0.0)
         self.animation.start()
 
+    def capture(self, target: QWidget, effect: HideEffect, layer: Layer):
+        '''Pictures a new item, at rest, for its entrance.'''
+        window = self.overlay.parentWidget()
+        if not self.laid_out:
+            # Settle any geometry still pending, so the pictures match
+            # where the items will be once they're handed back
+            self.laid_out = True
+            for widget in (window, self.page):
+                if widget.layout() is not None:
+                    widget.layout().activate()
+        layer.pixmap = self.blank(target, target.size())
+        # Its HideEffect would otherwise blank the picture too
+        effect.setEnabled(False)
+        self.draw_content(target, layer.pixmap, QPoint(0, 0))
+        effect.setEnabled(True)
+        layer.origin = QPointF(target.mapTo(window, QPoint(0, 0)))
+
     def step(self, elapsed: float):
-        out_curve = QEasingCurve(QEasingCurve.Type.InOutQuad)
-        in_curve = QEasingCurve(QEasingCurve.Type.OutCubic)
         try:
-            if self.overlay is not None:
+            if self.outgoing is not None:
                 span = self.REFRESH_MS if self.direction == 0 else self.OUT_MS
-                progress = out_curve.valueForProgress(min(1.0, elapsed / span))
-                self.overlay.opacity = 1.0 - progress
-                self.overlay.dx = -self.direction * self.SLIDE * progress
-                self.overlay.update()
-            for index, (_target, effect) in enumerate(self.effects):
+                progress = self.OUT_CURVE.valueForProgress(min(1.0, elapsed / span))
+                self.outgoing.opacity = 1.0 - progress
+                self.outgoing.dx = -self.direction * self.SLIDE * progress
+            landed = []
+            for entry in self.entering:
+                index, target, effect, layer = entry
                 local = (elapsed - self.IN_DELAY_MS - index * self.STAGGER_MS) / self.IN_MS
-                progress = in_curve.valueForProgress(min(1.0, max(0.0, local)))
+                if local <= 0.0 or not self.page.isVisible():
+                    continue
+                if local >= 1.0:
+                    landed.append(entry)
+                    continue
+                if layer.pixmap is None:
+                    self.capture(target, effect, layer)
+                progress = self.IN_CURVE.valueForProgress(local)
                 remaining = 1.0 - progress
-                effect.set_pose(progress, self.direction * self.SLIDE * remaining, self.RISE * remaining)
+                layer.opacity = progress
+                layer.dx = self.direction * self.SLIDE * remaining
+                layer.dy = self.RISE * remaining
+            for entry in landed:
+                # In place - the real item takes over from its picture
+                self.entering.remove(entry)
+                self.overlay.layers.remove(entry[3])
+                entry[1].setGraphicsEffect(None)
+            self.overlay.update()
         except RuntimeError:
             # A widget went away mid-transition (its page was torn down)
             self.stop()
@@ -174,14 +223,15 @@ class PageTransition:
         except RuntimeError:
             pass
         self.overlay = None
-        for target, _effect in self.effects:
+        self.outgoing = None
+        for _index, target, _effect, _layer in self.entering:
             try:
                 # Drop the effect entirely so the finished page paints
-                # directly again, with no offscreen pass
+                # directly again
                 target.setGraphicsEffect(None)
             except RuntimeError:
                 pass
-        self.effects = []
+        self.entering = []
 
 
 class PopupEntrance:

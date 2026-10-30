@@ -1,16 +1,69 @@
 import re
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRectF, QSizeF, Qt, QUrl, QVariantAnimation, Signal
-from PySide6.QtGui import QBrush, QColor, QImage, QLinearGradient, QPainter, QPainterPath, QTextDocument
-from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QSizePolicy,
-                               QTextBrowser, QVBoxLayout, QWidget)
+from PySide6.QtCore import (QEasingCurve, QEvent, QPoint, QPointF, QPropertyAnimation, QRectF, QSizeF, Qt, QUrl,
+                            QVariantAnimation, Signal)
+from PySide6.QtGui import QBrush, QColor, QImage, QLinearGradient, QPainter, QPainterPath, QPixmap, QTextDocument
+from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsEffect, QGraphicsOpacityEffect, QHBoxLayout, QLabel,
+                               QPushButton, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget)
 
 from ...app_core import Context
 from ...widgets import Scrollable
 from ...widgets.panels.panel import paint_panel
 from ...widgets.frame_widgets.important_buttons import PAGE_MARK, POPOUT_MARK
 from ..page import Page
+
+
+class NoteCache(QGraphicsEffect):
+    '''
+    Draws its widget from a picture of it, taken once and reused until
+    invalidate() - optionally faded through an opacity mask. The note
+    sits on a see-through card over the animated background, so every
+    background frame repaints it: drawn live (or through a
+    QGraphicsOpacityEffect, which Qt doesn't cache for widgets) that was
+    most of each frame.
+
+    Qt doesn't tell a widget's effect when the widget changes, so
+    whatever changes it has to call invalidate() (see NoteBrowser).
+    '''
+
+    def __init__(self):
+        super().__init__()
+        self.mask: QBrush | None = None
+        self.picture: QPixmap | None = None
+        self.origin = QPointF()
+        # Taking the picture lays the note out, which reports changes of its own
+        self.capturing = False
+
+    def invalidate(self):
+        if self.capturing:
+            return
+        self.picture = None
+        self.update()
+
+    def set_mask(self, mask: QBrush | None):
+        self.mask = mask
+        self.invalidate()
+
+    def draw(self, painter: QPainter):
+        if self.picture is None:
+            self.capturing = True
+            try:
+                # PySide6 drops sourcePixmap's offset out-parameter, so place
+                # it by the source's own bounding rect (logical coordinates,
+                # no padding - the two then line up exactly)
+                picture = self.sourcePixmap(Qt.CoordinateSystem.LogicalCoordinates,
+                                            mode=QGraphicsEffect.PixmapPadMode.NoPad)
+                self.origin = self.sourceBoundingRect(Qt.CoordinateSystem.LogicalCoordinates).topLeft()
+            finally:
+                self.capturing = False
+            if self.mask is not None and not picture.isNull():
+                masking = QPainter(picture)
+                masking.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                masking.fillRect(QRectF(QPointF(0, 0), picture.deviceIndependentSize()), self.mask)
+                masking.end()
+            self.picture = picture
+        painter.drawPixmap(self.origin, self.picture)
 
 
 class NoteBrowser(QTextBrowser):
@@ -26,40 +79,53 @@ class NoteBrowser(QTextBrowser):
     An edge with more of the note past it fades the text out toward it
     (see show_edges), so a long note never looks like it ends at the
     bottom of the card.
+
+    The text is drawn from a picture (see NoteCache), retaken whenever
+    anything here changes how it looks - its content, scrolling, size,
+    selection, focus, or the theme.
     '''
 
     # A markdown link to the web - not an image (![...](...))
     WEB_LINK = re.compile(r"(?<!!)\[([^\]]+)\]\((https?://[^)\s]+)\)")
     # px the fade reaches in from an edge
     FADE_DEPTH = 56
+    # Events on the browser or its viewport that change how the text looks
+    RESTYLE_EVENTS = {QEvent.Type.FocusIn, QEvent.Type.FocusOut, QEvent.Type.StyleChange, QEvent.Type.PaletteChange,
+                      QEvent.Type.FontChange, QEvent.Type.EnabledChange, QEvent.Type.Resize}
 
     def __init__(self):
         super().__init__()
-        self.fade: QGraphicsOpacityEffect | None = None
+        # Held here as well, or Python collects it out from under the viewport
+        self.cache = NoteCache()
+        self.viewport().setGraphicsEffect(self.cache)
         bar = self.verticalScrollBar()
         bar.valueChanged.connect(self.show_edges)
         bar.rangeChanged.connect(self.show_edges)
+        self.textChanged.connect(self.cache.invalidate)
+        self.selectionChanged.connect(self.cache.invalidate)
+        self.cursorPositionChanged.connect(self.cache.invalidate)
+        # Images arriving, and any other relayout
+        self.document().documentLayout().update.connect(self.cache.invalidate)
+        self.installEventFilter(self)
+        self.viewport().installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if event.type() in self.RESTYLE_EVENTS:
+            self.cache.invalidate()
+        return False
 
     def show_edges(self, *_):
         '''
         Fades the text out toward each edge with more of the note past it -
         the text itself, through an opacity mask, so it fades into whatever
-        is behind it, see-through themes and all. No effect at all while
-        the whole note shows.
+        is behind it, see-through themes and all. No mask at all while the
+        whole note shows.
         '''
         bar = self.verticalScrollBar()
         above, below = bar.value() > bar.minimum(), bar.value() < bar.maximum()
         if not (above or below):
-            if self.fade is not None:
-                # Setting None deletes it
-                self.viewport().setGraphicsEffect(None)
-                self.fade = None
+            self.cache.set_mask(None)
             return
-        if self.fade is None:
-            self.fade = QGraphicsOpacityEffect(self.viewport())
-            # Its default is 0.7 - only the mask should fade anything
-            self.fade.setOpacity(1.0)
-            self.viewport().setGraphicsEffect(self.fade)
         height = self.viewport().height()
         depth = min(self.FADE_DEPTH, height / 3) / max(1, height)
         gradient = QLinearGradient(0, 0, 0, height)
@@ -67,7 +133,7 @@ class NoteBrowser(QTextBrowser):
         gradient.setColorAt(depth, Qt.GlobalColor.black)
         gradient.setColorAt(1 - depth, Qt.GlobalColor.black)
         gradient.setColorAt(1, QColor(0, 0, 0, 0 if below else 255))
-        self.fade.setOpacityMask(QBrush(gradient))
+        self.cache.set_mask(QBrush(gradient))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
