@@ -310,6 +310,17 @@ class BaseForm(QWidget):
             self.caret_button.setText(self.style.icon("chevron-right" if self._minimized else "chevron-down"))
             self.caret_button.setToolTip("Show inputs" if self._minimized else "Hide inputs")
 
+    def unit_height(self) -> int:
+        '''
+        How tall this flat card is with just its header and button - no
+        entries or extra rows. The network action panel's grid cell height
+        (see FlowLayout).
+        '''
+        rows = [w for w in (self.header_bar, getattr(self, "process_button", None)) if w is not None]
+        margins = self.grid_layout.contentsMargins()
+        return (margins.top() + margins.bottom() + sum(w.sizeHint().height() for w in rows)
+                + self.grid_layout.verticalSpacing() * max(len(rows) - 1, 0))
+
     def _set_dot_tone(self, tone: str):
         '''Colors the title status dot (if this card has one) - see _add_flat_header.'''
         if self.status_dot is not None:
@@ -465,8 +476,13 @@ class BaseForm(QWidget):
             # the button's own icon carry the state instead. process_status
             # is kept as a detached label so apply_phase can still set its
             # text without special-casing.
+            # The button's row takes any height the card is stretched past its
+            # natural size (the network action panel sizes cards to whole grid
+            # cells - see FlowLayout), with the button pinned to its bottom so
+            # the slack opens up between the entries and the button.
             self.process_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-            self.grid_layout.addWidget(self.process_button, self.current_row, 0, 1, -1)
+            self.grid_layout.setRowStretch(self.current_row, 1)
+            self.grid_layout.addWidget(self.process_button, self.current_row, 0, 1, -1, Qt.AlignmentFlag.AlignBottom)
             return
         self.process_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
         if self.key is not None:

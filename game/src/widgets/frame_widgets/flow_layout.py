@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from math import ceil
+
 from PySide6.QtCore import QMargins, QPoint, QRect, QSize, Qt
 from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget, QWidgetItem
 
@@ -7,30 +10,41 @@ QWIDGETSIZE_MAX = (1 << 24) - 1  # Qt's "no maximum" sentinel for widget sizes
 
 class FlowLayout(QLayout):
     '''
-    Lays its widgets out left to right, wrapping to a new row when the next
-    one wouldn't fit the available width - so a panel of cards reflows to
-    fill however wide it currently is, one column when narrow and more as it
-    widens. Hidden widgets are skipped and take up no space (the network
-    action panel shows/hides forms in place - see its Builder), so a hidden
-    card leaves no gap.
+    Lays its widgets out on a grid of uniform cells, left to right and
+    wrapping to a new row - so a panel of cards reflows to fill however wide
+    it currently is, one column when narrow and more as it widens. Hidden
+    widgets are skipped and take up no space (the network action panel
+    shows/hides forms in place - see its Builder), so a hidden card leaves no
+    gap.
 
-    The cards are laid out in columns, filling each column top to bottom
-    before moving to the next one (so reading order is top-to-bottom then
-    left-to-right). Every card keeps its own natural height - nothing is
-    stretched to line up with its neighbours - so columns end at ragged but
-    honest heights. All columns share one width that fills the panel edge to
-    edge (each between the cards' minimum and maximum width); a trailing gap
-    is avoided as long as the maximum width is about twice the minimum.
+    A cell is unit_height tall (the height of a card with just its header
+    and button). A taller card spans as many cells down as it needs and is
+    stretched to fill them exactly, so every card's top and bottom land on
+    the grid instead of leaving ragged gaps. Cards are placed in order, each
+    in the next free cell reading left to right then top to bottom - a row
+    is filled before moving on to the next, skipping cells that a tall card
+    from the row above still covers.
+
+    All columns share one width that fills the panel edge to edge (each
+    between the cards' minimum and maximum width); a trailing gap is avoided
+    as long as the maximum width is about twice the minimum.
 
     The width-dependent height is reported through heightForWidth, which a
     vertical scroll area honours.
     '''
 
-    def __init__(self, parent: QWidget | None = None, margin: int = 0, hspacing: int = -1, vspacing: int = -1):
+    def __init__(self, parent: QWidget | None = None, margin: int = 0, hspacing: int = -1, vspacing: int = -1,
+                 unit_height: Callable[[], int] | None = None):
+        '''
+        unit_height returns the grid's cell height - asked on every layout,
+        since it follows the theme's fonts. Without it (or when it returns 0)
+        the shortest visible card sets the cell height.
+        '''
         super().__init__(parent)
         self._items: list[QLayoutItem] = []
         self._hspacing = hspacing
         self._vspacing = vspacing
+        self._unit_height = unit_height
         self.setContentsMargins(QMargins(margin, margin, margin, margin))
 
     def addItem(self, item: QLayoutItem):
@@ -104,6 +118,16 @@ class FlowLayout(QLayout):
             return widget.maximumWidth()
         return QWIDGETSIZE_MAX
 
+    def _unit(self, items: list[QLayoutItem]) -> int:
+        unit = self._unit_height() if self._unit_height is not None else 0
+        if unit <= 0:
+            unit = min(item.sizeHint().height() for item in items)
+        return max(unit, 1)
+
+    def _span(self, item: QLayoutItem, unit: int, vspace: int) -> int:
+        '''How many cells down a card needs to fit its natural height.'''
+        return max(1, ceil((item.sizeHint().height() + vspace) / (unit + vspace)))
+
     def _do_layout(self, rect: QRect, test_only: bool) -> int:
         margins = self.contentsMargins()
         effective = rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom())
@@ -115,6 +139,7 @@ class FlowLayout(QLayout):
         vspace = self.verticalSpacing()
         avail = max(effective.width(), 1)
         count = len(items)
+        unit = self._unit(items)
 
         # One uniform column width for the whole panel. The column count is
         # how many cards fit at their minimum width (never more than there
@@ -133,24 +158,34 @@ class FlowLayout(QLayout):
         # Spread any rounding remainder one pixel at a time across the
         # columns, so a full row of columns reaches edge to edge.
         remainder = inner - width * cols if width < unit_max else 0
-
-        # Fill each column top to bottom before the next: the first `rows`
-        # cards go down column 0, the next `rows` down column 1, and so on.
-        rows = (count + cols - 1) // cols
-        total_height = 0
+        col_x = []
         x = effective.x()
         for col in range(cols):
-            col_width = width + (1 if col < remainder else 0)
-            y = effective.y()
-            for item in items[col * rows:(col + 1) * rows]:
-                h = item.sizeHint().height()
-                if not test_only:
-                    item.setGeometry(QRect(x, y, col_width, h))
-                y += h + vspace
-            total_height = max(total_height, y - vspace)
-            x += col_width + hspace
+            col_x.append(x)
+            x += width + (1 if col < remainder else 0) + hspace
 
-        return total_height - rect.y() + margins.bottom()
+        # Each card takes the next free cell after the previous card's,
+        # reading left to right then top to bottom, and claims the cells
+        # below it that its span covers. Nothing placed later sits above the
+        # cursor, so a tall card always has room to extend down.
+        occupied: set[tuple[int, int]] = set()
+        row = col = 0
+        rows_used = 0
+        for item in items:
+            while (row, col) in occupied:
+                col += 1
+                if col == cols:
+                    col, row = 0, row + 1
+            span = self._span(item, unit, vspace)
+            occupied.update((r, col) for r in range(row, row + span))
+            rows_used = max(rows_used, row + span)
+            if not test_only:
+                col_width = width + (1 if col < remainder else 0)
+                y = effective.y() + row * (unit + vspace)
+                item.setGeometry(QRect(col_x[col], y, col_width, span * unit + (span - 1) * vspace))
+
+        bottom = effective.y() + rows_used * (unit + vspace) - vspace
+        return bottom - rect.y() + margins.bottom()
 
     def _smart_spacing(self) -> int:
         parent = self.parent()

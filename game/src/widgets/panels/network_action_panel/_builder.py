@@ -82,11 +82,15 @@ class Builder(Panel):
         # material still shows between them like any other panel content
         # (see Scrollable._Gaps). Each card is capped to a readable column
         # width so a wide panel makes more columns rather than wider cards.
+        # The grid's cell height is a card with just a header and button;
+        # the tallest such header wins, so a minimized card (whose header
+        # also has a caret) still fits in one cell.
         style = context.style
         self.cards_host = _Gaps(style)
         style.set_material(self.cards_host, "none")
         self.flow = FlowLayout(self.cards_host, margin=0,
-                               hspacing=style.igap, vspacing=style.igap)
+                               hspacing=style.igap, vspacing=style.igap,
+                               unit_height=lambda: max((form.unit_height() for form in self.forms.values()), default=0))
         for form in self.forms.values():
             form.setMinimumWidth(CARD_MIN_WIDTH)
             form.setMaximumWidth(CARD_MAX_WIDTH)
