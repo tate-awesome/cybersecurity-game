@@ -37,7 +37,7 @@ class Panes(QSplitter):
             page background shows through them - see WorkspacePage.
             ids: each pane's layout id (see PageManager.layout_tree), which
             get_weights reports its size under. Panes without ids (a panel's
-            own inner split, like NetworkDiagram's) aren't reported.
+            own inner split) aren't reported.
         '''
         if child_sizes is None:
             child_sizes = [4, 3, 2]
@@ -56,8 +56,8 @@ class Panes(QSplitter):
         self.direction = direction
         style = context.style
 
-        # Stretch 1 so a Panes used as a panel's body (e.g. NetworkDiagram's
-        # nested split) claims all leftover space over Panel's trailing
+        # Stretch 1 so a Panes used as a panel's body (a nested
+        # split) claims all leftover space over Panel's trailing
         # filler widget (see panel.py) - harmless when master isn't a Panel
         # (a Page's top-level trifold, a nested pane's sole child), since
         # there's nothing else in those layouts competing for the space.
@@ -65,7 +65,7 @@ class Panes(QSplitter):
         margin = style.igap if pad_around else 0
         master.layout().setContentsMargins(margin, margin, margin, margin)
 
-        # A panel's own split (e.g. NetworkDiagram's) is divided by the
+        # A panel's own split is divided by the
         # panel's drawer, as thick as its frame (see Panel.fit_frame)
         in_panel = master.property("material") == "panel"
         self.setHandleWidth(style.igap)

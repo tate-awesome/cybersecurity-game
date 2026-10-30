@@ -105,11 +105,11 @@
         "packet_console": {"filter": "-to:broadcast"},
         "packet_columns": {
             "time_word": 1,
-            "number": 2,
-            "observer": 3,
-            "direction": 4,
-            "protocol": 5,
-            "modbus_word": 6
+            "number": 0,
+            "observer": 0,
+            "direction": 0,
+            "protocol": 0,
+            "modbus_word": 0
         }
     },
 
@@ -127,7 +127,13 @@
     "layout_shape": {
         "h_panes_1": [
             {"v_panes_1": ["network_action_panel_1", "modbus_table_panel_1"]},
-            {"v_panes_2": ["packet_panel_1", "network_graph_panel_1", "status_panel_1"]},
+            {
+                "v_panes_2": [
+                    "packet_panel_1",
+                    {"h_panes_2": ["hosts_panel_1", "activity_panel_1"]},
+                    "status_panel_1"
+                ]
+            },
             {"v_panes_3": ["modbus_model_panel_1", "modbus_chart_panel_1"]}
         ]
     },
@@ -136,9 +142,11 @@
         "network_action_panel_1": 2.3,
         "modbus_table_panel_1": 2,
         "v_panes_2": 3,
-        "packet_panel_1": 3,
-        "network_graph_panel_1": 3,
-        "status_panel_1": 3,
+        "packet_panel_1": 33,
+        "h_panes_2": 33,
+        "hosts_panel_1": 50,
+        "activity_panel_1": 50,
+        "status_panel_1": 33,
         "v_panes_3": 3,
         "modbus_model_panel_1": 2,
         "modbus_chart_panel_1": 2

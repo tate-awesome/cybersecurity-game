@@ -35,24 +35,25 @@
         "available": {"sniff": 1},
         "network_action_forms_shown": {"wifi": 1, "arp": 1, "sniff": 1},
         "packet_console": {"filter": "-to:broadcast"},
-        "packet_columns": {"time_word": 2, "number": 1, "length": 6, "protocol": 5, "src": 3, "dst": 4, "info": 7}
+        "packet_columns": {"time_word": 0, "number": 1, "length": 0, "protocol": 0, "src": 0, "dst": 0, "info": 0}
     },
 
     "title": "start_here_workspace",
     "menu_bar": ["model_style_button", "strip_chart_style_button", "ap_config_button"],
 
     "layout_shape": {
-        "h_panes_3": [
-            {"v_panes_4": ["network_action_panel_2", "network_graph_panel_1"]},
-            {"v_panes_3": ["packet_panel_1", "status_panel_1"]}
+        "h_panes_5": [
+            {"v_panes_7": ["network_action_panel_2", "hosts_panel_1", "activity_panel_1"]},
+            {"v_panes_6": ["packet_panel_1", "status_panel_1"]}
         ]
     },
     "layout_weights": {
-        "v_panes_4": 19,
-        "network_action_panel_2": 42,
-        "network_graph_panel_1": 58,
-        "v_panes_3": 81,
-        "packet_panel_1": 72,
-        "status_panel_1": 28
+        "v_panes_7": 21,
+        "network_action_panel_2": 18,
+        "hosts_panel_1": 41,
+        "activity_panel_1": 41,
+        "v_panes_6": 79,
+        "packet_panel_1": 80,
+        "status_panel_1": 20
     }
 }

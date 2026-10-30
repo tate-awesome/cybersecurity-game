@@ -4,7 +4,7 @@ from ._base_button import ToggleButton
 class PausePacketConsole(ToggleButton):
     '''
     Switches packet_console "mode" between "live" and "paused" - the packet
-    console and network graph read it every frame.
+    console and the hosts and activity panels read it every frame.
     '''
     LABEL = "menu_bar_buttons_pause"
     ACTIVE_LABEL = "menu_bar_buttons_unpause"

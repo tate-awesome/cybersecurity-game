@@ -47,15 +47,13 @@
     },
 
     "title": "modbus_recon_workspace",
-    "menu_bar": [
-        "model_style_button",
-        "strip_chart_style_button",
-        "ap_config_button"
-    ],
+    "menu_bar": ["model_style_button", "strip_chart_style_button", "ap_config_button"],
 
     "layout_shape": {
         "h_panes_1": [
-            {"v_panes_1": ["network_action_panel_2", "network_graph_panel_1", "status_panel_1"]},
+            {
+                "v_panes_1": ["network_action_panel_2", "hosts_panel_1", "activity_panel_1", "status_panel_1"]
+            },
             "packet_panel_1",
             {"v_panes_2": ["modbus_table_panel_2", "modbus_chart_panel_1"]}
         ]
@@ -63,7 +61,8 @@
     "layout_weights": {
         "v_panes_1": 31,
         "network_action_panel_2": 33,
-        "network_graph_panel_1": 32,
+        "hosts_panel_1": 16,
+        "activity_panel_1": 16,
         "status_panel_1": 34,
         "packet_panel_1": 69,
         "v_panes_2": 50,

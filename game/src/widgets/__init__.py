@@ -17,7 +17,8 @@ from .panels.network_action_panel._builder import Builder as HackingPanel
 from .panels.status_console._builder import Builder as StatusConsole
 from .panels.packet_console._builder import Builder as PacketConsole
 from .panels.modbus_model._builder import Builder as ModbusModel
-from .panels.network_diagram._builder import Builder as NetworkDiagram
+from .panels.network_hosts._builder import Builder as NetworkHosts
+from .panels.network_activity._builder import Builder as NetworkActivity
 from .panels.variable_monitor._builder import Builder as VariableMonitor
 from .panels.modbus_panel._builder import Builder as ModbusPanel
 from .panels.defender_modbus_panel._builder import Builder as DefenderModbusPanel
@@ -32,7 +33,8 @@ PANELS = {
     HackingPanel.KEY: HackingPanel,
     ModbusPanel.KEY: ModbusPanel,
     PacketConsole.KEY: PacketConsole,
-    NetworkDiagram.KEY: NetworkDiagram,
+    NetworkHosts.KEY: NetworkHosts,
+    NetworkActivity.KEY: NetworkActivity,
     StatusConsole.KEY: StatusConsole,
     ModbusModel.KEY: ModbusModel,
     VariableMonitor.KEY: VariableMonitor,

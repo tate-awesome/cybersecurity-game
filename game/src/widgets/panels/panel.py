@@ -184,7 +184,7 @@ class Panel(QWidget):
         # obvious fix, but it isn't safe: e.g. Panes.__init__ unconditionally
         # calls master.layout().setContentsMargins(...) on whatever it's
         # given, which would silently clobber it back to 0 the moment a
-        # panel's body is a nested Panes split (NetworkDiagram) - and there's
+        # panel's body is a nested Panes split - and there's
         # no guarantee some other future body constructor won't do the same.
         # Routing the master.layout().addWidget(...) idiom every body
         # constructor already uses (Scrollable/Panes/MenuBar/...) through a
@@ -233,7 +233,7 @@ class Panel(QWidget):
         # stretching *every* item in the layout to fill its cell (using each
         # one's sizeHint instead) the moment *any* item has an explicit
         # alignment, which broke bodies whose sizeHint is naturally smaller
-        # than their pane (e.g. NetworkDiagram's nested Panes splitter) -
+        # than their pane (e.g. a nested Panes splitter) -
         # both leaving a gap under the menu bar and shrinking the body away
         # from filling the pane at all, even fully maximized.
         filler = QWidget()
