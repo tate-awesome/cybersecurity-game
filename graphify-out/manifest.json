@@ -1560,9 +1560,9 @@
     "semantic_hash": ""
   },
   "game/src/widgets/panels/base_form.py": {
-    "mtime": 1793389827.4569893,
-    "seen": 1793389873.6974208,
-    "ast_hash": "1d95093f062708a9b5942679ec2c71c2",
+    "mtime": 1793389987.2888904,
+    "seen": 1793390008.3824458,
+    "ast_hash": "81377bfd2c09a23ee284502ad989ff7d",
     "semantic_hash": ""
   },
   "game/src/widgets/panels/defender_console/_builder.py": {

@@ -540,6 +540,9 @@ class BaseForm(QWidget):
         if phase == PHASE_RUNNING and not self.stoppable:
             self.wire_button(self.process_button, lambda: None)
             self.process_button.setText(self.running_button_text)
+            # Let go of focus first - disabled with it, Qt hands it to the
+            # next widget in tab order, putting the cursor in another card's entry
+            self.process_button.clearFocus()
             self.process_button.setEnabled(False)
             self.process_status.setText(self.status_on_text)
             self._set_dot_tone("good")

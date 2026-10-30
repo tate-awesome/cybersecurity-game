@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-10-30)
 
 ## Corpus Check
-- 342 files · ~284,840 words
+- 342 files · ~284,869 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 32 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d25b4f79`
+- Built from commit: `af2a826c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -650,7 +650,7 @@ Nodes (3): TitleFooter, GrowingButton, TitleMenu
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `app_core/__init__.py`, `edit_network_hosts.py`, `ImportantButton`, `SmoothWheel`, `MetaPacket`, `packet_console/_builder.py`, `important_buttons/__init__.py`, `Scrollable`, `AnimationManager`, `menu_bar.py`, `confirm_dialog`, `widgets/__init__.py`, `modbus_panel/_builder.py`, `ShiftWheel`, `.start_session`, `workspace_sorter.py`, `window_chrome.py`, `Style`, `visuals/__init__.py`, `docking.py`, `LocalizationManager`, `.__init__`, `Preferences`, `filter_overlay.py`, `Performance`, `KeyBinds`, `Router`, `host.py`, `InputManager`, `ConfigureThisWorkspace`, `PageManager`, `PrivilegedHelper`, `.reset_page`, `threading`, `Toasts`, `message`, `BaseForm`, `CheckboxOverlay`, `.apply_theme`, `Json`, `ap_commands.py`?**
-  _High betweenness centrality (0.248) - this node is a cross-community bridge._
+  _High betweenness centrality (0.247) - this node is a cross-community bridge._
 - **Are the 16 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 16 INFERRED edges - model-reasoned connections that need verification._
 - **Should `app_core/__init__.py` be split into smaller, more focused modules?**
