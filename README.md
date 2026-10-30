@@ -38,6 +38,9 @@ and [`game/requirements.txt`](game/requirements.txt)):
   registry settings each platform needs.
 - `nmap` must be installed separately on the system (for `python-nmap`).
 
+New to the app? [`game/USER_GUIDE.md`](game/USER_GUIDE.md) walks through navigating it, laying out
+panels, the settings, and what gets saved.
+
 The app's own design notes and screen outline are in
 [`game/README.md`](game/README.md) and [`game/outline.txt`](game/outline.txt).
 
