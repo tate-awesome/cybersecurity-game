@@ -95,6 +95,8 @@ class NoteBrowser(QTextBrowser):
 
     def __init__(self):
         super().__init__()
+        # px of empty room after the note's end (see set_bottom_space)
+        self.bottom_space = 0
         # Held here as well, or Python collects it out from under the viewport
         self.cache = NoteCache()
         self.viewport().setGraphicsEffect(self.cache)
@@ -146,6 +148,24 @@ class NoteBrowser(QTextBrowser):
                 text = f"{text} {POPOUT_MARK}"
             return f"[{text}]({match.group(2)})"
         super().setMarkdown(self.WEB_LINK.sub(mark, markdown))
+        self.apply_bottom_space()
+
+    def set_bottom_space(self, space: int):
+        '''
+        Empty room after the note's end, so scrolled all the way down its
+        last lines clear whatever floats over the bottom of the view (see
+        SummaryDrawer.add_button).
+        '''
+        if space != self.bottom_space:
+            self.bottom_space = space
+            self.apply_bottom_space()
+
+    def apply_bottom_space(self):
+        '''The root frame's bottom margin, past the document's own - new content resets it (see setMarkdown).'''
+        root = self.document().rootFrame()
+        frame_format = root.frameFormat()
+        frame_format.setBottomMargin(self.document().documentMargin() + self.bottom_space)
+        root.setFrameFormat(frame_format)
 
     def loadResource(self, type: int, name: QUrl):
         resource = super().loadResource(type, name)
@@ -173,15 +193,21 @@ class WorkspaceButton(QPushButton):
 class SummaryDrawer(QFrame):
     '''
     The workspace summary, shaped like a panel's drawer (see themes' module
-    docstring): a beefy bar along its top - the workspace's title, big, and
-    its action buttons (see add_button) - over a card holding its note, in
-    the drawer's frame. The shadow, drawer and card are painted by hand, so
-    they fade in and out together (see reveal); inner holds everything on
-    them - the bar's title and buttons and the card's content - to fade new
-    content in over them.
+    docstring): a beefy bar along its top - the workspace's title, big -
+    over a card holding its note, in the drawer's frame, with its action
+    buttons floating over the card's bottom-left corner (see add_button).
+    The shadow, drawer and card are painted by hand, so they fade in and
+    out together (see reveal); inner holds everything on them - the bar's
+    title, the card's content and the buttons - to fade new content in
+    over them.
+
+    actions_resized reports the buttons' row's height whenever it changes,
+    so the content can leave room for it (see NoteBrowser.set_bottom_space).
     '''
 
     REVEAL_MS = 220
+
+    actions_resized = Signal(int)
 
     def __init__(self, context: Context):
         super().__init__()
@@ -223,18 +249,45 @@ class SummaryDrawer(QFrame):
         content_layout.setContentsMargins(0, 0, 0, 0)
         inner_layout.addWidget(self.content, 1)
 
+        # Floats over the content, not in its layout - sized to its buttons (see place_actions)
+        self.actions = QWidget(self.content)
+        actions_layout = QHBoxLayout(self.actions)
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(self.style.igap)
+        actions_layout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetFixedSize)
+        self.actions.hide()
+        self.content.installEventFilter(self)
+        self.actions.installEventFilter(self)
+
         self.fit()
         self.style.signals.changed.connect(self.fit)
 
     def add_button(self, button: QPushButton):
-        '''A button along the bar, right of the title, in the order added - as big as the title.'''
+        '''A button floating over the card's bottom-left corner, right of those added before it.'''
         button.setFont(self.style.get_font("title_btn"))
-        self.bar.layout().addWidget(button)
+        self.actions.layout().addWidget(button)
 
     def show_bar(self, title: str):
-        '''The bar, titled.'''
+        '''The bar, titled, and the buttons.'''
         self.bar.show()
+        self.actions.show()
+        self.actions.raise_()
         self.title.setText(title)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.Resize and watched in (self.content, self.actions):
+            self.place_actions()
+        return False
+
+    def actions_inset(self) -> int:
+        '''px between the buttons and the card's left and bottom edges - lined up with the note's text.'''
+        return self.style.igap * 2
+
+    def place_actions(self):
+        '''The buttons into the card's bottom-left corner - and the room they take reported (see actions_resized).'''
+        inset = self.actions_inset()
+        self.actions.move(inset, self.content.height() - self.actions.height() - inset)
+        self.actions_resized.emit(self.actions.height() + 2 * inset)
 
     def fit(self):
         '''After a theme change: room for its shadow, then its frame (see Panel.fit_frame), and the bar's padding.'''
@@ -244,6 +297,8 @@ class SummaryDrawer(QFrame):
         self.layout().setContentsMargins(left + frame, top + style.PANEL_BORDER_WIDTH, right + frame, bottom + frame)
         # The title lines up with the card's text below it
         self.bar.layout().setContentsMargins(max(0, style.igap * 2 - frame), style.igap, 0, style.igap)
+        self.actions.layout().setSpacing(style.igap)
+        self.place_actions()
         self.update()
 
     def body_rect(self) -> QRectF:
@@ -325,10 +380,11 @@ class WorkspaceSelectPage(Page):
     shown in a drawer shaped like a panel's (see SummaryDrawer) - the one
     last selected (the "workspace_description" preference), or the first
     in the list. Switching workspaces fades the new summary in. The
-    drawer's bar, where a panel's menu bar is, has the workspace's title
-    and its buttons: Open Workspace (and, in developer mode, Edit This
-    Workspace, which opens it in the workspace editor). Double-clicking a
-    workspace opens it immediately.
+    drawer's bar, where a panel's menu bar is, has the workspace's title,
+    and its buttons float over the note's bottom-left corner: Open
+    Workspace (and, in developer mode, Edit This Workspace, which opens it
+    in the workspace editor). Double-clicking a workspace opens it
+    immediately.
 
     A _note can be one string or a list of markdown blocks, joined with
     blank lines between them.
@@ -490,9 +546,10 @@ class WorkspaceSelectPage(Page):
     def build_summary(self, body: QHBoxLayout):
         '''
         The summary drawer (see SummaryDrawer): the markdown browser on its
-        card, and on its bar Edit This Workspace in developer mode, then
-        Open Workspace. The bar's title and buttons and the browser fade in
-        together whenever the summary changes (see show_note).
+        card, and floating over the card's bottom-left Open Workspace, then
+        Edit This Workspace in developer mode. The bar's title, the browser
+        and the buttons fade in together whenever the summary changes (see
+        show_note).
         '''
         self.summary_box = SummaryDrawer(self.context)
         body.addWidget(self.summary_box, 1)
@@ -509,16 +566,19 @@ class WorkspaceSelectPage(Page):
         pad = self.style.igap * 2
         self.browser.setViewportMargins(pad, 0, pad, 0)
         self.summary_box.content.layout().addWidget(self.browser, 1)
+        # Scrolled all the way down, the note's end clears the buttons floating over it
+        self.summary_box.actions_resized.connect(self.browser.set_bottom_space)
+
+        start_button = QPushButton(f"{self.labels.get('title_buttons_open_workspace')} {PAGE_MARK}")
+        start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
+        self.summary_box.add_button(start_button)
 
         if self.context.preferences.is_developer():
             from ...widgets.frame_widgets.important_buttons import developer_text
             edit_button = QPushButton(developer_text(f"{self.labels.get('title_buttons_edit_workspace')} {PAGE_MARK}"))
             edit_button.clicked.connect(lambda checked=False: self.edit(self.selected_target))
             self.summary_box.add_button(edit_button)
-
-        start_button = QPushButton(f"{self.labels.get('title_buttons_open_workspace')} {PAGE_MARK}")
-        start_button.clicked.connect(lambda checked=False: self.start(self.selected_target))
-        self.summary_box.add_button(start_button)
+        self.summary_box.place_actions()
 
     # How much thicker the note's scrollbar is than the theme's others - a long note's is easy to miss
     SCROLLBAR_SCALE = 1.75
