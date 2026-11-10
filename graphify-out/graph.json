@@ -67778,18 +67778,6 @@
     },
     {
       "source": "game_src_network_hardware_nmap_nmapper_library_nmap",
-      "target": "game_src_network_hardware_nmap_nmapper_host_macs",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "game/src/network/hardware/nmap.py",
-      "source_location": "L101",
-      "weight": 1.0
-    },
-    {
-      "source": "game_src_network_hardware_nmap_nmapper_library_nmap",
       "target": "game_src_network_hardware_nmap_nmapper_apply_nicknames",
       "relation": "calls",
       "_origin": "ast",
@@ -67846,6 +67834,18 @@
       "context": "call",
       "source_file": "game/src/network/hardware/nmap.py",
       "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "game_src_network_hardware_nmap_nmapper_library_nmap",
+      "target": "game_src_network_hardware_nmap_nmapper_host_macs",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "game/src/network/hardware/nmap.py",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
@@ -180843,5 +180843,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c3a1a1375aea4043071076aa7ee713ba6c450b81"
+  "built_at_commit": "f086db6550bee99222b4387f6557841eb44b8b25"
 }

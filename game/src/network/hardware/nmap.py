@@ -94,11 +94,11 @@ class NMapper(Process):
             return
 
         # The whole scan as one report - shown as one toast, not a line per host
+        macs = self.host_macs(nm)
         hosts = []
         for host in nm.all_hosts():
             if nm[host].state() == 'up':
-                hosts.append([host, nm[host].state(), nm[host].hostname() or "(No Hostname)"])
-        macs = self.host_macs(nm)
+                hosts.append([host, macs.get(host, "(Unknown)"), nm[host].state(), nm[host].hostname() or "(No Hostname)"])
         for host, mac in macs.items():
             self.context.buffer.network.put_host(mac, host)
         nicknamed = self.apply_nicknames(nm, macs)
@@ -106,7 +106,7 @@ class NMapper(Process):
         report = Report("NMap Scan")
         report.facts({"Local IP": local_ip, "Target subnet": subnet})
         report.heading(f"Active hosts ({len(hosts)})")
-        report.table(["IP Address", "State", "Hostname"], hosts, empty="No active hosts found.")
+        report.table(["IP Address", "MAC", "State", "Hostname"], hosts, empty="No active hosts found.")
         if nicknamed:
             report.heading("Nicknamed hosts")
             report.table(["MAC", "IP Address", "Nickname"], nicknamed)

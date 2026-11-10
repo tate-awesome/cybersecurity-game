@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-11-10)
 
 ## Corpus Check
-- 342 files · ~286,528 words
+- 342 files · ~286,531 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 32 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c3a1a137`
+- Built from commit: `f086db65`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -621,7 +621,7 @@ Nodes (5): graphify, Cyber-ICS Training Module, Intended use, Repository layout,
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `Canvas`, `.start_session`, `important_buttons/__init__.py`, `SmoothWheel`, `style.py`, `GoForwardToNextPage`, `threading`, `ClickManager`, `map.py`, `filter_overlay.py`, `PacketBuffer`, `widgets/__init__.py`, `ShiftWheel`, `PacketColumnsModal`, `config_editor.py`, `Paths`, `Style`, `AnimationManager`, `pyside6_qtcore`, `LocalizationManager`, `docking.py`, `menu_bar.py`, `RefreshCurrentPage`, `Preferences`, `Performance`, `KeyBinds`, `MenuBar`, `InputManager`, `PageManager`, `host.py`, `open_favorite_page.py`, `Toasts`, `Process`, `modal.py`, `CheckboxOverlay`, `ButtonModal`, `ConfigureThisWorkspace`, `Json`, `.reload_preferences`, `Router`, `ProcessManager`, `pause_menu.py`?**
-  _High betweenness centrality (0.239) - this node is a cross-community bridge._
+  _High betweenness centrality (0.242) - this node is a cross-community bridge._
 - **Are the 16 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 16 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `DOT11_SSID`, `WLAN_INTERFACE_INFO`, `WLAN_INTERFACE_INFO_LIST` to the rest of the system?**
