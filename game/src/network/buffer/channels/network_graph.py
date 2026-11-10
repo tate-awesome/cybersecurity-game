@@ -75,6 +75,11 @@ class NetworkGraph:
         if ip_addr not in self.host_ips[mac_addr]:
             self.host_ips[mac_addr].append(ip_addr)
 
+    def put_host(self, mac_addr: str, ip_addr: str):
+        '''Records an IP seen on a MAC from outside the packet buffer (an nmap scan).'''
+        with self.lock:
+            self.add_host(mac_addr, ip_addr)
+
     def get_hosts(self) -> tuple[list[str], dict[str, list[str]]]:
         '''Every MAC seen, in the order first seen, and the IPs seen on each.'''
         with self.lock:

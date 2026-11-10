@@ -8,7 +8,11 @@ import netifaces
 from ..process import Process
 from ..buffer.channels.network_graph import MAX_NICKNAME_LENGTH
 from ..buffer.notice import Report
-import nmap, socket, sys
+import nmap, re, socket, subprocess, sys
+
+# An IP, then a MAC later on its line - in /proc/net/arp, "arp -a" (Windows,
+# with dashes) and "arp -an" (macOS, which drops each byte's leading zero)
+ARP_ENTRY = re.compile(r"(\d+\.\d+\.\d+\.\d+)\D.*?\b([0-9a-f]{1,2}(?:[:-][0-9a-f]{1,2}){5})\b", re.IGNORECASE)
 
 class NMapper(Process):
     def __init__(self, buffer, context):
@@ -94,7 +98,10 @@ class NMapper(Process):
         for host in nm.all_hosts():
             if nm[host].state() == 'up':
                 hosts.append([host, nm[host].state(), nm[host].hostname() or "(No Hostname)"])
-        nicknamed = self.apply_nicknames(nm)
+        macs = self.host_macs(nm)
+        for host, mac in macs.items():
+            self.context.buffer.network.put_host(mac, host)
+        nicknamed = self.apply_nicknames(nm, macs)
 
         report = Report("NMap Scan")
         report.facts({"Local IP": local_ip, "Target subnet": subnet})
@@ -113,31 +120,66 @@ class NMapper(Process):
             return "brew install nmap"
         return "e.g. sudo apt install nmap"
 
-    def apply_nicknames(self, nm) -> list[list[str]]:
+    def host_macs(self, nm) -> dict[str, str]:
         '''
-        Nicknames each host found (in network_hosts, by MAC - see the network
-        graph's Configure Hosts) after its hostname, or else the maker nmap
-        reads from its MAC. Its MAC comes from the scan when nmap could see
-        it (a privileged scan on the same network), or else from the IPs the
-        network graph has seen on each MAC. Hosts already nicknamed keep theirs.
-        Returns each one it nicknamed - [mac, ip, nickname] - for the scan's report.
+        The MAC of each host the scan found up, by IP. It comes from the scan
+        when nmap could see it (a privileged scan on the same network), or
+        else from the OS's ARP cache - reaching a host on the same network
+        fills it in, even unprivileged - or else from the IPs the network
+        graph has seen on each MAC. A host with none of these is left out.
         '''
+        arp_macs = self.arp_cache()
         _, host_ips = self.context.buffer.network.get_hosts()
-        ip_macs = {}
+        seen_macs = {}
         for mac, ips in host_ips.items():
             for ip in ips:
-                ip_macs.setdefault(ip, mac)
+                seen_macs.setdefault(ip, mac)
 
-        preferences = self.context.preferences
-        nicknamed = []
+        macs = {}
         for host in nm.all_hosts():
             if nm[host].state() != 'up':
                 continue
             mac = nm[host].get('addresses', {}).get('mac')
-            vendor = nm[host].get('vendor', {}).get(mac, "") if mac else ""
-            mac = mac.lower() if mac else ip_macs.get(host)
+            mac = mac.lower() if mac else arp_macs.get(host) or seen_macs.get(host)
+            if mac:
+                macs[host] = mac
+        return macs
+
+    def arp_cache(self) -> dict[str, str]:
+        '''The OS's ARP cache - each IP's MAC, lowercase and colon-separated. Empty if it can't be read.'''
+        try:
+            if sys.platform.startswith("linux"):
+                with open("/proc/net/arp") as f:
+                    text = f.read()
+            else:
+                flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+                text = subprocess.run(["arp", "-a" if sys.platform == "win32" else "-an"],
+                                      capture_output=True, text=True, timeout=5, creationflags=flags).stdout
+        except (OSError, subprocess.SubprocessError):
+            return {}
+        cache = {}
+        for ip, mac in ARP_ENTRY.findall(text):
+            mac = ":".join(byte.zfill(2) for byte in re.split("[:-]", mac.lower()))
+            # Incomplete entries read as all zeros
+            if mac not in ("00:00:00:00:00:00", "ff:ff:ff:ff:ff:ff"):
+                cache.setdefault(ip, mac)
+        return cache
+
+    def apply_nicknames(self, nm, macs: dict[str, str]) -> list[list[str]]:
+        '''
+        Nicknames each host found (in network_hosts, by MAC - see the network
+        graph's Configure Hosts, and host_macs for where its MAC comes from)
+        after its hostname, or else the maker nmap reads from its MAC. Hosts
+        already nicknamed keep theirs. Returns each one it nicknamed -
+        [mac, ip, nickname] - for the scan's report.
+        '''
+        preferences = self.context.preferences
+        nicknamed = []
+        for host, mac in macs.items():
+            scan_mac = nm[host].get('addresses', {}).get('mac')
+            vendor = nm[host].get('vendor', {}).get(scan_mac, "") if scan_mac else ""
             name = nm[host].hostname() or vendor
-            if not mac or not name:
+            if not name:
                 continue
             if preferences.host_nickname(mac):
                 continue
