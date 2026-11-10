@@ -26,6 +26,7 @@ page changes - and each page's menu bar binds its own bell (see StatusBell).
 import math
 import time
 from collections import deque
+from collections.abc import Callable
 
 from PySide6.QtCore import QEasingCurve, QElapsedTimer, QObject, QPoint, QPointF, QRect, QRectF, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
@@ -74,8 +75,9 @@ def page_tokens(current: int, total: int, edge: int = 1, around: int = 1) -> lis
 TOAST_WIDTH = 380
 # At most this many up at once - one more sends the oldest into the bell at once
 MAX_SHOWN = 4
-# How long each kind stays up, ms - hovering holds it
-LIFETIME_MS = {"status": 3000, "error": 8000, "report": 8000}
+# How long a toast stays up, ms - every kind alike, so they go in the order
+# they came, oldest (the top) first. Hovering any holds them all.
+LIFETIME_MS = 6000
 # How many statuses the bell's dropdown keeps
 HISTORY_SIZE = 300
 # How often the status buffer is read, ms
@@ -264,8 +266,8 @@ class Toast(ToastCard):
     A ToastCard over the main window, placed by Toasts - it fades in rising
     into place (see enter), slides up as the ones above it go (see
     move_to), and asks Toasts to eat it when its time is up (see
-    LIFETIME_MS) - hovering holds it. Dragged, it takes the whole stack
-    somewhere else (see Toasts.drop).
+    LIFETIME_MS) - hovering any toast holds them all. Dragged, it takes
+    the whole stack somewhere else (see Toasts.drop).
     '''
 
     def __init__(self, toasts: "Toasts", status: MetaStatus):
@@ -278,7 +280,7 @@ class Toast(ToastCard):
         self._motion: QVariantAnimation | None = None
 
         # Time left, held while the mouse is over it
-        self.remaining = LIFETIME_MS[status.kind]
+        self.remaining = LIFETIME_MS
         self.clock = QElapsedTimer()
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
@@ -292,15 +294,20 @@ class Toast(ToastCard):
         self.clock.restart()
         self.timer.start(max(0, self.remaining))
 
-    def enterEvent(self, event):
+    def pause(self):
         if self.timer.isActive():
             self.remaining -= self.clock.elapsed()
             self.timer.stop()
+
+    def enterEvent(self, event):
+        for toast in self.toasts.shown:
+            toast.pause()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         if self.toasts.is_shown(self) and not self.dragging:
-            self.start_clock()
+            for toast in self.toasts.shown:
+                toast.start_clock()
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):
@@ -611,6 +618,11 @@ class Toasts(QObject):
         except RuntimeError:
             pass  # its page went while the toast was on its way
 
+    def clear(self):
+        '''Takes every toast down into the bell - the dropdown opening shows them all anyway.'''
+        for toast in list(self.shown):
+            self.eat(toast)
+
     def mark_seen(self):
         self.unseen = 0
         bell = self.live_bell()
@@ -648,6 +660,7 @@ class StatusBell(ImportantButton):
 
     def on_click(self):
         self.context.toasts.mark_seen()
+        self.context.toasts.clear()
         self._page = 0
         self.dropdown.click_open()
 
@@ -771,7 +784,8 @@ class StatusBell(ImportantButton):
             self._page = page
             render()
 
-        def render():
+        def render(fresh: frozenset[int] = frozenset()):
+            '''fresh: the numbers of statuses just come in, which slide in (see _slide_in).'''
             items = shown()
             pages = max(1, math.ceil(len(items) / DROPDOWN_PAGE_SIZE))
             self._page = max(0, min(self._page, pages - 1))
@@ -780,13 +794,20 @@ class StatusBell(ImportantButton):
             column = QWidget()
             rows = QVBoxLayout(column)
             rows.setContentsMargins(0, 0, 0, 0)
+            entering = []
             if page_items:
                 cards = [ToastCard(context, status, opened=overlay.close_chain, selectable=True) for status in page_items]
                 # Spaced like the toast stack (see Toasts.place), the cards' shadow room overlapping
                 _, top, _, bottom = cards[0].shadow_room()
                 rows.setSpacing(max(0, style.igap - top - bottom))
+                animate = context.performance.page_transitions
                 for card in cards:
-                    rows.addWidget(card)
+                    if animate and card.status.number in fresh:
+                        holder, start = self._slide_in(card)
+                        rows.addWidget(holder)
+                        entering.append(start)
+                    else:
+                        rows.addWidget(card)
                 width["px"] = cards[0].width()
             else:
                 empty = QLabel(labels.get("status_toasts_empty"))
@@ -801,6 +822,9 @@ class StatusBell(ImportantButton):
             scroll.setFixedSize(width["px"] + scroll.verticalScrollBar().sizeHint().width(), page_height)
             build_nav(pages)
             overlay.refit()
+            # Once sized with them in full - so the dropdown doesn't grow in steps
+            for start in entering:
+                start()
 
         def build_nav(pages: int):
             while nav_row.count():
@@ -830,12 +854,43 @@ class StatusBell(ImportantButton):
             render()
 
         def refresh():
+            known = {status.number for status in statuses}
             statuses[:] = reversed(self.context.toasts.history)
-            render()
+            render(frozenset(status.number for status in statuses if status.number not in known))
 
         combo.currentIndexChanged.connect(on_filter)
         self._refresh = refresh
         render()
+
+    def _slide_in(self, card: ToastCard) -> tuple[QWidget, Callable[[], None]]:
+        '''
+        A card just come in to the open dropdown, in a holder that opens to
+        its height - pushing the older ones down - as the card fades in,
+        dropping into it (the dropdown's take on Toast.enter). Returns the
+        holder, at full height until the returned start() runs it.
+        '''
+        holder = QWidget()
+        holder.setFixedSize(card.size())
+        card.setParent(holder)
+        fade = QGraphicsOpacityEffect(card)
+        card.setGraphicsEffect(fade)
+        height = card.height()
+
+        def step(t: float):
+            holder.setFixedHeight(round(height * t))
+            card.move(0, round(height * t) - height)
+            fade.setOpacity(t)
+
+        def start():
+            motion = QVariantAnimation(holder)
+            motion.setStartValue(0.0)
+            motion.setEndValue(1.0)
+            motion.setDuration(ENTER_MS)
+            motion.setEasingCurve(QEasingCurve.Type.OutCubic)
+            motion.valueChanged.connect(lambda value: step(float(value)))
+            step(0.0)
+            motion.start()
+        return holder, start
 
     def _nav_button(self, text: str, enabled: bool, clicked, current: bool = False) -> QPushButton:
         '''
