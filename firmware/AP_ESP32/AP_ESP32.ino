@@ -6,6 +6,8 @@
 #include <DNSServer.h>
 #include <map>
 #include <ArduinoJson.h>          // JSON relay parsing
+#include "esp_netif.h"            // SoftAP DHCP server control (core 3.x / IDF 5.x)
+#include "dhcpserver/dhcpserver.h"
 
 // ─── Soft-AP credentials (permanent, never change) ───────────
 const char* AP_SSID     = "AP-Config";
@@ -186,6 +188,34 @@ void startAP() {
   WiFi.softAPConfig(AP_IP, AP_GW, AP_SUBNET);
   WiFi.softAP(AP_SSID, AP_PASSWORD);
   Serial.printf("[AP] Soft-AP started: SSID='%s'  IP=%s\n", AP_SSID, WiFi.softAPIP().toString().c_str());
+
+  // Carve the fixed-address devices out of the DHCP pool. By default the
+  // SoftAP's DHCP server leases from 192.168.4.2 upward and increments, so
+  // after enough stations have joined over the AP's uptime (laptops, phones,
+  // and reconnecting ESPs each take a lease) it will eventually hand .10 to a
+  // DHCP client — colliding with the Modbus server's STATIC 192.168.4.10 and
+  // wedging the whole bus until both ESPs are power-cycled. Pinning the
+  // dynamic pool to .100–.200 leaves .2–.99 permanently free for static
+  // devices, so .10 can never be handed out. Requires Arduino-ESP32 core 3.x.
+  esp_netif_t* ap_netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
+  if (ap_netif != nullptr) {
+    esp_netif_dhcps_stop(ap_netif);
+    dhcps_lease_t lease = {};
+    lease.enable = true;
+    IP4_ADDR(&lease.start_ip, 192, 168, 4, 100);
+    IP4_ADDR(&lease.end_ip,   192, 168, 4, 200);
+    esp_err_t err = esp_netif_dhcps_option(
+        ap_netif, ESP_NETIF_OP_SET, ESP_NETIF_REQUESTED_IP_ADDRESS,
+        &lease, sizeof(lease));
+    esp_netif_dhcps_start(ap_netif);
+    if (err == ESP_OK) {
+      Serial.println("[AP] DHCP pool pinned to 192.168.4.100-.200 (statics .2-.99 reserved)");
+    } else {
+      Serial.printf("[AP] WARNING: DHCP pool set failed (err=%d); .10 may still collide\n", err);
+    }
+  } else {
+    Serial.println("[AP] WARNING: could not get AP netif handle; DHCP pool unchanged");
+  }
 
   //captive portal
   dnsServer.start(DNS_PORT, "*", AP_IP);

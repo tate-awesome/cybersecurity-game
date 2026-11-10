@@ -91,6 +91,25 @@ void connectWifi() {
   WiFi.setSleep(false);
 }
 
+// Non-blocking WiFi watchdog. The original connectWifi() only ran once in
+// setup() and dead-ended in while(1) on failure, so if the link ever dropped
+// at runtime (AP reboot, IP conflict, moving out of range) the server sat
+// dead until a manual reset. This re-arms WiFi.begin() on a throttle; the
+// static-IP config from connectWifi() persists across reconnects, so the
+// server keeps its 192.168.4.10 identity. Returns true when connected.
+bool maintainWifi() {
+  if (WiFi.status() == WL_CONNECTED) return true;
+
+  static uint32_t lastAttempt = 0;
+  if (millis() - lastAttempt < 2000) return false;   // throttle retries
+  lastAttempt = millis();
+
+  Serial.println("[SERVER] WiFi dropped — attempting reconnect...");
+  WiFi.disconnect();
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  return false;
+}
+
 void setupModbusRegisters() {
   mb.server();
   // Register 10's initial value picks Submarine's default (10000) since
@@ -711,6 +730,14 @@ void setup() {
 }
 
 void loop() {
+    // Recover the WiFi link before touching Modbus/HTTP. While disconnected
+    // there is nothing useful to do, so skip the rest of the cycle instead of
+    // blocking on dead sockets.
+    if (!maintainWifi()) {
+        delay(10);
+        return;
+    }
+
     mb.task();
     yield();
 

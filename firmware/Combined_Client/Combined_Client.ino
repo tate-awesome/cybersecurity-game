@@ -139,6 +139,29 @@ void connectModbus() {
   delay(500);
 }
 
+// Non-blocking WiFi watchdog. connectWifi() only ran once in setup() and
+// dead-ended in while(1) on failure, and reconnectModbusIfNeeded() below only
+// re-opens the Modbus TCP socket — it assumes WiFi is still up. So if the
+// WiFi link itself dropped (AP reboot, IP conflict, range) the client was
+// stuck retrying a socket over a dead link until a manual reset. This re-arms
+// WiFi.begin() on a throttle; once WiFi is back, reconnectModbusIfNeeded()
+// naturally re-establishes Modbus. Returns true when connected.
+bool maintainWifi() {
+  if (WiFi.status() == WL_CONNECTED) return true;
+
+  static uint32_t lastAttempt = 0;
+  if (millis() - lastAttempt < 2000) return false;   // throttle retries
+  lastAttempt = millis();
+
+  Serial.println("[CLIENT] WiFi dropped — attempting reconnect...");
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("WiFi reconnect..");
+  WiFi.disconnect();
+  WiFi.begin(AP_SSID, AP_PASSWORD);
+  return false;
+}
+
 // Forward declaration — sendPoseAuto() is defined in the Submarine section
 // below, but the shared reconnect logic needs to call it.
 void sendPoseAuto();
@@ -809,6 +832,14 @@ void setup() {
 }
 
 void loop() {
+  // Recover the WiFi link first; a dead link makes every Modbus/HTTP call
+  // below pointless. reconnectModbusIfNeeded() re-opens the bus once WiFi
+  // is back.
+  if (!maintainWifi()) {
+    delay(10);
+    return;
+  }
+
   mb.task();
   yield();
 
