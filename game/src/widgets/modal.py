@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from PySide6.QtCore import QEasingCurve, QEvent, QPoint, Qt, QTimer, QVariantAnimation
-from PySide6.QtGui import QColor, QPainter, QTextFrameFormat, QTextTable
+from PySide6.QtGui import QColor, QPainter, QTextBlockFormat, QTextCursor, QTextFrameFormat, QTextTable
 from PySide6.QtWidgets import QDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QVBoxLayout, QWidget
 from ..app_core import Context
 from ..app_core.transitions import PopupEntrance
@@ -248,10 +248,13 @@ class MarkdownModal(ButtonModal):
     '''
     A ButtonModal reading out a markdown document - a status toast's report,
     or an error's fix (see toasts.open_notice) - scrolling past
-    HEIGHT of the window. Its links open in the browser.
+    HEIGHT of the window. Its links open in the browser. Its tables' cells
+    don't wrap - a MAC or IP reads on one line - so it widens past WIDTH
+    to fit them, as far as MAX_WIDTH of the window.
     '''
 
     WIDTH = 620
+    MAX_WIDTH = 0.9
     HEIGHT = 0.7
     # Room around a table's cells - Qt's markdown leaves them touching
     CELL_PADDING = 6
@@ -272,10 +275,18 @@ class MarkdownModal(ButtonModal):
                 table.setCellSpacing(0)
                 table.setBorderStyle(QTextFrameFormat.BorderStyle.BorderStyle_None)
                 frame.setFormat(table)
+                no_wrap = QTextBlockFormat()
+                no_wrap.setNonBreakableLines(True)
+                cells = frame.firstCursorPosition()
+                cells.setPosition(frame.lastPosition(), QTextCursor.MoveMode.KeepAnchor)
+                cells.mergeBlockFormat(no_wrap)
         document = browser.document()
         document.setTextWidth(self.WIDTH)
+        # A table too wide for WIDTH runs past it, growing the document's width
+        width = max(self.WIDTH, min(int(document.size().width()) + 1, int(context.root.width() * self.MAX_WIDTH)))
+        document.setTextWidth(width)
         height = int(document.size().height()) + 2 * int(document.documentMargin())
-        browser.setFixedSize(self.WIDTH + browser.verticalScrollBar().sizeHint().width(),
+        browser.setFixedSize(width + browser.verticalScrollBar().sizeHint().width(),
                              min(height, int(context.root.height() * self.HEIGHT)))
         self.body.addWidget(browser)
 
