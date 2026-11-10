@@ -1,13 +1,13 @@
 from .....app_core import Context
-from ...overlay import Overlay
+from ....modal import ButtonModal
 from .....network.buffer.channels.network_graph import MAX_NICKNAME_LENGTH
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, Qt
 from PySide6.QtWidgets import QCheckBox, QFrame, QGridLayout, QLabel, QLineEdit, QPushButton, QScrollArea
 
 
-class HostOverlay:
+class HostModal(QObject):
     '''
-    Binds a button to open and close an overlay with a row for every host
+    Opens the hosts modal, with a row for every host
     (device - MAC address) the network graph has seen
     (context.buffer.network), with the IPs seen on it, editing its nickname
     - kept in preferences, across workspaces (see Preferences.host_nicknames)
@@ -27,19 +27,23 @@ class HostOverlay:
     # A MAC's fields before it's edited
     DEFAULTS = {"nickname": "", "hide": "0"}
 
-    def __init__(self, button: QPushButton, context: Context):
+    def __init__(self, context: Context):
+        modal = ButtonModal(context, context.labels.get("network_hosts_overlay_title"))
+        super().__init__(modal)  # goes with the modal
+        self.modal = modal
         self.context = context
         self.style = context.style
-        self.overlay = Overlay(self.context.root, context, button, self.populate_overlay, "east")
+        self.populate()
+        modal.show()
 
-    def populate_overlay(self, overlay: Overlay):
+    def populate(self):
+        body = self.modal.body
         med = self.style.get_font()
         mono = self.style.get_font("mono")
         frame = QFrame()
-        # Part of the overlay's background - follows the "overlay" surface, not "widget"
-        self.style.set_material(frame, "overlay_card")
+        self.style.set_material(frame, "none")
         grid = QGridLayout(frame)
-        grid.setContentsMargins(self.style.igap, self.style.igap, self.style.igap, self.style.igap)
+        grid.setContentsMargins(0, 0, 0, 0)
         grid.setVerticalSpacing(self.style.cgap * 2)
         grid.setHorizontalSpacing(self.style.igap)
 
@@ -49,7 +53,7 @@ class HostOverlay:
             label = QLabel(self.context.labels.get("network_hosts_none_seen"))
             label.setFont(med)
             grid.addWidget(label, 0, 0)
-            overlay.layout().addWidget(frame)
+            body.addWidget(frame)
             return
 
         row = 0
@@ -155,8 +159,8 @@ class HostOverlay:
         search_entry.setPlaceholderText(self.context.labels.get("network_hosts_search"))
         search_entry.setClearButtonEnabled(True)
         search_entry.textChanged.connect(lambda text: self.search(text, rows))
-        overlay.layout().addWidget(search_entry)
-        overlay.layout().addWidget(scroll)
+        body.addWidget(search_entry)
+        body.addWidget(scroll)
         search_entry.setFocus()
 
     def search(self, text: str, rows: list):

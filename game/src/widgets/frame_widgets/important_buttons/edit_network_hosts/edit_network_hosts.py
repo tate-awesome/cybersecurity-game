@@ -1,6 +1,5 @@
-from .....app_core import Context
 from .._base_button import ImportantButton
-from .host_overlay import HostOverlay
+from .host_overlay import HostModal
 
 
 class EditNetworkHosts(ImportantButton):
@@ -11,7 +10,7 @@ class EditNetworkHosts(ImportantButton):
     '''
     LABEL = "menu_bar_buttons_network_hosts_overlay"
     TOOLTIP = "menu_bar_tooltips_network_hosts_overlay"
+    OPENS = "modal"
 
-    def __init__(self, context: Context):
-        super().__init__(context)
-        HostOverlay(self, context)
+    def on_click(self):
+        HostModal(self.context)

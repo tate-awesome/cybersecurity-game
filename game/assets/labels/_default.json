@@ -698,6 +698,7 @@
     "network_hosts_settings_seen_with": "IPs seen\non it",
     "network_hosts_settings_nickname": "Nickname\nfor display",
     "network_hosts_settings_hide": "Hide\nin graph",
+    "network_hosts_overlay_title": "Hosts",
     "network_hosts_search": "Search MACs, IPs and nicknames",
     "network_hosts_none_seen": "No hosts seen yet - capture some traffic first.",
     "stripcharts_time": "Time",
