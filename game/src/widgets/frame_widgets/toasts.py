@@ -887,6 +887,8 @@ class StatusBell(ImportantButton):
                 empty = QLabel(labels.get("status_toasts_empty"))
                 empty.setFont(style.get_font())
                 rows.addWidget(empty)
+            # A short page in the fixed height (see below) keeps its spacing, at the top
+            rows.addStretch()
             column.setFixedWidth(width["px"])
             scroll.setWidget(column)
             # A fixed height across pages (so the navigator stays put) when

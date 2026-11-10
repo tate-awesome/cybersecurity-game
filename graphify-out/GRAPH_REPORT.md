@@ -1,7 +1,7 @@
 # Graph Report - cybersecurity-game  (2026-11-10)
 
 ## Corpus Check
-- 342 files · ~287,310 words
+- 342 files · ~287,327 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 32 file(s) not represented in the graph (top: .ino 8, .pcap 5, .pcapng 4)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d1ffc183`
+- Built from commit: `e3f9d813`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -646,7 +646,7 @@ Nodes (3): align_decimals(), format_number(), fraction_width()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `ContextManager` connect `ContextManager` to `Canvas`, `important_buttons/__init__.py`, `context_manager.py`, `Process`, `buffer_manager.py`, `CallbackRegistry`, `ShiftWheel`, `Style`, `AnimationManager`, `pyside6_qtcore`, `LocalizationManager`, `docking.py`, `Preferences`, `.reset_page`, `Performance`, `KeyBinds`, `config_editor.py`, `InputManager`, `PageManager`, `Notice`, `Toasts`, `Buffer`, `confirm_dialog`, `.start_session`, `Overlay`, `Json`, `Router`, `SmoothWheel`?**
-  _High betweenness centrality (0.252) - this node is a cross-community bridge._
+  _High betweenness centrality (0.253) - this node is a cross-community bridge._
 - **Are the 16 inferred relationships involving `ContextManager` (e.g. with `AnimationManager` and `ClickManager`) actually correct?**
   _`ContextManager` has 16 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `DOT11_SSID`, `WLAN_INTERFACE_INFO`, `WLAN_INTERFACE_INFO_LIST` to the rest of the system?**
