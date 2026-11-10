@@ -5,11 +5,13 @@ bell - a plain status as written, an error as written with a link to its
 fix, a report as its one-line summary with a link to the report itself.
 
 Each toast fades in rising into place below the ones already up, stays a
-while (longer for errors and reports - hovering holds it), then shrinks
-into the bell, which pops as it swallows it. At most MAX_SHOWN are up at
-once: one more pushes the oldest straight into the bell. Everything stays
-in the bell's dropdown afterwards, and the bell counts the errors and
-reports since it was last opened.
+while (LIFETIME_MS - hovering holds them all), then shrinks into the bell,
+which pops as it swallows it - one at a time (see RETREAT_GAP_MS), the
+rest sliding up once it's out of the way. The stack takes up at most
+STACK_HEIGHT of the room for it: a status that doesn't fit isn't toasted
+at all, then or later. Everything stays in the bell's dropdown afterwards,
+and the bell counts the errors and reports - and the statuses never
+toasted - since it was last opened.
 
 Dragging a toast moves the whole stack: let go, and it settles in the
 nearest of ANCHORS - a top or bottom corner, or the middle of either edge -
@@ -73,11 +75,14 @@ def page_tokens(current: int, total: int, edge: int = 1, around: int = 1) -> lis
 
 # How wide a toast's card is, px - the shadow's room comes on top
 TOAST_WIDTH = 380
-# At most this many up at once - one more sends the oldest into the bell at once
-MAX_SHOWN = 4
+# The most of the room for toasts (see Toasts.bounds) the stack takes up -
+# a status that would take it past this goes to the bell untoasted
+STACK_HEIGHT = 0.5
 # How long a toast stays up, ms - every kind alike, so they go in the order
-# they came, oldest (the top) first. Hovering any holds them all.
+# they came, oldest (the top) first. Hovering any holds them all, and
+# they're all up at least HOVER_BUFFER_MS more once it moves off
 LIFETIME_MS = 6000
+HOVER_BUFFER_MS = 3000
 # How many statuses the bell's dropdown keeps
 HISTORY_SIZE = 300
 # How often the status buffer is read, ms
@@ -91,6 +96,12 @@ MOVE_MS = 220
 EAT_MS = 340
 POP_MS = 240
 POP_SCALE = 0.35
+# The rest slide up into the room a toast left this far into its shrinking
+# - once it's mostly out of the way, so they don't run into it
+SLIDE_DELAY_MS = EAT_MS * 3 // 4
+# The least time between toasts going into the bell - each one's out of the
+# way, and the rest slid up, before the next goes
+RETREAT_GAP_MS = SLIDE_DELAY_MS + MOVE_MS
 # The bell's dropdown's page of cards scrolls past this much of the window's height
 DROPDOWN_HEIGHT = 0.6
 # Statuses shown per page in the dropdown (see StatusBell.fill)
@@ -265,9 +276,9 @@ class Toast(ToastCard):
     '''
     A ToastCard over the main window, placed by Toasts - it fades in rising
     into place (see enter), slides up as the ones above it go (see
-    move_to), and asks Toasts to eat it when its time is up (see
-    LIFETIME_MS) - hovering any toast holds them all. Dragged, it takes
-    the whole stack somewhere else (see Toasts.drop).
+    move_to), and asks Toasts to retire it when its time is up (see
+    LIFETIME_MS) - hovering any toast holds them all (see Toasts.hold).
+    Dragged, it takes the whole stack somewhere else (see Toasts.drop).
     '''
 
     def __init__(self, toasts: "Toasts", status: MetaStatus):
@@ -284,7 +295,9 @@ class Toast(ToastCard):
         self.clock = QElapsedTimer()
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
-        self.timer.timeout.connect(lambda: toasts.eat(self))
+        self.timer.timeout.connect(self._expired)
+        # Shrinking into the bell - its room in the stack kept a moment (see Toasts.eat)
+        self.leaving = False
         # Where a press landed (its own coordinates), and whether it's become a drag
         self._pressed: QPoint | None = None
         self.dragging = False
@@ -294,20 +307,22 @@ class Toast(ToastCard):
         self.clock.restart()
         self.timer.start(max(0, self.remaining))
 
+    def _expired(self):
+        self.remaining = 0
+        self.toasts.retire(self)
+
     def pause(self):
         if self.timer.isActive():
             self.remaining -= self.clock.elapsed()
             self.timer.stop()
 
     def enterEvent(self, event):
-        for toast in self.toasts.shown:
-            toast.pause()
+        self.toasts.hold()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         if self.toasts.is_shown(self) and not self.dragging:
-            for toast in self.toasts.shown:
-                toast.start_clock()
+            self.toasts.resume()
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):
@@ -441,6 +456,11 @@ class Toasts(QObject):
         self.unseen = 0
         # Oldest first - top to bottom
         self.shown: list[Toast] = []
+        # Toasts whose time is up, waiting their turn into the bell (see retire)
+        self.retiring: deque[Toast] = deque()
+        self.retreat_gap = QTimer(self)
+        self.retreat_gap.setSingleShot(True)
+        self.retreat_gap.timeout.connect(self._next_retreat)
         self.bell: "StatusBell | None" = None
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
@@ -477,24 +497,59 @@ class Toasts(QObject):
         watching = bell is not None and bell.dropdown.isVisible()
         for status in new:
             self.history.append(status)
-            if status.kind != "status" and not watching:
+            if watching:
+                continue
+            # One the stack has no room for goes straight to the bell, unseen
+            toasted = self.show_toast(status)
+            if status.kind != "status" or not toasted:
                 self.unseen += 1
         if bell is not None:
             bell.update()
         if watching:
             bell.refresh_dropdown()
-            return
-        # A burst bigger than fits only toasts its last few - the rest are in the dropdown
-        for status in new[-MAX_SHOWN:]:
-            self.show_toast(status)
 
-    def show_toast(self, status: MetaStatus):
-        # Full up - the oldest goes into the bell now, making room
-        while len(self.shown) >= MAX_SHOWN:
-            self.eat(self.shown[0])
+    def show_toast(self, status: MetaStatus) -> bool:
+        '''Toasts status, if it fits in the stack (see STACK_HEIGHT) - whether it did.'''
         toast = Toast(self, status)
+        if self.shown:
+            cards = [t.height() - t.shadow_room()[1] - t.shadow_room()[3] for t in self.shown + [toast]]
+            if sum(cards) + self.context.style.igap * (len(cards) - 1) > self.bounds().height() * STACK_HEIGHT:
+                toast.deleteLater()
+                return False
         self.shown.append(toast)
         self.place(entering=toast)
+        # Coming in while the mouse holds the stack - held with it
+        if any(t.underMouse() for t in self.live()):
+            toast.pause()
+        return True
+
+    def live(self) -> list[Toast]:
+        '''The toasts up, not on their way into the bell.'''
+        return [toast for toast in self.shown if not toast.leaving]
+
+    def hold(self):
+        '''Stops every toast's clock (the mouse is over one) - those whose time was up wait too.'''
+        for toast in self.live():
+            toast.pause()
+        self.retiring.clear()
+
+    def resume(self):
+        '''Starts every toast's clock again - with at least HOVER_BUFFER_MS left.'''
+        for toast in self.live():
+            toast.remaining = max(toast.remaining, HOVER_BUFFER_MS)
+            toast.start_clock()
+
+    def retire(self, toast: Toast):
+        '''Sends a toast whose time is up into the bell - once RETREAT_GAP_MS has passed since the last.'''
+        if toast in self.live() and toast not in self.retiring:
+            self.retiring.append(toast)
+        self._next_retreat()
+
+    def _next_retreat(self):
+        if self.retreat_gap.isActive() or not self.retiring:
+            return
+        self.eat(self.retiring.popleft())
+        self.retreat_gap.start(RETREAT_GAP_MS)
 
     def is_shown(self, toast: Toast) -> bool:
         return toast in self.shown
@@ -591,15 +646,20 @@ class Toasts(QObject):
             bell.menu_bar.place_bell()
         # After the bar's relaid out - the bell's place sets the stack's top
         QTimer.singleShot(0, self.place)
-        for toast in self.shown:
-            if not toast.underMouse():
-                toast.start_clock()
+        if not any(toast.underMouse() for toast in self.live()):
+            self.resume()
 
-    def eat(self, toast: Toast):
-        '''Takes a toast down - shrinking it into the bell, which pops - and slides the rest up.'''
-        if toast not in self.shown:
+    def eat(self, toast: Toast, now: bool = False):
+        '''
+        Takes a toast down - shrinking it into the bell, which pops - and
+        slides the rest up into its room once it's mostly out of the way
+        (see SLIDE_DELAY_MS), or now.
+        '''
+        if toast not in self.live():
             return
-        self.shown.remove(toast)
+        toast.leaving = True
+        if toast in self.retiring:
+            self.retiring.remove(toast)
         toast.timer.stop()
         bell = self.live_bell()
         if bell is not None and self.context.performance.page_transitions and toast.isVisible():
@@ -608,9 +668,20 @@ class Toasts(QObject):
             start = QRect(toast.mapTo(self.context.root, card.topLeft()), card.size())
             middle = QPointF(bell.mapTo(self.context.root, bell.rect().center()))
             _Swallowed(self.context.root, picture, start, middle, lambda: self._swallowed(bell))
+        else:
+            now = True
         toast.hide()
-        toast.deleteLater()
-        self.place()
+        if now:
+            self._gone(toast)
+        else:
+            QTimer.singleShot(SLIDE_DELAY_MS, lambda: self._gone(toast))
+
+    def _gone(self, toast: Toast):
+        '''A toast eaten is out of the way - the rest slide up into its room.'''
+        if toast in self.shown:
+            self.shown.remove(toast)
+            toast.deleteLater()
+            self.place()
 
     def _swallowed(self, bell: "StatusBell"):
         try:
@@ -619,9 +690,12 @@ class Toasts(QObject):
             pass  # its page went while the toast was on its way
 
     def clear(self):
-        '''Takes every toast down into the bell - the dropdown opening shows them all anyway.'''
+        '''Takes every toast down into the bell at once - the dropdown opening shows them all anyway.'''
+        self.retiring.clear()
+        for toast in self.live():
+            self.eat(toast, now=True)
         for toast in list(self.shown):
-            self.eat(toast)
+            self._gone(toast)  # those already on their way, too
 
     def mark_seen(self):
         self.unseen = 0
