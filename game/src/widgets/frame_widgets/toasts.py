@@ -465,13 +465,18 @@ class Toasts(QObject):
         if not new:
             return
         self.last = new[-1].number
+        bell = self.live_bell()
+        # Seen as they come in, in the open dropdown - not toasted under it
+        watching = bell is not None and bell.dropdown.isVisible()
         for status in new:
             self.history.append(status)
-            if status.kind != "status":
+            if status.kind != "status" and not watching:
                 self.unseen += 1
-        bell = self.live_bell()
         if bell is not None:
             bell.update()
+        if watching:
+            bell.refresh_dropdown()
+            return
         # A burst bigger than fits only toasts its last few - the rest are in the dropdown
         for status in new[-MAX_SHOWN:]:
             self.show_toast(status)
@@ -636,6 +641,8 @@ class StatusBell(ImportantButton):
         self._filter = 0
         self._page = 0
         self.dropdown = Overlay(context.root, context, self, self.fill, trigger_texts=False)
+        # Rebuilds the open dropdown's page with the statuses since (set by fill)
+        self._refresh = None
         context.style.signals.changed.connect(self.update)
         context.toasts.bind_bell(self)
 
@@ -643,6 +650,11 @@ class StatusBell(ImportantButton):
         self.context.toasts.mark_seen()
         self._page = 0
         self.dropdown.click_open()
+
+    def refresh_dropdown(self):
+        '''Shows the statuses that came in while the dropdown is open (see Toasts.poll).'''
+        if self._refresh is not None and self.dropdown.isVisible():
+            self._refresh()
 
     def pop(self):
         '''Grows by POP_SCALE and back - having just swallowed a toast.'''
@@ -706,12 +718,12 @@ class StatusBell(ImportantButton):
         statuses (newest first, each on the card its toast had - see
         ToastCard), then a page navigator. The filter and page are kept on
         the bell (see __init__), so changing either rebuilds the page in
-        place (see render) rather than reopening.
+        place (see render) rather than reopening - as does a status coming
+        in while it's open (see refresh_dropdown), on top, at the page it's on.
         '''
         context, style = self.context, self.context.style
         labels = context.labels
-        # Newest first; snapshotted at open time, so a status arriving while
-        # it's open doesn't shift the paging underfoot.
+        # Newest first
         statuses = list(reversed(self.context.toasts.history))
 
         # Filter menu, behind a "Filter:" label so it reads as one
@@ -817,7 +829,12 @@ class StatusBell(ImportantButton):
             self._page = 0
             render()
 
+        def refresh():
+            statuses[:] = reversed(self.context.toasts.history)
+            render()
+
         combo.currentIndexChanged.connect(on_filter)
+        self._refresh = refresh
         render()
 
     def _nav_button(self, text: str, enabled: bool, clicked, current: bool = False) -> QPushButton:

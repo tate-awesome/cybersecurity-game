@@ -11094,7 +11094,7 @@
       "file_type": "code",
       "norm_label": ".__init__()",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L259"
+      "source_location": "L262"
     },
     {
       "id": "game_src_widgets_modal_modalwindow_hideevent",
@@ -36114,7 +36114,7 @@
       "file_type": "code",
       "norm_label": "confirm_dialog()",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L290"
+      "source_location": "L301"
     },
     {
       "id": "game_src_widgets_modal_confirm_dialog_confirm",
@@ -36126,7 +36126,7 @@
       "file_type": "code",
       "norm_label": "confirm()",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L298"
+      "source_location": "L309"
     },
     {
       "id": "game_src_widgets_modal_message",
@@ -36138,7 +36138,7 @@
       "file_type": "code",
       "norm_label": "message()",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L283"
+      "source_location": "L294"
     },
     {
       "id": "game_src_widgets_visuals_vector_field_vectorfield_aim",
@@ -58593,7 +58593,7 @@
       "source_location": "L9"
     },
     {
-      "id": "game_src_widgets_modal_rationale_291",
+      "id": "game_src_widgets_modal_rationale_302",
       "label": "A modal yes/no dialog: shows message, and calls confirm_func only if the user\u2026",
       "_origin": "ast",
       "community": 97,
@@ -58601,7 +58601,7 @@
       "file_type": "rationale",
       "norm_label": "a modal yes/no dialog: shows message, and calls confirm_func only if the user...",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L291"
+      "source_location": "L302"
     },
     {
       "id": "game_src_widgets_visuals_vector_field_py_ndarray",
@@ -84381,7 +84381,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L295",
+      "source_location": "L306",
       "weight": 1.0
     },
     {
@@ -84393,7 +84393,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L260",
+      "source_location": "L263",
       "weight": 1.0
     },
     {
@@ -84405,7 +84405,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L284",
+      "source_location": "L295",
       "weight": 1.0
     },
     {
@@ -121596,7 +121596,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L290",
+      "source_location": "L301",
       "weight": 1.0
     },
     {
@@ -121608,7 +121608,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L290",
+      "source_location": "L301",
       "weight": 1.0
     },
     {
@@ -121620,7 +121620,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L259",
+      "source_location": "L262",
       "weight": 1.0
     },
     {
@@ -121632,7 +121632,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L283",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -121644,7 +121644,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L283",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -132016,7 +132016,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L283",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -132027,7 +132027,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L290",
+      "source_location": "L301",
       "weight": 1.0
     },
     {
@@ -156260,7 +156260,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L259",
+      "source_location": "L262",
       "weight": 1.0
     },
     {
@@ -172940,14 +172940,14 @@
       "weight": 1.0
     },
     {
-      "source": "game_src_widgets_modal_rationale_291",
+      "source": "game_src_widgets_modal_rationale_302",
       "target": "game_src_widgets_modal_confirm_dialog",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L291",
+      "source_location": "L302",
       "weight": 1.0
     },
     {
@@ -175742,7 +175742,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "game/src/widgets/modal.py",
-      "source_location": "L305",
+      "source_location": "L316",
       "weight": 1.0
     },
     {
@@ -180843,5 +180843,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "f086db6550bee99222b4387f6557841eb44b8b25"
+  "built_at_commit": "42a12367a56221575a61afc94981d80de9e5d1b3"
 }
