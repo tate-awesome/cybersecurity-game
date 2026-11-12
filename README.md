@@ -38,6 +38,16 @@ and [`game/requirements.txt`](game/requirements.txt)):
   registry settings each platform needs.
 - `nmap` must be installed separately on the system (for `python-nmap`).
 
+### Prebuilt Windows exe
+
+You don't need to build it yourself: GitHub Actions runs `game/dist.py` on every push
+([`.github/workflows/build-exe.yml`](.github/workflows/build-exe.yml)).
+
+- **Newest `main` build:** the [`latest-build`](../../releases/tag/latest-build) pre-release.
+- **Any branch:** open that push's run in the **Actions** tab and download it under **Artifacts**.
+
+Unzip it, keep `assets/` next to the exe, and run it as Administrator.
+
 The app's own design notes and screen outline are in
 [`game/README.md`](game/README.md) and [`game/outline.txt`](game/outline.txt).
 
