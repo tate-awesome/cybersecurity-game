@@ -8,7 +8,6 @@
     "link_folder": "workspaces",
     "sections": [
         {"workspace": "workspaces/start_here"},
-        {"label": "module_1_networks", "category": "module_1_networks", "numbered": true},
         {"label": "attacker_lessons", "category": "attacker", "numbered": true},
         {"label": "defender_lessons", "category": "defender", "numbered": true},
         {"label": "admin_suites", "category": "admin"}

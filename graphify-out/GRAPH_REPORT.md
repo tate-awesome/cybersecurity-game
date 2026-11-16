@@ -220,7 +220,7 @@
 - Telemetry
 - NMapper
 - .play
-- Cyber-ICS Training Module
+- Cyber-ICS Training Platform
 - HideEffect
 - Proximity
 - .global_rows
@@ -629,9 +629,9 @@ Nodes (3): InterfaceManager, NMapper, job()
 Cohesion: 0.60
 Nodes (3): covered(), settle(), uncovered()
 
-### Community 238 - "Cyber-ICS Training Module"
+### Community 238 - "Cyber-ICS Training Platform"
 Cohesion: 0.25
-Nodes (5): graphify, Cyber-ICS Training Module, Intended use, Repository layout, The game lives in [`game/`](game/)
+Nodes (5): graphify, Cyber-ICS Training Platform, Intended use, Repository layout, The game lives in [`game/`](game/)
 
 ### Community 248 - "align_decimals"
 Cohesion: 0.32

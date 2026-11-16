@@ -210,7 +210,7 @@
 - ToggleButton
 - BaseForm
 - Telemetry
-- Cyber-ICS Training Module
+- Cyber-ICS Training Platform
 - confirm_dialog
 - TitlePage
 
@@ -554,9 +554,9 @@ Nodes (8): ToggleButton, FreeScrollStatusConsole, PausePacketConsole, StreamInco
 Cohesion: 0.11
 Nodes (16): form_order(), BaseForm, FlagsForm, HVACFlagsForm, SubmarineFlagsForm, HVACSlidersForm, SubmarineSlidersForm, APConnectForm (+8 more)
 
-### Community 238 - "Cyber-ICS Training Module"
+### Community 238 - "Cyber-ICS Training Platform"
 Cohesion: 0.25
-Nodes (5): graphify, Cyber-ICS Training Module, Intended use, Repository layout, The game lives in [`game/`](game/)
+Nodes (5): graphify, Cyber-ICS Training Platform, Intended use, Repository layout, The game lives in [`game/`](game/)
 
 ### Community 239 - "confirm_dialog"
 Cohesion: 0.07

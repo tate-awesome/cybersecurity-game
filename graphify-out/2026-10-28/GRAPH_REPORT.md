@@ -203,7 +203,7 @@
 - ContextManager
 - NotFound
 - Telemetry
-- Cyber-ICS Training Module
+- Cyber-ICS Training Platform
 - Page
 
 ## God Nodes (most connected - your core abstractions)
@@ -568,9 +568,9 @@ Nodes (3): flush(), flush_all(), run()
 Cohesion: 0.09
 Nodes (18): ContextManager, House, form_order(), BaseForm, FlagsForm, HVACFlagsForm, SubmarineFlagsForm, HVACKalmanToggleForm (+10 more)
 
-### Community 238 - "Cyber-ICS Training Module"
+### Community 238 - "Cyber-ICS Training Platform"
 Cohesion: 0.25
-Nodes (5): graphify, Cyber-ICS Training Module, Intended use, Repository layout, The game lives in [`game/`](game/)
+Nodes (5): graphify, Cyber-ICS Training Platform, Intended use, Repository layout, The game lives in [`game/`](game/)
 
 ### Community 261 - "Page"
 Cohesion: 0.08

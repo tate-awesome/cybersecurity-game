@@ -1,4 +1,4 @@
-# Cyber-ICS Training Module
+# Cyber-ICS Training Platform
 
 An educational cybersecurity game about **industrial control systems (ICS)**. The
 scenario is a small maritime control loop: a "master" steers a vessel by reading its

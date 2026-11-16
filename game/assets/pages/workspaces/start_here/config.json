@@ -33,7 +33,7 @@
     "schema_version": 1,
     "link_label": "title_buttons_workspace_start_here",
     "include": 1,
-    "category": "None",
+    "category": null,
     "order": 0,
     "prerequisites": [],
     "estimated_minutes": 20,

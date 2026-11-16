@@ -109,7 +109,7 @@ class App:
     Creates the Router and starts the GUI main loop
     '''
 
-    def __init__(self, start_page: str | None = None, title="Game"):
+    def __init__(self, start_page: str | None = None, title="Cyber-ICS Training Platform"):
         '''
         start_page: page key to open first. If None, the Router opens
         its START_PAGE.

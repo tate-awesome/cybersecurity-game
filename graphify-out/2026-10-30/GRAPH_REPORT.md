@@ -214,7 +214,7 @@
 - ContextManager
 - CheckboxOverlay
 - paint_panel
-- Cyber-ICS Training Module
+- Cyber-ICS Training Platform
 - _Swallowed
 - ModalWindow
 - Scrim
@@ -581,9 +581,9 @@ Nodes (7): PanelButton, CheckboxOverlay, ChooseShownDefenderFlagForms, ChooseSho
 Cohesion: 0.09
 Nodes (4): _Peek, blurred_shape(), paint_panel(), surface_shadow()
 
-### Community 238 - "Cyber-ICS Training Module"
+### Community 238 - "Cyber-ICS Training Platform"
 Cohesion: 0.25
-Nodes (5): graphify, Cyber-ICS Training Module, Intended use, Repository layout, The game lives in [`game/`](game/)
+Nodes (5): graphify, Cyber-ICS Training Platform, Intended use, Repository layout, The game lives in [`game/`](game/)
 
 ### Community 250 - "menu_bar.py"
 Cohesion: 0.07

@@ -11,7 +11,7 @@
     "schema_version": 1,
     "link_label": "title_buttons_workspace_internet_traffic",
     "include": 1,
-    "category": "module_1_networks",
+    "category": "attacker",
     "order": 10,
     "prerequisites": [],
     "estimated_minutes": 20,
