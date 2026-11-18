@@ -331,7 +331,7 @@ void restPost() {
     http.begin(REST_URL);
     http.addHeader("Content-Type", "application/json");
 
-    StaticJsonDocument<128> doc;
+    StaticJsonDocument<512> doc;
     doc["timestamp"] = (uint32_t)(millis() / 1000);
     doc["source"]    = "server";
     doc["x"]         = g_state_x;
@@ -349,7 +349,7 @@ void restPost() {
 
     if (code == 200) {
         String body = http.getString();
-        StaticJsonDocument<128> resp;
+        StaticJsonDocument<1024> resp;
         if (!deserializeJson(resp, body)) {
             if (resp.containsKey("encryption_status")) {
                 encrypt_status = resp["encryption_status"].as<bool>();

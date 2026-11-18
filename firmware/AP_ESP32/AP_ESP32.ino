@@ -1594,7 +1594,7 @@ void setupRoutes() {
     [](AsyncWebServerRequest* req) {},
     nullptr,
     [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
-      DynamicJsonDocument incoming(512);
+      DynamicJsonDocument incoming(1024);
       DeserializationError err = deserializeJson(incoming, data, len);
       if (err) {
         req->send(400, "application/json", "{\"error\":\"bad json\"}");
@@ -1675,7 +1675,7 @@ void setupRoutes() {
       }
 
       // Return control state
-      StaticJsonDocument<128> resp;
+      StaticJsonDocument<1024> resp;
       resp["encryption_status"] = g_encryption_status;
       resp["encryption_key"]    = g_encryption_key;
       resp["target_x"]          = g_target_x;
