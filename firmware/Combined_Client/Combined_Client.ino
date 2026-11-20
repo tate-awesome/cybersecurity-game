@@ -469,9 +469,14 @@ void runSubmarineCycle() {
       float speed_error = abs(last_speed - state_speed);
       float rudder_error = fabs(wrapToPi(last_rudder - state_rudder));
 
-      speed_anomaly_detected = speed_error > g_speed_error_threshold;
-      rudder_anomaly_detected = rudder_error > g_rudder_error_threshold;
-      
+      if(!AP_communication && g_submarine_filtering_on){
+        speed_anomaly_detected = speed_error > g_speed_error_threshold;
+        rudder_anomaly_detected = rudder_error > g_rudder_error_threshold;
+      } else{
+        speed_anomaly_detected = false;
+        rudder_anomaly_detected = false;
+      }
+
       if(AP_communication){
         speed_m_s *= 15.0f;
         rudder_deg *= 3.0f;

@@ -268,7 +268,11 @@ void ekfStep(float speed_m_s, float rudder_rad, const BLA::Matrix<3,1>& z_meas, 
   bool yCheck = fabsf(y(1,0)) > yLimit;
   bool thetaCheck = fabsf(y(2,0)) > thetaLimit;
 
-  g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
+  if(!AP_communication){
+    g_state_anomaly_detected = xCheck || yCheck || thetaCheck;
+  }else{
+    g_state_anomaly_detected = false;
+  }
 
   xhat = x_pred + K * y;
 
@@ -455,6 +459,7 @@ void runSubmarineCycle() {
         g_state_y = xhat(1,0);
         g_state_theta = xhat(2,0);
       }else{
+        g_state_anomaly_detected = false;
         g_state_x = z_meas(0,0);
         g_state_y = z_meas(1,0);
         g_state_theta = z_meas(2,0);
@@ -625,7 +630,11 @@ void runHvacCycle() {
         if (g_hvac_kalman_filter_enabled) {
             est_temp = tempKF(current_temp, 0.1f);
             float error_value = fabsf(est_temp - current_temp);
-            g_HVAC_anomaly_detected = error_value > g_hvac_state_error_threshold;
+            if(!AP_communication){
+              g_HVAC_anomaly_detected = error_value > g_hvac_state_error_threshold;
+            }else{
+              g_HVAC_anomaly_detected = false;
+            }
             current_temp = est_temp;
         }
         else {
